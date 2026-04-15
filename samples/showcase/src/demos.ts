@@ -35,4 +35,24 @@ export const demos: Demo[] = [
       import("@samples/custom-themes/App").then((m) => ({ default: m.App }))
     ),
   },
+  {
+    id: "custom-components",
+    title: "Custom Components",
+    description:
+      "Override built-in UI primitives (Button, Input, ToggleButton, Loader) with custom implementations.",
+    component: lazy(() =>
+      import("@samples/custom-components/App").then((m) => ({
+        default: m.App,
+      }))
+    ),
+  },
+  {
+    id: "events-log",
+    title: "Events Log",
+    description:
+      "Listen to all 20 chat callbacks (messages, streams, tool calls, threads, profiles, errors) and display them in a live log.",
+    component: lazy(() =>
+      import("@samples/events-log/App").then((m) => ({ default: m.App }))
+    ),
+  },
 ];
