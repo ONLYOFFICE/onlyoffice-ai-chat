@@ -3,6 +3,7 @@ import { AIChatWidget } from "@onlyoffice/ai-chat";
 import type { StorageAdapter, Translations } from "@onlyoffice/ai-chat";
 
 import "@onlyoffice/ai-chat/styles";
+import "./styles.css";
 
 import { settings } from "./adapters/settings";
 import { createStorage } from "./adapters/storage";
@@ -149,7 +150,6 @@ export function App() {
                 onClick={() => setActiveLocale(loc.code)}
               >
                 {loc.label}
-                {loc.code === CUSTOM_LOCALE_ID && " ✎"}
               </button>
             ))}
           </div>

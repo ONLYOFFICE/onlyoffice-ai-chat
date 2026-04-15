@@ -2,7 +2,6 @@ export const CUSTOM_LOCALE_ID = "en-custom";
 
 export const locales = [
   { code: CUSTOM_LOCALE_ID, label: "EN Custom" },
-  { code: "en", label: "English" },
   { code: "ar-SA", label: "العربية (Arabic)" },
   { code: "be", label: "Беларуская (Belarusian)" },
   { code: "bg", label: "Български (Bulgarian)" },
