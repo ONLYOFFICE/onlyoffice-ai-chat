@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AIChatWidget } from "@onlyoffice/ai-chat";
 import type { StorageAdapter, Translations } from "@onlyoffice/ai-chat";
 
@@ -26,9 +26,7 @@ const colors = isDark
       itemHoverBg: "#3d3d3d",
       tabBorder: "#555",
       tabActiveBorder: "#8ab4f8",
-      inputBg: "#3a3a3a",
-      inputBorder: "#555",
-      inputText: "#e0e0e0",
+      valueBg: "#3a3a3a",
       labelText: "#aaa",
     }
   : {
@@ -38,9 +36,7 @@ const colors = isDark
       itemHoverBg: "#eaeaea",
       tabBorder: "#ddd",
       tabActiveBorder: "#1a73e8",
-      inputBg: "#fff",
-      inputBorder: "#ccc",
-      inputText: "#333",
+      valueBg: "#e8e8e8",
       labelText: "#666",
     };
 
@@ -49,16 +45,15 @@ document.documentElement.style.color = theme.text;
 
 type Tab = "locales" | "keys";
 
+const translationKeys = Object.keys(customEn) as (keyof Translations)[];
+
 export function App() {
   const [storage, setStorage] = useState<StorageAdapter | null>(null);
   const [activeLocale, setActiveLocale] = useState(CUSTOM_LOCALE_ID);
-  const [draft, setDraft] = useState<Translations>(customEn);
-  const [applied, setApplied] = useState<Translations>(customEn);
   const { width: widgetWidth, onMouseDown } = useResize(520);
   const [activeTab, setActiveTab] = useState<Tab>("keys");
 
   const isCustom = activeLocale === CUSTOM_LOCALE_ID;
-  const hasChanges = draft !== applied;
 
   useEffect(() => {
     createStorage().then(setStorage);
@@ -72,37 +67,8 @@ export function App() {
 
   const widgetLocale = isCustom ? "en" : activeLocale;
   const widgetTranslations = useMemo<Partial<Translations> | undefined>(
-    () => (isCustom ? applied : undefined),
-    [isCustom, applied]
-  );
-
-  const widget = useMemo(
-    () =>
-      storage ? (
-        <AIChatWidget
-          storage={storage}
-          settings={settings}
-          platform={platform}
-          storeKeys={storeKeys}
-          locale={widgetLocale}
-          translations={widgetTranslations}
-          theme={theme.id}
-        />
-      ) : null,
-    [storage, widgetLocale, widgetTranslations]
-  );
-
-  const handleKeyChange = useCallback((key: string, value: string) => {
-    setDraft((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  const handleApply = useCallback(() => {
-    setApplied(draft);
-  }, [draft]);
-
-  const translationKeys = useMemo(
-    () => Object.keys(draft) as (keyof Translations)[],
-    [draft]
+    () => (isCustom ? customEn : undefined),
+    [isCustom]
   );
 
   if (!storage) {
@@ -189,33 +155,20 @@ export function App() {
           </div>
         ) : (
           <div className="key-editor">
-            {hasChanges && (
-              <button
-                className="apply-btn"
-                style={{
-                  backgroundColor: colors.tabActiveBorder,
-                  color: "#fff",
-                }}
-                onClick={handleApply}
-              >
-                Apply changes
-              </button>
-            )}
             {translationKeys.map((key) => (
               <div className="key-row" key={key}>
                 <div className="key-label" style={{ color: colors.labelText }}>
                   {key}
                 </div>
-                <input
-                  className="key-input"
+                <span
+                  className="key-value"
                   style={{
-                    backgroundColor: colors.inputBg,
-                    borderColor: colors.inputBorder,
-                    color: colors.inputText,
+                    backgroundColor: colors.valueBg,
+                    color: theme.text,
                   }}
-                  value={draft[key]}
-                  onChange={(e) => handleKeyChange(key, e.target.value)}
-                />
+                >
+                  {customEn[key]}
+                </span>
               </div>
             ))}
           </div>
@@ -226,7 +179,15 @@ export function App() {
         className="widget-area"
         style={{ width: widgetWidth, borderColor: theme.border }}
       >
-        {widget}
+        <AIChatWidget
+          storage={storage}
+          settings={settings}
+          platform={platform}
+          storeKeys={storeKeys}
+          locale={widgetLocale}
+          translations={widgetTranslations}
+          theme={theme.id}
+        />
         <div
           onMouseDown={onMouseDown}
           style={{

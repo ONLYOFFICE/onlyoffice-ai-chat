@@ -78,27 +78,11 @@ body,
   font-family: monospace;
 }
 
-.key-input {
-  width: 100%;
+.key-value {
+  display: block;
   padding: 6px 8px;
-  border: 1px solid;
   border-radius: 4px;
   font-size: 12px;
-  box-sizing: border-box;
-}
-
-.apply-btn {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  width: 100%;
-  padding: 8px;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-bottom: 8px;
 }
 
 .widget-area {
