@@ -16,7 +16,6 @@ import type {
   Model,
 } from "@onlyoffice/ai-chat";
 
-const DB_NAME = "ai-chat-sample";
 const DB_VERSION = 1;
 
 // ---------------------------------------------------------------------------
@@ -37,9 +36,9 @@ function tx(transaction: IDBTransaction): Promise<void> {
   });
 }
 
-function openDatabase(): Promise<IDBDatabase> {
+function openDatabase(dbName: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(dbName, DB_VERSION);
 
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -460,8 +459,10 @@ class IDBPromptFolders implements PromptFoldersStorage {
 // Factory
 // ---------------------------------------------------------------------------
 
-export async function createStorage(): Promise<StorageAdapter> {
-  const db = await openDatabase();
+export async function createStorage(
+  dbName = "ai-chat-sample"
+): Promise<StorageAdapter> {
+  const db = await openDatabase(dbName);
 
   return {
     threads: new IDBThreads(db),
@@ -473,7 +474,7 @@ export async function createStorage(): Promise<StorageAdapter> {
       /* DB already opened */
     },
     async close() {
-      db.close();
+      /* keep connection alive for re-mounts */
     },
   };
 }
