@@ -10,6 +10,7 @@ import { platform } from "./adapters/platform";
 import { storeKeys } from "./store-keys";
 import { customEn } from "./custom-en";
 import { locales, CUSTOM_LOCALE_ID } from "./locales";
+import { useResize } from "./useResize";
 
 const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -53,6 +54,7 @@ export function App() {
   const [activeLocale, setActiveLocale] = useState(CUSTOM_LOCALE_ID);
   const [draft, setDraft] = useState<Translations>(customEn);
   const [applied, setApplied] = useState<Translations>(customEn);
+  const { width: widgetWidth, onMouseDown } = useResize(520);
   const [activeTab, setActiveTab] = useState<Tab>("keys");
 
   const isCustom = activeLocale === CUSTOM_LOCALE_ID;
@@ -220,8 +222,22 @@ export function App() {
         )}
       </div>
 
-      <div className="widget-area" style={{ borderColor: theme.border }}>
+      <div
+        className="widget-area"
+        style={{ width: widgetWidth, borderColor: theme.border }}
+      >
         {widget}
+        <div
+          onMouseDown={onMouseDown}
+          style={{
+            position: "absolute",
+            top: 0,
+            right: -3,
+            width: 6,
+            height: "100%",
+            cursor: "col-resize",
+          }}
+        />
       </div>
     </div>
   );

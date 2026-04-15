@@ -8,6 +8,7 @@ import { settings } from "./adapters/settings";
 import { createStorage } from "./adapters/storage";
 import { platform } from "./adapters/platform";
 import { storeKeys } from "./store-keys";
+import { useResize } from "./useResize";
 
 const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -19,6 +20,7 @@ document.documentElement.style.backgroundColor = theme.bg;
 
 export function App() {
   const [storage, setStorage] = useState<StorageAdapter | null>(null);
+  const { width, onMouseDown } = useResize(520);
 
   useEffect(() => {
     createStorage().then(setStorage);
@@ -43,10 +45,9 @@ export function App() {
   return (
     <div
       style={{
-        maxWidth: 520,
+        width,
         height: "100vh",
-        margin: "0 auto",
-        borderLeft: `1px solid ${theme.border}`,
+        position: "relative",
         borderRight: `1px solid ${theme.border}`,
       }}
     >
@@ -57,6 +58,17 @@ export function App() {
         storeKeys={storeKeys}
         locale={navigator.language.split("-")[0] || "en"}
         theme={theme.id}
+      />
+      <div
+        onMouseDown={onMouseDown}
+        style={{
+          position: "absolute",
+          top: 0,
+          right: -3,
+          width: 6,
+          height: "100%",
+          cursor: "col-resize",
+        }}
       />
     </div>
   );

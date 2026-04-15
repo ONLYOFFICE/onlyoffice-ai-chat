@@ -102,8 +102,8 @@ body,
 }
 
 .widget-area {
-  flex: 1;
-  max-width: 520px;
+  position: relative;
+  flex-shrink: 0;
   border-left: 1px solid;
   border-right: 1px solid;
   height: 100vh;
