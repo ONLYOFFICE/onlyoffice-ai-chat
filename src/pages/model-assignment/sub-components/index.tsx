@@ -1,12 +1,12 @@
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { CapabilitiesUI } from "../../../capabilities";
+import { useComponents } from "../../../components-provider";
 import { useStores } from "../../../store/context";
 import type { Profile } from "../../../types";
-import { ComboBox } from "../../../components/combo-box";
-import { FieldContainer } from "../../../components/field-container";
 
 const ModelAssignment = () => {
-  const { t } = useTranslation();
+  const { ComboBox, FieldContainer } = useComponents();
+  const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const {
     profiles,

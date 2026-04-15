@@ -1,7 +1,9 @@
 import type { StoreApi, UseBoundStore } from "zustand";
 import type { AppContext } from "../app-context";
 import type { StoreKeys } from "../config";
+import type { CallbacksManager } from "../events/callbacks";
 import type Provider from "../providers";
+import type { MiddlewareRunner } from "../middleware";
 import { ChatEngine } from "../services/chat-engine";
 import { ProfilesService } from "../services/profiles";
 import { PromptsService } from "../services/prompts";
@@ -56,6 +58,13 @@ export type { ThreadsStoreState } from "./create-threads-store";
 // Stores bundle type
 // ---------------------------------------------------------------------------
 
+/**
+ * Bundle of all Zustand store hooks, service instances, and shared selectors
+ * that make up the runtime state of a single AI chat widget instance.
+ *
+ * Created once per widget via {@link createStores} and distributed through
+ * React context so every component can access any slice of state.
+ */
 export interface Stores {
   useMessageStore: UseBoundStore<StoreApi<MessageStoreState>>;
   useProfilesStore: UseBoundStore<StoreApi<ProfilesStoreState>>;
@@ -67,6 +76,8 @@ export interface Stores {
   useRouter: UseBoundStore<StoreApi<RouterStoreState>>;
   chatEngine: ChatEngine;
   provider: Provider;
+  callbacksManager: CallbacksManager;
+  middlewareRunner: MiddlewareRunner;
   selectCurrentChatProfile: (s: ProfilesStoreState) => Profile | null;
   useCloudsStore: UseBoundStore<StoreApi<CloudsStoreState>>;
 }
@@ -75,6 +86,14 @@ export interface Stores {
 // Factory
 // ---------------------------------------------------------------------------
 
+/**
+ * Configuration required to create the full store bundle.
+ *
+ * @property keys - Namespaced storage/settings keys used to persist state
+ *   (e.g. profile IDs, MCP server configs) across sessions.
+ * @property ctx - The application context containing adapters (storage,
+ *   settings, platform), the provider instance, and the callbacks manager.
+ */
 export interface CreateStoresConfig {
   keys: StoreKeys;
   ctx: AppContext;
@@ -82,6 +101,14 @@ export interface CreateStoresConfig {
 
 import type { Profile } from "../types";
 
+/**
+ * Factory that creates a complete, self-contained set of Zustand stores and
+ * domain services for one AI chat widget instance.
+ *
+ * Each call produces an independent {@link Stores} bundle with its own
+ * services, stores, and engine -- allowing multiple widget instances to
+ * coexist without shared mutable state.
+ */
 export function createStores(config: CreateStoresConfig): Stores {
   const { keys } = config;
   const { ctx } = config;
@@ -108,6 +135,7 @@ export function createStores(config: CreateStoresConfig): Stores {
     threadsService,
     useProfilesStore,
     useMessageStore,
+    callbacksManager: ctx.callbacksManager,
   });
   const useServersStore = createServersStore({ serversService });
   const usePromptsStore = createPromptsStore({ promptsService });
@@ -132,6 +160,8 @@ export function createStores(config: CreateStoresConfig): Stores {
     useCloudsStore,
     chatEngine,
     provider: ctx.provider,
+    callbacksManager: ctx.callbacksManager,
+    middlewareRunner: ctx.middlewareRunner,
     selectCurrentChatProfile,
   };
 }

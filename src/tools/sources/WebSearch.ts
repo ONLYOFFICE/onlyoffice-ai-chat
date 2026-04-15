@@ -18,11 +18,18 @@ class WebSearch {
 
   private webSearchData: WebSearchData = null;
 
+  private settings: SettingsAdapter;
+  private platform: PlatformAdapter;
+  private eventBus: ChatEventBus;
+
   constructor(
-    private settings: SettingsAdapter,
-    private platform: PlatformAdapter,
-    private eventBus: ChatEventBus
+    settings: SettingsAdapter,
+    platform: PlatformAdapter,
+    eventBus: ChatEventBus
   ) {
+    this.settings = settings;
+    this.platform = platform;
+    this.eventBus = eventBus;
     this.tools = [];
 
     const data = this.settings.get(WEB_SEARCH_DATA);

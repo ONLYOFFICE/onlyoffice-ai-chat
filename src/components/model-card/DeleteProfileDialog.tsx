@@ -1,10 +1,9 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
-import { useDirection } from "../../hooks/useDirection";
+import { useI18n } from "../../locales";
 import { useStores } from "../../store/context";
 import type { Profile } from "../../types";
-import { Button } from "../button";
-import { Dialog, DialogContent } from "../dialog";
+import { useComponents } from "../../components-provider";
+import { Dialog } from "../dialog";
 
 type DeleteProfileDialogProps = {
   profile: Profile;
@@ -15,10 +14,10 @@ const DeleteProfileDialog = ({
   profile,
   onClose,
 }: DeleteProfileDialogProps) => {
+  const { Button, DialogContent } = useComponents();
   const { useProfilesStore } = useStores();
   const { deleteProfile } = useProfilesStore();
-  const { isRTL } = useDirection();
-  const { t } = useTranslation();
+  const { t, isRTL } = useI18n();
 
   const onSubmitAction = React.useCallback(async () => {
     await deleteProfile(profile.id);

@@ -2,18 +2,33 @@ import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { PromptsService } from "../services/prompts";
 import type { Prompt, PromptFolder } from "../types";
 
+/**
+ * Zustand state for saved prompt templates and prompt folders.
+ *
+ * Prompts are reusable text snippets that users can quickly insert into
+ * the chat input. They can optionally be organized into folders.
+ */
 export interface PromptsStoreState {
+  /** All saved prompt templates. */
   prompts: Prompt[];
+  /** All prompt folders for organizing prompts. */
   folders: PromptFolder[];
+  /** Load all prompts and folders from persistent storage. */
   initPrompts: () => Promise<void>;
+  /** Create a new prompt with the given text, optionally placed in a folder. */
   addPrompt: (text: string, folderId?: string) => void;
+  /** Update a prompt's name, text, or folder assignment. */
   editPrompt: (
     id: string,
     updates: { name?: string; text?: string; folderId?: string | null }
   ) => void;
+  /** Delete a prompt by ID. */
   removePrompt: (id: string) => void;
+  /** Create a new folder and return its generated ID. */
   addFolder: (name: string) => string;
+  /** Rename an existing folder. */
   renameFolder: (id: string, name: string) => void;
+  /** Delete a folder and unlink any prompts that belonged to it. */
   removeFolder: (id: string) => void;
 }
 

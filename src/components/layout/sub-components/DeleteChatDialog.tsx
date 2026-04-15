@@ -1,9 +1,8 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
-import { useDirection } from "../../../hooks/useDirection";
+import { useI18n } from "../../../locales";
 import { useStores } from "../../../store/context";
-import { Button } from "../../button";
-import { Dialog, DialogContent } from "../../dialog";
+import { useComponents } from "../../../components-provider";
+import { Dialog } from "../../dialog";
 
 type DeleteChatDialogProps = {
   id: string;
@@ -11,11 +10,10 @@ type DeleteChatDialogProps = {
 };
 
 const DeleteChatDialog = ({ id, onClose }: DeleteChatDialogProps) => {
+  const { Button, DialogContent } = useComponents();
   const { useThreadsStore } = useStores();
   const { onDeleteThread } = useThreadsStore();
-  const { isRTL } = useDirection();
-
-  const { t } = useTranslation();
+  const { t, isRTL } = useI18n();
 
   const onSubmitAction = React.useCallback(async () => {
     await onDeleteThread(id);

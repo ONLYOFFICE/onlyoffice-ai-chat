@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { useStores } from "../../../store/context";
 import { IconButton } from "../../icon-button";
 import { Input } from "../../input";
@@ -18,7 +18,7 @@ const ChatList = () => {
   const [searchValue, setSearchValue] = React.useState("");
   const [showingThreads, setShowingThreads] = React.useState(threads);
 
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const onChangeSearchValue = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

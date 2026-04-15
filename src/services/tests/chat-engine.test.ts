@@ -33,6 +33,22 @@ const mockServers = {
   setAllowAlways: vi.fn(),
 };
 
+const mockCallbacksManager = {
+  emit: vi.fn(),
+  setCallbacks: vi.fn(),
+  getCallbacks: vi.fn().mockReturnValue({}),
+};
+
+const mockMiddlewareRunner = {
+  isEmpty: true,
+  runBeforeSend: vi.fn().mockResolvedValue({ action: "continue" }),
+  runOnStreamChunk: vi.fn().mockResolvedValue({ action: "continue" }),
+  runBeforeToolCall: vi.fn().mockResolvedValue({ action: "continue" }),
+  runAfterToolResult: vi.fn().mockResolvedValue({ action: "continue" }),
+  runBeforeDisplay: vi.fn().mockResolvedValue({ action: "continue" }),
+  runOnError: vi.fn().mockResolvedValue({ action: "default" }),
+};
+
 const mockCtx = {
   storage: mockStorage,
   provider: mockProvider,
@@ -40,6 +56,8 @@ const mockCtx = {
   settings: {} as never,
   platform: {} as never,
   eventBus: {} as never,
+  callbacksManager: mockCallbacksManager,
+  middlewareRunner: mockMiddlewareRunner,
 };
 
 // ---------------------------------------------------------------------------

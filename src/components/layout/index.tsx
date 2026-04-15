@@ -1,51 +1,16 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
-import { useDirection } from "../../hooks/useDirection";
+import { useI18n } from "../../locales";
 import { usePlatform } from "../../platform/context";
 import { useStores } from "../../store/context";
 import { ChatList } from "./sub-components/ChatList";
 import { Navigation } from "./sub-components/Header";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { useRouter, useThemeStore, useCloudsStore } = useStores();
+  const { useRouter, useCloudsStore } = useStores();
   const { currentPage } = useRouter();
-  const { themeId, setThemeId, initFromPlatform } = useThemeStore();
   const platform = usePlatform();
   const { fetchClouds } = useCloudsStore();
-
-  // Initialize theme from platform on first render (after PlatformProvider is mounted)
-  initFromPlatform();
-
-  const { i18n } = useTranslation();
-  const { isRTL } = useDirection();
-
-  React.useLayoutEffect(() => {
-    i18n.changeLanguage(platform.env.locale);
-
-    const unsubscribeEnvironment = platform.env.onEnvironmentChange?.(
-      (info) => {
-        if (info.lang) {
-          i18n.changeLanguage(info.lang);
-        }
-
-        if (info.theme) {
-          if (info.theme === "theme-system") {
-            const resolved =
-              platform.env.systemTheme === "dark"
-                ? "theme-night"
-                : "theme-white";
-            setThemeId(resolved);
-          } else {
-            setThemeId(info.theme);
-          }
-        }
-      }
-    );
-
-    return () => {
-      unsubscribeEnvironment?.();
-    };
-  }, [i18n, setThemeId, platform]);
+  const { isRTL } = useI18n();
 
   React.useLayoutEffect(() => {
     const unsubscribeClouds = platform.clouds?.onCloudsChange?.(fetchClouds);
@@ -59,7 +24,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div
-      className={`h-[100vh] ${themeId} ${isRTL ? "font-rtl" : ""}`}
+      className={`h-[100vh] ${isRTL ? "font-rtl" : ""}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
       <main

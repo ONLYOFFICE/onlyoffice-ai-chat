@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { useStores } from "../../../store/context";
 import type { ProviderType } from "../../../types";
-import { Button } from "../../button";
-import { IconButton } from "../../icon-button";
-import { Link } from "../../link";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../../tooltip";
+import { useComponents } from "../../../components-provider";
+import { Tooltip, TooltipTrigger } from "../../tooltip";
 import { useModelForm } from "../hooks/useModelForm";
 import { ModelCardShell } from "./ModelCardShell";
 import { ModelConfigForm, type ModelFormValues } from "./ModelConfigForm";
@@ -31,7 +29,8 @@ export const AddModelCard = ({
   onSuccess,
   isHorizontal,
 }: AddModelCardProps) => {
-  const { t } = useTranslation();
+  const { Button, IconButton, Link, TooltipContent } = useComponents();
+  const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const { addProfile } = useProfilesStore();
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);

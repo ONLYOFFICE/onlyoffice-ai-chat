@@ -1,9 +1,10 @@
 import type { StorageAdapter } from "./types";
 
 /**
- * Global storage instance holder.
- * Zustand stores can't access React context, so they get storage from here.
- * Set by App.tsx during initialization, before any store operations.
+ * @internal
+ * Global storage instance holder — legacy singleton bridge.
+ * Used only by `AIChatWidget` for backward compatibility.
+ * Headless consumers should use `AppContext.storage` instead.
  */
 let storageInstance: StorageAdapter | null = null;
 

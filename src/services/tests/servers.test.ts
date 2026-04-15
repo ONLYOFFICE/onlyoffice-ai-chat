@@ -50,7 +50,11 @@ function makeTool(name: string, description = "desc") {
 }
 
 function createService() {
-  return new ServersService(SERVERS_KEY, DISABLED_TOOLS_KEY, mockCtx as unknown as AppContext);
+  return new ServersService(
+    SERVERS_KEY,
+    DISABLED_TOOLS_KEY,
+    mockCtx as unknown as AppContext
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -5,16 +5,11 @@ import {
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
 import { memo, useCallback, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "../../../components/button";
-import { Dialog, DialogContent } from "../../../components/dialog";
-import { DropdownMenu } from "../../../components/dropdown";
+import { useI18n } from "../../../locales";
+import { useComponents } from "../../../components-provider";
+import { Dialog } from "../../../components/dialog";
 import { FileItem } from "../../../components/file-item";
-import { IconButton } from "../../../components/icon-button";
-import { Input } from "../../../components/input";
 import { MarkdownText } from "../../../components/markdown";
-import { TooltipIconButton } from "../../../components/tooltip-icon-button";
-import { useDirection } from "../../../hooks/useDirection";
 import { cn } from "../../../lib/utils";
 import { useStores } from "../../../store/context";
 import type { TAttachmentFile } from "../../../types";
@@ -26,8 +21,8 @@ type NewFolderDialogProps = {
 };
 
 const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
-  const { t } = useTranslation();
-  const { isRTL } = useDirection();
+  const { Button, DialogContent, Input } = useComponents();
+  const { t, isRTL } = useI18n();
   const { usePromptsStore } = useStores();
   const { addFolder, addPrompt } = usePromptsStore();
   const [folderName, setFolderName] = useState(t("NewFolder"));
@@ -85,7 +80,8 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
 };
 
 const UserActionBar = () => {
-  const { t } = useTranslation();
+  const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
+  const { t } = useI18n();
   const message = useMessage();
   const { usePromptsStore } = useStores();
   const { addPrompt, folders } = usePromptsStore();
@@ -173,7 +169,7 @@ const UserActionBar = () => {
 
 export const UserMessage = memo(() => {
   const message = useMessage();
-  const { isRTL } = useDirection();
+  const { isRTL } = useI18n();
 
   const images = message.content
     .filter((item) => item.type === "image")

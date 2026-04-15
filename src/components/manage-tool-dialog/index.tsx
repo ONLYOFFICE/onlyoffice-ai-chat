@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../locales";
 import { useStores } from "../../store/context";
-import { Button } from "../button";
-import { Checkbox } from "../checkbox";
-import { Dialog, DialogContent } from "../dialog";
+import { useComponents } from "../../components-provider";
+import { Dialog } from "../dialog";
 import { ToolFallback } from "../tool-fallback";
 
 type ManageToolDialogProps = {
@@ -17,7 +16,8 @@ const ManageToolDialog = ({
   onDeny,
   onClose,
 }: ManageToolDialogProps) => {
-  const { t } = useTranslation();
+  const { Button, Checkbox, DialogContent } = useComponents();
+  const { t } = useI18n();
   const { useServersStore } = useStores();
   const { manageToolData } = useServersStore();
 
@@ -74,7 +74,10 @@ const ManageToolDialog = ({
             result={toolCall.result}
             status={{ type: "running" }}
             addResult={() => {
-              // ingore
+              // ignore
+            }}
+            resume={() => {
+              // ignore
             }}
           />
           <p className="font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]">

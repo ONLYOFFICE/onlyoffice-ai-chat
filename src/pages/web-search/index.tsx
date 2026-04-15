@@ -1,8 +1,8 @@
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../locales";
 import { WebSearch } from "./sub-components";
 
 const WebSearchPage = () => {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   return (
     <div className="flex justify-center p-[24px]">

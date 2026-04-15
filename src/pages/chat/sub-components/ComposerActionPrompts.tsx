@@ -1,15 +1,9 @@
 import { useComposerRuntime } from "@assistant-ui/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "../../../components/button";
-import { Dialog, DialogContent } from "../../../components/dialog";
-import { DropdownMenu } from "../../../components/dropdown";
+import { useI18n } from "../../../locales";
+import { useComponents } from "../../../components-provider";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
-import { FieldContainer } from "../../../components/field-container";
-import { IconButton } from "../../../components/icon-button";
-import { Input } from "../../../components/input";
-import { TooltipIconButton } from "../../../components/tooltip-icon-button";
-import { useDirection } from "../../../hooks/useDirection";
+import { Dialog } from "../../../components/dialog";
 import { cn } from "../../../lib/utils";
 import { useStores } from "../../../store/context";
 
@@ -29,8 +23,8 @@ const EditPromptDialog = ({
   initialText,
   onClose,
 }: EditPromptDialogProps) => {
-  const { t } = useTranslation();
-  const { isRTL } = useDirection();
+  const { Button, DialogContent, FieldContainer, Input } = useComponents();
+  const { t, isRTL } = useI18n();
   const { usePromptsStore } = useStores();
   const { editPrompt } = usePromptsStore();
   const [name, setName] = useState(initialName);
@@ -122,8 +116,8 @@ const RenameFolderDialog = ({
   initialName,
   onClose,
 }: RenameFolderDialogProps) => {
-  const { t } = useTranslation();
-  const { isRTL } = useDirection();
+  const { Button, DialogContent, Input } = useComponents();
+  const { t, isRTL } = useI18n();
   const { usePromptsStore } = useStores();
   const { renameFolder } = usePromptsStore();
   const [name, setName] = useState(initialName);
@@ -185,8 +179,8 @@ type DeleteFolderDialogProps = {
 };
 
 const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
-  const { t } = useTranslation();
-  const { isRTL } = useDirection();
+  const { Button, DialogContent } = useComponents();
+  const { t, isRTL } = useI18n();
   const { usePromptsStore } = useStores();
   const { removeFolder } = usePromptsStore();
 
@@ -228,7 +222,8 @@ const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
 };
 
 const ComposerActionPrompts = () => {
-  const { t } = useTranslation();
+  const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
+  const { t } = useI18n();
   const { usePromptsStore } = useStores();
   const { prompts, folders, editPrompt, removePrompt } = usePromptsStore();
   const composerRuntime = useComposerRuntime();
@@ -250,7 +245,7 @@ const ComposerActionPrompts = () => {
         <IconButton iconName="btn-prompt" size={24} isActive={isOpen} />
       </TooltipIconButton>
     ),
-    [isOpen, t]
+    [isOpen, t, IconButton, TooltipIconButton]
   );
 
   const applyPrompt = useCallback(

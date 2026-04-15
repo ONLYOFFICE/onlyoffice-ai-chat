@@ -1,7 +1,7 @@
 import { ThreadPrimitive } from "@assistant-ui/react";
 import { motion } from "framer-motion";
-import { useTranslation } from "react-i18next";
-import { Loader } from "../../components/loader";
+import { useI18n } from "../../locales";
+import { useComponents } from "../../components-provider";
 import { useStores } from "../../store/context";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
 import { Composer } from "./sub-components/Composer";
@@ -11,9 +11,10 @@ import { ThreadWelcome } from "./sub-components/Welcome";
 import "./Thread.css";
 
 const Thread = () => {
+  const { Loader } = useComponents();
   const { useMessageStore } = useStores();
   const { isStreamRunning, isRequestRunning } = useMessageStore();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   return (
     <ThreadPrimitive.Root
       className="flex h-full flex-col"

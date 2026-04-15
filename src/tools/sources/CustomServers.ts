@@ -105,11 +105,12 @@ class CustomServers {
     string,
     { resolve: (value: unknown) => void; reject: (reason: unknown) => void }
   >;
+  private platform: PlatformAdapter;
+  private eventBus: ChatEventBus;
 
-  constructor(
-    private platform: PlatformAdapter,
-    private eventBus: ChatEventBus
-  ) {
+  constructor(platform: PlatformAdapter, eventBus: ChatEventBus) {
+    this.platform = platform;
+    this.eventBus = eventBus;
     this.customServers = {};
     this.startedCustomServers = {};
     this.initedCustomServers = {};
@@ -145,7 +146,9 @@ class CustomServers {
       try {
         const correctJson = JSON.parse(message);
         const jsonId =
-          correctJson.jsonrpc === "2.0" && correctJson.id !== null && correctJson.id !== undefined
+          correctJson.jsonrpc === "2.0" &&
+          correctJson.id !== null &&
+          correctJson.id !== undefined
             ? String(correctJson.id)
             : null;
 

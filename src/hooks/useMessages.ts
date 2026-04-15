@@ -7,6 +7,17 @@ type UseMessagesProps = {
   isReady: boolean;
 };
 
+/**
+ * Hook that manages the chat message lifecycle: sending new messages,
+ * processing streaming events from the chat engine, and handling
+ * tool-call approval/denial flows.
+ *
+ * @param props.isReady - Whether the widget is fully initialized and ready to send messages.
+ * @returns An object with:
+ *   - `onNew` — Callback to send a new user message (text + optional attachments).
+ *   - `approveToolCall` — Approve a pending tool call (optionally with "allow always").
+ *   - `denyToolCall` — Deny a pending tool call and continue the conversation.
+ */
 const useMessages = ({ isReady }: UseMessagesProps) => {
   const {
     useMessageStore,
@@ -15,6 +26,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     useAttachmentsStore,
     useProfilesStore,
     chatEngine,
+    callbacksManager,
+    middlewareRunner,
     selectCurrentChatProfile,
   } = useStores();
 
@@ -57,22 +70,75 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   }, [threadId, isReady, fetchPrevMessages, clearAttachmentFiles]);
 
   const handleEvent = useCallback(
-    (event: ChatEvent) => {
+    async (event: ChatEvent) => {
+      const tid = threadIdRef.current;
+
+      // Run beforeDisplay middleware for message events
+      if (
+        event.type === "message-start" ||
+        event.type === "message-delta" ||
+        event.type === "message-end" ||
+        event.type === "message-incomplete"
+      ) {
+        if (!middlewareRunner.isEmpty) {
+          const isStreaming =
+            event.type === "message-start" ||
+            event.type === "message-delta";
+          const result = await middlewareRunner.runBeforeDisplay({
+            message: event.message,
+            threadId: tid,
+            isStreaming,
+          });
+          if (result.action === "skip") return;
+          if (result.action === "continue" && result.message) {
+            event = { ...event, message: result.message };
+          }
+        }
+      }
+
       switch (event.type) {
         case "message-start":
           addMessage(event.message);
+          callbacksManager.emit("onStreamStart", {
+            threadId: tid,
+            messageUID: event.messageUID,
+          });
           break;
         case "message-delta":
           updateLastMessage(event.message);
+          callbacksManager.emit("onStreamDelta", {
+            threadId: tid,
+            messageUID: event.messageUID,
+            message: event.message,
+          });
           break;
         case "message-end":
           setIsStreamRunning(false);
           setIsRequestRunning(false);
+          callbacksManager.emit("onStreamEnd", {
+            threadId: tid,
+            messageUID: event.messageUID,
+            message: event.message,
+          });
           break;
         case "message-incomplete":
           addMessage(event.message);
           setIsStreamRunning(false);
           setIsRequestRunning(false);
+          callbacksManager.emit("onStreamError", {
+            threadId: tid,
+            messageUID: "",
+            error: {
+              reason:
+                event.message.status?.type === "incomplete"
+                  ? (event.message.status.reason ?? "unknown")
+                  : "unknown",
+              message:
+                event.message.status?.type === "incomplete"
+                  ? String(event.message.status.error ?? "")
+                  : undefined,
+            },
+          });
           break;
         case "tool-call-pending":
           setManageToolData({
@@ -93,6 +159,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setIsRequestRunning,
       setManageToolData,
       insertThread,
+      callbacksManager,
+      middlewareRunner,
     ]
   );
 
@@ -111,12 +179,29 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         }
 
         if (event.type === "tool-call-pending") {
+          // Emit tool-call-pending callback
+          const toolCall = event.message.content[event.idx];
+          if (
+            toolCall &&
+            typeof toolCall === "object" &&
+            "type" in toolCall &&
+            toolCall.type === "tool-call"
+          ) {
+            callbacksManager.emit("onToolCallPending", {
+              threadId: threadIdRef.current,
+              toolName: toolCall.toolName,
+              toolArgs: (toolCall.args ?? {}) as Record<string, unknown>,
+              messageUID: event.messageUID,
+            });
+          }
+
           // Try auto-allow first via ChatEngine.handleToolCall
           const innerEvents = chatEngine.handleToolCall(
             event.message,
             event.idx,
             event.messageUID,
-            extendedThinkingRef.current
+            extendedThinkingRef.current,
+            threadIdRef.current
           );
           let handled = false;
           for await (const innerEvent of innerEvents) {
@@ -129,6 +214,20 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               });
               handled = true;
             } else {
+              // Auto-approved tool call
+              if (
+                innerEvent.type === "message-delta" &&
+                toolCall &&
+                typeof toolCall === "object" &&
+                "type" in toolCall &&
+                toolCall.type === "tool-call"
+              ) {
+                callbacksManager.emit("onToolCallAutoApproved", {
+                  threadId: threadIdRef.current,
+                  toolName: toolCall.toolName,
+                  toolArgs: (toolCall.args ?? {}) as Record<string, unknown>,
+                });
+              }
               handleEventRef.current(innerEvent);
             }
           }
@@ -141,7 +240,13 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setIsStreamRunning(false);
       setIsRequestRunning(false);
     },
-    [chatEngine, setIsStreamRunning, setIsRequestRunning, setManageToolData]
+    [
+      chatEngine,
+      setIsStreamRunning,
+      setIsRequestRunning,
+      setManageToolData,
+      callbacksManager,
+    ]
   );
 
   const extractToolData = useCallback((): ToolCallData | null => {
@@ -158,6 +263,22 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       const data = extractToolData();
       if (!data) return;
 
+      // Emit approved callback
+      const toolCall = data.message.content[data.idx];
+      if (
+        toolCall &&
+        typeof toolCall === "object" &&
+        "type" in toolCall &&
+        toolCall.type === "tool-call"
+      ) {
+        callbacksManager.emit("onToolCallApproved", {
+          threadId: threadIdRef.current,
+          toolName: toolCall.toolName,
+          toolArgs: (toolCall.args ?? {}) as Record<string, unknown>,
+          allowAlways,
+        });
+      }
+
       setManageToolData(undefined);
 
       const events = chatEngine.approveToolCall(
@@ -167,32 +288,80 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       );
       processEvents(events);
     },
-    [extractToolData, chatEngine, setManageToolData, processEvents]
+    [
+      extractToolData,
+      chatEngine,
+      setManageToolData,
+      processEvents,
+      callbacksManager,
+    ]
   );
 
   const denyToolCall = useCallback(() => {
     const data = extractToolData();
     if (!data) return;
 
+    // Emit denied callback
+    const toolCall = data.message.content[data.idx];
+    if (
+      toolCall &&
+      typeof toolCall === "object" &&
+      "type" in toolCall &&
+      toolCall.type === "tool-call"
+    ) {
+      callbacksManager.emit("onToolCallDenied", {
+        threadId: threadIdRef.current,
+        toolName: toolCall.toolName,
+      });
+    }
+
     setManageToolData(undefined);
 
     const events = chatEngine.denyToolCall(data, extendedThinkingRef.current);
     processEvents(events);
-  }, [extractToolData, chatEngine, setManageToolData, processEvents]);
+  }, [
+    extractToolData,
+    chatEngine,
+    setManageToolData,
+    processEvents,
+    callbacksManager,
+  ]);
 
   const onNew = async (message: AppendMessage) => {
     if (!currentProfile) return;
     if (message.content[0].type !== "text") return;
 
-    const files = attachmentFiles.length > 0 ? [...attachmentFiles] : undefined;
-    const images =
+    let text = message.content[0].text;
+    let files =
+      attachmentFiles.length > 0 ? [...attachmentFiles] : undefined;
+    let images =
       attachmentImages.length > 0 ? [...attachmentImages] : undefined;
 
     if (files) clearAttachmentFiles();
     if (images) clearAttachmentImages();
 
-    addMessage({
-      role: "user",
+    // Run beforeSend middleware
+    if (!middlewareRunner.isEmpty) {
+      const result = await middlewareRunner.runBeforeSend({
+        text,
+        files: files ?? [],
+        images: images ?? [],
+        threadId,
+        profile: currentProfile,
+        existingMessages: messages,
+      });
+      if (result.action === "block") return;
+      if (result.action === "continue") {
+        if (result.text !== undefined) text = result.text;
+        if (result.files !== undefined)
+          files = result.files.length > 0 ? result.files : undefined;
+        if (result.images !== undefined)
+          images = result.images.length > 0 ? result.images : undefined;
+      }
+    }
+
+    const userMessage = {
+      role: "user" as const,
       content: [
         ...(files?.map((f) => ({
           type: "file" as const,
@@ -204,8 +373,17 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           image: i.base64,
           name: i.name,
         })) ?? []),
-        { type: "text" as const, text: message.content[0].text },
+        { type: "text" as const, text },
       ],
+    };
+
+    addMessage(userMessage);
+
+    // Emit onMessageSent callback
+    callbacksManager.emit("onMessageSent", {
+      threadId,
+      message: userMessage,
+      attachments: { files, images },
     });
 
     if (
@@ -217,7 +395,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     }
 
     const events = chatEngine.sendMessage({
-      text: message.content[0].text,
+      text,
       threadId,
       files,
       images,

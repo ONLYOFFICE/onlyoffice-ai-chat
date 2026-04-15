@@ -1,6 +1,6 @@
 import { cn } from "../../lib/utils";
 
-type LoaderProps = {
+export type LoaderProps = {
   className?: string;
   size?: number;
 };

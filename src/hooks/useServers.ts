@@ -6,6 +6,13 @@ type UseServersProps = {
   isReady: boolean;
 };
 
+/**
+ * Side-effect hook that initializes MCP servers, syncs host tool groups,
+ * and keeps the available tool list up-to-date. Polls for tool changes
+ * every 5 minutes and listens for `tools-changed` events from the event bus.
+ *
+ * @param props.isReady - Whether the widget is fully initialized.
+ */
 const useServers = ({ isReady }: UseServersProps) => {
   const {
     useServersStore,

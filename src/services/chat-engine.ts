@@ -9,6 +9,18 @@ import type { TAttachmentFile, TAttachmentImage } from "../types";
 
 // --- Event types ---
 
+/**
+ * Discriminated union of events emitted by {@link ChatEngine} during message
+ * processing. Consumers iterate an `AsyncGenerator<ChatEvent>` and react to
+ * each variant:
+ *
+ * - `message-start` -- first streaming chunk of an assistant reply.
+ * - `message-delta` -- subsequent streaming chunk or tool-result update.
+ * - `message-end` -- assistant reply finished successfully.
+ * - `message-incomplete` -- provider returned an incomplete / error status.
+ * - `tool-call-pending` -- a tool call requires user approval before execution.
+ * - `thread-title` -- auto-generated title ready for a new thread.
+ */
 export type ChatEvent =
   | { type: "message-start"; message: ThreadMessageLike; messageUID: string }
   | { type: "message-delta"; message: ThreadMessageLike; messageUID: string }
@@ -26,6 +38,13 @@ export type ChatEvent =
       profileId?: string;
     };
 
+/**
+ * Data required to identify a pending tool call within an assistant message.
+ *
+ * @property message - The full assistant message containing the tool call.
+ * @property idx - Index of the tool-call content part inside `message.content`.
+ * @property messageUID - Unique identifier of the message in storage.
+ */
 export type ToolCallData = {
   message: ThreadMessageLike;
   idx: number;
@@ -34,9 +53,42 @@ export type ToolCallData = {
 
 // --- ChatEngine ---
 
+/**
+ * Orchestrates the full message lifecycle: sending user messages to the AI
+ * provider, streaming assistant responses, handling tool-call approval /
+ * denial, persisting messages to storage, and generating thread titles.
+ *
+ * All public methods are async generators that yield {@link ChatEvent}
+ * instances, allowing the UI layer to react incrementally as data arrives.
+ *
+ * Middleware hooks (`beforeToolCall`, `afterToolResult`, `onStreamChunk`,
+ * `onError`) are invoked at the appropriate points in the pipeline.
+ */
 export class ChatEngine {
-  constructor(private ctx: AppContext) {}
+  private ctx: AppContext;
 
+  constructor(ctx: AppContext) {
+    this.ctx = ctx;
+  }
+
+  /**
+   * Send a user message to the current AI provider and stream back the
+   * assistant response.
+   *
+   * For new threads (no existing storage entry) the method also persists all
+   * prior messages, initiates asynchronous title generation, and yields a
+   * `thread-title` event once the title is ready.
+   *
+   * @param params - Message payload and thread context.
+   * @param params.text - The user's text input.
+   * @param params.threadId - Target thread identifier.
+   * @param params.files - Optional file attachments.
+   * @param params.images - Optional image attachments.
+   * @param params.existingMessages - Messages already present in the thread.
+   * @param params.extendedThinking - Whether extended thinking mode is enabled.
+   * @param params.profileId - Optional profile that originated the request.
+   * @returns An async generator of {@link ChatEvent} instances.
+   */
   async *sendMessage(params: {
     text: string;
     threadId: string;
@@ -145,6 +197,16 @@ export class ChatEngine {
     }
   }
 
+  /**
+   * Approve a pending tool call, execute it, and continue the conversation
+   * with the tool result fed back to the provider.
+   *
+   * @param data - The pending tool call data (message, index, UID).
+   * @param allowAlways - When `true`, marks this tool as auto-approved for
+   *   future invocations in the current session.
+   * @param extendedThinking - Whether extended thinking mode is enabled.
+   * @returns An async generator of {@link ChatEvent} instances.
+   */
   async *approveToolCall(
     data: ToolCallData,
     allowAlways: boolean,
@@ -176,6 +238,14 @@ export class ChatEngine {
     );
   }
 
+  /**
+   * Deny a pending tool call, sending a "User deny tool call" result back to
+   * the provider so it can continue the conversation without the tool output.
+   *
+   * @param data - The pending tool call data (message, index, UID).
+   * @param extendedThinking - Whether extended thinking mode is enabled.
+   * @returns An async generator of {@link ChatEvent} instances.
+   */
   async *denyToolCall(
     data: ToolCallData,
     extendedThinking: boolean
@@ -189,6 +259,10 @@ export class ChatEngine {
     );
   }
 
+  /**
+   * Immediately abort the in-flight provider stream, cancelling any ongoing
+   * message generation.
+   */
   stop(): void {
     this.ctx.provider.stopMessage();
   }
@@ -204,7 +278,8 @@ export class ChatEngine {
     msg: ThreadMessageLike,
     idx: number,
     messageUID: string,
-    extendedThinking: boolean
+    extendedThinking: boolean,
+    threadId?: string
   ): AsyncGenerator<ChatEvent> {
     const toolCall = msg.content[idx];
     if (
@@ -218,6 +293,47 @@ export class ChatEngine {
     const toolName = toolCall.toolName;
     const type = this.ctx.servers.getServerType(toolName);
     const name = toolName.replace(`${type}_`, "");
+
+    // Run beforeToolCall middleware
+    const runner = this.ctx.middlewareRunner;
+    if (!runner.isEmpty) {
+      const mwResult = await runner.runBeforeToolCall({
+        toolName,
+        toolArgs: (toolCall.args ?? {}) as Record<string, unknown>,
+        toolSource: type,
+        threadId: threadId ?? "",
+        messageUID,
+      });
+      if (mwResult.action === "approve") {
+        yield* this._executeToolCall(
+          msg,
+          idx,
+          messageUID,
+          extendedThinking,
+          false
+        );
+        return;
+      }
+      if (mwResult.action === "deny") {
+        yield* this._executeToolCall(
+          msg,
+          idx,
+          messageUID,
+          extendedThinking,
+          true
+        );
+        return;
+      }
+      // "continue" — apply modified args if any
+      if (mwResult.action === "continue" && mwResult.args) {
+        const updatedContent = Array.isArray(msg.content)
+          ? msg.content.map((item, index) =>
+              index === idx ? { ...toolCall, args: mwResult.args } : item
+            )
+          : msg.content;
+        msg = { ...msg, content: updatedContent };
+      }
+    }
 
     if (this.ctx.servers.checkAllowAlways(type, name)) {
       yield* this._executeToolCall(
@@ -253,7 +369,7 @@ export class ChatEngine {
     )
       return;
 
-    const result = deny
+    let result: unknown = deny
       ? "User deny tool call"
       : await this.ctx.servers.callTools(
           this.ctx.servers.getServerType(toolCall.toolName),
@@ -263,6 +379,28 @@ export class ChatEngine {
           ),
           toolCall.args as Record<string, unknown>
         );
+
+    // Run afterToolResult middleware
+    if (!deny && !this.ctx.middlewareRunner.isEmpty) {
+      const mwResult = await this.ctx.middlewareRunner.runAfterToolResult({
+        toolName: toolCall.toolName,
+        toolArgs: (toolCall.args ?? {}) as Record<string, unknown>,
+        result,
+        threadId: "",
+      });
+      if (mwResult.action === "skip") return;
+      if (mwResult.action === "continue" && mwResult.result !== undefined) {
+        result = mwResult.result;
+      }
+    }
+
+    if (!deny) {
+      this.ctx.callbacksManager.emit("onToolCallResult", {
+        threadId: "",
+        toolName: toolCall.toolName,
+        result,
+      });
+    }
 
     const updatedContent = Array.isArray(msg.content)
       ? msg.content.map((item, index) =>
@@ -296,10 +434,23 @@ export class ChatEngine {
     let initedMessage = afterToolCall;
     const messageUID =
       afterToolCall && messageUIDProp ? messageUIDProp : crypto.randomUUID();
+    const runner = this.ctx.middlewareRunner;
 
     for await (const message of stream) {
       if ("isEnd" in message) {
         if (message.responseMessage.status?.type === "incomplete") {
+          // Run onError middleware for incomplete messages
+          if (!runner.isEmpty) {
+            const errorResult = await runner.runOnError({
+              error: message.responseMessage.status.error,
+              type: "provider",
+              threadId,
+              messageUID,
+            });
+            if (errorResult.action === "suppress") return;
+            // retry and fallback are handled by the caller
+          }
+
           yield {
             type: "message-incomplete" as const,
             message: message.responseMessage,
@@ -336,21 +487,36 @@ export class ChatEngine {
         return;
       }
 
+      // Run onStreamChunk middleware
+      let chunk = message;
+      if (!runner.isEmpty) {
+        const chunkResult = await runner.runOnStreamChunk({
+          chunk: message,
+          threadId,
+          messageUID,
+          isFirst: !initedMessage,
+        });
+        if (chunkResult.action === "skip") continue;
+        if (chunkResult.action === "continue" && chunkResult.chunk) {
+          chunk = chunkResult.chunk;
+        }
+      }
+
       if (!initedMessage) {
         yield {
           type: "message-start" as const,
-          message,
+          message: chunk,
           messageUID,
         };
         if (!afterToolCall) {
-          this.ctx.storage.messages.create(threadId, messageUID, message);
+          this.ctx.storage.messages.create(threadId, messageUID, chunk);
         }
         initedMessage = true;
       } else {
-        this.ctx.storage.messages.update(messageUID, message);
+        this.ctx.storage.messages.update(messageUID, chunk);
         yield {
           type: "message-delta" as const,
-          message,
+          message: chunk,
           messageUID,
         };
       }

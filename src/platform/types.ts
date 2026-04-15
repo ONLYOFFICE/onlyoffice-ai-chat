@@ -1,5 +1,13 @@
 import type { TCloud, TCloudKey, TMCPItem, TProcess } from "../types";
 
+/**
+ * File-system operations delegated to the host application.
+ *
+ * Covers picking files/images, converting document formats, and opening or
+ * saving files through the host editor. If the host does not support file
+ * operations, pass `null` for `PlatformAdapter.file` — the library will
+ * hide all file-related UI automatically.
+ */
 export interface PlatformFileOperations {
   /** Show a native file picker dialog and return selected file paths, or null if cancelled */
   pickFiles(): Promise<{ path: string; name: string }[] | null>;
@@ -23,6 +31,15 @@ export interface PlatformFileOperations {
   openFile(path: string, name: string): void;
 }
 
+/**
+ * External process runner used by the MCP STDIO server transport.
+ *
+ * When MCP servers are configured with a `command` (rather than an HTTP URL),
+ * the library calls `createProcess` to spawn a child process and communicates
+ * over its stdin/stdout using JSON-RPC 2.0. If the host environment cannot
+ * spawn processes (e.g. a web browser), pass `null` for
+ * `PlatformAdapter.process` — only HTTP-based MCP servers will be available.
+ */
 export interface PlatformProcessRunner {
   /** Spawn an external process (used for MCP STDIO servers). Returns a process handle or null if unavailable */
   createProcess(command: string, env?: Record<string, string>): TProcess | null;
@@ -31,6 +48,13 @@ export interface PlatformProcessRunner {
   isAvailable(): boolean;
 }
 
+/**
+ * Host environment information: theme, locale, and display characteristics.
+ *
+ * The library reads these values at startup and, if `onEnvironmentChange` is
+ * provided, subscribes to live updates so the UI stays in sync with the host
+ * application.
+ */
 export interface PlatformEnvironment {
   /** Current UI theme set by the host application */
   theme: string;
@@ -50,6 +74,12 @@ export interface PlatformEnvironment {
   ) => () => void;
 }
 
+/**
+ * Cloud account integration provided by the host application.
+ *
+ * Allows the library to list cloud-connected AI providers (e.g. a
+ * corporate OpenAI deployment) and react when the set of accounts changes.
+ */
 export interface PlatformClouds {
   /** Get the list of connected cloud accounts from the host application */
   getClouds(): Promise<TCloud[]>;
@@ -61,6 +91,14 @@ export interface PlatformClouds {
   onCloudsChange?(callback: () => void): () => void;
 }
 
+/**
+ * Built-in tools exposed by the host application (e.g. ONLYOFFICE editor
+ * commands such as "insert table" or "apply style").
+ *
+ * These tools appear alongside MCP and web-search tools in the unified tool
+ * list. If the host has no built-in tools, pass `null` for
+ * `PlatformAdapter.hostTools`.
+ */
 export interface PlatformHostTools {
   /** Get the list of built-in tools provided by the host application (e.g. ONLYOFFICE editor tools) */
   getTools(): TMCPItem[];
@@ -69,6 +107,33 @@ export interface PlatformHostTools {
   callTool(name: string, args: Record<string, unknown>): Promise<string>;
 }
 
+/**
+ * Top-level platform adapter that bundles every host-specific capability.
+ *
+ * Each sub-adapter is nullable: set it to `null` when the host does not
+ * support that capability, and the library will gracefully hide the
+ * corresponding UI and skip the related logic.
+ *
+ * @example
+ * ```ts
+ * import type { PlatformAdapter } from "@onlyoffice/ai-chat";
+ *
+ * // Minimal browser-only implementation — no native file ops, no process
+ * // spawning, no host tools, no clouds.
+ * const minimalPlatform: PlatformAdapter = {
+ *   file: null,
+ *   process: null,
+ *   env: {
+ *     theme: "light",
+ *     systemTheme: "light",
+ *     locale: "en",
+ *     devicePixelRatio: window.devicePixelRatio,
+ *   },
+ *   hostTools: null,
+ *   clouds: null,
+ * };
+ * ```
+ */
 export interface PlatformAdapter {
   /** File operations: picking, converting, saving, opening files via the host. If null — file attachment buttons and "Save as DOCX" are hidden */
   file: PlatformFileOperations | null;

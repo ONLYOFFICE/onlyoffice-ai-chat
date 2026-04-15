@@ -86,8 +86,8 @@ class MistralProvider extends AbstractBaseProvider<Tool, Messages, Mistral> {
   private getModelKey = (withThinking?: boolean): string => {
     if (!withThinking) return this.modelKey;
 
-    const reasoningModel = mistralInfo.reasoningModels.find(
-      ([level]) => this.modelKey.includes(level)
+    const reasoningModel = mistralInfo.reasoningModels.find(([level]) =>
+      this.modelKey.includes(level)
     );
 
     return reasoningModel ? reasoningModel[1] : this.modelKey;

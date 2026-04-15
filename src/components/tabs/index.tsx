@@ -1,5 +1,5 @@
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { useDirection } from "../../hooks/useDirection";
+import { useI18n } from "../../locales";
 import { cn } from "../../lib/utils";
 import type { TabsProps } from "./Tabs.types";
 
@@ -10,7 +10,7 @@ const Tabs = ({
   onValueChange,
   className,
 }: TabsProps) => {
-  const { isRTL } = useDirection();
+  const { isRTL } = useI18n();
 
   return (
     <TabsPrimitive.Root

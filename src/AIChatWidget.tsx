@@ -1,4 +1,5 @@
 import {
+  type AppendMessage,
   AssistantRuntimeProvider,
   CompositeAttachmentAdapter,
   SimpleImageAttachmentAdapter,
@@ -6,23 +7,41 @@ import {
   type ThreadMessageLike,
   useExternalStoreRuntime,
 } from "@assistant-ui/react";
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { AppContext } from "./app-context";
 import { Layout } from "./components/layout";
 import { ManageToolDialog } from "./components/manage-tool-dialog";
 import type { StoreKeys } from "./config";
-import { ChatEventBus } from "./events";
+import { CallbacksManager } from "./events/callbacks";
+import { ChatEventBus } from "./events/event-bus";
+import { EventsProvider } from "./events/context";
+import type { ChatCallbacks } from "./events/types";
+import { MiddlewareRunner } from "./middleware";
+import type { ChatMiddleware } from "./middleware";
 import useMessages from "./hooks/useMessages";
 import useProfiles from "./hooks/useProfiles";
 import useServers from "./hooks/useServers";
 import useThread from "./hooks/useThreads";
-import { initAIChatI18n } from "./i18n";
+import { ComponentsProvider } from "./components-provider";
+import type { ComponentOverrides } from "./components-provider";
+import { ImagesProvider } from "./images-provider";
+import type { ImageOverrides } from "./images-provider";
+import { I18nProvider } from "./locales";
+import type { Translations } from "./locales";
 import logger from "./lib/logger";
+import { ThemeProvider } from "./theme";
+import type { ThemeTokens } from "./theme";
 import Thread from "./pages/chat";
 
-const EmptyScreen = lazy(() => import("./pages/empty-screen"));
-const InitialSetup = lazy(() => import("./pages/initial-setup"));
-const Settings = lazy(() => import("./pages/settings"));
+import EmptyScreen from "./pages/empty-screen";
+import InitialSetup from "./pages/initial-setup";
+import Settings from "./pages/settings";
 import { PlatformProvider } from "./platform/context";
 import type { PlatformAdapter } from "./platform/types";
 import Provider from "./providers";
@@ -39,84 +58,119 @@ import { ToolsProvider } from "./tools/context";
 import Servers from "./tools/servers";
 import { setServersInstance } from "./tools/tools-holder";
 import type { HostToolGroup } from "./tools/types";
+import type { AIChatWidgetRef } from "./imperative";
+import { createWidgetRef, type RefCallbacks } from "./imperative";
 
 export interface AIChatWidgetProps {
   storage: StorageAdapter;
   settings: SettingsAdapter;
   platform: PlatformAdapter;
   locale?: string;
-  translations?: Record<string, { translation: object }>;
+  translations?: Partial<Translations>;
   theme?: string;
+  customTheme?: Partial<ThemeTokens>;
+  customThemes?: Record<string, Partial<ThemeTokens>>;
   storeKeys: StoreKeys;
+  components?: Partial<ComponentOverrides>;
+  images?: ImageOverrides;
   hostToolGroups?: HostToolGroup[];
   onMigrate?: () => Promise<void>;
+  callbacks?: ChatCallbacks;
+  middleware?: ChatMiddleware[];
 }
 
-export const AIChatWidget = ({
-  storage,
-  settings,
-  platform,
-  locale,
-  translations,
-  storeKeys,
-  hostToolGroups: hostToolGroupsProp,
-  onMigrate,
-}: AIChatWidgetProps) => {
-  // Initialize i18n lazily (only loads requested locale + English fallback)
-  const [i18nReady, setI18nReady] = useState(false);
-  useEffect(() => {
-    initAIChatI18n({ locale, resources: translations })
-      .then(() => setI18nReady(true))
-      .catch((err) => {
-        logger.error("i18n init failed:", err);
-      });
-  }, [locale, translations]);
-
-  // Build AppContext — single DI container for this widget instance
-  const { ctx, stores } = useMemo(() => {
-    const provider = new Provider();
-    provider.setSettings(settings);
-    const eventBus = new ChatEventBus();
-    const servers = new Servers(settings, platform, eventBus);
-
-    const ctx: AppContext = {
-      settings,
+export const AIChatWidget = React.forwardRef<
+  AIChatWidgetRef,
+  AIChatWidgetProps
+>(
+  (
+    {
       storage,
+      settings,
       platform,
-      provider,
-      servers,
-      eventBus,
-    };
+      locale,
+      translations,
+      theme,
+      customTheme,
+      customThemes,
+      storeKeys,
+      components,
+      images,
+      hostToolGroups: hostToolGroupsProp,
+      onMigrate,
+      callbacks,
+      middleware,
+    },
+    ref
+  ) => {
+    // Build AppContext — single DI container for this widget instance
+    const { ctx, stores } = useMemo(() => {
+      const provider = new Provider();
+      provider.setSettings(settings);
+      const eventBus = new ChatEventBus();
+      const servers = new Servers(settings, platform, eventBus);
+      const callbacksManager = new CallbacksManager();
+      const middlewareRunner = new MiddlewareRunner(middleware ?? []);
 
-    // Deprecated: set global holders for backward compatibility
-    setProviderInstance(provider);
-    setSettingsInstance(settings);
-    setStorageInstance(storage);
-    setServersInstance(servers);
+      const ctx: AppContext = {
+        settings,
+        storage,
+        platform,
+        provider,
+        servers,
+        eventBus,
+        callbacksManager,
+        middlewareRunner,
+      };
 
-    const stores = createStores({ keys: storeKeys, ctx });
+      // Deprecated: set global holders for backward compatibility
+      setProviderInstance(provider);
+      setSettingsInstance(settings);
+      setStorageInstance(storage);
+      setServersInstance(servers);
 
-    return { ctx, stores };
-  }, [settings, storage, platform, storeKeys]);
+      const stores = createStores({ keys: storeKeys, ctx });
 
-  if (!i18nReady) return null;
+      return { ctx, stores };
+    }, [settings, storage, platform, storeKeys, middleware]);
 
-  return (
-    <SettingsProvider settings={settings}>
-      <PlatformProvider platform={platform}>
-        <StoresProvider stores={stores}>
-          <AppWithTools
-            storage={storage}
-            hostToolGroupsProp={hostToolGroupsProp}
-            onMigrate={onMigrate}
-            servers={ctx.servers}
-            eventBus={ctx.eventBus}
-          />
-        </StoresProvider>
-      </PlatformProvider>
-    </SettingsProvider>
-  );
-};
+    return (
+      <EventsProvider
+        callbacksManager={ctx.callbacksManager}
+        callbacks={callbacks}
+      >
+        <SettingsProvider settings={settings}>
+          <PlatformProvider platform={platform}>
+            <I18nProvider locale={locale} translations={translations}>
+              <ComponentsProvider overrides={components}>
+                <StoresProvider stores={stores}>
+                  <ThemeProvider
+                    theme={theme}
+                    customTheme={customTheme}
+                    customThemes={customThemes}
+                  >
+                    <ImagesProvider overrides={images}>
+                      <AppWithTools
+                        storage={storage}
+                        hostToolGroupsProp={hostToolGroupsProp}
+                        onMigrate={onMigrate}
+                        servers={ctx.servers}
+                        eventBus={ctx.eventBus}
+                        widgetRef={ref}
+                      />
+                    </ImagesProvider>
+                  </ThemeProvider>
+                </StoresProvider>
+              </ComponentsProvider>
+            </I18nProvider>
+          </PlatformProvider>
+        </SettingsProvider>
+      </EventsProvider>
+    );
+  }
+);
+
+AIChatWidget.displayName = "AIChatWidget";
 
 /** Reads platform from context to build host tool groups, then wraps in ToolsProvider + StorageProvider */
 const AppWithTools = ({
@@ -125,12 +179,14 @@ const AppWithTools = ({
   onMigrate,
   servers,
   eventBus,
+  widgetRef,
 }: {
   storage: StorageAdapter;
   hostToolGroupsProp?: HostToolGroup[];
   onMigrate?: () => Promise<void>;
   servers: Servers;
   eventBus: ChatEventBus;
+  widgetRef?: React.ForwardedRef<AIChatWidgetRef>;
 }) => {
   const hostToolGroups: HostToolGroup[] = useMemo(() => {
     if (hostToolGroupsProp) return hostToolGroupsProp;
@@ -144,23 +200,31 @@ const AppWithTools = ({
       eventBus={eventBus}
     >
       <StorageProvider storage={storage}>
-        <AppInner onMigrate={onMigrate} />
+        <AppInner onMigrate={onMigrate} widgetRef={widgetRef} />
       </StorageProvider>
     </ToolsProvider>
   );
 };
 
-const AppInner = ({ onMigrate }: { onMigrate?: () => Promise<void> }) => {
+const AppInner = ({
+  onMigrate,
+  widgetRef,
+}: {
+  onMigrate?: () => Promise<void>;
+  widgetRef?: React.ForwardedRef<AIChatWidgetRef>;
+}) => {
   const [isReady, setIsReady] = useState(false);
   const [isManageToolOpen, setIsManageToolOpen] = useState(false);
 
+  const stores = useStores();
   const {
     useMessageStore,
     useProfilesStore,
     useServersStore,
     useRouter,
     useCloudsStore,
-  } = useStores();
+    selectCurrentChatProfile,
+  } = stores;
 
   const { messages, stopMessage } = useMessageStore();
   const { currentPage } = useRouter();
@@ -175,6 +239,35 @@ const AppInner = ({ onMigrate }: { onMigrate?: () => Promise<void> }) => {
   const { onNew, approveToolCall, denyToolCall } = useMessages({
     isReady,
   });
+
+  // --- Imperative ref ---
+  const callbacksRef = useRef<RefCallbacks>({
+    onNew: () => {},
+    approveToolCall: () => {},
+    denyToolCall: () => {},
+  });
+
+  callbacksRef.current = {
+    onNew: (text) => {
+      void onNew({
+        content: [{ type: "text", text }],
+        parentId: null,
+        sourceId: null,
+        runConfig: undefined,
+        role: "user",
+        attachments: [],
+        metadata: { custom: {} },
+      } as unknown as AppendMessage);
+    },
+    approveToolCall: (allowAlways) => approveToolCall(allowAlways),
+    denyToolCall,
+  };
+
+  useImperativeHandle(
+    widgetRef,
+    () => createWidgetRef(stores, selectCurrentChatProfile, callbacksRef),
+    [stores, selectCurrentChatProfile]
+  );
 
   useEffect(() => {
     if (manageToolData) setIsManageToolOpen(true);
@@ -215,9 +308,7 @@ const AppInner = ({ onMigrate }: { onMigrate?: () => Promise<void> }) => {
   if (currentPage !== "settings" && !profiles.length && !messages.length)
     return (
       <Layout>
-        <Suspense fallback={null}>
-          <EmptyScreen />
-        </Suspense>
+        <EmptyScreen />
       </Layout>
     );
 
@@ -225,13 +316,9 @@ const AppInner = ({ onMigrate }: { onMigrate?: () => Promise<void> }) => {
     <Layout>
       <AssistantRuntimeProvider runtime={runtime}>
         {currentPage === "settings" ? (
-          <Suspense fallback={null}>
-            <Settings />
-          </Suspense>
+          <Settings />
         ) : currentPage === "initial-setup" ? (
-          <Suspense fallback={null}>
-            <InitialSetup />
-          </Suspense>
+          <InitialSetup />
         ) : (
           <Thread />
         )}

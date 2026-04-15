@@ -1,9 +1,10 @@
 import type Servers from "./servers";
 
 /**
- * Global Servers instance holder.
- * Zustand stores can't access React context, so they get the Servers instance from here.
- * Set by ToolsProvider during render.
+ * @internal
+ * Global Servers instance holder — legacy singleton bridge.
+ * Used only by `AIChatWidget` for backward compatibility.
+ * Headless consumers should use `AppContext.servers` instead.
  */
 let serversInstance: Servers | null = null;
 

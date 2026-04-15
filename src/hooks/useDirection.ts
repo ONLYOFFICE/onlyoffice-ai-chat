@@ -1,12 +1,12 @@
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../locales";
 
-const RTL_LANGUAGES = ["ar-SA"];
-
+/**
+ * Returns the current text direction based on the active locale.
+ *
+ * @deprecated Use `useI18n()` directly — it provides `isRTL` and `direction`.
+ * @returns An object with `isRTL` (boolean) and `direction` (`"ltr"` | `"rtl"`).
+ */
 export const useDirection = () => {
-  const { i18n } = useTranslation();
-
-  const isRTL = RTL_LANGUAGES.includes(i18n.language);
-  const direction = isRTL ? "rtl" : "ltr";
-
+  const { isRTL, direction } = useI18n();
   return { isRTL, direction };
 };

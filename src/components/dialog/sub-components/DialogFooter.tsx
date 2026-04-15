@@ -1,9 +1,11 @@
 import type React from "react";
-import { useDirection } from "../../../hooks/useDirection";
+import { useI18n } from "../../../locales";
 import { cn } from "../../../lib/utils";
 
-const DialogFooter = ({ className, ...props }: React.ComponentProps<"div">) => {
-  const { isRTL } = useDirection();
+export type DialogFooterProps = React.ComponentProps<"div">;
+
+const DialogFooter = ({ className, ...props }: DialogFooterProps) => {
+  const { isRTL } = useI18n();
 
   return (
     <div

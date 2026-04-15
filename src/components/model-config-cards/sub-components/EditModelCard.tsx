@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { useStores } from "../../../store/context";
 import type { Profile, ProviderType } from "../../../types";
-import { Button } from "../../button";
+import { useComponents } from "../../../components-provider";
 import { Icon } from "../../icon";
 import { ProviderLogo } from "../../provider-logo";
 import { useModelForm } from "../hooks/useModelForm";
@@ -31,7 +31,8 @@ export const EditModelCard = ({
   onDelete,
   isHorizontal,
 }: EditModelCardProps) => {
-  const { t } = useTranslation();
+  const { Button } = useComponents();
+  const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const { editProfile } = useProfilesStore();
   const initialValues = profileToFormValues(profile);
@@ -52,7 +53,13 @@ export const EditModelCard = ({
       keepModelIfExists: true,
       isCloudProvider: profile.isCloudProvider,
     });
-  }, [fetchModels, profile.baseUrl, profile.isCloudProvider, profile.key, profile.providerType]);
+  }, [
+    fetchModels,
+    profile.baseUrl,
+    profile.isCloudProvider,
+    profile.key,
+    profile.providerType,
+  ]);
 
   const handleSave = async () => {
     const hasChanges = (

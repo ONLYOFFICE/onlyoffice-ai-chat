@@ -1,6 +1,6 @@
 import { cn } from "../../lib/utils";
 
-type LinkProps = React.ComponentProps<"a"> & {
+export type LinkProps = React.ComponentProps<"a"> & {
   variant?: "default" | "primary";
 };
 

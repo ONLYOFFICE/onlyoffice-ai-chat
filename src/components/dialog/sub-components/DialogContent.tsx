@@ -1,6 +1,6 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import React from "react";
-import { useDirection } from "../../../hooks/useDirection";
+import { useI18n } from "../../../locales";
 import { cn } from "../../../lib/utils";
 import { Icon } from "../../icon";
 import { IconButton } from "../../icon-button";
@@ -16,7 +16,7 @@ const HiddenComponents = () => (
   </>
 );
 
-type DialogContentProps = React.ComponentProps<
+export type DialogContentProps = React.ComponentProps<
   typeof DialogPrimitive.Content
 > & {
   header: string;
@@ -43,7 +43,7 @@ const DialogContent = ({
   withWarningIcon = false,
   ...props
 }: DialogContentProps) => {
-  const { isRTL } = useDirection();
+  const { isRTL } = useI18n();
   const widthStyles = isHuge ? widthHugeStyles : widthDefaultStyles;
   const sizeStyles = withWarningIcon ? warningSizeStyles : centeredSizeStyles;
 

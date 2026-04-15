@@ -1,8 +1,8 @@
 import { ThreadPrimitive } from "@assistant-ui/react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 
 const ThreadWelcome = () => {
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   return (
     <ThreadPrimitive.Empty>

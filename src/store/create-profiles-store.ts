@@ -10,35 +10,69 @@ import {
 import type { ProfilesService } from "../services/profiles";
 import type { Profile } from "../types";
 
+/**
+ * Zustand state for AI provider profiles.
+ *
+ * A "profile" represents a configured AI provider + model pair (e.g.
+ * "OpenAI / GPT-4o"). Profiles are assigned to task-specific action types
+ * (chat, summarization, translation, etc.) and persisted via settings.
+ */
 export interface ProfilesStoreState {
+  /** All saved profiles. */
   profiles: Profile[];
+  /** The fallback profile used when no task-specific profile is assigned. */
   defaultProfile: Profile | null;
+  /** Profile assigned to the Chat action type. */
   chatProfile: Profile | null;
+  /** Profile assigned to the Summarization action type. */
   summarizationProfile: Profile | null;
+  /** Profile assigned to the Translation action type. */
   translationProfile: Profile | null;
+  /** Profile assigned to the Text Analysis action type. */
   textAnalysisProfile: Profile | null;
+  /** Profile assigned to the Image Generation action type. */
   imageGenerationProfile: Profile | null;
+  /** Profile assigned to the OCR action type. */
   ocrProfile: Profile | null;
+  /** Profile assigned to the Vision action type. */
   visionProfile: Profile | null;
+  /** Temporary per-session chat profile override (not persisted). */
   sessionChatProfile: Profile | null;
+  /** Whether extended / deep thinking mode is enabled. */
   extendedThinking: boolean;
+  /** Load all profiles and task assignments from storage. */
   init: () => Promise<void>;
+  /** Create and persist a new profile. Returns `true` on success or error data on failure. */
   addProfile: (
     data: Omit<Profile, "id">
   ) => Promise<boolean | TErrorData | undefined>;
+  /** Update an existing profile and propagate changes to all task assignments. */
   editProfile: (profile: Profile) => Promise<boolean | TErrorData | undefined>;
+  /** Delete a profile by ID and clear any task assignments that reference it. */
   deleteProfile: (id: string) => Promise<void>;
+  /** Look up a profile by its unique ID. */
   getProfileById: (id: string) => Profile | null;
+  /** Look up a profile by display name, optionally case-insensitive. */
   getProfileByName: (name: string, ignoreCase?: boolean) => Profile | null;
+  /** Set the default (fallback) profile and persist the choice. */
   setDefaultProfile: (profile: Profile) => void;
+  /** Assign a profile to the Chat action type and update the active provider. */
   setChatProfile: (profile: Profile | null) => void;
+  /** Assign a profile to the Summarization action type. */
   setSummarizationProfile: (profile: Profile | null) => void;
+  /** Assign a profile to the Translation action type. */
   setTranslationProfile: (profile: Profile | null) => void;
+  /** Assign a profile to the Text Analysis action type. */
   setTextAnalysisProfile: (profile: Profile | null) => void;
+  /** Assign a profile to the Image Generation action type. */
   setImageGenerationProfile: (profile: Profile | null) => void;
+  /** Assign a profile to the OCR action type. */
   setOcrProfile: (profile: Profile | null) => void;
+  /** Assign a profile to the Vision action type. */
   setVisionProfile: (profile: Profile | null) => void;
+  /** Set a temporary session-scoped chat profile override (cleared on thread switch). */
   setSessionChatProfile: (profile: Profile | null) => void;
+  /** Toggle extended / deep thinking mode on or off and persist the setting. */
   toggleExtendedThinking: () => void;
 }
 
@@ -181,6 +215,9 @@ export function createProfilesStore(deps: {
             profiles: [result.profile, ...state.profiles],
           }));
           if (isFirst) get().setDefaultProfile(result.profile);
+          ctx.callbacksManager.emit("onProfileCreated", {
+            profile: result.profile,
+          });
           return true;
         }
         return result.error;
@@ -242,6 +279,7 @@ export function createProfilesStore(deps: {
 
       deleteProfile: async (id) => {
         await profilesService.deleteProfile(id);
+        ctx.callbacksManager.emit("onProfileDeleted", { profileId: id });
         set((state) => {
           const profiles = state.profiles.filter((p) => p.id !== id);
 
@@ -323,6 +361,13 @@ export function createProfilesStore(deps: {
           profile,
           store.getState().defaultProfile
         );
+        if (profile) {
+          ctx.callbacksManager.emit("onProfileChanged", {
+            profileId: profile.id,
+            providerType: profile.providerType,
+            modelId: profile.modelId,
+          });
+        }
       },
 
       setSummarizationProfile: makeTaskSetter(

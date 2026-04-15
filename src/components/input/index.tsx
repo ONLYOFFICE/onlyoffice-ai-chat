@@ -1,9 +1,9 @@
 import React from "react";
-import { useDirection } from "../../hooks/useDirection";
+import { useI18n } from "../../locales";
 import { cn } from "../../lib/utils";
 import { Icon } from "../icon";
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+export type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   isError?: boolean;
   icon?: string;
   onClear?: () => void;
@@ -13,7 +13,7 @@ const INPUT_COLOR = "var(--input-color)";
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, isError, icon, onClear, ...props }, ref) => {
-    const { isRTL } = useDirection();
+    const { isRTL } = useI18n();
 
     return (
       <div className={`relative ${className}`}>

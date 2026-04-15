@@ -1,6 +1,6 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import type React from "react";
-import { useDirection } from "../../../hooks/useDirection";
+import { useI18n } from "../../../locales";
 import { cn } from "../../../lib/utils";
 
 const DialogTitle = ({
@@ -10,7 +10,7 @@ const DialogTitle = ({
 }: React.ComponentProps<typeof DialogPrimitive.Title> & {
   withWarningIcon?: boolean;
 }) => {
-  const { isRTL } = useDirection();
+  const { isRTL } = useI18n();
 
   return (
     <DialogPrimitive.Title

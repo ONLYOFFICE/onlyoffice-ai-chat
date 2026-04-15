@@ -1,10 +1,10 @@
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { useStores } from "../../../store/context";
-import { IconButton } from "../../icon-button";
-import { TooltipIconButton } from "../../tooltip-icon-button";
+import { useComponents } from "../../../components-provider";
 
 const Navigation = () => {
-  const { t } = useTranslation();
+  const { IconButton, TooltipIconButton } = useComponents();
+  const { t } = useI18n();
   const { useRouter, useThreadsStore } = useStores();
 
   const currentPage = useRouter((s) => s.currentPage);

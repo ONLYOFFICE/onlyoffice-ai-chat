@@ -2,7 +2,7 @@ import { cn } from "../../lib/utils";
 import { Icon } from "../icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
 
-type FieldContainerProps = {
+export type FieldContainerProps = {
   children: React.ReactNode;
   header: string;
   icon?: string;

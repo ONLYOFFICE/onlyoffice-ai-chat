@@ -1,26 +1,27 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../app-context";
+import { type ThemeType, getThemeType } from "../theme/constants";
 
-type ThemeType = "light" | "dark";
-
-const DARK_THEMES = [
-  "theme-dark",
-  "theme-night",
-  "theme-contrast-dark",
-] as const;
-
-const getThemeType = (themeId: string): ThemeType =>
-  DARK_THEMES.some((dark) => themeId.includes(dark.replace("theme-", "")))
-    ? "dark"
-    : "light";
-
+/**
+ * Zustand state for the widget's visual theme and display scale.
+ *
+ * Reads initial values from the platform adapter and exposes setters
+ * so the host application can update the theme or scale at runtime.
+ */
 export interface ThemeStoreState {
+  /** Current theme identifier (e.g. "theme-light", "theme-dark"). */
   themeId: string;
+  /** Resolved theme category derived from {@link themeId} ("light" or "dark"). */
   themeType: ThemeType;
+  /** Device pixel ratio / UI scale factor. */
   scale: number;
+  /** `true` after {@link initFromPlatform} has run once. */
   initialized: boolean;
+  /** Set the active theme by ID and recompute the theme type. */
   setThemeId: (id: string) => void;
+  /** Update the UI scale factor. */
   setScale: (scale: number) => void;
+  /** Read theme and scale from the platform adapter (runs at most once). */
   initFromPlatform: () => void;
 }
 

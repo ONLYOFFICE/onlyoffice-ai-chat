@@ -6,14 +6,12 @@ import {
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { usePlatform } from "../../../platform/context";
+import { useComponents } from "../../../components-provider";
 import { Icon } from "../../../components/icon";
-import { IconButton } from "../../../components/icon-button";
-import { Loader } from "../../../components/loader";
 import { MarkdownContent } from "../../../components/markdown";
 import { ToolFallback } from "../../../components/tool-fallback";
-import { TooltipIconButton } from "../../../components/tooltip-icon-button";
 import { convertMessagesToMd, getMessageTitleFromMd } from "../../../lib/utils";
 import { useStores } from "../../../store/context";
 
@@ -27,7 +25,8 @@ const ThinkingMarkdownText = memo(
     type: string;
     parentId?: string;
   }) => {
-    const { t } = useTranslation();
+    const { Loader } = useComponents();
+    const { t } = useI18n();
     const [isCollapsed, setIsCollapsed] = useState(true);
 
     return (
@@ -84,7 +83,8 @@ const MessageError = () => {
 };
 
 const AssistantActionBar = () => {
-  const { t } = useTranslation();
+  const { IconButton, TooltipIconButton } = useComponents();
+  const { t } = useI18n();
   const { useMessageStore } = useStores();
   const { isStreamRunning, messages } = useMessageStore();
   const platform = usePlatform();

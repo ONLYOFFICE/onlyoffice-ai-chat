@@ -4,15 +4,19 @@ import { cn } from "../../../lib/utils";
 
 import "./TooltipContent.css";
 
+export type TooltipContentProps = React.ComponentProps<
+  typeof TooltipPrimitive.Content
+> & {
+  isAbout?: boolean;
+};
+
 const TooltipContent = ({
   className,
   sideOffset = 0,
   children,
   isAbout,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content> & {
-  isAbout?: boolean;
-}) => {
+}: TooltipContentProps) => {
   return (
     <TooltipPrimitive.Portal container={document.getElementById("app")}>
       <TooltipPrimitive.Content

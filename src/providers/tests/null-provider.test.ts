@@ -12,10 +12,10 @@ describe("NullProvider", () => {
       expect(() => provider.setModelKey("test")).not.toThrow();
     });
 
-    it("setModelKey prototype should be no-op", () => {
+    it("setModelKey should be no-op (does not mutate state)", () => {
       const provider = new NullProvider();
-      NullProvider.prototype.setModelKey.call(provider, "test");
-      // Prototype method is a no-op; instance arrow function from base may set it
+      provider.setModelKey("test");
+      // Arrow override is a no-op; no state mutation expected
     });
 
     it("setSystemPrompt should not throw", () => {
@@ -23,9 +23,9 @@ describe("NullProvider", () => {
       expect(() => provider.setSystemPrompt("test")).not.toThrow();
     });
 
-    it("setSystemPrompt prototype should be no-op", () => {
+    it("setSystemPrompt should be no-op (does not mutate state)", () => {
       const provider = new NullProvider();
-      NullProvider.prototype.setSystemPrompt.call(provider, "test");
+      provider.setSystemPrompt("test");
     });
 
     it("setApiKey should be no-op", () => {
@@ -45,9 +45,9 @@ describe("NullProvider", () => {
       expect(() => provider.stopMessage()).not.toThrow();
     });
 
-    it("stopMessage prototype should be no-op", () => {
+    it("stopMessage should be no-op (does not mutate state)", () => {
       const provider = new NullProvider();
-      NullProvider.prototype.stopMessage.call(provider);
+      provider.stopMessage();
     });
 
     it("setProvider should be no-op", () => {

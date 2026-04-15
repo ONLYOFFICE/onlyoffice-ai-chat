@@ -25,18 +25,18 @@ class StabilityAIProvider extends AbstractBaseProvider<never, never, null> {
     return "";
   }
 
+  // eslint-disable-next-line require-yield
   async *sendMessage(): AsyncGenerator<
     ThreadMessageLike | { isEnd: true; responseMessage: ThreadMessageLike }
   > {
     throw new Error("Stability AI does not support chat");
-    yield; // unreachable — satisfies require-yield for this image-only provider
   }
 
+  // eslint-disable-next-line require-yield
   async *sendMessageAfterToolCall(): AsyncGenerator<
     ThreadMessageLike | { isEnd: true; responseMessage: ThreadMessageLike }
   > {
     throw new Error("Stability AI does not support chat");
-    yield; // unreachable — satisfies require-yield for this image-only provider
   }
 
   isSupportStreaming(): boolean {

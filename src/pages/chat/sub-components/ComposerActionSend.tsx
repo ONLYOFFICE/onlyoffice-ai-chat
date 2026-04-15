@@ -1,11 +1,12 @@
 import { ComposerPrimitive, ThreadPrimitive } from "@assistant-ui/react";
-import { IconButton } from "../../../components/icon-button";
+import { useComponents } from "../../../components-provider";
 import { useStores } from "../../../store/context";
 
 const BUTTON_STYLES =
   "rounded-[4px] cursor-pointer disabled:cursor-not-allowed flex items-center justify-center bg-[var(--chat-composer-action-send-background-color)] hover:enabled:bg-[var(--chat-composer-action-send-background-hover-color)] active:enabled:bg-[var(--chat-composer-action-send-background-pressed-color)] disabled:opacity-[0.5]";
 
 const ComposerActionSend = () => {
+  const { IconButton } = useComponents();
   const { useMessageStore, useProfilesStore, selectCurrentChatProfile } =
     useStores();
   const { isStreamRunning } = useMessageStore();

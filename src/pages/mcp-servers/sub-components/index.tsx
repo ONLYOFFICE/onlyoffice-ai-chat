@@ -1,8 +1,7 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
-import { useDirection } from "../../../hooks/useDirection";
+import { useI18n } from "../../../locales";
 import { cn } from "../../../lib/utils";
-import { Button } from "../../../components/button";
+import { useComponents } from "../../../components-provider";
 import AvailableTools from "./AvailableTools";
 import ConfigDialog from "./ConfigDialog";
 import ToolsCounter from "./ToolsCounter";
@@ -12,8 +11,8 @@ type ServersProps = {
 };
 
 const Servers = ({ variant = "tab" }: ServersProps) => {
-  const { t } = useTranslation();
-  const { isRTL } = useDirection();
+  const { Button } = useComponents();
+  const { t, isRTL } = useI18n();
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (

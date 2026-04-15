@@ -1,8 +1,10 @@
 import type Provider from "./index";
 
 /**
- * Global Provider instance holder.
- * Zustand stores can't access React context, so they get Provider from here.
+ * @internal
+ * Global Provider instance holder — legacy singleton bridge.
+ * Used only by `AIChatWidget` for backward compatibility.
+ * Headless consumers should use `AppContext.provider` instead.
  */
 let providerInstance: InstanceType<typeof Provider> | null = null;
 

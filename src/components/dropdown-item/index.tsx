@@ -1,6 +1,6 @@
 import { Item } from "@radix-ui/react-dropdown-menu";
 import { useRef, useState } from "react";
-import { useDirection } from "../../hooks/useDirection";
+import { useI18n } from "../../locales";
 import { cn } from "../../lib/utils";
 import { DropdownMenu } from "../dropdown";
 import { IconButton } from "../icon-button";
@@ -31,7 +31,7 @@ const DropDownItem = ({
   withAbout,
   aboutContent,
 }: DropDownItemProps) => {
-  const { isRTL } = useDirection();
+  const { isRTL } = useI18n();
 
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
   const [submenuSide, setSubmenuSide] = useState<"left" | "right">("left");

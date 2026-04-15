@@ -109,6 +109,22 @@ const mockEventBus = {
   emit: vi.fn(),
 };
 
+const mockCallbacksManager = {
+  emit: vi.fn(),
+  setCallbacks: vi.fn(),
+  getCallbacks: vi.fn().mockReturnValue({}),
+};
+
+const mockMiddlewareRunner = {
+  isEmpty: true,
+  runBeforeSend: vi.fn().mockResolvedValue({ action: "continue" }),
+  runOnStreamChunk: vi.fn().mockResolvedValue({ action: "continue" }),
+  runBeforeToolCall: vi.fn().mockResolvedValue({ action: "continue" }),
+  runAfterToolResult: vi.fn().mockResolvedValue({ action: "continue" }),
+  runBeforeDisplay: vi.fn().mockResolvedValue({ action: "continue" }),
+  runOnError: vi.fn().mockResolvedValue({ action: "default" }),
+};
+
 const mockCtx = {
   settings: mockSettings,
   storage: mockStorage,
@@ -116,6 +132,8 @@ const mockCtx = {
   platform: mockPlatform,
   servers: mockServers,
   eventBus: mockEventBus,
+  callbacksManager: mockCallbacksManager,
+  middlewareRunner: mockMiddlewareRunner,
 };
 
 // ---------------------------------------------------------------------------

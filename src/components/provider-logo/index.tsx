@@ -1,4 +1,4 @@
-import { getProviderImageSrc } from "../../lib/images";
+import { useImages } from "../../images-provider";
 import { cn } from "../../lib/utils";
 import type { ProviderType } from "../../types";
 
@@ -11,6 +11,8 @@ export const ProviderLogo = ({
   providerType,
   className,
 }: ProviderLogoProps) => {
+  const { getProviderImageSrc } = useImages();
+
   return (
     <div
       className={cn(

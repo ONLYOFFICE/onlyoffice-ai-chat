@@ -1,8 +1,7 @@
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../locales";
 import { useToolsContext } from "../../tools/context";
-import { useDirection } from "../../hooks/useDirection";
 import { Icon } from "../icon";
 import { IconButton } from "../icon-button";
 import { Loader } from "../loader";
@@ -13,8 +12,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   argsText,
   result,
 }) => {
-  const { t } = useTranslation();
-  const { isRTL } = useDirection();
+  const { t, isRTL } = useI18n();
   const { servers: serversInstance } = useToolsContext();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isArgsCopied, setIsArgsCopied] = useState(false);
@@ -184,15 +182,13 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                       return searchResults.length > 0 ? (
                         <div className="flex flex-col gap-[10px]">
                           {searchResults.map(
-                            (
-                              item: {
-                                id: string;
-                                title: string;
-                                url: string;
-                                publishedDate?: string;
-                                author?: string;
-                              },
-                            ) => (
+                            (item: {
+                              id: string;
+                              title: string;
+                              url: string;
+                              publishedDate?: string;
+                              author?: string;
+                            }) => (
                               <div
                                 key={item.id}
                                 className="group h-[36px] px-[8px] rounded-[4px] flex flex-row items-center justify-between cursor-pointer hover:bg-[var(--drop-down-menu-item-hover-color)] transition-colors"

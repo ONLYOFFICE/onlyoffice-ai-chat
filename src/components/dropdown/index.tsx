@@ -1,5 +1,5 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useDirection } from "../../hooks/useDirection";
+import { useI18n } from "../../locales";
 import { cn } from "../../lib/utils";
 import { DropDownItem } from "../dropdown-item";
 import type { DropdownMenuProps } from "./DropDown.types";
@@ -17,14 +17,17 @@ const DropdownMenuComponent = ({
   dropdownRef,
   onOpenChange,
 }: DropdownMenuProps) => {
-  const { isRTL } = useDirection();
+  const { isRTL } = useI18n();
 
   return (
-    <DropdownMenu.Root open={open} onOpenChange={onOpenChange}>
+    <DropdownMenu.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      dir={isRTL ? "rtl" : "ltr"}
+    >
       <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Content
         ref={dropdownRef}
-        dir={isRTL ? "rtl" : "ltr"}
         side={side ?? "bottom"}
         align={align ?? "start"}
         sideOffset={sideOffset ?? 6}

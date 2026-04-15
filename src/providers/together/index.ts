@@ -26,7 +26,7 @@ class TogetherProvider extends OpenAIProvider {
   // Model Fetching (different filters)
   // ============================================
 
-  private checkModelCapabilities = (model: TogetherModel): number => {
+  private checkTogetherCapabilities = (model: TogetherModel): number => {
     const id = model.id.toLowerCase();
 
     if (model.type === "chat") {
@@ -55,7 +55,7 @@ class TogetherProvider extends OpenAIProvider {
       id: model.id,
       name: model.id,
       provider: "together" as const,
-      capabilities: this.checkModelCapabilities(model),
+      capabilities: this.checkTogetherCapabilities(model),
     }));
   };
 }

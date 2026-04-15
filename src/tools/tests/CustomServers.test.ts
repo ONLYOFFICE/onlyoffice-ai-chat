@@ -34,10 +34,7 @@ class MockExternalProcess {
 
   constructor() {
     processCount++;
-    lastProcess = Object.assign(
-      {} as typeof lastProcess,
-      this
-    );
+    lastProcess = Object.assign({} as typeof lastProcess, this);
   }
 }
 
@@ -78,7 +75,10 @@ describe("CustomServers", () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     processCount = 0;
-    customServers = new CustomServers(mockPlatform as unknown as PlatformAdapter, mockEventBus as unknown as ChatEventBus);
+    customServers = new CustomServers(
+      mockPlatform as unknown as PlatformAdapter,
+      mockEventBus as unknown as ChatEventBus
+    );
   });
 
   afterEach(() => {

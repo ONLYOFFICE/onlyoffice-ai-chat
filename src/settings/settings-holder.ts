@@ -1,9 +1,10 @@
 import type { SettingsAdapter } from "./types";
 
 /**
- * Global settings instance holder.
- * Zustand stores can't access React context, so they get settings from here.
- * Set by the host app during initialization, before any store operations.
+ * @internal
+ * Global settings instance holder — legacy singleton bridge.
+ * Used only by `AIChatWidget` for backward compatibility.
+ * Headless consumers should use `AppContext.settings` instead.
  */
 let settingsInstance: SettingsAdapter | null = null;
 

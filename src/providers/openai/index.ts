@@ -490,7 +490,7 @@ class OpenAIProvider extends AbstractBaseProvider<
       response_format: "b64_json",
     });
 
-    return response.data[0]?.b64_json ?? "";
+    return response.data?.[0]?.b64_json ?? "";
   };
 
   // ============================================

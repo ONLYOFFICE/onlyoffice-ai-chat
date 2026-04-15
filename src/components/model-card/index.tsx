@@ -1,14 +1,12 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../locales";
 import { useStores } from "../../store/context";
-import { useDirection } from "../../hooks/useDirection";
 import { cn } from "../../lib/utils";
 import type { Profile } from "../../types";
-import { DropdownMenu } from "../dropdown";
-import { IconButton } from "../icon-button";
+import { useComponents } from "../../components-provider";
 import { EditModelCard } from "../model-config-cards";
 import { ProviderLogo } from "../provider-logo";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
+import { Tooltip, TooltipTrigger } from "../tooltip";
 import { DeleteProfileDialog } from "./DeleteProfileDialog";
 
 type ModelCardProps = {
@@ -16,14 +14,14 @@ type ModelCardProps = {
 };
 
 const ModelCard = ({ profile }: ModelCardProps) => {
+  const { DropdownMenu, IconButton, TooltipContent } = useComponents();
   const { provider } = useStores();
   const providerName = profile.isCloudProvider
     ? new URL(profile.baseUrl).hostname
     : provider.getProviderInfo(profile.providerType).name;
   const [isEditing, setIsEditing] = React.useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
-  const { isRTL } = useDirection();
-  const { t } = useTranslation();
+  const { t, isRTL } = useI18n();
 
   const [containerElement, setContainerElement] =
     React.useState<HTMLDivElement | null>(null);

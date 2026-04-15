@@ -54,7 +54,7 @@ class OpenRouterProvider extends OpenAIProvider {
   // Model Fetching (different filters)
   // ============================================
 
-  private checkModelCapabilities = (model: OpenRouterModel): number => {
+  private checkOpenRouterCapabilities = (model: OpenRouterModel): number => {
     const modality = model.architecture?.modality ?? "";
     if (!modality) return CapabilitiesUI.Chat;
 
@@ -99,7 +99,7 @@ class OpenRouterProvider extends OpenAIProvider {
       name: model.id,
       provider: "openrouter" as const,
       reasoning: openrouterInfo.reasoningModels.includes(model.id),
-      capabilities: this.checkModelCapabilities(model),
+      capabilities: this.checkOpenRouterCapabilities(model),
     }));
   };
 }

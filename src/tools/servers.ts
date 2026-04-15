@@ -15,11 +15,14 @@ class Servers {
 
   allowAlways: string[];
 
+  private settings: SettingsAdapter;
+
   constructor(
-    private settings: SettingsAdapter,
+    settings: SettingsAdapter,
     platform: PlatformAdapter,
     eventBus: ChatEventBus
   ) {
+    this.settings = settings;
     this.hostToolSource = new HostToolSource();
     this.customServers = new CustomServers(platform, eventBus);
     this.webSearch = new WebSearch(settings, platform, eventBus);

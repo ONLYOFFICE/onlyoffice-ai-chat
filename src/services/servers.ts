@@ -4,6 +4,16 @@ import type { TMCPItem } from "../types";
 const MAX_TOOL_COUNT = 100;
 const MAX_TOOL_COUNT_WITH_WEB_SEARCH = MAX_TOOL_COUNT + 2;
 
+/**
+ * Aggregated result from {@link ServersService.buildToolsList}, containing
+ * the flat enabled-tools list, per-server tool maps, disabled-tool tracking,
+ * and web-search status.
+ *
+ * @property tools - Flat array of enabled tools with prefixed names (e.g. `"host_toolName"`).
+ * @property servers - Per-server-type map of all tools (including disabled).
+ * @property disabledTools - Per-server-type list of disabled tool names.
+ * @property webSearchEnabled - Whether web-search tools are currently active.
+ */
 export type ToolsListResult = {
   tools: TMCPItem[];
   servers: Record<string, TMCPItem[]>;
@@ -11,6 +21,11 @@ export type ToolsListResult = {
   webSearchEnabled: boolean;
 };
 
+/**
+ * Result from {@link ServersService.changeToolStatus}. Returns the updated
+ * state when the change succeeds, or `null` when the target tool was not
+ * found or the max-tools limit would be exceeded.
+ */
 export type ChangeToolStatusResult = {
   tools: TMCPItem[];
   servers: Record<string, TMCPItem[]>;
@@ -18,13 +33,30 @@ export type ChangeToolStatusResult = {
   webSearchEnabled: boolean;
 } | null;
 
+/**
+ * Manages MCP tool servers -- initialization from persisted settings,
+ * building the flattened enabled-tools list (capped at 100, or 102 with
+ * web search), toggling individual tool status, and dispatching tool calls.
+ *
+ * Custom server configurations are stored as serialized JSON in settings and
+ * delegated to the underlying {@link AppContext.servers} adapter.
+ */
 export class ServersService {
-  constructor(
-    private serversKey: string,
-    private disabledToolsKey: string,
-    private ctx: AppContext
-  ) {}
+  private serversKey: string;
+  private disabledToolsKey: string;
+  private ctx: AppContext;
 
+  constructor(serversKey: string, disabledToolsKey: string, ctx: AppContext) {
+    this.serversKey = serversKey;
+    this.disabledToolsKey = disabledToolsKey;
+    this.ctx = ctx;
+  }
+
+  /**
+   * Load custom MCP server configurations from settings and start them.
+   * Should be called once during application initialization. Invalid JSON
+   * in settings is silently ignored.
+   */
   initServers(): void {
     const settings = this.ctx.settings;
     const customServers = settings.get(this.serversKey);
@@ -40,6 +72,16 @@ export class ServersService {
     }
   }
 
+  /**
+   * Query all registered servers for their tools, merge with persisted
+   * disabled-tools state, enforce the max-tool-count cap, and return the
+   * aggregated result.
+   *
+   * Tools exceeding the cap are automatically added to the disabled list.
+   *
+   * @returns The full tools state including enabled list, per-server maps,
+   *   disabled tracking, and web-search flag.
+   */
   async buildToolsList(): Promise<ToolsListResult> {
     const allTools = await this.ctx.servers.getTools();
     const settings = this.ctx.settings;
@@ -141,6 +183,17 @@ export class ServersService {
     return { tools, servers, disabledTools, webSearchEnabled };
   }
 
+  /**
+   * Enable or disable a specific tool and persist the updated disabled-tools
+   * map to settings.
+   *
+   * @param type - Server type the tool belongs to (e.g. `"host"`, `"web-search"`).
+   * @param name - Tool name within the server.
+   * @param enabled - Whether to enable (`true`) or disable (`false`) the tool.
+   * @param currentState - Current tools state to derive the update from.
+   * @returns Updated tools state, or `null` if the tool was not found or the
+   *   max-tools limit prevents enabling.
+   */
   changeToolStatus(
     type: string,
     name: string,
@@ -227,6 +280,16 @@ export class ServersService {
     };
   }
 
+  /**
+   * Execute a tool call by dispatching to the appropriate server, after
+   * verifying the tool is not disabled.
+   *
+   * @param name - The prefixed tool name (e.g. `"host_myTool"`).
+   * @param args - Arguments to pass to the tool.
+   * @param disabledTools - Current disabled-tools map; calls to disabled tools
+   *   are silently skipped.
+   * @returns The tool execution result, or `undefined` if the tool is disabled.
+   */
   async callTools(
     name: string,
     args: Record<string, unknown>,

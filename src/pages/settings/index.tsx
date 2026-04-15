@@ -1,5 +1,5 @@
-import { useTranslation } from "react-i18next";
-import { Tabs } from "../../components/tabs";
+import { useI18n } from "../../locales";
+import { useComponents } from "../../components-provider";
 import { ModelAssignment } from "../model-assignment/sub-components";
 import { Servers } from "../mcp-servers/sub-components";
 import { WebSearch } from "../web-search/sub-components";
@@ -7,7 +7,8 @@ import { useStores } from "../../store/context";
 import { Models } from "../ai-models/sub-components";
 
 const Settings = () => {
-  const { t } = useTranslation();
+  const { Tabs } = useComponents();
+  const { t } = useI18n();
   const { useProfilesStore } = useStores();
 
   const profiles = useProfilesStore((s) => s.profiles);

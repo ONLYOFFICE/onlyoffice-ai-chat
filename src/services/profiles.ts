@@ -7,19 +7,45 @@ const NAME_EXISTS_ERROR = {
   message: "Duplicate name",
 };
 
+/**
+ * Keys used to persist the default and per-task profile selections in settings.
+ *
+ * @property defaultKey - Settings key for the default (chat) profile ID.
+ * @property taskKeys - Settings keys for action-specific profile IDs
+ *   (e.g. summarization, translation).
+ */
 export type TaskProfileKeys = {
   defaultKey: string;
   taskKeys: string[];
 };
 
+/**
+ * Result returned by {@link ProfilesService.init} after loading all profiles
+ * from storage and resolving the default and task-specific selections.
+ *
+ * @property profiles - All stored profiles in display order.
+ * @property defaultProfile - The currently selected default profile, or `null`.
+ * @property taskProfiles - Map of task settings key to resolved profile (or `null`).
+ */
 export type ProfilesInitResult = {
   profiles: Profile[];
   defaultProfile: Profile | null;
   taskProfiles: Record<string, Profile | null>;
 };
 
+/**
+ * Manages AI provider profiles -- CRUD operations, validation against the
+ * provider registry, and resolution of the default / task-specific profile
+ * selections persisted in settings.
+ *
+ * All storage and settings access goes through the injected {@link AppContext}.
+ */
 export class ProfilesService {
-  constructor(private ctx: AppContext) {}
+  private ctx: AppContext;
+
+  constructor(ctx: AppContext) {
+    this.ctx = ctx;
+  }
 
   loadProfileById(profiles: Profile[], key: string): Profile | null {
     const settings = this.ctx.settings;
@@ -55,6 +81,15 @@ export class ProfilesService {
     }
   }
 
+  /**
+   * Load all profiles from storage and resolve the default and per-task
+   * profile selections from settings.
+   *
+   * If no default profile is persisted, the first available profile is used.
+   *
+   * @param keys - Settings keys for the default and task-specific profiles.
+   * @returns The full list of profiles along with resolved default and task selections.
+   */
   async init(keys: TaskProfileKeys): Promise<ProfilesInitResult> {
     const storage = this.ctx.storage;
     const settings = this.ctx.settings;
@@ -75,6 +110,15 @@ export class ProfilesService {
     return { profiles, defaultProfile, taskProfiles };
   }
 
+  /**
+   * Create a new profile after validating name uniqueness and provider
+   * connectivity.
+   *
+   * @param data - Profile data (without `id`).
+   * @param existingProfiles - Current profiles used for duplicate-name check.
+   * @returns On success, the newly created {@link Profile}. On failure, an
+   *   error describing which field failed validation.
+   */
   async addProfile(
     data: Omit<Profile, "id">,
     existingProfiles: Profile[]
@@ -110,6 +154,14 @@ export class ProfilesService {
     };
   }
 
+  /**
+   * Update an existing profile after re-validating name uniqueness and
+   * provider connectivity.
+   *
+   * @param profile - The full profile object with updated fields.
+   * @param existingProfiles - Current profiles used for duplicate-name check.
+   * @returns Success indicator, or an error describing the failing field.
+   */
   async editProfile(
     profile: Profile,
     existingProfiles: Profile[]
@@ -144,6 +196,11 @@ export class ProfilesService {
     };
   }
 
+  /**
+   * Permanently remove a profile from storage.
+   *
+   * @param id - The profile identifier to delete.
+   */
   async deleteProfile(id: string): Promise<void> {
     const storage = this.ctx.storage;
     await storage.profiles.delete(id);
@@ -179,6 +236,12 @@ export class ProfilesService {
     return nextDefault;
   }
 
+  /**
+   * Persist (or clear) the profile selection for a specific task action.
+   *
+   * @param key - The settings key that identifies the task action.
+   * @param profile - The profile to assign, or `null` to clear the selection.
+   */
   setTaskProfile(key: string, profile: Profile | null): void {
     const settings = this.ctx.settings;
     if (profile) {
@@ -188,6 +251,15 @@ export class ProfilesService {
     }
   }
 
+  /**
+   * Resolve the effective chat profile using a priority chain:
+   * session override > persisted chat profile > default profile.
+   *
+   * @param sessionChatProfile - Temporary session-level override (highest priority).
+   * @param chatProfile - Persisted chat profile selection.
+   * @param defaultProfile - Global default profile (lowest priority).
+   * @returns The first non-null profile in the chain, or `null` if none exist.
+   */
   selectCurrentChatProfile(
     sessionChatProfile: Profile | null,
     chatProfile: Profile | null,

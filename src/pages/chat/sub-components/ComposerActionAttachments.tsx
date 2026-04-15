@@ -1,10 +1,8 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { usePlatform } from "../../../platform/context";
-import { DropdownMenu } from "../../../components/dropdown";
+import { useComponents } from "../../../components-provider";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
-import { IconButton } from "../../../components/icon-button";
-import { TooltipIconButton } from "../../../components/tooltip-icon-button";
 import { useToolsContext } from "../../../tools/context";
 import {
   isDjVu,
@@ -31,6 +29,7 @@ const getFileIconName = (type: number): string => {
 };
 
 const ComposerActionAttachment = () => {
+  const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const [isOpen, setIsOpen] = React.useState(false);
   const imageInputRef = React.useRef<HTMLInputElement>(null);
   const platform = usePlatform();
@@ -113,9 +112,9 @@ const ComposerActionAttachment = () => {
         setRecentFiles([]);
       }
     });
-  }, [platform.file, selectRecentFile]);
+  }, [platform.file, selectRecentFile, IconButton]);
 
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const trigger = (
     <TooltipIconButton tooltip={t("Attachments")} visible={!isOpen}>

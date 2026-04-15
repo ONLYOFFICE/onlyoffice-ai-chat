@@ -1,5 +1,5 @@
 import { ComposerPrimitive } from "@assistant-ui/react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { FileItem } from "../../../components/file-item";
 import { useStores } from "../../../store/context";
 import { ComposerAction } from "./ComposerAction";
@@ -10,7 +10,7 @@ const Composer = () => {
     useStores();
   const { attachmentFiles, attachmentImages } = useAttachmentsStore();
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   return (
     <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[8px] px-[var(--thread-padding-x)] pb-[16px]">

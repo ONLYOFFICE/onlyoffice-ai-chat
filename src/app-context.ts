@@ -1,4 +1,6 @@
-import type { ChatEventBus } from "./events";
+import type { CallbacksManager } from "./events/callbacks";
+import type { ChatEventBus } from "./events/event-bus";
+import type { MiddlewareRunner } from "./middleware";
 import type { PlatformAdapter } from "./platform/types";
 import type Provider from "./providers";
 import type { SettingsAdapter } from "./settings/types";
@@ -17,4 +19,6 @@ export interface AppContext {
   provider: Provider;
   servers: Servers;
   eventBus: ChatEventBus;
+  callbacksManager: CallbacksManager;
+  middlewareRunner: MiddlewareRunner;
 }

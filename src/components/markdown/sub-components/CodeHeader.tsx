@@ -1,13 +1,13 @@
 import type { CodeHeaderProps } from "@assistant-ui/react-markdown";
-import { useTranslation } from "react-i18next";
-import { IconButton } from "../../icon-button";
-import { TooltipIconButton } from "../../tooltip-icon-button";
+import { useI18n } from "../../../locales";
+import { useComponents } from "../../../components-provider";
 import useCopyToClipboard from "../hooks/useCopyToClipboard";
 
 const CodeHeader = ({ language, code }: CodeHeaderProps) => {
+  const { IconButton, TooltipIconButton } = useComponents();
   const { isCopied, copyToClipboard } = useCopyToClipboard();
 
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const onCopy = () => {
     if (!code || isCopied) return;

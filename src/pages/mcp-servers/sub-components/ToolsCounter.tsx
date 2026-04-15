@@ -1,4 +1,4 @@
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import {
   MAX_TOOL_COUNT,
   MAX_TOOL_COUNT_WITH_WEB_SEARCH,
@@ -8,7 +8,7 @@ import { useStores } from "../../../store/context";
 const TOOLS_COUNTER_THRESHOLD = 90;
 
 const ToolsCounter = () => {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const { useServersStore } = useStores();
   const { tools, webSearchEnabled } = useServersStore();
 

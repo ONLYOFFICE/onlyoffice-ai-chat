@@ -12,11 +12,11 @@ export class NullProvider extends AbstractBaseProvider<
   unknown
 > {
   // Override inherited setters to prevent mutation of shared instance
-  override setModelKey(): void {}
-  override setSystemPrompt(): void {}
+  override setModelKey = (): void => {};
+  override setSystemPrompt = (): void => {};
   override setApiKey(): void {}
   override setUrl(): void {}
-  override stopMessage(): void {}
+  override stopMessage = (): void => {};
   setProvider(): void {}
 
   setPrevMessages(): void {}

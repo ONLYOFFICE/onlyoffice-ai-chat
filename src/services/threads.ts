@@ -2,13 +2,37 @@ import type { AppContext } from "../app-context";
 import type { Profile, Thread } from "../types";
 import { convertMessagesToMd, removeSpecialCharacter } from "../utils";
 
+/**
+ * Manages chat thread lifecycle -- creation, loading, renaming, deletion,
+ * history clearing, and exporting threads as downloadable documents.
+ *
+ * Also handles migration of legacy threads (with inline provider/model data)
+ * to the profile-based model.
+ */
 export class ThreadsService {
-  constructor(private ctx: AppContext) {}
+  private ctx: AppContext;
+
+  constructor(ctx: AppContext) {
+    this.ctx = ctx;
+  }
+  /**
+   * Load all threads from storage.
+   *
+   * @returns An array of all persisted {@link Thread} objects.
+   */
   async loadAll(): Promise<Thread[]> {
     const storage = this.ctx.storage;
     return storage.threads.getAll();
   }
 
+  /**
+   * Create a new thread and persist it to storage.
+   *
+   * @param threadId - Unique identifier for the new thread.
+   * @param title - Display title for the thread.
+   * @param profileId - Optional profile to associate with the thread.
+   * @returns The newly created {@link Thread} object.
+   */
   createThread(threadId: string, title: string, profileId?: string): Thread {
     const thread: Thread = {
       threadId,
@@ -67,6 +91,13 @@ export class ThreadsService {
     return migratedThread;
   }
 
+  /**
+   * Export a thread's messages as a `.docx` file via the platform file adapter.
+   *
+   * @param threadId - The thread to export.
+   * @param threadTitle - Optional title used as the file name (sanitized).
+   *   Defaults to "Chat Export" when omitted.
+   */
   async downloadThread(threadId: string, threadTitle?: string): Promise<void> {
     const storage = this.ctx.storage;
     const messages = await storage.messages.getByThread(threadId);
@@ -75,17 +106,33 @@ export class ThreadsService {
     this.ctx.platform.file?.saveAsFile(content, `${title}.docx`);
   }
 
+  /**
+   * Update the display title of an existing thread.
+   *
+   * @param id - The thread identifier.
+   * @param title - The new title.
+   */
   renameThread(id: string, title: string): void {
     const storage = this.ctx.storage;
     storage.threads.update(id, title);
   }
 
+  /**
+   * Permanently delete a thread and all of its associated messages from storage.
+   *
+   * @param id - The thread identifier to delete.
+   */
   async deleteThread(id: string): Promise<void> {
     const storage = this.ctx.storage;
     await storage.messages.deleteByThread(id);
     await storage.threads.delete(id);
   }
 
+  /**
+   * Delete all messages within a thread while keeping the thread itself.
+   *
+   * @param id - The thread identifier whose messages should be cleared.
+   */
   async clearHistory(id: string): Promise<void> {
     const storage = this.ctx.storage;
     await storage.messages.deleteByThread(id);

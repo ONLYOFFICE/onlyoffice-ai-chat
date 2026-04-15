@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { useStores } from "../../../store/context";
 import { useDebouncedCallback } from "../../../hooks/useDebouncedCallback";
 import type { Model, ProviderType } from "../../../types";
@@ -18,7 +18,7 @@ const fieldToErrorKey: Partial<
 };
 
 export const useModelForm = (initialValues: ModelFormValues) => {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const { provider } = useStores();
   const [values, setValues] = useState<ModelFormValues>(initialValues);
   const [models, setModels] = useState<Model[]>([]);
@@ -130,10 +130,11 @@ export const useModelForm = (initialValues: ModelFormValues) => {
       return;
     }
     if (field === "apiKey") {
-      setValues((prev) => ({ ...prev, apiKey: value }));
+      const strValue = value as string;
+      setValues((prev) => ({ ...prev, apiKey: strValue }));
       debouncedFetchModels(
         valuesRef.current.provider as ProviderType,
-        value,
+        strValue,
         valuesRef.current.baseUrl,
         {
           isCloudProvider: values.isCloudProvider,
@@ -142,11 +143,12 @@ export const useModelForm = (initialValues: ModelFormValues) => {
       return;
     }
     if (field === "baseUrl") {
-      setValues((prev) => ({ ...prev, baseUrl: value }));
+      const strValue = value as string;
+      setValues((prev) => ({ ...prev, baseUrl: strValue }));
       debouncedFetchModels(
         valuesRef.current.provider as ProviderType,
         valuesRef.current.apiKey,
-        value,
+        strValue,
         {
           isCloudProvider: values.isCloudProvider,
         }
@@ -154,7 +156,8 @@ export const useModelForm = (initialValues: ModelFormValues) => {
       return;
     }
     if (field === "model") {
-      const modelObj = models.find((m) => m.id === value);
+      const strValue = value as string;
+      const modelObj = models.find((m) => m.id === strValue);
       const providerInfo = provider.getProviderInfo(
         valuesRef.current.provider as ProviderType
       );
@@ -163,7 +166,7 @@ export const useModelForm = (initialValues: ModelFormValues) => {
         : providerInfo.name;
       setValues((prev) => ({
         ...prev,
-        model: value,
+        model: strValue,
         ...(modelObj && {
           profileName: `${displayName} - ${modelObj.name}`,
         }),

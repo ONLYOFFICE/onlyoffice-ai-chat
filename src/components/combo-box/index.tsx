@@ -4,7 +4,7 @@ import { DropdownMenu } from "../dropdown";
 import type { DropDownItemProps } from "../dropdown-item/DropDownItem.types";
 import { Icon } from "../icon";
 
-type ComboBoxProps = {
+export type ComboBoxProps = {
   placeholder?: string;
   value?: string;
   className?: string;

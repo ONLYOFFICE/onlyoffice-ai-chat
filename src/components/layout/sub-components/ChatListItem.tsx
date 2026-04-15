@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import type { Page } from "../../../store/create-stores";
 import type { Thread } from "../../../types";
 import { DropdownMenu } from "../../dropdown";
@@ -42,7 +42,7 @@ const ChatListItemComponent = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   // Handle keyboard events for rename input
   React.useEffect(() => {

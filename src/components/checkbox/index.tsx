@@ -2,7 +2,7 @@ import type React from "react";
 import { cn } from "../../lib/utils";
 import { Icon } from "../icon";
 
-type CheckboxProps = {
+export type CheckboxProps = {
   checked?: boolean;
   onChange?: (checked: boolean) => void;
   disabled?: boolean;

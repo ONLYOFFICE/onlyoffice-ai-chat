@@ -8,42 +8,104 @@ export {
   removeSpecialCharacter,
 } from "../utils";
 
+/**
+ * Merges class names using `clsx` and resolves Tailwind CSS conflicts
+ * with `tailwind-merge`.
+ *
+ * @param inputs - Class values (strings, arrays, objects, etc.).
+ * @returns A single merged class string.
+ */
 export const cn = (...inputs: ClassValue[]) => {
   return twMerge(clsx(inputs));
 };
 
+/**
+ * Strips characters that are invalid in file/provider names
+ * (`\ / : * " < > | ?`).
+ *
+ * @param str - The raw provider name.
+ * @returns The sanitized string.
+ */
 export const sanitizeProviderName = (str: string) => {
   return str.replace(/[\\/:*"<>|?]/g, "");
 };
 
+/**
+ * Checks whether a file type bitmask represents a document.
+ *
+ * @param type - The numeric file type bitmask.
+ * @returns `true` if the document bit (`0x40`) is set.
+ */
 export const isDocument = (type: number) => {
   return !!(type & 0x40);
 };
 
+/**
+ * Checks whether a file type bitmask represents a presentation.
+ *
+ * @param type - The numeric file type bitmask.
+ * @returns `true` if the presentation bit (`0x80`) is set.
+ */
 export const isPresentation = (type: number) => {
   return !!(type & 0x80);
 };
 
+/**
+ * Checks whether a file type bitmask represents a spreadsheet.
+ *
+ * @param type - The numeric file type bitmask.
+ * @returns `true` if the spreadsheet bit (`0x0100`) is set.
+ */
 export const isSpreadsheet = (type: number) => {
   return !!(type & 0x0100);
 };
 
+/**
+ * Checks whether a file type represents a PDF file.
+ *
+ * @param type - The numeric file type.
+ * @returns `true` if `type` is `0x0201` or `0x0209`.
+ */
 export const isPdf = (type: number) => {
   return type === 0x0201 || type === 0x0209;
 };
 
+/**
+ * Checks whether a file type represents a DjVu file.
+ *
+ * @param type - The numeric file type.
+ * @returns `true` if `type` is `0x0203`.
+ */
 export const isDjVu = (type: number) => {
   return type === 0x0203;
 };
 
+/**
+ * Checks whether a file type represents an XPS file.
+ *
+ * @param type - The numeric file type.
+ * @returns `true` if `type` is `0x0204`.
+ */
 export const isXps = (type: number) => {
   return type === 0x0204;
 };
 
+/**
+ * Checks whether a file type represents a PDF form.
+ *
+ * @param type - The numeric file type.
+ * @returns `true` if `type` is `0x0057`.
+ */
 export const isPdfForm = (type: number) => {
   return type === 0x0057;
 };
 
+/**
+ * Checks whether a file type bitmask represents a Visio file.
+ *
+ * @param type - The numeric file type bitmask.
+ * @returns `true` if the Visio bit (`0x4000`) is set.
+ */
 export const isVisio = (type: number) => {
   return !!(type & 0x4000);
 };

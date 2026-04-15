@@ -1,5 +1,13 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 
+/**
+ * Converts an array of thread messages into a Markdown string.
+ * User messages are formatted as `##` headings; assistant messages as
+ * plain paragraphs. Tool-call parts are skipped.
+ *
+ * @param messages - The messages to convert.
+ * @returns A Markdown-formatted string.
+ */
 export const convertMessagesToMd = (messages: ThreadMessageLike[]) => {
   let content = "";
 
@@ -33,10 +41,23 @@ export const convertMessagesToMd = (messages: ThreadMessageLike[]) => {
   return content;
 };
 
+/**
+ * Strips characters that are invalid in file names (`\ / : * " < > | ?`).
+ *
+ * @param str - The input string.
+ * @returns The sanitized string.
+ */
 export const removeSpecialCharacter = (str: string) => {
   return str.replace(/[\\/:*"<>|?]/g, "");
 };
 
+/**
+ * Extracts a short title (up to 30 characters) from the first line of a
+ * Markdown string, stripping the `## ` heading prefix and special characters.
+ *
+ * @param md - A Markdown string (typically from {@link convertMessagesToMd}).
+ * @returns A sanitized title string.
+ */
 export const getMessageTitleFromMd = (md: string) => {
   const lines = md.split("\n");
 

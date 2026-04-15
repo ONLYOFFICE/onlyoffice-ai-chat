@@ -1,11 +1,8 @@
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { getApiKeyLink } from "../../../lib/api-key-links";
 import { useStores } from "../../../store/context";
 import type { Model, ProviderType } from "../../../types";
-import { ComboBox } from "../../combo-box";
-import { FieldContainer } from "../../field-container";
-import { Input } from "../../input";
-import { Link } from "../../link";
+import { useComponents } from "../../../components-provider";
 
 export interface ModelFormValues {
   provider: string;
@@ -43,7 +40,8 @@ export const ModelConfigForm = ({
   errors,
   isHorizontal,
 }: ModelConfigFormProps) => {
-  const { t } = useTranslation();
+  const { ComboBox, FieldContainer, Input, Link } = useComponents();
+  const { t } = useI18n();
   const { provider, useCloudsStore } = useStores();
   const { cloudProviders } = useCloudsStore();
   const providersInfo = provider.getProvidersInfo();

@@ -1,11 +1,12 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { CapabilitiesUI } from "../../../capabilities";
-import { ComboBox } from "../../../components/combo-box";
+import { useComponents } from "../../../components-provider";
 import { useStores } from "../../../store/context";
 import type { Profile } from "../../../types";
 
 const SelectModel = () => {
+  const { ComboBox } = useComponents();
   const {
     useProfilesStore,
     useServersStore,
@@ -17,7 +18,7 @@ const SelectModel = () => {
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const { tools } = useServersStore();
   const { messages } = useMessageStore();
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const chatProfiles = profiles.filter(
     (p) => !p.capabilities || (p.capabilities & CapabilitiesUI.Chat) !== 0

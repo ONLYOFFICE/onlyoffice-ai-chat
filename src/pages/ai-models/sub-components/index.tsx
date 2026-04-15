@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "../../../components/button";
+import { useI18n } from "../../../locales";
+import { useComponents } from "../../../components-provider";
 import { ModelCard } from "../../../components/model-card";
 import { AddModelCard } from "../../../components/model-config-cards";
 import { useStores } from "../../../store/context";
 
 export const Models = () => {
-  const { t } = useTranslation();
+  const { Button } = useComponents();
+  const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const { profiles } = useProfilesStore();
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);

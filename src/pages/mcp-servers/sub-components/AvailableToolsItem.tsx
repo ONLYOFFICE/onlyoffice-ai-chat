@@ -1,15 +1,11 @@
 import React, { useCallback, useMemo } from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { useToolsContext } from "../../../tools/context";
-import { useDirection } from "../../../hooks/useDirection";
 import { cn } from "../../../lib/utils";
 import { useStores } from "../../../store/context";
 import type { TMCPItem } from "../../../types";
-import { DropdownMenu } from "../../../components/dropdown";
+import { useComponents } from "../../../components-provider";
 import { Icon } from "../../../components/icon";
-import { IconButton } from "../../../components/icon-button";
-import { Loader } from "../../../components/loader";
-import { ToggleButton } from "../../../components/toggle-button";
 
 type AvailableToolsItemProps = {
   name: string;
@@ -24,8 +20,8 @@ const AvailableToolsItem = ({
   isLoading,
   disableEnable,
 }: AvailableToolsItemProps) => {
-  const { t } = useTranslation();
-  const { isRTL } = useDirection();
+  const { IconButton, DropdownMenu, Loader, ToggleButton } = useComponents();
+  const { t, isRTL } = useI18n();
   const { servers: serversInstance } = useToolsContext();
 
   const [opened, setOpened] = React.useState(false);

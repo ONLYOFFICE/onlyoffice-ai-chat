@@ -299,7 +299,9 @@ class GenAIProvider extends AbstractBaseProvider<
     while (page.length > 0) {
       for (const model of page) {
         const modelId = model.name?.replace("models/", "") ?? "";
-        const methods = model.supportedGenerationMethods ?? [];
+        const methods =
+          (model as unknown as Record<string, string[]>)
+            .supportedGenerationMethods ?? [];
 
         let capabilities: number;
 

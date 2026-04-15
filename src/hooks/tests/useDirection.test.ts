@@ -2,11 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 
 let mockLanguage = "en";
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    i18n: { language: mockLanguage },
-    t: (k: string) => k,
-  }),
+vi.mock("../../locales", () => ({
+  useI18n: () => {
+    const isRTL = mockLanguage === "ar-SA";
+    return {
+      t: (k: string) => k,
+      locale: mockLanguage,
+      changeLocale: vi.fn(),
+      isRTL,
+      direction: isRTL ? ("rtl" as const) : ("ltr" as const),
+    };
+  },
 }));
 
 import { useDirection } from "../useDirection";

@@ -1,11 +1,10 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { useToolsContext } from "../../../tools/context";
 import {
   MAX_TOOL_COUNT,
   MAX_TOOL_COUNT_WITH_WEB_SEARCH,
 } from "../../../config";
-import { useDirection } from "../../../hooks/useDirection";
 import { cn } from "../../../lib/utils";
 import { useStores } from "../../../store/context";
 import AvailableToolsItem from "./AvailableToolsItem";
@@ -16,8 +15,7 @@ type AvailableToolsProps = {
 };
 
 const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
-  const { t } = useTranslation();
-  const { isRTL } = useDirection();
+  const { t, isRTL } = useI18n();
   const { servers: serversInstance } = useToolsContext();
 
   const [customServers, setCustomServers] = React.useState({});

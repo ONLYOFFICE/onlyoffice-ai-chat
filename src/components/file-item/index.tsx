@@ -1,5 +1,5 @@
 import { usePlatform } from "../../platform/context";
-import { useDirection } from "../../hooks/useDirection";
+import { useI18n } from "../../locales";
 import {
   cn,
   isDjVu,
@@ -34,7 +34,7 @@ const getFileIconName = (type: number): string => {
 };
 
 const FileItem = ({ file, withoutClose }: FileItemProps) => {
-  const { isRTL } = useDirection();
+  const { isRTL } = useI18n();
   const platform = usePlatform();
   const { useAttachmentsStore } = useStores();
   const { deleteAttachmentFile, deleteAttachmentImage } = useAttachmentsStore();

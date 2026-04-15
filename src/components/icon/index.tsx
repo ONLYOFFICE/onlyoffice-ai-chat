@@ -1,7 +1,7 @@
 import { memo, useCallback } from "react";
 import { ReactSVG } from "react-svg";
-import { getImageSrc } from "../../lib/images";
-import { useStores } from "../../store/context";
+import { useImages } from "../../images-provider";
+import { useTheme } from "../../theme";
 
 type IconProps = {
   name: string;
@@ -26,9 +26,10 @@ const IconComponent = ({
 }: IconProps) => {
   const w = width ?? size;
   const h = height ?? size;
-  const { useThemeStore } = useStores();
-  const { themeType, scale } = useThemeStore();
+  const { themeType, scale } = useTheme();
+  const { getImageSrc, getIconComponent } = useImages();
   const image = getImageSrc(name, themeType, scale);
+  const CustomIcon = getIconComponent(name);
 
   const handleBeforeInjection = useCallback(
     (svg: SVGSVGElement) => {
@@ -56,6 +57,10 @@ const IconComponent = ({
     },
     [noColor, color, isStroke]
   );
+
+  if (CustomIcon) {
+    return <CustomIcon size={w ?? h} className={className} />;
+  }
 
   if (!image) {
     return null;

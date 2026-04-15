@@ -3,11 +3,11 @@ import { EditorState } from "@codemirror/state";
 import type { ViewUpdate } from "@codemirror/view";
 import { basicSetup, EditorView } from "codemirror";
 import React from "react";
-import { useTranslation } from "react-i18next";
+import { useI18n } from "../../../locales";
 import { usePlatform } from "../../../platform/context";
 import { useStores } from "../../../store/context";
-import { Button } from "../../../components/button";
-import { Dialog, DialogContent } from "../../../components/dialog";
+import { useComponents } from "../../../components-provider";
+import { Dialog } from "../../../components/dialog";
 
 import "./ConfigDialog.css";
 
@@ -17,7 +17,8 @@ type ConfigDialogProps = {
 };
 
 const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
-  const { t } = useTranslation();
+  const { Button, DialogContent } = useComponents();
+  const { t } = useI18n();
   const platform = usePlatform();
   const { useServersStore } = useStores();
   const { saveConfig, getConfig } = useServersStore();

@@ -178,3 +178,15 @@ class Provider {
 }
 
 export default Provider;
+
+// Subpath barrel re-exports
+export { AbstractBaseProvider } from "./base";
+export type { BaseProvider } from "./registry";
+export {
+  createProvider,
+  getProvider,
+  getSupportedProviderTypes,
+  isValidProviderType,
+  registerProvider,
+  unregisterProvider,
+} from "./registry";

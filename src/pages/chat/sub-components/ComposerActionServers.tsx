@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { DropdownMenu } from "../../../components/dropdown";
-import { IconButton } from "../../../components/icon-button";
-import { TooltipIconButton } from "../../../components/tooltip-icon-button";
+import { useI18n } from "../../../locales";
+import { useComponents } from "../../../components-provider";
 import { useStores } from "../../../store/context";
 import { useToolsContext } from "../../../tools/context";
 
 const ServersSettings = () => {
+  const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const { useServersStore, useProfilesStore } = useStores();
   const { eventBus } = useToolsContext();
   const { servers, changeToolStatus, webSearchEnabled, getWebSearchEnabled } =
@@ -15,7 +14,7 @@ const ServersSettings = () => {
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const { t } = useTranslation();
+  const { t } = useI18n();
 
   const trigger = useMemo(
     () => (
@@ -29,7 +28,7 @@ const ServersSettings = () => {
         />
       </TooltipIconButton>
     ),
-    [isOpen, t]
+    [isOpen, t, IconButton, TooltipIconButton]
   );
 
   const toolsActions = useMemo(
@@ -149,6 +148,7 @@ const ServersSettings = () => {
       toggleExtendedThinking,
       extendedThinking,
       eventBus,
+      IconButton,
     ]
   );
 
