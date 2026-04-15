@@ -14,6 +14,7 @@ export default defineConfig({
         "../custom-components/src"
       ),
       "@samples/events-log": resolve(__dirname, "../events-log/src"),
+      "@samples/imperative-api": resolve(__dirname, "../imperative-api/src"),
     },
   },
   server: {

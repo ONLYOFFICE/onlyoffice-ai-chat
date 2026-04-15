@@ -19,3 +19,7 @@ declare module "@samples/custom-components/App" {
 declare module "@samples/events-log/App" {
   export const App: () => React.JSX.Element;
 }
+
+declare module "@samples/imperative-api/App" {
+  export const App: () => React.JSX.Element;
+}

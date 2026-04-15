@@ -55,4 +55,15 @@ export const demos: Demo[] = [
       import("@samples/events-log/App").then((m) => ({ default: m.App }))
     ),
   },
+  {
+    id: "imperative-api",
+    title: "Imperative API",
+    description:
+      "Control the widget externally via ref — send messages, manage threads, navigate pages, switch profiles, and handle tool calls.",
+    component: lazy(() =>
+      import("@samples/imperative-api/App").then((m) => ({
+        default: m.App,
+      }))
+    ),
+  },
 ];
