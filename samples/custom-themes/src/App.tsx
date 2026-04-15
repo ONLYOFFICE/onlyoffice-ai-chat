@@ -3,6 +3,7 @@ import { AIChatWidget } from "@onlyoffice/ai-chat";
 import type { StorageAdapter, ThemeTokens } from "@onlyoffice/ai-chat";
 
 import "@onlyoffice/ai-chat/styles";
+import "./styles.css";
 
 import { settings } from "./adapters/settings";
 import { createStorage } from "./adapters/storage";
