@@ -114,6 +114,8 @@ export const I18nProvider = ({
       true,
       true
     );
+    // Force react-i18next to pick up the new resources
+    void i18n.changeLanguage(i18n.language);
   }, [ready, translations]);
 
   // 4. Inject custom languages
