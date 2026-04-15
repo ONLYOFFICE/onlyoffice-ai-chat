@@ -81,10 +81,10 @@ export const ThemeProvider = ({
   // --- Initialize from platform on first render ---
   initFromPlatform();
 
-  // --- Apply consumer-provided theme prop (once, after platform init) ---
-  const appliedInitialTheme = useRef(false);
-  if (theme && !appliedInitialTheme.current) {
-    appliedInitialTheme.current = true;
+  // --- Keep store in sync with consumer-provided theme prop ---
+  const prevThemeRef = useRef<string | undefined>(undefined);
+  if (theme && theme !== prevThemeRef.current) {
+    prevThemeRef.current = theme;
     setThemeId(theme);
   }
 
