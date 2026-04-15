@@ -1,412 +1,315 @@
-# @onlyoffice/ai-chat — Library Core
+# @onlyoffice/ai-chat
 
-This folder is the **core of the ai-chat library**. It contains interfaces, React providers, shared types, AI provider implementations, tool runtime logic, and business-logic services. It has **zero imports from `src/`** — fully self-contained.
+Headless AI chat widget library for React with 16 built-in providers, MCP tool support, 41 locales, 7 themes, and pluggable adapters.
 
-Host-specific code (IndexedDB, `window.AscDesktopEditor`, ONLYOFFICE APIs) lives in `src/` and is injected via adapters.
+## Features
 
-## Architecture
+- **16 AI Providers** — Anthropic, OpenAI, Google GenAI, Mistral, Ollama, LM Studio, Groq, DeepSeek, xAI, OpenRouter, Together, StabilityAI, Zhipu, GPT4All, OpenAI-compatible, ONLYOFFICE
+- **MCP Tools** — Host tools, web search (Exa API), custom MCP servers (HTTP + STDIO)
+- **Adapter Pattern** — Pluggable storage, settings, and platform adapters
+- **41 Locales** — Full i18n with RTL support
+- **7 Themes** — Light, dark, white, gray, classic-light, night, contrast-dark + custom themes
+- **Component Overrides** — Replace any built-in UI component
+- **Imperative API** — Programmatic control via ref
+- **Events & Middleware** — Intercept messages, tool calls, errors at 6 pipeline points
+- **Headless Mode** — Use services, stores, and providers without the widget UI
 
-```
-npm_lib/          — Library core: types, adapters, contexts, AI providers, tool runtime, services
-src/              — Host implementation: IndexedDB storage, localStorage settings, OnlyOffice platform, UI components
-```
+## Installation
 
-## File Structure
-
-```
-npm_lib/
-├── index.ts                       # Root entry — re-exports everything
-├── types.ts                       # Shared domain types (Thread, Profile, Model, etc.)
-├── capabilities.ts                # CapabilitiesUI bitmask, ActionType, inferCapabilities()
-├── constants.ts                   # Shared constants (CURRENT_MODEL_KEY)
-├── utils.ts                       # Message utilities (convertMessagesToMd, removeSpecialCharacter, getMessageTitleFromMd)
-├── README.md
-│
-├── storage/
-│   ├── types.ts                   # StorageAdapter interface + sub-interfaces
-│   ├── context.tsx                # StorageProvider + useStorage()
-│   ├── storage-holder.ts          # Global holder for Zustand stores
-│   └── index.ts
-│
-├── settings/
-│   ├── types.ts                   # SettingsAdapter interface (key-value)
-│   ├── context.tsx                # SettingsProvider + useSettings()
-│   ├── settings-holder.ts         # Global holder for Zustand stores
-│   └── index.ts
-│
-├── platform/
-│   ├── types.ts                   # PlatformAdapter interface + sub-interfaces
-│   ├── context.tsx                # PlatformProvider + usePlatform()
-│   ├── platform-holder.ts         # Global holder for Zustand stores
-│   └── index.ts
-│
-├── tools/
-│   ├── types.ts                   # HostTool, HostToolGroup, ToolSource
-│   ├── context.tsx                # ToolsProvider + useToolsContext()
-│   ├── servers.ts                 # Servers aggregator class
-│   ├── tools-holder.ts            # Global holder for Zustand stores
-│   ├── sources/
-│   │   ├── HostToolSource.ts      # Wraps HostToolGroup[] from host
-│   │   ├── WebSearch.ts           # Exa API web search
-│   │   └── CustomServers.ts       # MCP STDIO/HTTP servers
-│   └── index.ts
-│
-├── services/
-│   ├── index.ts                   # Re-exports all services
-│   ├── action-holders.ts          # Action holders — per-ActionType provider instances
-│   ├── prompts.ts                 # PromptsService — prompt/folder CRUD
-│   ├── threads.ts                 # ThreadsService — thread lifecycle, migration, export
-│   ├── profiles.ts                # ProfilesService — profile validation, task assignments, provider sync
-│   ├── servers.ts                 # ServersService — MCP config, tool list building, enable/disable
-│   └── chat-engine.ts             # ChatEngine — message sending, streaming, tool call approval/deny
-│
-└── providers/
-    ├── index.ts                   # Provider class (AI provider manager)
-    ├── base.ts                    # AbstractBaseProvider<TOOL, MESSAGE, CLIENT>
-    ├── registry.ts                # Provider registry + registerProvider/unregisterProvider
-    ├── errors.ts                  # Error handling utilities
-    ├── prompts.ts                 # System prompts
-    ├── provider-holder.ts         # Global holder for Zustand stores
-    ├── anthropic/                 # Claude (Anthropic SDK)
-    ├── openai/                    # GPT (OpenAI SDK)
-    ├── genai/                     # Gemini (Google GenAI SDK)
-    ├── mistral/                   # Mistral SDK
-    ├── ollama/                    # Ollama (local)
-    ├── lm-studio/                 # LM Studio (local)
-    ├── together/                  # Together AI
-    ├── openrouter/                # OpenRouter
-    ├── deepseek/                  # DeepSeek
-    ├── xai/                       # xAI (Grok)
-    ├── openaicompatible/          # Generic OpenAI-compatible
-    ├── groq/                      # Groq (OpenAI-compatible, LPU inference)
-    ├── zhipu/                     # Zhipu (OpenAI-compatible, GLM-4)
-    ├── gpt4all/                   # GPT4All (local, OpenAI-compatible)
-    ├── stabilityai/               # Stability AI (image-only, FormData API)
-    └── tests/
+```bash
+npm install @onlyoffice/ai-chat
 ```
 
-## Initialization Order
+**Peer dependencies:**
 
-All providers set their global holders **synchronously during render** so Zustand stores can access them immediately. The chain:
-
-```
-App
-├── SettingsProvider          [SYNC]  setSettingsInstance()
-│   └── PlatformProvider      [SYNC]  setPlatformInstance()
-│       ├── Provider instance [SYNC]  setProviderInstance() via useMemo
-│       └── AppWithTools
-│           └── ToolsProvider [SYNC]  new Servers() + setServersInstance()
-│               └── StorageProvider
-│                   ├── [SYNC]    setStorageInstance()
-│                   ├── [ASYNC]   storage.init() → renders children when ready
-│                   └── AppInner  [uses all holders safely]
+```bash
+npm install react react-dom
 ```
 
-**Key rule:** All holders are set synchronously. `StorageProvider` additionally gates rendering on async `init()`.
-
----
-
-## Modules
-
-### types.ts — Shared Domain Types
-
-| Type | Description |
-|------|-------------|
-| `Thread` | Chat session (threadId, title, lastEditDate, profileId) |
-| `Profile` | AI provider profile (name, providerType, baseUrl, key, modelId, capabilities) |
-| `Model` | AI model reference (id, name, provider, reasoning, capabilities) |
-| `TProvider` | Provider connection info (type, name, key, baseUrl) |
-| `ProviderType` | `BuiltinProviderType | (string & {})` — builtin autocomplete + custom strings |
-| `TMCPItem` | MCP tool schema (name, description, inputSchema) |
-| `Prompt` | Saved prompt (id, name, text, folderId, timestamps) |
-| `PromptFolder` | Prompt folder (id, name, timestamps) |
-| `TAttachmentFile` | File attachment (path, content, type) |
-| `TAttachmentImage` | Image attachment (name, base64) |
-| `TProcess` | External process handle (stdin, onprocess, end, start) |
-
----
-
-### capabilities.ts — Model Capabilities & Action Types
-
-**CapabilitiesUI** — bitmask flags for model capabilities:
-
-| Flag | Value | Description |
-|------|-------|-------------|
-| `None` | 0x00 | No capabilities |
-| `Chat` | 0x01 | Text chat |
-| `Image` | 0x02 | Image generation |
-| `Embeddings` | 0x04 | Text embeddings |
-| `Audio` | 0x08 | Audio (TTS/STT) |
-| `Vision` | 0x80 | Image understanding |
-| `Tools` | 0x100 | Tool/function calling |
-
-Capabilities are stored as bitmasks on `Model` and `Profile`. Each provider returns capabilities from `getProviderModels()`. Model Assignment UI filters profiles by required capability per task.
-
-**ActionType** — task types for model assignment:
-
-`Chat`, `Summarization`, `Translation`, `TextAnalyze`, `ImageGeneration`, `OCR`, `Vision`
-
-**Action Holders** — each ActionType gets a dedicated provider instance via `getActionProvider(actionType)`. Configured automatically when profiles change. Fallback: task profile -> default profile -> undefined.
-
-```ts
-import { ActionType, getActionProvider } from "@onlyoffice/ai-chat";
-
-const provider = getActionProvider(ActionType.Summarization);
-if (provider) {
-  const result = await provider.sendMessageSync([
-    { role: "user", content: "Summarize this text: ..." },
-  ]);
-}
-```
-
----
-
-### storage/ — Pluggable Persistence
-
-The host provides a `StorageAdapter` implementation with 5 sub-stores:
-
-| Sub-store | Key methods |
-|-----------|-------------|
-| `threads` | create, getAll, getById, update, touch, delete (cascading) |
-| `messages` | create, getByThread, getById, update, delete, deleteByThread, replaceByThread, search |
-| `profiles` | create, createMany, getAll, getById, update, delete |
-| `prompts` | create, getAll, getById, update, delete, deleteByFolder |
-| `promptFolders` | create, getAll, getById, update, delete (cascading) |
-
-Plus `init()` / `close()` lifecycle.
-
-**Current host implementation:** `src/storage/indexeddb/` — IndexedDB with 5 object stores.
-
----
-
-### settings/ — Pluggable Key-Value Settings
-
-The host provides a `SettingsAdapter` for persisting user preferences:
-
-```ts
-interface SettingsAdapter {
-  get(key: string): string | null;
-  set(key: string, value: string): void;
-  remove(key: string): void;
-}
-```
-
-Settings keys (e.g. `"default-profile"`, `"mcpServers"`) are defined by the host, not the library. Services receive keys via constructor or method arguments.
-
-**Current host implementation:** `src/settings/localStorage.ts` — wraps browser `localStorage`.
-
----
-
-### platform/ — Platform Abstraction
-
-| Sub-interface | Nullable | When null, hides |
-|---------------|----------|-----------------|
-| `file` | Yes | File/image attachment buttons, "Save as DOCX" |
-| `process` | Yes | STDIO MCP servers (HTTP still works) |
-| `env` | No | — (always required: theme, locale, pixelRatio) |
-| `hostTools` | Yes | Desktop editor tools section in tools list |
-
-**Current host implementations:** `src/platform/onlyoffice/` and `src/platform/noop/`.
-
----
-
-### tools/ — Unified Tool System
-
-Three tool sources managed by `Servers` class:
-
-| Source | Description | Availability |
-|--------|-------------|-------------|
-| `HostToolSource` | Host-provided tool groups (`HostToolGroup[]`) | Always, if passed via `ToolsProvider` |
-| `WebSearch` | Exa API (web_search + web_crawling) | When configured with provider + API key |
-| `CustomServers` | MCP via JSON-RPC 2.0 | HTTP always; STDIO only if `platform.process` available |
-
-**Tool approval:** Host tools auto-allow by default (`requireApproval: false`). MCP tools require UI approval. Web search always auto-allows.
-
----
-
-### services/ — Business Logic
-
-Services contain all chat business logic. They depend on holders (`getStorageInstance()`, `getSettingsInstance()`, etc.) and have zero UI dependencies.
-
-| Service | Responsibility |
-|---------|---------------|
-| `ActionHolders` | Per-ActionType provider instances with fallback (task profile -> default profile) |
-| `PromptsService` | Prompt/folder CRUD with storage persistence |
-| `ThreadsService` | Thread lifecycle, legacy migration, DOCX export, deletion |
-| `ProfilesService` | Profile validation, task profile assignments, provider sync |
-| `ServersService` | MCP config persistence, tool list building with limits, enable/disable, tool call routing |
-| `ChatEngine` | Message sending, streaming via `AsyncGenerator<ChatEvent>`, tool call approval/deny, thread title generation |
-
-**ChatEngine event types:**
-
-| ChatEvent type | Description |
-|----------------|-------------|
-| `message-start` | First chunk of assistant response |
-| `message-delta` | Subsequent streaming chunk |
-| `message-end` | Stream complete |
-| `message-incomplete` | Stream interrupted (error/cancel) |
-| `tool-call-pending` | Tool call requires user approval |
-| `thread-title` | Thread title generated, create thread |
-
----
-
-### providers/ — AI Provider System
-
-15 built-in providers + runtime registration for custom ones.
-
-**AbstractBaseProvider<TOOL, MESSAGE, CLIENT>** — base class:
-
-| Method | Type | Description |
-|--------|------|-------------|
-| `sendMessage()` | abstract | Streaming chat via async generator |
-| `sendMessageAfterToolCall()` | abstract | Continue after tool call |
-| `sendMessageSync()` | concrete | Non-streaming chat — drains generator, returns string |
-| `imageGeneration()` | optional | Image generation — returns base64 (OpenAI only) |
-| `imageVision()` | concrete | Image analysis — sends image+prompt via sendMessageSync |
-| `imageOCR()` | concrete | OCR — extracts text from image via imageVision |
-| `isSupportStreaming()` | concrete | Streaming support flag (default true) |
-| `setProvider()` / `setTools()` / `setPrevMessages()` | abstract | Configuration |
-| `checkProvider()` / `getProviderModels()` | abstract | Validation and model discovery (returns capabilities) |
-| `createChatName()` | abstract | Generate thread title from content |
-
-**Registry:**
-- `getProvider(type)` — lookup builtin or custom (singleton)
-- `createProvider(type)` — create a new (non-singleton) instance
-- `registerProvider(type, instance)` — add custom provider at runtime
-- `unregisterProvider(type)` — remove custom provider
-- `getSupportedProviderTypes()` — all registered types
-- `isValidProviderType(type)` — check if type exists
-
-**Provider class** (`index.ts`) — wrapper that manages current active provider, delegates all calls.
-
----
-
-## Usage
-
-### Current Host (ONLYOFFICE Plugin)
+## Quick Start
 
 ```tsx
-// src/App.tsx
-const App = () => {
-  const storage = useMemo(() => new IndexedDBStorage(), []);
-  const settings = useMemo(() => new LocalStorageSettings(), []);
-  const platform = useMemo(
-    () => isDesktopEditor() ? new OnlyOfficePlatform() : new NoopPlatform(),
-    []
-  );
+import { AIChatWidget } from "@onlyoffice/ai-chat";
+import "@onlyoffice/ai-chat/styles";
 
-  useMemo(() => {
-    const p = new Provider();
-    setProviderInstance(p);
-    return p;
-  }, []);
-
+function App() {
   return (
-    <SettingsProvider settings={settings}>
-      <PlatformProvider platform={platform}>
-        <AppWithTools storage={storage} />
-      </PlatformProvider>
-    </SettingsProvider>
+    <AIChatWidget
+      storage={myStorageAdapter}
+      settings={mySettingsAdapter}
+      platform={myPlatformAdapter}
+      storeKeys={{
+        defaultProfile: "default-profile",
+        chatProfile: "chat-profile",
+        summarizationProfile: "summarization-profile",
+        translationProfile: "translation-profile",
+        textAnalysisProfile: "text-analysis-profile",
+        imageGenerationProfile: "image-generation-profile",
+        ocrProfile: "ocr-profile",
+        visionProfile: "vision-profile",
+        deepMode: "deep-mode",
+        mcpServers: "mcp-servers",
+        disabledTools: "disabled-tools",
+      }}
+      locale="en"
+      theme="theme-light"
+    />
   );
-};
-```
-
-### Custom Host (example)
-
-```tsx
-import {
-  PlatformProvider, StorageProvider, ToolsProvider, SettingsProvider,
-  type StorageAdapter, type PlatformAdapter, type SettingsAdapter, type HostToolGroup,
-  Provider, setProviderInstance,
-} from "@onlyoffice/ai-chat";
-
-const myStorage: StorageAdapter = { /* REST API */ };
-const mySettings: SettingsAdapter = {
-  get: (key) => sessionStorage.getItem(key),
-  set: (key, value) => sessionStorage.setItem(key, value),
-  remove: (key) => sessionStorage.removeItem(key),
-};
-const myPlatform: PlatformAdapter = {
-  file: null,
-  process: null,
-  env: { theme: "theme-dark", systemTheme: "dark", locale: "en", devicePixelRatio: 2 },
-  hostTools: null,
-};
-const myTools: HostToolGroup[] = [
-  {
-    id: "crm",
-    name: "CRM",
-    tools: [{
-      name: "find_contact",
-      description: "Find a contact",
-      inputSchema: { type: "object", properties: { query: { type: "string" } } },
-      handler: async (args) => crm.search(args.query),
-    }],
-  },
-];
-
-const p = new Provider();
-setProviderInstance(p);
-
-<SettingsProvider settings={mySettings}>
-  <PlatformProvider platform={myPlatform}>
-    <ToolsProvider hostToolGroups={myTools}>
-      <StorageProvider storage={myStorage}>
-        <Chat />
-      </StorageProvider>
-    </ToolsProvider>
-  </PlatformProvider>
-</SettingsProvider>
-```
-
-### Using Services Directly
-
-```tsx
-import { ChatEngine, ProfilesService, ServersService } from "@onlyoffice/ai-chat";
-
-// Profile management
-const profiles = new ProfilesService();
-const result = await profiles.init({ defaultKey: "default-profile", taskKeys: ["chat-profile"] });
-
-// Chat orchestration
-const chat = new ChatEngine();
-for await (const event of chat.sendMessage({
-  text: "Hello!",
-  threadId: "thread-1",
-  existingMessages: [],
-  extendedThinking: false,
-})) {
-  switch (event.type) {
-    case "message-start": console.log("Stream started");  break;
-    case "message-delta": console.log("Chunk:", event.message); break;
-    case "message-end":   console.log("Done"); break;
-    case "tool-call-pending": /* show approval UI */ break;
-  }
 }
 ```
 
-### Adding a Custom AI Provider
+The three adapters (`storage`, `settings`, `platform`) are required. See [Adapters](docs/adapters.md) for implementation guides.
+
+## Configuration
+
+### Store Keys
+
+The `storeKeys` prop maps logical setting names to actual storage key strings. Your `SettingsAdapter` reads/writes values by these keys.
+
+### Callbacks
 
 ```tsx
-import { AbstractBaseProvider, registerProvider } from "@onlyoffice/ai-chat";
-
-class MyProvider extends AbstractBaseProvider<MyTool, MyMsg, MyClient> {
-  getName() { return "My LLM"; }
-  getBaseUrl() { return "https://llm.example.com"; }
-  // ... implement all abstract methods
-}
-
-registerProvider("my-llm", new MyProvider());
-// Now profiles with providerType: "my-llm" will use MyProvider
+<AIChatWidget
+  callbacks={{
+    onMessageSent: (data) => analytics.track("message", data),
+    onStreamEnd: (data) => console.log("Response complete", data),
+    onError: (data) => errorReporter.capture(data.error),
+    onThreadCreated: (data) => console.log("New thread:", data.threadId),
+    onProfileChanged: (data) => console.log("Profile:", data.profileId),
+  }}
+  // ...other props
+/>
 ```
 
----
+See [Events & Middleware](docs/events-and-middleware.md) for the full event catalog.
 
-## Rules
+### Middleware
 
-1. **No imports from `src/`** — npm_lib is fully self-contained
-2. **No host-specific code** — no `window.*`, no IndexedDB, no ONLYOFFICE APIs, no localStorage
-3. **All providers/adapters require explicit props** — no auto-detection, no defaults, no fallbacks
-4. **Settings keys are host-defined** — services receive keys via arguments, never hardcode them
-5. **Holders set synchronously** — during render, not in useEffect, so Zustand stores can access them immediately
-6. **`ProviderType` accepts any string** — builtin types have autocomplete, custom types work via `registerProvider()`
+Intercept and transform the message flow at 6 points:
+
+```tsx
+<AIChatWidget
+  middleware={[
+    {
+      beforeSend: async (ctx) => {
+        if (containsBadWords(ctx.text)) {
+          return { action: "block", reason: "Content policy violation" };
+        }
+        return { action: "continue" };
+      },
+    },
+    {
+      onError: (ctx) => {
+        errorReporter.capture(ctx.error);
+        return { action: "default" };
+      },
+    },
+  ]}
+  // ...other props
+/>
+```
+
+See [Events & Middleware](docs/events-and-middleware.md) for all middleware hooks.
+
+## Adapters
+
+Three pluggable adapters let you integrate with any host application:
+
+| Adapter | Purpose | Example |
+|---------|---------|---------|
+| `StorageAdapter` | Persist threads, messages, profiles, prompts | IndexedDB, SQLite, REST API |
+| `SettingsAdapter` | Key-value settings (API keys, preferences) | localStorage, AsyncStorage |
+| `PlatformAdapter` | Host integration (files, processes, themes) | Desktop editor, browser-only |
+
+```ts
+// Minimal SettingsAdapter
+const settings: SettingsAdapter = {
+  get: (key) => localStorage.getItem(key),
+  set: (key, value) => localStorage.setItem(key, value),
+  remove: (key) => localStorage.removeItem(key),
+};
+```
+
+See [Adapters](docs/adapters.md) for full implementation examples.
+
+## Providers
+
+16 built-in AI providers, plus runtime registration of custom ones:
+
+```ts
+import { registerProvider } from "@onlyoffice/ai-chat/providers";
+
+registerProvider("my-custom", new MyCustomProvider());
+```
+
+| Provider | Type | SDK |
+|----------|------|-----|
+| Anthropic | `anthropic` | `@anthropic-ai/sdk` |
+| OpenAI | `openai` | `openai` |
+| Google GenAI | `genai` | `@google/genai` |
+| Mistral | `mistral` | `@mistralai/mistralai` |
+| Ollama | `ollama` | `openai` (compatible) |
+| LM Studio | `lm-studio` | `openai` (compatible) |
+| Groq | `groq` | `openai` (compatible) |
+| DeepSeek | `deepseek` | `openai` (compatible) |
+| xAI | `xai` | `openai` (compatible) |
+| OpenRouter | `openrouter` | `openai` (compatible) |
+| Together | `together` | `openai` (compatible) |
+| StabilityAI | `stabilityai` | Custom |
+| Zhipu | `zhipu` | `openai` (compatible) |
+| GPT4All | `gpt4all` | `openai` (compatible) |
+| OpenAI Compatible | `openaicompatible` | `openai` |
+| ONLYOFFICE | `onlyoffice` | `openai` (compatible) |
+
+See [Providers](docs/providers.md) for custom provider tutorial.
+
+## Tools & MCP
+
+Three tool sources unified by the `Servers` class:
+
+- **Host Tools** — Tools exposed by the host application (e.g. editor commands)
+- **Web Search** — Exa API integration for real-time web search
+- **Custom MCP Servers** — JSON-RPC 2.0 over HTTP or STDIO
+
+```tsx
+const editorTools: HostToolGroup = {
+  id: "editor",
+  name: "Editor Tools",
+  tools: [{
+    name: "insert_text",
+    description: "Insert text at cursor position",
+    inputSchema: { type: "object", properties: { text: { type: "string" } } },
+    handler: async (args) => editor.insertText(args.text),
+  }],
+};
+
+<AIChatWidget hostToolGroups={[editorTools]} ...props />
+```
+
+See [Tools & MCP](docs/tools-and-mcp.md) for full configuration.
+
+## Theming
+
+7 built-in themes + custom themes via CSS variables:
+
+```tsx
+<AIChatWidget theme="theme-dark" ...props />
+```
+
+```tsx
+// Custom theme overrides
+<AIChatWidget
+  customTheme={{ "--ai-chat-bg": "#1a1a2e", "--ai-chat-text": "#eee" }}
+  ...props
+/>
+```
+
+See [Theming](docs/theming.md) for CSS variables reference.
+
+## Internationalization
+
+41 bundled locales with lazy loading:
+
+```tsx
+<AIChatWidget locale="ru" ...props />
+```
+
+Supported: `ar-SA`, `be`, `bg`, `ca`, `cs-CZ`, `da`, `de`, `el`, `en`, `es`, `fi`, `fr`, `gl`, `he`, `hr`, `hu`, `hy`, `id`, `it`, `ja-JP`, `ko`, `lv`, `nl`, `no`, `pl`, `pt-BR`, `pt-PT`, `ro`, `ru`, `sk-SK`, `sl`, `sq-AL`, `sr-Cyrl-RS`, `sr-Latn-RS`, `sv`, `tr`, `uk`, `ur`, `vi`, `zh-CN`, `zh-TW`
+
+See [I18n](docs/i18n.md) for custom translations.
+
+## Component Overrides
+
+Replace any built-in UI component:
+
+```tsx
+<AIChatWidget
+  components={{ Button: MyButton, Input: MyInput }}
+  ...props
+/>
+```
+
+18 overridable slots: Button, IconButton, Input, Checkbox, RadioButton, ToggleButton, ComboBox, DialogContent, DialogOverlay, DialogFooter, DropdownMenu, DropDownItem, Tabs, TooltipContent, TooltipIconButton, Link, Loader, FieldContainer.
+
+See [Component Overrides](docs/component-overrides.md).
+
+## Imperative API
+
+Control the widget programmatically via ref:
+
+```tsx
+const chatRef = useRef<AIChatWidgetRef>(null);
+
+chatRef.current?.sendMessage("Summarize this document");
+chatRef.current?.stopStreaming();
+chatRef.current?.openSettings();
+
+<AIChatWidget ref={chatRef} ...props />
+```
+
+Methods: `sendMessage`, `stopStreaming`, `isStreaming`, `switchThread`, `createThread`, `deleteThread`, `renameThread`, `clearHistory`, `downloadThread`, `getThreads`, `getCurrentThreadId`, `openChat`, `openSettings`, `openHistory`, `getCurrentPage`, `getProfiles`, `setChatProfile`, `getCurrentProfile`, `approveToolCall`, `denyToolCall`.
+
+See [Imperative API](docs/imperative-api.md).
+
+## Headless Mode
+
+Use the library's services, stores, and providers without the widget UI:
+
+```ts
+import { Provider } from "@onlyoffice/ai-chat/providers";
+import { Servers } from "@onlyoffice/ai-chat/tools";
+import { ChatEventBus, CallbacksManager } from "@onlyoffice/ai-chat/events";
+import { MiddlewareRunner } from "@onlyoffice/ai-chat/middleware";
+import { createStores } from "@onlyoffice/ai-chat/store";
+import type { AppContext } from "@onlyoffice/ai-chat";
+
+const ctx: AppContext = {
+  settings, storage, platform,
+  provider: new Provider(),
+  servers: new Servers(settings, platform, new ChatEventBus()),
+  eventBus: new ChatEventBus(),
+  callbacksManager: new CallbacksManager(),
+  middlewareRunner: new MiddlewareRunner([]),
+};
+
+const stores = createStores({ keys: myStoreKeys, ctx });
+// Use stores.chatEngine, stores.useMessageStore, etc.
+```
+
+See [Headless Usage](docs/headless-usage.md).
+
+## Subpath Imports
+
+Import only what you need for better tree-shaking:
+
+```ts
+import { AIChatWidget } from "@onlyoffice/ai-chat";
+import { Provider } from "@onlyoffice/ai-chat/providers";
+import { createStores } from "@onlyoffice/ai-chat/store";
+import { ChatEngine } from "@onlyoffice/ai-chat/services";
+import type { Thread, Profile } from "@onlyoffice/ai-chat/types";
+import { isDjVu, isPdf } from "@onlyoffice/ai-chat/utils";
+```
+
+Available subpaths: `/providers`, `/services`, `/store`, `/storage`, `/settings`, `/platform`, `/tools`, `/events`, `/middleware`, `/i18n`, `/theme`, `/components`, `/images`, `/pages`, `/hooks`, `/types`, `/utils`.
+
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [Getting Started](docs/getting-started.md) | Step-by-step setup with Vite, Next.js |
+| [Adapters](docs/adapters.md) | StorageAdapter, SettingsAdapter, PlatformAdapter implementation |
+| [Providers](docs/providers.md) | Built-in providers, custom provider tutorial |
+| [Tools & MCP](docs/tools-and-mcp.md) | Host tools, web search, MCP servers |
+| [Events & Middleware](docs/events-and-middleware.md) | Event catalog, middleware pipeline |
+| [Theming](docs/theming.md) | CSS variables, custom themes |
+| [I18n](docs/i18n.md) | Locales, custom translations |
+| [Component Overrides](docs/component-overrides.md) | Replace built-in UI components |
+| [Imperative API](docs/imperative-api.md) | Ref methods reference |
+| [Pages](docs/pages.md) | Standalone page components |
+| [Headless Usage](docs/headless-usage.md) | Manual AppContext, custom UI |
+| [Architecture](docs/architecture.md) | Data flow, dependency injection |
+
+## License
+
+MIT

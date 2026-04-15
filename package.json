@@ -1,6 +1,6 @@
 {
   "name": "@onlyoffice/ai-chat",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Headless AI chat widget with 16 providers, MCP tools, and pluggable adapters",
   "type": "module",
   "license": "MIT",
@@ -17,21 +17,84 @@
     "onlyoffice",
     "llm"
   ],
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./providers": {
+      "types": "./dist/providers/index.d.ts",
+      "import": "./dist/providers/index.js"
+    },
+    "./services": {
+      "types": "./dist/services/index.d.ts",
+      "import": "./dist/services/index.js"
+    },
+    "./store": {
+      "types": "./dist/store/index.d.ts",
+      "import": "./dist/store/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "import": "./dist/storage/index.js"
+    },
+    "./settings": {
+      "types": "./dist/settings/index.d.ts",
+      "import": "./dist/settings/index.js"
+    },
+    "./platform": {
+      "types": "./dist/platform/index.d.ts",
+      "import": "./dist/platform/index.js"
+    },
+    "./tools": {
+      "types": "./dist/tools/index.d.ts",
+      "import": "./dist/tools/index.js"
+    },
+    "./events": {
+      "types": "./dist/events/index.d.ts",
+      "import": "./dist/events/index.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware/index.d.ts",
+      "import": "./dist/middleware/index.js"
+    },
+    "./i18n": {
+      "types": "./dist/locales/index.d.ts",
+      "import": "./dist/locales/index.js"
+    },
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "import": "./dist/theme/index.js"
+    },
+    "./components": {
+      "types": "./dist/components-provider/index.d.ts",
+      "import": "./dist/components-provider/index.js"
+    },
+    "./images": {
+      "types": "./dist/images-provider/index.d.ts",
+      "import": "./dist/images-provider/index.js"
+    },
+    "./pages": {
+      "types": "./dist/pages/index.d.ts",
+      "import": "./dist/pages/index.js"
+    },
+    "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
+      "import": "./dist/hooks/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js"
     },
     "./styles": "./dist/styles/index.css",
+    "./styles/themes": "./dist/styles/themes.css",
     "./themes/*": "./dist/styles/theme-*.css",
     "./locales/*": "./dist/locales/*.json"
   },
@@ -45,7 +108,11 @@
     "**/*.css"
   ],
   "scripts": {
-    "build": "vite build",
+    "generate:i18n": "node scripts/generate-i18n-types.mjs",
+    "generate:theme": "node scripts/generate-theme-types.mjs",
+    "generate:icons": "node scripts/generate-icon-types.mjs",
+    "prebuild": "npm run generate:i18n && npm run generate:theme && npm run generate:icons",
+    "build": "vite build && cp src/styles/themes.css dist/styles/themes.css && cp src/styles/theme-*.css dist/styles/",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -98,6 +165,9 @@
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@tailwindcss/vite": "^4.1.12",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/codemirror": "^5.60.16",
     "@types/lodash.clonedeep": "^4.5.9",
     "@types/node": "^24.3.0",
@@ -109,6 +179,7 @@
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "^5.0.0",
+    "jsdom": "^29.0.2",
     "prettier": "^3.3.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
