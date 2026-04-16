@@ -66,4 +66,53 @@ export const demos: Demo[] = [
       }))
     ),
   },
+  {
+    id: "middleware",
+    title: "Middleware",
+    description:
+      "Intercept message flow with 6 middleware hooks. Includes a content filter that blocks messages containing 'block'.",
+    component: lazy(() =>
+      import("@samples/middleware/App").then((m) => ({ default: m.App }))
+    ),
+  },
+  {
+    id: "host-tools",
+    title: "Host Tools",
+    description:
+      "Inject custom tools (get time, calculate, generate UUID, browser info) that the AI can call during conversations.",
+    component: lazy(() =>
+      import("@samples/host-tools/App").then((m) => ({ default: m.App }))
+    ),
+  },
+  {
+    id: "image-overrides",
+    title: "Image Overrides",
+    description:
+      "Replace built-in icons with custom SVG components. Shows all 55 icon slots with custom/default badges.",
+    component: lazy(() =>
+      import("@samples/image-overrides/App").then((m) => ({
+        default: m.App,
+      }))
+    ),
+  },
+  {
+    id: "custom-provider",
+    title: "Custom Provider",
+    description:
+      "Register a custom Echo provider via registerProvider(). Echoes messages back with character-by-character streaming.",
+    component: lazy(() =>
+      import("@samples/custom-provider/App").then((m) => ({
+        default: m.App,
+      }))
+    ),
+  },
+  {
+    id: "fetch-proxy",
+    title: "Fetch Proxy",
+    description:
+      "Intercept all provider API requests via platform.fetchProxy. Logs method, URL, status code, and response time.",
+    component: lazy(() =>
+      import("@samples/fetch-proxy/App").then((m) => ({ default: m.App }))
+    ),
+  },
 ];
