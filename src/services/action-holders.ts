@@ -1,6 +1,10 @@
 import { ActionType } from "../capabilities";
 import { SYSTEM_PROMPT } from "../providers/prompts";
-import { type BaseProvider, createProvider } from "../providers/registry";
+import {
+  type BaseProvider,
+  createProvider,
+  getProvider,
+} from "../providers/registry";
 import type { Profile } from "../types";
 
 /**
@@ -25,7 +29,9 @@ class ActionHolder {
 
     // Reuse existing instance if same provider type
     if (this.providerType !== effective.providerType) {
-      this.provider = createProvider(effective.providerType);
+      this.provider =
+        createProvider(effective.providerType) ??
+        getProvider(effective.providerType);
       this.providerType = effective.providerType;
     }
 

@@ -120,14 +120,17 @@ class Provider {
   };
 
   getProvidersInfo = () => {
-    return getSupportedProviderTypes().map((type) => {
-      const p = providerRegistry[type];
-      return {
-        type,
-        name: p.getName(),
-        baseUrl: p.getBaseUrl(),
-      };
-    });
+    return getSupportedProviderTypes()
+      .map((type) => {
+        const p = getProvider(type);
+        if (!p) return null;
+        return {
+          type,
+          name: p.getName(),
+          baseUrl: p.getBaseUrl(),
+        };
+      })
+      .filter(Boolean);
   };
 
   getProviderInfo = (type: ProviderType) => {
@@ -155,8 +158,8 @@ class Provider {
     const validProviders = providers.filter((p) => getProvider(p.type));
 
     const actions = validProviders.map((p) => {
-      const providerInstance = providerRegistry[p.type];
-      return providerInstance.getProviderModels({
+      const providerInstance = getProvider(p.type);
+      return providerInstance!.getProviderModels({
         url: p.baseUrl,
         apiKey: p.key,
       });
