@@ -13,7 +13,7 @@ const InitialSetup = () => {
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
 
   return (
-    <div className="flex justify-center h-full w-full bg-[var(--layout-background-color)] py-[24px]">
+    <div className="flex h-full w-full bg-[var(--layout-background-color)]">
       <div className="w-full max-w-[560px] flex flex-col">
         <h1 className="select-none text-[20px] font-bold leading-[28px] text-[var(--settings-header-color)] mb-[24px]">
           {t("AIModels")}

@@ -5,8 +5,8 @@ const ModelAssignmentPage = () => {
   const { t } = useI18n();
 
   return (
-    <div className="flex justify-center">
-      <div className="w-[560px] p-[24px]">
+    <div className="flex h-full bg-[var(--layout-background-color)]">
+      <div className="w-[560px]">
         <h1 className="select-none font-bold text-[20px] leading-[28px] text-[var(--settings-header-color)] mb-[24px]">
           {t("ModelAssignment")}
         </h1>

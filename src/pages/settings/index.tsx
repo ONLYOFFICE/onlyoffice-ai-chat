@@ -1,10 +1,10 @@
 import { useI18n } from "../../locales";
 import { useComponents } from "../../components-provider";
-import { ModelAssignment } from "../model-assignment/sub-components";
-import { Servers } from "../mcp-servers/sub-components";
-import { WebSearch } from "../web-search/sub-components";
 import { useStores } from "../../store/context";
-import { Models } from "../ai-models/sub-components";
+import AiModelsPage from "../ai-models";
+import ModelAssignmentPage from "../model-assignment";
+import McpServersPage from "../mcp-servers";
+import WebSearchPage from "../web-search";
 
 const Settings = () => {
   const { Tabs } = useComponents();
@@ -14,7 +14,7 @@ const Settings = () => {
   const profiles = useProfilesStore((s) => s.profiles);
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center h-full bg-[var(--layout-background-color)]">
       <div className="flex flex-col gap-[16px] box-border max-w-[640px] w-[640px] mx-[32px] mt-[32px] overflow-hidden">
         <h1 className="select-none font-bold text-[20px] leading-[28px] text-[var(--settings-header-color)]">
           {t("Settings")}
@@ -24,40 +24,24 @@ const Settings = () => {
             {
               value: "ai-settings",
               label: t("AIModels"),
-              content: (
-                <div className="max-w-[480px]">
-                  <Models />
-                </div>
-              ),
+              content: <AiModelsPage />,
             },
             {
               value: "model-assignment",
               label: t("ModelAssignment"),
-              content: (
-                <div className="max-w-[480px]">
-                  <ModelAssignment />
-                </div>
-              ),
+              content: <ModelAssignmentPage />,
               disabled: !profiles.length,
             },
             {
               value: "mcp-servers",
               label: t("MCPServers"),
-              content: (
-                <div className="max-w-[480px] mt-[16px]">
-                  <Servers />
-                </div>
-              ),
+              content: <McpServersPage />,
               disabled: !profiles.length,
             },
             {
               value: "web-search",
               label: t("WebSearch"),
-              content: (
-                <div className="max-w-[480px] mt-[16px]">
-                  <WebSearch />
-                </div>
-              ),
+              content: <WebSearchPage />,
               disabled: !profiles.length,
             },
           ]}
