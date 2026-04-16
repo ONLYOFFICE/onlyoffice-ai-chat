@@ -198,7 +198,9 @@ class IDBMessages implements MessagesStorage {
     );
     records.sort((a, b) => a.timestamp - b.timestamp);
     const slice = limit ? records.slice(-limit) : records;
-    return slice.map((r) => r.message);
+    return slice
+      .map((r) => r.message)
+      .filter((m) => m && "role" in m && m.role);
   }
 
   async getById(
