@@ -1,0 +1,29 @@
+{
+  "name": "@onlyoffice/ai-chat-sample-headless-nextjs",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "docker compose up --build",
+    "dev": "docker compose up --build --watch",
+    "stop": "docker compose down",
+    "next:dev": "next dev --turbopack",
+    "next:build": "next build",
+    "next:start": "next start",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@onlyoffice/ai-chat": "file:../../",
+    "@prisma/client": "^6.9.0",
+    "next": "^16.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "prisma": "^6.9.0",
+    "typescript": "~5.8.3"
+  }
+}
