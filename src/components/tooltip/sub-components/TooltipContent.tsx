@@ -1,6 +1,7 @@
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import type React from "react";
 import { cn } from "../../../lib/utils";
+import { useTheme } from "../../../theme";
 
 import "./TooltipContent.css";
 
@@ -17,8 +18,9 @@ const TooltipContent = ({
   isAbout,
   ...props
 }: TooltipContentProps) => {
+  const { portalContainer } = useTheme();
   return (
-    <TooltipPrimitive.Portal container={document.getElementById("app")}>
+    <TooltipPrimitive.Portal container={portalContainer ?? undefined}>
       <TooltipPrimitive.Content
         data-slot="tooltip-content"
         sideOffset={sideOffset}

@@ -1,9 +1,11 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { usePlatform } from "../platform/context";
 import { useStores } from "../store/context";
@@ -42,6 +44,8 @@ export interface ThemeContextValue {
   setTheme: (id: string) => void;
   /** Current UI scale factor (e.g. `1`, `1.25`). */
   scale: number;
+  /** The themed container element for portal targets. */
+  portalContainer: HTMLElement | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,6 +139,14 @@ export const ThemeProvider = ({
     return blocks.length > 0 ? blocks.join("\n") : null;
   }, [customThemes]);
 
+  // --- Portal container ref ---
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null
+  );
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    setPortalContainer(node);
+  }, []);
+
   // --- Context value ---
   const value: ThemeContextValue = useMemo(
     () => ({
@@ -142,14 +154,16 @@ export const ThemeProvider = ({
       themeType,
       setTheme: setThemeId,
       scale,
+      portalContainer,
     }),
-    [themeId, themeType, setThemeId, scale]
+    [themeId, themeType, setThemeId, scale, portalContainer]
   );
 
   return (
     <ThemeContext.Provider value={value}>
       {customStyleContent ? <style>{customStyleContent}</style> : null}
       <div
+        ref={containerRef}
         className={themeId}
         style={inlineStyle as React.CSSProperties | undefined}
       >
