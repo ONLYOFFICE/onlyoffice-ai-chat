@@ -31,8 +31,6 @@ import { ThemeProvider } from "./theme";
 import type { ThemeTokens } from "./theme";
 import Thread from "./pages/chat";
 
-import EmptyScreen from "./pages/empty-screen";
-import InitialSetup from "./pages/initial-setup";
 import Settings from "./pages/settings";
 import { PlatformProvider } from "./platform/context";
 import type { PlatformAdapter } from "./platform/types";
@@ -210,18 +208,14 @@ const AppInner = ({
 
   const stores = useStores();
   const {
-    useMessageStore,
-    useProfilesStore,
     useServersStore,
     useRouter,
     useCloudsStore,
     selectCurrentChatProfile,
   } = stores;
 
-  const { messages } = useMessageStore();
   const { currentPage } = useRouter();
   const { manageToolData, setManageToolData } = useServersStore();
-  const { profiles } = useProfilesStore();
   const { fetchClouds } = useCloudsStore();
 
   useThread({ isReady });
@@ -282,22 +276,9 @@ const AppInner = ({
     }
   }, [onMigrate]);
 
-  if (currentPage !== "settings" && !profiles.length && !messages.length)
-    return (
-      <Layout>
-        <EmptyScreen />
-      </Layout>
-    );
-
   return (
     <Layout>
-      {currentPage === "settings" ? (
-        <Settings />
-      ) : currentPage === "initial-setup" ? (
-        <InitialSetup />
-      ) : (
-        <Thread />
-      )}
+      {currentPage === "settings" ? <Settings /> : <Thread />}
       {isManageToolOpen ? (
         <ManageToolDialog
           onAllow={approveToolCall}

@@ -44,10 +44,7 @@ export type { StoreKeys } from "./config";
 // Platform
 // ---------------------------------------------------------------------------
 
-export {
-  PlatformProvider,
-  usePlatform,
-} from "./platform";
+export { PlatformProvider, usePlatform } from "./platform";
 export type {
   PlatformAdapter,
   PlatformClouds,
@@ -109,7 +106,7 @@ export type { SettingsAdapter } from "./settings";
 // Storage
 // ---------------------------------------------------------------------------
 
-export { StorageProvider, useStorage } from "./storage";
+export { StorageProvider, useStorage, getStorageInstance } from "./storage";
 export type {
   MessagesStorage,
   ProfilesStorage,
@@ -142,11 +139,7 @@ export { createStores, StoresProvider, useStores } from "./store";
 // Tools
 // ---------------------------------------------------------------------------
 
-export {
-  ToolsProvider,
-  useToolsContext,
-  Servers,
-} from "./tools";
+export { ToolsProvider, useToolsContext, Servers } from "./tools";
 export type { HostTool, HostToolGroup, ToolSource } from "./tools";
 
 // ---------------------------------------------------------------------------
@@ -180,7 +173,6 @@ export {
   McpServersPage,
   WebSearchPage,
   SettingsPage,
-  InitialSetupPage,
   EmptyScreenPage,
   ChatPage,
 } from "./pages";

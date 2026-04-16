@@ -17,6 +17,8 @@ import { Composer } from "./sub-components/Composer";
 import { UserMessage } from "./sub-components/UserMessage";
 import { ThreadWelcome } from "./sub-components/Welcome";
 
+import InitialSetup from "../initial-setup";
+
 import "./Thread.css";
 
 const ThreadInner = () => {
@@ -71,8 +73,9 @@ const ThreadInner = () => {
 };
 
 const Thread = () => {
-  const { useMessageStore } = useStores();
+  const { useMessageStore, useProfilesStore } = useStores();
   const { messages, stopMessage } = useMessageStore();
+  const { profiles } = useProfilesStore();
   const { onNew } = useMessages({ isReady: true });
 
   const runtime = useExternalStoreRuntime<ThreadMessageLike>({
@@ -89,6 +92,10 @@ const Thread = () => {
       ]),
     },
   });
+
+  if (!profiles.length) {
+    return <InitialSetup />;
+  }
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
