@@ -20,7 +20,7 @@ export interface ImagesProviderProps {
 const isComponent = (
   v: ImageOverride
 ): v is React.ComponentType<{ size?: number; className?: string }> =>
-  typeof v === "object" || (typeof v === "function" && v.length === 0);
+  typeof v === "object" || (typeof v === "function" && v.length <= 1);
 
 const isThemeFunction = (
   v: ImageOverride
