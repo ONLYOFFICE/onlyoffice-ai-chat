@@ -134,6 +134,10 @@ class Servers {
     this.customServers.deleteCustomServer(type);
   };
 
+  getHostToolGroupIds = (): string[] => {
+    return this.hostToolSource.getGroupIds();
+  };
+
   getCustomServers = () => {
     return this.customServers.customServers;
   };
