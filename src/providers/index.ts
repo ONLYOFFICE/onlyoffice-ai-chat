@@ -10,7 +10,6 @@ import {
   type BaseProvider,
   getProvider,
   getSupportedProviderTypes,
-  providerRegistry,
 } from "./registry";
 import "./lm-studio";
 
