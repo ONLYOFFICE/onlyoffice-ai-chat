@@ -120,17 +120,11 @@ class Provider {
   };
 
   getProvidersInfo = () => {
-    return getSupportedProviderTypes()
-      .map((type) => {
-        const p = getProvider(type);
-        if (!p) return null;
-        return {
-          type,
-          name: p.getName(),
-          baseUrl: p.getBaseUrl(),
-        };
-      })
-      .filter(Boolean);
+    return getSupportedProviderTypes().flatMap((type) => {
+      const p = getProvider(type);
+      if (!p) return [];
+      return [{ type, name: p.getName(), baseUrl: p.getBaseUrl() }];
+    });
   };
 
   getProviderInfo = (type: ProviderType) => {
