@@ -2,6 +2,8 @@ import React from "react";
 import { useI18n } from "../../../locales";
 import { cn } from "../../../lib/utils";
 import { useComponents } from "../../../components-provider";
+import { useToolsContext } from "../../../tools/context";
+import { useStores } from "../../../store/context";
 import AvailableTools from "./AvailableTools";
 import ConfigDialog from "./ConfigDialog";
 import ToolsCounter from "./ToolsCounter";
@@ -14,6 +16,24 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
   const { Button } = useComponents();
   const { t, isRTL } = useI18n();
   const [isOpen, setIsOpen] = React.useState(false);
+  const { servers: serversInstance } = useToolsContext();
+  const { useServersStore } = useStores();
+  const { servers } = useServersStore();
+  const [customServers, setCustomServers] = React.useState({});
+
+  React.useEffect(() => {
+    setCustomServers(serversInstance.getCustomServers());
+    const interval = setInterval(() => {
+      setCustomServers(serversInstance.getCustomServers());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [serversInstance]);
+
+  const hasTools =
+    serversInstance
+      .getHostToolGroupIds()
+      .some((id) => (servers[id] ?? []).length > 0) ||
+    Object.keys(customServers).length > 0;
 
   return (
     <>
@@ -37,7 +57,7 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
             {t("EditConfiguration")}
           </Button>
         </div>
-        {variant === "page" ? (
+        {hasTools && variant === "page" ? (
           <div
             className={cn(
               "flex items-center justify-between mb-[12px]",
@@ -50,7 +70,9 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
             <ToolsCounter />
           </div>
         ) : null}
-        <AvailableTools withHeader={variant === "tab"} />
+        {hasTools && (
+          <AvailableTools withHeader={variant === "tab"} />
+        )}
       </div>
       {<ConfigDialog open={isOpen} onClose={() => setIsOpen(false)} />}
     </>

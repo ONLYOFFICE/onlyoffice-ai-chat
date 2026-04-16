@@ -37,6 +37,14 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
     ? tools.length >= MAX_TOOL_COUNT_WITH_WEB_SEARCH
     : tools.length >= MAX_TOOL_COUNT;
 
+  const hostGroupIds = serversInstance.getHostToolGroupIds();
+  const hasHostTools = hostGroupIds.some(
+    (id) => (servers[id] ?? []).length > 0
+  );
+  const hasCustomServers = Object.keys(customServers).length > 0;
+
+  if (!hasHostTools && !hasCustomServers) return null;
+
   return (
     <div className="w-full max-h-[560px] border-[length:var(--servers-available-tools-border-width)] border-[var(--servers-available-tools-border-color)] rounded-[var(--servers-available-tools-border-radius)] flex flex-col">
       {withHeader ? (
