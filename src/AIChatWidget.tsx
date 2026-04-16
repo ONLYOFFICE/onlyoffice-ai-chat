@@ -1,12 +1,4 @@
-import {
-  type AppendMessage,
-  AssistantRuntimeProvider,
-  CompositeAttachmentAdapter,
-  SimpleImageAttachmentAdapter,
-  SimpleTextAttachmentAdapter,
-  type ThreadMessageLike,
-  useExternalStoreRuntime,
-} from "@assistant-ui/react";
+import { type AppendMessage } from "@assistant-ui/react";
 import React, {
   useEffect,
   useImperativeHandle,
@@ -226,7 +218,7 @@ const AppInner = ({
     selectCurrentChatProfile,
   } = stores;
 
-  const { messages, stopMessage } = useMessageStore();
+  const { messages } = useMessageStore();
   const { currentPage } = useRouter();
   const { manageToolData, setManageToolData } = useServersStore();
   const { profiles } = useProfilesStore();
@@ -290,21 +282,6 @@ const AppInner = ({
     }
   }, [onMigrate]);
 
-  const runtime = useExternalStoreRuntime<ThreadMessageLike>({
-    messages,
-    onNew,
-    onCancel: async () => {
-      stopMessage();
-    },
-    convertMessage: (m: ThreadMessageLike) => m,
-    adapters: {
-      attachments: new CompositeAttachmentAdapter([
-        new SimpleImageAttachmentAdapter(),
-        new SimpleTextAttachmentAdapter(),
-      ]),
-    },
-  });
-
   if (currentPage !== "settings" && !profiles.length && !messages.length)
     return (
       <Layout>
@@ -314,15 +291,13 @@ const AppInner = ({
 
   return (
     <Layout>
-      <AssistantRuntimeProvider runtime={runtime}>
-        {currentPage === "settings" ? (
-          <Settings />
-        ) : currentPage === "initial-setup" ? (
-          <InitialSetup />
-        ) : (
-          <Thread />
-        )}
-      </AssistantRuntimeProvider>
+      {currentPage === "settings" ? (
+        <Settings />
+      ) : currentPage === "initial-setup" ? (
+        <InitialSetup />
+      ) : (
+        <Thread />
+      )}
       {isManageToolOpen ? (
         <ManageToolDialog
           onAllow={approveToolCall}

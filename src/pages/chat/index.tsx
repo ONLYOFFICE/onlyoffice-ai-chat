@@ -1,8 +1,17 @@
-import { ThreadPrimitive } from "@assistant-ui/react";
+import {
+  ThreadPrimitive,
+  AssistantRuntimeProvider,
+  useExternalStoreRuntime,
+  CompositeAttachmentAdapter,
+  SimpleImageAttachmentAdapter,
+  SimpleTextAttachmentAdapter,
+} from "@assistant-ui/react";
+import type { ThreadMessageLike } from "@assistant-ui/react";
 import { motion } from "framer-motion";
 import { useI18n } from "../../locales";
 import { useComponents } from "../../components-provider";
 import { useStores } from "../../store/context";
+import { useMessages } from "../../hooks";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
 import { Composer } from "./sub-components/Composer";
 import { UserMessage } from "./sub-components/UserMessage";
@@ -10,14 +19,14 @@ import { ThreadWelcome } from "./sub-components/Welcome";
 
 import "./Thread.css";
 
-const Thread = () => {
+const ThreadInner = () => {
   const { Loader } = useComponents();
   const { useMessageStore } = useStores();
   const { isStreamRunning, isRequestRunning } = useMessageStore();
   const { t } = useI18n();
   return (
     <ThreadPrimitive.Root
-      className="flex h-full flex-col"
+      className="flex h-full flex-col bg-[var(--layout-background-color)]"
       style={{
         ["--thread-max-width" as string]: "687px",
         ["--thread-padding-x" as string]: "1rem",
@@ -58,6 +67,33 @@ const Thread = () => {
         <Composer />
       </ThreadPrimitive.If>
     </ThreadPrimitive.Root>
+  );
+};
+
+const Thread = () => {
+  const { useMessageStore } = useStores();
+  const { messages, stopMessage } = useMessageStore();
+  const { onNew } = useMessages({ isReady: true });
+
+  const runtime = useExternalStoreRuntime<ThreadMessageLike>({
+    messages,
+    onNew,
+    onCancel: async () => {
+      stopMessage();
+    },
+    convertMessage: (m: ThreadMessageLike) => m,
+    adapters: {
+      attachments: new CompositeAttachmentAdapter([
+        new SimpleImageAttachmentAdapter(),
+        new SimpleTextAttachmentAdapter(),
+      ]),
+    },
+  });
+
+  return (
+    <AssistantRuntimeProvider runtime={runtime}>
+      <ThreadInner />
+    </AssistantRuntimeProvider>
   );
 };
 
