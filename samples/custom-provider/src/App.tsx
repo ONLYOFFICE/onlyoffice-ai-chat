@@ -125,8 +125,8 @@ export function App() {
               lineHeight: 1.5,
             }}
           >
-            Select "echo" as provider when creating a profile. No API key needed
-            — leave it empty or type anything.
+            Select "echo" as provider when creating a profile. Type any API key
+            (e.g. "test"), keep the default Base URL, then pick a model.
           </div>
         </div>
       </div>

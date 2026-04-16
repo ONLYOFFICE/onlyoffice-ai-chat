@@ -2,20 +2,53 @@ import { registerProvider } from "@onlyoffice/ai-chat";
 
 const PROVIDER_TYPE = "echo";
 
-let currentModel: string | null = null;
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const echoProvider: any = {
+  // --- State ---
+  currentModel: null as string | null,
+  isReasoning: false,
+  stopFlag: false,
+  prevMessages: [] as unknown[],
+  systemPrompt: "",
+  modelKey: "",
+
+  // --- Required metadata ---
   type: PROVIDER_TYPE,
   name: "Echo Provider",
   description: "A demo provider that echoes back your messages",
-  defaultBaseUrl: "",
+  defaultBaseUrl: "http://localhost",
   models: [
     { id: "echo-v1", name: "Echo v1", provider: PROVIDER_TYPE },
     { id: "echo-reverse", name: "Echo Reverse", provider: PROVIDER_TYPE },
   ],
 
+  // --- Lifecycle methods ---
+  setProvider(provider: { model?: { id?: string } }) {
+    echoProvider.currentModel = provider?.model?.id ?? null;
+  },
+  setPrevMessages(messages: unknown[]) {
+    echoProvider.prevMessages = messages;
+  },
+  setTools() {},
+  setSystemPrompt(prompt: string) {
+    echoProvider.systemPrompt = prompt;
+  },
+  setModelKey(key: string) {
+    echoProvider.modelKey = key;
+  },
+  stop() {
+    echoProvider.stopFlag = true;
+  },
+  getName() {
+    return PROVIDER_TYPE;
+  },
+  getBaseUrl() {
+    return "http://localhost";
+  },
+
+  // --- Core methods ---
   async *sendMessage(messages: unknown[]) {
+    echoProvider.stopFlag = false;
     const last = messages[messages.length - 1];
     const text =
       typeof last === "object" && last !== null && "content" in last
@@ -29,22 +62,44 @@ const echoProvider: any = {
           )
         : "";
 
-    const model = currentModel ?? "echo-v1";
+    const model = echoProvider.currentModel ?? "echo-v1";
     const reply =
       model === "echo-reverse"
         ? text.split("").reverse().join("")
         : `Echo: ${text}`;
 
+    let accumulated = "";
     for (let i = 0; i < reply.length; i++) {
+      if (echoProvider.stopFlag) return;
       await new Promise((r) => setTimeout(r, 20));
-      yield { type: "text-delta" as const, textDelta: reply[i] };
+      accumulated += reply[i];
+      yield {
+        role: "assistant" as const,
+        content: [{ type: "text" as const, text: accumulated }],
+      };
     }
+
+    yield {
+      isEnd: true,
+      responseMessage: {
+        role: "assistant" as const,
+        content: [{ type: "text" as const, text: accumulated }],
+      },
+    };
   },
 
   async *sendMessageAfterToolCall() {
+    const text = "Echo: tool call completed";
     yield {
-      type: "text-delta" as const,
-      textDelta: "Echo: tool call completed",
+      role: "assistant" as const,
+      content: [{ type: "text" as const, text }],
+    };
+    yield {
+      isEnd: true,
+      responseMessage: {
+        role: "assistant" as const,
+        content: [{ type: "text" as const, text }],
+      },
     };
   },
 
@@ -61,18 +116,6 @@ const echoProvider: any = {
 
   async createChatName(message: string) {
     return message.slice(0, 30);
-  },
-
-  setProvider(provider: { model?: { id?: string } }) {
-    currentModel = provider?.model?.id ?? null;
-  },
-  setPrevMessages() {},
-  setTools() {},
-  getName() {
-    return PROVIDER_TYPE;
-  },
-  getBaseUrl() {
-    return "";
   },
 };
 
