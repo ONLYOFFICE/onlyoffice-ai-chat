@@ -67,7 +67,7 @@ export const ModelConfigForm = ({
           onChange("provider", {
             type: p.type as ProviderType,
             baseUrl: externalOnlyofficeConfig.baseUrl,
-            apiKey: externalOnlyofficeConfig.apiKey,
+            apiKey: externalOnlyofficeConfig.apiKey ?? "",
           });
           return;
         }

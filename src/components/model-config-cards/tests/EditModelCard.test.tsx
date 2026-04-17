@@ -26,6 +26,9 @@ vi.mock("../../../store/context", () => ({
     useProfilesStore: () => ({
       editProfile: mockEditProfile,
     }),
+    useCloudsStore: () => ({
+      externalOnlyofficeConfig: undefined,
+    }),
   }),
 }));
 
