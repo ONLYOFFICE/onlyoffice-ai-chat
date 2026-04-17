@@ -43,8 +43,12 @@ export const ModelConfigForm = ({
   const { ComboBox, FieldContainer, Input, Link } = useComponents();
   const { t } = useI18n();
   const { provider, useCloudsStore } = useStores();
-  const { cloudProviders, externalOnlyofficeConfig } = useCloudsStore();
-  const providersInfo = provider.getProvidersInfo();
+  const { cloudProviders, externalOnlyofficeConfig, hiddenProviders } =
+    useCloudsStore();
+  const hiddenSet = new Set<ProviderType>(hiddenProviders ?? []);
+  const providersInfo = provider
+    .getProvidersInfo()
+    .filter((p) => !hiddenSet.has(p.type as ProviderType));
   const isFieldsDisabled = !values.provider;
 
   const providerItems = [

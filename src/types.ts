@@ -356,9 +356,9 @@ export type TCloudProvider = {
  * External ONLYOFFICE AI provider configuration.
  *
  * When passed to {@link import("./AIChatWidget").AIChatWidgetProps.onlyofficeConfig},
- * adds an ONLYOFFICE AI entry to the provider list with the given base URL
- * and (optional) API key. The URL/key fields are hidden in the Add/Edit
- * model forms for this entry.
+ * makes the built-in ONLYOFFICE AI entry in Add/Edit model forms (and
+ * Web Search) use the given base URL and (optional) API key. The URL/key
+ * fields are hidden for that entry.
  */
 export type TOnlyOfficeConfig = {
   /** Base URL of the ONLYOFFICE AI backend. */

@@ -1,10 +1,15 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../app-context";
-import type { TCloudProvider, TOnlyOfficeConfig } from "../types";
+import type {
+  ProviderType,
+  TCloudProvider,
+  TOnlyOfficeConfig,
+} from "../types";
 
 export interface CloudsStoreState {
   cloudProviders: TCloudProvider[];
   externalOnlyofficeConfig?: TOnlyOfficeConfig;
+  hiddenProviders?: ProviderType[];
   fetchClouds: () => Promise<void>;
 }
 
@@ -14,6 +19,7 @@ export function createCloudsStore(
   return create<CloudsStoreState>()((set) => ({
     cloudProviders: [],
     externalOnlyofficeConfig: ctx.onlyofficeConfig,
+    hiddenProviders: ctx.hiddenProviders,
     fetchClouds: async () => {
       if (!ctx.platform.clouds) {
         set({ cloudProviders: [] });

@@ -6,7 +6,7 @@ import type Provider from "./providers";
 import type { SettingsAdapter } from "./settings/types";
 import type { StorageAdapter } from "./storage/types";
 import type Servers from "./tools/servers";
-import type { TOnlyOfficeConfig } from "./types";
+import type { ProviderType, TOnlyOfficeConfig } from "./types";
 
 /**
  * Dependency injection container for a single AIChatWidget instance.
@@ -23,4 +23,5 @@ export interface AppContext {
   callbacksManager: CallbacksManager;
   middlewareRunner: MiddlewareRunner;
   onlyofficeConfig?: TOnlyOfficeConfig;
+  hiddenProviders?: ProviderType[];
 }
