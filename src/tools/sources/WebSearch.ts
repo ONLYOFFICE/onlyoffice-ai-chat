@@ -84,9 +84,11 @@ class WebSearch {
       this.webSearchData?.provider === "ONLYOFFICE"
     ) {
       try {
-        const baseUrl = this.webSearchData.isCloudProvider
-          ? this.webSearchData.provider
-          : (this.webSearchData.baseUrl ?? "");
+        const baseUrl =
+          this.webSearchData.baseUrl ||
+          (this.webSearchData.isCloudProvider
+            ? this.webSearchData.provider
+            : "");
         const searchUrl = new URL("/api/2.0/ai/web-search/v1/search", baseUrl);
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
@@ -163,9 +165,11 @@ class WebSearch {
       this.webSearchData?.provider === "ONLYOFFICE"
     ) {
       try {
-        const baseUrl = this.webSearchData.isCloudProvider
-          ? this.webSearchData.provider
-          : (this.webSearchData.baseUrl ?? "");
+        const baseUrl =
+          this.webSearchData.baseUrl ||
+          (this.webSearchData.isCloudProvider
+            ? this.webSearchData.provider
+            : "");
         const crawlUrl = new URL("/api/2.0/ai/web-search/v1/contents", baseUrl);
         const headers: Record<string, string> = {
           "Content-Type": "application/json",

@@ -28,7 +28,7 @@ const WebSearch = ({ variant = "tab" }: WebSearchProps) => {
   const { t, isRTL } = useI18n();
   const { servers: serversInstance } = useToolsContext();
   const { useCloudsStore } = useStores();
-  const { cloudProviders } = useCloudsStore();
+  const { cloudProviders, externalOnlyofficeConfig } = useCloudsStore();
 
   const [selectedId, setSelectedId] = React.useState<string>("Exa");
   const [apiKey, setApiKey] = React.useState<string>("");
@@ -44,9 +44,19 @@ const WebSearch = ({ variant = "tab" }: WebSearchProps) => {
         key: cp.apiKey,
         isCloudProvider: true,
       })),
-      ...WEB_SEARCH_PROVIDERS,
+      ...WEB_SEARCH_PROVIDERS.map((p) => {
+        if (p.id === "ONLYOFFICE" && externalOnlyofficeConfig) {
+          return {
+            ...p,
+            baseUrl: externalOnlyofficeConfig.baseUrl,
+            key: externalOnlyofficeConfig.apiKey,
+            isCloudProvider: true,
+          };
+        }
+        return p;
+      }),
     ],
-    [cloudProviders]
+    [cloudProviders, externalOnlyofficeConfig]
   );
 
   const provider = allProviders.find((p) => p.id === selectedId);

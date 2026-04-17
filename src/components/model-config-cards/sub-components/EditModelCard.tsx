@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useI18n } from "../../../locales";
 import { useStores } from "../../../store/context";
-import type { Profile, ProviderType } from "../../../types";
+import type { Profile, ProviderType, TOnlyOfficeConfig } from "../../../types";
 import { useComponents } from "../../../components-provider";
 import { Icon } from "../../icon";
 import { ProviderLogo } from "../../provider-logo";
@@ -16,14 +16,23 @@ interface EditModelCardProps {
   isHorizontal?: boolean;
 }
 
-const profileToFormValues = (p: Profile): ModelFormValues => ({
-  provider: p.providerType,
-  apiKey: p.key ?? "",
-  baseUrl: p.baseUrl,
-  model: p.modelId,
-  profileName: p.name,
-  isCloudProvider: p.isCloudProvider,
-});
+const profileToFormValues = (
+  p: Profile,
+  externalOnlyofficeConfig?: TOnlyOfficeConfig
+): ModelFormValues => {
+  const isExternal =
+    p.providerType === "onlyoffice" && !!externalOnlyofficeConfig;
+  return {
+    provider: p.providerType,
+    apiKey: isExternal
+      ? (externalOnlyofficeConfig!.apiKey ?? "")
+      : (p.key ?? ""),
+    baseUrl: isExternal ? externalOnlyofficeConfig!.baseUrl : p.baseUrl,
+    model: p.modelId,
+    profileName: p.name,
+    isCloudProvider: p.isCloudProvider,
+  };
+};
 
 export const EditModelCard = ({
   profile,
@@ -33,9 +42,10 @@ export const EditModelCard = ({
 }: EditModelCardProps) => {
   const { Button } = useComponents();
   const { t } = useI18n();
-  const { useProfilesStore } = useStores();
+  const { useProfilesStore, useCloudsStore } = useStores();
   const { editProfile } = useProfilesStore();
-  const initialValues = profileToFormValues(profile);
+  const { externalOnlyofficeConfig } = useCloudsStore();
+  const initialValues = profileToFormValues(profile, externalOnlyofficeConfig);
 
   const {
     values,
@@ -49,16 +59,21 @@ export const EditModelCard = ({
   } = useModelForm(initialValues);
 
   useEffect(() => {
-    fetchModels(profile.providerType, profile.key ?? "", profile.baseUrl, {
-      keepModelIfExists: true,
-      isCloudProvider: profile.isCloudProvider,
-    });
+    fetchModels(
+      initialValues.provider as ProviderType,
+      initialValues.apiKey,
+      initialValues.baseUrl,
+      {
+        keepModelIfExists: true,
+        isCloudProvider: profile.isCloudProvider,
+      }
+    );
   }, [
     fetchModels,
-    profile.baseUrl,
+    initialValues.baseUrl,
+    initialValues.apiKey,
+    initialValues.provider,
     profile.isCloudProvider,
-    profile.key,
-    profile.providerType,
   ]);
 
   const handleSave = async () => {

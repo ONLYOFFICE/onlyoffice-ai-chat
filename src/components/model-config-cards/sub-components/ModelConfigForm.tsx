@@ -43,7 +43,7 @@ export const ModelConfigForm = ({
   const { ComboBox, FieldContainer, Input, Link } = useComponents();
   const { t } = useI18n();
   const { provider, useCloudsStore } = useStores();
-  const { cloudProviders } = useCloudsStore();
+  const { cloudProviders, externalOnlyofficeConfig } = useCloudsStore();
   const providersInfo = provider.getProvidersInfo();
   const isFieldsDisabled = !values.provider;
 
@@ -62,11 +62,20 @@ export const ModelConfigForm = ({
     ...providersInfo.map((p) => ({
       text: p.name,
       id: p.type,
-      onClick: () =>
+      onClick: () => {
+        if (p.type === "onlyoffice" && externalOnlyofficeConfig) {
+          onChange("provider", {
+            type: p.type as ProviderType,
+            baseUrl: externalOnlyofficeConfig.baseUrl,
+            apiKey: externalOnlyofficeConfig.apiKey,
+          });
+          return;
+        }
         onChange("provider", {
           type: p.type as ProviderType,
           baseUrl: p.baseUrl,
-        }),
+        });
+      },
     })),
   ];
 
@@ -82,7 +91,9 @@ export const ModelConfigForm = ({
     onClick: () => onChange("model", m.id),
   }));
 
-  const hideCredentials = !!values.isCloudProvider;
+  const isExternalOnlyoffice =
+    values.provider === "onlyoffice" && !!externalOnlyofficeConfig;
+  const hideCredentials = !!values.isCloudProvider || isExternalOnlyoffice;
 
   return (
     <div className="flex flex-col mb-[26px]">

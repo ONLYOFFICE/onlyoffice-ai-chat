@@ -25,13 +25,9 @@ The provider system abstracts AI service integrations behind a unified interface
 
 Most providers extend the OpenAI provider class since many APIs follow the OpenAI-compatible format. Anthropic, Google AI, Mistral, and Stability AI have dedicated implementations using their native SDKs.
 
-## ONLYOFFICE AI — external / cloud configuration
+## ONLYOFFICE AI — external configuration
 
-The `onlyoffice` provider is designed to be configured by the host, not by the end user. It never exposes Base URL / API key inputs in the Add/Edit model forms or in the Web Search settings page — those credentials come from one of two sources:
-
-1. **Platform clouds** — each connected cloud portal returned by `PlatformAdapter.clouds.getClouds()` (with a matching entry in `getCloudKeys()`) is surfaced as a provider option. The profile is saved with `isCloudProvider: true`, and the API key is mandatory.
-
-2. **External `onlyofficeConfig` prop** — the widget accepts an `onlyofficeConfig?: { baseUrl: string; apiKey?: string }` prop. When set, an extra ONLYOFFICE AI entry is injected into the cloud-provider list using that URL (and optionally the key). The key is **optional** in this case: if omitted, the runtime skips the `Authorization: Bearer` header, which is useful when the ONLYOFFICE AI backend is reachable without auth (e.g. same-origin proxy, internal network).
+The ONLYOFFICE AI provider behaves specially when the host passes an `onlyofficeConfig` prop to `AIChatWidget`. With the config present, the single built-in ONLYOFFICE AI entry (both in the AI Models picker and in Web Search) becomes "externally configured": Base URL and API key inputs are hidden in Add/Edit, and credentials come from the prop instead of user input. The API key is **optional** — if omitted, the runtime skips the `Authorization: Bearer` header.
 
 ```tsx
 import { AIChatWidget } from "@onlyoffice/ai-chat";
@@ -39,20 +35,36 @@ import { AIChatWidget } from "@onlyoffice/ai-chat";
 <AIChatWidget
   onlyofficeConfig={{
     baseUrl: "https://my-docspace.example.com",
-    apiKey: "optional-bearer-token",
+    apiKey: "optional-bearer-token", // optional
   }}
   // ...other props
 />
 ```
 
-Once the user selects this provider in **Settings → AI Models** or **Settings → Web Search**, the URL/Key fields are hidden in the form and the profile is saved with `isCloudProvider: true`. The selection is picked up by:
+**Flow in Settings → AI Models:**
 
-- `OnlyOfficeProvider` for chat/models (`POST /api/2.0/ai/openai/-1/v1/chat/completions`).
-- The web-search tool (`POST /api/2.0/ai/web-search/v1/search` and `/contents`).
+1. User opens the provider dropdown. The single `ONLYOFFICE AI` entry is listed (no extra cloud row is injected).
+2. Picking it pre-fills `baseUrl` / `apiKey` from `onlyofficeConfig` into the form.
+3. The BaseURL and APIKey fields are hidden — the user only picks a model and enters a profile name.
+4. On save, the profile stores the config's URL/key (and `providerType: "onlyoffice"`).
+5. When editing an existing ONLYOFFICE AI profile and `onlyofficeConfig` is set, the form re-hydrates `baseUrl` / `apiKey` from the current config (overriding the saved values), so config changes take effect on next save.
 
-Both sites honour the optional key — if the stored key is empty, the `Authorization` header is omitted.
+**Flow in Settings → Web Search:**
 
-> **Note:** the `id` of the built-in ONLYOFFICE AI web-search option is still `"ONLYOFFICE"` for backward compatibility; only the display label was renamed. Existing stored `webSearchProviderData` entries continue to work.
+1. The built-in `ONLYOFFICE AI` option appears with `baseUrl` / `key` pre-filled from `onlyofficeConfig`.
+2. Picking it hides the Base URL and API Key inputs and saves web-search data with `isCloudProvider: true`, `provider: "ONLYOFFICE"`, `baseUrl: config.baseUrl`, `key: config.apiKey ?? ""`.
+3. At runtime, `WebSearch.webSearch`/`webCrawling` use the stored `baseUrl` and skip the `Authorization` header when `key` is empty.
+
+**Backward compatibility:**
+
+- Without `onlyofficeConfig`, the built-in ONLYOFFICE AI provider behaves as before: user types URL/key manually.
+- Platform-cloud entries from `PlatformAdapter.clouds` are a separate, orthogonal mechanism — they still appear as individual cloud rows in the picker with hostname labels and mandatory keys.
+- The web-search provider `id` remains `"ONLYOFFICE"`; only the display label is `"ONLYOFFICE AI"`. Existing stored `webSearchProviderData` entries keep working.
+
+**Where the config is read from:**
+
+- `AIChatWidgetProps.onlyofficeConfig` → `AppContext.onlyofficeConfig` → `CloudsStoreState.externalOnlyofficeConfig`.
+- UI components (`ModelConfigForm`, `EditModelCard`, Web Search page) read it from the clouds store.
 
 
 ## Provider Profiles
