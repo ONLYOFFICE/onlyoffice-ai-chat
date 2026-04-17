@@ -4,7 +4,7 @@ Headless AI chat widget library for React with 16 built-in providers, MCP tool s
 
 ## Features
 
-- **16 AI Providers** — Anthropic, OpenAI, Google GenAI, Mistral, Ollama, LM Studio, Groq, DeepSeek, xAI, OpenRouter, Together, StabilityAI, Zhipu, GPT4All, OpenAI-compatible, ONLYOFFICE
+- **16 AI Providers** — Anthropic, OpenAI, Google GenAI, Mistral, Ollama, LM Studio, Groq, DeepSeek, xAI, OpenRouter, Together, StabilityAI, Zhipu, GPT4All, OpenAI-compatible, ONLYOFFICE AI
 - **MCP Tools** — Host tools, web search (Exa API), custom MCP servers (HTTP + STDIO)
 - **Adapter Pattern** — Pluggable storage, settings, and platform adapters
 - **41 Locales** — Full i18n with RTL support
@@ -159,9 +159,27 @@ registerProvider("my-custom", new MyCustomProvider());
 | Zhipu | `zhipu` | `openai` (compatible) |
 | GPT4All | `gpt4all` | `openai` (compatible) |
 | OpenAI Compatible | `openaicompatible` | `openai` |
-| ONLYOFFICE | `onlyoffice` | `openai` (compatible) |
+| ONLYOFFICE AI | `onlyoffice` | `openai` (compatible) |
 
 See [Providers](docs/providers.md) for custom provider tutorial.
+
+### ONLYOFFICE AI — external configuration
+
+The ONLYOFFICE AI provider is configured by the host, not by the end user. Supply a base URL (and optionally an API key) via the `onlyofficeConfig` prop and it will show up in both **AI Models** and **Web Search** settings with the URL/Key fields hidden:
+
+```tsx
+<AIChatWidget
+  onlyofficeConfig={{
+    baseUrl: "https://my-docspace.example.com",
+    apiKey: "optional-bearer-token", // optional
+  }}
+  // ...other props
+/>
+```
+
+The API key is optional — when omitted, requests are sent without an `Authorization` header (useful for same-origin / internal deployments). Platform-cloud entries returned by `PlatformAdapter.clouds` are merged into the same list and still require a key.
+
+See [Providers → ONLYOFFICE AI](docs/providers.md#onlyoffice-ai--external--cloud-configuration) for the full flow.
 
 ## Tools & MCP
 
