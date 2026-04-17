@@ -8,6 +8,7 @@ import { useComponents } from "../../../components-provider";
 
 type WebSearchProps = {
   variant?: "tab" | "page";
+  isHorizontal?: boolean;
 };
 
 type WebSearchProvider = {
@@ -23,7 +24,7 @@ const WEB_SEARCH_PROVIDERS: WebSearchProvider[] = [
   { id: "ONLYOFFICE", label: "ONLYOFFICE AI" },
 ];
 
-const WebSearch = ({ variant = "tab" }: WebSearchProps) => {
+const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const { ComboBox, FieldContainer, Input, Link } = useComponents();
   const { t, isRTL } = useI18n();
   const { servers: serversInstance } = useToolsContext();
@@ -129,6 +130,7 @@ const WebSearch = ({ variant = "tab" }: WebSearchProps) => {
   };
 
   const isPage = variant === "page";
+  const fieldIsHorizontal = isHorizontal ?? isPage;
 
   const comboItems = allProviders.map((p) => ({
     text: p.label,
@@ -152,7 +154,7 @@ const WebSearch = ({ variant = "tab" }: WebSearchProps) => {
         {t("WebSearchDescription")}
       </p>
       <div className="flex flex-col gap-[16px]">
-        <FieldContainer header={t("WebSearchEngine")} isHorizontal={isPage}>
+        <FieldContainer header={t("WebSearchEngine")} isHorizontal={fieldIsHorizontal}>
           <ComboBox
             className="w-full"
             value={provider?.label ?? t("SelectEngine")}
@@ -162,7 +164,7 @@ const WebSearch = ({ variant = "tab" }: WebSearchProps) => {
         {!provider?.baseUrl && (
           <FieldContainer
             header={t("BaseURL")}
-            isHorizontal={isPage}
+            isHorizontal={fieldIsHorizontal}
             error={baseUrlError}
           >
             <Input
@@ -180,7 +182,7 @@ const WebSearch = ({ variant = "tab" }: WebSearchProps) => {
         {!provider?.isCloudProvider && (
           <FieldContainer
             header={t("APIKey")}
-            isHorizontal={isPage}
+            isHorizontal={fieldIsHorizontal}
             action={
               getApiKeyLink(selectedId) ? (
                 <Link href={getApiKeyLink(selectedId)} target="_blank">

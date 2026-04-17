@@ -288,7 +288,7 @@ describe("WebSearch", () => {
     });
   });
 
-  it("disables API key input for cloud provider", () => {
+  it("hides API key input for cloud provider", () => {
     mockCloudProviders.push({
       url: "https://cloud.example.com",
       label: "My Cloud",
@@ -298,8 +298,7 @@ describe("WebSearch", () => {
     render(<WebSearch />);
     fireEvent.click(screen.getByTestId("combo-item-https://cloud.example.com"));
 
-    const apiInput = screen.getByTestId("input-EnterKey");
-    expect(apiInput).toBeDisabled();
+    expect(screen.queryByTestId("input-EnterKey")).toBeNull();
   });
 
   it("clears base URL error on provider switch", () => {

@@ -10,12 +10,14 @@ interface SettingsProps {
   hideHeader?: boolean;
   noPadding?: boolean;
   isAddModelCardHorizontal?: boolean;
+  isWebSearchHorizontal?: boolean;
 }
 
 const Settings = ({
   hideHeader,
   noPadding,
   isAddModelCardHorizontal,
+  isWebSearchHorizontal,
 }: SettingsProps) => {
   const { Tabs } = useComponents();
   const { t } = useI18n();
@@ -75,6 +77,7 @@ const Settings = ({
                 <WebSearchPage
                   hideHeader={hideHeader}
                   noPadding={noPadding}
+                  isHorizontal={isWebSearchHorizontal}
                 />
               ),
               disabled: !profiles.length,

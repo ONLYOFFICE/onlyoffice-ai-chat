@@ -4,9 +4,14 @@ import { WebSearch } from "./sub-components";
 interface WebSearchPageProps {
   hideHeader?: boolean;
   noPadding?: boolean;
+  isHorizontal?: boolean;
 }
 
-const WebSearchPage = ({ hideHeader, noPadding }: WebSearchPageProps) => {
+const WebSearchPage = ({
+  hideHeader,
+  noPadding,
+  isHorizontal,
+}: WebSearchPageProps) => {
   void noPadding;
   const { t } = useI18n();
 
@@ -18,7 +23,7 @@ const WebSearchPage = ({ hideHeader, noPadding }: WebSearchPageProps) => {
             {t("WebSearch")}
           </h1>
         )}
-        <WebSearch variant="page" />
+        <WebSearch variant="page" isHorizontal={isHorizontal} />
       </div>
     </div>
   );
