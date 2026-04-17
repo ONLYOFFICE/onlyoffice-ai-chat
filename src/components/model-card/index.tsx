@@ -11,9 +11,10 @@ import { DeleteProfileDialog } from "./DeleteProfileDialog";
 
 type ModelCardProps = {
   profile: Profile;
+  isEditModelCardHorizontal?: boolean;
 };
 
-const ModelCard = ({ profile }: ModelCardProps) => {
+const ModelCard = ({ profile, isEditModelCardHorizontal }: ModelCardProps) => {
   const { DropdownMenu, IconButton, TooltipContent } = useComponents();
   const { provider } = useStores();
   const providerName = profile.isCloudProvider
@@ -38,7 +39,7 @@ const ModelCard = ({ profile }: ModelCardProps) => {
           profile={profile}
           onClose={() => setIsEditing(false)}
           onDelete={() => setIsDeleteOpen(true)}
-          isHorizontal
+          isHorizontal={isEditModelCardHorizontal}
         />
         {isDeleteOpen && (
           <DeleteProfileDialog

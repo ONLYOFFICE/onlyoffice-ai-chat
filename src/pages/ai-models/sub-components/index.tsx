@@ -28,7 +28,11 @@ export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
 
       <div className="flex flex-col gap-[16px]">
         {profiles.map((profile) => (
-          <ModelCard key={profile.id} profile={profile} />
+          <ModelCard
+            key={profile.id}
+            profile={profile}
+            isEditModelCardHorizontal={isAddModelCardHorizontal}
+          />
         ))}
       </div>
     </div>
