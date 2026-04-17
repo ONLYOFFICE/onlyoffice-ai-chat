@@ -82,6 +82,8 @@ export const ModelConfigForm = ({
     onClick: () => onChange("model", m.id),
   }));
 
+  const hideCredentials = !!values.isCloudProvider;
+
   return (
     <div className="flex flex-col mb-[26px]">
       <FieldContainer
@@ -98,49 +100,53 @@ export const ModelConfigForm = ({
         />
       </FieldContainer>
 
-      <FieldContainer
-        className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}
-        header={t("APIKey")}
-        isHorizontal={isHorizontal}
-        reserveErrorSpace={isHorizontal}
-        action={
-          getApiKeyLink(values.provider) ? (
-            <Link href={getApiKeyLink(values.provider)} target="_blank">
-              {t("GetAPIKey")}
-            </Link>
-          ) : (
-            <div className="h-[20px]" />
-          )
-        }
-        error={errors?.key}
-      >
-        <Input
-          name="key"
-          placeholder={t("EnterKey")}
-          className="w-full"
-          type="password"
-          disabled={isFieldsDisabled}
-          onChange={(e) => onChange("apiKey", e.target.value)}
-          value={values.apiKey}
-        />
-      </FieldContainer>
+      {!hideCredentials && (
+        <FieldContainer
+          className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}
+          header={t("APIKey")}
+          isHorizontal={isHorizontal}
+          reserveErrorSpace={isHorizontal}
+          action={
+            getApiKeyLink(values.provider) ? (
+              <Link href={getApiKeyLink(values.provider)} target="_blank">
+                {t("GetAPIKey")}
+              </Link>
+            ) : (
+              <div className="h-[20px]" />
+            )
+          }
+          error={errors?.key}
+        >
+          <Input
+            name="key"
+            placeholder={t("EnterKey")}
+            className="w-full"
+            type="password"
+            disabled={isFieldsDisabled}
+            onChange={(e) => onChange("apiKey", e.target.value)}
+            value={values.apiKey}
+          />
+        </FieldContainer>
+      )}
 
-      <FieldContainer
-        className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}
-        header={t("BaseURL")}
-        isHorizontal={isHorizontal}
-        reserveErrorSpace={isHorizontal}
-        error={errors?.url}
-      >
-        <Input
-          name="url"
-          placeholder={t("SelectModelFirst")}
-          className="w-full"
-          disabled={isFieldsDisabled}
-          onChange={(e) => onChange("baseUrl", e.target.value)}
-          value={values.baseUrl}
-        />
-      </FieldContainer>
+      {!hideCredentials && (
+        <FieldContainer
+          className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}
+          header={t("BaseURL")}
+          isHorizontal={isHorizontal}
+          reserveErrorSpace={isHorizontal}
+          error={errors?.url}
+        >
+          <Input
+            name="url"
+            placeholder={t("SelectModelFirst")}
+            className="w-full"
+            disabled={isFieldsDisabled}
+            onChange={(e) => onChange("baseUrl", e.target.value)}
+            value={values.baseUrl}
+          />
+        </FieldContainer>
+      )}
 
       <FieldContainer
         className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}

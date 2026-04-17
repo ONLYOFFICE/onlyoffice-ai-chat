@@ -338,7 +338,8 @@ export type TCloudKey = {
 };
 
 /**
- * Cloud provider connection configuration derived from cloud accounts.
+ * Cloud provider connection configuration derived from cloud accounts or
+ * from an external ONLYOFFICE AI config passed to the widget.
  */
 export type TCloudProvider = {
   /** Provider API URL. */
@@ -347,6 +348,22 @@ export type TCloudProvider = {
   /** Display label for the cloud provider. */
   label: string;
 
-  /** API key for authentication. */
-  apiKey: string;
+  /** API key for authentication. Optional when provided by external ONLYOFFICE AI config. */
+  apiKey?: string;
+};
+
+/**
+ * External ONLYOFFICE AI provider configuration.
+ *
+ * When passed to {@link import("./AIChatWidget").AIChatWidgetProps.onlyofficeConfig},
+ * adds an ONLYOFFICE AI entry to the provider list with the given base URL
+ * and (optional) API key. The URL/key fields are hidden in the Add/Edit
+ * model forms for this entry.
+ */
+export type TOnlyOfficeConfig = {
+  /** Base URL of the ONLYOFFICE AI backend. */
+  baseUrl: string;
+
+  /** Optional API key. If omitted, requests are made without an Authorization header. */
+  apiKey?: string;
 };

@@ -44,6 +44,7 @@ import { setStorageInstance } from "./storage/storage-holder";
 import type { StorageAdapter } from "./storage/types";
 import { StoresProvider, useStores } from "./store/context";
 import { createStores } from "./store/create-stores";
+import type { TOnlyOfficeConfig } from "./types";
 import { ToolsProvider } from "./tools/context";
 import Servers from "./tools/servers";
 import { setServersInstance } from "./tools/tools-holder";
@@ -67,6 +68,7 @@ export interface AIChatWidgetProps {
   onMigrate?: () => Promise<void>;
   callbacks?: ChatCallbacks;
   middleware?: ChatMiddleware[];
+  onlyofficeConfig?: TOnlyOfficeConfig;
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -90,6 +92,7 @@ export const AIChatWidget = React.forwardRef<
       onMigrate,
       callbacks,
       middleware,
+      onlyofficeConfig,
     },
     ref
   ) => {
@@ -111,6 +114,7 @@ export const AIChatWidget = React.forwardRef<
         eventBus,
         callbacksManager,
         middlewareRunner,
+        onlyofficeConfig,
       };
 
       // Deprecated: set global holders for backward compatibility
@@ -122,7 +126,7 @@ export const AIChatWidget = React.forwardRef<
       const stores = createStores({ keys: storeKeys, ctx });
 
       return { ctx, stores };
-    }, [settings, storage, platform, storeKeys, middleware]);
+    }, [settings, storage, platform, storeKeys, middleware, onlyofficeConfig]);
 
     return (
       <EventsProvider

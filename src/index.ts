@@ -161,6 +161,7 @@ export type {
   TCloud,
   TCloudKey,
   TCloudProvider,
+  TOnlyOfficeConfig,
 } from "./types";
 
 // ---------------------------------------------------------------------------
