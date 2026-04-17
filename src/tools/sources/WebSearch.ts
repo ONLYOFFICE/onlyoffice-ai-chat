@@ -88,12 +88,15 @@ class WebSearch {
           ? this.webSearchData.provider
           : (this.webSearchData.baseUrl ?? "");
         const searchUrl = new URL("/api/2.0/ai/web-search/v1/search", baseUrl);
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (this.webSearchData.key) {
+          headers.Authorization = `Bearer ${this.webSearchData.key}`;
+        }
         const response = await fetch(`${searchUrl.href}`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.webSearchData.key}`,
-          },
+          headers,
           body: JSON.stringify({ query: args.query, numResults: 5 }),
         });
 
@@ -164,12 +167,15 @@ class WebSearch {
           ? this.webSearchData.provider
           : (this.webSearchData.baseUrl ?? "");
         const crawlUrl = new URL("/api/2.0/ai/web-search/v1/contents", baseUrl);
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (this.webSearchData.key) {
+          headers.Authorization = `Bearer ${this.webSearchData.key}`;
+        }
         const response = await fetch(`${crawlUrl.href}`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.webSearchData.key}`,
-          },
+          headers,
           body: JSON.stringify({
             url: (args.urls as string[])[0],
           }),

@@ -20,7 +20,7 @@ type WebSearchProvider = {
 
 const WEB_SEARCH_PROVIDERS: WebSearchProvider[] = [
   { id: "Exa", label: "Exa", baseUrl: "https://api.exa.ai" },
-  { id: "ONLYOFFICE", label: "ONLYOFFICE" },
+  { id: "ONLYOFFICE", label: "ONLYOFFICE AI" },
 ];
 
 const WebSearch = ({ variant = "tab" }: WebSearchProps) => {
@@ -167,27 +167,29 @@ const WebSearch = ({ variant = "tab" }: WebSearchProps) => {
             />
           </FieldContainer>
         )}
-        <FieldContainer
-          header={t("APIKey")}
-          isHorizontal={isPage}
-          action={
-            !provider?.isCloudProvider && getApiKeyLink(selectedId) ? (
-              <Link href={getApiKeyLink(selectedId)} target="_blank">
-                {t("GetAPIKey")}
-              </Link>
-            ) : undefined
-          }
-        >
-          <Input
-            className="w-full"
-            type="password"
-            placeholder={t("EnterKey")}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            onBlur={provider?.isCloudProvider ? undefined : handleApiKeyBlur}
-            disabled={!selectedId || provider?.isCloudProvider}
-          />
-        </FieldContainer>
+        {!provider?.isCloudProvider && (
+          <FieldContainer
+            header={t("APIKey")}
+            isHorizontal={isPage}
+            action={
+              getApiKeyLink(selectedId) ? (
+                <Link href={getApiKeyLink(selectedId)} target="_blank">
+                  {t("GetAPIKey")}
+                </Link>
+              ) : undefined
+            }
+          >
+            <Input
+              className="w-full"
+              type="password"
+              placeholder={t("EnterKey")}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              onBlur={handleApiKeyBlur}
+              disabled={!selectedId}
+            />
+          </FieldContainer>
+        )}
       </div>
     </div>
   );
