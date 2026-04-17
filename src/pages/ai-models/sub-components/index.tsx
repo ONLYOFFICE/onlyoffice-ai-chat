@@ -5,7 +5,11 @@ import { ModelCard } from "../../../components/model-card";
 import { AddModelCard } from "../../../components/model-config-cards";
 import { useStores } from "../../../store/context";
 
-export const Models = () => {
+interface ModelsProps {
+  isAddModelCardHorizontal?: boolean;
+}
+
+export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
   const { Button } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
@@ -15,7 +19,7 @@ export const Models = () => {
   return (
     <div className="flex flex-col gap-[16px] select-none">
       {isAddCardOpen ? (
-        <AddModelCard onClose={() => setIsAddCardOpen(false)} isHorizontal />
+        <AddModelCard onClose={() => setIsAddCardOpen(false)} isHorizontal={isAddModelCardHorizontal} />
       ) : (
         <Button className="self-start" onClick={() => setIsAddCardOpen(true)}>
           {t("AddModel")}
