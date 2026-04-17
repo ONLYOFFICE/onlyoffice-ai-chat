@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, beforeAll } from "vitest";
+import { describe, expect, it, beforeAll, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
   Tooltip,
@@ -7,6 +7,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../index";
+
+vi.mock("../../../theme", () => ({
+  useTheme: () => ({ portalContainer: null }),
+}));
 
 beforeAll(() => {
   // Radix UI tooltip uses ResizeObserver

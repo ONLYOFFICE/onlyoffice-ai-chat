@@ -679,11 +679,24 @@ describe("Provider", () => {
         },
       ];
 
-      // Mock to reject
+      // Swap the getProvider mock to return a provider whose
+      // getProviderModels rejects, so the Promise.allSettled branch
+      // in Provider.getProvidersModels produces a rejected result.
       const registry = await import("../registry");
-      vi.mocked(
-        registry.providerRegistry.openai.getProviderModels
-      ).mockRejectedValue(new Error("Network error"));
+      vi.mocked(registry.getProvider).mockImplementationOnce((type: string) => {
+        if (type !== "openai") return undefined;
+        return {
+          ...createMockProvider(),
+          getProviderModels: vi.fn().mockRejectedValue(new Error("Network error")),
+        } as unknown as ReturnType<typeof createMockProvider>;
+      });
+      vi.mocked(registry.getProvider).mockImplementationOnce((type: string) => {
+        if (type !== "openai") return undefined;
+        return {
+          ...createMockProvider(),
+          getProviderModels: vi.fn().mockRejectedValue(new Error("Network error")),
+        } as unknown as ReturnType<typeof createMockProvider>;
+      });
 
       const { models } = await provider.getProvidersModels(providers);
 

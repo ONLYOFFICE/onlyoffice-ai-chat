@@ -16,6 +16,7 @@ vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     servers: {
       getCustomServers: mockGetCustomServers,
+      getHostToolGroupIds: () => ["desktop-editor"],
     },
   }),
 }));

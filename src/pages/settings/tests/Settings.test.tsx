@@ -45,7 +45,9 @@ describe("SettingsPage", () => {
 
   it("renders all 4 tab labels", () => {
     render(<Settings />);
-    expect(screen.getByText("AIModels")).toBeInTheDocument();
+    // tab triggers use role="tab"; the AI Models page also renders an h1 with
+    // the same text ("AIModels"), so disambiguate by role here.
+    expect(screen.getByRole("tab", { name: "AIModels" })).toBeInTheDocument();
     expect(screen.getByText("ModelAssignment")).toBeInTheDocument();
     expect(screen.getByText("MCPServers")).toBeInTheDocument();
     expect(screen.getByText("WebSearch")).toBeInTheDocument();

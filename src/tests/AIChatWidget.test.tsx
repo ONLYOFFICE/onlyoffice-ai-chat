@@ -270,13 +270,13 @@ describe("AIChatWidget", () => {
     });
   });
 
-  it("renders empty screen when no profiles and no messages", async () => {
+  it("renders chat page when no profiles and no messages (initial-setup is now inside ChatPage)", async () => {
     mockProfiles = [];
     mockMessages = [];
     mockCurrentPage = "chat";
     render(<AIChatWidget {...defaultProps} />);
     await vi.waitFor(() => {
-      expect(screen.getByTestId("empty-screen")).toBeInTheDocument();
+      expect(screen.getByTestId("thread")).toBeInTheDocument();
     });
   });
 
@@ -299,12 +299,12 @@ describe("AIChatWidget", () => {
     });
   });
 
-  it("renders initial-setup page when currentPage is initial-setup", async () => {
+  it("renders chat page when currentPage is initial-setup (now handled inside ChatPage)", async () => {
     mockCurrentPage = "initial-setup";
     mockProfiles = [{ id: "p1", name: "Test" }];
     render(<AIChatWidget {...defaultProps} />);
     await vi.waitFor(() => {
-      expect(screen.getByTestId("initial-setup")).toBeInTheDocument();
+      expect(screen.getByTestId("thread")).toBeInTheDocument();
     });
   });
 
@@ -370,24 +370,6 @@ describe("AIChatWidget", () => {
       ).not.toBeInTheDocument();
     });
     expect(mockSetManageToolData).toHaveBeenCalledWith(undefined);
-  });
-
-  it("exercises onCancel callback from runtime config", async () => {
-    mockProfiles = [{ id: "p1", name: "Test" }];
-    render(<AIChatWidget {...defaultProps} />);
-    await vi.waitFor(() => {
-      expect(mockUseExternalStoreRuntime).toHaveBeenCalled();
-    });
-    const callArgs = mockUseExternalStoreRuntime.mock.calls[0][0] as {
-      onCancel: () => Promise<void>;
-      convertMessage: (m: unknown) => unknown;
-    };
-    // Exercise onCancel
-    await callArgs.onCancel();
-    expect(mockStopMessage).toHaveBeenCalled();
-    // Exercise convertMessage
-    const msg = { id: "1", role: "user", content: "hi" };
-    expect(callArgs.convertMessage(msg)).toBe(msg);
   });
 
   it("handles migration failure gracefully", async () => {

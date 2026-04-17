@@ -10,6 +10,26 @@ vi.mock("../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
+const mockServersInstance = {
+  getCustomServers: () => ({ "custom-1": [] }),
+  getHostToolGroupIds: () => ["host-editor"],
+};
+const mockToolsContext = { servers: mockServersInstance };
+
+vi.mock("../../../tools/context", () => ({
+  useToolsContext: () => mockToolsContext,
+}));
+
+const mockServersStoreState = {
+  servers: { "host-editor": [{ name: "t1", description: "", inputSchema: {} }] },
+};
+
+vi.mock("../../../store/context", () => ({
+  useStores: () => ({
+    useServersStore: () => mockServersStoreState,
+  }),
+}));
+
 vi.mock("../../../components/button", () => ({
   Button: ({
     children,

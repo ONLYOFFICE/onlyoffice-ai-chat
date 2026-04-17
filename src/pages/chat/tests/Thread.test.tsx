@@ -9,13 +9,33 @@ vi.mock("react-i18next", () => ({
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useMessageStore: () => ({
+      messages: [],
+      stopMessage: vi.fn(),
       isStreamRunning: false,
       isRequestRunning: false,
+    }),
+    useProfilesStore: () => ({
+      profiles: [{ id: "p1", name: "Test" }],
     }),
   }),
 }));
 
+vi.mock("../../../hooks", () => ({
+  useMessages: () => ({ onNew: vi.fn() }),
+}));
+
+vi.mock("../../initial-setup", () => ({
+  default: () => <div data-testid="initial-setup" />,
+}));
+
 vi.mock("@assistant-ui/react", () => ({
+  AssistantRuntimeProvider: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="runtime-provider">{children}</div>
+  ),
+  useExternalStoreRuntime: () => ({}),
+  CompositeAttachmentAdapter: class {},
+  SimpleImageAttachmentAdapter: class {},
+  SimpleTextAttachmentAdapter: class {},
   ThreadPrimitive: {
     Root: ({ children, ...props }: { children: React.ReactNode }) => (
       <div data-testid="thread-root" {...props}>

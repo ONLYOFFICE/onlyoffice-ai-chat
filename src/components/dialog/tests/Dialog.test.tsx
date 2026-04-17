@@ -6,6 +6,10 @@ vi.mock("../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
+vi.mock("../../../theme", () => ({
+  useTheme: () => ({ portalContainer: null }),
+}));
+
 vi.mock("../../icon", () => ({
   Icon: ({ name }: { name: string }) => <span data-testid="icon">{name}</span>,
 }));
