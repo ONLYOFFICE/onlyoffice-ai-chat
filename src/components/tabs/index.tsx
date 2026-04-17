@@ -17,11 +17,11 @@ const Tabs = ({
       defaultValue={defaultValue || items[0]?.value}
       value={value}
       onValueChange={onValueChange}
-      className={cn("w-full", className)}
+      className={cn("w-full flex flex-col flex-1 min-h-0", className)}
     >
       <TabsPrimitive.List
         className={cn(
-          "inline-flex h-[24px] items-center",
+          "inline-flex h-[24px] items-center shrink-0",
           isRTL ? "flex-row-reverse" : ""
         )}
       >
@@ -46,7 +46,7 @@ const Tabs = ({
         <TabsPrimitive.Content
           key={item.value}
           value={item.value}
-          className="mt-[24px]"
+          className="mt-[24px] flex-1 min-h-0 overflow-y-auto"
         >
           {item.content}
         </TabsPrimitive.Content>
