@@ -1,5 +1,6 @@
 import type { Stores } from "../store/create-stores";
 import type { ProfilesStoreState } from "../store/create-profiles-store";
+import type Servers from "../tools/servers";
 import type { Profile } from "../types";
 import type { AIChatWidgetRef } from "./types";
 
@@ -17,7 +18,8 @@ export interface RefCallbacks {
 export function createWidgetRef(
   stores: Stores,
   selectCurrentChatProfile: (s: ProfilesStoreState) => Profile | null,
-  callbacksRef: { current: RefCallbacks }
+  callbacksRef: { current: RefCallbacks },
+  servers: Servers
 ): AIChatWidgetRef {
   return {
     // --- Messages ---
@@ -114,6 +116,32 @@ export function createWidgetRef(
 
     denyToolCall() {
       callbacksRef.current.denyToolCall();
+    },
+
+    // --- External updates ---
+
+    async updateProfiles() {
+      await stores.useProfilesStore.getState().reloadProfiles();
+    },
+
+    async updateThreads() {
+      await stores.useThreadsStore.getState().initThreads();
+    },
+
+    updateCurrentChat() {
+      stores.useProfilesStore.getState().reloadCurrentChat();
+    },
+
+    updateModelAssignment() {
+      stores.useProfilesStore.getState().reloadModelAssignment();
+    },
+
+    async updateMCPServer() {
+      await stores.useServersStore.getState().reload();
+    },
+
+    updateWebSearch() {
+      servers.webSearch.reload();
     },
   };
 }

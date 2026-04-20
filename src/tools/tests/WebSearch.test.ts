@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CallbacksManager } from "../../events/callbacks";
 import type { ChatEventBus } from "../../events";
 import type { PlatformAdapter } from "../../platform/types";
 import type { SettingsAdapter } from "../../settings/types";
@@ -131,6 +132,113 @@ describe("WebSearch", () => {
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith(
         "webSearchProviderData"
       );
+    });
+
+    it("fires onWebSearchUpdated with the resolved enabled/provider", () => {
+      const onWebSearchUpdated = vi.fn();
+      const callbacksManager = new CallbacksManager();
+      callbacksManager.setCallbacks({ onWebSearchUpdated });
+      const ws = new WebSearch(
+        mockSettings as unknown as SettingsAdapter,
+        mockPlatform as unknown as PlatformAdapter,
+        mockEventBus as unknown as ChatEventBus,
+        callbacksManager
+      );
+
+      ws.setWebSearchData({
+        provider: "Exa",
+        key: "k",
+      });
+      expect(onWebSearchUpdated).toHaveBeenCalledWith({
+        enabled: true,
+        provider: "Exa",
+        isCloudProvider: undefined,
+      });
+
+      ws.setWebSearchData({
+        provider: "https://cloud.example.com",
+        key: "k",
+        isCloudProvider: true,
+      });
+      expect(onWebSearchUpdated).toHaveBeenLastCalledWith({
+        enabled: true,
+        provider: "https://cloud.example.com",
+        isCloudProvider: true,
+      });
+
+      ws.setWebSearchData(null);
+      expect(onWebSearchUpdated).toHaveBeenLastCalledWith({
+        enabled: false,
+        provider: null,
+        isCloudProvider: undefined,
+      });
+    });
+
+    it("does not throw when CallbacksManager is omitted", () => {
+      expect(() =>
+        webSearch.setWebSearchData({ provider: "Exa", key: "k" })
+      ).not.toThrow();
+    });
+  });
+
+  describe("reload", () => {
+    it("re-reads settings and rebuilds tools + fires onWebSearchUpdated", () => {
+      const onWebSearchUpdated = vi.fn();
+      const callbacksManager = new CallbacksManager();
+      callbacksManager.setCallbacks({ onWebSearchUpdated });
+      const ws = new WebSearch(
+        mockSettings as unknown as SettingsAdapter,
+        mockPlatform as unknown as PlatformAdapter,
+        mockEventBus as unknown as ChatEventBus,
+        callbacksManager
+      );
+      expect(ws.getTools()).toEqual([]);
+
+      // Host mutates storage out of band, then asks the widget to re-sync
+      mockLocalStorage.setItem(
+        "webSearchProviderData",
+        JSON.stringify({ provider: "Exa", key: "new-key" })
+      );
+
+      ws.reload();
+
+      expect(ws.getWebSearchData()).toEqual({ provider: "Exa", key: "new-key" });
+      expect(ws.getTools()).toHaveLength(2);
+      expect(onWebSearchUpdated).toHaveBeenCalledWith({
+        enabled: true,
+        provider: "Exa",
+        isCloudProvider: undefined,
+      });
+    });
+
+    it("clears state when storage entry is removed", () => {
+      const ws = new WebSearch(
+        mockSettings as unknown as SettingsAdapter,
+        mockPlatform as unknown as PlatformAdapter,
+        mockEventBus as unknown as ChatEventBus
+      );
+      ws.setWebSearchData({ provider: "Exa", key: "k" });
+      expect(ws.getTools()).toHaveLength(2);
+
+      mockLocalStorage.removeItem("webSearchProviderData");
+      ws.reload();
+
+      expect(ws.getWebSearchData()).toBeNull();
+      expect(ws.getTools()).toEqual([]);
+    });
+
+    it("handles invalid JSON gracefully", () => {
+      const ws = new WebSearch(
+        mockSettings as unknown as SettingsAdapter,
+        mockPlatform as unknown as PlatformAdapter,
+        mockEventBus as unknown as ChatEventBus
+      );
+
+      mockLocalStorage.setItem("webSearchProviderData", "not-json{{");
+      ws.reload();
+
+      expect(ws.getWebSearchData()).toBeNull();
+      expect(ws.getTools()).toEqual([]);
     });
   });
 

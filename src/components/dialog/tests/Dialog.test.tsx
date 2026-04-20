@@ -10,6 +10,12 @@ vi.mock("../../../theme", () => ({
   useTheme: () => ({ portalContainer: null }),
 }));
 
+const mockUseWidgetConfig = vi.fn(() => ({}) as Record<string, unknown>);
+
+vi.mock("../../../widget-config", () => ({
+  useWidgetConfig: () => mockUseWidgetConfig(),
+}));
+
 vi.mock("../../icon", () => ({
   Icon: ({ name }: { name: string }) => <span data-testid="icon">{name}</span>,
 }));
@@ -260,5 +266,53 @@ describe("DialogContent", () => {
     expect(onClose).toHaveBeenCalledOnce();
 
     document.body.removeChild(container);
+  });
+
+  it("enters fullscreen when WidgetConfig.isDialogFullscreen=true", () => {
+    const container = document.createElement("div");
+    container.id = "app";
+    document.body.appendChild(container);
+
+    mockUseWidgetConfig.mockReturnValueOnce({ isDialogFullscreen: true });
+    render(
+      <Dialog open>
+        <DialogContent header="From config" onClose={vi.fn()}>
+          <p>body</p>
+        </DialogContent>
+      </Dialog>
+    );
+
+    expect(screen.queryByTestId("icon-btn-btn-close")).not.toBeInTheDocument();
+    const content = document.getElementById("dialog-content");
+    expect(content?.className).toMatch(/absolute/);
+
+    document.body.removeChild(container);
+    mockUseWidgetConfig.mockReturnValue({});
+  });
+
+  it("per-call isFullscreen=false overrides WidgetConfig.isDialogFullscreen=true", () => {
+    const container = document.createElement("div");
+    container.id = "app";
+    document.body.appendChild(container);
+
+    mockUseWidgetConfig.mockReturnValueOnce({ isDialogFullscreen: true });
+    render(
+      <Dialog open>
+        <DialogContent
+          header="Override"
+          onClose={vi.fn()}
+          isFullscreen={false}
+        >
+          <p>body</p>
+        </DialogContent>
+      </Dialog>
+    );
+
+    expect(screen.getByTestId("icon-btn-btn-close")).toBeInTheDocument();
+    const content = document.getElementById("dialog-content");
+    expect(content?.className).not.toMatch(/\babsolute\b/);
+
+    document.body.removeChild(container);
+    mockUseWidgetConfig.mockReturnValue({});
   });
 });

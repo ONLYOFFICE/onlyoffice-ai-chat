@@ -2,6 +2,7 @@ import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../app-context";
 import { ActionType, inferCapabilities } from "../capabilities";
 import type { StoreKeys } from "../config";
+import type { ModelAssignmentTask } from "../events/types";
 import type { TErrorData } from "../providers/base";
 import {
   applyProfileToAction,
@@ -42,6 +43,12 @@ export interface ProfilesStoreState {
   extendedThinking: boolean;
   /** Load all profiles and task assignments from storage. */
   init: () => Promise<void>;
+  /** Re-read all profiles from storage without touching task assignments or session override. */
+  reloadProfiles: () => Promise<void>;
+  /** Re-read the persisted chat profile from settings and re-apply it. */
+  reloadCurrentChat: () => void;
+  /** Re-read all task profile assignments (default + 7 tasks) from settings and re-apply. */
+  reloadModelAssignment: () => void;
   /** Create and persist a new profile. Returns `true` on success or error data on failure. */
   addProfile: (
     data: Omit<Profile, "id">
@@ -136,13 +143,18 @@ export function createProfilesStore(deps: {
     (
       settingsKey: string,
       stateField: keyof ProfilesStoreState,
-      actionType: ActionType
+      actionType: ActionType,
+      task: ModelAssignmentTask
     ) =>
     (profile: Profile | null) => {
       profilesService.setTaskProfile(settingsKey, profile);
       set({ [stateField]: profile } as Partial<ProfilesStoreState>);
       const state = store.getState();
       applyProfileToAction(actionType, profile, state.defaultProfile);
+      ctx.callbacksManager.emit("onModelAssignmentUpdated", {
+        task,
+        profileId: profile?.id ?? null,
+      });
     };
 
   let set: (
@@ -207,6 +219,62 @@ export function createProfilesStore(deps: {
         applyAllActionHolders(get());
       },
 
+      reloadProfiles: async () => {
+        const { profiles } = await profilesService.init({
+          defaultKey: keys.defaultProfile,
+          taskKeys: [...TASK_PROFILE_KEYS],
+        });
+        for (const p of profiles) {
+          if (p.capabilities === null || p.capabilities === undefined) {
+            p.capabilities = inferCapabilities(p.providerType, p.modelId);
+          }
+        }
+        set({ profiles });
+      },
+
+      reloadCurrentChat: () => {
+        const { profiles } = get();
+        const chatProfile = profilesService.loadProfileById(
+          profiles,
+          keys.chatProfile
+        );
+        set((state) => {
+          profilesService.applyCurrentChatProvider(
+            state.sessionChatProfile,
+            chatProfile,
+            state.defaultProfile
+          );
+          return { chatProfile };
+        });
+        applyProfileToAction(
+          ActionType.Chat,
+          chatProfile,
+          store.getState().defaultProfile
+        );
+      },
+
+      reloadModelAssignment: () => {
+        const { profiles } = get();
+        const defaultProfile = profilesService.loadProfileById(
+          profiles,
+          keys.defaultProfile
+        );
+        const nextState: Record<string, unknown> = { defaultProfile };
+        for (const key of TASK_PROFILE_KEYS) {
+          nextState[TASK_FIELD_MAP[key]] =
+            profilesService.loadProfileById(profiles, key) ?? null;
+        }
+        set(nextState as Partial<ProfilesStoreState>);
+
+        const fresh = get();
+        profilesService.applyCurrentChatProvider(
+          fresh.sessionChatProfile,
+          fresh.chatProfile,
+          fresh.defaultProfile
+        );
+        applyAllActionHolders(fresh);
+      },
+
       addProfile: async (data) => {
         const result = await profilesService.addProfile(data, get().profiles);
         if (result.success) {
@@ -217,6 +285,10 @@ export function createProfilesStore(deps: {
           if (isFirst) get().setDefaultProfile(result.profile);
           ctx.callbacksManager.emit("onProfileCreated", {
             profile: result.profile,
+          });
+          ctx.callbacksManager.emit("onProfilesUpdated", {
+            kind: "created",
+            profileId: result.profile.id,
           });
           return true;
         }
@@ -274,12 +346,21 @@ export function createProfilesStore(deps: {
 
           return updated;
         });
+        ctx.callbacksManager.emit("onProfileUpdated", { profile });
+        ctx.callbacksManager.emit("onProfilesUpdated", {
+          kind: "updated",
+          profileId: profile.id,
+        });
         return true;
       },
 
       deleteProfile: async (id) => {
         await profilesService.deleteProfile(id);
         ctx.callbacksManager.emit("onProfileDeleted", { profileId: id });
+        ctx.callbacksManager.emit("onProfilesUpdated", {
+          kind: "deleted",
+          profileId: id,
+        });
         set((state) => {
           const profiles = state.profiles.filter((p) => p.id !== id);
 
@@ -344,6 +425,10 @@ export function createProfilesStore(deps: {
           return { defaultProfile: profile };
         });
         applyAllActionHolders(store.getState());
+        ctx.callbacksManager.emit("onModelAssignmentUpdated", {
+          task: "default",
+          profileId: profile?.id ?? null,
+        });
       },
 
       setChatProfile: (profile) => {
@@ -368,37 +453,53 @@ export function createProfilesStore(deps: {
             modelId: profile.modelId,
           });
         }
+        ctx.callbacksManager.emit("onModelAssignmentUpdated", {
+          task: "chat",
+          profileId: profile?.id ?? null,
+        });
+        ctx.callbacksManager.emit("onCurrentChatProfileUpdated", {
+          profileId: profile?.id ?? null,
+          scope: "persisted",
+          providerType: profile?.providerType,
+          modelId: profile?.modelId,
+        });
       },
 
       setSummarizationProfile: makeTaskSetter(
         keys.summarizationProfile,
         "summarizationProfile",
-        ActionType.Summarization
+        ActionType.Summarization,
+        "summarization"
       ),
       setTranslationProfile: makeTaskSetter(
         keys.translationProfile,
         "translationProfile",
-        ActionType.Translation
+        ActionType.Translation,
+        "translation"
       ),
       setTextAnalysisProfile: makeTaskSetter(
         keys.textAnalysisProfile,
         "textAnalysisProfile",
-        ActionType.TextAnalyze
+        ActionType.TextAnalyze,
+        "textAnalysis"
       ),
       setImageGenerationProfile: makeTaskSetter(
         keys.imageGenerationProfile,
         "imageGenerationProfile",
-        ActionType.ImageGeneration
+        ActionType.ImageGeneration,
+        "imageGeneration"
       ),
       setOcrProfile: makeTaskSetter(
         keys.ocrProfile,
         "ocrProfile",
-        ActionType.OCR
+        ActionType.OCR,
+        "ocr"
       ),
       setVisionProfile: makeTaskSetter(
         keys.visionProfile,
         "visionProfile",
-        ActionType.Vision
+        ActionType.Vision,
+        "vision"
       ),
 
       setSessionChatProfile: (profile) => {
@@ -409,6 +510,12 @@ export function createProfilesStore(deps: {
             state.defaultProfile
           );
           return { sessionChatProfile: profile };
+        });
+        ctx.callbacksManager.emit("onCurrentChatProfileUpdated", {
+          profileId: profile?.id ?? null,
+          scope: "session",
+          providerType: profile?.providerType,
+          modelId: profile?.modelId,
         });
       },
 

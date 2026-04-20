@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
+import type { CallbacksManager } from "../events/callbacks";
 import type { ServersService } from "../services/servers";
 import type { TMCPItem } from "../types";
 
@@ -31,6 +32,8 @@ export interface ServersStoreState {
   initServers: () => void;
   /** Rebuild the full tools list from all servers and update state. */
   getTools: () => Promise<void>;
+  /** Re-read MCP config from storage and rebuild the tools list. */
+  reload: () => Promise<void>;
   /** Enable or disable a specific tool by server type and tool name. */
   changeToolStatus: (type: string, name: string, enabled: boolean) => void;
   /** Invoke a tool by name with the given arguments. */
@@ -57,8 +60,9 @@ export interface ServersStoreState {
 
 export function createServersStore(deps: {
   serversService: ServersService;
+  callbacksManager: CallbacksManager;
 }): UseBoundStore<StoreApi<ServersStoreState>> {
-  const { serversService } = deps;
+  const { serversService, callbacksManager } = deps;
 
   return create<ServersStoreState>((set, get) => ({
     servers: {},
@@ -72,6 +76,17 @@ export function createServersStore(deps: {
     },
 
     getTools: async () => {
+      const result = await serversService.buildToolsList();
+      set({
+        tools: result.tools,
+        servers: result.servers,
+        disabledTools: result.disabledTools,
+        webSearchEnabled: result.webSearchEnabled,
+      });
+    },
+
+    reload: async () => {
+      serversService.initServers();
       const result = await serversService.buildToolsList();
       set({
         tools: result.tools,
@@ -96,6 +111,12 @@ export function createServersStore(deps: {
           disabledTools: result.disabledTools,
           webSearchEnabled: result.webSearchEnabled,
         });
+        callbacksManager.emit("onServersUpdated", {
+          kind: "tool-toggled",
+          toolType: type,
+          toolName: name,
+          enabled,
+        });
       }
     },
 
@@ -109,6 +130,12 @@ export function createServersStore(deps: {
 
     setAllowAlways: (value, type, name) => {
       serversService.setAllowAlways(value, type, name);
+      callbacksManager.emit("onServersUpdated", {
+        kind: "tool-auto-approve-changed",
+        toolType: type,
+        toolName: name,
+        allowAlways: value,
+      });
     },
 
     setManageToolData: (data) => {
@@ -119,10 +146,15 @@ export function createServersStore(deps: {
 
     saveConfig: (config) => {
       serversService.saveConfig(config);
+      callbacksManager.emit("onServersUpdated", { kind: "config-saved" });
     },
 
     deleteCustomServer: (name) => {
       serversService.deleteCustomServer(name);
+      callbacksManager.emit("onServersUpdated", {
+        kind: "server-deleted",
+        serverName: name,
+      });
     },
 
     getCustomServersLogs: () => serversService.getCustomServersLogs(),

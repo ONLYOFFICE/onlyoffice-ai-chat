@@ -46,7 +46,7 @@ import { StoresProvider, useStores } from "./store/context";
 import { createStores } from "./store/create-stores";
 import type { ProviderType, TOnlyOfficeConfig } from "./types";
 import { WidgetConfigProvider } from "./widget-config";
-import { ToolsProvider } from "./tools/context";
+import { ToolsProvider, useToolsContext } from "./tools/context";
 import Servers from "./tools/servers";
 import { setServersInstance } from "./tools/tools-holder";
 import type { HostToolGroup } from "./tools/types";
@@ -75,6 +75,7 @@ export interface AIChatWidgetProps {
   hideSettingsButton?: boolean;
   onSettingsClick?: () => void;
   isSettingsActive?: boolean;
+  isDialogFullscreen?: boolean;
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -104,6 +105,7 @@ export const AIChatWidget = React.forwardRef<
       hideSettingsButton,
       onSettingsClick,
       isSettingsActive,
+      isDialogFullscreen,
     },
     ref
   ) => {
@@ -113,8 +115,15 @@ export const AIChatWidget = React.forwardRef<
         hideSettingsButton,
         onSettingsClick,
         isSettingsActive,
+        isDialogFullscreen,
       }),
-      [hideProfilePicker, hideSettingsButton, onSettingsClick, isSettingsActive]
+      [
+        hideProfilePicker,
+        hideSettingsButton,
+        onSettingsClick,
+        isSettingsActive,
+        isDialogFullscreen,
+      ]
     );
 
     // Build AppContext — single DI container for this widget instance
@@ -122,8 +131,8 @@ export const AIChatWidget = React.forwardRef<
       const provider = new Provider();
       provider.setSettings(settings);
       const eventBus = new ChatEventBus();
-      const servers = new Servers(settings, platform, eventBus);
       const callbacksManager = new CallbacksManager();
+      const servers = new Servers(settings, platform, eventBus, callbacksManager);
       const middlewareRunner = new MiddlewareRunner(middleware ?? []);
 
       const ctx: AppContext = {
@@ -253,6 +262,7 @@ const AppInner = ({
   const { currentPage } = useRouter();
   const { manageToolData, setManageToolData } = useServersStore();
   const { fetchClouds } = useCloudsStore();
+  const { servers } = useToolsContext();
 
   useThread({ isReady });
   useServers({ isReady });
@@ -287,8 +297,9 @@ const AppInner = ({
 
   useImperativeHandle(
     widgetRef,
-    () => createWidgetRef(stores, selectCurrentChatProfile, callbacksRef),
-    [stores, selectCurrentChatProfile]
+    () =>
+      createWidgetRef(stores, selectCurrentChatProfile, callbacksRef, servers),
+    [stores, selectCurrentChatProfile, servers]
   );
 
   useEffect(() => {

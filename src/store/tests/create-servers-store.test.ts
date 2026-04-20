@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { CallbacksManager } from "../../events/callbacks";
 import type { ServersService } from "../../services/servers";
 import { createServersStore } from "../create-servers-store";
 
@@ -35,14 +36,19 @@ function makeService(overrides?: Partial<ServersService>): ServersService {
 
 describe("createServersStore", () => {
   let service: ServersService;
+  let callbacksManager: CallbacksManager;
+
+  const makeStore = (s: ServersService = service) =>
+    createServersStore({ serversService: s, callbacksManager });
 
   beforeEach(() => {
     vi.clearAllMocks();
     service = makeService();
+    callbacksManager = new CallbacksManager();
   });
 
   it("starts with empty state", () => {
-    const store = createServersStore({ serversService: service });
+    const store = makeStore();
     const state = store.getState();
     expect(state.servers).toEqual({});
     expect(state.tools).toEqual([]);
@@ -53,7 +59,7 @@ describe("createServersStore", () => {
 
   describe("initServers", () => {
     it("delegates to service", () => {
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
       store.getState().initServers();
       expect(service.initServers).toHaveBeenCalled();
     });
@@ -70,7 +76,7 @@ describe("createServersStore", () => {
           webSearchEnabled: true,
         }),
       } as unknown as Partial<ServersService>);
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
 
       await store.getState().getTools();
 
@@ -92,7 +98,7 @@ describe("createServersStore", () => {
       service = makeService({
         changeToolStatus: vi.fn().mockReturnValue(result),
       } as unknown as Partial<ServersService>);
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
 
       store.getState().changeToolStatus("custom", "t", true);
       expect(store.getState().webSearchEnabled).toBe(true);
@@ -102,7 +108,7 @@ describe("createServersStore", () => {
       service = makeService({
         changeToolStatus: vi.fn().mockReturnValue(null),
       } as unknown as Partial<ServersService>);
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
 
       store.getState().changeToolStatus("custom", "t", true);
       expect(store.getState().tools).toEqual([]);
@@ -111,7 +117,7 @@ describe("createServersStore", () => {
 
   describe("callTools", () => {
     it("delegates to service with disabledTools", async () => {
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
       const result = await store.getState().callTools("fn", { x: 1 });
       expect(service.callTools).toHaveBeenCalledWith("fn", { x: 1 }, {});
       expect(result).toBe("result");
@@ -120,13 +126,13 @@ describe("createServersStore", () => {
 
   describe("checkAllowAlways / setAllowAlways", () => {
     it("checks via service", () => {
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
       store.getState().checkAllowAlways("custom", "tool");
       expect(service.checkAllowAlways).toHaveBeenCalledWith("custom", "tool");
     });
 
     it("sets via service", () => {
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
       store.getState().setAllowAlways(true, "custom", "tool");
       expect(service.setAllowAlways).toHaveBeenCalledWith(
         true,
@@ -138,7 +144,7 @@ describe("createServersStore", () => {
 
   describe("setManageToolData", () => {
     it("sets and clears manage tool data", () => {
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
       const data = {
         message: { role: "assistant" as const, content: [] },
         idx: 0,
@@ -153,7 +159,7 @@ describe("createServersStore", () => {
 
   describe("saveConfig / getConfig", () => {
     it("delegates to service", () => {
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
       store.getState().saveConfig({ mcpServers: { s: {} } });
       expect(service.saveConfig).toHaveBeenCalledWith({
         mcpServers: { s: {} },
@@ -165,7 +171,7 @@ describe("createServersStore", () => {
 
   describe("deleteCustomServer", () => {
     it("delegates to service", () => {
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
       store.getState().deleteCustomServer("my-server");
       expect(service.deleteCustomServer).toHaveBeenCalledWith("my-server");
     });
@@ -176,7 +182,7 @@ describe("createServersStore", () => {
       service = makeService({
         getCustomServersLogs: vi.fn().mockReturnValue({ s: ["log1"] }),
       } as unknown as Partial<ServersService>);
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
       expect(store.getState().getCustomServersLogs()).toEqual({ s: ["log1"] });
     });
   });
@@ -186,8 +192,97 @@ describe("createServersStore", () => {
       service = makeService({
         getWebSearchEnabled: vi.fn().mockReturnValue(true),
       } as unknown as Partial<ServersService>);
-      const store = createServersStore({ serversService: service });
+      const store = makeStore();
       expect(store.getState().getWebSearchEnabled()).toBe(true);
+    });
+  });
+
+  describe("reload", () => {
+    it("calls initServers and buildToolsList, then sets state", async () => {
+      const tools = [{ name: "t", description: "d", inputSchema: {} }];
+      service = makeService({
+        buildToolsList: vi.fn().mockResolvedValue({
+          tools,
+          servers: { s1: tools },
+          disabledTools: {},
+          webSearchEnabled: true,
+        }),
+      } as unknown as Partial<ServersService>);
+      const store = makeStore();
+
+      await store.getState().reload();
+
+      expect(service.initServers).toHaveBeenCalled();
+      expect(service.buildToolsList).toHaveBeenCalled();
+      expect(store.getState().tools).toEqual(tools);
+      expect(store.getState().webSearchEnabled).toBe(true);
+    });
+  });
+
+  describe("onServersUpdated callback", () => {
+    it("fires on saveConfig with kind=config-saved", () => {
+      const onServersUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onServersUpdated });
+      const store = makeStore();
+      store.getState().saveConfig({ mcpServers: {} });
+      expect(onServersUpdated).toHaveBeenCalledTimes(1);
+      expect(onServersUpdated).toHaveBeenCalledWith({ kind: "config-saved" });
+    });
+
+    it("fires on deleteCustomServer with kind=server-deleted", () => {
+      const onServersUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onServersUpdated });
+      const store = makeStore();
+      store.getState().deleteCustomServer("my-server");
+      expect(onServersUpdated).toHaveBeenCalledWith({
+        kind: "server-deleted",
+        serverName: "my-server",
+      });
+    });
+
+    it("fires on changeToolStatus with kind=tool-toggled", () => {
+      const onServersUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onServersUpdated });
+      service = makeService({
+        changeToolStatus: vi.fn().mockReturnValue({
+          tools: [],
+          servers: {},
+          disabledTools: {},
+          webSearchEnabled: false,
+        }),
+      } as unknown as Partial<ServersService>);
+      const store = makeStore();
+      store.getState().changeToolStatus("custom", "search", false);
+      expect(onServersUpdated).toHaveBeenCalledWith({
+        kind: "tool-toggled",
+        toolType: "custom",
+        toolName: "search",
+        enabled: false,
+      });
+    });
+
+    it("does NOT fire on changeToolStatus when service returns null", () => {
+      const onServersUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onServersUpdated });
+      service = makeService({
+        changeToolStatus: vi.fn().mockReturnValue(null),
+      } as unknown as Partial<ServersService>);
+      const store = makeStore();
+      store.getState().changeToolStatus("custom", "search", true);
+      expect(onServersUpdated).not.toHaveBeenCalled();
+    });
+
+    it("fires on setAllowAlways with kind=tool-auto-approve-changed", () => {
+      const onServersUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onServersUpdated });
+      const store = makeStore();
+      store.getState().setAllowAlways(true, "custom", "tool");
+      expect(onServersUpdated).toHaveBeenCalledWith({
+        kind: "tool-auto-approve-changed",
+        toolType: "custom",
+        toolName: "tool",
+        allowAlways: true,
+      });
     });
   });
 });

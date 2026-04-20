@@ -137,7 +137,10 @@ export function createStores(config: CreateStoresConfig): Stores {
     useMessageStore,
     callbacksManager: ctx.callbacksManager,
   });
-  const useServersStore = createServersStore({ serversService });
+  const useServersStore = createServersStore({
+    serversService,
+    callbacksManager: ctx.callbacksManager,
+  });
   const usePromptsStore = createPromptsStore({ promptsService });
   const useAttachmentsStore = createAttachmentsStore();
   const useThemeStore = createThemeStore(ctx);

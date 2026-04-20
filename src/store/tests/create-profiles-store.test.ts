@@ -87,6 +87,7 @@ function makeService(overrides?: Partial<ProfilesService>): ProfilesService {
     editProfile: vi.fn().mockResolvedValue({ success: true }),
     deleteProfile: vi.fn().mockResolvedValue(undefined),
     setTaskProfile: vi.fn(),
+    loadProfileById: vi.fn().mockReturnValue(null),
     clearTaskProfileIfMatch: vi
       .fn()
       .mockImplementation((p: Profile | null, id: string) =>
@@ -275,6 +276,219 @@ describe("createProfilesStore", () => {
       expect(
         (ctx.settings as { set: ReturnType<typeof vi.fn> }).set
       ).toHaveBeenCalledWith("deepMode", "true");
+    });
+  });
+
+  describe("callbacks", () => {
+    const getEmit = () =>
+      ctx.callbacksManager.emit as unknown as ReturnType<typeof vi.fn>;
+
+    it("addProfile emits onProfileCreated + onProfilesUpdated", async () => {
+      const store = createStore();
+      await store.getState().addProfile({
+        name: "New",
+        providerType: "openai",
+        baseUrl: "https://api.openai.com",
+        key: "k",
+        modelId: "gpt-4",
+      });
+      expect(getEmit()).toHaveBeenCalledWith(
+        "onProfileCreated",
+        expect.objectContaining({
+          profile: expect.objectContaining({ id: "new" }),
+        })
+      );
+      expect(getEmit()).toHaveBeenCalledWith("onProfilesUpdated", {
+        kind: "created",
+        profileId: "new",
+      });
+    });
+
+    it("editProfile emits onProfileUpdated + onProfilesUpdated", async () => {
+      const store = createStore();
+      store.setState({ profiles: [makeProfile("1")] });
+      const edited = makeProfile("1", { name: "Updated" });
+      await store.getState().editProfile(edited);
+      expect(getEmit()).toHaveBeenCalledWith("onProfileUpdated", {
+        profile: edited,
+      });
+      expect(getEmit()).toHaveBeenCalledWith("onProfilesUpdated", {
+        kind: "updated",
+        profileId: "1",
+      });
+    });
+
+    it("deleteProfile emits onProfileDeleted + onProfilesUpdated", async () => {
+      const store = createStore();
+      store.setState({ profiles: [makeProfile("1")] });
+      await store.getState().deleteProfile("1");
+      expect(getEmit()).toHaveBeenCalledWith("onProfileDeleted", {
+        profileId: "1",
+      });
+      expect(getEmit()).toHaveBeenCalledWith("onProfilesUpdated", {
+        kind: "deleted",
+        profileId: "1",
+      });
+    });
+
+    it("setDefaultProfile emits onModelAssignmentUpdated", () => {
+      const store = createStore();
+      const profile = makeProfile("d");
+      store.getState().setDefaultProfile(profile);
+      expect(getEmit()).toHaveBeenCalledWith("onModelAssignmentUpdated", {
+        task: "default",
+        profileId: "d",
+      });
+    });
+
+    it("setChatProfile emits onProfileChanged + onModelAssignmentUpdated + onCurrentChatProfileUpdated", () => {
+      const store = createStore();
+      const profile = makeProfile("c");
+      store.getState().setChatProfile(profile);
+      expect(getEmit()).toHaveBeenCalledWith("onProfileChanged", {
+        profileId: "c",
+        providerType: "openai",
+        modelId: "gpt-4",
+      });
+      expect(getEmit()).toHaveBeenCalledWith("onModelAssignmentUpdated", {
+        task: "chat",
+        profileId: "c",
+      });
+      expect(getEmit()).toHaveBeenCalledWith("onCurrentChatProfileUpdated", {
+        profileId: "c",
+        scope: "persisted",
+        providerType: "openai",
+        modelId: "gpt-4",
+      });
+    });
+
+    it("setChatProfile(null) still emits assignment + current chat events", () => {
+      const store = createStore();
+      store.getState().setChatProfile(null);
+      expect(getEmit()).toHaveBeenCalledWith("onModelAssignmentUpdated", {
+        task: "chat",
+        profileId: null,
+      });
+      expect(getEmit()).toHaveBeenCalledWith("onCurrentChatProfileUpdated", {
+        profileId: null,
+        scope: "persisted",
+        providerType: undefined,
+        modelId: undefined,
+      });
+      // onProfileChanged is only emitted when profile is non-null
+      expect(getEmit()).not.toHaveBeenCalledWith(
+        "onProfileChanged",
+        expect.anything()
+      );
+    });
+
+    it.each([
+      ["setSummarizationProfile", "summarization"],
+      ["setTranslationProfile", "translation"],
+      ["setTextAnalysisProfile", "textAnalysis"],
+      ["setImageGenerationProfile", "imageGeneration"],
+      ["setOcrProfile", "ocr"],
+      ["setVisionProfile", "vision"],
+    ] as const)(
+      "%s emits onModelAssignmentUpdated with task=%s",
+      (setter, task) => {
+        const store = createStore();
+        const profile = makeProfile("p");
+        (
+          store.getState() as unknown as Record<
+            string,
+            (p: Profile | null) => void
+          >
+        )[setter](profile);
+        expect(getEmit()).toHaveBeenCalledWith("onModelAssignmentUpdated", {
+          task,
+          profileId: "p",
+        });
+      }
+    );
+
+    it("setSessionChatProfile emits onCurrentChatProfileUpdated with scope=session", () => {
+      const store = createStore();
+      const profile = makeProfile("s");
+      store.getState().setSessionChatProfile(profile);
+      expect(getEmit()).toHaveBeenCalledWith("onCurrentChatProfileUpdated", {
+        profileId: "s",
+        scope: "session",
+        providerType: "openai",
+        modelId: "gpt-4",
+      });
+    });
+  });
+
+  describe("external reload methods", () => {
+    it("reloadProfiles re-reads the profile list only", async () => {
+      const fresh = [makeProfile("x"), makeProfile("y")];
+      service = makeService({
+        init: vi.fn().mockResolvedValue({
+          profiles: fresh,
+          defaultProfile: null,
+          taskProfiles: {},
+        }),
+      } as unknown as Partial<ProfilesService>);
+      const store = createStore();
+      store.setState({
+        profiles: [makeProfile("old")],
+        chatProfile: makeProfile("chat"),
+      });
+
+      await store.getState().reloadProfiles();
+
+      expect(store.getState().profiles).toEqual(fresh);
+      // chatProfile must stay intact — reloadProfiles only touches the list
+      expect(store.getState().chatProfile?.id).toBe("chat");
+    });
+
+    it("reloadCurrentChat re-reads chatProfile via loadProfileById and re-applies it", () => {
+      const chat = makeProfile("c");
+      service = makeService({
+        loadProfileById: vi.fn().mockImplementation((_p, key) =>
+          key === "chat" ? chat : null
+        ),
+      } as unknown as Partial<ProfilesService>);
+      const store = createStore();
+      store.setState({ profiles: [chat], chatProfile: null });
+
+      store.getState().reloadCurrentChat();
+
+      expect(service.loadProfileById).toHaveBeenCalledWith([chat], "chat");
+      expect(store.getState().chatProfile).toEqual(chat);
+      expect(service.applyCurrentChatProvider).toHaveBeenCalled();
+    });
+
+    it("reloadModelAssignment re-reads default + 7 task profiles from settings", () => {
+      const def = makeProfile("d");
+      const summ = makeProfile("s");
+      const keyToProfile: Record<string, Profile> = {
+        default: def,
+        summarization: summ,
+      };
+      service = makeService({
+        loadProfileById: vi
+          .fn()
+          .mockImplementation((_p, key) => keyToProfile[key] ?? null),
+      } as unknown as Partial<ProfilesService>);
+      const store = createStore();
+      store.setState({ profiles: [def, summ] });
+
+      store.getState().reloadModelAssignment();
+
+      expect(store.getState().defaultProfile).toEqual(def);
+      expect(store.getState().summarizationProfile).toEqual(summ);
+      expect(store.getState().translationProfile).toBeNull();
+      expect(service.loadProfileById).toHaveBeenCalledWith(
+        [def, summ],
+        "default"
+      );
+      expect(service.loadProfileById).toHaveBeenCalledWith(
+        [def, summ],
+        "summarization"
+      );
+      expect(service.applyCurrentChatProvider).toHaveBeenCalled();
     });
   });
 });

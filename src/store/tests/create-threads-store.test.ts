@@ -66,12 +66,14 @@ describe("createThreadsStore", () => {
   let service: ThreadsService;
   let profilesStore: ReturnType<typeof makeProfilesStore>;
   let messageStore: ReturnType<typeof makeMessageStore>;
+  let callbacksManager: CallbacksManager;
 
   beforeEach(() => {
     vi.clearAllMocks();
     service = makeThreadsService();
     profilesStore = makeProfilesStore();
     messageStore = makeMessageStore();
+    callbacksManager = new CallbacksManager();
   });
 
   function createStore() {
@@ -83,7 +85,7 @@ describe("createThreadsStore", () => {
       useMessageStore: messageStore as unknown as Parameters<
         typeof createThreadsStore
       >[0]["useMessageStore"],
-      callbacksManager: new CallbacksManager(),
+      callbacksManager,
     });
   }
 
@@ -207,6 +209,77 @@ describe("createThreadsStore", () => {
       store.setState({ threads: [makeThread("t1", "My Thread")] });
       await store.getState().onDownloadThread("t1");
       expect(service.downloadThread).toHaveBeenCalledWith("t1", "My Thread");
+    });
+  });
+
+  describe("onThreadsUpdated callback", () => {
+    it("fires with kind=created on insertThread", () => {
+      const onThreadsUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onThreadsUpdated });
+      const store = createStore();
+      const currentId = store.getState().threadId;
+      store.getState().insertThread("hello");
+      expect(onThreadsUpdated).toHaveBeenCalledWith({
+        kind: "created",
+        threadId: currentId,
+      });
+    });
+
+    it("fires with kind=switched on onSwitchToNewThread", () => {
+      const onThreadsUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onThreadsUpdated });
+      const store = createStore();
+      store.getState().onSwitchToNewThread();
+      expect(onThreadsUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: "switched" })
+      );
+    });
+
+    it("fires with kind=switched on onSwitchToThread", () => {
+      const onThreadsUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onThreadsUpdated });
+      const store = createStore();
+      store.setState({ threads: [makeThread("t1")] });
+      store.getState().onSwitchToThread("t1");
+      expect(onThreadsUpdated).toHaveBeenCalledWith({
+        kind: "switched",
+        threadId: "t1",
+      });
+    });
+
+    it("fires with kind=renamed on onRenameThread", () => {
+      const onThreadsUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onThreadsUpdated });
+      const store = createStore();
+      store.setState({ threads: [makeThread("t1")] });
+      store.getState().onRenameThread("t1", "New title");
+      expect(onThreadsUpdated).toHaveBeenCalledWith({
+        kind: "renamed",
+        threadId: "t1",
+      });
+    });
+
+    it("fires with kind=deleted on onDeleteThread", () => {
+      const onThreadsUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onThreadsUpdated });
+      const store = createStore();
+      store.setState({ threads: [makeThread("t1"), makeThread("t2")] });
+      store.getState().onDeleteThread("t2");
+      expect(onThreadsUpdated).toHaveBeenCalledWith({
+        kind: "deleted",
+        threadId: "t2",
+      });
+    });
+
+    it("fires with kind=cleared on onClearThreadHistory", async () => {
+      const onThreadsUpdated = vi.fn();
+      callbacksManager.setCallbacks({ onThreadsUpdated });
+      const store = createStore();
+      await store.getState().onClearThreadHistory("t1");
+      expect(onThreadsUpdated).toHaveBeenCalledWith({
+        kind: "cleared",
+        threadId: "t1",
+      });
     });
   });
 });

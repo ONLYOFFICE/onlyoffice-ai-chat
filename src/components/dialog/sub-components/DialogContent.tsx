@@ -2,6 +2,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import React from "react";
 import { useI18n } from "../../../locales";
 import { cn } from "../../../lib/utils";
+import { useWidgetConfig } from "../../../widget-config";
 import { Icon } from "../../icon";
 import { IconButton } from "../../icon-button";
 import { DialogOverlay } from "./DialogOverlay";
@@ -37,8 +38,12 @@ const centeredSizeStyles =
   " box-border h-fit-content fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 rounded-[8px]";
 const warningSizeStyles =
   "w-[352px] box-border h-fit-content fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 rounded-[8px]";
-const fullscreenSizeStyles =
-  "w-full h-full absolute inset-0 z-50 box-border";
+const fullscreenSizeStyles = "absolute inset-0 z-50 box-border overflow-hidden";
+/**
+ * Always applied — ensures hardcoded pixel widths (`w-[548px]`, `w-[700px]`,
+ * or anything passed via `className`) never exceed the portal container.
+ */
+const clampStyles = "max-w-full max-h-full";
 const colorStyles =
   "bg-[var(--modal-dialog-background-color)]  shadow-[var(--modal-dialog-shadows)]";
 
@@ -49,16 +54,18 @@ const DialogContent = ({
   onClose,
   isHuge = false,
   withWarningIcon = false,
-  isFullscreen = false,
+  isFullscreen,
   ...props
 }: DialogContentProps) => {
   const { isRTL } = useI18n();
-  const widthStyles = isFullscreen
+  const { isDialogFullscreen } = useWidgetConfig();
+  const fullscreen = isFullscreen ?? isDialogFullscreen ?? false;
+  const widthStyles = fullscreen
     ? ""
     : isHuge
       ? widthHugeStyles
       : widthDefaultStyles;
-  const sizeStyles = isFullscreen
+  const sizeStyles = fullscreen
     ? fullscreenSizeStyles
     : withWarningIcon
       ? warningSizeStyles
@@ -80,7 +87,7 @@ const DialogContent = ({
 
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay isFullscreen={isFullscreen} />
+      <DialogOverlay isFullscreen={fullscreen} />
       <DialogPrimitive.Content
         id="dialog-content"
         data-slot="dialog-content"
@@ -90,7 +97,8 @@ const DialogContent = ({
           sizeStyles,
           colorStyles,
           "flex flex-col",
-          className
+          className,
+          clampStyles
         )}
         onInteractOutside={(e) => e.preventDefault()}
         {...props}
@@ -111,7 +119,7 @@ const DialogContent = ({
               {header}
             </DialogTitle>
           </div>
-          {!isFullscreen ? (
+          {!fullscreen ? (
             <IconButton iconName="btn-close" size={24} onClick={onClose} />
           ) : null}
         </div>

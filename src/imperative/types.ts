@@ -100,4 +100,26 @@ export interface AIChatWidgetRef {
 
   /** Deny a pending tool call. */
   denyToolCall(): void;
+
+  // --- External updates ---
+  // Call these after the host mutates storage/settings out of band so the
+  // widget re-syncs its in-memory state and any currently-open page.
+
+  /** Re-read the profile list from storage. */
+  updateProfiles(): Promise<void>;
+
+  /** Re-read the thread list from storage. */
+  updateThreads(): Promise<void>;
+
+  /** Re-read the persisted chat profile from settings and re-apply it. */
+  updateCurrentChat(): void;
+
+  /** Re-read every task profile assignment (default + 7 tasks) from settings. */
+  updateModelAssignment(): void;
+
+  /** Re-read MCP server config from storage and rebuild the tool list. */
+  updateMCPServer(): Promise<void>;
+
+  /** Re-read the Web Search configuration from storage. */
+  updateWebSearch(): void;
 }

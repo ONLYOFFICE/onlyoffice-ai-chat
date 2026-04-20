@@ -1,3 +1,4 @@
+import type { CallbacksManager } from "../events/callbacks";
 import type { ChatEventBus } from "../events";
 import type { PlatformAdapter } from "../platform/types";
 import type { SettingsAdapter } from "../settings/types";
@@ -20,12 +21,18 @@ class Servers {
   constructor(
     settings: SettingsAdapter,
     platform: PlatformAdapter,
-    eventBus: ChatEventBus
+    eventBus: ChatEventBus,
+    callbacksManager: CallbacksManager | null = null
   ) {
     this.settings = settings;
     this.hostToolSource = new HostToolSource();
     this.customServers = new CustomServers(platform, eventBus);
-    this.webSearch = new WebSearch(settings, platform, eventBus);
+    this.webSearch = new WebSearch(
+      settings,
+      platform,
+      eventBus,
+      callbacksManager
+    );
 
     const raw = this.settings.get(ALLOW_ALWAYS_TOOLS);
     this.allowAlways = raw ? raw.split(",").filter(Boolean) : [];

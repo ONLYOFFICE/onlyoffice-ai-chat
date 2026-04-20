@@ -1,5 +1,10 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
-import type { Profile, TAttachmentFile, TAttachmentImage } from "../types";
+import type {
+  Profile,
+  ProviderType,
+  TAttachmentFile,
+  TAttachmentImage,
+} from "../types";
 
 // ---------------------------------------------------------------------------
 // Message events
@@ -189,6 +194,106 @@ export interface ProfileDeletedEvent {
   profileId: string;
 }
 
+/**
+ * Fired when an existing AI profile is edited in-place.
+ */
+export interface ProfileUpdatedEvent {
+  profile: Profile;
+}
+
+// ---------------------------------------------------------------------------
+// Aggregate "updated" events
+// ---------------------------------------------------------------------------
+
+/** Discriminator for {@link ThreadsUpdatedEvent}. */
+export type ThreadsUpdateKind =
+  | "created"
+  | "switched"
+  | "renamed"
+  | "cleared"
+  | "deleted";
+
+/**
+ * Catch-all thread change event: fired alongside every granular thread
+ * callback (`onThreadCreated`, `onThreadSwitched`, …).
+ */
+export interface ThreadsUpdatedEvent {
+  kind: ThreadsUpdateKind;
+  threadId: string;
+}
+
+/** Discriminator for {@link ProfilesUpdatedEvent}. */
+export type ProfilesUpdateKind = "created" | "updated" | "deleted";
+
+/**
+ * Catch-all profile inventory change event: fired alongside
+ * `onProfileCreated` / `onProfileUpdated` / `onProfileDeleted`.
+ */
+export interface ProfilesUpdatedEvent {
+  kind: ProfilesUpdateKind;
+  profileId: string;
+}
+
+/**
+ * Fired whenever the effective chat profile changes — either via a
+ * session-scoped selection in the composer (`scope: "session"`) or via
+ * a persisted Model Assignment change (`scope: "persisted"`).
+ */
+export interface CurrentChatProfileUpdatedEvent {
+  profileId: string | null;
+  scope: "session" | "persisted";
+  providerType?: ProviderType;
+  modelId?: string;
+}
+
+/** Task slot on the Model Assignment page. */
+export type ModelAssignmentTask =
+  | "default"
+  | "chat"
+  | "summarization"
+  | "translation"
+  | "textAnalysis"
+  | "imageGeneration"
+  | "ocr"
+  | "vision";
+
+/**
+ * Fired whenever a profile is bound to or cleared from a task slot.
+ */
+export interface ModelAssignmentUpdatedEvent {
+  task: ModelAssignmentTask;
+  profileId: string | null;
+}
+
+/** Discriminator for {@link ServersUpdatedEvent}. */
+export type ServersUpdateKind =
+  | "config-saved"
+  | "server-deleted"
+  | "tool-toggled"
+  | "tool-auto-approve-changed";
+
+/**
+ * Fired whenever MCP server config or per-tool state changes.
+ */
+export interface ServersUpdatedEvent {
+  kind: ServersUpdateKind;
+  serverName?: string;
+  toolType?: string;
+  toolName?: string;
+  enabled?: boolean;
+  allowAlways?: boolean;
+}
+
+/**
+ * Fired whenever Web Search configuration changes (provider switch,
+ * credentials update, or disabling it entirely).
+ */
+export interface WebSearchUpdatedEvent {
+  enabled: boolean;
+  provider: string | null;
+  isCloudProvider?: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Error events
 // ---------------------------------------------------------------------------
@@ -251,7 +356,15 @@ export interface ChatCallbacks {
   // Profiles
   onProfileChanged?: (data: ProfileChangedEvent) => void;
   onProfileCreated?: (data: ProfileCreatedEvent) => void;
+  onProfileUpdated?: (data: ProfileUpdatedEvent) => void;
   onProfileDeleted?: (data: ProfileDeletedEvent) => void;
+  // Aggregate updates
+  onThreadsUpdated?: (data: ThreadsUpdatedEvent) => void;
+  onProfilesUpdated?: (data: ProfilesUpdatedEvent) => void;
+  onCurrentChatProfileUpdated?: (data: CurrentChatProfileUpdatedEvent) => void;
+  onModelAssignmentUpdated?: (data: ModelAssignmentUpdatedEvent) => void;
+  onServersUpdated?: (data: ServersUpdatedEvent) => void;
+  onWebSearchUpdated?: (data: WebSearchUpdatedEvent) => void;
   // Errors
   onError?: (data: ChatErrorEvent) => void;
 }

@@ -1,3 +1,4 @@
+import type { CallbacksManager } from "../../events/callbacks";
 import type { ChatEventBus } from "../../events";
 import logger from "../../lib/logger";
 import type { PlatformAdapter } from "../../platform/types";
@@ -21,15 +22,18 @@ class WebSearch {
   private settings: SettingsAdapter;
   private platform: PlatformAdapter;
   private eventBus: ChatEventBus;
+  private callbacksManager: CallbacksManager | null;
 
   constructor(
     settings: SettingsAdapter,
     platform: PlatformAdapter,
-    eventBus: ChatEventBus
+    eventBus: ChatEventBus,
+    callbacksManager: CallbacksManager | null = null
   ) {
     this.settings = settings;
     this.platform = platform;
     this.eventBus = eventBus;
+    this.callbacksManager = callbacksManager;
     this.tools = [];
 
     const data = this.settings.get(WEB_SEARCH_DATA);
@@ -64,6 +68,34 @@ class WebSearch {
       this.settings.remove(WEB_SEARCH_DATA);
     }
     this.initTools();
+    this.callbacksManager?.emit("onWebSearchUpdated", {
+      enabled: !!data,
+      provider: data?.provider ?? null,
+      isCloudProvider: data?.isCloudProvider,
+    });
+  };
+
+  /**
+   * Re-read web search configuration from storage and rebuild tools.
+   * Useful when the host updates settings externally.
+   */
+  reload = () => {
+    const raw = this.settings.get(WEB_SEARCH_DATA);
+    if (raw) {
+      try {
+        this.webSearchData = JSON.parse(raw);
+      } catch {
+        this.webSearchData = null;
+      }
+    } else {
+      this.webSearchData = null;
+    }
+    this.initTools();
+    this.callbacksManager?.emit("onWebSearchUpdated", {
+      enabled: !!this.webSearchData,
+      provider: this.webSearchData?.provider ?? null,
+      isCloudProvider: this.webSearchData?.isCloudProvider,
+    });
   };
 
   getWebSearchData = () => {

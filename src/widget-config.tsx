@@ -20,6 +20,12 @@ export interface WidgetConfig {
    * the internal rule (`currentPage === "settings"`).
    */
   isSettingsActive?: boolean;
+  /**
+   * Renders every built-in dialog in fullscreen mode (100% of the portal
+   * container, no header close button). Per-call `<DialogContent isFullscreen>`
+   * still wins when explicitly passed.
+   */
+  isDialogFullscreen?: boolean;
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});
