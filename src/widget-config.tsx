@@ -2,6 +2,24 @@ import { createContext, useContext, useMemo } from "react";
 
 export interface WidgetConfig {
   hideProfilePicker?: boolean;
+  /**
+   * Hide the settings (gear) button in the header. The settings page itself
+   * remains reachable programmatically via the router store.
+   */
+  hideSettingsButton?: boolean;
+  /**
+   * Fully takes over the click on the header settings button. When provided,
+   * the default behavior (`router.setCurrentPage("settings" | "chat")`) is
+   * NOT invoked — the host is responsible for any navigation, modal, etc.
+   */
+  onSettingsClick?: () => void;
+  /**
+   * Forces the header settings button into its active (highlighted) state.
+   * Useful when `onSettingsClick` renders an external panel whose open state
+   * the widget's router doesn't know about. When `undefined`, falls back to
+   * the internal rule (`currentPage === "settings"`).
+   */
+  isSettingsActive?: boolean;
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});

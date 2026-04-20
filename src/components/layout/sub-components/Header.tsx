@@ -1,15 +1,23 @@
 import { useI18n } from "../../../locales";
 import { useStores } from "../../../store/context";
 import { useComponents } from "../../../components-provider";
+import { useWidgetConfig } from "../../../widget-config";
 
 const Navigation = () => {
   const { IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
   const { useRouter, useThreadsStore } = useStores();
+  const { hideSettingsButton, onSettingsClick, isSettingsActive } =
+    useWidgetConfig();
 
   const currentPage = useRouter((s) => s.currentPage);
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
   const onSwitchToNewThread = useThreadsStore((s) => s.onSwitchToNewThread);
+
+  const settingsActive = isSettingsActive ?? currentPage === "settings";
+  const handleSettingsClick = onSettingsClick
+    ? onSettingsClick
+    : () => setCurrentPage(currentPage === "settings" ? "chat" : "settings");
 
   return (
     <nav className="w-full flex justify-between items-center h-[56px] min-h-[56px] box-border border-b-[1px] border-[var(--header-border-color)] bg-[var(--header-background-color)] px-[32px]">
@@ -41,18 +49,18 @@ const Navigation = () => {
           />
         </TooltipIconButton>
       </div>
-      <TooltipIconButton tooltip={t("Settings")}>
-        <IconButton
-          iconName="btn-settings"
-          size={24}
-          isStroke
-          isActive={currentPage === "settings"}
-          onClick={() =>
-            setCurrentPage(currentPage === "settings" ? "chat" : "settings")
-          }
-          data-testid="settings-button"
-        />
-      </TooltipIconButton>
+      {!hideSettingsButton ? (
+        <TooltipIconButton tooltip={t("Settings")}>
+          <IconButton
+            iconName="btn-settings"
+            size={24}
+            isStroke
+            isActive={settingsActive}
+            onClick={handleSettingsClick}
+            data-testid="settings-button"
+          />
+        </TooltipIconButton>
+      ) : null}
     </nav>
   );
 };

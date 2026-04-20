@@ -216,4 +216,49 @@ describe("DialogContent", () => {
 
     document.body.removeChild(container);
   });
+
+  it("in fullscreen mode hides the close button and uses absolute sizing", () => {
+    const container = document.createElement("div");
+    container.id = "app";
+    document.body.appendChild(container);
+
+    render(
+      <Dialog open>
+        <DialogContent header="Fullscreen" onClose={vi.fn()} isFullscreen>
+          <p>Full body</p>
+        </DialogContent>
+      </Dialog>
+    );
+
+    expect(screen.queryByTestId("icon-btn-btn-close")).not.toBeInTheDocument();
+
+    const content = document.getElementById("dialog-content");
+    expect(content).not.toBeNull();
+    expect(content?.className).toMatch(/absolute/);
+    expect(content?.className).toMatch(/inset-0/);
+    expect(content?.className).not.toMatch(/\bfixed\b/);
+    expect(content?.className).not.toMatch(/rounded-\[8px\]/);
+
+    document.body.removeChild(container);
+  });
+
+  it("in fullscreen mode still calls onClose on Escape", () => {
+    const container = document.createElement("div");
+    container.id = "app";
+    document.body.appendChild(container);
+
+    const onClose = vi.fn();
+    render(
+      <Dialog open>
+        <DialogContent header="Fullscreen" onClose={onClose} isFullscreen>
+          <p>body</p>
+        </DialogContent>
+      </Dialog>
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledOnce();
+
+    document.body.removeChild(container);
+  });
 });

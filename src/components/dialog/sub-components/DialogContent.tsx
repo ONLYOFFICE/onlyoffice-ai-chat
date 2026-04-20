@@ -23,6 +23,12 @@ export type DialogContentProps = React.ComponentProps<
   onClose: VoidFunction;
   isHuge?: boolean;
   withWarningIcon?: boolean;
+  /**
+   * Renders the dialog filling 100% of the portal container (no rounded
+   * corners, no centered sizing) and hides the close button in the header.
+   * Takes precedence over `isHuge` and `withWarningIcon` for sizing.
+   */
+  isFullscreen?: boolean;
 };
 
 const widthDefaultStyles = "w-[348px]";
@@ -31,6 +37,8 @@ const centeredSizeStyles =
   " box-border h-fit-content fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 rounded-[8px]";
 const warningSizeStyles =
   "w-[352px] box-border h-fit-content fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 rounded-[8px]";
+const fullscreenSizeStyles =
+  "w-full h-full absolute inset-0 z-50 box-border";
 const colorStyles =
   "bg-[var(--modal-dialog-background-color)]  shadow-[var(--modal-dialog-shadows)]";
 
@@ -41,11 +49,20 @@ const DialogContent = ({
   onClose,
   isHuge = false,
   withWarningIcon = false,
+  isFullscreen = false,
   ...props
 }: DialogContentProps) => {
   const { isRTL } = useI18n();
-  const widthStyles = isHuge ? widthHugeStyles : widthDefaultStyles;
-  const sizeStyles = withWarningIcon ? warningSizeStyles : centeredSizeStyles;
+  const widthStyles = isFullscreen
+    ? ""
+    : isHuge
+      ? widthHugeStyles
+      : widthDefaultStyles;
+  const sizeStyles = isFullscreen
+    ? fullscreenSizeStyles
+    : withWarningIcon
+      ? warningSizeStyles
+      : centeredSizeStyles;
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -63,7 +80,7 @@ const DialogContent = ({
 
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay />
+      <DialogOverlay isFullscreen={isFullscreen} />
       <DialogPrimitive.Content
         id="dialog-content"
         data-slot="dialog-content"
@@ -94,7 +111,9 @@ const DialogContent = ({
               {header}
             </DialogTitle>
           </div>
-          <IconButton iconName="btn-close" size={24} onClick={onClose} />
+          {!isFullscreen ? (
+            <IconButton iconName="btn-close" size={24} onClick={onClose} />
+          ) : null}
         </div>
         <div
           className={cn(

@@ -164,7 +164,7 @@ export const ThemeProvider = ({
       {customStyleContent ? <style>{customStyleContent}</style> : null}
       <div
         ref={containerRef}
-        className={themeId}
+        className={`${themeId} relative`}
         style={inlineStyle as React.CSSProperties | undefined}
       >
         {children}

@@ -4,9 +4,14 @@ import { fireEvent, render, screen } from "@testing-library/react";
 
 const mockSetCurrentPage = vi.fn();
 const mockOnSwitchToNewThread = vi.fn();
+const mockUseWidgetConfig = vi.fn();
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
+}));
+
+vi.mock("../../../widget-config", () => ({
+  useWidgetConfig: () => mockUseWidgetConfig(),
 }));
 
 vi.mock("../../../hooks/useDirection", () => ({
@@ -41,14 +46,17 @@ vi.mock("../../icon-button", () => ({
   IconButton: ({
     iconName,
     onClick,
+    isActive,
     ...rest
   }: {
     iconName: string;
     onClick?: () => void;
+    isActive?: boolean;
     "data-testid"?: string;
   }) => (
     <button
       data-testid={rest["data-testid"] || `icon-btn-${iconName}`}
+      data-active={String(!!isActive)}
       onClick={onClick}
     >
       {iconName}
@@ -71,6 +79,7 @@ import { Navigation } from "../sub-components/Header";
 describe("Navigation (Header)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseWidgetConfig.mockReturnValue({});
   });
 
   it("renders the AIAgent title", () => {
@@ -154,5 +163,50 @@ describe("Navigation (Header)", () => {
     render(<Navigation />);
     fireEvent.click(screen.getByTestId("chat-history-button"));
     expect(mockSetCurrentPage).toHaveBeenCalledWith("chat");
+  });
+
+  it("hides the settings button when hideSettingsButton is true", () => {
+    mockUseWidgetConfig.mockReturnValue({ hideSettingsButton: true });
+    render(<Navigation />);
+    expect(screen.queryByTestId("settings-button")).not.toBeInTheDocument();
+  });
+
+  it("calls onSettingsClick instead of setCurrentPage when provided", () => {
+    const handler = vi.fn();
+    mockUseWidgetConfig.mockReturnValue({ onSettingsClick: handler });
+    render(<Navigation />);
+    fireEvent.click(screen.getByTestId("settings-button"));
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentPage).not.toHaveBeenCalled();
+  });
+
+  it("uses isSettingsActive override to force the active state", () => {
+    mockUseWidgetConfig.mockReturnValue({ isSettingsActive: true });
+    render(<Navigation />);
+    // currentPage is "chat" in the default mock, but override forces active=true
+    const btn = screen.getByTestId("settings-button");
+    expect(btn.getAttribute("data-active")).toBe("true");
+  });
+
+  it("isSettingsActive=false forces inactive even on the settings page", async () => {
+    mockUseWidgetConfig.mockReturnValue({ isSettingsActive: false });
+    const mod = await import("../../../store/context");
+    vi.spyOn(mod, "useStores").mockReturnValue({
+      useRouter: ((selector?: (s: unknown) => unknown) => {
+        const state = {
+          currentPage: "settings",
+          setCurrentPage: mockSetCurrentPage,
+        };
+        return selector ? selector(state) : state;
+      }) as unknown as ReturnType<typeof mod.useStores>["useRouter"],
+      useThreadsStore: ((selector?: (s: unknown) => unknown) => {
+        const state = { onSwitchToNewThread: mockOnSwitchToNewThread };
+        return selector ? selector(state) : state;
+      }) as unknown as ReturnType<typeof mod.useStores>["useThreadsStore"],
+    } as ReturnType<typeof mod.useStores>);
+
+    render(<Navigation />);
+    const btn = screen.getByTestId("settings-button");
+    expect(btn.getAttribute("data-active")).toBe("false");
   });
 });

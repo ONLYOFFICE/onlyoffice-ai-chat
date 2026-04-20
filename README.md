@@ -258,10 +258,18 @@ Runtime toggles to adjust built-in UI. Pass directly as `AIChatWidget` props:
 | Prop | Type | Effect |
 |------|------|--------|
 | `hiddenProviders` | `ProviderType[]` | Hide specific providers from the Add/Edit model dropdowns. |
-| `hideProfilePicker` | `boolean` | Hide the `Ask <profile>` profile picker row inside the chat composer. The current chat profile is still resolved via the store — set it programmatically (e.g. via the imperative ref or an injected profile) when this flag is on. |
+| `hideProfilePicker` | `boolean` | Hide the `Ask <profile>` profile picker row inside the chat composer. The current chat profile is still resolved from the profiles store. |
+| `hideSettingsButton` | `boolean` | Hide the gear button in the header. The settings page stays reachable via `router.setCurrentPage("settings")`. |
+| `onSettingsClick` | `() => void` | Fully override the click on the header settings button — the built-in `setCurrentPage` toggle is not invoked when this is set. |
+| `isSettingsActive` | `boolean` | Force the header settings button into its active (highlighted) state. When `undefined`, falls back to `currentPage === "settings"`. |
 
 ```tsx
-<AIChatWidget hideProfilePicker ...props />
+<AIChatWidget
+  hideProfilePicker
+  onSettingsClick={() => openHostSettings()}
+  isSettingsActive={isHostSettingsOpen}
+  ...props
+/>
 ```
 
 ## Imperative API

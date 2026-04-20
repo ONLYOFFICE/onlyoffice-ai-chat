@@ -72,6 +72,9 @@ export interface AIChatWidgetProps {
   onlyofficeConfig?: TOnlyOfficeConfig;
   hiddenProviders?: ProviderType[];
   hideProfilePicker?: boolean;
+  hideSettingsButton?: boolean;
+  onSettingsClick?: () => void;
+  isSettingsActive?: boolean;
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -98,12 +101,20 @@ export const AIChatWidget = React.forwardRef<
       onlyofficeConfig,
       hiddenProviders,
       hideProfilePicker,
+      hideSettingsButton,
+      onSettingsClick,
+      isSettingsActive,
     },
     ref
   ) => {
     const widgetConfig = useMemo(
-      () => ({ hideProfilePicker }),
-      [hideProfilePicker]
+      () => ({
+        hideProfilePicker,
+        hideSettingsButton,
+        onSettingsClick,
+        isSettingsActive,
+      }),
+      [hideProfilePicker, hideSettingsButton, onSettingsClick, isSettingsActive]
     );
 
     // Build AppContext — single DI container for this widget instance
