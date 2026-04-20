@@ -45,6 +45,7 @@ import type { StorageAdapter } from "./storage/types";
 import { StoresProvider, useStores } from "./store/context";
 import { createStores } from "./store/create-stores";
 import type { ProviderType, TOnlyOfficeConfig } from "./types";
+import { WidgetConfigProvider } from "./widget-config";
 import { ToolsProvider } from "./tools/context";
 import Servers from "./tools/servers";
 import { setServersInstance } from "./tools/tools-holder";
@@ -70,6 +71,7 @@ export interface AIChatWidgetProps {
   middleware?: ChatMiddleware[];
   onlyofficeConfig?: TOnlyOfficeConfig;
   hiddenProviders?: ProviderType[];
+  hideProfilePicker?: boolean;
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -95,9 +97,15 @@ export const AIChatWidget = React.forwardRef<
       middleware,
       onlyofficeConfig,
       hiddenProviders,
+      hideProfilePicker,
     },
     ref
   ) => {
+    const widgetConfig = useMemo(
+      () => ({ hideProfilePicker }),
+      [hideProfilePicker]
+    );
+
     // Build AppContext — single DI container for this widget instance
     const { ctx, stores } = useMemo(() => {
       const provider = new Provider();
@@ -148,24 +156,26 @@ export const AIChatWidget = React.forwardRef<
           <PlatformProvider platform={platform}>
             <I18nProvider locale={locale} translations={translations}>
               <ComponentsProvider overrides={components}>
-                <StoresProvider stores={stores}>
-                  <ThemeProvider
-                    theme={theme}
-                    customTheme={customTheme}
-                    customThemes={customThemes}
-                  >
-                    <ImagesProvider overrides={images}>
-                      <AppWithTools
-                        storage={storage}
-                        hostToolGroupsProp={hostToolGroupsProp}
-                        onMigrate={onMigrate}
-                        servers={ctx.servers}
-                        eventBus={ctx.eventBus}
-                        widgetRef={ref}
-                      />
-                    </ImagesProvider>
-                  </ThemeProvider>
-                </StoresProvider>
+                <WidgetConfigProvider config={widgetConfig}>
+                  <StoresProvider stores={stores}>
+                    <ThemeProvider
+                      theme={theme}
+                      customTheme={customTheme}
+                      customThemes={customThemes}
+                    >
+                      <ImagesProvider overrides={images}>
+                        <AppWithTools
+                          storage={storage}
+                          hostToolGroupsProp={hostToolGroupsProp}
+                          onMigrate={onMigrate}
+                          servers={ctx.servers}
+                          eventBus={ctx.eventBus}
+                          widgetRef={ref}
+                        />
+                      </ImagesProvider>
+                    </ThemeProvider>
+                  </StoresProvider>
+                </WidgetConfigProvider>
               </ComponentsProvider>
             </I18nProvider>
           </PlatformProvider>

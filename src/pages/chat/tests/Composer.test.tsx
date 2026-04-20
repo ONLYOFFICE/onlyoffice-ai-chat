@@ -12,6 +12,12 @@ vi.mock("../../../store/context", () => ({
   useStores: () => mockUseStores(),
 }));
 
+const mockUseWidgetConfig = vi.fn();
+
+vi.mock("../../../widget-config", () => ({
+  useWidgetConfig: () => mockUseWidgetConfig(),
+}));
+
 vi.mock("@assistant-ui/react", () => ({
   ComposerPrimitive: {
     Root: ({
@@ -54,6 +60,7 @@ function setupStores(overrides?: {
   attachmentFiles?: { path: string; content: string; type: number }[];
   attachmentImages?: { name: string; base64: string }[];
   currentProfile?: { id: string; name: string } | null;
+  hideProfilePicker?: boolean;
 }) {
   mockUseStores.mockReturnValue({
     useAttachmentsStore: () => ({
@@ -67,6 +74,9 @@ function setupStores(overrides?: {
       return {};
     },
     selectCurrentChatProfile: () => overrides?.currentProfile ?? null,
+  });
+  mockUseWidgetConfig.mockReturnValue({
+    hideProfilePicker: overrides?.hideProfilePicker ?? false,
   });
 }
 
@@ -130,5 +140,12 @@ describe("Composer", () => {
     setupStores();
     render(<Composer />);
     expect(screen.getByTestId("composer-action")).toBeInTheDocument();
+  });
+
+  it("hides the Ask label and select model when hideProfilePicker is true", () => {
+    setupStores({ hideProfilePicker: true });
+    render(<Composer />);
+    expect(screen.queryByText("Ask")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("select-model")).not.toBeInTheDocument();
   });
 });

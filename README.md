@@ -251,6 +251,19 @@ Replace any built-in UI component:
 
 See [Component Overrides](docs/component-overrides.md).
 
+## UI Flags
+
+Runtime toggles to adjust built-in UI. Pass directly as `AIChatWidget` props:
+
+| Prop | Type | Effect |
+|------|------|--------|
+| `hiddenProviders` | `ProviderType[]` | Hide specific providers from the Add/Edit model dropdowns. |
+| `hideProfilePicker` | `boolean` | Hide the `Ask <profile>` profile picker row inside the chat composer. The current chat profile is still resolved via the store — set it programmatically (e.g. via the imperative ref or an injected profile) when this flag is on. |
+
+```tsx
+<AIChatWidget hideProfilePicker ...props />
+```
+
 ## Imperative API
 
 Control the widget programmatically via ref:

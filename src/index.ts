@@ -29,6 +29,17 @@ export type { AppContext } from "./app-context";
 export { AIChatWidget, type AIChatWidgetProps } from "./AIChatWidget";
 
 // ---------------------------------------------------------------------------
+// Widget Config — UI-level runtime flags
+// ---------------------------------------------------------------------------
+
+export {
+  WidgetConfigProvider,
+  useWidgetConfig,
+  type WidgetConfig,
+  type WidgetConfigProviderProps,
+} from "./widget-config";
+
+// ---------------------------------------------------------------------------
 // Imperative Ref
 // ---------------------------------------------------------------------------
 

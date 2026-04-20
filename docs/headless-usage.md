@@ -227,6 +227,7 @@ import {
   ImagesProvider,
   StorageProvider,
   ToolsProvider,
+  WidgetConfigProvider,
 } from "@onlyoffice/ai-chat";
 import "@onlyoffice/ai-chat/styles";
 
@@ -239,23 +240,24 @@ function CustomChatApp() {
         <PlatformProvider platform={ctx.platform}>
           <I18nProvider locale="en">
             <ComponentsProvider>
-              <StoresProvider stores={stores}>
-                <ThemeProvider theme="light">
-                  <ImagesProvider>
-                    <ToolsProvider
-                      hostToolGroups={[]}
-                      servers={ctx.servers}
-                      eventBus={ctx.eventBus}
-                    >
-                      <StorageProvider storage={ctx.storage}>
-                        {/* Your custom layout */}
-                        <MyCustomLayout />
-                      </StorageProvider>
-                    </ToolsProvider>
-                  </ImagesProvider>
-                </ThemeProvider>
-              </StoresProvider>
-            </ComponentsProvider>
+              <WidgetConfigProvider config={{ hideProfilePicker: false }}>
+                <StoresProvider stores={stores}>
+                  <ThemeProvider theme="light">
+                    <ImagesProvider>
+                      <ToolsProvider
+                        hostToolGroups={[]}
+                        servers={ctx.servers}
+                        eventBus={ctx.eventBus}
+                      >
+                        <StorageProvider storage={ctx.storage}>
+                          {/* Your custom layout */}
+                          <MyCustomLayout />
+                        </StorageProvider>
+                      </ToolsProvider>
+                    </ImagesProvider>
+                  </ThemeProvider>
+                </StoresProvider>
+              </WidgetConfigProvider>
           </I18nProvider>
         </PlatformProvider>
       </SettingsProvider>
