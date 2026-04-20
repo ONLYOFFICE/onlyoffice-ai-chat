@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.22
+
+- Fix infinite `fetchModels` loop in `EditModelCard` that exhausted the browser's network pool (`net::ERR_INSUFFICIENT_RESOURCES`). `fetchModels` in `useModelForm` is now memoized via `useCallback`, so the effect that seeds models on mount no longer re-fires on every render.
+
 ## 0.1.19
 
 New host callbacks on `ChatCallbacks` (all optional):

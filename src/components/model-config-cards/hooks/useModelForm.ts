@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useI18n } from "../../../locales";
 import { useStores } from "../../../store/context";
 import { useDebouncedCallback } from "../../../hooks/useDebouncedCallback";
@@ -36,68 +36,71 @@ export const useModelForm = (initialValues: ModelFormValues) => {
     !!values.profileName &&
     Object.values(errors).every((v) => !v);
 
-  const fetchModels = async (
-    providerType: ProviderType,
-    apiKey: string,
-    baseUrl: string,
-    options?: { keepModelIfExists?: boolean; isCloudProvider?: boolean }
-  ) => {
-    if (!baseUrl) return;
-    try {
-      new URL(baseUrl);
-    } catch {
-      setErrors((prev) => ({ ...prev, url: t("InvalidUrl") }));
-      setModels([]);
-      setValues((prev) => ({ ...prev, model: "" }));
-      return;
-    }
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next.url;
-      delete next.key;
-      return next;
-    });
-    setIsLoading(true);
-    const requestId = ++fetchModelsRequestIdRef.current;
-    const providerInfo = provider.getProviderInfo(providerType);
-    const { models: result, errors: fetchErrors } =
-      await provider.getProvidersModels([
-        { type: providerType, name: providerInfo.name, key: apiKey, baseUrl },
-      ]);
-    if (requestId !== fetchModelsRequestIdRef.current) return;
-    setIsLoading(false);
-    const fetchError = fetchErrors.get(providerInfo.name);
-    if (fetchError) {
-      setErrors((prev) => ({
-        ...prev,
-        [fetchError.field]: fetchError.message,
-      }));
-      setModels([]);
-      setValues((prev) => ({ ...prev, model: "" }));
-      return;
-    }
-    const fetched = result.get(providerInfo.name) ?? [];
-    setModels(fetched);
-
-    const displayName = options?.isCloudProvider
-      ? new URL(baseUrl).hostname
-      : providerInfo.name;
-
-    setValues((prev) => {
-      if (options?.keepModelIfExists) {
-        const currentExists = fetched.some((m) => m.id === prev.model);
-        if (currentExists) return prev;
+  const fetchModels = useCallback(
+    async (
+      providerType: ProviderType,
+      apiKey: string,
+      baseUrl: string,
+      options?: { keepModelIfExists?: boolean; isCloudProvider?: boolean }
+    ) => {
+      if (!baseUrl) return;
+      try {
+        new URL(baseUrl);
+      } catch {
+        setErrors((prev) => ({ ...prev, url: t("InvalidUrl") }));
+        setModels([]);
+        setValues((prev) => ({ ...prev, model: "" }));
+        return;
       }
-      const firstModel = fetched[0];
-      return {
-        ...prev,
-        model: firstModel?.id ?? "",
-        ...(firstModel && {
-          profileName: `${displayName} - ${firstModel.name}`,
-        }),
-      };
-    });
-  };
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.url;
+        delete next.key;
+        return next;
+      });
+      setIsLoading(true);
+      const requestId = ++fetchModelsRequestIdRef.current;
+      const providerInfo = provider.getProviderInfo(providerType);
+      const { models: result, errors: fetchErrors } =
+        await provider.getProvidersModels([
+          { type: providerType, name: providerInfo.name, key: apiKey, baseUrl },
+        ]);
+      if (requestId !== fetchModelsRequestIdRef.current) return;
+      setIsLoading(false);
+      const fetchError = fetchErrors.get(providerInfo.name);
+      if (fetchError) {
+        setErrors((prev) => ({
+          ...prev,
+          [fetchError.field]: fetchError.message,
+        }));
+        setModels([]);
+        setValues((prev) => ({ ...prev, model: "" }));
+        return;
+      }
+      const fetched = result.get(providerInfo.name) ?? [];
+      setModels(fetched);
+
+      const displayName = options?.isCloudProvider
+        ? new URL(baseUrl).hostname
+        : providerInfo.name;
+
+      setValues((prev) => {
+        if (options?.keepModelIfExists) {
+          const currentExists = fetched.some((m) => m.id === prev.model);
+          if (currentExists) return prev;
+        }
+        const firstModel = fetched[0];
+        return {
+          ...prev,
+          model: firstModel?.id ?? "",
+          ...(firstModel && {
+            profileName: `${displayName} - ${firstModel.name}`,
+          }),
+        };
+      });
+    },
+    [provider, t]
+  );
 
   const debouncedFetchModels = useDebouncedCallback(fetchModels, 500);
 
