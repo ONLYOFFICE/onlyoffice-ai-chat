@@ -93,7 +93,11 @@ export class ProfilesService {
   async init(keys: TaskProfileKeys): Promise<ProfilesInitResult> {
     const storage = this.ctx.storage;
     const settings = this.ctx.settings;
-    const profiles = (await storage.profiles.getAll()).reverse();
+    // Sort newest-first by creation time. Legacy profiles without
+    // `createdAt` fall back to 0 and land at the bottom of the list.
+    const profiles = (await storage.profiles.getAll()).sort(
+      (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)
+    );
 
     const defaultProfile =
       this.loadProfileById(profiles, keys.defaultKey) ?? profiles[0] ?? null;
@@ -139,7 +143,11 @@ export class ProfilesService {
 
     if (checkResult === true) {
       const storage = this.ctx.storage;
-      const newProfile: Profile = { ...data, id: crypto.randomUUID() };
+      const newProfile: Profile = {
+        ...data,
+        id: crypto.randomUUID(),
+        createdAt: Date.now(),
+      };
       await storage.profiles.create(newProfile);
       return { success: true, profile: newProfile };
     }

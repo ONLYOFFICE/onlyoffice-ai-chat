@@ -19,7 +19,8 @@ const fieldToErrorKey: Partial<
 
 export const useModelForm = (initialValues: ModelFormValues) => {
   const { t } = useI18n();
-  const { provider } = useStores();
+  const { provider, useCloudsStore } = useStores();
+  const { externalOnlyofficeConfig } = useCloudsStore();
   const [values, setValues] = useState<ModelFormValues>(initialValues);
   const [models, setModels] = useState<Model[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,12 +29,19 @@ export const useModelForm = (initialValues: ModelFormValues) => {
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
+  // Mirrors the credentials-visibility logic in ModelConfigForm: when the
+  // API Key field is shown to the user, a non-empty key is required.
+  const isExternalOnlyoffice =
+    values.provider === "onlyoffice" && !!externalOnlyofficeConfig;
+  const apiKeyRequired = !values.isCloudProvider && !isExternalOnlyoffice;
+
   const isFormValid =
     !isLoading &&
     !!values.provider &&
     !!values.baseUrl &&
     !!values.model &&
     !!values.profileName &&
+    (!apiKeyRequired || !!values.apiKey) &&
     Object.values(errors).every((v) => !v);
 
   const fetchModels = useCallback(

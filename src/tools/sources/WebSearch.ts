@@ -68,6 +68,7 @@ class WebSearch {
       this.settings.remove(WEB_SEARCH_DATA);
     }
     this.initTools();
+    this.eventBus.emit("web-search-changed");
     this.callbacksManager?.emit("onWebSearchUpdated", {
       enabled: !!data,
       provider: data?.provider ?? null,
@@ -91,6 +92,7 @@ class WebSearch {
       this.webSearchData = null;
     }
     this.initTools();
+    this.eventBus.emit("web-search-changed");
     this.callbacksManager?.emit("onWebSearchUpdated", {
       enabled: !!this.webSearchData,
       provider: this.webSearchData?.provider ?? null,
@@ -288,7 +290,7 @@ class WebSearch {
   initTools = () => {
     if (!this.webSearchData) {
       this.setTools([]);
-
+      this.eventBus.emit("tools-changed");
       return;
     }
 

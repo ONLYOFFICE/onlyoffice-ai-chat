@@ -234,23 +234,27 @@ export function createProfilesStore(deps: {
 
       reloadCurrentChat: () => {
         const { profiles } = get();
+        // The effective chat profile is `session ?? chat ?? default`, so to
+        // re-sync it after an external storage mutation we must re-read both
+        // the chat slot and the default slot — otherwise a change to the
+        // default profile (while the chat slot is unset) is invisible here.
         const chatProfile = profilesService.loadProfileById(
           profiles,
           keys.chatProfile
+        );
+        const defaultProfile = profilesService.loadProfileById(
+          profiles,
+          keys.defaultProfile
         );
         set((state) => {
           profilesService.applyCurrentChatProvider(
             state.sessionChatProfile,
             chatProfile,
-            state.defaultProfile
+            defaultProfile
           );
-          return { chatProfile };
+          return { chatProfile, defaultProfile };
         });
-        applyProfileToAction(
-          ActionType.Chat,
-          chatProfile,
-          store.getState().defaultProfile
-        );
+        applyProfileToAction(ActionType.Chat, chatProfile, defaultProfile);
       },
 
       reloadModelAssignment: () => {
@@ -351,6 +355,25 @@ export function createProfilesStore(deps: {
           kind: "updated",
           profileId: profile.id,
         });
+
+        // If the edited profile backs the current effective chat profile
+        // (session > chat > default fallback), notify consumers that the
+        // effective chat provider/model may have changed.
+        const fresh = get();
+        const effective =
+          fresh.sessionChatProfile ?? fresh.chatProfile ?? fresh.defaultProfile;
+        if (effective?.id === profile.id) {
+          const scope =
+            fresh.sessionChatProfile?.id === profile.id
+              ? "session"
+              : "persisted";
+          ctx.callbacksManager.emit("onCurrentChatProfileUpdated", {
+            profileId: profile.id,
+            scope,
+            providerType: profile.providerType,
+            modelId: profile.modelId,
+          });
+        }
         return true;
       },
 

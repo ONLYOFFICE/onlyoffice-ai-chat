@@ -26,6 +26,7 @@ vi.mock("../../../store/context", () => ({
       getProviderInfo: mockGetProviderInfo,
       getProvidersModels: mockGetProvidersModels,
     },
+    useCloudsStore: () => ({ externalOnlyofficeConfig: undefined }),
   }),
 }));
 

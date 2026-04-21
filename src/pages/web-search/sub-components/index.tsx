@@ -27,7 +27,7 @@ const WEB_SEARCH_PROVIDERS: WebSearchProvider[] = [
 const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const { ComboBox, FieldContainer, Input, Link } = useComponents();
   const { t, isRTL } = useI18n();
-  const { servers: serversInstance } = useToolsContext();
+  const { servers: serversInstance, eventBus } = useToolsContext();
   const { useCloudsStore } = useStores();
   const { cloudProviders, externalOnlyofficeConfig } = useCloudsStore();
 
@@ -63,14 +63,26 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const provider = allProviders.find((p) => p.id === selectedId);
 
   React.useEffect(() => {
-    const data = serversInstance.getWebSearchData();
+    const syncFromInstance = () => {
+      const data = serversInstance.getWebSearchData();
+      if (data) {
+        setSelectedId(data.provider);
+        setApiKey(data.key);
+        setBaseUrl(data.baseUrl ?? "");
+      } else {
+        setSelectedId("Exa");
+        setApiKey("");
+        setBaseUrl("");
+      }
+      setBaseUrlError("");
+    };
 
-    if (data) {
-      setSelectedId(data.provider);
-      setApiKey(data.key);
-      setBaseUrl(data.baseUrl ?? "");
-    }
-  }, [serversInstance]);
+    syncFromInstance();
+    eventBus.on("web-search-changed", syncFromInstance);
+    return () => {
+      eventBus.off("web-search-changed", syncFromInstance);
+    };
+  }, [serversInstance, eventBus]);
 
   const saveData = (desc: WebSearchProvider) => {
     const resolvedUrl = desc.baseUrl ?? baseUrl;

@@ -4,6 +4,12 @@ import { render, screen, fireEvent } from "@testing-library/react";
 
 const mockSetWebSearchData = vi.fn();
 const mockGetWebSearchData = vi.fn().mockReturnValue(null);
+const mockEventBus = { on: vi.fn(), off: vi.fn(), emit: vi.fn() };
+const mockServers = {
+  getWebSearchData: mockGetWebSearchData,
+  setWebSearchData: mockSetWebSearchData,
+};
+const mockToolsContext = { servers: mockServers, eventBus: mockEventBus };
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -14,12 +20,7 @@ vi.mock("../../../hooks/useDirection", () => ({
 }));
 
 vi.mock("../../../tools/context", () => ({
-  useToolsContext: () => ({
-    servers: {
-      getWebSearchData: mockGetWebSearchData,
-      setWebSearchData: mockSetWebSearchData,
-    },
-  }),
+  useToolsContext: () => mockToolsContext,
 }));
 
 const mockCloudProviders: {

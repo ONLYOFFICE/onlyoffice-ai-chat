@@ -52,13 +52,14 @@ import { ProfilesService } from "../profiles";
 
 function makeProfile(overrides: Partial<Profile> = {}): Profile {
   return {
-    id: overrides.id ?? crypto.randomUUID(),
-    name: overrides.name ?? "Test Profile",
-    providerType: overrides.providerType ?? "openai",
-    baseUrl: overrides.baseUrl ?? "https://api.openai.com",
-    key: overrides.key ?? "sk-test",
-    modelId: overrides.modelId ?? "gpt-4",
-    reasoning: overrides.reasoning ?? false,
+    id: crypto.randomUUID(),
+    name: "Test Profile",
+    providerType: "openai",
+    baseUrl: "https://api.openai.com",
+    key: "sk-test",
+    modelId: "gpt-4",
+    reasoning: false,
+    ...overrides,
   };
 }
 
@@ -81,9 +82,9 @@ describe("ProfilesService", () => {
   // -------------------------------------------------------------------------
 
   describe("init", () => {
-    it("loads profiles, loads default and task profiles from settings", async () => {
-      const p1 = makeProfile({ id: "p1", name: "Profile 1" });
-      const p2 = makeProfile({ id: "p2", name: "Profile 2" });
+    it("loads profiles sorted newest-first by createdAt, loads default and task profiles from settings", async () => {
+      const p1 = makeProfile({ id: "p1", name: "Profile 1", createdAt: 1000 });
+      const p2 = makeProfile({ id: "p2", name: "Profile 2", createdAt: 2000 });
       mockStorage.profiles.getAll.mockResolvedValue([p1, p2]);
       settingsMap.set("defaultKey", "p2");
       settingsMap.set("taskChat", "p1");
@@ -94,11 +95,29 @@ describe("ProfilesService", () => {
         taskKeys: ["taskChat", "taskSummary"],
       });
 
-      // getAll returns [p1, p2], reversed = [p2, p1]
+      // Sorted newest-first: p2 (2000) before p1 (1000)
       expect(result.profiles).toEqual([p2, p1]);
       expect(result.defaultProfile).toEqual(p2);
       expect(result.taskProfiles.taskChat).toEqual(p1);
       expect(result.taskProfiles.taskSummary).toBeNull();
+    });
+
+    it("places legacy profiles without createdAt after dated ones", async () => {
+      const legacy = makeProfile({ id: "legacy", name: "Legacy" });
+      const fresh = makeProfile({
+        id: "fresh",
+        name: "Fresh",
+        createdAt: 1000,
+      });
+      mockStorage.profiles.getAll.mockResolvedValue([legacy, fresh]);
+
+      const service = createService();
+      const result = await service.init({
+        defaultKey: "defaultKey",
+        taskKeys: [],
+      });
+
+      expect(result.profiles).toEqual([fresh, legacy]);
     });
 
     it("returns empty when no profiles exist", async () => {
@@ -252,6 +271,7 @@ describe("ProfilesService", () => {
       if (result.success) {
         expect(result.profile.name).toBe("New Profile");
         expect(result.profile.id).toBeDefined();
+        expect(typeof result.profile.createdAt).toBe("number");
       }
       expect(mockStorage.profiles.create).toHaveBeenCalled();
     });

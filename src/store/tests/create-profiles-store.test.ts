@@ -318,6 +318,59 @@ describe("createProfilesStore", () => {
       });
     });
 
+    it("editProfile emits onCurrentChatProfileUpdated when editing the default profile while chat slot is unset", async () => {
+      const store = createStore();
+      const def = makeProfile("1");
+      store.setState({
+        profiles: [def],
+        defaultProfile: def,
+        chatProfile: null,
+        sessionChatProfile: null,
+      });
+      const edited = makeProfile("1", { modelId: "gpt-4o" });
+      await store.getState().editProfile(edited);
+      expect(getEmit()).toHaveBeenCalledWith("onCurrentChatProfileUpdated", {
+        profileId: "1",
+        scope: "persisted",
+        providerType: "openai",
+        modelId: "gpt-4o",
+      });
+    });
+
+    it("editProfile emits onCurrentChatProfileUpdated with scope=session when editing the active session profile", async () => {
+      const store = createStore();
+      const p = makeProfile("s");
+      store.setState({
+        profiles: [p],
+        defaultProfile: makeProfile("d"),
+        chatProfile: null,
+        sessionChatProfile: p,
+      });
+      const edited = makeProfile("s", { modelId: "gpt-4o" });
+      await store.getState().editProfile(edited);
+      expect(getEmit()).toHaveBeenCalledWith("onCurrentChatProfileUpdated", {
+        profileId: "s",
+        scope: "session",
+        providerType: "openai",
+        modelId: "gpt-4o",
+      });
+    });
+
+    it("editProfile does not emit onCurrentChatProfileUpdated for an unrelated profile", async () => {
+      const store = createStore();
+      store.setState({
+        profiles: [makeProfile("1"), makeProfile("2")],
+        defaultProfile: makeProfile("1"),
+        chatProfile: null,
+        sessionChatProfile: null,
+      });
+      await store.getState().editProfile(makeProfile("2", { name: "X" }));
+      expect(getEmit()).not.toHaveBeenCalledWith(
+        "onCurrentChatProfileUpdated",
+        expect.anything()
+      );
+    });
+
     it("deleteProfile emits onProfileDeleted + onProfilesUpdated", async () => {
       const store = createStore();
       store.setState({ profiles: [makeProfile("1")] });
@@ -458,6 +511,32 @@ describe("createProfilesStore", () => {
       expect(service.loadProfileById).toHaveBeenCalledWith([chat], "chat");
       expect(store.getState().chatProfile).toEqual(chat);
       expect(service.applyCurrentChatProvider).toHaveBeenCalled();
+    });
+
+    it("reloadCurrentChat also re-reads defaultProfile so fallback chat picks up external default changes", () => {
+      const oldDef = makeProfile("old");
+      const newDef = makeProfile("new");
+      service = makeService({
+        loadProfileById: vi.fn().mockImplementation((_p, key) => {
+          if (key === "default") return newDef;
+          return null;
+        }),
+      } as unknown as Partial<ProfilesService>);
+      const store = createStore();
+      store.setState({
+        profiles: [oldDef, newDef],
+        defaultProfile: oldDef,
+        chatProfile: null,
+      });
+
+      store.getState().reloadCurrentChat();
+
+      expect(service.loadProfileById).toHaveBeenCalledWith(
+        [oldDef, newDef],
+        "default"
+      );
+      expect(store.getState().defaultProfile).toEqual(newDef);
+      expect(store.getState().chatProfile).toBeNull();
     });
 
     it("reloadModelAssignment re-reads default + 7 task profiles from settings", () => {
