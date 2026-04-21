@@ -294,6 +294,15 @@ export interface WebSearchUpdatedEvent {
   isCloudProvider?: boolean;
 }
 
+/**
+ * Fired whenever the "extended thinking" / deep-mode toggle changes
+ * (via the composer button, {@link toggleExtendedThinking}, or an
+ * external re-sync).
+ */
+export interface ExtendedThinkingUpdatedEvent {
+  enabled: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Error events
 // ---------------------------------------------------------------------------
@@ -365,6 +374,7 @@ export interface ChatCallbacks {
   onModelAssignmentUpdated?: (data: ModelAssignmentUpdatedEvent) => void;
   onServersUpdated?: (data: ServersUpdatedEvent) => void;
   onWebSearchUpdated?: (data: WebSearchUpdatedEvent) => void;
+  onExtendedThinkingUpdated?: (data: ExtendedThinkingUpdatedEvent) => void;
   // Errors
   onError?: (data: ChatErrorEvent) => void;
 }

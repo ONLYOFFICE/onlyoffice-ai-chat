@@ -81,6 +81,8 @@ export interface ProfilesStoreState {
   setSessionChatProfile: (profile: Profile | null) => void;
   /** Toggle extended / deep thinking mode on or off and persist the setting. */
   toggleExtendedThinking: () => void;
+  /** Re-read the extended-thinking flag from settings (after external mutation). */
+  reloadExtendedThinking: () => void;
 }
 
 export function createProfilesStore(deps: {
@@ -546,6 +548,26 @@ export function createProfilesStore(deps: {
         set((state) => {
           const next = !state.extendedThinking;
           ctx.settings.set(keys.deepMode, JSON.stringify(next));
+          ctx.callbacksManager.emit("onExtendedThinkingUpdated", {
+            enabled: next,
+          });
+          return { extendedThinking: next };
+        });
+      },
+
+      reloadExtendedThinking: () => {
+        let next = false;
+        try {
+          const saved = ctx.settings.get(keys.deepMode);
+          next = saved ? !!JSON.parse(saved) : false;
+        } catch {
+          next = false;
+        }
+        set((state) => {
+          if (state.extendedThinking === next) return {};
+          ctx.callbacksManager.emit("onExtendedThinkingUpdated", {
+            enabled: next,
+          });
           return { extendedThinking: next };
         });
       },

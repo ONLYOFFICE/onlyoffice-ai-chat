@@ -143,5 +143,9 @@ export function createWidgetRef(
     updateWebSearch() {
       servers.webSearch.reload();
     },
+
+    updateExtendedThinking() {
+      stores.useProfilesStore.getState().reloadExtendedThinking();
+    },
   };
 }

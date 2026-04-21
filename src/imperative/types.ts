@@ -122,4 +122,7 @@ export interface AIChatWidgetRef {
 
   /** Re-read the Web Search configuration from storage. */
   updateWebSearch(): void;
+
+  /** Re-read the extended-thinking (deep-mode) flag from settings. */
+  updateExtendedThinking(): void;
 }

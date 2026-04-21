@@ -277,6 +277,71 @@ describe("createProfilesStore", () => {
         (ctx.settings as { set: ReturnType<typeof vi.fn> }).set
       ).toHaveBeenCalledWith("deepMode", "true");
     });
+
+    it("toggleExtendedThinking emits onExtendedThinkingUpdated", () => {
+      const store = createStore();
+      const emit = ctx.callbacksManager.emit as unknown as ReturnType<
+        typeof vi.fn
+      >;
+      store.getState().toggleExtendedThinking();
+      expect(emit).toHaveBeenCalledWith("onExtendedThinkingUpdated", {
+        enabled: true,
+      });
+    });
+  });
+
+  describe("reloadExtendedThinking", () => {
+    it("re-reads the flag from settings and emits when it changes", () => {
+      const store = createStore();
+      expect(store.getState().extendedThinking).toBe(false);
+
+      const settings = ctx.settings as unknown as {
+        get: ReturnType<typeof vi.fn>;
+      };
+      settings.get.mockReturnValueOnce("true");
+
+      store.getState().reloadExtendedThinking();
+
+      expect(store.getState().extendedThinking).toBe(true);
+      const emit = ctx.callbacksManager.emit as unknown as ReturnType<
+        typeof vi.fn
+      >;
+      expect(emit).toHaveBeenCalledWith("onExtendedThinkingUpdated", {
+        enabled: true,
+      });
+    });
+
+    it("does not emit when the flag is unchanged", () => {
+      const store = createStore();
+      const settings = ctx.settings as unknown as {
+        get: ReturnType<typeof vi.fn>;
+      };
+      settings.get.mockReturnValueOnce("false");
+
+      store.getState().reloadExtendedThinking();
+
+      const emit = ctx.callbacksManager.emit as unknown as ReturnType<
+        typeof vi.fn
+      >;
+      expect(emit).not.toHaveBeenCalledWith(
+        "onExtendedThinkingUpdated",
+        expect.anything()
+      );
+    });
+
+    it("treats invalid JSON in settings as disabled", () => {
+      const store = createStore();
+      store.setState({ extendedThinking: true });
+
+      const settings = ctx.settings as unknown as {
+        get: ReturnType<typeof vi.fn>;
+      };
+      settings.get.mockReturnValueOnce("not-json{{");
+
+      store.getState().reloadExtendedThinking();
+
+      expect(store.getState().extendedThinking).toBe(false);
+    });
   });
 
   describe("callbacks", () => {
