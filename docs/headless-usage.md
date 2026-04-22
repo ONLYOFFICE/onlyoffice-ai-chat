@@ -49,8 +49,9 @@ const provider = new Provider();
 provider.setSettings(settings);
 
 const eventBus = new ChatEventBus();
-const servers = new Servers(settings, platform, eventBus);
 const callbacksManager = new CallbacksManager();
+// Pass the callbacksManager so Servers can emit `onWebSearchUpdated`.
+const servers = new Servers(settings, platform, eventBus, callbacksManager);
 const middlewareRunner = new MiddlewareRunner([]);
 
 const ctx: AppContext = {
@@ -62,6 +63,9 @@ const ctx: AppContext = {
   eventBus,
   callbacksManager,
   middlewareRunner,
+  // Optional external configuration:
+  onlyofficeConfig: undefined,   // { baseUrl, apiKey? } for external ONLYOFFICE AI
+  hiddenProviders: undefined,    // ProviderType[] to hide from model pickers
 };
 ```
 
@@ -87,6 +91,7 @@ const storeKeys: StoreKeys = {
   deepMode: "ai.deepMode",
   mcpServers: "ai.mcpServers",
   disabledTools: "ai.disabledTools",
+  systemPromptAppendix: "ai.systemPromptAppendix",
 };
 
 const stores = createStores({ keys: storeKeys, ctx });
@@ -153,26 +158,45 @@ const unsubscribe = stores.useThreadsStore.subscribe((state) => {
 
 ## Using ChatEngine Directly
 
-`ChatEngine` orchestrates the full message lifecycle. Its methods are async
-generators that yield `ChatEvent` objects:
+`ChatEngine` orchestrates the full message lifecycle. Its `sendMessage` method is an async generator that yields `ChatEvent` objects:
 
 ```ts
-const { chatEngine } = stores;
+const { chatEngine, useProfilesStore } = stores;
 
-// ChatEngine.sendMessage returns AsyncGenerator<ChatEvent>
-// It is designed to be consumed by the useMessages hook, but you can
-// drive it from your own code by iterating the generator.
+// Load profiles from storage once.
+await useProfilesStore.getState().init();
 
-// For programmatic access, use the store actions directly:
-const { useMessageStore, useProfilesStore } = stores;
+// Pick a profile — either the configured chat profile or any profile by id.
+const profile = useProfilesStore.getState().chatProfile
+  ?? useProfilesStore.getState().defaultProfile;
+if (!profile) throw new Error("No profile configured");
 
-// Set up a profile first
-const { loadProfiles } = useProfilesStore.getState();
-await loadProfiles();
-
-// Access the message store for sending
-const { setThreadId } = useMessageStore.getState();
-setThreadId("my-thread-id");
+// Drive the generator directly.
+for await (const event of chatEngine.sendMessage({
+  text: "Hello, assistant!",
+  threadId: "thread-1",
+  existingMessages: [],
+  extendedThinking: false,
+  profileId: profile.id,
+})) {
+  switch (event.type) {
+    case "message-start":
+    case "message-delta":
+    case "message-end":
+      process.stdout.write(
+        typeof event.message.content === "string"
+          ? event.message.content
+          : ""
+      );
+      break;
+    case "tool-call-pending":
+      // Approve programmatically — there is no UI in headless mode.
+      break;
+    case "thread-title":
+      console.log("Auto-generated title:", event.title);
+      break;
+  }
+}
 ```
 
 ### ChatEvent Types
@@ -201,7 +225,6 @@ own layout. They require the full provider stack to be in place.
 import {
   ChatPage,
   SettingsPage,
-  InitialSetupPage,
   EmptyScreenPage,
   AiModelsPage,
   ModelAssignmentPage,
@@ -209,6 +232,8 @@ import {
   WebSearchPage,
 } from "@onlyoffice/ai-chat/pages";
 ```
+
+(The first-run / initial-setup flow is rendered *inside* `ChatPage` automatically when no profiles exist; there is no standalone `InitialSetupPage` export.)
 
 ### Building the Provider Stack
 
@@ -272,10 +297,8 @@ function MyCustomLayout() {
   switch (currentPage) {
     case "settings":
       return <SettingsPage />;
-    case "initial-setup":
-      return <InitialSetupPage />;
     default:
-      return <ChatPage />;
+      return <ChatPage />; // ChatPage handles empty/initial-setup internally
   }
 }
 ```

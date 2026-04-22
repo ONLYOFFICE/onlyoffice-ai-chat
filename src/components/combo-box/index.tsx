@@ -56,6 +56,7 @@ const ComboBox = ({
         >
           <span
             className={cn(
+              "min-w-0 flex-1 truncate",
               value
                 ? "text-[var(--input-color)]"
                 : "text-[var(--input-placeholder-color)]"
@@ -63,7 +64,7 @@ const ComboBox = ({
           >
             {value || placeholder}
           </span>
-          <div className="flex items-center h-full w-[25px]">
+          <div className="flex items-center h-full w-[25px] shrink-0">
             <Icon
               name="arrow.bottom.big"
               color="var(--input-color)"

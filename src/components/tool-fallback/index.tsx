@@ -41,6 +41,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
 
   const isWebSearch = name === "web_search";
   const isWebCrawling = name === "web_crawling";
+  const isImageGeneration = name === "generate_image";
 
   let webSearchName = "";
 
@@ -70,6 +71,18 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   } catch {
     // ignore
   }
+
+  const imageBase64: string | undefined =
+    isImageGeneration &&
+    parsedResult &&
+    typeof parsedResult === "object" &&
+    "data" in parsedResult &&
+    parsedResult.data &&
+    typeof parsedResult.data === "object" &&
+    "base64" in parsedResult.data &&
+    typeof parsedResult.data.base64 === "string"
+      ? (parsedResult.data.base64 as string)
+      : undefined;
 
   return (
     <div className="my-[16px] flex w-full flex-col gap-3">
@@ -259,6 +272,13 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
             </div>
           )}
         </div>
+      ) : null}
+      {isImageGeneration && imageBase64 ? (
+        <img
+          src={`data:image/png;base64,${imageBase64}`}
+          alt={t("ToolCallResult")}
+          className="block max-w-full rounded-[8px]"
+        />
       ) : null}
     </div>
   );

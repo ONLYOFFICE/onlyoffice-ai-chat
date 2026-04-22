@@ -36,6 +36,19 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const [baseUrl, setBaseUrl] = React.useState<string>("");
   const [baseUrlError, setBaseUrlError] = React.useState<string>("");
 
+  // Skip the `web-search-changed` sync for events we ourselves caused —
+  // otherwise saving a partially-filled form (blur with empty key, invalid
+  // URL, etc.) would write null to storage, fire the event, and our own
+  // listener would wipe whatever the user just typed.
+  const selfInitiatedRef = React.useRef(false);
+  const writeWebSearchData = React.useCallback(
+    (data: Parameters<typeof serversInstance.setWebSearchData>[0]) => {
+      selfInitiatedRef.current = true;
+      serversInstance.setWebSearchData(data);
+    },
+    [serversInstance]
+  );
+
   const allProviders = React.useMemo<WebSearchProvider[]>(
     () => [
       ...cloudProviders.map((cp) => ({
@@ -64,13 +77,18 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
 
   React.useEffect(() => {
     const syncFromInstance = () => {
+      if (selfInitiatedRef.current) {
+        selfInitiatedRef.current = false;
+        return;
+      }
       const data = serversInstance.getWebSearchData();
       if (data) {
         setSelectedId(data.provider);
         setApiKey(data.key);
         setBaseUrl(data.baseUrl ?? "");
       } else {
-        setSelectedId("Exa");
+        // External clear (e.g. host sync) — drop credentials so the input
+        // reflects reality, but keep the dropdown selection intact.
         setApiKey("");
         setBaseUrl("");
       }
@@ -91,19 +109,19 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
       try {
         new URL(baseUrl);
       } catch {
-        serversInstance.setWebSearchData(null);
+        writeWebSearchData(null);
         return;
       }
     }
 
     if (apiKey) {
-      serversInstance.setWebSearchData({
+      writeWebSearchData({
         provider: desc.id,
         key: apiKey,
         baseUrl: resolvedUrl,
       });
     } else {
-      serversInstance.setWebSearchData(null);
+      writeWebSearchData(null);
     }
   };
 
@@ -114,14 +132,12 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     setBaseUrlError("");
 
     if (selected.isCloudProvider) {
-      serversInstance.setWebSearchData({
+      writeWebSearchData({
         provider: selected.id,
         key: selected.key ?? "",
         baseUrl: selected.baseUrl ?? "",
         isCloudProvider: true,
       });
-    } else {
-      serversInstance.setWebSearchData(null);
     }
   };
 

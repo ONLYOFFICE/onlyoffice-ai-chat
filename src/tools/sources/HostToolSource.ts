@@ -40,15 +40,35 @@ export class HostToolSource {
     );
   }
 
-  /** Call a tool by name. Searches across all groups */
+  /**
+   * Call a tool by name. Searches across all groups.
+   *
+   * The underlying provider SDKs (OpenAI, Anthropic) require the tool-result
+   * `content` to be a string, so we normalise whatever the handler returns
+   * here: strings pass through untouched; everything else is JSON-serialised.
+   * Errors during the handler are caught and returned as a stringified
+   * `{ error }` payload so one broken tool doesn't tear down the stream.
+   */
   async callTool(
     name: string,
     args: Record<string, unknown>
   ): Promise<unknown> {
     for (const group of this.groups) {
       const tool = group.tools.find((t) => t.name === name);
-      if (tool) {
-        return tool.handler(args);
+      if (!tool) continue;
+      try {
+        const result = await tool.handler(args);
+        if (typeof result === "string") return result;
+        if (result === undefined || result === null) return "{}";
+        try {
+          return JSON.stringify(result);
+        } catch {
+          return JSON.stringify({ error: "Tool result is not serialisable." });
+        }
+      } catch (e) {
+        return JSON.stringify({
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
 

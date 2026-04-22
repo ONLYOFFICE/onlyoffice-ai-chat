@@ -37,7 +37,15 @@ export interface HostTool {
   /** JSON Schema describing the tool's input parameters */
   inputSchema: Record<string, unknown>;
 
-  /** The function that executes the tool. Called with parsed arguments, returns a result for the AI model */
+  /**
+   * The function that executes the tool. Called with parsed arguments.
+   *
+   * The returned value is sent back to the LLM as the tool result. Return a
+   * string (typically `JSON.stringify(...)`) for maximum compatibility —
+   * provider SDKs require tool-result content to be a string. Non-string
+   * values are auto-serialised by {@link HostToolSource.callTool}; thrown
+   * errors are caught and turned into `{ error }` payloads.
+   */
   handler: (args: Record<string, unknown>) => Promise<unknown>;
 
   /** Whether to show an approval dialog before executing. Default: false (auto-allow) */

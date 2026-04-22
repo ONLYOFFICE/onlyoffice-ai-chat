@@ -2,6 +2,7 @@ export {
   applyProfileToAction,
   getActionProvider,
   initActionHolders,
+  refreshActionHolderSystemPrompts,
 } from "./action-holders";
 export type { ChatEvent, ToolCallData } from "./chat-engine";
 export { ChatEngine } from "./chat-engine";

@@ -330,11 +330,13 @@ describe("WebSearch", () => {
     expect(screen.queryByTestId("field-error")).not.toBeInTheDocument();
   });
 
-  it("sets null on non-cloud provider selection", () => {
+  it("does not write on non-cloud provider selection", () => {
+    // Selecting a non-cloud provider no longer clears stored credentials —
+    // `setWebSearchData` is only invoked after the user blurs the API-key
+    // or base-URL input, so partially-filled forms don't clobber storage.
     render(<WebSearch />);
-    // First select something else then switch to ONLYOFFICE
     fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
 
-    expect(mockSetWebSearchData).toHaveBeenCalledWith(null);
+    expect(mockSetWebSearchData).not.toHaveBeenCalled();
   });
 });

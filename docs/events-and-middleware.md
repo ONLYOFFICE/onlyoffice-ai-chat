@@ -4,9 +4,11 @@ The library provides two complementary systems for observing and intercepting th
 
 ## ChatCallbacks
 
-`ChatCallbacks` is an interface with 19 optional handlers covering messages, tool calls, threads, profiles, and errors. Callbacks are purely observational -- they cannot modify or block behavior.
+`ChatCallbacks` is an interface with 29 optional handlers covering messages, tool calls, threads, profiles, MCP/web-search updates, extended thinking, system-prompt appendix, and errors. Callbacks are purely observational -- they cannot modify or block behavior.
 
 ### Full Callback List
+
+#### Messages (6)
 
 | Callback | Event Type | Trigger |
 |----------|-----------|---------|
@@ -16,20 +18,56 @@ The library provides two complementary systems for observing and intercepting th
 | `onStreamEnd` | `StreamEndEvent` | Stream completes successfully |
 | `onStreamError` | `StreamErrorEvent` | Stream encounters an error |
 | `onStreamStop` | `StreamStopEvent` | User cancels an in-progress stream |
+
+#### Tool calls (5)
+
+| Callback | Event Type | Trigger |
+|----------|-----------|---------|
 | `onToolCallPending` | `ToolCallPendingEvent` | Tool call awaits user approval |
 | `onToolCallApproved` | `ToolCallApprovedEvent` | User approves a tool call |
 | `onToolCallDenied` | `ToolCallDeniedEvent` | User denies a tool call |
-| `onToolCallResult` | `ToolCallResultEvent` | Tool call returns a result |
-| `onToolCallAutoApproved` | `ToolCallAutoApprovedEvent` | Tool call auto-approved |
+| `onToolCallResult` | `ToolCallResultEvent` | Tool call completes and returns a result |
+| `onToolCallAutoApproved` | `ToolCallAutoApprovedEvent` | Tool call auto-approved from the persistent allow list |
+
+#### Threads (5, granular)
+
+| Callback | Event Type | Trigger |
+|----------|-----------|---------|
 | `onThreadCreated` | `ThreadCreatedEvent` | New thread created |
 | `onThreadSwitched` | `ThreadSwitchedEvent` | Active thread changes |
 | `onThreadDeleted` | `ThreadDeletedEvent` | Thread deleted |
 | `onThreadRenamed` | `ThreadRenamedEvent` | Thread renamed (manual or auto) |
 | `onThreadCleared` | `ThreadClearedEvent` | All messages in a thread cleared |
-| `onProfileChanged` | `ProfileChangedEvent` | Active profile changes |
-| `onProfileCreated` | `ProfileCreatedEvent` | New profile created |
+
+#### Profiles (4, granular)
+
+| Callback | Event Type | Trigger |
+|----------|-----------|---------|
+| `onProfileChanged` | `ProfileChangedEvent` | Active (session) profile changes |
+| `onProfileCreated` | `ProfileCreatedEvent` | New profile created via `addProfile` |
+| `onProfileUpdated` | `ProfileUpdatedEvent` | Existing profile edited in-place via `editProfile` |
 | `onProfileDeleted` | `ProfileDeletedEvent` | Profile deleted |
-| `onError` | `ChatErrorEvent` | Error occurs (provider/tool/network/storage) |
+
+#### Aggregate "updated" callbacks (8)
+
+These are catch-all callbacks fired alongside the granular ones. Use them when you need a single listener for any change in a domain (e.g. "re-fetch my thread list whenever anything about threads changes").
+
+| Callback | Event Type | Trigger |
+|----------|-----------|---------|
+| `onThreadsUpdated` | `ThreadsUpdatedEvent` | Fires on every thread change. `kind` is one of `"created" \| "switched" \| "renamed" \| "cleared" \| "deleted"`. |
+| `onProfilesUpdated` | `ProfilesUpdatedEvent` | Fires on every profile inventory change. `kind` is one of `"created" \| "updated" \| "deleted"`. |
+| `onCurrentChatProfileUpdated` | `CurrentChatProfileUpdatedEvent` | Fires whenever the effective chat profile changes. `scope` distinguishes `"session"` (composer-scoped override) from `"persisted"` (Model Assignment change). |
+| `onModelAssignmentUpdated` | `ModelAssignmentUpdatedEvent` | Fires when a profile is bound to or cleared from any task slot. `task` is `"default" \| "chat" \| "summarization" \| "translation" \| "textAnalysis" \| "imageGeneration" \| "ocr" \| "vision"`. |
+| `onServersUpdated` | `ServersUpdatedEvent` | Fires on MCP changes. `kind` is `"config-saved" \| "server-deleted" \| "tool-toggled" \| "tool-auto-approve-changed"`. |
+| `onWebSearchUpdated` | `WebSearchUpdatedEvent` | Fires on every `setWebSearchData` call (enable, disable, provider switch, credentials update). Payload carries `enabled`, `provider`, `isCloudProvider`. |
+| `onExtendedThinkingUpdated` | `ExtendedThinkingUpdatedEvent` | Fires when the "extended thinking" / deep-mode flag toggles, whether via the composer button, `toggleExtendedThinking`, or a host-driven re-sync. |
+| `onSystemPromptAppendixUpdated` | `SystemPromptAppendixUpdatedEvent` | Fires when the free-form system-prompt appendix changes — via `setSystemPromptAppendix`, `clearSystemPromptAppendix`, or a host-driven re-sync. Payload carries the new `appendix` (empty string when cleared). |
+
+#### Errors (1)
+
+| Callback | Event Type | Trigger |
+|----------|-----------|---------|
+| `onError` | `ChatErrorEvent` | Error occurs. `type` is `"provider" \| "tool" \| "network" \| "storage"`. |
 
 ### Usage
 
@@ -58,6 +96,10 @@ const callbacks: ChatCallbacks = {
 ```
 
 Consumer callback errors are silently swallowed by the `CallbacksManager` so they never break the internal message flow.
+
+### Granular vs. aggregate callbacks
+
+`onThreadCreated` and `onThreadsUpdated({ kind: "created" })` fire for the same underlying change. Subscribe to the granular callback when you need the specific payload (e.g. the new thread's title) and to the aggregate callback when you just need "something about threads changed, go re-read storage". The same split applies to profiles (`onProfileCreated`/`onProfilesUpdated`) — no de-duplication is performed, so avoid subscribing to both for the same side-effect.
 
 ## ChatMiddleware
 

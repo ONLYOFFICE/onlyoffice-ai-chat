@@ -258,31 +258,35 @@ export abstract class AbstractBaseProvider<TOOL, MESSAGE, CLIENT> {
    */
   abstract getProviderModels(data: TData): Promise<Model[]>;
 
+  /**
+   * One-shot, non-streaming chat request.
+   *
+   * Sends exactly the provided messages to the model and returns the
+   * assistant's reply as plain text. Intentionally standalone:
+   *
+   * - **No streaming** — uses the provider SDK's non-stream API.
+   * - **No history** — does NOT read or mutate {@link prevMessages};
+   *   only the messages passed in are sent.
+   * - **No tools** — tools are deliberately omitted so the model
+   *   produces a text answer rather than a tool call.
+   *
+   * Intended for host-driven one-off calls (e.g. vision, OCR,
+   * summarisation prompts) where thread state must not be touched.
+   * Each provider implements this directly against its SDK.
+   *
+   * @param messages     Messages to send in this single turn.
+   * @param systemPrompt Optional system prompt override. When omitted,
+   *   {@link systemPrompt} is used.
+   * @returns The assistant's reply text (empty string on failure).
+   */
+  abstract sendMessageSync(
+    messages: ThreadMessageLike[],
+    systemPrompt?: string
+  ): Promise<string>;
+
   // ============================================
   // Concrete methods (overridable by subclasses)
   // ============================================
-
-  /**
-   * Non-streaming chat request. Returns complete response text.
-   * Default implementation drains the sendMessage() async generator.
-   * Providers MAY override for a more efficient single-request call.
-   */
-  async sendMessageSync(messages: ThreadMessageLike[]): Promise<string> {
-    const result = "";
-    for await (const chunk of this.sendMessage(messages)) {
-      if ("isEnd" in chunk) {
-        const content = chunk.responseMessage.content;
-        if (typeof content === "string") return content;
-        if (Array.isArray(content)) {
-          return content
-            .filter((p) => p.type === "text")
-            .map((p) => ("text" in p ? p.text : ""))
-            .join("");
-        }
-      }
-    }
-    return result;
-  }
 
   /**
    * Image generation. Returns base64-encoded image data.

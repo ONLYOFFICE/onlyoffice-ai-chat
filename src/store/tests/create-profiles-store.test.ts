@@ -12,6 +12,7 @@ import { createProfilesStore } from "../create-profiles-store";
 vi.mock("../../services/action-holders", () => ({
   initActionHolders: vi.fn(),
   applyProfileToAction: vi.fn(),
+  refreshActionHolderSystemPrompts: vi.fn(),
 }));
 
 vi.mock("../../capabilities", () => ({
@@ -56,6 +57,7 @@ function makeKeys(): StoreKeys {
     deepMode: "deepMode",
     mcpServers: "mcpServers",
     disabledTools: "disabledTools",
+    systemPromptAppendix: "systemPromptAppendix",
   };
 }
 
@@ -64,11 +66,19 @@ function makeCtx(): AppContext {
     settings: {
       get: vi.fn().mockReturnValue(null),
       set: vi.fn(),
+      remove: vi.fn(),
     },
     callbacksManager: {
       emit: vi.fn(),
       setCallbacks: vi.fn(),
       getCallbacks: vi.fn().mockReturnValue({}),
+    },
+    servers: {
+      setImageGenerationEnabled: vi.fn(),
+      getImageGenerationEnabled: vi.fn().mockReturnValue(false),
+    },
+    provider: {
+      refreshSystemPrompt: vi.fn(),
     },
   } as unknown as AppContext;
 }
@@ -344,6 +354,97 @@ describe("createProfilesStore", () => {
     });
   });
 
+  describe("systemPromptAppendix", () => {
+    const getSettings = () =>
+      ctx.settings as unknown as {
+        get: ReturnType<typeof vi.fn>;
+        set: ReturnType<typeof vi.fn>;
+        remove: ReturnType<typeof vi.fn>;
+      };
+    const getEmit = () =>
+      ctx.callbacksManager.emit as unknown as ReturnType<typeof vi.fn>;
+
+    it("defaults to empty string when settings has no value", () => {
+      const store = createStore();
+      expect(store.getState().systemPromptAppendix).toBe("");
+    });
+
+    it("reads the persisted value as JSON string on init", () => {
+      getSettings().get.mockImplementation((k: string) =>
+        k === "systemPromptAppendix" ? JSON.stringify("Be concise.") : null
+      );
+      const store = createStore();
+      expect(store.getState().systemPromptAppendix).toBe("Be concise.");
+    });
+
+    it("setSystemPromptAppendix persists as JSON, refreshes prompts, emits event", () => {
+      const store = createStore();
+      store.getState().setSystemPromptAppendix("Be formal.");
+      expect(store.getState().systemPromptAppendix).toBe("Be formal.");
+      expect(getSettings().set).toHaveBeenCalledWith(
+        "systemPromptAppendix",
+        JSON.stringify("Be formal.")
+      );
+      const provider = ctx.provider as unknown as {
+        refreshSystemPrompt: ReturnType<typeof vi.fn>;
+      };
+      expect(provider.refreshSystemPrompt).toHaveBeenCalled();
+      expect(getEmit()).toHaveBeenCalledWith("onSystemPromptAppendixUpdated", {
+        appendix: "Be formal.",
+      });
+    });
+
+    it("setSystemPromptAppendix does not emit when unchanged", () => {
+      const store = createStore();
+      store.getState().setSystemPromptAppendix("Be formal.");
+      getEmit().mockClear();
+      store.getState().setSystemPromptAppendix("Be formal.");
+      expect(getEmit()).not.toHaveBeenCalledWith(
+        "onSystemPromptAppendixUpdated",
+        expect.anything()
+      );
+    });
+
+    it("clearSystemPromptAppendix removes the key and emits empty value", () => {
+      const store = createStore();
+      store.getState().setSystemPromptAppendix("Be formal.");
+      getEmit().mockClear();
+
+      store.getState().clearSystemPromptAppendix();
+      expect(store.getState().systemPromptAppendix).toBe("");
+      expect(getSettings().remove).toHaveBeenCalledWith("systemPromptAppendix");
+      expect(getEmit()).toHaveBeenCalledWith("onSystemPromptAppendixUpdated", {
+        appendix: "",
+      });
+    });
+
+    it("reloadSystemPromptAppendix re-reads from settings and emits on change", () => {
+      const store = createStore();
+      getSettings().get.mockImplementation((k: string) =>
+        k === "systemPromptAppendix"
+          ? JSON.stringify("Respond in French.")
+          : null
+      );
+
+      store.getState().reloadSystemPromptAppendix();
+      expect(store.getState().systemPromptAppendix).toBe("Respond in French.");
+      expect(getEmit()).toHaveBeenCalledWith("onSystemPromptAppendixUpdated", {
+        appendix: "Respond in French.",
+      });
+    });
+
+    it("reloadSystemPromptAppendix falls back to empty on malformed JSON", () => {
+      const store = createStore();
+      store.setState({ systemPromptAppendix: "something" });
+      getSettings().get.mockImplementation((k: string) =>
+        k === "systemPromptAppendix" ? "not-json{{" : null
+      );
+
+      store.getState().reloadSystemPromptAppendix();
+      expect(store.getState().systemPromptAppendix).toBe("");
+    });
+  });
+
   describe("callbacks", () => {
     const getEmit = () =>
       ctx.callbacksManager.emit as unknown as ReturnType<typeof vi.fn>;
@@ -564,9 +665,9 @@ describe("createProfilesStore", () => {
     it("reloadCurrentChat re-reads chatProfile via loadProfileById and re-applies it", () => {
       const chat = makeProfile("c");
       service = makeService({
-        loadProfileById: vi.fn().mockImplementation((_p, key) =>
-          key === "chat" ? chat : null
-        ),
+        loadProfileById: vi
+          .fn()
+          .mockImplementation((_p, key) => (key === "chat" ? chat : null)),
       } as unknown as Partial<ProfilesService>);
       const store = createStore();
       store.setState({ profiles: [chat], chatProfile: null });

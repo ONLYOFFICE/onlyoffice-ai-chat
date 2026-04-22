@@ -48,6 +48,7 @@ export type TranslationKey =
   | "DisableAllTools"
   | "Download"
   | "DownloadTemplate"
+  | "DropFilesHere"
   | "Edit"
   | "EditAIModel"
   | "EditAIPrompt"

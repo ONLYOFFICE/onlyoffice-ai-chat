@@ -17,6 +17,9 @@ vi.mock("../../providers/registry", () => ({
 
 vi.mock("../../providers/prompts", () => ({
   SYSTEM_PROMPT: "You are a helpful assistant.",
+  buildSystemPrompt: () => "You are a helpful assistant.",
+  getSystemPromptAppendix: () => "",
+  setSystemPromptAppendix: () => undefined,
 }));
 
 import {

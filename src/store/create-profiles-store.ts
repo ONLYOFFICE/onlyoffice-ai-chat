@@ -4,9 +4,11 @@ import { ActionType, inferCapabilities } from "../capabilities";
 import type { StoreKeys } from "../config";
 import type { ModelAssignmentTask } from "../events/types";
 import type { TErrorData } from "../providers/base";
+import { setSystemPromptAppendix as setGlobalSystemPromptAppendix } from "../providers/prompts";
 import {
   applyProfileToAction,
   initActionHolders,
+  refreshActionHolderSystemPrompts,
 } from "../services/action-holders";
 import type { ProfilesService } from "../services/profiles";
 import type { Profile } from "../types";
@@ -41,6 +43,11 @@ export interface ProfilesStoreState {
   sessionChatProfile: Profile | null;
   /** Whether extended / deep thinking mode is enabled. */
   extendedThinking: boolean;
+  /**
+   * Optional free-form text appended to the built-in system prompt on every
+   * provider request. Empty string means no appendix is active.
+   */
+  systemPromptAppendix: string;
   /** Load all profiles and task assignments from storage. */
   init: () => Promise<void>;
   /** Re-read all profiles from storage without touching task assignments or session override. */
@@ -83,6 +90,16 @@ export interface ProfilesStoreState {
   toggleExtendedThinking: () => void;
   /** Re-read the extended-thinking flag from settings (after external mutation). */
   reloadExtendedThinking: () => void;
+  /**
+   * Set (or replace) the free-form appendix appended to the built-in system
+   * prompt. Pass an empty string to behave like {@link clearSystemPromptAppendix}.
+   * Persists to settings and re-applies to all active providers immediately.
+   */
+  setSystemPromptAppendix: (text: string) => void;
+  /** Remove the system-prompt appendix so providers use the built-in prompt alone. */
+  clearSystemPromptAppendix: () => void;
+  /** Re-read the system-prompt appendix from settings (after external mutation). */
+  reloadSystemPromptAppendix: () => void;
 }
 
 export function createProfilesStore(deps: {
@@ -153,6 +170,9 @@ export function createProfilesStore(deps: {
       set({ [stateField]: profile } as Partial<ProfilesStoreState>);
       const state = store.getState();
       applyProfileToAction(actionType, profile, state.defaultProfile);
+      if (actionType === ActionType.ImageGeneration) {
+        ctx.servers.setImageGenerationEnabled(profile !== null);
+      }
       ctx.callbacksManager.emit("onModelAssignmentUpdated", {
         task,
         profileId: profile?.id ?? null,
@@ -190,6 +210,22 @@ export function createProfilesStore(deps: {
         }
       })(),
 
+      systemPromptAppendix: (() => {
+        try {
+          const saved = ctx.settings.get(keys.systemPromptAppendix);
+          const value = saved ? (JSON.parse(saved) as unknown) : "";
+          const text = typeof value === "string" ? value : "";
+          // Keep the module-level appendix in sync so providers created before
+          // `init()` runs (including the initial `setCurrentProvider` call)
+          // already see the persisted value.
+          setGlobalSystemPromptAppendix(text);
+          return text;
+        } catch {
+          setGlobalSystemPromptAppendix("");
+          return "";
+        }
+      })(),
+
       init: async () => {
         const { profiles, defaultProfile, taskProfiles } =
           await profilesService.init({
@@ -219,6 +255,12 @@ export function createProfilesStore(deps: {
         // Initialize action holders for all task types
         initActionHolders();
         applyAllActionHolders(get());
+
+        // Expose the built-in image-generation tool whenever an explicit
+        // Image Generation profile is assigned (non-default).
+        ctx.servers.setImageGenerationEnabled(
+          !!taskProfiles[keys.imageGenerationProfile]
+        );
       },
 
       reloadProfiles: async () => {
@@ -279,6 +321,9 @@ export function createProfilesStore(deps: {
           fresh.defaultProfile
         );
         applyAllActionHolders(fresh);
+        ctx.servers.setImageGenerationEnabled(
+          fresh.imageGenerationProfile !== null
+        );
       },
 
       addProfile: async (data) => {
@@ -569,6 +614,56 @@ export function createProfilesStore(deps: {
             enabled: next,
           });
           return { extendedThinking: next };
+        });
+      },
+
+      setSystemPromptAppendix: (text) => {
+        const next = typeof text === "string" ? text : "";
+        ctx.settings.set(keys.systemPromptAppendix, JSON.stringify(next));
+        setGlobalSystemPromptAppendix(next);
+        ctx.provider.refreshSystemPrompt();
+        refreshActionHolderSystemPrompts();
+        set((state) => {
+          if (state.systemPromptAppendix === next) return {};
+          ctx.callbacksManager.emit("onSystemPromptAppendixUpdated", {
+            appendix: next,
+          });
+          return { systemPromptAppendix: next };
+        });
+      },
+
+      clearSystemPromptAppendix: () => {
+        ctx.settings.remove(keys.systemPromptAppendix);
+        setGlobalSystemPromptAppendix("");
+        ctx.provider.refreshSystemPrompt();
+        refreshActionHolderSystemPrompts();
+        set((state) => {
+          if (state.systemPromptAppendix === "") return {};
+          ctx.callbacksManager.emit("onSystemPromptAppendixUpdated", {
+            appendix: "",
+          });
+          return { systemPromptAppendix: "" };
+        });
+      },
+
+      reloadSystemPromptAppendix: () => {
+        let next = "";
+        try {
+          const saved = ctx.settings.get(keys.systemPromptAppendix);
+          const parsed = saved ? (JSON.parse(saved) as unknown) : "";
+          next = typeof parsed === "string" ? parsed : "";
+        } catch {
+          next = "";
+        }
+        setGlobalSystemPromptAppendix(next);
+        ctx.provider.refreshSystemPrompt();
+        refreshActionHolderSystemPrompts();
+        set((state) => {
+          if (state.systemPromptAppendix === next) return {};
+          ctx.callbacksManager.emit("onSystemPromptAppendixUpdated", {
+            appendix: next,
+          });
+          return { systemPromptAppendix: next };
         });
       },
     };

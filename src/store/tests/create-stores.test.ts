@@ -14,6 +14,7 @@ const DEFAULT_STORE_KEYS: StoreKeys = {
   deepMode: "deep-mode",
   mcpServers: "mcpServers",
   disabledTools: "disabledTools",
+  systemPromptAppendix: "system-prompt-appendix",
 };
 
 // ---------------------------------------------------------------------------
@@ -100,6 +101,8 @@ const mockServers = {
   deleteCustomServer: vi.fn(),
   getCustomServersLogs: vi.fn().mockReturnValue({}),
   getWebSearchEnabled: vi.fn().mockReturnValue(false),
+  setImageGenerationEnabled: vi.fn(),
+  getImageGenerationEnabled: vi.fn().mockReturnValue(false),
   hostToolSource: { setGroups: vi.fn() },
 };
 

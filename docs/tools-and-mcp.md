@@ -1,17 +1,31 @@
 # Tools & MCP
 
-The tool system unifies three tool sources under a single `Servers` class: host tools from the embedding application, web search via Exa API, and custom MCP servers communicating over JSON-RPC 2.0.
+The tool system unifies four tool sources under a single `Servers` class: host tools from the embedding application, web search, image generation, and custom MCP servers communicating over JSON-RPC 2.0.
 
 ## Architecture
 
 ```
 Servers
-  +-- HostToolSource     (host app tools, passed via props)
+  +-- HostToolSource      (host app tools, passed via props)
   +-- WebSearch           (Exa / ONLYOFFICE web search)
+  +-- ImageGeneration     (built-in `generate_image` tool)
   +-- CustomServers       (MCP servers: HTTP + STDIO transports)
 ```
 
 The `Servers` class aggregates tools from all sources via `getTools()`, routes `callTools()` to the correct source, and manages the "always allow" list for tool approval.
+
+### Constructor
+
+```ts
+new Servers(
+  settings: SettingsAdapter,
+  platform: PlatformAdapter,
+  eventBus: ChatEventBus,
+  callbacksManager?: CallbacksManager | null,
+);
+```
+
+`callbacksManager` is optional when building `Servers` standalone (e.g. in bot scripts); pass one to receive `onWebSearchUpdated` and `onServersUpdated` callbacks.
 
 ## Host Tools
 
@@ -108,6 +122,48 @@ servers.setWebSearchData(null);
 ```
 
 Web search tools are always auto-allowed (no approval dialog).
+
+## Image Generation
+
+The `ImageGeneration` source exposes a single `generate_image` tool that routes at call time to whichever profile is currently bound to `ActionType.ImageGeneration` in Model Assignment (typically a Stability AI or OpenAI image model).
+
+### Activation
+
+The tool is gated on `ImageGeneration.setEnabled(true)` — the widget wires this automatically when the user assigns a non-default image generation profile. There is no UI toggle separate from Model Assignment.
+
+### Tool schema
+
+```json
+{
+  "name": "generate_image",
+  "description": "Generate an image from a textual description.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "prompt": {
+        "type": "string",
+        "description": "Detailed description of the image to generate."
+      }
+    },
+    "required": ["prompt"]
+  }
+}
+```
+
+The tool returns a JSON string of the shape `{ "data": { "base64": "..." } }` on success or `{ "error": "..." }` on failure. The widget renders the base64 PNG inline in the chat.
+
+### Auto-approval
+
+Like web search, image generation tool calls are always auto-allowed — `checkAllowAlways("image-generation", ...)` returns `true` unconditionally, and `setAllowAlways` is a no-op for this source.
+
+### Configuration from code
+
+```ts
+// Enable programmatically (normally driven by Model Assignment UI)
+servers.imageGeneration.setEnabled(true);
+servers.imageGeneration.getEnabled();   // true
+servers.imageGeneration.getTools();     // [generate_image tool]
+```
 
 ## Custom MCP Servers
 
@@ -221,9 +277,10 @@ const mySource: ToolSource = {
 };
 ```
 
-The three built-in `ToolSource` implementations are:
+The four built-in `ToolSource` implementations are:
 - `HostToolSource` -- wraps `HostToolGroup[]` from the host app.
 - `WebSearch` -- Exa/ONLYOFFICE-powered web search.
+- `ImageGeneration` -- built-in `generate_image` routed to the Image Generation profile.
 - `CustomServers` -- MCP servers via JSON-RPC 2.0 (HTTP and STDIO).
 
 ## `Servers` Class API

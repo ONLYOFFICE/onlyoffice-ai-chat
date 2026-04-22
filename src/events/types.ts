@@ -303,6 +303,16 @@ export interface ExtendedThinkingUpdatedEvent {
   enabled: boolean;
 }
 
+/**
+ * Fired whenever the free-form system-prompt appendix changes — via
+ * `setSystemPromptAppendix`, `clearSystemPromptAppendix`, or an external
+ * re-sync. The `appendix` field carries the new value (empty string when
+ * cleared).
+ */
+export interface SystemPromptAppendixUpdatedEvent {
+  appendix: string;
+}
+
 // ---------------------------------------------------------------------------
 // Error events
 // ---------------------------------------------------------------------------
@@ -375,6 +385,9 @@ export interface ChatCallbacks {
   onServersUpdated?: (data: ServersUpdatedEvent) => void;
   onWebSearchUpdated?: (data: WebSearchUpdatedEvent) => void;
   onExtendedThinkingUpdated?: (data: ExtendedThinkingUpdatedEvent) => void;
+  onSystemPromptAppendixUpdated?: (
+    data: SystemPromptAppendixUpdatedEvent
+  ) => void;
   // Errors
   onError?: (data: ChatErrorEvent) => void;
 }

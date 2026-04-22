@@ -39,6 +39,10 @@ export class NullProvider extends AbstractBaseProvider<
     // No-op: yields nothing
   }
 
+  async sendMessageSync(): Promise<string> {
+    return "";
+  }
+
   getName(): string {
     return "";
   }

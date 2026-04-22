@@ -23,6 +23,12 @@ import "./styles/index.css";
 export type { AppContext } from "./app-context";
 
 // ---------------------------------------------------------------------------
+// Capabilities — Action types bound to profiles
+// ---------------------------------------------------------------------------
+
+export { ActionType } from "./capabilities";
+
+// ---------------------------------------------------------------------------
 // Widget — Main Entry Point
 // ---------------------------------------------------------------------------
 
@@ -270,6 +276,7 @@ export type {
   ChatErrorEvent,
   CurrentChatProfileUpdatedEvent,
   EventsProviderProps,
+  ExtendedThinkingUpdatedEvent,
   MessageSentEvent,
   ModelAssignmentTask,
   ModelAssignmentUpdatedEvent,
@@ -286,6 +293,7 @@ export type {
   StreamErrorEvent,
   StreamStartEvent,
   StreamStopEvent,
+  SystemPromptAppendixUpdatedEvent,
   ThreadClearedEvent,
   ThreadCreatedEvent,
   ThreadDeletedEvent,

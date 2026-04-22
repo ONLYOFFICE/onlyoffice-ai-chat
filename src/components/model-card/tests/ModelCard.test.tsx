@@ -121,6 +121,7 @@ vi.mock("../DeleteProfileDialog", () => ({
   ),
 }));
 
+import React from "react";
 import { ModelCard } from "../index";
 import type { Profile } from "../../../types";
 
@@ -133,25 +134,39 @@ const profile: Profile = {
   modelId: "gpt-4",
 };
 
+// ModelCard is now controlled: edit state lives in the parent. Use a small
+// harness so the existing behavioural tests keep exercising the full flow.
+const Harness = ({ profile: p }: { profile: Profile }) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  return (
+    <ModelCard
+      profile={p}
+      isEditing={isEditing}
+      onStartEdit={() => setIsEditing(true)}
+      onStopEdit={() => setIsEditing(false)}
+    />
+  );
+};
+
 describe("ModelCard", () => {
   it("renders profile name", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
     const names = screen.getAllByText("My GPT-4");
     expect(names.length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders provider name", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
     expect(screen.getByText("OPENAI")).toBeInTheDocument();
   });
 
   it("renders provider logo", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
     expect(screen.getByTestId("provider-logo")).toHaveTextContent("openai");
   });
 
   it("renders more menu trigger", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
     expect(screen.getByTestId("dropdown")).toBeInTheDocument();
   });
 
@@ -161,12 +176,12 @@ describe("ModelCard", () => {
       isCloudProvider: true,
       baseUrl: "https://cloud.example.com",
     };
-    render(<ModelCard profile={cloudProfile} />);
+    render(<Harness profile={cloudProfile} />);
     expect(screen.getByText("cloud.example.com")).toBeInTheDocument();
   });
 
   it("shows EditModelCard when Edit is clicked", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
     expect(screen.queryByTestId("edit-card")).not.toBeInTheDocument();
 
     act(() => {
@@ -177,7 +192,7 @@ describe("ModelCard", () => {
   });
 
   it("returns to ModelCard view when EditModelCard close is clicked", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
 
     act(() => {
       fireEvent.click(screen.getByTestId("dropdown-item-Edit"));
@@ -192,7 +207,7 @@ describe("ModelCard", () => {
   });
 
   it("shows DeleteProfileDialog when Delete is clicked from dropdown", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
 
     act(() => {
       fireEvent.click(screen.getByTestId("dropdown-item-Delete"));
@@ -202,7 +217,7 @@ describe("ModelCard", () => {
   });
 
   it("closes DeleteProfileDialog via its onClose", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
 
     act(() => {
       fireEvent.click(screen.getByTestId("dropdown-item-Delete"));
@@ -216,7 +231,7 @@ describe("ModelCard", () => {
   });
 
   it("shows DeleteProfileDialog from within EditModelCard when onDelete is called", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
 
     // Enter edit mode
     act(() => {
@@ -232,7 +247,7 @@ describe("ModelCard", () => {
   });
 
   it("renders dropdown items including separator", () => {
-    render(<ModelCard profile={profile} />);
+    render(<Harness profile={profile} />);
     expect(screen.getByTestId("dropdown-item-Edit")).toBeInTheDocument();
     expect(screen.getByTestId("dropdown-item-Delete")).toBeInTheDocument();
   });

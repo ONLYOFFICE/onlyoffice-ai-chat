@@ -39,6 +39,10 @@ class StabilityAIProvider extends AbstractBaseProvider<never, never, null> {
     throw new Error("Stability AI does not support chat");
   }
 
+  async sendMessageSync(): Promise<string> {
+    throw new Error("Stability AI does not support chat");
+  }
+
   isSupportStreaming(): boolean {
     return false;
   }

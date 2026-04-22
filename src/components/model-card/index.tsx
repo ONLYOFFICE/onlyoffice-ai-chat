@@ -11,16 +11,24 @@ import { DeleteProfileDialog } from "./DeleteProfileDialog";
 
 type ModelCardProps = {
   profile: Profile;
+  isEditing: boolean;
+  onStartEdit: () => void;
+  onStopEdit: () => void;
   isEditModelCardHorizontal?: boolean;
 };
 
-const ModelCard = ({ profile, isEditModelCardHorizontal }: ModelCardProps) => {
+const ModelCard = ({
+  profile,
+  isEditing,
+  onStartEdit,
+  onStopEdit,
+  isEditModelCardHorizontal,
+}: ModelCardProps) => {
   const { DropdownMenu, IconButton, TooltipContent } = useComponents();
   const { provider } = useStores();
   const providerName = profile.isCloudProvider
     ? new URL(profile.baseUrl).hostname
     : provider.getProviderInfo(profile.providerType).name;
-  const [isEditing, setIsEditing] = React.useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
   const { t, isRTL } = useI18n();
 
@@ -37,7 +45,7 @@ const ModelCard = ({ profile, isEditModelCardHorizontal }: ModelCardProps) => {
       <>
         <EditModelCard
           profile={profile}
-          onClose={() => setIsEditing(false)}
+          onClose={onStopEdit}
           onDelete={() => setIsDeleteOpen(true)}
           isHorizontal={isEditModelCardHorizontal}
         />
@@ -99,7 +107,7 @@ const ModelCard = ({ profile, isEditModelCardHorizontal }: ModelCardProps) => {
                 />
               ),
               text: t("Edit"),
-              onClick: () => setIsEditing(true),
+              onClick: onStartEdit,
             },
             {
               text: "",

@@ -5,6 +5,7 @@ import type { SettingsAdapter } from "../settings/types";
 import type { TMCPItem } from "../types";
 import { CustomServers } from "./sources/CustomServers";
 import { HostToolSource } from "./sources/HostToolSource";
+import { ImageGeneration } from "./sources/ImageGeneration";
 import { WebSearch, type WebSearchData } from "./sources/WebSearch";
 
 const ALLOW_ALWAYS_TOOLS = "allowAlwaysTools";
@@ -13,6 +14,7 @@ class Servers {
   hostToolSource: HostToolSource;
   customServers: CustomServers;
   webSearch: WebSearch;
+  imageGeneration: ImageGeneration;
 
   allowAlways: string[];
 
@@ -33,13 +35,14 @@ class Servers {
       eventBus,
       callbacksManager
     );
+    this.imageGeneration = new ImageGeneration(eventBus);
 
     const raw = this.settings.get(ALLOW_ALWAYS_TOOLS);
     this.allowAlways = raw ? raw.split(",").filter(Boolean) : [];
   }
 
   checkAllowAlways = (type: string, name: string) => {
-    if (type === "web-search") {
+    if (type === "web-search" || type === "image-generation") {
       return true;
     }
 
@@ -58,7 +61,7 @@ class Servers {
   };
 
   setAllowAlways = (value: boolean, type: string, name: string) => {
-    if (type === "web-search") {
+    if (type === "web-search" || type === "image-generation") {
       return;
     }
 
@@ -84,6 +87,7 @@ class Servers {
     const items: Record<string, TMCPItem[]> = {
       ...hostToolsByGroup,
       "web-search": webSearchTools,
+      "image-generation": this.imageGeneration.getTools(),
       ...customServersTools,
     };
 
@@ -104,6 +108,10 @@ class Servers {
       return await this.webSearch.callTools(name, args);
     }
 
+    if (type === "image-generation") {
+      return await this.imageGeneration.callTools(name, args);
+    }
+
     // Call MCP server tool
     return await this.customServers.callToolFromMCP(type, name, args);
   };
@@ -118,6 +126,10 @@ class Servers {
 
     if (name.startsWith("web-search_")) {
       return "web-search";
+    }
+
+    if (name.startsWith("image-generation_")) {
+      return "image-generation";
     }
 
     return this.customServers.getServerType(name);
@@ -167,6 +179,14 @@ class Servers {
 
   getWebSearchEnabled = () => {
     return this.webSearch.getWebSearchEnabled();
+  };
+
+  setImageGenerationEnabled = (enabled: boolean) => {
+    this.imageGeneration.setEnabled(enabled);
+  };
+
+  getImageGenerationEnabled = () => {
+    return this.imageGeneration.getEnabled();
   };
 }
 

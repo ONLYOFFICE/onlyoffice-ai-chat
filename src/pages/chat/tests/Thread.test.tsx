@@ -17,6 +17,10 @@ vi.mock("../../../store/context", () => ({
     useProfilesStore: () => ({
       profiles: [{ id: "p1", name: "Test" }],
     }),
+    useAttachmentsStore: () => ({
+      addAttachmentFile: vi.fn(),
+      addAttachmentImage: vi.fn(),
+    }),
   }),
 }));
 

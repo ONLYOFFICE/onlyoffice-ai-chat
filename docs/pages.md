@@ -1,19 +1,20 @@
 # Page Components
 
-`@onlyoffice/ai-chat` exports 8 page-level components that can be used standalone to build custom layouts, or composed together outside of the default `AIChatWidget` shell.
+`@onlyoffice/ai-chat` exports 7 page-level components that can be used standalone to build custom layouts, or composed together outside of the default `AIChatWidget` shell.
 
 ## Available Pages
 
 | Component | Description |
 |-----------|-------------|
-| `ChatPage` | Main chat interface with message list, composer, and streaming |
+| `ChatPage` | Main chat interface with message list, composer, streaming, and the first-run (initial-setup) flow rendered inline when no profiles exist |
 | `SettingsPage` | Profile management, model configuration, and general settings |
 | `AiModelsPage` | AI model cards for adding, editing, and deleting profiles |
-| `ModelAssignmentPage` | Assign profiles to specific action types (summarize, translate, etc.) |
+| `ModelAssignmentPage` | Assign profiles to specific action types (summarize, translate, image generation, OCR, vision, etc.) |
 | `McpServersPage` | MCP server configuration and tool management |
-| `WebSearchPage` | Web search (Exa API) configuration |
-| `InitialSetupPage` | First-run wizard for creating the initial profile |
+| `WebSearchPage` | Web search (Exa / ONLYOFFICE AI) configuration |
 | `EmptyScreenPage` | Placeholder shown when no profiles or messages exist |
+
+Note: there is no separate `InitialSetupPage` export. The first-run wizard is rendered inside `ChatPage` automatically when the profile list is empty.
 
 ## Import
 
@@ -27,7 +28,6 @@ import {
   ModelAssignmentPage,
   McpServersPage,
   WebSearchPage,
-  InitialSetupPage,
   EmptyScreenPage,
 } from "@onlyoffice/ai-chat";
 ```
@@ -146,6 +146,7 @@ function MyLayout() {
 
 ## Notes
 
-- `ChatPage` requires an `AssistantRuntimeProvider` from `@assistant-ui/react` wrapping it for the message runtime. Inside `AIChatWidget` this is handled automatically. When using `ChatPage` standalone, you must provide it yourself (see the `AIChatWidget` source for the runtime setup pattern).
-- `EmptyScreenPage` and `InitialSetupPage` are primarily used by the widget's internal routing logic, but can be rendered standalone as landing states.
+- `ChatPage` now wires its own `AssistantRuntimeProvider` internally — no extra provider is required around it. Historically this was the caller's responsibility; that changed when `AssistantRuntimeProvider` was moved into `ChatPage`.
+- `ChatPage` also renders the first-run setup flow internally when `useProfilesStore` has no profiles, so you do not need a separate `InitialSetupPage` route.
+- `EmptyScreenPage` is primarily used by the widget's internal routing logic but can be rendered standalone as a landing state.
 - Pages read all state from Zustand stores via `useStores()`. Ensure stores are created with the correct `AppContext` dependencies.

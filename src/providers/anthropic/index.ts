@@ -7,6 +7,7 @@ import type {
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { CapabilitiesUI } from "../../capabilities";
 import type { Model, TMCPItem, TProvider } from "../../types";
+import logger from "../../lib/logger";
 import { AbstractBaseProvider, type TData, type TErrorData } from "../base";
 import { extractErrorMessage, getErrorStatus, ProviderErrors } from "../errors";
 import { CREATE_TITLE_SYSTEM_PROMPT } from "../prompts";
@@ -112,6 +113,30 @@ class AnthropicProvider extends AbstractBaseProvider<
 
       return title ?? message.substring(0, 25);
     } catch {
+      return "";
+    }
+  }
+
+  async sendMessageSync(
+    messages: ThreadMessageLike[],
+    systemPrompt?: string
+  ): Promise<string> {
+    if (!this.client) return "";
+    try {
+      const converted = convertMessagesToModelFormat(messages);
+      const response = await this.client.messages.create({
+        model: this.modelKey,
+        system: systemPrompt ?? this.systemPrompt,
+        messages: converted,
+        max_tokens: 4096,
+        stream: false,
+      });
+      return response.content
+        .filter((c): c is Extract<typeof c, { type: "text" }> => c.type === "text")
+        .map((c) => c.text)
+        .join("");
+    } catch (e) {
+      logger.error("Anthropic sendMessageSync error:", e);
       return "";
     }
   }

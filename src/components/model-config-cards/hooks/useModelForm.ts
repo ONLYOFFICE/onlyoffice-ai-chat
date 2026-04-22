@@ -28,6 +28,10 @@ export const useModelForm = (initialValues: ModelFormValues) => {
   const fetchModelsRequestIdRef = useRef(0);
   const valuesRef = useRef(values);
   valuesRef.current = values;
+  // Once the user edits the profile name manually, stop auto-generating it
+  // from provider/model selection. Initialised to true in edit mode (name
+  // already has a saved value), false when creating a new profile.
+  const nameTouchedRef = useRef(initialValues.profileName !== "");
 
   // Mirrors the credentials-visibility logic in ModelConfigForm: when the
   // API Key field is shown to the user, a non-empty key is required.
@@ -101,9 +105,10 @@ export const useModelForm = (initialValues: ModelFormValues) => {
         return {
           ...prev,
           model: firstModel?.id ?? "",
-          ...(firstModel && {
-            profileName: `${displayName} - ${firstModel.name}`,
-          }),
+          ...(firstModel &&
+            !nameTouchedRef.current && {
+              profileName: `${displayName} - ${firstModel.name}`,
+            }),
         };
       });
     },
@@ -178,11 +183,15 @@ export const useModelForm = (initialValues: ModelFormValues) => {
       setValues((prev) => ({
         ...prev,
         model: strValue,
-        ...(modelObj && {
-          profileName: `${displayName} - ${modelObj.name}`,
-        }),
+        ...(modelObj &&
+          !nameTouchedRef.current && {
+            profileName: `${displayName} - ${modelObj.name}`,
+          }),
       }));
       return;
+    }
+    if (field === "profileName") {
+      nameTouchedRef.current = true;
     }
     setValues((prev) => ({ ...prev, [field]: value }));
   };

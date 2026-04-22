@@ -6,6 +6,25 @@ Do not push the user toward tools unnecessarily.
 When you do use a tool, explain in natural language what you’re doing if appropriate.
 Otherwise, behave as if you are a standalone LLM chat without tools`;
 
+// Module-level appendix appended to SYSTEM_PROMPT. Kept here (rather than on
+// a per-instance field) so every provider instance — the main facade and
+// every per-action holder — reads the same value without each one needing
+// its own copy kept in sync.
+let systemPromptAppendix = "";
+
+export function getSystemPromptAppendix(): string {
+  return systemPromptAppendix;
+}
+
+export function setSystemPromptAppendix(text: string): void {
+  systemPromptAppendix = typeof text === "string" ? text : "";
+}
+
+export function buildSystemPrompt(): string {
+  const extra = systemPromptAppendix.trim();
+  return extra ? `${SYSTEM_PROMPT}\n\n${extra}` : SYSTEM_PROMPT;
+}
+
 export const CREATE_TITLE_SYSTEM_PROMPT = `You are an assistant that generates short, clear chat titles.
 
 Instructions:

@@ -260,7 +260,7 @@ Services contain all chat business logic. They depend on holders (`getStorageIns
 |--------|------|-------------|
 | `sendMessage()` | abstract | Streaming chat via async generator |
 | `sendMessageAfterToolCall()` | abstract | Continue after tool call |
-| `sendMessageSync()` | concrete | Non-streaming chat — drains generator, returns string |
+| `sendMessageSync()` | abstract | One-shot non-streaming chat — no history, no tools, optional system prompt |
 | `imageGeneration()` | optional | Image generation — returns base64 (OpenAI only) |
 | `imageVision()` | concrete | Image analysis — sends image+prompt via sendMessageSync |
 | `imageOCR()` | concrete | OCR — extracts text from image via imageVision |

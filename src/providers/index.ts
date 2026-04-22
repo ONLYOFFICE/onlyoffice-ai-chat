@@ -5,7 +5,7 @@ import type { Model, ProviderType, TMCPItem, TProvider } from "../types";
 import type { TData, TErrorData } from "./base";
 import { mapFetchError } from "./errors";
 import { NullProvider } from "./null-provider";
-import { SYSTEM_PROMPT } from "./prompts";
+import { buildSystemPrompt } from "./prompts";
 import {
   type BaseProvider,
   getProvider,
@@ -52,7 +52,7 @@ class Provider {
     this.currentProvider = resolved;
     this.currentProviderType = provider.type;
     this.currentProvider.setProvider(provider);
-    this.currentProvider.setSystemPrompt(SYSTEM_PROMPT);
+    this.currentProvider.setSystemPrompt(buildSystemPrompt());
 
     // Restore model from settings to handle initialization race condition
     if (this.settings) {
@@ -72,6 +72,14 @@ class Provider {
   setCurrentProviderModel = (modelKey: string, isReasoning?: boolean) => {
     this.currentProvider.setModelKey(modelKey);
     this.currentProvider.isReasoning = isReasoning ?? false;
+  };
+
+  /**
+   * Re-apply the active system prompt to the current provider. Call after the
+   * system-prompt appendix changes so subsequent requests pick up the new text.
+   */
+  refreshSystemPrompt = () => {
+    this.currentProvider.setSystemPrompt(buildSystemPrompt());
   };
 
   setCurrentProviderTools = (tools: TMCPItem[]) => {

@@ -205,6 +205,28 @@ class OpenAIProvider extends AbstractBaseProvider<
     }
   }
 
+  async sendMessageSync(
+    messages: ThreadMessageLike[],
+    systemPrompt?: string
+  ): Promise<string> {
+    if (!this.client) return "";
+    try {
+      const systemMessage = this.buildSystemMessage(
+        systemPrompt ?? this.systemPrompt
+      );
+      const converted = convertMessagesToModelFormat(messages);
+      const response = await this.client.chat.completions.create({
+        model: this.modelKey,
+        messages: [systemMessage, ...converted],
+        stream: false,
+      });
+      return response.choices[0]?.message?.content ?? "";
+    } catch (e) {
+      logger.error("OpenAI sendMessageSync error:", e);
+      return "";
+    }
+  }
+
   async getStream(
     systemMessage: ChatCompletionSystemMessageParam,
     convertedMessages: ChatCompletionMessageParam[],

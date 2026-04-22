@@ -18,6 +18,7 @@ export interface StoreKeys {
   deepMode: string;
   mcpServers: string;
   disabledTools: string;
+  systemPromptAppendix: string;
 }
 
 /** Maximum number of MCP / host tools that may be active at once */

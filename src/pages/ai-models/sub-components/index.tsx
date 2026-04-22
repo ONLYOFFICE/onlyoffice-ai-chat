@@ -9,19 +9,26 @@ interface ModelsProps {
   isAddModelCardHorizontal?: boolean;
 }
 
+type ActiveCard = null | "add" | { editingProfileId: string };
+
 export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
   const { Button } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const { profiles } = useProfilesStore();
-  const [isAddCardOpen, setIsAddCardOpen] = useState(false);
+  // Only one Add or Edit card may be open at a time across the whole list.
+  const [activeCard, setActiveCard] = useState<ActiveCard>(null);
+  const isAddCardOpen = activeCard === "add";
 
   return (
     <div className="flex flex-col gap-[16px] select-none">
       {isAddCardOpen ? (
-        <AddModelCard onClose={() => setIsAddCardOpen(false)} isHorizontal={isAddModelCardHorizontal} />
+        <AddModelCard
+          onClose={() => setActiveCard(null)}
+          isHorizontal={isAddModelCardHorizontal}
+        />
       ) : (
-        <Button className="self-start" onClick={() => setIsAddCardOpen(true)}>
+        <Button className="self-start" onClick={() => setActiveCard("add")}>
           {t("AddModel")}
         </Button>
       )}
@@ -31,6 +38,14 @@ export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
           <ModelCard
             key={profile.id}
             profile={profile}
+            isEditing={
+              typeof activeCard === "object" &&
+              activeCard?.editingProfileId === profile.id
+            }
+            onStartEdit={() =>
+              setActiveCard({ editingProfileId: profile.id })
+            }
+            onStopEdit={() => setActiveCard(null)}
             isEditModelCardHorizontal={isAddModelCardHorizontal}
           />
         ))}

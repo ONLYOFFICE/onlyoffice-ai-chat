@@ -1,3 +1,4 @@
+import type { ThreadMessageLike } from "@assistant-ui/react";
 import type {
   ChatCompletionMessageParam,
   ChatCompletionSystemMessageParam,
@@ -5,7 +6,9 @@ import type {
 import type { Model, TProvider } from "../../types";
 import type { TData, TErrorData } from "../base";
 import { getErrorCode, ProviderErrors } from "../errors";
+import logger from "../../lib/logger";
 import { OpenAIProvider } from "../openai";
+import { convertMessagesToModelFormat } from "../openai/utils";
 import { onlyOfficeInfo } from "./info";
 
 const ONLYOFFICE_PROVIDER_ID = -1;
@@ -162,6 +165,35 @@ class OnlyOfficeProvider extends OpenAIProvider {
     return asyncIterable as unknown as Awaited<
       ReturnType<OpenAIProvider["getStream"]>
     >;
+  }
+
+  override async sendMessageSync(
+    messages: ThreadMessageLike[],
+    systemPrompt?: string
+  ): Promise<string> {
+    if (!this.client) return "";
+    try {
+      // Mirror getStream: strip the "-thinking" suffix that marks the
+      // reasoning variant of a model. The backend expects the bare name.
+      const modelThinking = this.modelKey.includes("-thinking");
+      const model = modelThinking
+        ? this.modelKey.replace("-thinking", "")
+        : this.modelKey;
+      const systemMessage: ChatCompletionSystemMessageParam = {
+        role: "system",
+        content: systemPrompt ?? this.systemPrompt,
+      };
+      const converted = convertMessagesToModelFormat(messages);
+      const response = await this.client.chat.completions.create({
+        model,
+        messages: [systemMessage, ...converted],
+        stream: false,
+      });
+      return response.choices[0]?.message?.content ?? "";
+    } catch (e) {
+      logger.error("OnlyOffice sendMessageSync error:", e);
+      return "";
+    }
   }
 
   getProviderModels = async (data: TData): Promise<Model[]> => {

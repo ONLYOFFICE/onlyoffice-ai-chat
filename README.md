@@ -11,8 +11,10 @@ Headless AI chat widget library for React with 16 built-in providers, MCP tool s
 - **7 Themes** — Light, dark, white, gray, classic-light, night, contrast-dark + custom themes
 - **Component Overrides** — Replace any built-in UI component
 - **Imperative API** — Programmatic control via ref
-- **Events & Middleware** — Intercept messages, tool calls, errors at 6 pipeline points
+- **Events & Middleware** — 28 callback hooks + 6 middleware pipeline points for observing and intercepting the chat flow
 - **Headless Mode** — Use services, stores, and providers without the widget UI
+- **Imperative API** — Ref handle with 24+ methods for messages, threads, profiles, tool approval, and external re-sync
+- **Drag-and-drop attachments** — Drop text files and images directly into the chat composer
 
 ## Installation
 
@@ -183,10 +185,11 @@ See [Providers → ONLYOFFICE AI](docs/providers.md#onlyoffice-ai--external--clo
 
 ## Tools & MCP
 
-Three tool sources unified by the `Servers` class:
+Four tool sources unified by the `Servers` class:
 
 - **Host Tools** — Tools exposed by the host application (e.g. editor commands)
-- **Web Search** — Exa API integration for real-time web search
+- **Web Search** — Exa / ONLYOFFICE AI integration for real-time web search
+- **Image Generation** — Built-in `generate_image` tool routed to the profile assigned to `ActionType.ImageGeneration`
 - **Custom MCP Servers** — JSON-RPC 2.0 over HTTP or STDIO
 
 ```tsx
@@ -286,7 +289,7 @@ chatRef.current?.openSettings();
 <AIChatWidget ref={chatRef} ...props />
 ```
 
-Methods: `sendMessage`, `stopStreaming`, `isStreaming`, `switchThread`, `createThread`, `deleteThread`, `renameThread`, `clearHistory`, `downloadThread`, `getThreads`, `getCurrentThreadId`, `openChat`, `openSettings`, `openHistory`, `getCurrentPage`, `getProfiles`, `setChatProfile`, `getCurrentProfile`, `approveToolCall`, `denyToolCall`.
+Methods: `sendMessage`, `stopStreaming`, `isStreaming`, `switchThread`, `createThread`, `deleteThread`, `renameThread`, `clearHistory`, `downloadThread`, `getThreads`, `getCurrentThreadId`, `openChat`, `openSettings`, `openHistory`, `getCurrentPage`, `getProfiles`, `setChatProfile`, `getCurrentProfile`, `approveToolCall`, `denyToolCall`, plus external re-sync: `updateProfiles`, `updateThreads`, `updateCurrentChat`, `updateModelAssignment`, `updateMCPServer`, `updateWebSearch`, `updateExtendedThinking`.
 
 See [Imperative API](docs/imperative-api.md).
 
@@ -346,6 +349,7 @@ Available subpaths: `/providers`, `/services`, `/store`, `/storage`, `/settings`
 | [Component Overrides](docs/component-overrides.md) | Replace built-in UI components |
 | [Imperative API](docs/imperative-api.md) | Ref methods reference |
 | [Pages](docs/pages.md) | Standalone page components |
+| [Hooks](docs/hooks.md) | Runtime hooks (`useMessages`, `useProfiles`, `useChatDropAttachments`, …) |
 | [Headless Usage](docs/headless-usage.md) | Manual AppContext, custom UI |
 | [Architecture](docs/architecture.md) | Data flow, dependency injection |
 

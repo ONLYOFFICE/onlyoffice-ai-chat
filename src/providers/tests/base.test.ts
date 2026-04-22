@@ -31,6 +31,9 @@ class TestProvider extends AbstractBaseProvider<
   > {
     // Intentionally empty for testing
   }
+  async sendMessageSync(): Promise<string> {
+    return "";
+  }
   getName(): string {
     return "Test Provider";
   }
@@ -210,123 +213,65 @@ describe("AbstractBaseProvider", () => {
   });
 
   describe("sendMessageSync", () => {
-    it("should return text from sendMessage isEnd response with string content", async () => {
-      class StreamingTestProvider extends TestProvider {
-        async *sendMessage(): AsyncGenerator<
-          | ThreadMessageLike
-          | { isEnd: true; responseMessage: ThreadMessageLike }
-        > {
-          yield {
-            isEnd: true as const,
-            responseMessage: {
-              role: "assistant",
-              content: "Hello world",
-            },
-          };
+    // `sendMessageSync` is now an abstract method — each provider implements
+    // its own one-shot, non-streaming call. These tests cover the contract
+    // that concrete providers must respect.
+
+    it("is invoked with the passed messages and optional system prompt", async () => {
+      const spy: {
+        messages?: ThreadMessageLike[];
+        systemPrompt?: string;
+      } = {};
+      class SyncTestProvider extends TestProvider {
+        override async sendMessageSync(
+          messages: ThreadMessageLike[],
+          systemPrompt?: string
+        ): Promise<string> {
+          spy.messages = messages;
+          spy.systemPrompt = systemPrompt;
+          return "ok";
         }
       }
 
-      const provider = new StreamingTestProvider();
-      const result = await provider.sendMessageSync([
-        { role: "user", content: "Hi" },
-      ]);
+      const provider = new SyncTestProvider();
+      const result = await provider.sendMessageSync(
+        [{ role: "user", content: "Hi" }],
+        "You are terse."
+      );
 
-      expect(result).toBe("Hello world");
+      expect(result).toBe("ok");
+      expect(spy.messages).toEqual([{ role: "user", content: "Hi" }]);
+      expect(spy.systemPrompt).toBe("You are terse.");
     });
 
-    it("should return joined text from array content", async () => {
-      class StreamingTestProvider extends TestProvider {
-        async *sendMessage(): AsyncGenerator<
-          | ThreadMessageLike
-          | { isEnd: true; responseMessage: ThreadMessageLike }
-        > {
-          yield {
-            isEnd: true as const,
-            responseMessage: {
-              role: "assistant",
-              content: [
-                { type: "text" as const, text: "Hello " },
-                { type: "text" as const, text: "world" },
-              ],
-            },
-          };
+    it("must not mutate prevMessages when implemented per the contract", async () => {
+      class SyncTestProvider extends TestProvider {
+        override async sendMessageSync(): Promise<string> {
+          // A faithful implementation returns a reply without touching
+          // `this.prevMessages` — no history retention.
+          return "reply";
         }
       }
 
-      const provider = new StreamingTestProvider();
-      const result = await provider.sendMessageSync([
-        { role: "user", content: "Hi" },
+      const provider = new SyncTestProvider();
+      provider.prevMessages = [{ role: "user", content: "earlier" }];
+      await provider.sendMessageSync([{ role: "user", content: "Hi" }]);
+
+      expect(provider.prevMessages).toEqual([
+        { role: "user", content: "earlier" },
       ]);
-
-      expect(result).toBe("Hello world");
-    });
-
-    it("should handle content parts without text property", async () => {
-      class StreamingTestProvider extends TestProvider {
-        async *sendMessage(): AsyncGenerator<
-          | ThreadMessageLike
-          | { isEnd: true; responseMessage: ThreadMessageLike }
-        > {
-          yield {
-            isEnd: true as const,
-            responseMessage: {
-              role: "assistant",
-              content: [
-                { type: "text" as const, text: "Hello" },
-                {
-                  type: "image" as const,
-                  image: new URL("https://example.com/img.png"),
-                },
-              ],
-            },
-          };
-        }
-      }
-
-      const provider = new StreamingTestProvider();
-      const result = await provider.sendMessageSync([
-        { role: "user", content: "Hi" },
-      ]);
-
-      expect(result).toBe("Hello");
-    });
-
-    it("should return empty string when no isEnd message", async () => {
-      class StreamingTestProvider extends TestProvider {
-        async *sendMessage(): AsyncGenerator<
-          | ThreadMessageLike
-          | { isEnd: true; responseMessage: ThreadMessageLike }
-        > {
-          yield {
-            role: "assistant",
-            content: [{ type: "text" as const, text: "partial" }],
-          };
-        }
-      }
-
-      const provider = new StreamingTestProvider();
-      const result = await provider.sendMessageSync([
-        { role: "user", content: "Hi" },
-      ]);
-
-      expect(result).toBe("");
     });
   });
 
   describe("imageVision", () => {
     it("should call sendMessageSync with image and prompt", async () => {
+      const spy: { messages?: ThreadMessageLike[] } = {};
       class VisionTestProvider extends TestProvider {
-        async *sendMessage(): AsyncGenerator<
-          | ThreadMessageLike
-          | { isEnd: true; responseMessage: ThreadMessageLike }
-        > {
-          yield {
-            isEnd: true as const,
-            responseMessage: {
-              role: "assistant",
-              content: "A cat sitting on a mat",
-            },
-          };
+        override async sendMessageSync(
+          messages: ThreadMessageLike[]
+        ): Promise<string> {
+          spy.messages = messages;
+          return "A cat sitting on a mat";
         }
       }
 
@@ -337,23 +282,23 @@ describe("AbstractBaseProvider", () => {
       });
 
       expect(result).toBe("A cat sitting on a mat");
+      expect(spy.messages).toEqual([
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Describe this image" },
+            { type: "image", image: "base64imagedata" },
+          ],
+        },
+      ]);
     });
   });
 
   describe("imageOCR", () => {
     it("should call imageVision with OCR prompt", async () => {
       class OCRTestProvider extends TestProvider {
-        async *sendMessage(): AsyncGenerator<
-          | ThreadMessageLike
-          | { isEnd: true; responseMessage: ThreadMessageLike }
-        > {
-          yield {
-            isEnd: true as const,
-            responseMessage: {
-              role: "assistant",
-              content: "Extracted text from image",
-            },
-          };
+        override async sendMessageSync(): Promise<string> {
+          return "Extracted text from image";
         }
       }
 

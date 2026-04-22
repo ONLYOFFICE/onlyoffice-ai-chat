@@ -147,5 +147,23 @@ export function createWidgetRef(
     updateExtendedThinking() {
       stores.useProfilesStore.getState().reloadExtendedThinking();
     },
+
+    // --- System prompt appendix ---
+
+    setSystemPromptAppendix(text) {
+      stores.useProfilesStore.getState().setSystemPromptAppendix(text);
+    },
+
+    clearSystemPromptAppendix() {
+      stores.useProfilesStore.getState().clearSystemPromptAppendix();
+    },
+
+    getSystemPromptAppendix() {
+      return stores.useProfilesStore.getState().systemPromptAppendix;
+    },
+
+    updateSystemPromptAppendix() {
+      stores.useProfilesStore.getState().reloadSystemPromptAppendix();
+    },
   };
 }

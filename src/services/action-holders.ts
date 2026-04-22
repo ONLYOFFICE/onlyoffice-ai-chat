@@ -1,5 +1,5 @@
 import { ActionType } from "../capabilities";
-import { SYSTEM_PROMPT } from "../providers/prompts";
+import { buildSystemPrompt } from "../providers/prompts";
 import {
   type BaseProvider,
   createProvider,
@@ -43,7 +43,7 @@ class ActionHolder {
       baseUrl: effective.baseUrl,
       key: effective.key,
     });
-    this.provider.setSystemPrompt(SYSTEM_PROMPT);
+    this.provider.setSystemPrompt(buildSystemPrompt());
     this.provider.setModelKey(effective.modelId);
     this.provider.isReasoning = effective.reasoning ?? false;
   }
@@ -85,4 +85,18 @@ export function applyProfileToAction(
   if (!holder) return;
 
   holder.applyProfile(taskProfile, defaultProfile);
+}
+
+/**
+ * Re-apply the current system prompt (with any appendix) to every action
+ * holder's underlying provider. Used when the system-prompt appendix changes
+ * so task-specific providers (summarization, translation, …) stay in sync
+ * with the main chat provider.
+ */
+export function refreshActionHolderSystemPrompts(): void {
+  const prompt = buildSystemPrompt();
+  for (const holder of actionHolders.values()) {
+    const p = holder.getProvider();
+    if (p) p.setSystemPrompt(prompt);
+  }
 }

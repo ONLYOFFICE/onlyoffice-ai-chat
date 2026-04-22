@@ -5,12 +5,16 @@ import { ModelCard } from "../../components/model-card";
 import { AddModelCard } from "../../components/model-config-cards";
 import { useStores } from "../../store/context";
 
+type ActiveCard = null | "add" | { editingProfileId: string };
+
 const InitialSetup = () => {
   const { Button } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const { profiles } = useProfilesStore();
-  const [isAddCardOpen, setIsAddCardOpen] = useState(false);
+  // Only one Add or Edit card may be open at a time across the whole list.
+  const [activeCard, setActiveCard] = useState<ActiveCard>(null);
+  const isAddCardOpen = activeCard === "add";
 
   return (
     <div className="flex h-full w-full bg-[var(--layout-background-color)]">
@@ -23,11 +27,11 @@ const InitialSetup = () => {
         </p>
 
         {isAddCardOpen ? (
-          <AddModelCard onClose={() => setIsAddCardOpen(false)} isHorizontal />
+          <AddModelCard onClose={() => setActiveCard(null)} isHorizontal />
         ) : (
           <Button
             className="self-start mb-[16px]"
-            onClick={() => setIsAddCardOpen(true)}
+            onClick={() => setActiveCard("add")}
           >
             {t("AddModel")}
           </Button>
@@ -35,7 +39,18 @@ const InitialSetup = () => {
 
         <div className="flex flex-col gap-[16px]">
           {profiles.map((profile) => (
-            <ModelCard key={profile.id} profile={profile} />
+            <ModelCard
+              key={profile.id}
+              profile={profile}
+              isEditing={
+                typeof activeCard === "object" &&
+                activeCard?.editingProfileId === profile.id
+              }
+              onStartEdit={() =>
+                setActiveCard({ editingProfileId: profile.id })
+              }
+              onStopEdit={() => setActiveCard(null)}
+            />
           ))}
         </div>
       </div>

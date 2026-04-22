@@ -41,6 +41,13 @@ const mockWebSearch = {
   callTools: vi.fn().mockResolvedValue("web-result"),
 };
 
+const mockImageGeneration = {
+  getTools: vi.fn().mockReturnValue([]),
+  callTools: vi.fn().mockResolvedValue("image-result"),
+  setEnabled: vi.fn(),
+  getEnabled: vi.fn().mockReturnValue(false),
+};
+
 vi.mock("../sources/HostToolSource", () => ({
   HostToolSource: class {
     constructor() {
@@ -65,6 +72,14 @@ vi.mock("../sources/WebSearch", () => ({
   },
 }));
 
+vi.mock("../sources/ImageGeneration", () => ({
+  ImageGeneration: class {
+    constructor() {
+      return mockImageGeneration;
+    }
+  },
+}));
+
 import Servers from "../servers";
 
 describe("Servers", () => {
@@ -78,6 +93,8 @@ describe("Servers", () => {
     mockHostToolSource.isAutoAllow.mockReturnValue(false);
     mockCustomServers.getTools.mockResolvedValue({});
     mockWebSearch.getTools.mockResolvedValue([]);
+    mockImageGeneration.getTools.mockReturnValue([]);
+    mockImageGeneration.getEnabled.mockReturnValue(false);
     servers = new Servers(
       mockSettings as unknown as SettingsAdapter,
       mockPlatform as unknown as PlatformAdapter,
@@ -181,6 +198,7 @@ describe("Servers", () => {
       expect(result).toEqual({
         "desktop-editor": hostTools["desktop-editor"],
         "web-search": webTools,
+        "image-generation": [],
         "my-mcp": customTools["my-mcp"],
       });
     });

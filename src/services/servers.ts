@@ -122,6 +122,18 @@ export class ServersService {
           return;
         }
 
+        if (type === "image-generation") {
+          servers[type] = [...serverTools];
+          disabledTools[type] = [];
+          tools.push(
+            ...serverTools.map((tool) => ({
+              ...tool,
+              name: `${type}_${tool.name}`,
+            }))
+          );
+          return;
+        }
+
         servers[type] = serverTools.map((tool) => {
           if (!disabledTools[type]) {
             disabledTools[type] = [];
@@ -158,6 +170,18 @@ export class ServersService {
         }));
         tools.push(...items);
         webSearchEnabled = serverTools.length > 0;
+        return;
+      }
+
+      if (type === "image-generation") {
+        servers[type] = [...serverTools];
+        tools.push(
+          ...serverTools.map((tool) => ({
+            ...tool,
+            name: `${type}_${tool.name}`,
+            enabled: true,
+          }))
+        );
         return;
       }
 

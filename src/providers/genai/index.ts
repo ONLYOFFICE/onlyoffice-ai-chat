@@ -137,6 +137,27 @@ class GenAIProvider extends AbstractBaseProvider<
     }
   }
 
+  async sendMessageSync(
+    messages: ThreadMessageLike[],
+    systemPrompt?: string
+  ): Promise<string> {
+    if (!this.client) return "";
+    try {
+      const converted = convertMessagesToModelFormat(messages);
+      const response = await this.client.models.generateContent({
+        model: this.modelKey,
+        contents: converted,
+        config: {
+          systemInstruction: systemPrompt ?? this.systemPrompt,
+        },
+      });
+      return response.text ?? "";
+    } catch (e) {
+      logger.error("GenAI sendMessageSync error:", e);
+      return "";
+    }
+  }
+
   async *sendMessage(
     messages: ThreadMessageLike[],
     afterToolCall?: boolean,

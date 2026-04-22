@@ -83,6 +83,28 @@ class MistralProvider extends AbstractBaseProvider<Tool, Messages, Mistral> {
     }
   }
 
+  async sendMessageSync(
+    messages: ThreadMessageLike[],
+    systemPrompt?: string
+  ): Promise<string> {
+    if (!this.client) return "";
+    try {
+      const converted = convertMessagesToModelFormat(messages);
+      const response = await this.client.chat.complete({
+        model: this.modelKey,
+        messages: [
+          { role: "system", content: systemPrompt ?? this.systemPrompt },
+          ...converted,
+        ],
+      });
+      const content = response.choices?.[0]?.message?.content;
+      return typeof content === "string" ? content : "";
+    } catch (e) {
+      logger.error("Mistral sendMessageSync error:", e);
+      return "";
+    }
+  }
+
   private getModelKey = (withThinking?: boolean): string => {
     if (!withThinking) return this.modelKey;
 

@@ -61,6 +61,8 @@ class WebSearch {
   };
 
   setWebSearchData = (data: WebSearchData) => {
+    const changed =
+      JSON.stringify(this.webSearchData) !== JSON.stringify(data);
     this.webSearchData = data;
     if (data) {
       this.settings.set(WEB_SEARCH_DATA, JSON.stringify(data));
@@ -69,35 +71,45 @@ class WebSearch {
     }
     this.initTools();
     this.eventBus.emit("web-search-changed");
-    this.callbacksManager?.emit("onWebSearchUpdated", {
-      enabled: !!data,
-      provider: data?.provider ?? null,
-      isCloudProvider: data?.isCloudProvider,
-    });
+    if (changed) {
+      this.callbacksManager?.emit("onWebSearchUpdated", {
+        enabled: !!data,
+        provider: data?.provider ?? null,
+        isCloudProvider: data?.isCloudProvider,
+      });
+    }
   };
 
   /**
    * Re-read web search configuration from storage and rebuild tools.
    * Useful when the host updates settings externally.
+   *
+   * Emits `onWebSearchUpdated` only when the reloaded value differs from
+   * the current one — a no-op re-read must not look like a user action to
+   * host callbacks, matching the behaviour of `reloadExtendedThinking`.
    */
   reload = () => {
     const raw = this.settings.get(WEB_SEARCH_DATA);
+    let next: WebSearchData = null;
     if (raw) {
       try {
-        this.webSearchData = JSON.parse(raw);
+        next = JSON.parse(raw);
       } catch {
-        this.webSearchData = null;
+        next = null;
       }
-    } else {
-      this.webSearchData = null;
     }
+    const changed =
+      JSON.stringify(this.webSearchData) !== JSON.stringify(next);
+    this.webSearchData = next;
     this.initTools();
     this.eventBus.emit("web-search-changed");
-    this.callbacksManager?.emit("onWebSearchUpdated", {
-      enabled: !!this.webSearchData,
-      provider: this.webSearchData?.provider ?? null,
-      isCloudProvider: this.webSearchData?.isCloudProvider,
-    });
+    if (changed) {
+      this.callbacksManager?.emit("onWebSearchUpdated", {
+        enabled: !!this.webSearchData,
+        provider: this.webSearchData?.provider ?? null,
+        isCloudProvider: this.webSearchData?.isCloudProvider,
+      });
+    }
   };
 
   getWebSearchData = () => {
