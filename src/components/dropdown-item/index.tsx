@@ -2,11 +2,15 @@ import { Item } from "@radix-ui/react-dropdown-menu";
 import { useRef, useState } from "react";
 import { useI18n } from "../../locales";
 import { cn } from "../../lib/utils";
+import { useTheme } from "../../theme/context";
 import { DropdownMenu } from "../dropdown";
 import { IconButton } from "../icon-button";
 import { ToggleButton } from "../toggle-button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
 import type { DropDownItemProps } from "./DropDownItem.types";
+
+const SUBMENU_WIDTH = 300;
+const SUBMENU_MARGIN = 8;
 
 const DropDownItem = ({
   text,
@@ -32,10 +36,13 @@ const DropDownItem = ({
   aboutContent,
 }: DropDownItemProps) => {
   const { isRTL } = useI18n();
+  const { portalContainer } = useTheme();
 
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
-  const [submenuSide, setSubmenuSide] = useState<"left" | "right">("left");
-  const [submenuOffset, setSubmenuOffset] = useState(12);
+  const [submenuSide, setSubmenuSide] = useState<"left" | "right" | "top">(
+    isRTL ? "left" : "right"
+  );
+  const [submenuAlign, setSubmenuAlign] = useState<"start" | "end">("start");
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const itemRef = useRef<HTMLDivElement | null>(null);
@@ -93,8 +100,6 @@ const DropDownItem = ({
       mouseY >= submenuRect.top &&
       mouseY <= submenuRect.bottom;
 
-    // Don't close if mouse is inside a nested dropdown (e.g. context menu from 3-dots)
-    // Exclude the submenu itself and any ancestor dropdown that contains this item
     const nestedDropdowns = document.querySelectorAll(".dropdown-menu");
     const isInsideNestedDropdown = Array.from(nestedDropdowns).some((el) => {
       if (el === submenuRef.current) return false;
@@ -116,34 +121,41 @@ const DropDownItem = ({
 
   const handleMouseEnter = () => {
     if (isSubMenuOpen || !subMenu) return;
+    if (!itemRef.current) return;
 
-    // Calculate which side has more space
-    if (itemRef.current) {
-      const itemRect = itemRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
+    const rect = itemRef.current.getBoundingClientRect();
+    const container = portalContainer ?? document.documentElement;
+    const cRect = container.getBoundingClientRect();
 
-      const spaceOnRight = viewportWidth - itemRect.right;
-      const spaceOnLeft = itemRect.left;
+    const spaceRight = cRect.right - rect.right;
+    const spaceLeft = rect.left - cRect.left;
 
-      // Assume submenu width is around 300px (max-w-[300px]) + 4px offset
-      const estimatedSubmenuWidth = 154;
+    const preferred = isRTL ? "left" : "right";
+    const opposite = isRTL ? "right" : "left";
+    const preferSpace = isRTL ? spaceLeft : spaceRight;
+    const oppositeSpace = isRTL ? spaceRight : spaceLeft;
 
-      // In RTL, default to left; in LTR, default to right
-      // Fall back to opposite side if not enough space
-      let side: "left" | "right";
-      if (isRTL) {
-        side = spaceOnLeft >= estimatedSubmenuWidth ? "left" : "right";
-      } else {
-        side = spaceOnRight >= estimatedSubmenuWidth ? "right" : "left";
+    let side: "left" | "right" | "top";
+    let align: "start" | "end" = "start";
+
+    if (preferSpace >= SUBMENU_WIDTH + SUBMENU_MARGIN) {
+      side = preferred;
+    } else if (oppositeSpace >= SUBMENU_WIDTH + SUBMENU_MARGIN) {
+      side = opposite;
+    } else {
+      side = "top";
+      if (rect.left + SUBMENU_WIDTH > cRect.right - SUBMENU_MARGIN) {
+        align = "end";
       }
-
-      setSubmenuSide(side);
-      setSubmenuOffset(12);
     }
 
+    setSubmenuSide(side);
+    setSubmenuAlign(align);
     setIsSubMenuOpen(true);
     window.addEventListener("mousemove", handleMouseMove);
   };
+
+  const isHorizontalSide = submenuSide === "left" || submenuSide === "right";
 
   const itemContent = (
     <Item
@@ -152,7 +164,6 @@ const DropDownItem = ({
         "flex items-center justify-between gap-[32px] min-w-0 w-full max-w-full min-h-[32px] h-[32px] px-[12px] select-none cursor-pointer",
         "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 border-0",
         "hover:bg-[var(--drop-down-menu-item-hover-color)] hover:text-[var(--drop-down-menu-item-hover-color)]",
-        // "data-[highlighted]:bg-[var(--drop-down-menu-item-active-color)] data-[highlighted]:text-[var(--drop-down-menu-item-active-color)]",
         "data-[disabled]:opacity-50 data-[disabled]:pointer-events-none",
         isActive || (subMenu && isSubMenuOpen)
           ? "bg-[var(--drop-down-menu-item-active-color)] text-[var(--drop-down-menu-item-active-color)]"
@@ -220,11 +231,11 @@ const DropDownItem = ({
             }
             items={subMenu}
             side={submenuSide}
-            align="start"
-            sideOffset={submenuOffset}
+            align={submenuAlign}
+            sideOffset={8}
+            alignOffset={isHorizontalSide ? -8 : 0}
             open={subMenuIcon ? undefined : isSubMenuOpen}
-            contentClassName={`mt-[-15px] max-w-[300px] ${subMenuClassName || ""}`}
-            containerRef={itemRef.current}
+            contentClassName={cn("max-w-[300px]", subMenuClassName)}
             dropdownRef={submenuRef}
           />
         </div>

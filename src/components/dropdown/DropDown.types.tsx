@@ -7,6 +7,7 @@ export type DropdownMenuProps = {
   side?: "bottom" | "top" | "left" | "right";
   align?: "start" | "center" | "end";
   sideOffset?: number;
+  alignOffset?: number;
   contentClassName?: string;
   maxWidth?: number | string;
   matchTriggerWidth?: boolean;
