@@ -44,7 +44,11 @@ import { setStorageInstance } from "./storage/storage-holder";
 import type { StorageAdapter } from "./storage/types";
 import { StoresProvider, useStores } from "./store/context";
 import { createStores } from "./store/create-stores";
-import type { ProviderType, TOnlyOfficeConfig } from "./types";
+import type {
+  ProviderType,
+  TOnlyOfficeConfig,
+  WebSearchProviderId,
+} from "./types";
 import { WidgetConfigProvider } from "./widget-config";
 import { ToolsProvider, useToolsContext } from "./tools/context";
 import Servers from "./tools/servers";
@@ -71,6 +75,7 @@ export interface AIChatWidgetProps {
   middleware?: ChatMiddleware[];
   onlyofficeConfig?: TOnlyOfficeConfig;
   hiddenProviders?: ProviderType[];
+  hiddenWebSearchProviders?: WebSearchProviderId[];
   hideProfilePicker?: boolean;
   hideSettingsButton?: boolean;
   onSettingsClick?: () => void;
@@ -101,6 +106,7 @@ export const AIChatWidget = React.forwardRef<
       middleware,
       onlyofficeConfig,
       hiddenProviders,
+      hiddenWebSearchProviders,
       hideProfilePicker,
       hideSettingsButton,
       onSettingsClick,
@@ -132,7 +138,12 @@ export const AIChatWidget = React.forwardRef<
       provider.setSettings(settings);
       const eventBus = new ChatEventBus();
       const callbacksManager = new CallbacksManager();
-      const servers = new Servers(settings, platform, eventBus, callbacksManager);
+      const servers = new Servers(
+        settings,
+        platform,
+        eventBus,
+        callbacksManager
+      );
       const middlewareRunner = new MiddlewareRunner(middleware ?? []);
 
       const ctx: AppContext = {
@@ -146,6 +157,7 @@ export const AIChatWidget = React.forwardRef<
         middlewareRunner,
         onlyofficeConfig,
         hiddenProviders,
+        hiddenWebSearchProviders,
       };
 
       // Deprecated: set global holders for backward compatibility
@@ -165,6 +177,7 @@ export const AIChatWidget = React.forwardRef<
       middleware,
       onlyofficeConfig,
       hiddenProviders,
+      hiddenWebSearchProviders,
     ]);
 
     return (

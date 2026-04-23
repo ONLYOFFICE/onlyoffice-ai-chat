@@ -56,6 +56,8 @@ export const EditModelCard = ({
     fetchModels,
     handleChange,
     models,
+    isOnlyofficeAISetupIncomplete,
+    checkOnlyofficeAISetup,
   } = useModelForm(initialValues);
 
   useEffect(() => {
@@ -68,8 +70,12 @@ export const EditModelCard = ({
         isCloudProvider: profile.isCloudProvider,
       }
     );
+    if (initialValues.provider === "onlyoffice" || profile.isCloudProvider) {
+      checkOnlyofficeAISetup(initialValues.baseUrl, initialValues.apiKey);
+    }
   }, [
     fetchModels,
+    checkOnlyofficeAISetup,
     initialValues.baseUrl,
     initialValues.apiKey,
     initialValues.provider,
@@ -130,6 +136,7 @@ export const EditModelCard = ({
         models={models}
         errors={errors}
         isHorizontal={isHorizontal}
+        isOnlyofficeAISetupIncomplete={isOnlyofficeAISetupIncomplete}
       />
 
       <div className="flex flex-row justify-between items-center">

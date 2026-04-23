@@ -45,6 +45,7 @@ export const AddModelCard = ({
     setErrors,
     isFormValid,
     handleChange,
+    isOnlyofficeAISetupIncomplete,
   } = useModelForm(INITIAL_VALUES);
 
   const handleAdd = async () => {
@@ -136,6 +137,7 @@ export const AddModelCard = ({
           models={models}
           errors={errors}
           isHorizontal={isHorizontal}
+          isOnlyofficeAISetupIncomplete={isOnlyofficeAISetupIncomplete}
         />
 
         {footer}
@@ -155,6 +157,7 @@ export const AddModelCard = ({
         models={models}
         errors={errors}
         isHorizontal={isHorizontal}
+        isOnlyofficeAISetupIncomplete={isOnlyofficeAISetupIncomplete}
       />
 
       {footer}

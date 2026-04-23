@@ -4,12 +4,14 @@ import type {
   ProviderType,
   TCloudProvider,
   TOnlyOfficeConfig,
+  WebSearchProviderId,
 } from "../types";
 
 export interface CloudsStoreState {
   cloudProviders: TCloudProvider[];
   externalOnlyofficeConfig?: TOnlyOfficeConfig;
   hiddenProviders?: ProviderType[];
+  hiddenWebSearchProviders?: WebSearchProviderId[];
   fetchClouds: () => Promise<void>;
 }
 
@@ -20,6 +22,7 @@ export function createCloudsStore(
     cloudProviders: [],
     externalOnlyofficeConfig: ctx.onlyofficeConfig,
     hiddenProviders: ctx.hiddenProviders,
+    hiddenWebSearchProviders: ctx.hiddenWebSearchProviders,
     fetchClouds: async () => {
       if (!ctx.platform.clouds) {
         set({ cloudProviders: [] });

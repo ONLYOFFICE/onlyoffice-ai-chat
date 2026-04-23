@@ -356,6 +356,13 @@ export type TCloudProvider = {
 };
 
 /**
+ * Identifier of a built-in Web Search provider row shown in the Web Search
+ * configuration page. Cloud-derived entries (from `PlatformClouds`) are
+ * identified by their portal URL instead and are not part of this union.
+ */
+export type WebSearchProviderId = "Exa" | "ONLYOFFICE";
+
+/**
  * External ONLYOFFICE AI provider configuration.
  *
  * When passed to {@link import("./AIChatWidget").AIChatWidgetProps.onlyofficeConfig},

@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useI18n } from "../../../locales";
 import { getApiKeyLink } from "../../../lib/api-key-links";
 import { useStores } from "../../../store/context";
 import type { Model, ProviderType } from "../../../types";
 import { useComponents } from "../../../components-provider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../tooltip";
 
 export interface ModelFormValues {
   provider: string;
@@ -31,6 +33,14 @@ interface ModelConfigFormProps {
   models: Model[];
   errors?: ModelFormErrors;
   isHorizontal?: boolean;
+  /**
+   * `true` once the wallet-service probe has completed for the current
+   * baseUrl (apiKey is optional — the portal endpoint also answers
+   * anonymously) and reported that the `aitools` feature is not active.
+   * Gates the "AI setup is incomplete" hint and the settings link in the
+   * Provider field — both stay hidden until the probe has actually run.
+   */
+  isOnlyofficeAISetupIncomplete?: boolean;
 }
 
 export const ModelConfigForm = ({
@@ -39,8 +49,10 @@ export const ModelConfigForm = ({
   models,
   errors,
   isHorizontal,
+  isOnlyofficeAISetupIncomplete,
 }: ModelConfigFormProps) => {
-  const { ComboBox, FieldContainer, Input, Link } = useComponents();
+  const { Button, ComboBox, FieldContainer, Input, Link } = useComponents();
+  const [isSetupTooltipOpen, setIsSetupTooltipOpen] = useState(false);
   const { t } = useI18n();
   const { provider, useCloudsStore } = useStores();
   const { cloudProviders, externalOnlyofficeConfig, hiddenProviders } =
@@ -99,6 +111,34 @@ export const ModelConfigForm = ({
     values.provider === "onlyoffice" && !!externalOnlyofficeConfig;
   const hideCredentials = !!values.isCloudProvider || isExternalOnlyoffice;
 
+  // The "AI setup is incomplete" hint and the companion settings link are
+  // both gated on the ONLYOFFICE wallet-service probe: they only surface
+  // after the probe has actually run (baseUrl is enough, apiKey optional —
+  // the endpoint answers anonymously too) and reported the `aitools`
+  // feature as not active. Until then — and when the feature returns
+  // active — both stay hidden.
+  const showOnlyofficeAISetupHint = !!isOnlyofficeAISetupIncomplete;
+
+  const onlyofficeAISettingsHref = (() => {
+    if (!showOnlyofficeAISetupHint || !values.baseUrl) return undefined;
+    try {
+      return `${new URL(values.baseUrl).origin}/portal-settings/payments/services/ai-services`;
+    } catch {
+      return undefined;
+    }
+  })();
+
+  // Suppress the "AI setup is incomplete" text only while the API-Key field
+  // is actually rendered AND already showing its own error ("Empty key"
+  // etc.) — the two would stack and say essentially the same thing.
+  // When credentials are hidden (cloud / external ONLYOFFICE config), the
+  // API-Key error has nowhere to surface, so fall back to showing the
+  // setup hint here. The settings link stays rendered either way.
+  const providerError =
+    showOnlyofficeAISetupHint && (hideCredentials || !errors?.key)
+      ? t("AISetupIncomplete")
+      : undefined;
+
   return (
     <div className="flex flex-col mb-[26px]">
       <FieldContainer
@@ -106,6 +146,57 @@ export const ModelConfigForm = ({
         isHorizontal={isHorizontal}
         reserveErrorSpace={false}
         className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}
+        error={providerError}
+        action={
+          onlyofficeAISettingsHref ? (
+            <Tooltip open={isSetupTooltipOpen}>
+              <TooltipTrigger asChild>
+                <Link
+                  // preventDefault + manual toggle: clicking opens the
+                  // "Finish AI setup" popover instead of navigating. The
+                  // href stays populated so right-click → "Open in new tab"
+                  // still reaches the portal settings page.
+                  href={onlyofficeAISettingsHref}
+                  target="_blank"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsSetupTooltipOpen((v) => !v);
+                  }}
+                >
+                  {t("OnlyofficeAISettings")}
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent
+                className="p-[16px]"
+                side="bottom"
+                align="end"
+                isAbout
+              >
+                <div className="flex flex-col gap-[8px] max-w-[280px]">
+                  <p className="text-[14px] leading-[20px] font-bold text-[var(--text-normal)] select-none">
+                    {t("FinishAISetup")}
+                  </p>
+                  <p className="text-[14px] leading-[20px] text-[var(--text-normal)] select-none">
+                    {t("FinishAISetupDescription")}
+                  </p>
+                  <Button
+                    className="self-start"
+                    onClick={() => {
+                      setIsSetupTooltipOpen(false);
+                      window.open(
+                        onlyofficeAISettingsHref,
+                        "_blank",
+                        "noopener"
+                      );
+                    }}
+                  >
+                    {t("GoToAISettings")}
+                  </Button>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          ) : undefined
+        }
       >
         <ComboBox
           className="w-full"
@@ -173,7 +264,13 @@ export const ModelConfigForm = ({
           className="w-full"
           placeholder={t("SelectModel")}
           value={models.find((m) => m.id === values.model)?.name}
-          disabled={!values.provider || models.length === 0}
+          // Locked (but still showing the current selection) while the
+          // ONLYOFFICE wallet-service probe reports the `aitools` feature
+          // as inactive — the user must finish the portal-side setup
+          // before picking a different model.
+          disabled={
+            !values.provider || models.length === 0 || showOnlyofficeAISetupHint
+          }
           items={modelItems}
         />
       </FieldContainer>

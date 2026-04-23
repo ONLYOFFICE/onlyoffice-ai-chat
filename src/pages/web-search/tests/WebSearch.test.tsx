@@ -29,10 +29,15 @@ const mockCloudProviders: {
   apiKey: string;
 }[] = [];
 
+const mockStoreState: {
+  externalOnlyofficeConfig?: { baseUrl: string; apiKey?: string };
+} = {};
+
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useCloudsStore: () => ({
       cloudProviders: mockCloudProviders,
+      externalOnlyofficeConfig: mockStoreState.externalOnlyofficeConfig,
     }),
   }),
 }));
@@ -134,6 +139,7 @@ describe("WebSearch", () => {
     mockSetWebSearchData.mockClear();
     mockGetWebSearchData.mockReturnValue(null);
     mockCloudProviders.length = 0;
+    mockStoreState.externalOnlyofficeConfig = undefined;
   });
 
   it("renders description text", () => {
@@ -192,6 +198,27 @@ describe("WebSearch", () => {
     fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
 
     expect(screen.getByTestId("field-BaseURL")).toBeInTheDocument();
+  });
+
+  it("defaults to ONLYOFFICE and hides credential fields when onlyofficeConfig is preset", () => {
+    mockStoreState.externalOnlyofficeConfig = {
+      baseUrl: "https://eu-test-oauth.onlyoffice.io",
+      apiKey: "preset-key",
+    };
+
+    render(<WebSearch />);
+
+    // Already selected on initial render — no click required.
+    expect(screen.getByTestId("combo-value")).toHaveTextContent(
+      "ONLYOFFICE AI"
+    );
+    expect(screen.queryByTestId("field-BaseURL")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("field-APIKey")).not.toBeInTheDocument();
+  });
+
+  it("defaults to Exa when no onlyofficeConfig is provided", () => {
+    render(<WebSearch />);
+    expect(screen.getByTestId("combo-value")).toHaveTextContent("Exa");
   });
 
   it("validates URL on base URL blur - invalid URL", () => {

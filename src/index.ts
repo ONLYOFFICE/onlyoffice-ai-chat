@@ -179,6 +179,7 @@ export type {
   TCloudKey,
   TCloudProvider,
   TOnlyOfficeConfig,
+  WebSearchProviderId,
 } from "./types";
 
 // ---------------------------------------------------------------------------

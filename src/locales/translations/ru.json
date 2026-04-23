@@ -78,5 +78,10 @@
   "Thinking": "Логическое рассуждение",
   "ExtendedThinking": "Расширенная обработка",
   "ExtendedThinkingDescription": "Данная модель использует сложные логические рассуждения, что может привести к увеличению затрат.",
-  "DropFilesHere": "Перетащите файлы сюда, чтобы прикрепить"
+  "DropFilesHere": "Перетащите файлы сюда, чтобы прикрепить",
+  "OnlyofficeAISettings": "Настройки ONLYOFFICE AI",
+  "AISetupIncomplete": "ИИ настроен не полностью",
+  "FinishAISetup": "Завершите настройку ИИ",
+  "FinishAISetupDescription": "Включите ИИ и настройте оплату в настройках ONLYOFFICE",
+  "GoToAISettings": "Перейти к настройкам ИИ"
 }

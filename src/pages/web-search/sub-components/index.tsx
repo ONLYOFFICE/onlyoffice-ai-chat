@@ -29,9 +29,21 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const { t, isRTL } = useI18n();
   const { servers: serversInstance, eventBus } = useToolsContext();
   const { useCloudsStore } = useStores();
-  const { cloudProviders, externalOnlyofficeConfig } = useCloudsStore();
+  const { cloudProviders, externalOnlyofficeConfig, hiddenWebSearchProviders } =
+    useCloudsStore();
+  const hiddenWebSearchSet = React.useMemo(
+    () => new Set<string>(hiddenWebSearchProviders ?? []),
+    [hiddenWebSearchProviders]
+  );
 
-  const [selectedId, setSelectedId] = React.useState<string>("Exa");
+  // When the host passes an `onlyofficeConfig`, default to the preconfigured
+  // ONLYOFFICE entry instead of Exa — otherwise the user would land on Exa
+  // with its empty credentials and have to click through to ONLYOFFICE to
+  // see the preset take effect. `syncFromInstance` still overrides this
+  // from storage when the user has an earlier saved choice.
+  const [selectedId, setSelectedId] = React.useState<string>(() =>
+    externalOnlyofficeConfig ? "ONLYOFFICE" : "Exa"
+  );
   const [apiKey, setApiKey] = React.useState<string>("");
   const [baseUrl, setBaseUrl] = React.useState<string>("");
   const [baseUrlError, setBaseUrlError] = React.useState<string>("");
@@ -58,19 +70,21 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
         key: cp.apiKey,
         isCloudProvider: true,
       })),
-      ...WEB_SEARCH_PROVIDERS.map((p) => {
-        if (p.id === "ONLYOFFICE" && externalOnlyofficeConfig) {
-          return {
-            ...p,
-            baseUrl: externalOnlyofficeConfig.baseUrl,
-            key: externalOnlyofficeConfig.apiKey,
-            isCloudProvider: true,
-          };
+      ...WEB_SEARCH_PROVIDERS.filter((p) => !hiddenWebSearchSet.has(p.id)).map(
+        (p) => {
+          if (p.id === "ONLYOFFICE" && externalOnlyofficeConfig) {
+            return {
+              ...p,
+              baseUrl: externalOnlyofficeConfig.baseUrl,
+              key: externalOnlyofficeConfig.apiKey,
+              isCloudProvider: true,
+            };
+          }
+          return p;
         }
-        return p;
-      }),
+      ),
     ],
-    [cloudProviders, externalOnlyofficeConfig]
+    [cloudProviders, externalOnlyofficeConfig, hiddenWebSearchSet]
   );
 
   const provider = allProviders.find((p) => p.id === selectedId);
@@ -182,7 +196,10 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
         {t("WebSearchDescription")}
       </p>
       <div className="flex flex-col gap-[16px]">
-        <FieldContainer header={t("WebSearchEngine")} isHorizontal={fieldIsHorizontal}>
+        <FieldContainer
+          header={t("WebSearchEngine")}
+          isHorizontal={fieldIsHorizontal}
+        >
           <ComboBox
             className="w-full"
             value={provider?.label ?? t("SelectEngine")}
