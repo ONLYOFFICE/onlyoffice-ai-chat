@@ -1,0 +1,172 @@
+import type { ThreadMessageLike } from "@assistant-ui/react";
+import type { Profile, Thread } from "../../types";
+import { generateTitle } from "../../actions/title";
+import type {
+  OpenOrCreateInput,
+  OpenOrCreateResult,
+  ThreadsEngineDeps,
+} from "./types";
+
+/**
+ * Thread lifecycle orchestrator. Wraps `storage.threads` +
+ * `storage.messages` with the rules that plain CRUD can't express:
+ *
+ * - **Auto-generated titles** for new threads via the
+ *   {@link generateTitle} action, with a `"New chat"` fallback.
+ * - **Coupled writes** — appending a user message also bumps the
+ *   thread's `lastEditDate` so the sidebar resurfaces it.
+ * - **Coordinated rename** — sets the title and bumps `lastEditDate`
+ *   together so the rename is visible in the sidebar.
+ * - **Title regeneration** — re-runs `generateTitle` against the
+ *   thread's first user message and persists the result.
+ *
+ * The engine never touches assignments — callers (typically
+ * {@link AIEngine}) resolve a profile through {@link AssignmentsEngine}
+ * and pass it in.
+ */
+export class ThreadsEngine {
+  private readonly deps: ThreadsEngineDeps;
+
+  constructor(deps: ThreadsEngineDeps) {
+    this.deps = deps;
+  }
+
+  /**
+   * Create a new thread with a caller-supplied title. Returns the
+   * persisted {@link Thread} as assigned by storage (id + lastEditDate
+   * are populated). Use {@link openOrCreate} when the title should be
+   * auto-generated from the first user message.
+   */
+  async create(input: { title: string; profileId?: string }): Promise<Thread> {
+    const thread = await this.deps.storage.threads.create(
+      input.title,
+      input.profileId
+    );
+    return thread;
+  }
+
+  /**
+   * Open an existing thread (returning its prior history) or create a
+   * new one with an auto-generated title derived from `firstMessage`.
+   * Used by `AIEngine.sendWithStream` to bootstrap a streaming chat.
+   *
+   * Does **not** persist `firstMessage` — the caller decides whether
+   * to follow up with {@link appendUserMessage}, since some flows
+   * just want to inspect history.
+   */
+  async openOrCreate(input: OpenOrCreateInput): Promise<OpenOrCreateResult> {
+    if (input.threadId) {
+      const priorMessages = await this.deps.storage.messages.readByThread(
+        input.threadId
+      );
+      return { threadId: input.threadId, title: "", priorMessages };
+    }
+
+    const generated = await generateTitle({
+      profile: input.profile,
+      messages: [input.firstMessage],
+    });
+    const title = generated || "New chat";
+    const thread = await this.deps.storage.threads.create(
+      title,
+      input.profileId
+    );
+    return { threadId: thread.threadId, title, priorMessages: [] };
+  }
+
+  /**
+   * Persist a user message in `threadId` and bump the thread's
+   * `lastEditDate` to `Date.now()`. Optionally rebinds the thread to
+   * `profileId` when the active profile has changed mid-conversation.
+   * Returns the generated message ID.
+   */
+  async appendUserMessage(
+    threadId: string,
+    message: Omit<ThreadMessageLike, "id" | "createdAt">,
+    profileId?: string
+  ): Promise<string> {
+    const [stored] = await Promise.all([
+      this.deps.storage.messages.create(threadId, message),
+      this.deps.storage.threads.touch(threadId, Date.now(), { profileId }),
+    ]);
+    if (!stored.id) {
+      throw new Error(`storage.messages.create returned no id for ${threadId}`);
+    }
+    return stored.id;
+  }
+
+  /**
+   * Bump the thread's `lastEditDate` to `Date.now()` and optionally
+   * rebind it to `profileId`. Used when an event other than a new
+   * message (e.g. a profile switch from the composer) should resurface
+   * the thread in the sidebar.
+   */
+  async touch(threadId: string, profileId?: string): Promise<void> {
+    await this.deps.storage.threads.touch(threadId, Date.now(), { profileId });
+  }
+
+  /**
+   * Rename a thread and bump `lastEditDate` so the rename is visible
+   * in the sidebar. Two writes by necessity — `update` doesn't bump
+   * the timestamp, `touch` doesn't take a title.
+   */
+  async rename(threadId: string, title: string): Promise<void> {
+    await this.deps.storage.threads.update(threadId, title);
+    await this.deps.storage.threads.touch(threadId, Date.now());
+  }
+
+  /**
+   * Delete a thread. Storage cascades to its messages — see
+   * {@link ThreadsStorage.delete}.
+   */
+  async delete(threadId: string): Promise<void> {
+    await this.deps.storage.threads.delete(threadId);
+  }
+
+  /**
+   * Drop every message in the thread without deleting the thread
+   * itself. Bumps `lastEditDate` so the sidebar reflects the change.
+   */
+  async clearMessages(threadId: string): Promise<void> {
+    await this.deps.storage.messages.deleteByThread(threadId);
+    await this.deps.storage.threads.touch(threadId, Date.now());
+  }
+
+  /**
+   * Re-run {@link generateTitle} against the thread's first user
+   * message and persist the result. Returns the new title. Throws if
+   * the thread has no user messages yet.
+   */
+  async regenerateTitle(threadId: string, profile: Profile): Promise<string> {
+    const messages = await this.deps.storage.messages.readByThread(
+      threadId,
+      1,
+      0
+    );
+    const first = messages[0];
+    if (!first) {
+      throw new Error(
+        `Thread has no messages to derive a title from: ${threadId}`
+      );
+    }
+    const generated = await generateTitle({ profile, messages: [first] });
+    const title = generated || "New chat";
+    await this.deps.storage.threads.update(threadId, title);
+    await this.deps.storage.threads.touch(threadId, Date.now());
+    return title;
+  }
+
+  /** List all threads, sorted by `lastEditDate` desc — passthrough. */
+  async list(): Promise<Thread[]> {
+    return this.deps.storage.threads.readAll();
+  }
+
+  /** Read messages from a thread — passthrough with same pagination. */
+  async readMessages(
+    threadId: string,
+    limit?: number,
+    startIndex?: number
+  ): Promise<ThreadMessageLike[]> {
+    return this.deps.storage.messages.readByThread(threadId, limit, startIndex);
+  }
+}

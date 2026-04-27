@@ -1,0 +1,323 @@
+import type { ThreadMessageLike } from "@assistant-ui/react";
+import type { ChatCompletionChunk } from "openai/resources/chat/completions";
+import { describe, expect, it } from "vitest";
+import {
+  createFinishChunk,
+  createReasoningChunk,
+  createTextDeltaChunk,
+  createToolCallChunk,
+} from "../../tests/test-utils";
+import {
+  createEmptyResponse,
+  createErrorResponse,
+  createStopResponse,
+  finalizeReasoning,
+  handleReasoning,
+  handleText,
+  handleToolCall,
+  processStream,
+} from "../stream";
+
+const emptyMsg = (): ThreadMessageLike => createEmptyResponse();
+
+// ---------------------------------------------------------------------------
+// Response factories
+// ---------------------------------------------------------------------------
+
+describe("openai/stream/response factories", () => {
+  it("createEmptyResponse returns a fresh assistant shell", () => {
+    expect(createEmptyResponse()).toEqual({ role: "assistant", content: [] });
+  });
+
+  it("createErrorResponse carries the error on status", () => {
+    const err = new Error("boom");
+    const out = createErrorResponse(err) as {
+      status: { reason: string; error: unknown };
+    };
+    expect(out.status.reason).toBe("error");
+    expect(out.status.error).toBe(err);
+  });
+
+  it("createStopResponse uses `cancelled` as the reason", () => {
+    const out = createStopResponse() as { status: { reason: string } };
+    expect(out.status.reason).toBe("cancelled");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reasoning handlers
+// ---------------------------------------------------------------------------
+
+describe("openai/stream/handleReasoning", () => {
+  it("starts a new reasoning part when content is empty", () => {
+    const out = handleReasoning(emptyMsg(), "hello");
+    expect(out.content).toEqual([{ type: "reasoning", text: "hello" }]);
+  });
+
+  it("appends onto the last reasoning part", () => {
+    const seed: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "reasoning", text: "a" }],
+    };
+    const out = handleReasoning(seed, "b");
+    expect(out.content).toEqual([{ type: "reasoning", text: "ab" }]);
+  });
+
+  it("creates a new reasoning part when the last is not reasoning", () => {
+    const seed: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "x" }],
+    };
+    const out = handleReasoning(seed, "y");
+    expect(out.content).toEqual([
+      { type: "text", text: "x" },
+      { type: "reasoning", text: "y" },
+    ]);
+  });
+
+  it("is a no-op for empty reasoning content", () => {
+    const seed = emptyMsg();
+    expect(handleReasoning(seed, "")).toBe(seed);
+  });
+
+  it("is a no-op when content is a string", () => {
+    const seed: ThreadMessageLike = { role: "assistant", content: "x" };
+    expect(handleReasoning(seed, "more")).toBe(seed);
+  });
+});
+
+describe("openai/stream/finalizeReasoning", () => {
+  it("assigns a parentId to unfinalized reasoning parts", () => {
+    const seed: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "reasoning", text: "t" }],
+    };
+    const out = finalizeReasoning(seed);
+    const part = (out.content as unknown as Array<{ parentId?: string }>)[0];
+    expect(part.parentId).toBeTruthy();
+  });
+
+  it("leaves already-finalized reasoning parts alone", () => {
+    const seed: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "reasoning", text: "t", parentId: "r-1" }],
+    };
+    const out = finalizeReasoning(seed);
+    expect((out.content as unknown as Array<{ parentId: string }>)[0].parentId).toBe(
+      "r-1"
+    );
+  });
+
+  it("appends an empty text part with addEmptyText when last part is reasoning", () => {
+    const seed: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "reasoning", text: "t" }],
+    };
+    const out = finalizeReasoning(seed, true);
+    const parts = out.content as unknown as Array<{ type: string; text?: string }>;
+    expect(parts).toHaveLength(2);
+    expect(parts[1]).toEqual({ type: "text", text: "" });
+  });
+
+  it("is a no-op when content is a string", () => {
+    const seed: ThreadMessageLike = { role: "assistant", content: "x" };
+    expect(finalizeReasoning(seed)).toBe(seed);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Text handler
+// ---------------------------------------------------------------------------
+
+describe("openai/stream/handleText", () => {
+  const chunk = (content: string): ChatCompletionChunk.Choice =>
+    ({
+      index: 0,
+      delta: { content },
+      finish_reason: null,
+    }) as ChatCompletionChunk.Choice;
+
+  it("appends onto the last text part", () => {
+    const seed: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "a" }],
+    };
+    const out = handleText(seed, chunk("b"));
+    expect(out.content).toEqual([{ type: "text", text: "ab" }]);
+  });
+
+  it("creates the first text part when content is empty", () => {
+    const out = handleText(emptyMsg(), chunk("hi"));
+    expect(out.content).toEqual([{ type: "text", text: "hi" }]);
+  });
+
+  it("starts a new text part after reasoning", () => {
+    const seed: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "reasoning", text: "r" }],
+    };
+    const out = handleText(seed, chunk("t"));
+    const parts = out.content as unknown as Array<{ type: string }>;
+    expect(parts.map((p) => p.type)).toEqual(["reasoning", "text"]);
+  });
+
+  it("is a no-op on empty delta content", () => {
+    const seed = emptyMsg();
+    expect(handleText(seed, chunk(""))).toBe(seed);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tool-call handler
+// ---------------------------------------------------------------------------
+
+describe("openai/stream/handleToolCall", () => {
+  it("creates a fresh tool-call part when none is in progress", () => {
+    const out = handleToolCall(
+      emptyMsg(),
+      createToolCallChunk("t1", "search", '{"q":"x"}').choices[0]
+    );
+    const parts = out.content as unknown as Array<{ type: string; toolCallId: string }>;
+    expect(parts[0].type).toBe("tool-call");
+    expect(parts[0].toolCallId).toBe("t1");
+  });
+
+  it("merges fragmented arguments into the existing part", () => {
+    let msg = emptyMsg();
+    msg = handleToolCall(
+      msg,
+      createToolCallChunk("t1", "search", '{"q":').choices[0]
+    );
+    msg = handleToolCall(
+      msg,
+      createToolCallChunk("", "", '"x"}').choices[0]
+    );
+    const part = (
+      msg.content as unknown as Array<{ argsText: string; args: Record<string, unknown> }>
+    )[0];
+    expect(part.argsText).toBe('{"q":"x"}');
+    expect(part.args).toEqual({ q: "x" });
+  });
+
+  it("keeps args empty when JSON is not yet complete", () => {
+    const out = handleToolCall(
+      emptyMsg(),
+      createToolCallChunk("t1", "search", '{"q":').choices[0]
+    );
+    const part = (out.content as unknown as Array<{ args: Record<string, unknown> }>)[0];
+    expect(part.args).toEqual({});
+  });
+
+  it("is a no-op when no tool-call delta is present", () => {
+    const seed = emptyMsg();
+    const out = handleToolCall(seed, {
+      index: 0,
+      delta: {},
+      finish_reason: null,
+    } as ChatCompletionChunk.Choice);
+    expect(out).toBe(seed);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// processStream
+// ---------------------------------------------------------------------------
+
+async function collect<T>(gen: AsyncGenerator<T>): Promise<T[]> {
+  const out: T[] = [];
+  for await (const item of gen) out.push(item);
+  return out;
+}
+
+async function* toStream(chunks: ChatCompletionChunk[]) {
+  for (const c of chunks) yield c;
+}
+
+describe("openai/stream/processStream", () => {
+  it("yields snapshots then a terminal isEnd on finish", async () => {
+    const out = await collect(
+      processStream(
+        toStream([createTextDeltaChunk("hi"), createFinishChunk()])
+      )
+    );
+    const last = out[out.length - 1] as unknown as {
+      isEnd: true;
+      responseMessage: ThreadMessageLike;
+    };
+    expect(last.isEnd).toBe(true);
+    expect(last.responseMessage.content).toEqual([
+      { type: "text", text: "hi" },
+    ]);
+  });
+
+  it("finalises reasoning when finish arrives mid-thought", async () => {
+    const out = await collect(
+      processStream(
+        toStream([createReasoningChunk("thinking"), createFinishChunk()])
+      )
+    );
+    const last = out[out.length - 1] as unknown as {
+      responseMessage: { content: Array<{ parentId?: string }> };
+    };
+    expect(last.responseMessage.content[0].parentId).toBeTruthy();
+  });
+
+  it("finalises reasoning when text starts after thinking", async () => {
+    const out = await collect(
+      processStream(
+        toStream([
+          createReasoningChunk("r"),
+          createTextDeltaChunk("t"),
+          createFinishChunk(),
+        ])
+      )
+    );
+    const last = out[out.length - 1] as unknown as {
+      responseMessage: { content: Array<{ type: string; parentId?: string }> };
+    };
+    const reasoning = last.responseMessage.content.find(
+      (p) => p.type === "reasoning"
+    );
+    expect(reasoning?.parentId).toBeTruthy();
+  });
+
+  it("finalises reasoning when a tool_call arrives after thinking", async () => {
+    const out = await collect(
+      processStream(
+        toStream([
+          createReasoningChunk("r"),
+          createToolCallChunk("t1", "search", "{}"),
+          createFinishChunk(),
+        ])
+      )
+    );
+    const last = out[out.length - 1] as unknown as {
+      responseMessage: { content: Array<{ type: string; parentId?: string }> };
+    };
+    const reasoning = last.responseMessage.content.find(
+      (p) => p.type === "reasoning"
+    );
+    expect(reasoning?.parentId).toBeTruthy();
+  });
+
+  it("salvages a partial response when the stream ends without finish_reason", async () => {
+    const out = await collect(
+      processStream(toStream([createTextDeltaChunk("hi")]))
+    );
+    const last = out[out.length - 1] as unknown as {
+      isEnd: true;
+      responseMessage: { content: Array<{ text: string }> };
+    };
+    expect(last.isEnd).toBe(true);
+    expect(last.responseMessage.content[0].text).toBe("hi");
+  });
+
+  it("yields an error response when the stream ends empty", async () => {
+    const out = await collect(processStream(toStream([])));
+    const last = out[out.length - 1] as unknown as {
+      isEnd: true;
+      responseMessage: { status: { reason: string } };
+    };
+    expect(last.responseMessage.status.reason).toBe("error");
+  });
+});

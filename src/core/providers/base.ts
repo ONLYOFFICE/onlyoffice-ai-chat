@@ -1,0 +1,47 @@
+import type { TErrorData } from "../../shared/error-data";
+import type { ImageGenerationArgs } from "../../shared/image-generation-args";
+import type { Model } from "../../shared/model";
+import type { ProviderCredentials } from "../../shared/provider-credentials";
+import type {
+  SendMessageArgs,
+  SendMessageResult,
+} from "../../shared/send-message-args";
+import type { SendMessageSyncArgs } from "../../shared/send-message-sync-args";
+
+/**
+ * Stateless thin-client contract for an AI provider.
+ *
+ * Each concrete subclass owns its own SDK client (typed per SDK) and
+ * exposes chat / sync / optional image-generation methods that take all
+ * per-call data as arguments. The only piece of instance state kept is
+ * the credentials that were used to construct the SDK client.
+ */
+export abstract class AbstractBaseProvider {
+  protected creds: ProviderCredentials;
+
+  constructor(creds: ProviderCredentials) {
+    this.creds = creds;
+  }
+
+  abstract sendMessage(
+    args: SendMessageArgs
+  ): AsyncGenerator<SendMessageResult>;
+
+  abstract sendMessageSync(args: SendMessageSyncArgs): Promise<string>;
+
+  imageGeneration?(args: ImageGenerationArgs): Promise<string>;
+}
+
+/**
+ * Static surface every concrete provider class must satisfy. TypeScript
+ * cannot mark static methods `abstract`, so the registry and any caller
+ * that needs static provider info relies on this companion interface.
+ */
+export interface ProviderConstructor {
+  new (creds: ProviderCredentials): AbstractBaseProvider;
+
+  checkProvider(creds: ProviderCredentials): Promise<boolean | TErrorData>;
+  getProviderModels(creds: ProviderCredentials): Promise<Model[]>;
+  getName(): string;
+  getBaseUrl(): string;
+}
