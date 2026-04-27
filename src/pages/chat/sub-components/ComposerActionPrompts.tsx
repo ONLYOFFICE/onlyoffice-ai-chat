@@ -1,10 +1,10 @@
 import { useComposerRuntime } from "@assistant-ui/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useI18n } from "../../../locales";
-import { useComponents } from "../../../components-provider";
-import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
-import { Dialog } from "../../../components/dialog";
-import { cn } from "../../../lib/utils";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
+import type { DropDownItemProps } from "../../../ui/components/dropdown-item/DropDownItem.types";
+import { Dialog } from "../../../ui/components/dialog";
+import { cn } from "../../../shared/utils";
 import { useStores } from "../../../store/context";
 
 export const PROMPT_DIALOG_CLASS =

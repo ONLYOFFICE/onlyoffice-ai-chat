@@ -5,12 +5,12 @@ import {
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
 import { memo, useCallback, useState } from "react";
-import { useI18n } from "../../../locales";
-import { useComponents } from "../../../components-provider";
-import { Dialog } from "../../../components/dialog";
-import { FileItem } from "../../../components/file-item";
-import { MarkdownText } from "../../../components/markdown";
-import { cn } from "../../../lib/utils";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
+import { Dialog } from "../../../ui/components/dialog";
+import { FileItem } from "../../../ui/components/file-item";
+import { MarkdownText } from "../../../ui/components/markdown";
+import { cn } from "../../../shared/utils";
 import { useStores } from "../../../store/context";
 import type { TAttachmentFile } from "../../../types";
 import { PROMPT_DIALOG_CLASS } from "./ComposerActionPrompts";

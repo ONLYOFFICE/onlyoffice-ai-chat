@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo } from "react";
-import { useI18n } from "../../../locales";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
 import { useToolsContext } from "../../../tools/context";
-import { cn } from "../../../lib/utils";
+import { cn } from "../../../shared/utils";
 import { useStores } from "../../../store/context";
 import type { TMCPItem } from "../../../types";
-import { useComponents } from "../../../components-provider";
-import { Icon } from "../../../components/icon";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
+import { Icon } from "../../../ui/components/icon";
 
 type AvailableToolsItemProps = {
   name: string;

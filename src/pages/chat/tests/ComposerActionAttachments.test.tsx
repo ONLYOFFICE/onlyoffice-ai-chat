@@ -61,7 +61,7 @@ vi.mock("../../../tools/context", () => ({
 
 let mockDropdownItems: unknown[] = [];
 let mockOnOpenChange: ((open: boolean) => void) | undefined;
-vi.mock("../../../components/dropdown", () => ({
+vi.mock("../../../ui/components/dropdown", () => ({
   DropdownMenu: ({
     trigger,
     items,
@@ -81,7 +81,7 @@ vi.mock("../../../components/dropdown", () => ({
   },
 }));
 
-vi.mock("../../../components/icon-button", () => ({
+vi.mock("../../../ui/components/icon-button", () => ({
   IconButton: (props: Record<string, unknown>) => (
     <button
       data-testid={
@@ -93,7 +93,7 @@ vi.mock("../../../components/icon-button", () => ({
   ),
 }));
 
-vi.mock("../../../components/tooltip-icon-button", () => ({
+vi.mock("../../../ui/components/tooltip-icon-button", () => ({
   TooltipIconButton: ({
     children,
     tooltip,
@@ -113,7 +113,7 @@ vi.mock("../../../components/tooltip-icon-button", () => ({
   ),
 }));
 
-vi.mock("../../../lib/utils", () => ({
+vi.mock("../../../shared/utils", () => ({
   cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
   isDjVu: (t: number) => t === 20,
   isDocument: (t: number) => t === 7,

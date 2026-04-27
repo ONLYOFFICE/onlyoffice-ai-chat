@@ -46,7 +46,7 @@ vi.mock("@assistant-ui/react", () => ({
   },
 }));
 
-vi.mock("../../../components/icon-button", () => ({
+vi.mock("../../../ui/components/icon-button", () => ({
   IconButton: (props: Record<string, unknown>) => (
     <button
       data-testid={props["data-testid"] as string}

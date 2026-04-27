@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 let mockLanguage = "en";
 
-vi.mock("../../locales", () => ({
+vi.mock("../../ui/providers/LocalesProvider", () => ({
   useI18n: () => {
     const isRTL = mockLanguage === "ar-SA";
     return {

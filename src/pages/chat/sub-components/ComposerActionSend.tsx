@@ -1,5 +1,5 @@
 import { ComposerPrimitive, ThreadPrimitive } from "@assistant-ui/react";
-import { useComponents } from "../../../components-provider";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
 import { useStores } from "../../../store/context";
 
 const BUTTON_STYLES =

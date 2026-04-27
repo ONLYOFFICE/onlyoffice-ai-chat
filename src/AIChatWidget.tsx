@@ -7,8 +7,8 @@ import React, {
   useState,
 } from "react";
 import type { AppContext } from "./app-context";
-import { Layout } from "./components/layout";
-import { ManageToolDialog } from "./components/manage-tool-dialog";
+import { Layout } from "./ui/components/layout";
+import { ManageToolDialog } from "./ui/components/manage-tool-dialog";
 import type { StoreKeys } from "./config";
 import { CallbacksManager } from "./events/callbacks";
 import { ChatEventBus } from "./events/event-bus";
@@ -20,15 +20,15 @@ import useMessages from "./hooks/useMessages";
 import useProfiles from "./hooks/useProfiles";
 import useServers from "./hooks/useServers";
 import useThread from "./hooks/useThreads";
-import { ComponentsProvider } from "./components-provider";
-import type { ComponentOverrides } from "./components-provider";
-import { ImagesProvider } from "./images-provider";
-import type { ImageOverrides } from "./images-provider";
-import { I18nProvider } from "./locales";
-import type { Translations } from "./locales";
-import logger from "./lib/logger";
-import { ThemeProvider } from "./theme";
-import type { ThemeTokens } from "./theme";
+import { ComponentsProvider } from "./ui/providers/ComponentsProvider";
+import type { ComponentOverrides } from "./ui/providers/ComponentsProvider";
+import { ImagesProvider } from "./ui/providers/ImagesProvider";
+import type { ImageOverrides } from "./ui/providers/ImagesProvider";
+import { I18nProvider } from "./ui/providers/LocalesProvider";
+import type { Translations } from "./ui/providers/LocalesProvider";
+import logger from "./shared/logger";
+import { ThemeProvider } from "./ui/providers/ThemeProvider";
+import type { ThemeTokens } from "./ui/providers/ThemeProvider";
 import Thread from "./pages/chat";
 
 import Settings from "./pages/settings";

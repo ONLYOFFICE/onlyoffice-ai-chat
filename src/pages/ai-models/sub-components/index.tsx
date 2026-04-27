@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useI18n } from "../../../locales";
-import { useComponents } from "../../../components-provider";
-import { ModelCard } from "../../../components/model-card";
-import { AddModelCard } from "../../../components/model-config-cards";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
+import { ModelCard } from "../../../ui/components/model-card";
+import { AddModelCard } from "../../../ui/components/model-config-cards";
 import { useStores } from "../../../store/context";
 
 interface ModelsProps {

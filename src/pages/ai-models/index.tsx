@@ -1,4 +1,4 @@
-import { useI18n } from "../../locales";
+import { useI18n } from "../../ui/providers/LocalesProvider";
 import { Models } from "./sub-components";
 
 interface AiModelsPageProps {

@@ -3,7 +3,7 @@ import { vi } from "vitest";
 
 // Global mock for the i18n locales module — components now use useI18n()
 // instead of react-i18next's useTranslation().
-vi.mock("../locales", () => ({
+vi.mock("../ui/providers/LocalesProvider", () => ({
   useI18n: () => ({
     t: (key: string) => key,
     locale: "en",

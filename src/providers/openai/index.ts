@@ -11,7 +11,7 @@ import type { Model as OpenAIModel } from "openai/resources/models";
 import { CapabilitiesUI } from "../../capabilities";
 import type { Model, TMCPItem, TProvider } from "../../types";
 import { AbstractBaseProvider, type TData, type TErrorData } from "../base";
-import logger from "../../lib/logger";
+import logger from "../../shared/logger";
 import { getErrorCode, ProviderErrors } from "../errors";
 import { CREATE_TITLE_SYSTEM_PROMPT } from "../prompts";
 import {

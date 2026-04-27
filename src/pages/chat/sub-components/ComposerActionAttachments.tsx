@@ -1,8 +1,8 @@
 import React from "react";
-import { useI18n } from "../../../locales";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
 import { usePlatform } from "../../../platform/context";
-import { useComponents } from "../../../components-provider";
-import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
+import type { DropDownItemProps } from "../../../ui/components/dropdown-item/DropDownItem.types";
 import { useToolsContext } from "../../../tools/context";
 import {
   isDjVu,
@@ -13,7 +13,7 @@ import {
   isSpreadsheet,
   isVisio,
   isXps,
-} from "../../../lib/utils";
+} from "../../../shared/utils";
 import { useStores } from "../../../store/context";
 
 const getFileIconName = (type: number): string => {

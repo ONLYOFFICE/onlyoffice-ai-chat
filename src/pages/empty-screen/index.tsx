@@ -1,4 +1,4 @@
-import { AddModelCard } from "../../components/model-config-cards";
+import { AddModelCard } from "../../ui/components/model-config-cards";
 import { useStores } from "../../store/context";
 
 const EmptyScreen = () => {

@@ -6,7 +6,7 @@ import type {
 import type { Model, TProvider } from "../../types";
 import type { TData, TErrorData } from "../base";
 import { getErrorCode, ProviderErrors } from "../errors";
-import logger from "../../lib/logger";
+import logger from "../../shared/logger";
 import { OpenAIProvider } from "../openai";
 import { convertMessagesToModelFormat } from "../openai/utils";
 import { onlyOfficeInfo } from "./info";

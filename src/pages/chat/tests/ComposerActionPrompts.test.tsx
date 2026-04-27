@@ -46,7 +46,7 @@ vi.mock("@assistant-ui/react", () => ({
 }));
 
 let mockDropdownItems: unknown[] = [];
-vi.mock("../../../components/dropdown", () => ({
+vi.mock("../../../ui/components/dropdown", () => ({
   DropdownMenu: ({
     trigger,
     items,
@@ -65,13 +65,13 @@ vi.mock("../../../components/dropdown", () => ({
   },
 }));
 
-vi.mock("../../../components/icon-button", () => ({
+vi.mock("../../../ui/components/icon-button", () => ({
   IconButton: (props: Record<string, unknown>) => (
     <button data-testid={`icon-btn-${props.iconName}`} />
   ),
 }));
 
-vi.mock("../../../components/tooltip-icon-button", () => ({
+vi.mock("../../../ui/components/tooltip-icon-button", () => ({
   TooltipIconButton: ({
     children,
     visible,
@@ -91,7 +91,7 @@ vi.mock("../../../components/tooltip-icon-button", () => ({
   ),
 }));
 
-vi.mock("../../../components/button", () => ({
+vi.mock("../../../ui/components/button", () => ({
   Button: ({
     children,
     onClick,
@@ -116,7 +116,7 @@ vi.mock("../../../components/button", () => ({
   ),
 }));
 
-vi.mock("../../../components/dialog", () => ({
+vi.mock("../../../ui/components/dialog", () => ({
   Dialog: ({
     children,
     open,
@@ -175,7 +175,7 @@ vi.mock("../../../components/dialog", () => ({
   ),
 }));
 
-vi.mock("../../../components/field-container", () => ({
+vi.mock("../../../ui/components/field-container", () => ({
   FieldContainer: ({
     children,
     header,
@@ -189,7 +189,7 @@ vi.mock("../../../components/field-container", () => ({
   ),
 }));
 
-vi.mock("../../../components/input", () => ({
+vi.mock("../../../ui/components/input", () => ({
   Input: ({
     value,
     onChange,
@@ -201,7 +201,7 @@ vi.mock("../../../components/input", () => ({
   }) => <input data-testid="input" value={value} onChange={onChange} />,
 }));
 
-vi.mock("../../../lib/utils", () => ({
+vi.mock("../../../shared/utils", () => ({
   cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
 }));
 

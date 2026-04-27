@@ -29,7 +29,7 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../components/dropdown", () => ({
+vi.mock("../../../ui/components/dropdown", () => ({
   DropdownMenu: ({
     trigger,
     items,
@@ -48,11 +48,11 @@ vi.mock("../../../components/dropdown", () => ({
   ),
 }));
 
-vi.mock("../../../components/icon", () => ({
+vi.mock("../../../ui/components/icon", () => ({
   Icon: () => <span data-testid="icon" />,
 }));
 
-vi.mock("../../../components/icon-button", () => ({
+vi.mock("../../../ui/components/icon-button", () => ({
   IconButton: ({
     iconName,
     ...props
@@ -62,11 +62,11 @@ vi.mock("../../../components/icon-button", () => ({
   }) => <button data-testid={`icon-btn-${iconName}`} {...props} />,
 }));
 
-vi.mock("../../../components/loader", () => ({
+vi.mock("../../../ui/components/loader", () => ({
   Loader: () => <div data-testid="loader" />,
 }));
 
-vi.mock("../../../components/toggle-button", () => ({
+vi.mock("../../../ui/components/toggle-button", () => ({
   ToggleButton: ({ checked }: { checked: boolean }) => (
     <div data-testid="toggle" data-checked={String(checked)} />
   ),

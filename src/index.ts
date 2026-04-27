@@ -200,31 +200,31 @@ export {
 // I18n
 // ---------------------------------------------------------------------------
 
-export { I18nProvider, useI18n, bundledLocaleKeys } from "./locales";
+export { I18nProvider, useI18n, bundledLocaleKeys } from "./ui/providers/LocalesProvider";
 export type {
   I18nProviderProps,
   I18nContextValue,
   TranslationKey,
   Translations,
-} from "./locales";
+} from "./ui/providers/LocalesProvider";
 
 // ---------------------------------------------------------------------------
 // Theme
 // ---------------------------------------------------------------------------
 
-export { ThemeProvider, useTheme, BUILT_IN_THEMES, DARK_THEMES } from "./theme";
+export { ThemeProvider, useTheme, BUILT_IN_THEMES, DARK_THEMES } from "./ui/providers/ThemeProvider";
 export type {
   ThemeProviderProps,
   ThemeContextValue,
   ThemeTokens,
   ThemeType,
-} from "./theme";
+} from "./ui/providers/ThemeProvider";
 
 // ---------------------------------------------------------------------------
 // Components — Pluggable UI Component Overrides
 // ---------------------------------------------------------------------------
 
-export { ComponentsProvider, useComponents } from "./components-provider";
+export { ComponentsProvider, useComponents } from "./ui/providers/ComponentsProvider";
 export type {
   ButtonProps,
   CheckboxProps,
@@ -246,13 +246,13 @@ export type {
   ToggleButtonProps,
   TooltipContentProps,
   TooltipIconButtonProps,
-} from "./components-provider";
+} from "./ui/providers/ComponentsProvider";
 
 // ---------------------------------------------------------------------------
 // Images — Pluggable Icon & Image Overrides
 // ---------------------------------------------------------------------------
 
-export { ImagesProvider, useImages } from "./images-provider";
+export { ImagesProvider, useImages } from "./ui/providers/ImagesProvider";
 export type {
   IconName,
   ImageOverride,
@@ -260,7 +260,7 @@ export type {
   ImageResult,
   ImagesContextValue,
   ImagesProviderProps,
-} from "./images-provider";
+} from "./ui/providers/ImagesProvider";
 
 // ---------------------------------------------------------------------------
 // Events / Callbacks
@@ -360,4 +360,4 @@ export {
   isVisio,
   isXps,
   sanitizeProviderName,
-} from "./lib/utils";
+} from "./shared/utils";

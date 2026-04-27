@@ -15,7 +15,7 @@ vi.mock("../../../store/context", () => ({
   useStores: () => mockUseStores(),
 }));
 
-vi.mock("../../../components/combo-box", () => ({
+vi.mock("../../../ui/components/combo-box", () => ({
   ComboBox: (props: Record<string, unknown>) => (
     <div
       data-testid="combo-box"

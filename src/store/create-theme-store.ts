@@ -1,6 +1,6 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../app-context";
-import { type ThemeType, getThemeType } from "../theme/constants";
+import { type ThemeType, getThemeType } from "../ui/providers/ThemeProvider/constants";
 
 /**
  * Zustand state for the widget's visual theme and display scale.

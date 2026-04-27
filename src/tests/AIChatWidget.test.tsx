@@ -4,11 +4,11 @@ import { render, screen } from "@testing-library/react";
 
 // Mock i18n initialization
 const mockInitI18n = vi.fn().mockResolvedValue(undefined);
-vi.mock("../locales/i18n", () => ({
+vi.mock("../ui/providers/LocalesProvider/i18n", () => ({
   initAIChatI18n: (...args: unknown[]) => mockInitI18n(...args),
 }));
 
-vi.mock("../locales", () => ({
+vi.mock("../ui/providers/LocalesProvider", () => ({
   I18nProvider: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -24,7 +24,7 @@ vi.mock("../locales", () => ({
 }));
 
 // Mock logger
-vi.mock("../lib/logger", () => ({
+vi.mock("../shared/logger", () => ({
   default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
@@ -182,13 +182,13 @@ vi.mock("@assistant-ui/react", () => ({
 }));
 
 // Mock page components
-vi.mock("../components/layout", () => ({
+vi.mock("../ui/components/layout", () => ({
   Layout: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="layout">{children}</div>
   ),
 }));
 
-vi.mock("../components/manage-tool-dialog", () => ({
+vi.mock("../ui/components/manage-tool-dialog", () => ({
   ManageToolDialog: ({ onClose }: { onClose: () => void }) => (
     <div data-testid="manage-tool-dialog">
       <button data-testid="manage-tool-close" onClick={onClose}>

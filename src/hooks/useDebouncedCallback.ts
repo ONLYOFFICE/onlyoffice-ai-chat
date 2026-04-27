@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { debounce } from "../lib/debounce";
+import { debounce } from "../shared/debounce";
 
 /**
  * Returns a debounced version of the given callback that delays invocation

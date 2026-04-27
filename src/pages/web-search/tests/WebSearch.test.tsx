@@ -42,12 +42,12 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../lib/api-key-links", () => ({
+vi.mock("../../../shared/api-key-links", () => ({
   getApiKeyLink: (id: string) =>
     id === "Exa" ? "https://exa.ai/keys" : undefined,
 }));
 
-vi.mock("../../../components/combo-box", () => ({
+vi.mock("../../../ui/components/combo-box", () => ({
   ComboBox: ({
     value,
     items,
@@ -72,7 +72,7 @@ vi.mock("../../../components/combo-box", () => ({
   },
 }));
 
-vi.mock("../../../components/field-container", () => ({
+vi.mock("../../../ui/components/field-container", () => ({
   FieldContainer: ({
     children,
     header,
@@ -93,7 +93,7 @@ vi.mock("../../../components/field-container", () => ({
   ),
 }));
 
-vi.mock("../../../components/input", () => {
+vi.mock("../../../ui/components/input", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const ReactModule = require("react");
   return {
@@ -124,7 +124,7 @@ vi.mock("../../../components/input", () => {
   };
 });
 
-vi.mock("../../../components/link", () => ({
+vi.mock("../../../ui/components/link", () => ({
   Link: ({ children, href }: { children: React.ReactNode; href?: string }) => (
     <a data-testid="link" href={href}>
       {children}

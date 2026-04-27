@@ -50,7 +50,7 @@ vi.mock("../sub-components/ComposerAction", () => ({
   ComposerAction: () => <div data-testid="composer-action" />,
 }));
 
-vi.mock("../../../components/file-item", () => ({
+vi.mock("../../../ui/components/file-item", () => ({
   FileItem: ({ file }: { file: { path?: string; name?: string } }) => (
     <div data-testid="file-item" data-path={file.path ?? file.name} />
   ),

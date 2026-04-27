@@ -1,7 +1,7 @@
 import React from "react";
-import { useI18n } from "../../../locales";
-import { cn } from "../../../lib/utils";
-import { useComponents } from "../../../components-provider";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
+import { cn } from "../../../shared/utils";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
 import { useToolsContext } from "../../../tools/context";
 import { useStores } from "../../../store/context";
 import AvailableTools from "./AvailableTools";

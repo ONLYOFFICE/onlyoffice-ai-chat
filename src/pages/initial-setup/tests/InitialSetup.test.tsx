@@ -14,7 +14,7 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../components/button", () => ({
+vi.mock("../../../ui/components/button", () => ({
   Button: ({
     children,
     onClick,
@@ -24,13 +24,13 @@ vi.mock("../../../components/button", () => ({
   }) => <button onClick={onClick}>{children}</button>,
 }));
 
-vi.mock("../../../components/model-card", () => ({
+vi.mock("../../../ui/components/model-card", () => ({
   ModelCard: ({ profile }: { profile: { name: string } }) => (
     <div data-testid="model-card">{profile.name}</div>
   ),
 }));
 
-vi.mock("../../../components/model-config-cards", () => ({
+vi.mock("../../../ui/components/model-config-cards", () => ({
   AddModelCard: ({ onClose }: { onClose: () => void }) => (
     <div data-testid="add-model-card">
       <button onClick={onClose}>Close</button>

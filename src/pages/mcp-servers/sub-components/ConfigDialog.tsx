@@ -3,11 +3,11 @@ import { EditorState } from "@codemirror/state";
 import type { ViewUpdate } from "@codemirror/view";
 import { basicSetup, EditorView } from "codemirror";
 import React from "react";
-import { useI18n } from "../../../locales";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
 import { usePlatform } from "../../../platform/context";
 import { useStores } from "../../../store/context";
-import { useComponents } from "../../../components-provider";
-import { Dialog } from "../../../components/dialog";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
+import { Dialog } from "../../../ui/components/dialog";
 
 import "./ConfigDialog.css";
 

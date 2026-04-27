@@ -170,13 +170,13 @@ vi.mock("framer-motion", () => ({
   },
 }));
 
-vi.mock("../../../components/markdown", () => ({
+vi.mock("../../../ui/components/markdown", () => ({
   MarkdownContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="markdown-content">{children}</div>
   ),
 }));
 
-vi.mock("../../../components/icon", () => ({
+vi.mock("../../../ui/components/icon", () => ({
   Icon: (props: Record<string, unknown>) => (
     <span
       data-testid="icon"
@@ -186,7 +186,7 @@ vi.mock("../../../components/icon", () => ({
   ),
 }));
 
-vi.mock("../../../components/icon-button", () => ({
+vi.mock("../../../ui/components/icon-button", () => ({
   IconButton: (props: Record<string, unknown>) => (
     <button
       data-testid={`icon-btn-${props.iconName}`}
@@ -195,13 +195,13 @@ vi.mock("../../../components/icon-button", () => ({
   ),
 }));
 
-vi.mock("../../../components/loader", () => ({
+vi.mock("../../../ui/components/loader", () => ({
   Loader: ({ size }: { size?: number }) => (
     <div data-testid="loader" data-size={size} />
   ),
 }));
 
-vi.mock("../../../components/tooltip-icon-button", () => ({
+vi.mock("../../../ui/components/tooltip-icon-button", () => ({
   TooltipIconButton: ({
     children,
     tooltip,
@@ -215,11 +215,11 @@ vi.mock("../../../components/tooltip-icon-button", () => ({
   ),
 }));
 
-vi.mock("../../../components/tool-fallback", () => ({
+vi.mock("../../../ui/components/tool-fallback", () => ({
   ToolFallback: () => <div data-testid="tool-fallback" />,
 }));
 
-vi.mock("../../../lib/utils", () => ({
+vi.mock("../../../shared/utils", () => ({
   cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
   convertMessagesToMd: vi.fn(() => "# Title\nContent"),
   getMessageTitleFromMd: vi.fn(() => "Title"),

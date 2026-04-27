@@ -1,7 +1,7 @@
 import React from "react";
-import { useI18n } from "../../../locales";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
 import { CapabilitiesUI } from "../../../capabilities";
-import { useComponents } from "../../../components-provider";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
 import { useStores } from "../../../store/context";
 import type { Profile } from "../../../types";
 

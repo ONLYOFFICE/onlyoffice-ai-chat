@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import logger from "../lib/logger";
+import logger from "../shared/logger";
 import type { StorageAdapter } from "./types";
 
 const StorageContext = createContext<StorageAdapter | null>(null);

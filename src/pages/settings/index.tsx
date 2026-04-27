@@ -1,5 +1,5 @@
-import { useI18n } from "../../locales";
-import { useComponents } from "../../components-provider";
+import { useI18n } from "../../ui/providers/LocalesProvider";
+import { useComponents } from "../../ui/providers/ComponentsProvider";
 import { useStores } from "../../store/context";
 import AiModelsPage from "../ai-models";
 import ModelAssignmentPage from "../model-assignment";

@@ -30,7 +30,7 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../components/button", () => ({
+vi.mock("../../../ui/components/button", () => ({
   Button: ({
     children,
     onClick,

@@ -1,11 +1,11 @@
 import React from "react";
-import { useI18n } from "../../../locales";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
 import { useToolsContext } from "../../../tools/context";
 import {
   MAX_TOOL_COUNT,
   MAX_TOOL_COUNT_WITH_WEB_SEARCH,
 } from "../../../config";
-import { cn } from "../../../lib/utils";
+import { cn } from "../../../shared/utils";
 import { useStores } from "../../../store/context";
 import AvailableToolsItem from "./AvailableToolsItem";
 import ToolsCounter from "./ToolsCounter";

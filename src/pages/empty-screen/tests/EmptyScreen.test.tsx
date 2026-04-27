@@ -12,7 +12,7 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../components/model-config-cards", () => ({
+vi.mock("../../../ui/components/model-config-cards", () => ({
   AddModelCard: ({
     variant,
     onSuccess,

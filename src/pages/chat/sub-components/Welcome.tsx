@@ -1,5 +1,5 @@
 import { ThreadPrimitive } from "@assistant-ui/react";
-import { useI18n } from "../../../locales";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
 
 const ThreadWelcome = () => {
   const { t } = useI18n();

@@ -1,5 +1,5 @@
 import type { AppContext } from "../app-context";
-import logger from "../lib/logger";
+import logger from "../shared/logger";
 import type { Prompt, PromptFolder } from "../types";
 
 /**

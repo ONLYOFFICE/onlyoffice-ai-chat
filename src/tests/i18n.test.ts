@@ -19,7 +19,7 @@ describe("initAIChatI18n", () => {
   });
 
   it("calls i18n.use and i18n.init", async () => {
-    const { initAIChatI18n } = await import("../locales/i18n");
+    const { initAIChatI18n } = await import("../ui/providers/LocalesProvider/i18n");
     await initAIChatI18n();
 
     expect(mockUse).toHaveBeenCalledWith("initReactI18next-mock");
@@ -27,7 +27,7 @@ describe("initAIChatI18n", () => {
   });
 
   it("uses fallbackLng 'en' by default", async () => {
-    const { initAIChatI18n } = await import("../locales/i18n");
+    const { initAIChatI18n } = await import("../ui/providers/LocalesProvider/i18n");
     await initAIChatI18n();
 
     expect(mockInit).toHaveBeenCalledWith(
@@ -36,7 +36,7 @@ describe("initAIChatI18n", () => {
   });
 
   it("passes lng when locale option is provided", async () => {
-    const { initAIChatI18n } = await import("../locales/i18n");
+    const { initAIChatI18n } = await import("../ui/providers/LocalesProvider/i18n");
     await initAIChatI18n({ locale: "ru" });
 
     expect(mockInit).toHaveBeenCalledWith(
@@ -45,7 +45,7 @@ describe("initAIChatI18n", () => {
   });
 
   it("merges custom resources with loaded locales", async () => {
-    const { initAIChatI18n } = await import("../locales/i18n");
+    const { initAIChatI18n } = await import("../ui/providers/LocalesProvider/i18n");
     const custom = { "ko-KR": { translation: { hello: "world" } } };
     await initAIChatI18n({ resources: custom });
 
@@ -60,7 +60,7 @@ describe("initAIChatI18n", () => {
   });
 
   it("does not re-initialize on second call", async () => {
-    const { initAIChatI18n } = await import("../locales/i18n");
+    const { initAIChatI18n } = await import("../ui/providers/LocalesProvider/i18n");
     await initAIChatI18n();
     await initAIChatI18n({ locale: "fr" });
 
@@ -68,7 +68,7 @@ describe("initAIChatI18n", () => {
   });
 
   it("exports bundledLocaleKeys with all locale keys", async () => {
-    const { bundledLocaleKeys } = await import("../locales/i18n");
+    const { bundledLocaleKeys } = await import("../ui/providers/LocalesProvider/i18n");
 
     expect(Array.isArray(bundledLocaleKeys)).toBe(true);
     expect(bundledLocaleKeys).toContain("en");

@@ -1,6 +1,6 @@
 import type { CallbacksManager } from "../../events/callbacks";
 import type { ChatEventBus } from "../../events";
-import logger from "../../lib/logger";
+import logger from "../../shared/logger";
 import type { PlatformAdapter } from "../../platform/types";
 import type { SettingsAdapter } from "../../settings/types";
 import type { TMCPItem } from "../../types";

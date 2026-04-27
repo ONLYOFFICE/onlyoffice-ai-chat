@@ -1,6 +1,6 @@
 import { ComposerPrimitive } from "@assistant-ui/react";
-import { useI18n } from "../../../locales";
-import { FileItem } from "../../../components/file-item";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
+import { FileItem } from "../../../ui/components/file-item";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../widget-config";
 import { ComposerAction } from "./ComposerAction";

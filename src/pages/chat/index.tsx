@@ -8,8 +8,8 @@ import {
 } from "@assistant-ui/react";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { motion } from "framer-motion";
-import { useI18n } from "../../locales";
-import { useComponents } from "../../components-provider";
+import { useI18n } from "../../ui/providers/LocalesProvider";
+import { useComponents } from "../../ui/providers/ComponentsProvider";
 import { useStores } from "../../store/context";
 import { useMessages } from "../../hooks";
 import { AssistantMessage } from "./sub-components/AssistantMessage";

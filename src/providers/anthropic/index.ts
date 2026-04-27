@@ -7,7 +7,7 @@ import type {
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { CapabilitiesUI } from "../../capabilities";
 import type { Model, TMCPItem, TProvider } from "../../types";
-import logger from "../../lib/logger";
+import logger from "../../shared/logger";
 import { AbstractBaseProvider, type TData, type TErrorData } from "../base";
 import { extractErrorMessage, getErrorStatus, ProviderErrors } from "../errors";
 import { CREATE_TITLE_SYSTEM_PROMPT } from "../prompts";

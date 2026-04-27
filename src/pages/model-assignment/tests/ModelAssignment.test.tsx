@@ -54,7 +54,7 @@ vi.mock("../../../capabilities", () => ({
   },
 }));
 
-vi.mock("../../../components/combo-box", () => ({
+vi.mock("../../../ui/components/combo-box", () => ({
   ComboBox: ({
     value,
     placeholder,
@@ -83,7 +83,7 @@ vi.mock("../../../components/combo-box", () => ({
   ),
 }));
 
-vi.mock("../../../components/field-container", () => ({
+vi.mock("../../../ui/components/field-container", () => ({
   FieldContainer: ({
     children,
     header,

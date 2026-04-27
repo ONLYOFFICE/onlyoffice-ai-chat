@@ -1,6 +1,6 @@
 import { ActionType } from "../../capabilities";
 import type { ChatEventBus } from "../../events/event-bus";
-import logger from "../../lib/logger";
+import logger from "../../shared/logger";
 import { getActionProvider } from "../../services/action-holders";
 import type { TMCPItem } from "../../types";
 

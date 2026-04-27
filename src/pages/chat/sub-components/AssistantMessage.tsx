@@ -6,13 +6,13 @@ import {
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
-import { useI18n } from "../../../locales";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
 import { usePlatform } from "../../../platform/context";
-import { useComponents } from "../../../components-provider";
-import { Icon } from "../../../components/icon";
-import { MarkdownContent } from "../../../components/markdown";
-import { ToolFallback } from "../../../components/tool-fallback";
-import { convertMessagesToMd, getMessageTitleFromMd } from "../../../lib/utils";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
+import { Icon } from "../../../ui/components/icon";
+import { MarkdownContent } from "../../../ui/components/markdown";
+import { ToolFallback } from "../../../ui/components/tool-fallback";
+import { convertMessagesToMd, getMessageTitleFromMd } from "../../../shared/utils";
 import { useStores } from "../../../store/context";
 
 const ThinkingMarkdownText = memo(

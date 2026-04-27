@@ -1,4 +1,4 @@
-import { useI18n } from "../../../locales";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
 import {
   MAX_TOOL_COUNT,
   MAX_TOOL_COUNT_WITH_WEB_SEARCH,

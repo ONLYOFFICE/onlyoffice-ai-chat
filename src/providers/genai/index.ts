@@ -11,7 +11,7 @@ import type { Model, TMCPItem, TProvider } from "../../types";
 import { AbstractBaseProvider, type TData, type TErrorData } from "../base";
 import { ProviderErrors } from "../errors";
 import { CREATE_TITLE_SYSTEM_PROMPT } from "../prompts";
-import logger from "../../lib/logger";
+import logger from "../../shared/logger";
 import { processGenAIResponse } from "./handlers";
 import { genaiInfo } from "./info";
 import {

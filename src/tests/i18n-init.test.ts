@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-let initAIChatI18n: typeof import("../locales/i18n").initAIChatI18n;
-let bundledLocaleKeys: typeof import("../locales/i18n").bundledLocaleKeys;
+let initAIChatI18n: typeof import("../ui/providers/LocalesProvider/i18n").initAIChatI18n;
+let bundledLocaleKeys: typeof import("../ui/providers/LocalesProvider/i18n").bundledLocaleKeys;
 
 const mockInit = vi.fn().mockResolvedValue(undefined);
 const mockUse = vi.fn().mockReturnThis();
@@ -21,7 +21,7 @@ describe("initAIChatI18n", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.resetModules();
-    const mod = await import("../locales/i18n");
+    const mod = await import("../ui/providers/LocalesProvider/i18n");
     initAIChatI18n = mod.initAIChatI18n;
     bundledLocaleKeys = mod.bundledLocaleKeys;
   });

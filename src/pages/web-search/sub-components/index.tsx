@@ -1,10 +1,10 @@
 import React from "react";
-import { useI18n } from "../../../locales";
+import { useI18n } from "../../../ui/providers/LocalesProvider";
 import { useToolsContext } from "../../../tools/context";
-import { getApiKeyLink } from "../../../lib/api-key-links";
-import { cn } from "../../../lib/utils";
+import { getApiKeyLink } from "../../../shared/api-key-links";
+import { cn } from "../../../shared/utils";
 import { useStores } from "../../../store/context";
-import { useComponents } from "../../../components-provider";
+import { useComponents } from "../../../ui/providers/ComponentsProvider";
 
 type WebSearchProps = {
   variant?: "tab" | "page";

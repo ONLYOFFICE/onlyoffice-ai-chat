@@ -129,7 +129,7 @@ describe("ToolsProvider / useToolsContext", () => {
 
 // ── StorageProvider / useStorage ────────────────────────────────────────────
 
-vi.mock("../lib/logger", () => ({
+vi.mock("../shared/logger", () => ({
   default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
@@ -214,7 +214,7 @@ describe("StorageProvider / useStorage", () => {
   });
 
   it("logs error when storage.init() fails", async () => {
-    const logger = (await import("../lib/logger")).default;
+    const logger = (await import("../shared/logger")).default;
     const mockStorage = {
       init: vi.fn().mockRejectedValue(new Error("init failed")),
       close: vi.fn(),

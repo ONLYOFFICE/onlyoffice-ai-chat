@@ -60,7 +60,7 @@ vi.mock("@assistant-ui/react", () => ({
   },
 }));
 
-vi.mock("../../../components/loader", () => ({
+vi.mock("../../../ui/components/loader", () => ({
   Loader: () => <div data-testid="loader" />,
 }));
 

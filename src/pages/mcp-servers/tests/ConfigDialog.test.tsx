@@ -25,7 +25,7 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../components/dialog", () => ({
+vi.mock("../../../ui/components/dialog", () => ({
   Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
     open ? <div data-testid="dialog">{children}</div> : null,
   DialogContent: ({
@@ -69,7 +69,7 @@ vi.mock("../../../components/dialog", () => ({
   ),
 }));
 
-vi.mock("../../../components/button", () => ({
+vi.mock("../../../ui/components/button", () => ({
   Button: ({
     children,
     onClick,
