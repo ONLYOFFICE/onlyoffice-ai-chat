@@ -8,8 +8,8 @@ const mockGetProvidersModels = vi.fn().mockResolvedValue({
     [
       "OpenAI",
       [
-        { id: "gpt-4", name: "GPT-4", capabilities: {} },
-        { id: "gpt-3.5", name: "GPT-3.5", capabilities: {} },
+        { id: "gpt-4", name: "GPT-4", provider: "openai", capabilities: 0 },
+        { id: "gpt-3.5", name: "GPT-3.5", provider: "openai", capabilities: 0 },
       ],
     ],
   ]),
@@ -58,8 +58,8 @@ describe("useModelForm", () => {
         [
           "OpenAI",
           [
-            { id: "gpt-4", name: "GPT-4", capabilities: {} },
-            { id: "gpt-3.5", name: "GPT-3.5", capabilities: {} },
+            { id: "gpt-4", name: "GPT-4", provider: "openai", capabilities: 0 },
+            { id: "gpt-3.5", name: "GPT-3.5", provider: "openai", capabilities: 0 },
           ],
         ],
       ]),
@@ -132,7 +132,7 @@ describe("useModelForm", () => {
     // Set models first by calling setModels
     act(() => {
       result.current.setModels([
-        { id: "gpt-4", name: "GPT-4", capabilities: {} },
+        { id: "gpt-4", name: "GPT-4", provider: "openai", capabilities: 0 },
       ]);
     });
     act(() => {

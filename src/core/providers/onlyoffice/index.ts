@@ -1,5 +1,4 @@
 import type OpenAI from "openai";
-import logger from "../../../shared/logger";
 import type { TErrorData } from "../../../shared/error-data";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
@@ -58,23 +57,18 @@ class OnlyOfficeProvider extends OpenAIProvider {
 
   override async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
     const { messages, model, systemPrompt, signal } = args;
-    try {
-      const response = await this.client.chat.completions.create(
-        {
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...convertMessages(messages),
-          ] as OpenAI.Chat.ChatCompletionMessageParam[],
-          stream: false,
-        },
-        { signal }
-      );
-      return response.choices[0]?.message?.content ?? "";
-    } catch (e) {
-      logger.error("OnlyOffice sendMessageSync error:", e);
-      return "";
-    }
+    const response = await this.client.chat.completions.create(
+      {
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...convertMessages(messages),
+        ] as OpenAI.Chat.ChatCompletionMessageParam[],
+        stream: false,
+      },
+      { signal }
+    );
+    return response.choices[0]?.message?.content ?? "";
   }
 
   static override async getProviderModels(

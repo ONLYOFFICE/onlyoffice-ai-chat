@@ -1,4 +1,4 @@
-import { usePlatform } from "../../../platform/context";
+import { usePlatform } from "../../platform/context";
 import { useI18n } from "../../providers/LocalesProvider";
 import {
   cn,
@@ -11,7 +11,7 @@ import {
   isVisio,
   isXps,
 } from "../../../shared/utils";
-import { useStores } from "../../../store/context";
+import { useStores } from "../../store/context";
 import type { TAttachmentFile, TAttachmentImage } from "../../../types";
 import { Icon } from "../icon";
 import { IconButton } from "../icon-button";

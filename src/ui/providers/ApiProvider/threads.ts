@@ -52,5 +52,19 @@ export function createThreadsApi(
         [threadId, limit, startIndex],
         engines
       ),
+    getById: (threadId) =>
+      callRoute(config, "threads", "getById", [threadId], engines),
+    getMessageById: (messageId) =>
+      callRoute(config, "threads", "getMessageById", [messageId], engines),
+    updateMessage: (messageId, message) =>
+      callRoute(
+        config,
+        "threads",
+        "updateMessage",
+        [messageId, message],
+        engines
+      ),
+    deleteMessage: (messageId) =>
+      callRoute(config, "threads", "deleteMessage", [messageId], engines),
   };
 }

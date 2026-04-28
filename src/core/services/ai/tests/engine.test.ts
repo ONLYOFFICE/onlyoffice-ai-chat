@@ -55,7 +55,7 @@ const userMessage: ThreadMessageLike = {
 
 function makeStorage() {
   let messages: ThreadMessageLike[] = [];
-  let threads: { threadId: string; title: string }[] = [];
+  const threads: { threadId: string; title: string }[] = [];
   const storage = {
     profiles: { readById: vi.fn(async () => profile) },
     assignments: {
@@ -97,6 +97,7 @@ function makeStorage() {
         }
       ),
       readByThread: vi.fn(async () => [...messages]),
+      update: vi.fn(),
       deleteByThread: vi.fn(async () => {
         messages = [];
       }),
@@ -140,8 +141,10 @@ describe("AIEngine.sendWithStream", () => {
     for await (const item of engine.sendWithStream({ userMessage })) {
       yielded.push(item);
     }
-    expect(yielded).toHaveLength(1);
-    expect(yielded[0].title).toBe("My Title");
+    expect(yielded).toHaveLength(3);
+    expect(yielded[0]).toMatchObject({ type: "thread-title", title: "New chat" });
+    expect(yielded[1].type).toBe("message-end");
+    expect(yielded[2]).toMatchObject({ type: "thread-title", title: "My Title" });
     expect(threads).toHaveLength(1);
     expect(messages).toEqual(
       expect.arrayContaining([

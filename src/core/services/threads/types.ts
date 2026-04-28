@@ -28,6 +28,10 @@ export const DEFAULT_THREADS_ROUTES: Record<ThreadsEngineMethod, RouteSpec> = {
   regenerateTitle: { method: "POST", path: "threads/regenerate-title" },
   list: { method: "GET", path: "threads/list" },
   readMessages: { method: "GET", path: "threads/read-messages" },
+  getById: { method: "GET", path: "threads/get-by-id" },
+  getMessageById: { method: "GET", path: "threads/get-message-by-id" },
+  updateMessage: { method: "PUT", path: "threads/update-message" },
+  deleteMessage: { method: "DELETE", path: "threads/delete-message" },
 };
 
 /** Dependencies injected into a {@link ThreadsEngine} instance. */

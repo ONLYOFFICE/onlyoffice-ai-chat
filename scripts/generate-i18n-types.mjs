@@ -4,8 +4,11 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const enPath = resolve(__dirname, "../src/locales/translations/en.json");
-const outPath = resolve(__dirname, "../src/locales/generated-types.ts");
+const enPath = resolve(__dirname, "../src/translations/en.json");
+const outPath = resolve(
+  __dirname,
+  "../src/ui/providers/LocalesProvider/generated-types.ts"
+);
 
 const en = JSON.parse(readFileSync(enPath, "utf-8"));
 const keys = Object.keys(en).sort();

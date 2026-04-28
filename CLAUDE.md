@@ -57,7 +57,7 @@ src/
 ## Code Style
 
 - **Prettier**: double quotes, semicolons, trailing commas (ES5), 2-space indent, 80-char width, LF.
-- **ESLint**: `eqeqeq` always, `prefer-const` error, `no-debugger` error, `no-console` warn (use `src/lib/logger.ts` instead of `console.*`).
+- **ESLint**: `eqeqeq` always, `prefer-const` error, `no-debugger` error, `no-console` warn (use `src/shared/logger.ts` instead of `console.*`).
 - **TypeScript**: strict mode, `verbatimModuleSyntax`, `noUnusedLocals` / `noUnusedParameters`.
 - Use `===` / `!==`, never `==` / `!=`.
 - No `any` — use `unknown` with type assertions (`as unknown as T`) when needed.

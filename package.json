@@ -112,7 +112,7 @@
     "generate:theme": "node scripts/generate-theme-types.mjs",
     "generate:icons": "node scripts/generate-icon-types.mjs",
     "prebuild": "npm run generate:i18n && npm run generate:theme && npm run generate:icons",
-    "build": "vite build && cp src/styles/themes.css dist/styles/themes.css && cp src/styles/theme-*.css dist/styles/",
+    "build": "vite build && cp src/ui/styles/themes.css dist/styles/themes.css && cp src/ui/styles/theme-*.css dist/styles/",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",

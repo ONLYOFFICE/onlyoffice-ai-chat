@@ -34,5 +34,8 @@ export function createPromptsApi(
     export: () => callRoute(config, "prompts", "export", [], engines),
     importBundle: (bundle, options) =>
       callRoute(config, "prompts", "importBundle", [bundle, options], engines),
+    getById: (id) => callRoute(config, "prompts", "getById", [id], engines),
+    getFolderById: (id) =>
+      callRoute(config, "prompts", "getFolderById", [id], engines),
   };
 }

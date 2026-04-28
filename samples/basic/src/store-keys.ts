@@ -12,4 +12,5 @@ export const storeKeys: StoreKeys = {
   deepMode: "ai-chat.deepMode",
   mcpServers: "ai-chat.mcpServers",
   disabledTools: "ai-chat.disabledTools",
+  systemPromptAppendix: "ai-chat.systemPromptAppendix",
 };

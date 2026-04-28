@@ -26,8 +26,9 @@ class StabilityAIProvider extends AbstractBaseProvider {
     throw new Error("Stability AI does not support chat");
   }
 
-  imageGeneration = (args: ImageGenerationArgs): Promise<string> =>
-    generateImage(this.creds, args);
+  async imageGeneration(args: ImageGenerationArgs): Promise<string> {
+    return generateImage(this.creds, args);
+  }
 
   static getName(): string {
     return stabilityaiInfo.name;

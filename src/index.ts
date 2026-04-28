@@ -1,4 +1,4 @@
-import "./styles/index.css";
+import "./ui/styles/index.css";
 
 // =============================================================================
 // AI Chat Widget — Public API
@@ -49,7 +49,7 @@ export {
 // Imperative Ref
 // ---------------------------------------------------------------------------
 
-export type { AIChatWidgetRef } from "./imperative";
+export type { AIChatWidgetRef } from "./ui/imperative";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -61,7 +61,7 @@ export type { StoreKeys } from "./config";
 // Platform
 // ---------------------------------------------------------------------------
 
-export { PlatformProvider, usePlatform } from "./platform";
+export { PlatformProvider, usePlatform } from "./ui/platform";
 export type {
   PlatformAdapter,
   PlatformClouds,
@@ -69,15 +69,13 @@ export type {
   PlatformFileOperations,
   PlatformHostTools,
   PlatformProcessRunner,
-} from "./platform";
+} from "./ui/platform";
 
 // ---------------------------------------------------------------------------
 // Providers
 // ---------------------------------------------------------------------------
 
 export {
-  default as Provider,
-  type SendMessageReturnType,
   AbstractBaseProvider,
   createProvider,
   getProvider,
@@ -85,53 +83,106 @@ export {
   isValidProviderType,
   registerProvider,
   unregisterProvider,
-} from "./providers";
-export type { BaseProvider } from "./providers";
+} from "./core/providers";
+export type { BaseProvider, ProviderConstructor } from "./core/providers";
 
 // ---------------------------------------------------------------------------
-// Services
+// Services (core engines)
 // ---------------------------------------------------------------------------
 
-export type {
-  ChangeToolStatusResult,
-  ChatEvent,
-  ProfilesInitResult,
-  PromptUpdates,
-  TaskProfileKeys,
-  ToolCallData,
-  ToolsListResult,
-} from "./services";
 export {
-  applyProfileToAction,
-  ChatEngine,
-  getActionProvider,
-  initActionHolders,
-  ProfilesService,
-  PromptsService,
-  ServersService,
-  ThreadsService,
-} from "./services";
-
-// ---------------------------------------------------------------------------
-// Settings
-// ---------------------------------------------------------------------------
-
-export { SettingsProvider, useSettings } from "./settings";
-export type { SettingsAdapter } from "./settings";
-
-// ---------------------------------------------------------------------------
-// Storage
-// ---------------------------------------------------------------------------
-
-export { StorageProvider, useStorage, getStorageInstance } from "./storage";
+  AIEngine,
+  AssignmentsEngine,
+  DEFAULT_AI_ROUTES,
+  DEFAULT_ASSIGNMENTS_ROUTES,
+  DEFAULT_PREFERENCES,
+  DEFAULT_PREFERENCES_ROUTES,
+  DEFAULT_PROFILES_ROUTES,
+  DEFAULT_PROMPTS_ROUTES,
+  DEFAULT_THREADS_ROUTES,
+  DEFAULT_TOOLS_ROUTES,
+  DEFAULT_WEB_SEARCH_ROUTES,
+  PreferencesEngine,
+  ProfilesEngine,
+  PromptsEngine,
+  ThreadsEngine,
+  ToolsEngine,
+  WebSearchEngine,
+} from "./core/services";
 export type {
+  AIEngineDeps,
+  AIEngineMethod,
+  ApproveToolCallInput,
+  AssignmentMutationResult,
+  AssignmentsEngineDeps,
+  AssignmentsEngineMethod,
+  BulkAssignmentResult,
+  ChatEvent,
+  CreateProfileInput,
+  CreatePromptInput,
+  DenyToolCallInput,
+  FolderMutationResult,
+  HttpMethod,
+  ImportError,
+  ImportMode,
+  ImportResult,
+  McpTransportConfig,
+  OpenOrCreateInput,
+  OpenOrCreateResult,
+  PreferenceDefaults,
+  PreferencesEngineDeps,
+  PreferencesEngineMethod,
+  ProfileMutationResult,
+  ProfilesEngineDeps,
+  ProfilesEngineMethod,
+  PromptBundle,
+  PromptMutationResult,
+  PromptsEngineDeps,
+  PromptsEngineMethod,
+  ResolvedAssignment,
+  RouteSpec,
+  SendCustomInput,
+  SendInput,
+  SendResult,
+  SendStreamInput,
+  ThreadsEngineDeps,
+  ThreadsEngineMethod,
+  ToolCallData,
+  ToolDispatcher,
+  ToolsBulkResult,
+  ToolsEngineDeps,
+  ToolsEngineMethod,
+  ToolsMutationResult,
+  WebSearchEngineDeps,
+  WebSearchEngineMethod,
+  WebSearchMutationResult,
+} from "./core/services";
+
+// ---------------------------------------------------------------------------
+// Settings (key/value adapter contract — implemented by the host)
+// ---------------------------------------------------------------------------
+
+export type { SettingsAdapter } from "./shared/settings-adapter";
+
+// ---------------------------------------------------------------------------
+// Storage (core adapter contract — concrete implementations are host-supplied)
+// ---------------------------------------------------------------------------
+
+export type {
+  AssignmentsStorage,
+  McpServerConfig,
+  McpServersStorage,
   MessagesStorage,
+  PreferencesStorage,
   ProfilesStorage,
   PromptFoldersStorage,
   PromptsStorage,
   StorageAdapter,
   ThreadsStorage,
-} from "./storage";
+  ToolPrefsStorage,
+  WebSearchConfig,
+  WebSearchStorage,
+} from "./core/storage";
 
 // ---------------------------------------------------------------------------
 // Store
@@ -149,15 +200,15 @@ export type {
   Stores,
   ThemeStoreState,
   ThreadsStoreState,
-} from "./store";
-export { createStores, StoresProvider, useStores } from "./store";
+} from "./ui/store";
+export { createStores, StoresProvider, useStores } from "./ui/store";
 
 // ---------------------------------------------------------------------------
 // Tools
 // ---------------------------------------------------------------------------
 
-export { ToolsProvider, useToolsContext, Servers } from "./tools";
-export type { HostTool, HostToolGroup, ToolSource } from "./tools";
+export { ToolsProvider, useToolsContext, Servers } from "./ui/tools";
+export type { HostTool, HostToolGroup, ToolSource } from "./ui/tools";
 
 // ---------------------------------------------------------------------------
 // Types — Domain Models
@@ -194,7 +245,7 @@ export {
   SettingsPage,
   EmptyScreenPage,
   ChatPage,
-} from "./pages";
+} from "./ui/pages";
 
 // ---------------------------------------------------------------------------
 // I18n
@@ -271,7 +322,7 @@ export {
   EventsProvider,
   useCallbacksManager,
   ChatEventBus,
-} from "./events";
+} from "./ui/events";
 export type {
   ChatCallbacks,
   ChatErrorEvent,
@@ -281,10 +332,6 @@ export type {
   MessageSentEvent,
   ModelAssignmentTask,
   ModelAssignmentUpdatedEvent,
-  ProfileChangedEvent,
-  ProfileCreatedEvent,
-  ProfileDeletedEvent,
-  ProfileUpdatedEvent,
   ProfilesUpdateKind,
   ProfilesUpdatedEvent,
   ServersUpdateKind,
@@ -295,11 +342,6 @@ export type {
   StreamStartEvent,
   StreamStopEvent,
   SystemPromptAppendixUpdatedEvent,
-  ThreadClearedEvent,
-  ThreadCreatedEvent,
-  ThreadDeletedEvent,
-  ThreadRenamedEvent,
-  ThreadSwitchedEvent,
   ThreadsUpdateKind,
   ThreadsUpdatedEvent,
   ToolCallApprovedEvent,
@@ -308,13 +350,13 @@ export type {
   ToolCallPendingEvent,
   ToolCallResultEvent,
   WebSearchUpdatedEvent,
-} from "./events";
+} from "./ui/events";
 
 // ---------------------------------------------------------------------------
 // Middleware
 // ---------------------------------------------------------------------------
 
-export { MiddlewareRunner } from "./middleware";
+export { MiddlewareRunner } from "./core/middleware";
 export type {
   ChatMiddleware,
   BeforeSendContext,
@@ -329,7 +371,7 @@ export type {
   BeforeDisplayResult,
   ErrorContext,
   ErrorResult,
-} from "./middleware";
+} from "./core/middleware";
 
 // ---------------------------------------------------------------------------
 // Hooks
@@ -342,7 +384,7 @@ export {
   useProfiles,
   useServers,
   useThread,
-} from "./hooks";
+} from "./ui/hooks";
 
 // ---------------------------------------------------------------------------
 // Utilities

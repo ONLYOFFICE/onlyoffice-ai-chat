@@ -1,7 +1,7 @@
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
 import { useEffect, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
-import { useToolsContext } from "../../../tools/context";
+import { useToolsContext } from "../../tools/context";
 import { Icon } from "../icon";
 import { IconButton } from "../icon-button";
 import { Loader } from "../loader";

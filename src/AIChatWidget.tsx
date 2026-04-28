@@ -7,55 +7,63 @@ import React, {
   useState,
 } from "react";
 import type { AppContext } from "./app-context";
+import type { StoreKeys } from "./config";
+import { CallbacksManager, ChatEventBus } from "./ui/events";
+import type { ChatCallbacks } from "./ui/events";
+import { MiddlewareRunner } from "./core/middleware";
+import type { ChatMiddleware } from "./core/middleware";
+import {
+  AIEngine,
+  AssignmentsEngine,
+  PreferencesEngine,
+  ProfilesEngine,
+  PromptsEngine,
+  ThreadsEngine,
+  ToolsEngine,
+  WebSearchEngine,
+} from "./core/services";
+import type { StorageAdapter } from "./core/storage";
+import { PlatformProvider } from "./ui/platform/context";
+import type { PlatformAdapter } from "./ui/platform/types";
+import logger from "./shared/logger";
+import type { SettingsAdapter } from "./shared/settings-adapter";
 import { Layout } from "./ui/components/layout";
 import { ManageToolDialog } from "./ui/components/manage-tool-dialog";
-import type { StoreKeys } from "./config";
-import { CallbacksManager } from "./events/callbacks";
-import { ChatEventBus } from "./events/event-bus";
-import { EventsProvider } from "./events/context";
-import type { ChatCallbacks } from "./events/types";
-import { MiddlewareRunner } from "./middleware";
-import type { ChatMiddleware } from "./middleware";
-import useMessages from "./hooks/useMessages";
-import useProfiles from "./hooks/useProfiles";
-import useServers from "./hooks/useServers";
-import useThread from "./hooks/useThreads";
+import { EventsProvider } from "./ui/events/context";
+import Settings from "./ui/pages/settings";
+import Thread from "./ui/pages/chat";
+import {
+  ApiProvider,
+  createServerAPI,
+  DEFAULT_SERVER_API_ROUTES,
+  type ServerAPIConfig,
+} from "./ui/providers/ApiProvider";
 import { ComponentsProvider } from "./ui/providers/ComponentsProvider";
 import type { ComponentOverrides } from "./ui/providers/ComponentsProvider";
 import { ImagesProvider } from "./ui/providers/ImagesProvider";
 import type { ImageOverrides } from "./ui/providers/ImagesProvider";
 import { I18nProvider } from "./ui/providers/LocalesProvider";
 import type { Translations } from "./ui/providers/LocalesProvider";
-import logger from "./shared/logger";
 import { ThemeProvider } from "./ui/providers/ThemeProvider";
 import type { ThemeTokens } from "./ui/providers/ThemeProvider";
-import Thread from "./pages/chat";
-
-import Settings from "./pages/settings";
-import { PlatformProvider } from "./platform/context";
-import type { PlatformAdapter } from "./platform/types";
-import Provider from "./providers";
-import { setProviderInstance } from "./providers/provider-holder";
-import { SettingsProvider } from "./settings/context";
-import { setSettingsInstance } from "./settings/settings-holder";
-import type { SettingsAdapter } from "./settings/types";
-import { StorageProvider } from "./storage/context";
-import { setStorageInstance } from "./storage/storage-holder";
-import type { StorageAdapter } from "./storage/types";
-import { StoresProvider, useStores } from "./store/context";
-import { createStores } from "./store/create-stores";
+import { StoresProvider, useStores } from "./ui/store/context";
+import { createStores } from "./ui/store/create-stores";
+import { ToolsProvider, useToolsContext } from "./ui/tools/context";
+import Servers from "./ui/tools/servers";
+import { createServersDispatcher } from "./ui/tools/dispatcher";
+import type { HostToolGroup } from "./ui/tools/types";
+import { WidgetConfigProvider } from "./widget-config";
 import type {
   ProviderType,
   TOnlyOfficeConfig,
   WebSearchProviderId,
 } from "./types";
-import { WidgetConfigProvider } from "./widget-config";
-import { ToolsProvider, useToolsContext } from "./tools/context";
-import Servers from "./tools/servers";
-import { setServersInstance } from "./tools/tools-holder";
-import type { HostToolGroup } from "./tools/types";
-import type { AIChatWidgetRef } from "./imperative";
-import { createWidgetRef, type RefCallbacks } from "./imperative";
+import type { AIChatWidgetRef } from "./ui/imperative";
+import { createWidgetRef, type RefCallbacks } from "./ui/imperative";
+import useMessages from "./ui/hooks/useMessages";
+import useProfiles from "./ui/hooks/useProfiles";
+import useServers from "./ui/hooks/useServers";
+import useThread from "./ui/hooks/useThreads";
 
 export interface AIChatWidgetProps {
   storage: StorageAdapter;
@@ -81,6 +89,8 @@ export interface AIChatWidgetProps {
   onSettingsClick?: () => void;
   isSettingsActive?: boolean;
   isDialogFullscreen?: boolean;
+  /** Optional remote API routing — defaults to in-process engines. */
+  apiConfig?: Partial<Pick<ServerAPIConfig, "origin" | "baseUrl" | "headers">>;
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -112,6 +122,7 @@ export const AIChatWidget = React.forwardRef<
       onSettingsClick,
       isSettingsActive,
       isDialogFullscreen,
+      apiConfig,
     },
     ref
   ) => {
@@ -132,25 +143,38 @@ export const AIChatWidget = React.forwardRef<
       ]
     );
 
-    // Build AppContext — single DI container for this widget instance
-    const { ctx, stores } = useMemo(() => {
-      const provider = new Provider();
-      provider.setSettings(settings);
+    // Build AppContext + engines + ServerAPI for this widget instance
+    const { ctx, stores, engines, serverApiConfig } = useMemo(() => {
       const eventBus = new ChatEventBus();
       const callbacksManager = new CallbacksManager();
+      const middlewareRunner = new MiddlewareRunner(middleware ?? []);
+
+      const assignments = new AssignmentsEngine({ storage });
+      const profiles = new ProfilesEngine({ storage, assignments });
+      const threads = new ThreadsEngine({ storage });
+      const tools = new ToolsEngine({ storage });
+      const prompts = new PromptsEngine({ storage });
+      const webSearch = new WebSearchEngine({ storage });
+      const preferences = new PreferencesEngine({ storage });
+
       const servers = new Servers(
         settings,
         platform,
         eventBus,
+        assignments,
         callbacksManager
       );
-      const middlewareRunner = new MiddlewareRunner(middleware ?? []);
+
+      const ai = new AIEngine({
+        storage,
+        assignments,
+        threads,
+        toolDispatcher: createServersDispatcher(servers),
+      });
 
       const ctx: AppContext = {
-        settings,
         storage,
         platform,
-        provider,
         servers,
         eventBus,
         callbacksManager,
@@ -160,24 +184,38 @@ export const AIChatWidget = React.forwardRef<
         hiddenWebSearchProviders,
       };
 
-      // Deprecated: set global holders for backward compatibility
-      setProviderInstance(provider);
-      setSettingsInstance(settings);
-      setStorageInstance(storage);
-      setServersInstance(servers);
+      const engines = {
+        ai,
+        assignments,
+        preferences,
+        profiles,
+        prompts,
+        threads,
+        tools,
+        webSearch,
+      };
 
-      const stores = createStores({ keys: storeKeys, ctx });
+      const serverApiConfig: ServerAPIConfig = {
+        origin: apiConfig?.origin ?? "",
+        baseUrl: apiConfig?.baseUrl ?? "",
+        headers: apiConfig?.headers,
+        routes: DEFAULT_SERVER_API_ROUTES,
+      };
 
-      return { ctx, stores };
+      const api = createServerAPI(serverApiConfig, engines);
+      const stores = createStores({ keys: storeKeys, ctx, api });
+
+      return { ctx, stores, engines, serverApiConfig };
     }, [
-      settings,
       storage,
+      settings,
       platform,
       storeKeys,
       middleware,
       onlyofficeConfig,
       hiddenProviders,
       hiddenWebSearchProviders,
+      apiConfig,
     ]);
 
     return (
@@ -185,11 +223,11 @@ export const AIChatWidget = React.forwardRef<
         callbacksManager={ctx.callbacksManager}
         callbacks={callbacks}
       >
-        <SettingsProvider settings={settings}>
-          <PlatformProvider platform={platform}>
-            <I18nProvider locale={locale} translations={translations}>
-              <ComponentsProvider overrides={components}>
-                <WidgetConfigProvider config={widgetConfig}>
+        <PlatformProvider platform={platform}>
+          <I18nProvider locale={locale} translations={translations}>
+            <ComponentsProvider overrides={components}>
+              <WidgetConfigProvider config={widgetConfig}>
+                <ApiProvider config={serverApiConfig} engines={engines}>
                   <StoresProvider stores={stores}>
                     <ThemeProvider
                       theme={theme}
@@ -198,7 +236,6 @@ export const AIChatWidget = React.forwardRef<
                     >
                       <ImagesProvider overrides={images}>
                         <AppWithTools
-                          storage={storage}
                           hostToolGroupsProp={hostToolGroupsProp}
                           onMigrate={onMigrate}
                           servers={ctx.servers}
@@ -208,11 +245,11 @@ export const AIChatWidget = React.forwardRef<
                       </ImagesProvider>
                     </ThemeProvider>
                   </StoresProvider>
-                </WidgetConfigProvider>
-              </ComponentsProvider>
-            </I18nProvider>
-          </PlatformProvider>
-        </SettingsProvider>
+                </ApiProvider>
+              </WidgetConfigProvider>
+            </ComponentsProvider>
+          </I18nProvider>
+        </PlatformProvider>
       </EventsProvider>
     );
   }
@@ -220,16 +257,13 @@ export const AIChatWidget = React.forwardRef<
 
 AIChatWidget.displayName = "AIChatWidget";
 
-/** Reads platform from context to build host tool groups, then wraps in ToolsProvider + StorageProvider */
 const AppWithTools = ({
-  storage,
   hostToolGroupsProp,
   onMigrate,
   servers,
   eventBus,
   widgetRef,
 }: {
-  storage: StorageAdapter;
   hostToolGroupsProp?: HostToolGroup[];
   onMigrate?: () => Promise<void>;
   servers: Servers;
@@ -247,9 +281,7 @@ const AppWithTools = ({
       servers={servers}
       eventBus={eventBus}
     >
-      <StorageProvider storage={storage}>
-        <AppInner onMigrate={onMigrate} widgetRef={widgetRef} />
-      </StorageProvider>
+      <AppInner onMigrate={onMigrate} widgetRef={widgetRef} />
     </ToolsProvider>
   );
 };

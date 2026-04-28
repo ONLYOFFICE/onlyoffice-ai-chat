@@ -21,7 +21,7 @@ const mockOnCloudsChange = vi.fn(() => {
   return vi.fn(); // unsubscribe fn
 });
 
-vi.mock("../../../../platform/context", () => ({
+vi.mock("../../../platform/context", () => ({
   usePlatform: () => ({
     env: {
       locale: "en",

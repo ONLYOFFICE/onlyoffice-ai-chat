@@ -178,19 +178,19 @@ describe("AnthropicProvider", () => {
       expect(text).toBe("hello world");
     });
 
-    it("returns empty string when SDK throws", async () => {
+    it("rethrows when SDK throws", async () => {
       messagesCreateMock.mockRejectedValueOnce(new Error("x"));
       const p = new AnthropicProvider({
         baseUrl: "https://api.anthropic.com",
         apiKey: "sk",
       });
-      expect(
-        await p.sendMessageSync({
+      await expect(
+        p.sendMessageSync({
           messages: [],
           model: "claude",
           systemPrompt: "",
         })
-      ).toBe("");
+      ).rejects.toThrow("x");
     });
   });
 

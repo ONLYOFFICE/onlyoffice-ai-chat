@@ -1,22 +1,26 @@
-import type {
-  StorageAdapter,
-  ThreadsStorage,
-  MessagesStorage,
-  ProfilesStorage,
-  PromptsStorage,
-  PromptFoldersStorage,
-} from "@onlyoffice/ai-chat";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type {
-  Thread,
+  AssignmentsStorage,
+  McpServerConfig,
+  McpServersStorage,
+  MessagesStorage,
+  PreferencesStorage,
   Profile,
+  ProfilesStorage,
   Prompt,
   PromptFolder,
-  TProvider,
-  Model,
+  PromptFoldersStorage,
+  PromptsStorage,
+  StorageAdapter,
+  Thread,
+  ThreadsStorage,
+  ToolPrefsStorage,
+  WebSearchConfig,
+  WebSearchStorage,
 } from "@onlyoffice/ai-chat";
+import { ActionType } from "@onlyoffice/ai-chat";
 
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -36,6 +40,10 @@ function tx(transaction: IDBTransaction): Promise<void> {
   });
 }
 
+function uuid(): string {
+  return crypto.randomUUID();
+}
+
 function openDatabase(dbName: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(dbName, DB_VERSION);
@@ -43,20 +51,50 @@ function openDatabase(dbName: string): Promise<IDBDatabase> {
     request.onupgradeneeded = () => {
       const db = request.result;
 
-      const threads = db.createObjectStore("threads", {
-        keyPath: "threadId",
-      });
-      threads.createIndex("lastEditDate", "lastEditDate");
+      if (!db.objectStoreNames.contains("threads")) {
+        const threads = db.createObjectStore("threads", {
+          keyPath: "threadId",
+        });
+        threads.createIndex("lastEditDate", "lastEditDate");
+      }
 
-      const messages = db.createObjectStore("messages", { keyPath: "id" });
-      messages.createIndex("threadId", "threadId");
+      if (!db.objectStoreNames.contains("messages")) {
+        const messages = db.createObjectStore("messages", { keyPath: "id" });
+        messages.createIndex("threadId", "threadId");
+      }
 
-      db.createObjectStore("profiles", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("profiles")) {
+        db.createObjectStore("profiles", { keyPath: "id" });
+      }
 
-      const prompts = db.createObjectStore("prompts", { keyPath: "id" });
-      prompts.createIndex("folderId", "folderId");
+      if (!db.objectStoreNames.contains("prompts")) {
+        const prompts = db.createObjectStore("prompts", { keyPath: "id" });
+        prompts.createIndex("folderId", "folderId");
+      }
 
-      db.createObjectStore("promptFolders", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("promptFolders")) {
+        db.createObjectStore("promptFolders", { keyPath: "id" });
+      }
+
+      if (!db.objectStoreNames.contains("assignments")) {
+        db.createObjectStore("assignments", { keyPath: "actionType" });
+      }
+
+      if (!db.objectStoreNames.contains("preferences")) {
+        db.createObjectStore("preferences", { keyPath: "key" });
+      }
+
+      if (!db.objectStoreNames.contains("mcpServers")) {
+        db.createObjectStore("mcpServers", { keyPath: "name" });
+      }
+
+      if (!db.objectStoreNames.contains("toolPrefs")) {
+        db.createObjectStore("toolPrefs", { keyPath: "key" });
+      }
+
+      if (!db.objectStoreNames.contains("webSearch")) {
+        db.createObjectStore("webSearch", { keyPath: "key" });
+      }
     };
 
     request.onsuccess = () => resolve(request.result);
@@ -71,29 +109,21 @@ function openDatabase(dbName: string): Promise<IDBDatabase> {
 class IDBThreads implements ThreadsStorage {
   constructor(private db: IDBDatabase) {}
 
-  async create(
-    threadId: string,
-    title: string,
-    provider?: TProvider,
-    model?: Model,
-    profileId?: string
-  ): Promise<void> {
+  async create(title: string, profileId?: string): Promise<Thread> {
+    const thread: Thread = {
+      threadId: uuid(),
+      title,
+      lastEditDate: Date.now(),
+      profileId,
+    };
     const store = this.db
       .transaction("threads", "readwrite")
       .objectStore("threads");
-    await req(
-      store.add({
-        threadId,
-        title,
-        lastEditDate: Date.now(),
-        provider,
-        model,
-        profileId,
-      })
-    );
+    await req(store.add(thread));
+    return thread;
   }
 
-  async getAll(): Promise<Thread[]> {
+  async readAll(): Promise<Thread[]> {
     const store = this.db
       .transaction("threads", "readonly")
       .objectStore("threads");
@@ -101,7 +131,7 @@ class IDBThreads implements ThreadsStorage {
     return all.sort((a, b) => (b.lastEditDate ?? 0) - (a.lastEditDate ?? 0));
   }
 
-  async getById(threadId: string): Promise<Thread | null> {
+  async readById(threadId: string): Promise<Thread | null> {
     const store = this.db
       .transaction("threads", "readonly")
       .objectStore("threads");
@@ -114,7 +144,6 @@ class IDBThreads implements ThreadsStorage {
     const thread: Thread | undefined = await req(store.get(threadId));
     if (thread) {
       if (title !== undefined) thread.title = title;
-      thread.lastEditDate = Date.now();
       store.put(thread);
     }
     await tx(t);
@@ -122,24 +151,16 @@ class IDBThreads implements ThreadsStorage {
 
   async touch(
     threadId: string,
-    updates?: {
-      provider?: TProvider | null;
-      model?: Model | null;
-      profileId?: string | null;
-    }
+    lastEditDate: number,
+    updates?: { profileId?: string | null }
   ): Promise<void> {
     const t = this.db.transaction("threads", "readwrite");
     const store = t.objectStore("threads");
     const thread: Thread | undefined = await req(store.get(threadId));
     if (thread) {
-      thread.lastEditDate = Date.now();
-      if (updates) {
-        if (updates.provider !== undefined)
-          thread.provider = updates.provider ?? undefined;
-        if (updates.model !== undefined)
-          thread.model = updates.model ?? undefined;
-        if (updates.profileId !== undefined)
-          thread.profileId = updates.profileId ?? undefined;
+      thread.lastEditDate = lastEditDate;
+      if (updates?.profileId !== undefined) {
+        thread.profileId = updates.profileId ?? undefined;
       }
       store.put(thread);
     }
@@ -166,28 +187,44 @@ interface MessageRecord {
 }
 
 class IDBMessages implements MessagesStorage {
+  private lastTimestamp = 0;
+
   constructor(private db: IDBDatabase) {}
+
+  private nextTimestamp(): number {
+    const now = Date.now();
+    this.lastTimestamp = Math.max(now, this.lastTimestamp + 1);
+    return this.lastTimestamp;
+  }
 
   async create(
     threadId: string,
-    id: string,
-    message: ThreadMessageLike
-  ): Promise<void> {
-    const store = this.db
-      .transaction("messages", "readwrite")
-      .objectStore("messages");
+    message: Omit<ThreadMessageLike, "id" | "createdAt">
+  ): Promise<ThreadMessageLike> {
+    const id = uuid();
+    const timestamp = this.nextTimestamp();
+    const stored: ThreadMessageLike = {
+      ...(message as ThreadMessageLike),
+      id,
+      createdAt: new Date(timestamp),
+    };
     const record: MessageRecord = {
       id,
       threadId,
-      message,
-      timestamp: Date.now(),
+      message: stored,
+      timestamp,
     };
+    const store = this.db
+      .transaction("messages", "readwrite")
+      .objectStore("messages");
     await req(store.add(record));
+    return stored;
   }
 
-  async getByThread(
+  async readByThread(
     threadId: string,
-    limit?: number
+    limit?: number,
+    startIndex?: number
   ): Promise<ThreadMessageLike[]> {
     const store = this.db
       .transaction("messages", "readonly")
@@ -197,22 +234,20 @@ class IDBMessages implements MessagesStorage {
       index.getAll(IDBKeyRange.only(threadId))
     );
     records.sort((a, b) => a.timestamp - b.timestamp);
-    const slice = limit ? records.slice(-limit) : records;
-    return slice
+    const start = startIndex ?? 0;
+    const end = limit !== undefined ? start + limit : undefined;
+    return records
+      .slice(start, end)
       .map((r) => r.message)
       .filter((m) => m && "role" in m && m.role);
   }
 
-  async getById(
-    threadId: string,
-    messageId: string
-  ): Promise<ThreadMessageLike | null> {
+  async readById(messageId: string): Promise<ThreadMessageLike | null> {
     const store = this.db
       .transaction("messages", "readonly")
       .objectStore("messages");
     const record: MessageRecord | undefined = await req(store.get(messageId));
-    if (record && record.threadId === threadId) return record.message;
-    return null;
+    return record?.message ?? null;
   }
 
   async update(messageId: string, message: ThreadMessageLike): Promise<void> {
@@ -220,8 +255,15 @@ class IDBMessages implements MessagesStorage {
     const store = t.objectStore("messages");
     const record: MessageRecord | undefined = await req(store.get(messageId));
     if (record) {
-      record.message = message;
-      record.timestamp = Date.now();
+      // Preserve identity fields (id, createdAt) — the engine passes a
+      // bare assistant message without them on stream updates, and losing
+      // them here means the runtime falls back to index-based ids and
+      // can mis-link messages across re-renders.
+      record.message = {
+        ...message,
+        id: record.id,
+        createdAt: record.message?.createdAt,
+      };
       store.put(record);
     }
     await tx(t);
@@ -246,50 +288,6 @@ class IDBMessages implements MessagesStorage {
     }
     await tx(t);
   }
-
-  async replaceByThread(
-    threadId: string,
-    messages: ThreadMessageLike[]
-  ): Promise<void> {
-    const t = this.db.transaction("messages", "readwrite");
-    const store = t.objectStore("messages");
-    const index = store.index("threadId");
-
-    const keys: IDBValidKey[] = await req(
-      index.getAllKeys(IDBKeyRange.only(threadId))
-    );
-    for (const key of keys) {
-      store.delete(key);
-    }
-
-    const now = Date.now();
-    messages.forEach((msg, i) => {
-      const record: MessageRecord = {
-        id: `${threadId}-${i}-${now}`,
-        threadId,
-        message: msg,
-        timestamp: now + i,
-      };
-      store.add(record);
-    });
-
-    await tx(t);
-  }
-
-  async search(
-    query: string
-  ): Promise<{ threadId: string; message: ThreadMessageLike }[]> {
-    const store = this.db
-      .transaction("messages", "readonly")
-      .objectStore("messages");
-    const all: MessageRecord[] = await req(store.getAll());
-    const lowerQuery = query.toLowerCase();
-    return all
-      .filter((r) =>
-        JSON.stringify(r.message).toLowerCase().includes(lowerQuery)
-      )
-      .map((r) => ({ threadId: r.threadId, message: r.message }));
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -299,30 +297,42 @@ class IDBMessages implements MessagesStorage {
 class IDBProfiles implements ProfilesStorage {
   constructor(private db: IDBDatabase) {}
 
-  async create(profile: Profile): Promise<void> {
+  async create(
+    profile: Omit<Profile, "id" | "createdAt">
+  ): Promise<Profile> {
+    const stored: Profile = { ...profile, id: uuid(), createdAt: Date.now() };
     const store = this.db
       .transaction("profiles", "readwrite")
       .objectStore("profiles");
-    await req(store.add(profile));
+    await req(store.add(stored));
+    return stored;
   }
 
-  async createMany(profiles: Profile[]): Promise<void> {
+  async createMany(
+    profiles: Omit<Profile, "id" | "createdAt">[]
+  ): Promise<Profile[]> {
     const t = this.db.transaction("profiles", "readwrite");
     const store = t.objectStore("profiles");
-    for (const p of profiles) {
+    const stored: Profile[] = profiles.map((p) => ({
+      ...p,
+      id: uuid(),
+      createdAt: Date.now(),
+    }));
+    for (const p of stored) {
       store.add(p);
     }
     await tx(t);
+    return stored;
   }
 
-  async getAll(): Promise<Profile[]> {
+  async readAll(): Promise<Profile[]> {
     const store = this.db
       .transaction("profiles", "readonly")
       .objectStore("profiles");
     return req(store.getAll());
   }
 
-  async getById(id: string): Promise<Profile | undefined> {
+  async readById(id: string): Promise<Profile | undefined> {
     const store = this.db
       .transaction("profiles", "readonly")
       .objectStore("profiles");
@@ -351,14 +361,28 @@ class IDBProfiles implements ProfilesStorage {
 class IDBPrompts implements PromptsStorage {
   constructor(private db: IDBDatabase) {}
 
-  async create(prompt: Prompt): Promise<void> {
+  async create(
+    input: Omit<Prompt, "id" | "createdAt" | "updatedAt">
+  ): Promise<Prompt> {
+    const now = Date.now();
+    const stored: Prompt = { ...input, id: uuid(), createdAt: now, updatedAt: now };
     const store = this.db
       .transaction("prompts", "readwrite")
       .objectStore("prompts");
-    await req(store.add(prompt));
+    await req(store.add(stored));
+    return stored;
   }
 
-  async getAll(): Promise<Prompt[]> {
+  async createMany(prompts: Prompt[]): Promise<void> {
+    const t = this.db.transaction("prompts", "readwrite");
+    const store = t.objectStore("prompts");
+    for (const p of prompts) {
+      store.add(p);
+    }
+    await tx(t);
+  }
+
+  async readAll(): Promise<Prompt[]> {
     const store = this.db
       .transaction("prompts", "readonly")
       .objectStore("prompts");
@@ -366,11 +390,22 @@ class IDBPrompts implements PromptsStorage {
     return all.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   }
 
-  async getById(id: string): Promise<Prompt | null> {
+  async readById(id: string): Promise<Prompt | null> {
     const store = this.db
       .transaction("prompts", "readonly")
       .objectStore("prompts");
     return (await req(store.get(id))) ?? null;
+  }
+
+  async readByFolderId(folderId: string | null): Promise<Prompt[]> {
+    const store = this.db
+      .transaction("prompts", "readonly")
+      .objectStore("prompts");
+    const all: Prompt[] = await req(store.getAll());
+    const filtered = all.filter((p) =>
+      folderId === null ? !p.folderId : p.folderId === folderId
+    );
+    return filtered.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   }
 
   async update(
@@ -381,7 +416,12 @@ class IDBPrompts implements PromptsStorage {
     const store = t.objectStore("prompts");
     const prompt: Prompt | undefined = await req(store.get(id));
     if (prompt) {
-      Object.assign(prompt, updates, { updatedAt: Date.now() });
+      if (updates.name !== undefined) prompt.name = updates.name;
+      if (updates.text !== undefined) prompt.text = updates.text;
+      if (updates.folderId !== undefined) {
+        prompt.folderId = updates.folderId ?? undefined;
+      }
+      prompt.updatedAt = Date.now();
       store.put(prompt);
     }
     await tx(t);
@@ -415,14 +455,33 @@ class IDBPrompts implements PromptsStorage {
 class IDBPromptFolders implements PromptFoldersStorage {
   constructor(private db: IDBDatabase) {}
 
-  async create(folder: PromptFolder): Promise<void> {
+  async create(
+    input: Omit<PromptFolder, "id" | "createdAt" | "updatedAt">
+  ): Promise<PromptFolder> {
+    const now = Date.now();
+    const stored: PromptFolder = {
+      ...input,
+      id: uuid(),
+      createdAt: now,
+      updatedAt: now,
+    };
     const store = this.db
       .transaction("promptFolders", "readwrite")
       .objectStore("promptFolders");
-    await req(store.add(folder));
+    await req(store.add(stored));
+    return stored;
   }
 
-  async getAll(): Promise<PromptFolder[]> {
+  async createMany(folders: PromptFolder[]): Promise<void> {
+    const t = this.db.transaction("promptFolders", "readwrite");
+    const store = t.objectStore("promptFolders");
+    for (const f of folders) {
+      store.add(f);
+    }
+    await tx(t);
+  }
+
+  async readAll(): Promise<PromptFolder[]> {
     const store = this.db
       .transaction("promptFolders", "readonly")
       .objectStore("promptFolders");
@@ -430,7 +489,7 @@ class IDBPromptFolders implements PromptFoldersStorage {
     return all.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   }
 
-  async getById(id: string): Promise<PromptFolder | null> {
+  async readById(id: string): Promise<PromptFolder | null> {
     const store = this.db
       .transaction("promptFolders", "readonly")
       .objectStore("promptFolders");
@@ -458,6 +517,357 @@ class IDBPromptFolders implements PromptFoldersStorage {
 }
 
 // ---------------------------------------------------------------------------
+// Assignments
+// ---------------------------------------------------------------------------
+
+interface AssignmentRecord {
+  actionType: ActionType;
+  profileId: string;
+}
+
+class IDBAssignments implements AssignmentsStorage {
+  constructor(private db: IDBDatabase) {}
+
+  async create(actionType: ActionType, profileId: string): Promise<void> {
+    const t = this.db.transaction("assignments", "readwrite");
+    const store = t.objectStore("assignments");
+    const existing = await req(store.get(actionType));
+    if (existing) {
+      throw new Error(`Assignment for ${actionType} already exists`);
+    }
+    store.add({ actionType, profileId } satisfies AssignmentRecord);
+    await tx(t);
+  }
+
+  async readByType(actionType: ActionType): Promise<string | null> {
+    const store = this.db
+      .transaction("assignments", "readonly")
+      .objectStore("assignments");
+    const record: AssignmentRecord | undefined = await req(store.get(actionType));
+    return record?.profileId ?? null;
+  }
+
+  async readAll(): Promise<Partial<Record<ActionType, string>>> {
+    const store = this.db
+      .transaction("assignments", "readonly")
+      .objectStore("assignments");
+    const all: AssignmentRecord[] = await req(store.getAll());
+    const result: Partial<Record<ActionType, string>> = {};
+    for (const r of all) {
+      result[r.actionType] = r.profileId;
+    }
+    return result;
+  }
+
+  async update(actionType: ActionType, profileId: string): Promise<void> {
+    const t = this.db.transaction("assignments", "readwrite");
+    const store = t.objectStore("assignments");
+    const existing = await req(store.get(actionType));
+    if (!existing) {
+      throw new Error(`No assignment for ${actionType}`);
+    }
+    store.put({ actionType, profileId } satisfies AssignmentRecord);
+    await tx(t);
+  }
+
+  async upsertMany(
+    assignments: Partial<Record<ActionType, string>>
+  ): Promise<void> {
+    const t = this.db.transaction("assignments", "readwrite");
+    const store = t.objectStore("assignments");
+    for (const [actionType, profileId] of Object.entries(assignments)) {
+      if (profileId !== undefined) {
+        store.put({
+          actionType: actionType as ActionType,
+          profileId,
+        } satisfies AssignmentRecord);
+      }
+    }
+    await tx(t);
+  }
+
+  async delete(actionType: ActionType): Promise<void> {
+    const store = this.db
+      .transaction("assignments", "readwrite")
+      .objectStore("assignments");
+    await req(store.delete(actionType));
+  }
+
+  async deleteMany(actionTypes: ActionType[]): Promise<void> {
+    const t = this.db.transaction("assignments", "readwrite");
+    const store = t.objectStore("assignments");
+    for (const actionType of actionTypes) {
+      store.delete(actionType);
+    }
+    await tx(t);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Preferences
+// ---------------------------------------------------------------------------
+
+const DEEP_MODE_KEY = "deepMode";
+
+class IDBPreferences implements PreferencesStorage {
+  constructor(private db: IDBDatabase) {}
+
+  private async readKey<T>(key: string): Promise<T | null> {
+    const store = this.db
+      .transaction("preferences", "readonly")
+      .objectStore("preferences");
+    const record: { key: string; value: T } | undefined = await req(
+      store.get(key)
+    );
+    return record?.value ?? null;
+  }
+
+  private async putKey<T>(key: string, value: T, mustExist: boolean): Promise<void> {
+    const t = this.db.transaction("preferences", "readwrite");
+    const store = t.objectStore("preferences");
+    const existing = await req(store.get(key));
+    if (mustExist && !existing) {
+      throw new Error(`Preference ${key} not set`);
+    }
+    if (!mustExist && existing) {
+      throw new Error(`Preference ${key} already set`);
+    }
+    store.put({ key, value });
+    await tx(t);
+  }
+
+  createDeepMode(value: boolean): Promise<void> {
+    return this.putKey(DEEP_MODE_KEY, value, false);
+  }
+
+  readDeepMode(): Promise<boolean | null> {
+    return this.readKey<boolean>(DEEP_MODE_KEY);
+  }
+
+  updateDeepMode(value: boolean): Promise<void> {
+    return this.putKey(DEEP_MODE_KEY, value, true);
+  }
+
+  async upsertDeepMode(value: boolean): Promise<void> {
+    const t = this.db.transaction("preferences", "readwrite");
+    t.objectStore("preferences").put({ key: DEEP_MODE_KEY, value });
+    await tx(t);
+  }
+
+  async deleteDeepMode(): Promise<void> {
+    const store = this.db
+      .transaction("preferences", "readwrite")
+      .objectStore("preferences");
+    await req(store.delete(DEEP_MODE_KEY));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MCP Servers
+// ---------------------------------------------------------------------------
+
+interface McpServerRecord {
+  name: string;
+  config: McpServerConfig;
+}
+
+class IDBMcpServers implements McpServersStorage {
+  constructor(private db: IDBDatabase) {}
+
+  async create(name: string, config: McpServerConfig): Promise<void> {
+    const t = this.db.transaction("mcpServers", "readwrite");
+    const store = t.objectStore("mcpServers");
+    const existing = await req(store.get(name));
+    if (existing) throw new Error(`MCP server ${name} already exists`);
+    store.add({ name, config } satisfies McpServerRecord);
+    await tx(t);
+  }
+
+  async readByName(name: string): Promise<McpServerConfig | null> {
+    const store = this.db
+      .transaction("mcpServers", "readonly")
+      .objectStore("mcpServers");
+    const record: McpServerRecord | undefined = await req(store.get(name));
+    return record?.config ?? null;
+  }
+
+  async readAll(): Promise<Record<string, McpServerConfig>> {
+    const store = this.db
+      .transaction("mcpServers", "readonly")
+      .objectStore("mcpServers");
+    const all: McpServerRecord[] = await req(store.getAll());
+    const result: Record<string, McpServerConfig> = {};
+    for (const r of all) result[r.name] = r.config;
+    return result;
+  }
+
+  async update(name: string, config: McpServerConfig): Promise<void> {
+    const t = this.db.transaction("mcpServers", "readwrite");
+    const store = t.objectStore("mcpServers");
+    const existing = await req(store.get(name));
+    if (!existing) throw new Error(`MCP server ${name} not found`);
+    store.put({ name, config } satisfies McpServerRecord);
+    await tx(t);
+  }
+
+  async replaceAll(servers: Record<string, McpServerConfig>): Promise<void> {
+    const t = this.db.transaction("mcpServers", "readwrite");
+    const store = t.objectStore("mcpServers");
+    store.clear();
+    for (const [name, config] of Object.entries(servers)) {
+      store.add({ name, config } satisfies McpServerRecord);
+    }
+    await tx(t);
+  }
+
+  async delete(name: string): Promise<void> {
+    const store = this.db
+      .transaction("mcpServers", "readwrite")
+      .objectStore("mcpServers");
+    await req(store.delete(name));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tool Prefs
+// ---------------------------------------------------------------------------
+
+const DISABLED_KEY = "disabled";
+const ALLOW_ALWAYS_KEY = "allowAlways";
+
+class IDBToolPrefs implements ToolPrefsStorage {
+  constructor(private db: IDBDatabase) {}
+
+  private async readKey<T>(key: string): Promise<T | null> {
+    const store = this.db
+      .transaction("toolPrefs", "readonly")
+      .objectStore("toolPrefs");
+    const record: { key: string; value: T } | undefined = await req(
+      store.get(key)
+    );
+    return record?.value ?? null;
+  }
+
+  private async putKey<T>(key: string, value: T, mustExist: boolean): Promise<void> {
+    const t = this.db.transaction("toolPrefs", "readwrite");
+    const store = t.objectStore("toolPrefs");
+    const existing = await req(store.get(key));
+    if (mustExist && !existing) {
+      throw new Error(`Tool pref ${key} not set`);
+    }
+    if (!mustExist && existing) {
+      throw new Error(`Tool pref ${key} already set`);
+    }
+    store.put({ key, value });
+    await tx(t);
+  }
+
+  private async upsertKey<T>(key: string, value: T): Promise<void> {
+    const t = this.db.transaction("toolPrefs", "readwrite");
+    t.objectStore("toolPrefs").put({ key, value });
+    await tx(t);
+  }
+
+  private async deleteKey(key: string): Promise<void> {
+    const store = this.db
+      .transaction("toolPrefs", "readwrite")
+      .objectStore("toolPrefs");
+    await req(store.delete(key));
+  }
+
+  createDisabled(disabled: Record<string, string[]>): Promise<void> {
+    return this.putKey(DISABLED_KEY, disabled, false);
+  }
+
+  async readDisabled(): Promise<Record<string, string[]>> {
+    return (await this.readKey<Record<string, string[]>>(DISABLED_KEY)) ?? {};
+  }
+
+  updateDisabled(disabled: Record<string, string[]>): Promise<void> {
+    return this.putKey(DISABLED_KEY, disabled, true);
+  }
+
+  upsertDisabled(disabled: Record<string, string[]>): Promise<void> {
+    return this.upsertKey(DISABLED_KEY, disabled);
+  }
+
+  deleteDisabled(): Promise<void> {
+    return this.deleteKey(DISABLED_KEY);
+  }
+
+  createAllowAlways(tokens: string[]): Promise<void> {
+    return this.putKey(ALLOW_ALWAYS_KEY, tokens, false);
+  }
+
+  async readAllowAlways(): Promise<string[]> {
+    return (await this.readKey<string[]>(ALLOW_ALWAYS_KEY)) ?? [];
+  }
+
+  updateAllowAlways(tokens: string[]): Promise<void> {
+    return this.putKey(ALLOW_ALWAYS_KEY, tokens, true);
+  }
+
+  upsertAllowAlways(tokens: string[]): Promise<void> {
+    return this.upsertKey(ALLOW_ALWAYS_KEY, tokens);
+  }
+
+  deleteAllowAlways(): Promise<void> {
+    return this.deleteKey(ALLOW_ALWAYS_KEY);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Web Search
+// ---------------------------------------------------------------------------
+
+const WEB_SEARCH_KEY = "config";
+
+class IDBWebSearch implements WebSearchStorage {
+  constructor(private db: IDBDatabase) {}
+
+  async create(config: WebSearchConfig): Promise<void> {
+    const t = this.db.transaction("webSearch", "readwrite");
+    const store = t.objectStore("webSearch");
+    const existing = await req(store.get(WEB_SEARCH_KEY));
+    if (existing) throw new Error("Web-search config already set");
+    store.add({ key: WEB_SEARCH_KEY, value: config });
+    await tx(t);
+  }
+
+  async read(): Promise<WebSearchConfig | null> {
+    const store = this.db
+      .transaction("webSearch", "readonly")
+      .objectStore("webSearch");
+    const record: { key: string; value: WebSearchConfig } | undefined = await req(
+      store.get(WEB_SEARCH_KEY)
+    );
+    return record?.value ?? null;
+  }
+
+  async update(config: WebSearchConfig): Promise<void> {
+    const t = this.db.transaction("webSearch", "readwrite");
+    const store = t.objectStore("webSearch");
+    const existing = await req(store.get(WEB_SEARCH_KEY));
+    if (!existing) throw new Error("Web-search config not set");
+    store.put({ key: WEB_SEARCH_KEY, value: config });
+    await tx(t);
+  }
+
+  async upsert(config: WebSearchConfig): Promise<void> {
+    const t = this.db.transaction("webSearch", "readwrite");
+    t.objectStore("webSearch").put({ key: WEB_SEARCH_KEY, value: config });
+    await tx(t);
+  }
+
+  async delete(): Promise<void> {
+    const store = this.db
+      .transaction("webSearch", "readwrite")
+      .objectStore("webSearch");
+    await req(store.delete(WEB_SEARCH_KEY));
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
@@ -472,6 +882,11 @@ export async function createStorage(
     profiles: new IDBProfiles(db),
     prompts: new IDBPrompts(db),
     promptFolders: new IDBPromptFolders(db),
+    assignments: new IDBAssignments(db),
+    preferences: new IDBPreferences(db),
+    mcpServers: new IDBMcpServers(db),
+    toolPrefs: new IDBToolPrefs(db),
+    webSearch: new IDBWebSearch(db),
     async init() {
       /* DB already opened */
     },

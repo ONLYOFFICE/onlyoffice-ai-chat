@@ -1,13 +1,45 @@
 import { useCallback, useRef, useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
-import { useStores } from "../../../../store/context";
-import { useDebouncedCallback } from "../../../../hooks/useDebouncedCallback";
+import { useStores } from "../../../store/context";
+import { useDebouncedCallback } from "../../../hooks/useDebouncedCallback";
+import { getProvider } from "../../../../core/providers";
 import type { Model, ProviderType } from "../../../../types";
 import type {
   ModelFormErrors,
   ModelFormValues,
   ProviderSelection,
 } from "../../model-config-cards/sub-components/ModelConfigForm";
+
+/**
+ * Resolve a provider's display name through the static
+ * {@link ProviderConstructor.getName} helper. Falls back to the raw
+ * type when the provider isn't registered (e.g. tests with a stub).
+ */
+function getProviderName(type: ProviderType): string {
+  return getProvider(type)?.getName() ?? type;
+}
+
+/**
+ * Fetch the list of models a provider exposes via the static
+ * {@link ProviderConstructor.getProviderModels}. Returns either the
+ * model list or a structured error suitable for the form's
+ * `setErrors` map.
+ */
+async function fetchProviderModels(
+  type: ProviderType,
+  apiKey: string,
+  baseUrl: string
+): Promise<{ models: Model[] } | { error: { field: string; message: string } }> {
+  const provider = getProvider(type);
+  if (!provider) {
+    return {
+      error: { field: "name", message: `Unknown provider: ${type}` },
+    };
+  }
+  const result = await provider.getProviderModels({ baseUrl, apiKey });
+  if (Array.isArray(result)) return { models: result };
+  return { models: [] };
+}
 
 const fieldToErrorKey: Partial<
   Record<keyof ModelFormValues, keyof ModelFormErrors>
@@ -19,7 +51,7 @@ const fieldToErrorKey: Partial<
 
 export const useModelForm = (initialValues: ModelFormValues) => {
   const { t } = useI18n();
-  const { provider, useCloudsStore } = useStores();
+  const { useCloudsStore } = useStores();
   const { externalOnlyofficeConfig } = useCloudsStore();
   const [values, setValues] = useState<ModelFormValues>(initialValues);
   const [models, setModels] = useState<Model[]>([]);
@@ -80,29 +112,25 @@ export const useModelForm = (initialValues: ModelFormValues) => {
       });
       setIsLoading(true);
       const requestId = ++fetchModelsRequestIdRef.current;
-      const providerInfo = provider.getProviderInfo(providerType);
-      const { models: result, errors: fetchErrors } =
-        await provider.getProvidersModels([
-          { type: providerType, name: providerInfo.name, key: apiKey, baseUrl },
-        ]);
+      const providerName = getProviderName(providerType);
+      const result = await fetchProviderModels(providerType, apiKey, baseUrl);
       if (requestId !== fetchModelsRequestIdRef.current) return;
       setIsLoading(false);
-      const fetchError = fetchErrors.get(providerInfo.name);
-      if (fetchError) {
+      if ("error" in result) {
         setErrors((prev) => ({
           ...prev,
-          [fetchError.field]: fetchError.message,
+          [result.error.field]: result.error.message,
         }));
         setModels([]);
         setValues((prev) => ({ ...prev, model: "" }));
         return;
       }
-      const fetched = result.get(providerInfo.name) ?? [];
+      const fetched = result.models;
       setModels(fetched);
 
       const displayName = options?.isCloudProvider
         ? new URL(baseUrl).hostname
-        : providerInfo.name;
+        : providerName;
 
       setValues((prev) => {
         if (options?.keepModelIfExists) {
@@ -120,7 +148,7 @@ export const useModelForm = (initialValues: ModelFormValues) => {
         };
       });
     },
-    [provider, t]
+    [t]
   );
 
   const debouncedFetchModels = useDebouncedCallback(fetchModels, 500);
@@ -265,12 +293,12 @@ export const useModelForm = (initialValues: ModelFormValues) => {
     if (field === "model") {
       const strValue = value as string;
       const modelObj = models.find((m) => m.id === strValue);
-      const providerInfo = provider.getProviderInfo(
+      const providerName = getProviderName(
         valuesRef.current.provider as ProviderType
       );
       const displayName = values.isCloudProvider
         ? new URL(values.baseUrl).hostname
-        : providerInfo.name;
+        : providerName;
       setValues((prev) => ({
         ...prev,
         model: strValue,

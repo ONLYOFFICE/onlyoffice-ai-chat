@@ -87,4 +87,14 @@ export class ProfilesEngine {
     const profile = await loadProfile(this.deps.storage, profileId);
     return checkCredentials(profile);
   }
+
+  /** Retrieve a single profile by id, or `undefined` if it does not exist. */
+  async getById(id: string): Promise<Profile | undefined> {
+    return this.deps.storage.profiles.readById(id);
+  }
+
+  /** List all profiles — passthrough. */
+  async list(): Promise<Profile[]> {
+    return this.deps.storage.profiles.readAll();
+  }
 }

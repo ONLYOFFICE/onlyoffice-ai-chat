@@ -158,16 +158,16 @@ describe("GenAIProvider", () => {
       ).toBe("answer");
     });
 
-    it("returns empty on error", async () => {
+    it("rethrows on error", async () => {
       generateContentMock.mockRejectedValueOnce(new Error("x"));
       const p = new GenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
-      expect(
-        await p.sendMessageSync({
+      await expect(
+        p.sendMessageSync({
           messages: [],
           model: "gemini",
           systemPrompt: "",
         })
-      ).toBe("");
+      ).rejects.toThrow("x");
     });
   });
 

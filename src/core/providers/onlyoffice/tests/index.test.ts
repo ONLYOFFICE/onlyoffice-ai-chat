@@ -58,19 +58,19 @@ describe("OnlyOfficeProvider", () => {
       ).toBe("answer");
     });
 
-    it("returns empty string on error", async () => {
+    it("rethrows on error", async () => {
       chatCreateMock.mockRejectedValueOnce(new Error("x"));
       const p = new OnlyOfficeProvider({
         baseUrl: "https://portal.example.com/",
         apiKey: "sk",
       });
-      expect(
-        await p.sendMessageSync({
+      await expect(
+        p.sendMessageSync({
           messages: [],
           model: "gpt-4",
           systemPrompt: "",
         })
-      ).toBe("");
+      ).rejects.toThrow("x");
     });
   });
 

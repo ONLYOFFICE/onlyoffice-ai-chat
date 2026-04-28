@@ -16,7 +16,7 @@ vi.mock("../../../providers/LocalesProvider", () => ({
 
 const mockOpenFile = vi.fn();
 
-vi.mock("../../../../platform/context", () => ({
+vi.mock("../../../platform/context", () => ({
   usePlatform: () => ({ file: { openFile: mockOpenFile } }),
 }));
 

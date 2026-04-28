@@ -4,10 +4,15 @@ export { AIEngine, DEFAULT_AI_ROUTES } from "./ai";
 export type {
   AIEngineDeps,
   AIEngineMethod,
+  ApproveToolCallInput,
+  ChatEvent,
+  DenyToolCallInput,
   SendCustomInput,
   SendInput,
   SendResult,
   SendStreamInput,
+  ToolCallData,
+  ToolDispatcher,
 } from "./ai";
 
 export { DEFAULT_PROFILES_ROUTES, ProfilesEngine } from "./profiles";

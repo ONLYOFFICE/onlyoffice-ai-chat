@@ -1,11 +1,8 @@
-import type { CallbacksManager } from "./events/callbacks";
-import type { ChatEventBus } from "./events/event-bus";
-import type { MiddlewareRunner } from "./middleware";
-import type { PlatformAdapter } from "./platform/types";
-import type Provider from "./providers";
-import type { SettingsAdapter } from "./settings/types";
-import type { StorageAdapter } from "./storage/types";
-import type Servers from "./tools/servers";
+import type { CallbacksManager, ChatEventBus } from "./ui/events";
+import type { MiddlewareRunner } from "./core/middleware";
+import type { StorageAdapter } from "./core/storage";
+import type { PlatformAdapter } from "./ui/platform/types";
+import type Servers from "./ui/tools/servers";
 import type {
   ProviderType,
   TOnlyOfficeConfig,
@@ -16,12 +13,16 @@ import type {
  * Dependency injection container for a single AIChatWidget instance.
  * Replaces global singleton holders — each widget gets its own context,
  * enabling multiple independent instances on the same page.
+ *
+ * `storage` is the only persistence boundary — every core engine
+ * receives it via {@link ServerAPIEngines}. Settings and the legacy
+ * provider singleton are intentionally absent: settings live inside
+ * `storage` (preferences / tool prefs / mcp servers), and the
+ * provider is constructed per-action via `providerFor(profile)`.
  */
 export interface AppContext {
-  settings: SettingsAdapter;
-  storage: StorageAdapter;
   platform: PlatformAdapter;
-  provider: Provider;
+  storage: StorageAdapter;
   servers: Servers;
   eventBus: ChatEventBus;
   callbacksManager: CallbacksManager;

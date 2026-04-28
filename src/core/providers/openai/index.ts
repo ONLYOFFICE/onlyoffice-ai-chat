@@ -23,8 +23,35 @@ import {
 } from "./stream";
 import { convertTools } from "./tools";
 
+/**
+ * Sizes accepted by OpenAI's image-generation API. Anything outside this
+ * set falls back to `1024x1024` to avoid a 400 from the upstream.
+ */
+const OPENAI_IMAGE_SIZES = new Set([
+  "256x256",
+  "512x512",
+  "1024x1024",
+  "1792x1024",
+  "1024x1792",
+]);
+
+type OpenAIImageSize =
+  | "256x256"
+  | "512x512"
+  | "1024x1024"
+  | "1792x1024"
+  | "1024x1792";
+
 class OpenAIProvider extends AbstractBaseProvider {
   protected client: OpenAI;
+
+  /**
+   * When `true`, mid-conversation `system` messages are downgraded to
+   * `user`. Some OpenAI-compatible servers (LM Studio, etc.) reject
+   * `system` outside the head of the request — concrete subclasses flip
+   * this to opt into the safer wire format.
+   */
+  protected downgradeSystem = false;
 
   constructor(creds: ProviderCredentials) {
     super(creds);
@@ -41,7 +68,7 @@ class OpenAIProvider extends AbstractBaseProvider {
       const stream = await this.getStream({
         messages: [
           { role: "system", content: systemPrompt },
-          ...convertMessages(messages),
+          ...convertMessages(messages, this.downgradeSystem),
         ],
         model,
         tools: convertTools(tools ?? []),
@@ -86,50 +113,45 @@ class OpenAIProvider extends AbstractBaseProvider {
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
     const { messages, model, systemPrompt, signal } = args;
-    try {
-      const response = await this.client.chat.completions.create(
-        {
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...convertMessages(messages),
-          ],
-          stream: false,
-        },
-        { signal }
-      );
-      return response.choices[0]?.message?.content ?? "";
-    } catch (e) {
-      logger.error("OpenAI sendMessageSync error:", e);
-      return "";
-    }
-  }
-
-  imageGeneration = async (args: ImageGenerationArgs): Promise<string> => {
-    const { model, prompt, width, height, signal } = args;
-    const size =
-      width && height
-        ? (`${width}x${height}` as
-            | "256x256"
-            | "512x512"
-            | "1024x1024"
-            | "1792x1024"
-            | "1024x1792")
-        : "1024x1024";
-
-    const response = await this.client.images.generate(
+    const response = await this.client.chat.completions.create(
       {
         model,
-        prompt,
-        n: 1,
-        size,
-        response_format: "b64_json",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...convertMessages(messages, this.downgradeSystem),
+        ],
+        stream: false,
       },
       { signal }
     );
+    return response.choices[0]?.message?.content ?? "";
+  }
 
-    return response.data?.[0]?.b64_json ?? "";
-  };
+  async imageGeneration(args: ImageGenerationArgs): Promise<string> {
+    const { model, prompt, width, height, signal } = args;
+    const candidate = width && height ? `${width}x${height}` : "1024x1024";
+    const size: OpenAIImageSize = OPENAI_IMAGE_SIZES.has(candidate)
+      ? (candidate as OpenAIImageSize)
+      : "1024x1024";
+
+    try {
+      const response = await this.client.images.generate(
+        {
+          model,
+          prompt,
+          n: 1,
+          size,
+          response_format: "b64_json",
+        },
+        { signal }
+      );
+      return response.data?.[0]?.b64_json ?? "";
+    } catch (error) {
+      if (isAbortError(error, signal)) return "";
+      logger.error("OpenAI imageGeneration error:", error);
+      throw error;
+    }
+  }
 
   static getName(): string {
     return openaiInfo.name;

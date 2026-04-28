@@ -65,20 +65,15 @@ class MistralProvider extends AbstractBaseProvider {
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
     const { messages, model, systemPrompt } = args;
-    try {
-      const response = await this.client.chat.complete({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...convertMessages(messages),
-        ] as Messages[],
-      });
-      const content = response.choices?.[0]?.message?.content;
-      return typeof content === "string" ? content : "";
-    } catch (e) {
-      logger.error("Mistral sendMessageSync error:", e);
-      return "";
-    }
+    const response = await this.client.chat.complete({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...convertMessages(messages),
+      ] as Messages[],
+    });
+    const content = response.choices?.[0]?.message?.content;
+    return typeof content === "string" ? content : "";
   }
 
   static getName(): string {

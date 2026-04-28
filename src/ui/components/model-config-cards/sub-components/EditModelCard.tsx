@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
-import { useStores } from "../../../../store/context";
+import { useStores } from "../../../store/context";
 import type { Profile, ProviderType, TOnlyOfficeConfig } from "../../../../types";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { Icon } from "../../icon";

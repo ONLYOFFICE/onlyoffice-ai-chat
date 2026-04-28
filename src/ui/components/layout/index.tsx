@@ -1,7 +1,7 @@
 import React from "react";
 import { useI18n } from "../../providers/LocalesProvider";
-import { usePlatform } from "../../../platform/context";
-import { useStores } from "../../../store/context";
+import { usePlatform } from "../../platform/context";
+import { useStores } from "../../store/context";
 import { ChatList } from "./sub-components/ChatList";
 import { Navigation } from "./sub-components/Header";
 

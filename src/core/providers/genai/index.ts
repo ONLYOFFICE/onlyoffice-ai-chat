@@ -73,20 +73,15 @@ class GenAIProvider extends AbstractBaseProvider {
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
     const { messages, model, systemPrompt, signal } = args;
-    try {
-      const response = await this.client.models.generateContent({
-        model,
-        contents: convertMessages(messages),
-        config: {
-          systemInstruction: systemPrompt,
-          abortSignal: signal,
-        },
-      });
-      return response.text ?? "";
-    } catch (e) {
-      logger.error("GenAI sendMessageSync error:", e);
-      return "";
-    }
+    const response = await this.client.models.generateContent({
+      model,
+      contents: convertMessages(messages),
+      config: {
+        systemInstruction: systemPrompt,
+        abortSignal: signal,
+      },
+    });
+    return response.text ?? "";
   }
 
   static getName(): string {

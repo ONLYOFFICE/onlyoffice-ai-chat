@@ -169,4 +169,30 @@ export class ThreadsEngine {
   ): Promise<ThreadMessageLike[]> {
     return this.deps.storage.messages.readByThread(threadId, limit, startIndex);
   }
+
+  /** Retrieve a single thread by id, or `null` if it does not exist. */
+  async getById(threadId: string): Promise<Thread | null> {
+    return this.deps.storage.threads.readById(threadId);
+  }
+
+  /** Retrieve a single message by its globally-unique id. */
+  async getMessageById(messageId: string): Promise<ThreadMessageLike | null> {
+    return this.deps.storage.messages.readById(messageId);
+  }
+
+  /**
+   * Replace the content of an existing message. Used by edit/regenerate
+   * flows that mutate a message outside the streaming lifecycle.
+   */
+  async updateMessage(
+    messageId: string,
+    message: Omit<ThreadMessageLike, "id" | "createdAt">
+  ): Promise<void> {
+    await this.deps.storage.messages.update(messageId, message);
+  }
+
+  /** Delete a single message without touching the rest of the thread. */
+  async deleteMessage(messageId: string): Promise<void> {
+    await this.deps.storage.messages.delete(messageId);
+  }
 }

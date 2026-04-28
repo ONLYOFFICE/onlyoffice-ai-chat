@@ -25,5 +25,7 @@ export function createProfilesApi(
       callRoute(config, "profiles", "listModels", [profileId], engines),
     testConnection: (profileId) =>
       callRoute(config, "profiles", "testConnection", [profileId], engines),
+    getById: (id) => callRoute(config, "profiles", "getById", [id], engines),
+    list: () => callRoute(config, "profiles", "list", [], engines),
   };
 }

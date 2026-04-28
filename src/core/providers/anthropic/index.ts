@@ -70,27 +70,22 @@ class AnthropicProvider extends AbstractBaseProvider {
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
     const { messages, model, systemPrompt, signal } = args;
-    try {
-      const response = await this.client.messages.create(
-        {
-          model,
-          system: systemPrompt,
-          messages: convertMessages(messages),
-          max_tokens: 4096,
-          stream: false,
-        },
-        { signal }
-      );
-      return response.content
-        .filter(
-          (c): c is Extract<typeof c, { type: "text" }> => c.type === "text"
-        )
-        .map((c) => c.text)
-        .join("");
-    } catch (e) {
-      logger.error("Anthropic sendMessageSync error:", e);
-      return "";
-    }
+    const response = await this.client.messages.create(
+      {
+        model,
+        system: systemPrompt,
+        messages: convertMessages(messages),
+        max_tokens: 4096,
+        stream: false,
+      },
+      { signal }
+    );
+    return response.content
+      .filter(
+        (c): c is Extract<typeof c, { type: "text" }> => c.type === "text"
+      )
+      .map((c) => c.text)
+      .join("");
   }
 
   static getName(): string {

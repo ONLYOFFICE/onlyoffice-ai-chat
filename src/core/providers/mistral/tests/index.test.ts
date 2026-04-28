@@ -189,19 +189,19 @@ describe("MistralProvider", () => {
       ).toBe("");
     });
 
-    it("returns empty string on error", async () => {
+    it("rethrows on error", async () => {
       chatCompleteMock.mockRejectedValueOnce(new Error("x"));
       const p = new MistralProvider({
         baseUrl: "https://api.mistral.ai",
         apiKey: "sk",
       });
-      expect(
-        await p.sendMessageSync({
+      await expect(
+        p.sendMessageSync({
           messages: [],
           model: "mistral-large",
           systemPrompt: "",
         })
-      ).toBe("");
+      ).rejects.toThrow("x");
     });
   });
 

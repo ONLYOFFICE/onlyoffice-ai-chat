@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
-import { useStores } from "../../../../store/context";
+import { useStores } from "../../../store/context";
 import { IconButton } from "../../icon-button";
 import { Input } from "../../input";
 import { ChatListItem } from "./ChatListItem";

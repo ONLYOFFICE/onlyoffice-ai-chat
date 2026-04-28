@@ -11,6 +11,19 @@ import { listModels } from "./models";
  * endpoint exposes.
  */
 class OpenAICompatibleProvider extends OpenAIProvider {
+  /**
+   * Many OpenAI-compatible servers (LM Studio, llama.cpp, etc.) reject
+   * mid-conversation `system` messages, so we downgrade them to `user`.
+   */
+  protected override downgradeSystem = true;
+
+  /**
+   * Generic OpenAI-compatible endpoints rarely expose
+   * `/v1/images/generations`. Drop the inherited implementation so the
+   * action layer can detect the absence and fall back to chat.
+   */
+  override imageGeneration = undefined as never;
+
   static override getName(): string {
     return openaicompatibleInfo.name;
   }

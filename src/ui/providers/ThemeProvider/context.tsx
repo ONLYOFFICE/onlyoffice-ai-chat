@@ -7,8 +7,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { usePlatform } from "../../../platform/context";
-import { useStores } from "../../../store/context";
+import { usePlatform } from "../../platform/context";
+import { useStores } from "../../store/context";
 import type { ThemeType } from "./constants";
 import { getThemeType } from "./constants";
 import type { ThemeTokens } from "./generated-types";

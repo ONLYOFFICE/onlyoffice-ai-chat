@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
-import { useStores } from "../../../../store/context";
+import { useStores } from "../../../store/context";
 import type { ProviderType } from "../../../../types";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { Tooltip, TooltipTrigger } from "../../tooltip";

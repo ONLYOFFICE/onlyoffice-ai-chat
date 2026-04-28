@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { getApiKeyLink } from "../../../../shared/api-key-links";
-import { useStores } from "../../../../store/context";
+import { useStores } from "../../../store/context";
+import {
+  getProvider,
+  getSupportedProviderTypes,
+} from "../../../../core/providers";
 import type { Model, ProviderType } from "../../../../types";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../tooltip";
@@ -54,12 +58,23 @@ export const ModelConfigForm = ({
   const { Button, ComboBox, FieldContainer, Input, Link } = useComponents();
   const [isSetupTooltipOpen, setIsSetupTooltipOpen] = useState(false);
   const { t } = useI18n();
-  const { provider, useCloudsStore } = useStores();
+  const { useCloudsStore } = useStores();
   const { cloudProviders, externalOnlyofficeConfig, hiddenProviders } =
     useCloudsStore();
   const hiddenSet = new Set<ProviderType>(hiddenProviders ?? []);
-  const providersInfo = provider
-    .getProvidersInfo()
+  const providersInfo = getSupportedProviderTypes()
+    .map((type) => {
+      const klass = getProvider(type);
+      if (!klass) return null;
+      return {
+        type,
+        name: klass.getName(),
+        baseUrl: klass.getBaseUrl(),
+      };
+    })
+    .filter((p): p is { type: string; name: string; baseUrl: string } =>
+      p !== null
+    )
     .filter((p) => !hiddenSet.has(p.type as ProviderType));
   const isFieldsDisabled = !values.provider;
 

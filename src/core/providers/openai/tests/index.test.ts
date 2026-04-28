@@ -168,15 +168,16 @@ describe("OpenAIProvider", () => {
       expect(text).toBe("answer");
     });
 
-    it("returns an empty string when the SDK throws", async () => {
+    it("rethrows when the SDK throws", async () => {
       chatCreateMock.mockRejectedValueOnce(new Error("fail"));
       const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
-      const text = await p.sendMessageSync({
-        messages: [],
-        model: "gpt-4o",
-        systemPrompt: "",
-      });
-      expect(text).toBe("");
+      await expect(
+        p.sendMessageSync({
+          messages: [],
+          model: "gpt-4o",
+          systemPrompt: "",
+        })
+      ).rejects.toThrow("fail");
     });
 
     it("returns empty string when the choice has no content", async () => {

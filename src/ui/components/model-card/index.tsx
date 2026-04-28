@@ -1,6 +1,5 @@
 import React from "react";
 import { useI18n } from "../../providers/LocalesProvider";
-import { useStores } from "../../../store/context";
 import { cn } from "../../../shared/utils";
 import type { Profile } from "../../../types";
 import { useComponents } from "../../providers/ComponentsProvider";
@@ -8,6 +7,7 @@ import { EditModelCard } from "../model-config-cards";
 import { ProviderLogo } from "../provider-logo";
 import { Tooltip, TooltipTrigger } from "../tooltip";
 import { DeleteProfileDialog } from "./DeleteProfileDialog";
+import { getProvider } from "../../../core/providers";
 
 type ModelCardProps = {
   profile: Profile;
@@ -25,10 +25,9 @@ const ModelCard = ({
   isEditModelCardHorizontal,
 }: ModelCardProps) => {
   const { DropdownMenu, IconButton, TooltipContent } = useComponents();
-  const { provider } = useStores();
   const providerName = profile.isCloudProvider
     ? new URL(profile.baseUrl).hostname
-    : provider.getProviderInfo(profile.providerType).name;
+    : (getProvider(profile.providerType)?.getName() ?? profile.providerType);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
   const { t, isRTL } = useI18n();
 

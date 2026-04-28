@@ -198,19 +198,19 @@ vi.mock("../ui/components/manage-tool-dialog", () => ({
   ),
 }));
 
-vi.mock("../pages/chat", () => ({
+vi.mock("../ui/pages/chat", () => ({
   default: () => <div data-testid="thread" />,
 }));
 
-vi.mock("../pages/empty-screen", () => ({
+vi.mock("../ui/pages/empty-screen", () => ({
   default: () => <div data-testid="empty-screen" />,
 }));
 
-vi.mock("../pages/initial-setup", () => ({
+vi.mock("../ui/pages/initial-setup", () => ({
   default: () => <div data-testid="initial-setup" />,
 }));
 
-vi.mock("../pages/settings", () => ({
+vi.mock("../ui/pages/settings", () => ({
   default: () => <div data-testid="settings" />,
 }));
 

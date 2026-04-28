@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
-import { useStores } from "../../../store/context";
+import { useStores } from "../../store/context";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { Dialog } from "../dialog";
 import { ToolFallback } from "../tool-fallback";

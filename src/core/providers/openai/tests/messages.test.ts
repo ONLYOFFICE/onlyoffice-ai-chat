@@ -68,8 +68,13 @@ describe("openai/messages/convertMessages", () => {
   });
 
   describe("system role", () => {
-    it("downgrades system to user role", () => {
+    it("preserves system role by default", () => {
       const out = convertMessages([{ role: "system", content: "s" }]);
+      expect(out[0].role).toBe("system");
+    });
+
+    it("downgrades system to user when downgradeSystem is true", () => {
+      const out = convertMessages([{ role: "system", content: "s" }], true);
       expect(out[0].role).toBe("user");
     });
   });

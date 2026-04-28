@@ -37,6 +37,8 @@ export const DEFAULT_PROMPTS_ROUTES: Record<PromptsEngineMethod, RouteSpec> = {
   listFolders: { method: "GET", path: "prompts/list-folders" },
   export: { method: "GET", path: "prompts/export" },
   importBundle: { method: "POST", path: "prompts/import-bundle" },
+  getById: { method: "GET", path: "prompts/get-by-id" },
+  getFolderById: { method: "GET", path: "prompts/get-folder-by-id" },
 };
 
 /** Dependencies injected into a {@link PromptsEngine} instance. */

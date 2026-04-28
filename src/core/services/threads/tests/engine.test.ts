@@ -55,7 +55,7 @@ function makeStorage(seed: {
   messagesByThread?: Record<string, ThreadMessageLike[]>;
 } = {}) {
   let threads: Thread[] = [...(seed.threads ?? [])];
-  let messages = new Map<string, ThreadMessageLike[]>();
+  const messages = new Map<string, ThreadMessageLike[]>();
   for (const [tid, list] of Object.entries(seed.messagesByThread ?? {})) {
     messages.set(tid, [...list]);
   }

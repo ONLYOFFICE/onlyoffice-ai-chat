@@ -18,7 +18,7 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useRouter: (selector?: (s: unknown) => unknown) => {
       const state = {
@@ -124,7 +124,7 @@ describe("Navigation (Header)", () => {
 
   it("clicking settings when already on settings toggles back to chat", async () => {
     // Override mock for this test to simulate being on settings page
-    const mod = await import("../../../../store/context");
+    const mod = await import("../../../store/context");
     vi.spyOn(mod, "useStores").mockReturnValue({
       useRouter: ((selector?: (s: unknown) => unknown) => {
         const state = {
@@ -145,7 +145,7 @@ describe("Navigation (Header)", () => {
   });
 
   it("clicking history when already on history toggles back to chat", async () => {
-    const mod = await import("../../../../store/context");
+    const mod = await import("../../../store/context");
     vi.spyOn(mod, "useStores").mockReturnValue({
       useRouter: ((selector?: (s: unknown) => unknown) => {
         const state = {
@@ -190,7 +190,7 @@ describe("Navigation (Header)", () => {
 
   it("isSettingsActive=false forces inactive even on the settings page", async () => {
     mockUseWidgetConfig.mockReturnValue({ isSettingsActive: false });
-    const mod = await import("../../../../store/context");
+    const mod = await import("../../../store/context");
     vi.spyOn(mod, "useStores").mockReturnValue({
       useRouter: ((selector?: (s: unknown) => unknown) => {
         const state = {

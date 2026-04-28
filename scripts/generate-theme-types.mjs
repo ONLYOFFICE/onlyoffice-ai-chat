@@ -4,8 +4,11 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const cssPath = resolve(__dirname, "../src/styles/theme-light.css");
-const outPath = resolve(__dirname, "../src/theme/generated-types.ts");
+const cssPath = resolve(__dirname, "../src/ui/styles/theme-light.css");
+const outPath = resolve(
+  __dirname,
+  "../src/ui/providers/ThemeProvider/generated-types.ts"
+);
 
 const css = readFileSync(cssPath, "utf-8");
 

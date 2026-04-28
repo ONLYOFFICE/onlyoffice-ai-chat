@@ -189,6 +189,16 @@ export class PromptsEngine {
     return this.deps.storage.promptFolders.readAll();
   }
 
+  /** Retrieve a single prompt by id, or `null` if it does not exist. */
+  async getById(id: string): Promise<Prompt | null> {
+    return this.deps.storage.prompts.readById(id);
+  }
+
+  /** Retrieve a single folder by id, or `null` if it does not exist. */
+  async getFolderById(id: string): Promise<PromptFolder | null> {
+    return this.deps.storage.promptFolders.readById(id);
+  }
+
   // ---------------------------------------------------------------------------
   // Import / export
   // ---------------------------------------------------------------------------

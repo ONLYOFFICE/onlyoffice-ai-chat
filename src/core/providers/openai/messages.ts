@@ -8,11 +8,11 @@ import type {
 } from "openai/resources/chat/completions";
 
 /**
- * Produce a stable fallback tool-call identifier when the SDK chunk
- * arrives without one. Uses an ISO-8601 timestamp so IDs remain roughly
- * time-sortable if multiple fallbacks are generated.
+ * Produce a unique fallback tool-call identifier when the SDK chunk
+ * arrives without one. Uses `crypto.randomUUID()` to avoid collisions
+ * when multiple tool-calls are generated within the same millisecond.
  */
-const generateFallbackToolCallId = (): string => new Date().toISOString();
+const generateFallbackToolCallId = (): string => crypto.randomUUID();
 
 /**
  * Convert a user-message `content` payload into OpenAI's chat-completion
@@ -141,21 +141,23 @@ type AssistantMessageWithReasoning = ChatCompletionAssistantMessageParam & {
  *
  * Assistant turns may expand into multiple messages: one assistant message
  * followed by one or more `tool` messages when tool-results are attached.
- * System messages are downgraded to `user` role for broader backend
- * compatibility (some OpenAI-compatible servers reject mid-conversation
- * `system` messages).
  *
  * @param messages - The thread as a flat array of `ThreadMessageLike`.
+ * @param downgradeSystem - When `true`, mid-conversation `system` messages
+ *   are converted to `user` (some OpenAI-compatible servers reject `system`
+ *   anywhere but the head of the request). Defaults to `false`.
  * @returns A flat array ready to pass to `chat.completions.create`.
  */
 export const convertMessages = (
-  messages: ThreadMessageLike[]
+  messages: ThreadMessageLike[],
+  downgradeSystem = false
 ): ChatCompletionMessageParam[] => {
   const result: ChatCompletionMessageParam[] = [];
 
   for (const message of messages) {
     if (message.role === "user" || message.role === "system") {
-      const role = message.role === "system" ? "user" : message.role;
+      const role =
+        message.role === "system" && downgradeSystem ? "user" : message.role;
       result.push({
         role,
         content: convertUserContent(message.content),

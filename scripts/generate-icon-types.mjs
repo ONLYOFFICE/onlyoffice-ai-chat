@@ -6,7 +6,10 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const assetsDir = resolve(__dirname, "../src/assets");
-const outPath = resolve(__dirname, "../src/images-provider/generated-types.ts");
+const outPath = resolve(
+  __dirname,
+  "../src/ui/providers/ImagesProvider/generated-types.ts"
+);
 
 const IMAGE_NAME_REGEX = /^([^@]+?)(?:@[\d.]+x)?\.(png|svg)$/;
 

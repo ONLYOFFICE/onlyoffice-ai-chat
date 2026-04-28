@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
-import type { Page } from "../../../../store/create-stores";
+import type { Page } from "../../../store/create-stores";
 import type { Thread } from "../../../../types";
 import { DropdownMenu } from "../../dropdown";
 import { Icon } from "../../icon";
@@ -13,7 +13,7 @@ type ChatListItemProps = {
   isActive: boolean;
   onSwitchToThread: (threadId: string) => void;
   onRenameThread: (threadId: string, newTitle: string) => void;
-  onDownloadThread: (threadId: string) => void;
+  onDownloadThread: (threadId: string, title?: string) => void;
   onClearThreadHistory: (threadId: string) => void;
   setCurrentPage: (page: Page) => void;
 };
@@ -91,7 +91,7 @@ const ChatListItemComponent = ({
   };
 
   const onDownloadClick = () => {
-    onDownloadThread(thread.threadId);
+    onDownloadThread(thread.threadId, thread.title);
     setIsOpen(false);
   };
 
