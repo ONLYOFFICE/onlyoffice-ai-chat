@@ -58,8 +58,8 @@ import type {
   TOnlyOfficeConfig,
   WebSearchProviderId,
 } from "./types";
-import type { AIChatWidgetRef } from "./ui/imperative";
-import { createWidgetRef, type RefCallbacks } from "./ui/imperative";
+import type { AIChatWidgetRef } from "./ui/providers/ImperativeProvider";
+import { createWidgetRef, type RefCallbacks } from "./ui/providers/ImperativeProvider";
 import useMessages from "./ui/hooks/useMessages";
 import useProfiles from "./ui/hooks/useProfiles";
 import useServers from "./ui/hooks/useServers";

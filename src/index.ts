@@ -49,7 +49,7 @@ export {
 // Imperative Ref
 // ---------------------------------------------------------------------------
 
-export type { AIChatWidgetRef } from "./ui/imperative";
+export type { AIChatWidgetRef } from "./ui/providers/ImperativeProvider";
 
 // ---------------------------------------------------------------------------
 // Config

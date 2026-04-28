@@ -1,10 +1,10 @@
-import type { Page } from "../store/create-router-store";
+import type { Page } from "../../store/create-router-store";
 import type {
   Profile,
   TAttachmentFile,
   TAttachmentImage,
   Thread,
-} from "../../types";
+} from "../../../types";
 
 /**
  * Imperative handle exposed by `AIChatWidget` via `React.forwardRef`.

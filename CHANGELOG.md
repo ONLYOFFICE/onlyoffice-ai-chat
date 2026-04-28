@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.2
+
+Internal refactor — imperative module moved under providers folder.
+
+- `src/ui/imperative/` → `src/ui/providers/ImperativeProvider/`.
+  The public `@onlyoffice/ai-chat/imperative` subpath import is
+  unchanged.
+- Docs: `docs/ui/imperative.md` → `docs/ui/providers/imperative.md`,
+  `ImperativeProvider` listed in `ui/providers/README.md`.
+
 ## 0.2.1
 
 Internal refactor — events module moved under providers folder.

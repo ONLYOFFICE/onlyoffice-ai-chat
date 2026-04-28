@@ -19,7 +19,7 @@ const entries = {
   "ui/tools/index": resolve(__dirname, "src/ui/tools/index.ts"),
   "ui/providers/EventsProvider/index": resolve(__dirname, "src/ui/providers/EventsProvider/index.ts"),
   "ui/hooks/index": resolve(__dirname, "src/ui/hooks/index.ts"),
-  "ui/imperative/index": resolve(__dirname, "src/ui/imperative/index.ts"),
+  "ui/providers/ImperativeProvider/index": resolve(__dirname, "src/ui/providers/ImperativeProvider/index.ts"),
   "ui/pages/index": resolve(__dirname, "src/ui/pages/index.ts"),
 
   // Shared

@@ -5,15 +5,15 @@ const { setSystemPromptAppendix, getSystemPromptAppendix } = vi.hoisted(() => ({
   getSystemPromptAppendix: vi.fn(() => "appendix"),
 }));
 
-vi.mock("../../../core/providers/prompts", () => ({
+vi.mock("../../../../core/providers/prompts", () => ({
   setSystemPromptAppendix,
   getSystemPromptAppendix,
 }));
 
 import { createWidgetRef } from "../create-ref";
-import type { Stores } from "../../store/create-stores";
-import type Servers from "../../tools/servers";
-import type { ChatEventBus } from "../../providers/EventsProvider";
+import type { Stores } from "../../../store/create-stores";
+import type Servers from "../../../tools/servers";
+import type { ChatEventBus } from "../../EventsProvider";
 
 function makeStores() {
   const messageState = {

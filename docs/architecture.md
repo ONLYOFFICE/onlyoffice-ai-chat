@@ -262,7 +262,7 @@ Two complementary mechanisms:
 | Pages | [`src/ui/pages/`](../src/ui/pages/) |
 | Stores | [`src/ui/store/`](../src/ui/store/) |
 | Tools (`Servers`) | [`src/ui/tools/`](../src/ui/tools/) |
-| Imperative ref | [`src/ui/imperative/`](../src/ui/imperative/) |
+| Imperative ref | [`src/ui/providers/ImperativeProvider/`](../src/ui/providers/ImperativeProvider/) |
 | Pluggable React providers | [`src/ui/providers/`](../src/ui/providers/) |
 | Translations | [`src/translations/`](../src/translations/) |
 | Type-only primitives | [`src/shared/`](../src/shared/) |

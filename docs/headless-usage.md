@@ -20,7 +20,7 @@ storage contract you must implement, read
 | Embed only the settings page | The page export inside your own provider stack |
 
 If you only need programmatic control while keeping the UI, prefer
-the [imperative ref](./ui/imperative.md) instead.
+the [imperative ref](./ui/providers/imperative.md) instead.
 
 ## Constructing engines
 

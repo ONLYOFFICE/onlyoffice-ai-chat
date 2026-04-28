@@ -130,7 +130,7 @@ Import the stylesheet from `pages/_app.tsx`.
   with copy-pasteable examples.
 - [`headless-usage.md`](./headless-usage.md) — driving `AIEngine`
   directly without rendering the widget.
-- [`ui/imperative.md`](./ui/imperative.md) — `AIChatWidgetRef` for
+- [`ui/providers/imperative.md`](./ui/providers/imperative.md) — `AIChatWidgetRef` for
   programmatic control while keeping the UI.
 - [`ui/providers/theme.md`](./ui/providers/theme.md) — picking,
   overriding, and registering themes.

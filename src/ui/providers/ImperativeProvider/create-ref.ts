@@ -1,13 +1,13 @@
-import type { Stores } from "../store/create-stores";
-import type { ProfilesStoreState } from "../store/create-profiles-store";
-import type Servers from "../tools/servers";
-import type { ChatEventBus } from "../providers/EventsProvider";
-import type { Profile } from "../../types";
+import type { Stores } from "../../store/create-stores";
+import type { ProfilesStoreState } from "../../store/create-profiles-store";
+import type Servers from "../../tools/servers";
+import type { ChatEventBus } from "../EventsProvider";
+import type { Profile } from "../../../types";
 import type { AIChatWidgetRef } from "./types";
 import {
   getSystemPromptAppendix,
   setSystemPromptAppendix,
-} from "../../core/providers/prompts";
+} from "../../../core/providers/prompts";
 
 /**
  * Mutable holder for hook-derived callbacks that the imperative ref delegates to.

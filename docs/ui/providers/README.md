@@ -1,8 +1,9 @@
 # `ui/providers/` — pluggable React providers
 
-Six React context providers expose the widget's customization
-points. Each can be used inside `AIChatWidget` (via props) or
-standalone (wrap your tree directly).
+The widget's customization points live as React context providers.
+Each can be used inside `AIChatWidget` (via props) or standalone
+(wrap your tree directly). `ImperativeProvider` is consumed via
+`React.forwardRef` rather than a context.
 
 | Provider | Doc | Customizes |
 | --- | --- | --- |
@@ -10,6 +11,7 @@ standalone (wrap your tree directly).
 | `ComponentsProvider` | [`components.md`](./components.md) | UI primitive overrides (buttons, inputs, dialogs, …) |
 | `EventsProvider` | [`events.md`](./events.md) | Host-facing `ChatCallbacks`, internal `ChatEventBus` |
 | `ImagesProvider` | [`images.md`](./images.md) | Icon / image overrides |
+| `ImperativeProvider` | [`imperative.md`](./imperative.md) | `AIChatWidgetRef` — programmatic widget control |
 | `LocalesProvider` (`I18nProvider`) | [`locales.md`](./locales.md) | i18n: 43 bundled locales, custom strings |
 | `ThemeProvider` | [`theme.md`](./theme.md) | Themes, CSS-variable tokens, dark/light resolution |
 

@@ -145,4 +145,4 @@ export function ChatApp() {
 ```
 
 The full type definition lives in
-[`src/ui/imperative/types.ts`](../../src/ui/imperative/types.ts).
+[`src/ui/providers/ImperativeProvider/types.ts`](../../../src/ui/providers/ImperativeProvider/types.ts).

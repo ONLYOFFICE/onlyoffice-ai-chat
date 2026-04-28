@@ -176,7 +176,7 @@ vi.mock("../ui/hooks/useThreads", () => ({ default: vi.fn() }));
 vi.mock("../ui/hooks/useServers", () => ({ default: vi.fn() }));
 vi.mock("../ui/hooks/useProfiles", () => ({ default: vi.fn() }));
 
-vi.mock("../ui/imperative", () => ({
+vi.mock("../ui/providers/ImperativeProvider", () => ({
   createWidgetRef: vi.fn().mockReturnValue({}),
 }));
 
