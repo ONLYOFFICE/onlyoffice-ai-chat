@@ -19,6 +19,13 @@ type WebSearchProvider = {
   isCloudProvider?: boolean;
 };
 
+type WebSearchData = {
+  provider: string;
+  key: string;
+  baseUrl?: string;
+  isCloudProvider?: boolean;
+};
+
 const WEB_SEARCH_PROVIDERS: WebSearchProvider[] = [
   { id: "Exa", label: "Exa", baseUrl: "https://api.exa.ai" },
   { id: "ONLYOFFICE", label: "ONLYOFFICE AI" },
@@ -27,8 +34,8 @@ const WEB_SEARCH_PROVIDERS: WebSearchProvider[] = [
 const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const { ComboBox, FieldContainer, Input, Link } = useComponents();
   const { t, isRTL } = useI18n();
-  const { servers: serversInstance, eventBus } = useToolsContext();
-  const { useCloudsStore } = useStores();
+  const { eventBus } = useToolsContext();
+  const { useCloudsStore, api, callbacksManager } = useStores();
   const { cloudProviders, externalOnlyofficeConfig, hiddenWebSearchProviders } =
     useCloudsStore();
   const hiddenWebSearchSet = React.useMemo(
@@ -39,7 +46,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   // When the host passes an `onlyofficeConfig`, default to the preconfigured
   // ONLYOFFICE entry instead of Exa — otherwise the user would land on Exa
   // with its empty credentials and have to click through to ONLYOFFICE to
-  // see the preset take effect. `syncFromInstance` still overrides this
+  // see the preset take effect. `syncFromStorage` still overrides this
   // from storage when the user has an earlier saved choice.
   const [selectedId, setSelectedId] = React.useState<string>(() =>
     externalOnlyofficeConfig ? "ONLYOFFICE" : "Exa"
@@ -48,17 +55,33 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const [baseUrl, setBaseUrl] = React.useState<string>("");
   const [baseUrlError, setBaseUrlError] = React.useState<string>("");
 
-  // Skip the `web-search-changed` sync for events we ourselves caused —
-  // otherwise saving a partially-filled form (blur with empty key, invalid
-  // URL, etc.) would write null to storage, fire the event, and our own
-  // listener would wipe whatever the user just typed.
+  // Track the last-persisted shape so the `web-search-changed` listener can
+  // skip its sync-from-storage when the change originates from this same
+  // form (and detect what actually changed for the host callback).
+  const lastPersistedRef = React.useRef<WebSearchData | null>(null);
   const selfInitiatedRef = React.useRef(false);
-  const writeWebSearchData = React.useCallback(
-    (data: Parameters<typeof serversInstance.setWebSearchData>[0]) => {
+
+  const persist = React.useCallback(
+    async (data: WebSearchData | null) => {
+      const previous = lastPersistedRef.current;
+      const changed = JSON.stringify(previous) !== JSON.stringify(data);
+      lastPersistedRef.current = data;
       selfInitiatedRef.current = true;
-      serversInstance.setWebSearchData(data);
+      if (data) {
+        await api.webSearch.setActiveConfig(data);
+      } else {
+        await api.webSearch.clear();
+      }
+      eventBus.emit("web-search-changed");
+      if (changed) {
+        callbacksManager.emit("onWebSearchUpdated", {
+          enabled: !!data,
+          provider: data?.provider ?? null,
+          isCloudProvider: data?.isCloudProvider,
+        });
+      }
     },
-    [serversInstance]
+    [api, callbacksManager, eventBus]
   );
 
   const allProviders = React.useMemo<WebSearchProvider[]>(
@@ -90,12 +113,17 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const provider = allProviders.find((p) => p.id === selectedId);
 
   React.useEffect(() => {
-    const syncFromInstance = () => {
+    let cancelled = false;
+    const syncFromStorage = async () => {
       if (selfInitiatedRef.current) {
         selfInitiatedRef.current = false;
         return;
       }
-      const data = serversInstance.getWebSearchData();
+      const data = (await api.webSearch.getActiveConfig()) as
+        | WebSearchData
+        | null;
+      if (cancelled) return;
+      lastPersistedRef.current = data;
       if (data) {
         setSelectedId(data.provider);
         setApiKey(data.key);
@@ -109,12 +137,13 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
       setBaseUrlError("");
     };
 
-    syncFromInstance();
-    eventBus.on("web-search-changed", syncFromInstance);
+    syncFromStorage();
+    eventBus.on("web-search-changed", syncFromStorage);
     return () => {
-      eventBus.off("web-search-changed", syncFromInstance);
+      cancelled = true;
+      eventBus.off("web-search-changed", syncFromStorage);
     };
-  }, [serversInstance, eventBus]);
+  }, [api, eventBus]);
 
   const saveData = (desc: WebSearchProvider) => {
     const resolvedUrl = desc.baseUrl ?? baseUrl;
@@ -123,19 +152,19 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
       try {
         new URL(baseUrl);
       } catch {
-        writeWebSearchData(null);
+        void persist(null);
         return;
       }
     }
 
     if (apiKey) {
-      writeWebSearchData({
+      void persist({
         provider: desc.id,
         key: apiKey,
         baseUrl: resolvedUrl,
       });
     } else {
-      writeWebSearchData(null);
+      void persist(null);
     }
   };
 
@@ -146,7 +175,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     setBaseUrlError("");
 
     if (selected.isCloudProvider) {
-      writeWebSearchData({
+      void persist({
         provider: selected.id,
         key: selected.key ?? "",
         baseUrl: selected.baseUrl ?? "",

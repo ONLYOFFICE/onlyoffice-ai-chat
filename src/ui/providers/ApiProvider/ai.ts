@@ -22,8 +22,5 @@ export function createAIApi(
       callRoute(config, "ai", "approveToolCall", [input], engines),
     denyToolCall: (input) =>
       callRoute(config, "ai", "denyToolCall", [input], engines),
-    continueAfterToolCall: (input) =>
-      callRoute(config, "ai", "continueAfterToolCall", [input], engines),
-    stop: () => callRoute(config, "ai", "stop", [], engines),
   };
 }

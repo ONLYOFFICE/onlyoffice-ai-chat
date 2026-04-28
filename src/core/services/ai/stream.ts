@@ -3,8 +3,8 @@ import type { SendMessageResult } from "../../../shared/send-message-args";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { Profile } from "../../types";
-import { handleToolCall } from "./tool-call";
-import type { ChatEvent, ToolDispatcher } from "./types";
+import { readToolCall } from "./tool-call";
+import type { ChatEvent } from "./types";
 
 /**
  * Persist the assistant's response message when a stream reaches its
@@ -60,8 +60,6 @@ export type ProcessStreamContext = {
   threadId: string;
   profile?: Profile;
   profileId?: string;
-  dispatcher?: ToolDispatcher;
-  /** Forwarded to {@link handleToolCall} when the model issues a tool call. */
   tools?: ActionArgs["tools"];
   isReasoning?: boolean;
   signal?: AbortSignal;
@@ -145,27 +143,17 @@ export async function* processStream(
             await storage.messages.update(messageId, final);
           }
 
-          if (ctx.profile && ctx.profileId) {
-            yield* handleToolCall(
-              { storage, dispatcher: ctx.dispatcher },
-              {
-                threadId,
-                messageId,
-                idx: toolIdx,
-                message: final,
-              }
-            );
-            return;
-          }
+          const toolName = readToolCall(final, toolIdx)?.toolName ?? null;
+          const allowList = await storage.toolPrefs.readAllowAlways();
+          const autoAllow = !!toolName && allowList.includes(toolName);
 
-          // No profile in scope (e.g. server-reuse path) — surface
-          // pending tool-call to the caller without auto-approval.
           yield {
             type: "tool-call-pending",
             message: final,
             idx: toolIdx,
             messageId,
             threadId,
+            autoAllow,
           };
           return;
         }

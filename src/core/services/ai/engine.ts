@@ -9,16 +9,18 @@ import { ThreadsEngine } from "../threads";
 import { drainToFinal, runSync } from "./actions";
 import { runCustomOnce, runCustomStream } from "./custom";
 import { processStream } from "./stream";
+import { readToolCall, resumeChat } from "./tool-call";
 import {
-  executeToolCall,
-  replaceContentPart,
-  resumeChat,
-} from "./tool-call";
+  type AdapterRunContext,
+  buildToolContext,
+  executeAdapterTool,
+  resolveToolSource,
+  type ToolContext,
+} from "./tools";
 import type {
   AIEngineDeps,
   ApproveToolCallInput,
   ChatEvent,
-  ContinueAfterToolCallInput,
   DenyToolCallInput,
   SendCustomInput,
   SendInput,
@@ -37,20 +39,17 @@ import type {
  * and UI callbacks live with the consumer of the stream — typically
  * the browser, even when the engine itself runs server-side.
  *
- * Tool-call lifecycle is two-phase to give the UI a chance to apply
- * `beforeToolCall` and `afterToolResult` middleware:
+ * Tool-call lifecycle:
  *
- * 1. {@link sendWithStream} streams up to a `tool-call-pending` and
- *    stops.
- * 2. UI runs `beforeToolCall`, then calls
- *    {@link approveToolCall} / {@link denyToolCall}.
- * 3. {@link approveToolCall} dispatches the tool and emits
- *    `tool-call-executed`, then stops.
- * 4. UI runs `afterToolResult`, then calls
- *    {@link continueAfterToolCall} with the (optionally rewritten)
- *    result. Chat resumes.
- * 5. {@link denyToolCall} skips both round-trips and resumes the
- *    chat with `"User deny tool call"`.
+ * - **Adapter tools** (contributed by {@link ToolsAdapter}) are
+ *   executed in-engine by {@link executeAdapterTool}; the chat resumes
+ *   automatically without surfacing a pause to the consumer.
+ * - **User tools** (from `actionArgs.tools`) yield `tool-call-pending`
+ *   to the consumer with an `autoAllow` flag derived from
+ *   `storage.toolPrefs.readAllowAlways()`. The consumer dispatches the
+ *   tool itself and resumes via {@link approveToolCall} (with the
+ *   result) or {@link denyToolCall} (no result — engine writes
+ *   `"User deny tool call"`).
  *
  * Other entry points:
  *
@@ -122,19 +121,33 @@ export class AIEngine {
         .catch(() => "New chat");
     }
 
+    const toolCtx = await buildToolContext(
+      this.deps.storage,
+      this.deps.toolsAdapter,
+      input.actionArgs?.tools ?? []
+    );
+
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
       profile,
       messages: [...priorMessages, input.userMessage],
+      tools: toolCtx.mergedTools,
     };
 
-    yield* processStream(chat(actionArgs), {
+    const stream = processStream(chat(actionArgs), {
       storage: this.deps.storage,
       threadId,
       profile,
       profileId,
-      dispatcher: this.deps.toolDispatcher,
-      tools: input.actionArgs?.tools,
+      tools: toolCtx.mergedTools,
+      isReasoning: input.actionArgs?.isReasoning,
+      signal: input.actionArgs?.signal,
+    });
+
+    yield* this.runChatStream(stream, toolCtx, {
+      profile,
+      profileId,
+      tools: toolCtx.mergedTools,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
     });
@@ -147,105 +160,121 @@ export class AIEngine {
   }
 
   /**
-   * Approve a pending tool call. Optionally persists the auto-approve
-   * flag and applies `modifiedArgs` (typically produced by the UI's
-   * `beforeToolCall` middleware). Dispatches the tool through
-   * {@link ToolDispatcher.callTool}, then yields a `tool-call-executed`
-   * event and stops — the caller must follow up with
-   * {@link continueAfterToolCall} once `afterToolResult` middleware
-   * has run.
+   * Resume the chat after the consumer has executed the tool. The
+   * supplied `result` is persisted onto the assistant message that
+   * issued the call, and a fresh `processStream` is started with the
+   * augmented history. The consumer (UI) is responsible for the actual
+   * tool dispatch and for any `beforeToolCall` / `afterToolResult`
+   * middleware.
    */
   async *approveToolCall(input: ApproveToolCallInput): AsyncGenerator<ChatEvent> {
-    const original = readToolCallPart(input.message, input.idx);
-
-    if (input.allowAlways && this.deps.toolDispatcher && original) {
-      const serverType = this.deps.toolDispatcher.getServerType(
-        original.toolName
-      );
-      const bareName = original.toolName.replace(`${serverType}_`, "");
-      this.deps.toolDispatcher.setAutoApproved(serverType, bareName, true);
-    }
-
-    let message = input.message;
-    if (input.modifiedArgs && original) {
-      message = replaceContentPart(message, input.idx, {
-        ...original,
-        args: input.modifiedArgs,
-      });
-      await this.deps.storage.messages.update(input.messageId, message);
-    }
-
-    yield* executeToolCall(
-      { storage: this.deps.storage, dispatcher: this.deps.toolDispatcher },
-      {
-        threadId: input.threadId,
-        messageId: input.messageId,
-        idx: input.idx,
-        message,
+    if (input.allowAlways) {
+      const toolCall = readToolCall(input.message, input.idx);
+      if (toolCall) {
+        const current = await this.deps.storage.toolPrefs.readAllowAlways();
+        if (!current.includes(toolCall.toolName)) {
+          await this.deps.storage.toolPrefs.upsertAllowAlways([
+            ...current,
+            toolCall.toolName,
+          ]);
+        }
       }
-    );
+    }
+
+    yield* this.resumeAndContinue(input, input.result);
   }
 
   /**
    * Deny the pending tool call and resume the chat immediately with
-   * `"User deny tool call"` as the result. Skips both `tool-call-pending`
-   * approval and the `tool-call-executed` round-trip — denial is not
-   * considered a value the model could meaningfully transform.
+   * `"User deny tool call"` as the result.
    */
   async *denyToolCall(input: DenyToolCallInput): AsyncGenerator<ChatEvent> {
-    const { profile, profileId } = await this.assignments.resolveForAction(
-      ActionType.Chat
-    );
-
-    yield* resumeChat(
-      { storage: this.deps.storage, dispatcher: this.deps.toolDispatcher },
-      {
-        threadId: input.threadId,
-        messageId: input.messageId,
-        idx: input.idx,
-        message: input.message,
-        result: "User deny tool call",
-        profile,
-        profileId,
-        isReasoning: input.isReasoning,
-        signal: input.signal,
-        tools: input.tools,
-      }
-    );
+    yield* this.resumeAndContinue(input, "User deny tool call");
   }
 
   /**
-   * Continue the chat after the UI has applied its `afterToolResult`
-   * middleware to the result surfaced by `tool-call-executed`. The
-   * `result` carried in `input` is the final value the model will see.
+   * Persist `result`, resume the provider stream, and run it through
+   * {@link runChatStream} so adapter-served tools that surface in the
+   * follow-up rounds keep being auto-executed in-engine instead of
+   * leaking out to the UI as `tool-call-pending`. Shared by
+   * {@link approveToolCall} and {@link denyToolCall}.
    */
-  async *continueAfterToolCall(
-    input: ContinueAfterToolCallInput
+  private async *resumeAndContinue(
+    input: DenyToolCallInput,
+    result: unknown
   ): AsyncGenerator<ChatEvent> {
     const { profile, profileId } = await this.assignments.resolveForAction(
       ActionType.Chat
     );
 
-    yield* resumeChat(
-      { storage: this.deps.storage, dispatcher: this.deps.toolDispatcher },
+    const toolCtx = await buildToolContext(
+      this.deps.storage,
+      this.deps.toolsAdapter,
+      input.actionArgs?.tools ?? []
+    );
+    const runCtx: AdapterRunContext = {
+      profile,
+      profileId,
+      tools: toolCtx.mergedTools,
+      isReasoning: input.actionArgs?.isReasoning,
+      signal: input.actionArgs?.signal,
+    };
+
+    const resumed = resumeChat(
+      { storage: this.deps.storage },
       {
         threadId: input.threadId,
         messageId: input.messageId,
         idx: input.idx,
         message: input.message,
-        result: input.result,
+        result,
         profile,
         profileId,
-        isReasoning: input.isReasoning,
-        signal: input.signal,
-        tools: input.tools,
+        isReasoning: input.actionArgs?.isReasoning,
+        signal: input.actionArgs?.signal,
+        tools: toolCtx.mergedTools,
       }
     );
+
+    yield* this.runChatStream(resumed, toolCtx, runCtx);
   }
 
-  /** Cancel any in-flight provider stream via the dispatcher's `stop` hook. */
-  stop(): void {
-    this.deps.toolDispatcher?.stop?.();
+  /**
+   * Drain a chat stream, intercepting `tool-call-pending` events whose
+   * tool was contributed by the {@link ToolsAdapter}: those tools are
+   * executed in-engine via {@link executeAdapterTool}, and the chat is
+   * resumed with the result without going through the UI approve / deny
+   * round-trip. Tools sourced from `actionArgs.tools` (or unrecognized
+   * names) are forwarded untouched so the UI can run its
+   * `beforeToolCall` middleware.
+   */
+  private async *runChatStream(
+    stream: AsyncGenerator<ChatEvent>,
+    toolCtx: ToolContext,
+    runCtx: AdapterRunContext
+  ): AsyncGenerator<ChatEvent> {
+    for await (const event of stream) {
+      if (event.type === "tool-call-pending") {
+        const toolCall = readToolCall(event.message, event.idx);
+        const source = resolveToolSource(
+          toolCall?.toolName ?? null,
+          toolCtx.userToolNames,
+          toolCtx.adapterToolNames
+        );
+
+        if (source === "adapter" && toolCall) {
+          const resumed = executeAdapterTool(
+            this.deps.storage,
+            this.deps.toolsAdapter,
+            event,
+            runCtx
+          );
+          yield* this.runChatStream(resumed, toolCtx, runCtx);
+          return;
+        }
+      }
+      yield event;
+    }
   }
 
   async send(input: SendInput): Promise<ThreadMessageLike> {
@@ -272,25 +301,3 @@ export class AIEngine {
   }
 }
 
-function readToolCallPart(
-  message: ThreadMessageLike,
-  idx: number
-):
-  | { type: "tool-call"; toolName: string; args?: Record<string, unknown> }
-  | null {
-  if (!Array.isArray(message.content)) return null;
-  const part = message.content[idx] as unknown;
-  if (
-    !part ||
-    typeof part !== "object" ||
-    !("type" in part) ||
-    (part as { type?: string }).type !== "tool-call"
-  ) {
-    return null;
-  }
-  return part as {
-    type: "tool-call";
-    toolName: string;
-    args?: Record<string, unknown>;
-  };
-}

@@ -50,7 +50,7 @@ import { StoresProvider, useStores } from "./ui/store/context";
 import { createStores } from "./ui/store/create-stores";
 import { ToolsProvider, useToolsContext } from "./ui/tools/context";
 import Servers from "./ui/tools/servers";
-import { createServersDispatcher } from "./ui/tools/dispatcher";
+import type { ToolsAdapter } from "./core/tools-adapter";
 import type { HostToolGroup } from "./ui/tools/types";
 import { WidgetConfigProvider } from "./widget-config";
 import type {
@@ -78,6 +78,13 @@ export interface AIChatWidgetProps {
   components?: Partial<ComponentOverrides>;
   images?: ImageOverrides;
   hostToolGroups?: HostToolGroup[];
+  /**
+   * Optional pluggable tool source. The engine resolves `getTools()`
+   * server-side alongside built-in web-search / image-generation, then
+   * dispatches `callTool(...)` automatically when the model picks an
+   * adapter-served tool — no UI approval round-trip.
+   */
+  toolsAdapter?: ToolsAdapter;
   onMigrate?: () => Promise<void>;
   callbacks?: ChatCallbacks;
   middleware?: ChatMiddleware[];
@@ -111,6 +118,7 @@ export const AIChatWidget = React.forwardRef<
       components,
       images,
       hostToolGroups: hostToolGroupsProp,
+      toolsAdapter,
       onMigrate,
       callbacks,
       middleware,
@@ -157,19 +165,13 @@ export const AIChatWidget = React.forwardRef<
       const webSearch = new WebSearchEngine({ storage });
       const preferences = new PreferencesEngine({ storage });
 
-      const servers = new Servers(
-        settings,
-        platform,
-        eventBus,
-        assignments,
-        callbacksManager
-      );
+      const servers = new Servers(platform, eventBus);
 
       const ai = new AIEngine({
         storage,
         assignments,
         threads,
-        toolDispatcher: createServersDispatcher(servers),
+        toolsAdapter,
       });
 
       const ctx: AppContext = {
@@ -216,6 +218,7 @@ export const AIChatWidget = React.forwardRef<
       hiddenProviders,
       hiddenWebSearchProviders,
       apiConfig,
+      toolsAdapter,
     ]);
 
     return (
@@ -307,7 +310,7 @@ const AppInner = ({
   const { currentPage } = useRouter();
   const { manageToolData, setManageToolData } = useServersStore();
   const { fetchClouds } = useCloudsStore();
-  const { servers } = useToolsContext();
+  const { servers, eventBus } = useToolsContext();
 
   useThread({ isReady });
   useServers({ isReady });
@@ -343,8 +346,14 @@ const AppInner = ({
   useImperativeHandle(
     widgetRef,
     () =>
-      createWidgetRef(stores, selectCurrentChatProfile, callbacksRef, servers),
-    [stores, selectCurrentChatProfile, servers]
+      createWidgetRef(
+        stores,
+        selectCurrentChatProfile,
+        callbacksRef,
+        servers,
+        eventBus
+      ),
+    [stores, selectCurrentChatProfile, servers, eventBus]
   );
 
   useEffect(() => {

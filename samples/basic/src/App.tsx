@@ -9,6 +9,7 @@ import { settings } from "./adapters/settings";
 import { createStorage } from "./adapters/storage";
 import { platform } from "./adapters/platform";
 import { hostToolGroups } from "./adapters/hostTools";
+import { toolsAdapter } from "./adapters/toolsAdapter";
 import { storeKeys } from "./store-keys";
 import { useResize } from "./useResize";
 
@@ -61,6 +62,7 @@ export function App() {
         locale={navigator.language.split("-")[0] || "en"}
         theme={theme.id}
         hostToolGroups={hostToolGroups}
+        toolsAdapter={toolsAdapter}
       />
       <div
         onMouseDown={onMouseDown}

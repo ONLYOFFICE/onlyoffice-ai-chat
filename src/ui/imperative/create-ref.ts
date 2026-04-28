@@ -1,6 +1,7 @@
 import type { Stores } from "../store/create-stores";
 import type { ProfilesStoreState } from "../store/create-profiles-store";
 import type Servers from "../tools/servers";
+import type { ChatEventBus } from "../events";
 import type { Profile } from "../../types";
 import type { AIChatWidgetRef } from "./types";
 import {
@@ -23,7 +24,8 @@ export function createWidgetRef(
   stores: Stores,
   selectCurrentChatProfile: (s: ProfilesStoreState) => Profile | null,
   callbacksRef: { current: RefCallbacks },
-  servers: Servers
+  _servers: Servers,
+  eventBus: ChatEventBus
 ): AIChatWidgetRef {
   return {
     // --- Messages ---
@@ -150,7 +152,10 @@ export function createWidgetRef(
     },
 
     updateWebSearch() {
-      servers.webSearch.reload();
+      // The active config lives in `storage.webSearch` now and is read
+      // on demand by the settings page. Emitting `web-search-changed`
+      // signals the page to re-sync from storage.
+      eventBus.emit("web-search-changed");
     },
 
     updateExtendedThinking() {

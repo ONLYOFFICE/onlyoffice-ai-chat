@@ -64,6 +64,16 @@ export class WebSearchEngine {
   }
 
   /**
+   * Persist `config` directly without running `testConnection`. Use for
+   * settings UIs that already validate the form locally and want to
+   * save partial / mid-edit state without a network round-trip on every
+   * keystroke.
+   */
+  async setActiveConfig(config: WebSearchConfig): Promise<void> {
+    await this.deps.storage.webSearch.upsert(config);
+  }
+
+  /**
    * Remove the persisted configuration. No-op if web search was not
    * configured. Idempotent — safe to call from "Reset" UX.
    */

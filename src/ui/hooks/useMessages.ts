@@ -1,7 +1,14 @@
 import type { AppendMessage, ThreadMessageLike } from "@assistant-ui/react";
+import type { ReadonlyJSONObject } from "assistant-stream/utils";
 import { useCallback, useEffect, useRef } from "react";
 import type { ChatEvent } from "../../core/services";
+import {
+  patchToolCallArgs,
+  patchToolCallResult,
+  readToolCall,
+} from "../../core/services/ai/tool-call";
 import { useStores } from "../store/context";
+import { useToolsContext } from "../tools/context";
 
 type UseMessagesProps = {
   isReady: boolean;
@@ -64,6 +71,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   } = useAttachmentsStore();
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const extendedThinking = useProfilesStore((s) => s.extendedThinking);
+  const { servers } = useToolsContext();
 
   const threadIdRef = useRef(threadId);
 
@@ -140,12 +148,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
           if (event.type === "tool-call-pending") {
             await handleToolCallPending(event);
-            return;
-          }
-
-          if (event.type === "tool-call-executed") {
-            await handleToolCallExecuted(event);
-            return;
+            // Don't return — the engine may still yield `thread-title`
+            // for new threads after the stream pauses on a tool call.
+            // Bailing out here loses the auto-generated title.
+            continue;
           }
 
           if (event.type === "message-incomplete") {
@@ -267,30 +273,21 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           }
         }
 
-        const toolCall = readToolCallPart(event.message, event.idx);
+        const toolCall = readToolCall(event.message, event.idx);
         if (!toolCall) return;
 
-        let modifiedArgs: Record<string, unknown> | undefined;
+        let toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
 
         if (!middlewareRunner.isEmpty) {
           const mw = await middlewareRunner.runBeforeToolCall({
             toolName: toolCall.toolName,
-            toolArgs: (toolCall.args ?? {}) as Record<string, unknown>,
-            toolSource: getServerType(toolCall.toolName),
+            toolArgs,
+            toolSource: servers.getServerType(toolCall.toolName),
             threadId: event.threadId,
             messageUID: event.messageId,
           });
           if (mw.action === "approve") {
-            const next = api.ai.approveToolCall({
-              threadId: event.threadId,
-              messageId: event.messageId,
-              idx: event.idx,
-              message: event.message,
-              allowAlways: false,
-              isReasoning: extendedThinking,
-              tools: tools.length > 0 ? tools : undefined,
-            });
-            await processStream(next, resolvedThreadId);
+            await dispatchAndApprove(event, toolCall.toolName, toolArgs);
             return;
           }
           if (mw.action === "deny") {
@@ -299,53 +296,59 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               messageId: event.messageId,
               idx: event.idx,
               message: event.message,
-              isReasoning: extendedThinking,
-              tools: tools.length > 0 ? tools : undefined,
+              actionArgs: {
+                isReasoning: extendedThinking,
+                tools: tools.length > 0 ? tools : undefined,
+              },
             });
             await processStream(next, resolvedThreadId);
             return;
           }
           if (mw.action === "continue" && mw.args) {
-            modifiedArgs = mw.args;
+            toolArgs = mw.args;
           }
+        }
+
+        if (event.autoAllow) {
+          await dispatchAndApprove(event, toolCall.toolName, toolArgs);
+          return;
         }
 
         // Surface the dialog to the user. Approve / deny will arrive
         // via `approveToolCall` / `denyToolCall` below.
+        const dialogMessage =
+          toolArgs !== toolCall.args
+            ? patchToolCallArgs(
+                event.message,
+                event.idx,
+                toolArgs as ReadonlyJSONObject
+              )
+            : event.message;
         setManageToolData({
           threadId: event.threadId,
-          message: event.message,
+          message: dialogMessage,
           idx: event.idx,
           messageId: event.messageId,
         });
-        // Stash the modified args alongside the dialog payload by
-        // reusing `manageToolData.message` — patch the args in-place so
-        // when the user approves, the engine sees them.
-        if (modifiedArgs) {
-          const patchedMessage = patchToolCallArgs(
-            event.message,
-            event.idx,
-            modifiedArgs
-          );
-          setManageToolData({
-            threadId: event.threadId,
-            message: patchedMessage,
-            idx: event.idx,
-            messageId: event.messageId,
-          });
-        }
       }
 
-      async function handleToolCallExecuted(
-        event: Extract<ChatEvent, { type: "tool-call-executed" }>
+      async function dispatchAndApprove(
+        event: Extract<ChatEvent, { type: "tool-call-pending" }>,
+        toolName: string,
+        toolArgs: Record<string, unknown>
       ) {
-        let result = event.result;
+        const serverType = servers.getServerType(toolName);
+        const bareName = toolName.replace(`${serverType}_`, "");
+        let result: unknown = await servers.callTools(
+          serverType,
+          bareName,
+          toolArgs
+        );
 
         if (!middlewareRunner.isEmpty) {
-          const toolCall = readToolCallPart(event.message, event.idx);
           const mw = await middlewareRunner.runAfterToolResult({
-            toolName: event.toolName,
-            toolArgs: (toolCall?.args ?? {}) as Record<string, unknown>,
+            toolName,
+            toolArgs,
             result,
             threadId: event.threadId,
           });
@@ -361,29 +364,27 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
         callbacksManager.emit("onToolCallResult", {
           threadId: event.threadId,
-          toolName: event.toolName,
+          toolName,
           result,
         });
 
         // Patch the result onto the local assistant message so the UI
         // shows the tool-call as completed immediately. The engine
-        // mirrors this write to storage in `resumeChat`, but the local
-        // store is the source of truth for the live runtime.
+        // mirrors this write to storage inside `resumeChat`.
         const patched = patchToolCallResult(event.message, event.idx, result);
         updateLastMessage(patched);
 
-        const next = api.ai.continueAfterToolCall({
+        const next = api.ai.approveToolCall({
           threadId: event.threadId,
           messageId: event.messageId,
           idx: event.idx,
           message: event.message,
           result,
-          isReasoning: extendedThinking,
-          tools: tools.length > 0 ? tools : undefined,
+          actionArgs: {
+            isReasoning: extendedThinking,
+            tools: tools.length > 0 ? tools : undefined,
+          },
         });
-        // The post-tool-call round extends the SAME assistant bubble:
-        // tell the recursive stream loop the placeholder is already in
-        // the list so the first delta updates it instead of appending.
         await processStream(next, event.threadId, {
           hasAssistantPlaceholder: true,
         });
@@ -400,6 +401,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       insertThread,
       middlewareRunner,
       api,
+      servers,
       setIsStreamRunning,
       setIsRequestRunning,
       setAbortController,
@@ -495,23 +497,73 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setManageToolData(undefined);
       if (!data) return;
 
+      const toolCall = readToolCall(data.message, data.idx);
+      if (!toolCall) return;
+
+      const serverType = servers.getServerType(toolCall.toolName);
+      const bareName = toolCall.toolName.replace(`${serverType}_`, "");
+      const toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
+
+      let result: unknown = await servers.callTools(
+        serverType,
+        bareName,
+        toolArgs
+      );
+
+      if (!middlewareRunner.isEmpty) {
+        const mw = await middlewareRunner.runAfterToolResult({
+          toolName: toolCall.toolName,
+          toolArgs,
+          result,
+          threadId: data.threadId,
+        });
+        if (mw.action === "skip") {
+          setIsStreamRunning(false);
+          setIsRequestRunning(false);
+          return;
+        }
+        if (mw.action === "continue" && mw.result !== undefined) {
+          result = mw.result;
+        }
+      }
+
+      callbacksManager.emit("onToolCallResult", {
+        threadId: data.threadId,
+        toolName: toolCall.toolName,
+        result,
+      });
+
+      const patched = patchToolCallResult(data.message, data.idx, result);
+      updateLastMessage(patched);
+
       const stream = api.ai.approveToolCall({
         threadId: data.threadId,
         messageId: data.messageId,
         idx: data.idx,
         message: data.message,
+        result,
         allowAlways,
-        isReasoning: extendedThinking,
-        tools: tools.length > 0 ? tools : undefined,
+        actionArgs: {
+          isReasoning: extendedThinking,
+          tools: tools.length > 0 ? tools : undefined,
+        },
       });
-      await processStream(stream, data.threadId);
+      await processStream(stream, data.threadId, {
+        hasAssistantPlaceholder: true,
+      });
     },
     [
       api,
+      callbacksManager,
       extendedThinking,
+      middlewareRunner,
       processStream,
+      servers,
+      setIsRequestRunning,
+      setIsStreamRunning,
       setManageToolData,
       tools,
+      updateLastMessage,
       useServersStore,
     ]
   );
@@ -526,8 +578,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       messageId: data.messageId,
       idx: data.idx,
       message: data.message,
-      isReasoning: extendedThinking,
-      tools: tools.length > 0 ? tools : undefined,
+      actionArgs: {
+        isReasoning: extendedThinking,
+        tools: tools.length > 0 ? tools : undefined,
+      },
     });
     await processStream(stream, data.threadId);
   }, [
@@ -545,79 +599,5 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     denyToolCall,
   };
 };
-
-// ---- helpers ----
-
-function readToolCallPart(
-  message: ThreadMessageLike,
-  idx: number
-):
-  | { type: "tool-call"; toolName: string; args?: Record<string, unknown> }
-  | null {
-  if (!Array.isArray(message.content)) return null;
-  const part = message.content[idx] as unknown;
-  if (
-    !part ||
-    typeof part !== "object" ||
-    !("type" in part) ||
-    (part as { type?: string }).type !== "tool-call"
-  ) {
-    return null;
-  }
-  return part as {
-    type: "tool-call";
-    toolName: string;
-    args?: Record<string, unknown>;
-  };
-}
-
-function patchToolCallArgs(
-  message: ThreadMessageLike,
-  idx: number,
-  args: Record<string, unknown>
-): ThreadMessageLike {
-  if (!Array.isArray(message.content)) return message;
-  const next = message.content.map((item, i) => {
-    if (i !== idx) return item;
-    if (
-      !item ||
-      typeof item !== "object" ||
-      (item as { type?: string }).type !== "tool-call"
-    ) {
-      return item;
-    }
-    return { ...(item as object), args };
-  });
-  return { ...message, content: next } as ThreadMessageLike;
-}
-
-function patchToolCallResult(
-  message: ThreadMessageLike,
-  idx: number,
-  result: unknown
-): ThreadMessageLike {
-  if (!Array.isArray(message.content)) return message;
-  const next = message.content.map((item, i) => {
-    if (i !== idx) return item;
-    if (
-      !item ||
-      typeof item !== "object" ||
-      (item as { type?: string }).type !== "tool-call"
-    ) {
-      return item;
-    }
-    return { ...(item as object), result };
-  });
-  return { ...message, content: next } as ThreadMessageLike;
-}
-
-function getServerType(toolName: string): string {
-  // Best-effort heuristic — the dispatcher knows the canonical answer
-  // but isn't reachable from this hook. For middleware purposes we
-  // surface the prefix before the underscore (e.g. "web-search_search"
-  // → "web-search"), or empty when the tool name has no prefix.
-  const idx = toolName.indexOf("_");
-  return idx === -1 ? "" : toolName.slice(0, idx);
-}
 
 export default useMessages;

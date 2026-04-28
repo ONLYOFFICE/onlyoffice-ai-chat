@@ -1,9 +1,9 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { ActionType } from "../../../shared/action-type";
-import type { TMCPItem } from "../../../shared/mcp-item";
 import type { SendMessageResult } from "../../../shared/send-message-args";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
+import type { ToolsAdapter } from "../../tools-adapter";
 import type { AssignmentsEngine } from "../assignments";
 import type { ThreadsEngine } from "../threads";
 import type { RouteSpec } from "../types";
@@ -26,44 +26,7 @@ export const DEFAULT_AI_ROUTES: Record<AIEngineMethod, RouteSpec> = {
   sendWithStream: { method: "POST", path: "ai/send-with-stream" },
   approveToolCall: { method: "POST", path: "ai/approve-tool-call" },
   denyToolCall: { method: "POST", path: "ai/deny-tool-call" },
-  continueAfterToolCall: {
-    method: "POST",
-    path: "ai/continue-after-tool-call",
-  },
-  stop: { method: "POST", path: "ai/stop" },
 };
-
-/**
- * Runtime contract for executing tool calls. The engine itself stays
- * transport-agnostic — the dispatcher knows how to talk to live MCP
- * servers, host tools, web-search, image-generation, etc.
- *
- * The browser runtime implementation lives in `src/tools/`; a server
- * runtime can implement the same contract over HTTP / IPC.
- */
-export interface ToolDispatcher {
-  /** Map a prefixed tool name (`"mcp-foo_bar"`) back to its server type. */
-  getServerType(toolName: string): string;
-
-  /**
-   * Execute a tool call and return the raw result. Implementations
-   * stringify errors into the result so the model can react to them.
-   */
-  callTool(
-    serverType: string,
-    toolName: string,
-    args: Record<string, unknown>
-  ): Promise<unknown>;
-
-  /** Persisted "always-allow" flag for the given tool. */
-  isAutoApproved(serverType: string, toolName: string): boolean;
-
-  /** Toggle the persisted "always-allow" flag. */
-  setAutoApproved(serverType: string, toolName: string, value: boolean): void;
-
-  /** Cancel any in-flight provider stream. */
-  stop?(): void;
-}
 
 /**
  * Dependencies injected into an {@link AIEngine} instance.
@@ -76,12 +39,26 @@ export interface ToolDispatcher {
  *
  * `assignments` and `threads` are optional — the engine constructs
  * its own from `storage` when omitted.
+ *
+ * Tool execution itself lives entirely on the consumer side: the
+ * engine surfaces `tool-call-pending` events, the consumer dispatches
+ * the tool, then resumes the chat by calling {@link AIEngine.approveToolCall}
+ * with the result (or {@link AIEngine.denyToolCall}). The only tools the
+ * engine ever runs in-process are those served by {@link toolsAdapter}.
  */
 export type AIEngineDeps = {
   storage: StorageAdapter;
   assignments?: AssignmentsEngine;
   threads?: ThreadsEngine;
-  toolDispatcher?: ToolDispatcher;
+
+  /**
+   * Optional pluggable source of tools merged with caller-supplied
+   * `actionArgs.tools` before each request. Adapter-served tools are
+   * executed in-engine and the chat is resumed automatically; user-served
+   * tools always pause on `tool-call-pending` and wait for `approveToolCall`
+   * / `denyToolCall`.
+   */
+  toolsAdapter?: ToolsAdapter;
 };
 
 /**
@@ -138,12 +115,13 @@ export type SendCustomInput = {
 };
 
 /**
- * Identifies a pending tool call inside an assistant message. Carried
- * alongside `tool-call-pending` and `tool-call-executed` events so the
- * UI can route the user's approve / deny / continue decision back to
- * the engine.
+ * Identifies a pending tool call inside an assistant message and
+ * carries the same `actionArgs` envelope as {@link SendStreamInput} so
+ * the resume round (after approve / deny) sees the same prompts,
+ * abort signal, `isReasoning` flag, and tool list as the original
+ * `sendWithStream` request.
  */
-export type ToolCallData = {
+export type ToolCallData = Pick<SendStreamInput, "actionArgs"> & {
   /** Thread the assistant message belongs to. */
   threadId: string;
 
@@ -163,49 +141,29 @@ export type ToolCallData = {
 /**
  * Payload for {@link AIEngine.approveToolCall}.
  *
- * `allowAlways` persists the auto-approve flag for the (server, tool)
- * pair via the {@link ToolDispatcher}. `modifiedArgs` lets the UI
- * patch tool arguments after a `beforeToolCall` middleware ran on the
- * client. After approval the engine emits `tool-call-executed` and
- * waits for {@link AIEngine.continueAfterToolCall}.
+ * The consumer (UI) is responsible for executing the tool — the engine
+ * just persists the supplied `result` onto the assistant message and
+ * resumes the chat. When the user opts into "always allow" in the
+ * approval dialog, set `allowAlways: true` and the engine appends the
+ * tool's name to `storage.toolPrefs.allowAlways` — subsequent rounds
+ * surface `tool-call-pending` with `autoAllow: true` and the consumer
+ * skips the dialog.
  */
 export type ApproveToolCallInput = ToolCallData & {
-  allowAlways: boolean;
-  /** Optional rewrite of the tool's arguments produced by client middleware. */
-  modifiedArgs?: Record<string, unknown>;
-  isReasoning?: boolean;
-  signal?: AbortSignal;
-  tools?: TMCPItem[];
+  /** Final result of the tool call, as the model should see it. */
+  result: unknown;
+
+  /** Persist auto-approve for this tool's name. */
+  allowAlways?: boolean;
 };
 
 /**
  * Payload for {@link AIEngine.denyToolCall}.
  *
- * Skips dispatch entirely — the tool result is replaced with
- * `"User deny tool call"` and the chat resumes immediately with no
- * `tool-call-executed` round-trip.
+ * The tool result is replaced with `"User deny tool call"` and the chat
+ * resumes immediately.
  */
-export type DenyToolCallInput = ToolCallData & {
-  isReasoning?: boolean;
-  signal?: AbortSignal;
-  tools?: TMCPItem[];
-};
-
-/**
- * Payload for {@link AIEngine.continueAfterToolCall}.
- *
- * Sent by the UI after it received a `tool-call-executed` event and
- * (optionally) ran an `afterToolResult` middleware on the result.
- * `result` is the value the model will see; the engine persists it
- * onto the assistant message and resumes the chat with the augmented
- * history.
- */
-export type ContinueAfterToolCallInput = ToolCallData & {
-  result: unknown;
-  isReasoning?: boolean;
-  signal?: AbortSignal;
-  tools?: TMCPItem[];
-};
+export type DenyToolCallInput = ToolCallData;
 
 /**
  * Discriminated event emitted by the streaming methods of
@@ -214,15 +172,10 @@ export type ContinueAfterToolCallInput = ToolCallData & {
  * a {@link ChatEvent} so the same stream can be replayed over SSE,
  * WebSocket, or in-process.
  *
- * Pause points (the UI is expected to take some action before the
- * stream proceeds):
- *
- * - `tool-call-pending` — UI must run `beforeToolCall` middleware
- *   then call {@link AIEngine.approveToolCall} or
- *   {@link AIEngine.denyToolCall}.
- * - `tool-call-executed` — UI must run `afterToolResult` middleware
- *   then call {@link AIEngine.continueAfterToolCall} (or stop the
- *   stream).
+ * Pause point: `tool-call-pending` is the only stop. The UI must
+ * execute the tool itself (consulting `autoAllow` to decide between
+ * the silent path and the approve dialog) and resume via
+ * {@link AIEngine.approveToolCall} or {@link AIEngine.denyToolCall}.
  *
  * Other variants are pure data:
  *
@@ -258,15 +211,11 @@ export type ChatEvent =
       idx: number;
       messageId: string;
       threadId: string;
-    }
-  | {
-      type: "tool-call-executed";
-      message: ThreadMessageLike;
-      idx: number;
-      messageId: string;
-      threadId: string;
-      toolName: string;
-      result: unknown;
+      /**
+       * Whether the tool is in the persisted "always-allow" list —
+       * the consumer should execute it without prompting the user.
+       */
+      autoAllow: boolean;
     }
   | {
       type: "thread-title";

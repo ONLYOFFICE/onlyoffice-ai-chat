@@ -1,94 +1,36 @@
-import type { CallbacksManager, ChatEventBus } from "../events";
-import type { AssignmentsEngine } from "../../core/services";
+import type { ChatEventBus } from "../events";
 import type { PlatformAdapter } from "../platform/types";
-import type { SettingsAdapter } from "../../shared/settings-adapter";
 import type { TMCPItem } from "../../types";
 import { CustomServers } from "./sources/CustomServers";
 import { HostToolSource } from "./sources/HostToolSource";
-import { ImageGeneration } from "./sources/ImageGeneration";
-import { WebSearch, type WebSearchData } from "./sources/WebSearch";
 
-const ALLOW_ALWAYS_TOOLS = "allowAlwaysTools";
-
+/**
+ * UI-side aggregator over the *external* tool providers — the host
+ * (`hostToolSource`) and the user's MCP servers (`customServers`).
+ *
+ * Built-in tools (web-search, image-generation) are sourced and
+ * dispatched in [`core/services/web-search`](../../core/services/web-search/source.ts)
+ * and [`core/services/ai/sources/image-generation`](../../core/services/ai/sources/image-generation.ts);
+ * web-search configuration persistence runs through
+ * [`api.webSearch`](../providers/ApiProvider/web-search.ts).
+ */
 class Servers {
   hostToolSource: HostToolSource;
   customServers: CustomServers;
-  webSearch: WebSearch;
-  imageGeneration: ImageGeneration;
 
-  allowAlways: string[];
-
-  private settings: SettingsAdapter;
-
-  constructor(
-    settings: SettingsAdapter,
-    platform: PlatformAdapter,
-    eventBus: ChatEventBus,
-    assignments: AssignmentsEngine,
-    callbacksManager: CallbacksManager | null = null
-  ) {
-    this.settings = settings;
+  constructor(platform: PlatformAdapter, eventBus: ChatEventBus) {
     this.hostToolSource = new HostToolSource();
     this.customServers = new CustomServers(platform, eventBus);
-    this.webSearch = new WebSearch(
-      settings,
-      platform,
-      eventBus,
-      callbacksManager
-    );
-    this.imageGeneration = new ImageGeneration(eventBus, assignments);
-
-    const raw = this.settings.get(ALLOW_ALWAYS_TOOLS);
-    this.allowAlways = raw ? raw.split(",").filter(Boolean) : [];
   }
 
-  checkAllowAlways = (type: string, name: string) => {
-    if (type === "web-search" || type === "image-generation") {
-      return true;
-    }
-
-    // Check if host tool group auto-allows this tool
-    if (this.hostToolSource.getGroupIds().includes(type)) {
-      if (this.hostToolSource.isAutoAllow(type, name)) {
-        return true;
-      }
-    }
-
-    if (this.allowAlways.includes(`${type}_${name}`)) {
-      return true;
-    }
-
-    return false;
-  };
-
-  setAllowAlways = (value: boolean, type: string, name: string) => {
-    if (type === "web-search" || type === "image-generation") {
-      return;
-    }
-
-    if (value) {
-      this.allowAlways.push(`${type}_${name}`);
-    } else {
-      this.allowAlways = this.allowAlways.filter(
-        (tool) => tool !== `${type}_${name}`
-      );
-    }
-
-    this.settings.set(ALLOW_ALWAYS_TOOLS, this.allowAlways.join(","));
-  };
-
   getTools = async () => {
-    const [hostToolsByGroup, webSearchTools, customServersTools] =
-      await Promise.all([
-        this.hostToolSource.getToolsByGroup(),
-        this.webSearch.getTools(),
-        this.customServers.getTools(),
-      ]);
+    const [hostToolsByGroup, customServersTools] = await Promise.all([
+      this.hostToolSource.getToolsByGroup(),
+      this.customServers.getTools(),
+    ]);
 
     const items: Record<string, TMCPItem[]> = {
       ...hostToolsByGroup,
-      "web-search": webSearchTools,
-      "image-generation": this.imageGeneration.getTools(),
       ...customServersTools,
     };
 
@@ -100,39 +42,18 @@ class Servers {
     name: string,
     args: Record<string, unknown>
   ) => {
-    // Check if this is a host tool group
     if (this.hostToolSource.getGroupIds().includes(type)) {
       return this.hostToolSource.callTool(name, args);
     }
-
-    if (type === "web-search") {
-      return await this.webSearch.callTools(name, args);
-    }
-
-    if (type === "image-generation") {
-      return await this.imageGeneration.callTools(name, args);
-    }
-
-    // Call MCP server tool
     return await this.customServers.callToolFromMCP(type, name, args);
   };
 
   getServerType = (name: string) => {
-    // Check host tool groups first
     for (const groupId of this.hostToolSource.getGroupIds()) {
       if (name.startsWith(`${groupId}_`)) {
         return groupId;
       }
     }
-
-    if (name.startsWith("web-search_")) {
-      return "web-search";
-    }
-
-    if (name.startsWith("image-generation_")) {
-      return "image-generation";
-    }
-
     return this.customServers.getServerType(name);
   };
 
@@ -168,26 +89,6 @@ class Servers {
 
   getCustomServersLogs = () => {
     return this.customServers.customServersLogs;
-  };
-
-  setWebSearchData = (data: WebSearchData) => {
-    this.webSearch.setWebSearchData(data);
-  };
-
-  getWebSearchData = () => {
-    return this.webSearch.getWebSearchData();
-  };
-
-  getWebSearchEnabled = () => {
-    return this.webSearch.getWebSearchEnabled();
-  };
-
-  setImageGenerationEnabled = (enabled: boolean) => {
-    this.imageGeneration.setEnabled(enabled);
-  };
-
-  getImageGenerationEnabled = () => {
-    return this.imageGeneration.getEnabled();
   };
 }
 

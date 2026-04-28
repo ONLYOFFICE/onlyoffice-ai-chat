@@ -32,8 +32,6 @@ export interface ServersStoreState {
     enabled: boolean
   ) => Promise<void>;
   callTools: (name: string, args: Record<string, unknown>) => Promise<unknown>;
-  checkAllowAlways: (type: string, name: string) => boolean;
-  setAllowAlways: (value: boolean, type: string, name: string) => Promise<void>;
   setManageToolData: (data: ServersStoreState["manageToolData"]) => void;
   saveConfig: (config: {
     mcpServers: Record<string, Record<string, unknown>>;
@@ -57,8 +55,10 @@ export function createServersStore(deps: {
     const webSearchEnabled = await api.webSearch.isConfigured();
 
     // Annotate each tool with its `enabled` flag derived from the
-    // persisted disabled list, so the permissions UI can render toggles
-    // correctly. `flat` is the enabled subset the engine consumes.
+    // persisted disabled list — used by the permissions UI to render
+    // toggles. `flat` carries every tool (disabled-filter is applied by
+    // the engine in `buildToolContext`) so the chat receives the full
+    // provider list.
     const annotated: Record<string, TMCPItem[]> = {};
     const flat: TMCPItem[] = [];
     for (const [type, items] of Object.entries(grouped)) {
@@ -70,9 +70,7 @@ export function createServersStore(deps: {
             ? tool.enabled
             : !disabledForType.includes(tool.name),
       }));
-      for (const tool of annotated[type]) {
-        if (tool.enabled) flat.push(tool);
-      }
+      flat.push(...annotated[type]);
     }
 
     return {
@@ -125,21 +123,6 @@ export function createServersStore(deps: {
     callTools: (name, args) => {
       const type = ctx.servers.getServerType(name);
       return ctx.servers.callTools(type, name, args);
-    },
-
-    checkAllowAlways: (type, name) => {
-      return ctx.servers.checkAllowAlways(type, name);
-    },
-
-    setAllowAlways: async (value, type, name) => {
-      await api.tools.setAllowAlways(type, name, value);
-      ctx.servers.setAllowAlways(value, type, name);
-      callbacksManager.emit("onServersUpdated", {
-        kind: "tool-auto-approve-changed",
-        toolType: type,
-        toolName: name,
-        allowAlways: value,
-      });
     },
 
     setManageToolData: (data) => set({ manageToolData: data }),

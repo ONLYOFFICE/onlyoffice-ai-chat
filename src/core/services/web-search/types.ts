@@ -25,6 +25,7 @@ export const DEFAULT_WEB_SEARCH_ROUTES: Record<
   isConfigured: { method: "GET", path: "web-search/is-configured" },
   testConnection: { method: "POST", path: "web-search/test-connection" },
   configure: { method: "PUT", path: "web-search/configure" },
+  setActiveConfig: { method: "PUT", path: "web-search/set-active-config" },
   clear: { method: "DELETE", path: "web-search/clear" },
 };
 

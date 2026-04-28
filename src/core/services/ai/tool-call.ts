@@ -1,24 +1,31 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
+import type { ReadonlyJSONObject } from "assistant-stream/utils";
 import { chat } from "../../actions/chat";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { Profile } from "../../types";
 import { processStream } from "./stream";
-import type { ChatEvent, ToolDispatcher } from "./types";
+import type { ChatEvent } from "./types";
 
 /**
  * Shared context threaded through the tool-call helpers — bundled so
  * each helper signature stays short. The engine owns one instance and
  * passes it to every helper.
- *
- * Only `storage` is mandatory. `dispatcher` is required for actually
- * executing tool calls; without it the helpers can still run the deny
- * path.
  */
 export type ToolCallContext = {
   storage: StorageAdapter;
-  dispatcher?: ToolDispatcher;
 };
+
+/**
+ * Tool-call variant of {@link ThreadMessageLike} content parts. Mirrors
+ * the inline shape from `@assistant-ui/react` so DTOs that read from or
+ * write into `message.content` stay aligned with the runtime type
+ * instead of duplicating a looser local definition.
+ */
+export type ToolCallPart = Extract<
+  Exclude<ThreadMessageLike["content"], string>[number],
+  { type: "tool-call" }
+>;
 
 /**
  * Locate the tool-call content part inside `message` at the given
@@ -26,17 +33,10 @@ export type ToolCallContext = {
  * point at a tool-call entry — used to reject malformed
  * `approve` / `deny` requests without throwing.
  */
-function readToolCall(
+export function readToolCall(
   message: ThreadMessageLike,
   idx: number
-):
-  | {
-      type: "tool-call";
-      toolName: string;
-      args?: Record<string, unknown>;
-      result?: unknown;
-    }
-  | null {
+): ToolCallPart | null {
   if (!Array.isArray(message.content)) return null;
   const part = message.content[idx] as unknown;
   if (
@@ -47,19 +47,22 @@ function readToolCall(
   ) {
     return null;
   }
-  return part as {
-    type: "tool-call";
-    toolName: string;
-    args?: Record<string, unknown>;
-    result?: unknown;
-  };
+  return part as ToolCallPart;
+}
+
+/** Read the `args` payload from a tool-call part, defaulting to `{}`. */
+export function readToolCallArgs(
+  message: ThreadMessageLike,
+  idx: number
+): ReadonlyJSONObject {
+  return readToolCall(message, idx)?.args ?? ({} as ReadonlyJSONObject);
 }
 
 /** Replace the content entry at `idx` with `next`, returning a fresh message. */
 export function replaceContentPart(
   message: ThreadMessageLike,
   idx: number,
-  next: unknown
+  next: ToolCallPart
 ): ThreadMessageLike {
   const content = Array.isArray(message.content)
     ? message.content.map((item, i) => (i === idx ? next : item))
@@ -68,112 +71,40 @@ export function replaceContentPart(
 }
 
 /**
- * Execute a tool call through {@link ToolDispatcher.callTool} and
- * surface the raw result via a `tool-call-executed` event.
- *
- * The engine persists nothing yet — the consumer is expected to apply
- * its `afterToolResult` middleware to the surfaced result and call
- * {@link AIEngine.continueAfterToolCall} with the final value, which
- * is the point where storage and the chat stream pick up.
- *
- * If `dispatcher` is unavailable (typical on a server-only setup that
- * proxies tool dispatch elsewhere) the helper yields nothing — the
- * caller is responsible for handling that branch.
+ * Patch only the `args` field of the tool-call at `idx`, leaving every
+ * other field untouched. No-op if the part at `idx` is not a tool-call.
  */
-export async function* executeToolCall(
-  ctx: ToolCallContext,
-  input: {
-    threadId: string;
-    messageId: string;
-    idx: number;
-    message: ThreadMessageLike;
-  }
-): AsyncGenerator<ChatEvent> {
-  const toolCall = readToolCall(input.message, input.idx);
-  if (!toolCall) return;
-
-  const { dispatcher } = ctx;
-  if (!dispatcher) {
-    yield {
-      type: "tool-call-executed",
-      threadId: input.threadId,
-      messageId: input.messageId,
-      idx: input.idx,
-      message: input.message,
-      toolName: toolCall.toolName,
-      result: "Tool dispatcher unavailable",
-    };
-    return;
-  }
-
-  const serverType = dispatcher.getServerType(toolCall.toolName);
-  const bareName = toolCall.toolName.replace(`${serverType}_`, "");
-  const result = await dispatcher.callTool(
-    serverType,
-    bareName,
-    (toolCall.args ?? {}) as Record<string, unknown>
-  );
-
-  yield {
-    type: "tool-call-executed",
-    threadId: input.threadId,
-    messageId: input.messageId,
-    idx: input.idx,
-    message: input.message,
-    toolName: toolCall.toolName,
-    result,
-  };
+export function patchToolCallArgs(
+  message: ThreadMessageLike,
+  idx: number,
+  args: ReadonlyJSONObject
+): ThreadMessageLike {
+  const original = readToolCall(message, idx);
+  if (!original) return message;
+  return replaceContentPart(message, idx, { ...original, args });
 }
 
 /**
- * Decide what to do with a tool-call surfaced mid-stream:
- *
- * - If the dispatcher reports the tool as auto-approved, jump straight
- *   to {@link executeToolCall} so the UI never sees the dialog.
- * - Otherwise emit `tool-call-pending` and stop — the UI will run
- *   `beforeToolCall` middleware and resume via
- *   `approveToolCall` / `denyToolCall`.
- *
- * Used internally by {@link processStream} when it spots an incomplete
- * tool-call in the terminal assistant message.
+ * Patch only the `result` field of the tool-call at `idx`. No-op if the
+ * part at `idx` is not a tool-call.
  */
-export async function* handleToolCall(
-  ctx: ToolCallContext,
-  input: {
-    threadId: string;
-    messageId: string;
-    idx: number;
-    message: ThreadMessageLike;
-  }
-): AsyncGenerator<ChatEvent> {
-  const toolCall = readToolCall(input.message, input.idx);
-  if (!toolCall) return;
-
-  if (ctx.dispatcher) {
-    const serverType = ctx.dispatcher.getServerType(toolCall.toolName);
-    const bareName = toolCall.toolName.replace(`${serverType}_`, "");
-    if (ctx.dispatcher.isAutoApproved(serverType, bareName)) {
-      yield* executeToolCall(ctx, input);
-      return;
-    }
-  }
-
-  yield {
-    type: "tool-call-pending",
-    threadId: input.threadId,
-    messageId: input.messageId,
-    idx: input.idx,
-    message: input.message,
-  };
+export function patchToolCallResult(
+  message: ThreadMessageLike,
+  idx: number,
+  result: unknown
+): ThreadMessageLike {
+  const original = readToolCall(message, idx);
+  if (!original) return message;
+  return replaceContentPart(message, idx, { ...original, result });
 }
 
 /**
  * Persist `result` onto the assistant message and resume the chat
  * stream with the augmented history.
  *
- * Called by both {@link AIEngine.continueAfterToolCall} (after the
- * UI's `afterToolResult` middleware) and {@link AIEngine.denyToolCall}
- * (with `result === "User deny tool call"`).
+ * Called by both {@link AIEngine.approveToolCall} (with the consumer-
+ * supplied tool result) and {@link AIEngine.denyToolCall} (with
+ * `"User deny tool call"`).
  */
 export async function* resumeChat(
   ctx: ToolCallContext,
@@ -225,7 +156,6 @@ export async function* resumeChat(
     threadId: input.threadId,
     profile: input.profile,
     profileId: input.profileId,
-    dispatcher: ctx.dispatcher,
     tools: input.tools,
     isReasoning: input.isReasoning,
     signal: input.signal,

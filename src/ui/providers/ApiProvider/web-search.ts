@@ -24,6 +24,8 @@ export function createWebSearchApi(
       callRoute(config, "webSearch", "testConnection", [body], engines),
     configure: (body) =>
       callRoute(config, "webSearch", "configure", [body], engines),
+    setActiveConfig: (body) =>
+      callRoute(config, "webSearch", "setActiveConfig", [body], engines),
     clear: () => callRoute(config, "webSearch", "clear", [], engines),
   };
 }

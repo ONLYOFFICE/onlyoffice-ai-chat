@@ -21,7 +21,16 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
   const [customServers, setCustomServers] = React.useState({});
 
   const { useServersStore } = useStores();
-  const { servers, tools, webSearchEnabled } = useServersStore();
+  const { servers, webSearchEnabled } = useServersStore();
+
+  const enabledCount = React.useMemo(
+    () =>
+      Object.values(servers).reduce(
+        (acc, items) => acc + items.filter((t) => t.enabled).length,
+        0
+      ),
+    [servers]
+  );
 
   React.useEffect(() => {
     setCustomServers(serversInstance.getCustomServers());
@@ -34,8 +43,8 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
   }, [serversInstance]);
 
   const disableEnable = webSearchEnabled
-    ? tools.length >= MAX_TOOL_COUNT_WITH_WEB_SEARCH
-    : tools.length >= MAX_TOOL_COUNT;
+    ? enabledCount >= MAX_TOOL_COUNT_WITH_WEB_SEARCH
+    : enabledCount >= MAX_TOOL_COUNT;
 
   const hostGroupIds = serversInstance.getHostToolGroupIds();
   const hasHostTools = hostGroupIds.some(

@@ -148,7 +148,6 @@ export type {
   ThreadsEngineDeps,
   ThreadsEngineMethod,
   ToolCallData,
-  ToolDispatcher,
   ToolsBulkResult,
   ToolsEngineDeps,
   ToolsEngineMethod,
@@ -163,6 +162,13 @@ export type {
 // ---------------------------------------------------------------------------
 
 export type { SettingsAdapter } from "./shared/settings-adapter";
+
+// ---------------------------------------------------------------------------
+// Tools adapter (pluggable runtime tool source the engine resolves
+// alongside built-in web-search / image-generation)
+// ---------------------------------------------------------------------------
+
+export type { ToolsAdapter } from "./core/tools-adapter";
 
 // ---------------------------------------------------------------------------
 // Storage (core adapter contract — concrete implementations are host-supplied)
