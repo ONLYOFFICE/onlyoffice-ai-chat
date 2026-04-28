@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect } from "react";
-import type { ChatEventBus } from "../events";
+import type { ChatEventBus } from "../providers/EventsProvider";
 import type Servers from "./servers";
 import type { HostToolGroup } from "./types";
 

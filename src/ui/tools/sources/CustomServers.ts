@@ -1,4 +1,4 @@
-import type { ChatEventBus } from "../../events";
+import type { ChatEventBus } from "../../providers/EventsProvider";
 import logger from "../../../shared/logger";
 import type { PlatformAdapter } from "../../platform/types";
 import type { TMCPItem, TProcess } from "../../../types";

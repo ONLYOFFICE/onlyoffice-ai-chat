@@ -1,6 +1,6 @@
 # Events
 
-Two complementary event systems live under `ui/events/`:
+Two complementary event systems live under `ui/providers/EventsProvider/`:
 
 - **`ChatCallbacks`** — host-facing observation hooks (run via the
   `callbacks` prop on `AIChatWidget` or via `EventsProvider`). They
@@ -9,7 +9,7 @@ Two complementary event systems live under `ui/events/`:
   parts of the widget. Not for consumer code.
 
 For interception (block, modify, retry, fall back), use middleware
-instead — see [`../core/middleware/README.md`](../core/middleware/README.md).
+instead — see [`../../core/middleware/README.md`](../../core/middleware/README.md).
 
 ```ts
 import {
@@ -84,7 +84,7 @@ domain.
 | `onError` | `ChatErrorEvent` | `type: "provider" \| "tool" \| "network" \| "storage"` |
 
 The full event type definitions live in
-[`src/ui/events/types.ts`](../../src/ui/events/types.ts).
+[`src/ui/providers/EventsProvider/types.ts`](../../../src/ui/providers/EventsProvider/types.ts).
 
 ## `EventsProvider` and `useCallbacksManager`
 

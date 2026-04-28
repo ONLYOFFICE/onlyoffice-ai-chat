@@ -17,7 +17,7 @@ const entries = {
   // UI (browser / React)
   "ui/store/index": resolve(__dirname, "src/ui/store/index.ts"),
   "ui/tools/index": resolve(__dirname, "src/ui/tools/index.ts"),
-  "ui/events/index": resolve(__dirname, "src/ui/events/index.ts"),
+  "ui/providers/EventsProvider/index": resolve(__dirname, "src/ui/providers/EventsProvider/index.ts"),
   "ui/hooks/index": resolve(__dirname, "src/ui/hooks/index.ts"),
   "ui/imperative/index": resolve(__dirname, "src/ui/imperative/index.ts"),
   "ui/pages/index": resolve(__dirname, "src/ui/pages/index.ts"),

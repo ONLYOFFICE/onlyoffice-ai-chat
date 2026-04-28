@@ -1,4 +1,4 @@
-import type { ChatEventBus } from "../events";
+import type { ChatEventBus } from "../providers/EventsProvider";
 import type { PlatformAdapter } from "../platform/types";
 import type { TMCPItem } from "../../types";
 import { CustomServers } from "./sources/CustomServers";

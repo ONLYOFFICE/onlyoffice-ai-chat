@@ -6,7 +6,7 @@ fall back at well-defined points. Middleware lives in `core/`
 because it is pure logic — no React, no browser-only APIs.
 
 For passive observation (analytics, logging) use
-[`ChatCallbacks`](../../ui/events.md) instead — middleware is for
+[`ChatCallbacks`](../../ui/providers/events.md) instead — middleware is for
 intercepting and transforming.
 
 ```ts

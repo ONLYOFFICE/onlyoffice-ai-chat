@@ -328,7 +328,7 @@ export {
   EventsProvider,
   useCallbacksManager,
   ChatEventBus,
-} from "./ui/events";
+} from "./ui/providers/EventsProvider";
 export type {
   ChatCallbacks,
   ChatErrorEvent,
@@ -356,7 +356,7 @@ export type {
   ToolCallPendingEvent,
   ToolCallResultEvent,
   WebSearchUpdatedEvent,
-} from "./ui/events";
+} from "./ui/providers/EventsProvider";
 
 // ---------------------------------------------------------------------------
 // Middleware

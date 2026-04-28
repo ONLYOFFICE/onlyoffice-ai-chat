@@ -1,7 +1,7 @@
 import type { Stores } from "../store/create-stores";
 import type { ProfilesStoreState } from "../store/create-profiles-store";
 import type Servers from "../tools/servers";
-import type { ChatEventBus } from "../events";
+import type { ChatEventBus } from "../providers/EventsProvider";
 import type { Profile } from "../../types";
 import type { AIChatWidgetRef } from "./types";
 import {

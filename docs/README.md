@@ -47,7 +47,7 @@ documentation tree:
 | [`ui/hooks.md`](./ui/hooks.md) | `useMessages`, `useProfiles`, `useServers`, `useThread`, helpers |
 | [`ui/pages.md`](./ui/pages.md) | The seven exported page components |
 | [`ui/imperative.md`](./ui/imperative.md) | `AIChatWidgetRef` — programmatic widget control |
-| [`ui/events.md`](./ui/events.md) | `ChatCallbacks`, `ChatEventBus`, `CallbacksManager` |
+| [`ui/providers/events.md`](./ui/providers/events.md) | `ChatCallbacks`, `ChatEventBus`, `CallbacksManager` |
 | [`ui/tools.md`](./ui/tools.md) | `ToolsProvider`, `Servers`, `HostToolGroup`, MCP transport |
 | [`ui/providers/README.md`](./ui/providers/README.md) | Pluggable React providers — index |
 | [`ui/providers/api.md`](./ui/providers/api.md) | `ApiProvider` — in-process or remote engine routing |

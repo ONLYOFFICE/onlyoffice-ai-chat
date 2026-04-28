@@ -8,8 +8,8 @@ import React, {
 } from "react";
 import type { AppContext } from "./app-context";
 import type { StoreKeys } from "./config";
-import { CallbacksManager, ChatEventBus } from "./ui/events";
-import type { ChatCallbacks } from "./ui/events";
+import { CallbacksManager, ChatEventBus } from "./ui/providers/EventsProvider";
+import type { ChatCallbacks } from "./ui/providers/EventsProvider";
 import { MiddlewareRunner } from "./core/middleware";
 import type { ChatMiddleware } from "./core/middleware";
 import {
@@ -29,7 +29,7 @@ import logger from "./shared/logger";
 import type { SettingsAdapter } from "./shared/settings-adapter";
 import { Layout } from "./ui/components/layout";
 import { ManageToolDialog } from "./ui/components/manage-tool-dialog";
-import { EventsProvider } from "./ui/events/context";
+import { EventsProvider } from "./ui/providers/EventsProvider";
 import Settings from "./ui/pages/settings";
 import Thread from "./ui/pages/chat";
 import {

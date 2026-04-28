@@ -189,7 +189,7 @@ Two complementary mechanisms:
 
 - `ChatCallbacks` — observational callbacks the host registers via
   the `callbacks` prop. Run after the fact, can never modify state.
-  See [`ui/events.md`](./ui/events.md).
+  See [`ui/providers/events.md`](./ui/providers/events.md).
 - `ChatMiddleware` — interceptor pipeline. Six hooks
   (`beforeSend`, `onStreamChunk`, `beforeToolCall`,
   `afterToolResult`, `beforeDisplay`, `onError`) that can block,

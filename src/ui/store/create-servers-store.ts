@@ -1,7 +1,7 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../../app-context";
-import type { CallbacksManager } from "../events";
+import type { CallbacksManager } from "../providers/EventsProvider";
 import type { ServerAPI } from "../providers/ApiProvider";
 import type { TMCPItem } from "../../types";
 

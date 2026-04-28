@@ -1,7 +1,7 @@
 import type { StoreApi, UseBoundStore } from "zustand";
 import type { AppContext } from "../../app-context";
 import type { StoreKeys } from "../../config";
-import type { CallbacksManager } from "../events";
+import type { CallbacksManager } from "../providers/EventsProvider";
 import type { MiddlewareRunner } from "../../core/middleware";
 import type { ServerAPI } from "../providers/ApiProvider";
 import {

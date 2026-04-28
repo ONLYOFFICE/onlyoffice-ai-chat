@@ -1,6 +1,6 @@
 {
   "name": "@onlyoffice/ai-chat",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Headless AI chat widget with 16 providers, MCP tools, and pluggable adapters",
   "type": "module",
   "license": "MIT",
@@ -54,8 +54,8 @@
       "import": "./dist/ui/tools/index.js"
     },
     "./events": {
-      "types": "./dist/ui/events/index.d.ts",
-      "import": "./dist/ui/events/index.js"
+      "types": "./dist/ui/providers/EventsProvider/index.d.ts",
+      "import": "./dist/ui/providers/EventsProvider/index.js"
     },
     "./hooks": {
       "types": "./dist/ui/hooks/index.d.ts",

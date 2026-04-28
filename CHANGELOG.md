@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+
+Internal refactor — events module moved under providers folder.
+
+- `src/ui/events/` → `src/ui/providers/EventsProvider/`. The
+  public `@onlyoffice/ai-chat/events` subpath import is unchanged.
+- Docs: `docs/ui/events.md` → `docs/ui/providers/events.md`,
+  `EventsProvider` listed in `ui/providers/README.md`.
+
 ## 0.2.0
 
 Tool flow refactored — built-in tools execute server-side, user

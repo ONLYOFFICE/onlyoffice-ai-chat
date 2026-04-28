@@ -15,7 +15,7 @@ imports React.
 | [`hooks.md`](./hooks.md) | Lifecycle hooks (`useMessages`, `useProfiles`, `useServers`, `useThread`) and helpers |
 | [`pages.md`](./pages.md) | Seven exported page components and how to mount them standalone |
 | [`imperative.md`](./imperative.md) | `AIChatWidgetRef` — programmatic widget control |
-| [`events.md`](./events.md) | `ChatCallbacks`, `ChatEventBus`, `CallbacksManager` |
+| [`providers/events.md`](./providers/events.md) | `ChatCallbacks`, `ChatEventBus`, `CallbacksManager` |
 | [`tools.md`](./tools.md) | `ToolsProvider`, `Servers`, `HostToolGroup`, MCP transport |
 | [`providers/README.md`](./providers/README.md) | Pluggable React providers — index |
 

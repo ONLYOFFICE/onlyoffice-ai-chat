@@ -4,7 +4,7 @@ import type {
   ProviderType,
   TAttachmentFile,
   TAttachmentImage,
-} from "../../types";
+} from "../../../types";
 
 // ---------------------------------------------------------------------------
 // Message events

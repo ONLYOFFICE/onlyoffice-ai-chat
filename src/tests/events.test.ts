@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ChatEventBus, chatEvents } from "../ui/events";
+import { ChatEventBus, chatEvents } from "../ui/providers/EventsProvider";
 
 describe("ChatEventBus", () => {
   it("calls handler when event is emitted", () => {

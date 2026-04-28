@@ -1,5 +1,5 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
-import type { CallbacksManager } from "../events";
+import type { CallbacksManager } from "../providers/EventsProvider";
 import type { PlatformAdapter } from "../platform/types";
 import type { ServerAPI } from "../providers/ApiProvider";
 import type { Thread } from "../../types";

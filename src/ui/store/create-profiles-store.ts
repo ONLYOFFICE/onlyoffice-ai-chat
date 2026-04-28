@@ -5,7 +5,7 @@ import { inferCapabilities } from "../../capabilities";
 import type { StoreKeys } from "../../config";
 import type { TErrorData } from "../../shared/error-data";
 import type { ServerAPI } from "../providers/ApiProvider";
-import type { ModelAssignmentTask } from "../events";
+import type { ModelAssignmentTask } from "../providers/EventsProvider";
 import type { Profile } from "../../types";
 
 /**
