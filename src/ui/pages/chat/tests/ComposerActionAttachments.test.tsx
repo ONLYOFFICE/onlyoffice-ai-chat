@@ -47,7 +47,7 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../platform/context", () => ({
+vi.mock("../../../providers/PlatformProvider/context", () => ({
   usePlatform: () => ({
     file: mockPlatformFile,
   }),

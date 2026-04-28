@@ -24,7 +24,7 @@ const entries = {
 
   // Shared
   types: resolve(__dirname, "src/types.ts"),
-  "ui/platform/index": resolve(__dirname, "src/ui/platform/index.ts"),
+  "ui/providers/PlatformProvider/index": resolve(__dirname, "src/ui/providers/PlatformProvider/index.ts"),
 };
 
 export default defineConfig({

@@ -1,4 +1,4 @@
-import { usePlatform } from "../../platform/context";
+import { usePlatform } from "../../providers/PlatformProvider/context";
 import { useI18n } from "../../providers/LocalesProvider";
 import {
   cn,

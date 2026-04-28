@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CallbacksManager } from "../../providers/EventsProvider";
-import type { PlatformAdapter } from "../../platform/types";
+import type { PlatformAdapter } from "../../providers/PlatformProvider/types";
 import type { ServerAPI } from "../../providers/ApiProvider";
 import { createThreadsStore } from "../create-threads-store";
 import type { MessageStoreState } from "../create-message-store";

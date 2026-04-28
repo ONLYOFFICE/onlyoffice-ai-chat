@@ -44,7 +44,7 @@ const { platformValue } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../../../platform/context", () => ({
+vi.mock("../../PlatformProvider/context", () => ({
   usePlatform: () => platformValue,
 }));
 

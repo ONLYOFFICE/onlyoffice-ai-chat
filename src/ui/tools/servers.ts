@@ -1,5 +1,5 @@
 import type { ChatEventBus } from "../providers/EventsProvider";
-import type { PlatformAdapter } from "../platform/types";
+import type { PlatformAdapter } from "../providers/PlatformProvider/types";
 import type { TMCPItem } from "../../types";
 import { CustomServers } from "./sources/CustomServers";
 import { HostToolSource } from "./sources/HostToolSource";

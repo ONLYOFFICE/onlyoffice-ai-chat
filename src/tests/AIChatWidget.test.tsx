@@ -113,7 +113,7 @@ vi.mock("../ui/tools/context", () => ({
   }),
 }));
 
-vi.mock("../ui/platform/context", () => ({
+vi.mock("../ui/providers/PlatformProvider/context", () => ({
   PlatformProvider: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),

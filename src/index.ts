@@ -61,7 +61,7 @@ export type { StoreKeys } from "./config";
 // Platform
 // ---------------------------------------------------------------------------
 
-export { PlatformProvider, usePlatform } from "./ui/platform";
+export { PlatformProvider, usePlatform } from "./ui/providers/PlatformProvider";
 export type {
   PlatformAdapter,
   PlatformClouds,
@@ -69,7 +69,7 @@ export type {
   PlatformFileOperations,
   PlatformHostTools,
   PlatformProcessRunner,
-} from "./ui/platform";
+} from "./ui/providers/PlatformProvider";
 
 // ---------------------------------------------------------------------------
 // Providers

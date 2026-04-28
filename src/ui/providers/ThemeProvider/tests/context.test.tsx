@@ -30,7 +30,7 @@ const platformValue = {
   },
 };
 
-vi.mock("../../../platform/context", () => ({
+vi.mock("../../PlatformProvider/context", () => ({
   usePlatform: () => platformValue,
 }));
 

@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 import type { TranslationKey, Translations } from "./generated-types";
 import { initAIChatI18n, loadLocale } from "./i18n";
-import { usePlatform } from "../../platform/context";
+import { usePlatform } from "../PlatformProvider/context";
 import logger from "../../../shared/logger";
 
 const RTL_LANGUAGES = ["ar-SA"];

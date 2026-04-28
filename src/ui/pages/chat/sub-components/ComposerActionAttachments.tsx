@@ -1,6 +1,6 @@
 import React from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
-import { usePlatform } from "../../../platform/context";
+import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
 import { useToolsContext } from "../../../tools/context";

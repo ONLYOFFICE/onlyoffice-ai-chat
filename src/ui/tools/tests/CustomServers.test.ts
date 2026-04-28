@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatEventBus } from "../../providers/EventsProvider";
-import type { PlatformAdapter } from "../../platform/types";
+import type { PlatformAdapter } from "../../providers/PlatformProvider/types";
 import { CustomServers } from "../sources/CustomServers";
 
 // =============================================================================

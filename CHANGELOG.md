@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.3
+
+Internal refactor — platform module moved under providers folder.
+
+- `src/ui/platform/` → `src/ui/providers/PlatformProvider/`. The
+  public `@onlyoffice/ai-chat/platform` subpath import is unchanged.
+- Docs: `PlatformProvider` listed in `ui/providers/README.md`,
+  adapters reference updated.
+
 ## 0.2.2
 
 Internal refactor — imperative module moved under providers folder.

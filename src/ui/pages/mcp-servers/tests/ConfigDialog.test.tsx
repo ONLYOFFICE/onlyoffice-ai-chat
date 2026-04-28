@@ -10,7 +10,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
-vi.mock("../../../platform/context", () => ({
+vi.mock("../../../providers/PlatformProvider/context", () => ({
   usePlatform: () => ({
     process: { isAvailable: () => true },
   }),
@@ -400,7 +400,7 @@ describe("ConfigDialog - platform local server validation", () => {
 
   it("shows error for local servers when platform process is not available", async () => {
     // Re-mock platform to return process.isAvailable = false
-    const platformMock = await import("../../../platform/context");
+    const platformMock = await import("../../../providers/PlatformProvider/context");
     vi.spyOn(platformMock, "usePlatform").mockReturnValue({
       process: { isAvailable: () => false },
     } as ReturnType<typeof platformMock.usePlatform>);

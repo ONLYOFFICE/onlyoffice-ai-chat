@@ -9,7 +9,7 @@ when running headless).
 | --- | --- |
 | [`SettingsAdapter`](#settingsadapter) | [`src/shared/settings-adapter.ts`](../src/shared/settings-adapter.ts) |
 | [`StorageAdapter`](#storageadapter) | [`src/core/storage/adapter.ts`](../src/core/storage/adapter.ts) |
-| [`PlatformAdapter`](#platformadapter) | [`src/ui/platform/types.ts`](../src/ui/platform/types.ts) |
+| [`PlatformAdapter`](#platformadapter) | [`src/ui/providers/PlatformProvider/types.ts`](../src/ui/providers/PlatformProvider/types.ts) |
 | [`ToolsAdapter`](#toolsadapter) (optional) | [`src/core/tools-adapter.ts`](../src/core/tools-adapter.ts) |
 
 ## `SettingsAdapter`

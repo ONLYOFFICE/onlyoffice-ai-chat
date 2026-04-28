@@ -7,7 +7,7 @@ import {
 import { motion } from "framer-motion";
 import { memo, useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
-import { usePlatform } from "../../../platform/context";
+import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { Icon } from "../../../components/icon";
 import { MarkdownContent } from "../../../components/markdown";

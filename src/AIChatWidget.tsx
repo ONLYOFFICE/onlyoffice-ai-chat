@@ -23,8 +23,8 @@ import {
   WebSearchEngine,
 } from "./core/services";
 import type { StorageAdapter } from "./core/storage";
-import { PlatformProvider } from "./ui/platform/context";
-import type { PlatformAdapter } from "./ui/platform/types";
+import { PlatformProvider } from "./ui/providers/PlatformProvider/context";
+import type { PlatformAdapter } from "./ui/providers/PlatformProvider/types";
 import logger from "./shared/logger";
 import type { SettingsAdapter } from "./shared/settings-adapter";
 import { Layout } from "./ui/components/layout";

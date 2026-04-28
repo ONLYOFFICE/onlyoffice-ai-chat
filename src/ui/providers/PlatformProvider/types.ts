@@ -1,4 +1,4 @@
-import type { TCloud, TCloudKey, TMCPItem, TProcess } from "../../types";
+import type { TCloud, TCloudKey, TMCPItem, TProcess } from "../../../types";
 
 /**
  * File-system operations delegated to the host application.

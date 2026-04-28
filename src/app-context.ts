@@ -1,7 +1,7 @@
 import type { CallbacksManager, ChatEventBus } from "./ui/providers/EventsProvider";
 import type { MiddlewareRunner } from "./core/middleware";
 import type { StorageAdapter } from "./core/storage";
-import type { PlatformAdapter } from "./ui/platform/types";
+import type { PlatformAdapter } from "./ui/providers/PlatformProvider/types";
 import type Servers from "./ui/tools/servers";
 import type {
   ProviderType,
