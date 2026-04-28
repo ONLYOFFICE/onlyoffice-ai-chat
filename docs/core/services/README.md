@@ -177,7 +177,8 @@ All entry points are exported from
 ```ts
 export { AIEngine } from "./ai";
 export type {
-  AIEngineDeps, SendCustomInput, SendInput, SendResult, SendStreamInput,
+  AIEngineDeps, ApproveToolCallInput, ChatEvent, DenyToolCallInput,
+  SendCustomInput, SendInput, SendResult, SendStreamInput, ToolCallData,
 } from "./ai";
 
 export { ProfilesEngine } from "./profiles";

@@ -9,11 +9,13 @@ how to talk to a provider) to a
 knows how to persist threads, messages and profile assignments), so
 that callers don't have to wire those pieces together themselves.
 
-It exposes three call shapes — pick whichever matches your use case:
+It exposes five call shapes:
 
 | Method                | Streams? | Touches storage? | Profile slot           | Action     |
 | --------------------- | -------- | ---------------- | ---------------------- | ---------- |
 | [`sendWithStream`](#sendwithstream) | ✅ stream | ✅ thread + messages | `Chat` → `Default`     | `chat`     |
+| [`approveToolCall`](#approvetoolcall) | ✅ stream | ✅ messages | `Chat` → `Default` | resumes `chat` |
+| [`denyToolCall`](#denytoolcall) | ✅ stream | ✅ messages | `Chat` → `Default` | resumes `chat` |
 | [`send`](#send)               | one-shot | ❌ no writes        | `<actionType>` → `Default` | any registered action |
 | [`sendCustom`](#sendcustom)         | both     | ❌ no writes        | `Default`              | `custom`   |
 
@@ -30,26 +32,39 @@ const engine = new AIEngine({ storage });
 ```ts
 type AIEngineDeps = {
   storage: StorageAdapter;
+  assignments?: AssignmentsEngine;
+  threads?: ThreadsEngine;
+
+  /**
+   * Optional pluggable tool source. Tools it returns are auto-executed
+   * in-engine when the model picks one — no UI approval round-trip.
+   * See {@link ToolsAdapter}.
+   */
+  toolsAdapter?: ToolsAdapter;
 };
 ```
 
 The engine is stateless across calls — share one instance per
 `AppContext`. All persistence flows through `deps.storage`; swap
 that out and the engine works identically against any backend.
+Sub-engines (`assignments`, `threads`) default to fresh instances
+built from `storage` when omitted.
 
 ---
 
 ## `sendWithStream`
 
 The full **streaming chat** lifecycle: resolve the `Chat` profile,
-open or create the thread, persist the user message, dispatch the
-`chat` action, and stream every event to the caller. The terminal
-event additionally writes the assistant's response to storage.
+open or create the thread, persist the user message, build the
+tool list (adapter + built-in web-search / image-generation +
+caller-supplied), dispatch the `chat` action, and stream every
+event to the caller. The terminal event additionally writes the
+assistant's response to storage.
 
 ### Signature
 
 ```ts
-async *sendWithStream(input: SendStreamInput): AsyncGenerator<SendResult>;
+async *sendWithStream(input: SendStreamInput): AsyncGenerator<ChatEvent>;
 ```
 
 ```ts
@@ -61,82 +76,190 @@ type SendStreamInput = {
   actionArgs?: Omit<ActionArgs, "profile" | "messages">;
 };
 
-type SendResult = {
-  threadId: string;
-  title: string;          // empty string for existing threads
-  result: SendMessageResult; // raw event from the chat action
-};
+type ChatEvent =
+  | { type: "message-start"; message: ThreadMessageLike; messageId: string }
+  | { type: "message-delta"; message: ThreadMessageLike; messageId: string }
+  | { type: "message-end";   message: ThreadMessageLike; messageId: string }
+  | { type: "message-incomplete"; message: ThreadMessageLike }
+  | {
+      type: "tool-call-pending";
+      message: ThreadMessageLike;
+      idx: number;
+      messageId: string;
+      threadId: string;
+      /** True when `toolName` is in `storage.toolPrefs.allowAlways` — caller skips dialog. */
+      autoAllow: boolean;
+    }
+  | {
+      type: "thread-title";
+      threadId: string;
+      title: string;
+      profileId?: string;
+    };
 ```
 
-`SendMessageResult` is a union: each iteration yields either an
-intermediate `ThreadMessageLike` (deltas, tool calls, reasoning
-chunks) or the terminal `{ isEnd: true, responseMessage }` event
-that closes the stream.
+The stream is **transport-agnostic and middleware-free** — every
+observable side effect is encoded as a `ChatEvent`. User
+middleware (`beforeSend`, `onStreamChunk`, `beforeToolCall`,
+`afterToolResult`, `beforeDisplay`, `onError`) runs on the
+consumer side, around this generator.
 
 ### What it does, step by step
 
 1. **Resolve profile.** Look up
    `storage.assignments.readByType("Chat")`; if nothing is
-   assigned, fall back to
-   `storage.assignments.readByType("Default")`. Throw if neither
-   slot is filled or the resolved ID is missing from
-   `storage.profiles`.
-2. **Open or create thread.**
+   assigned, fall back to `Default`. Throw if neither slot is set
+   or the resolved ID is missing from `storage.profiles`.
+2. **Bootstrap thread.**
    - With `threadId`: read `storage.messages.readByThread(threadId)`
-     for prior history. The yielded `title` is `""`.
-   - Without: generate a `threadId` (`crypto.randomUUID()`),
-     call the [`generateTitle`](../../../src/core/actions/title/index.ts)
-     action against the resolved profile, fall back to `"New chat"`
-     if the model returns nothing, and `storage.threads.create`
-     the thread.
-3. **Persist user message + bump thread.** In parallel:
-   - `storage.messages.create(threadId, randomUUID(), userMessage)`
-   - `storage.threads.touch(threadId, Date.now(), { profileId })`
+     for prior history; persist the new user message.
+   - Without: create a placeholder thread `"New chat"` with a
+     fresh id, persist the user message, **yield**
+     `thread-title` immediately so the UI can show the placeholder,
+     then run [`generateTitle`](../../../src/core/actions/title/index.ts)
+     in parallel with the chat stream.
+3. **Build tool context.** [`buildToolContext`](../../../src/core/services/ai/tools.ts)
+   resolves four sources in parallel:
+   - `toolsAdapter?.getTools()` — pluggable adapter (grouped by `serverType`),
+   - [`getWebSearchTools(storage)`](../../../src/core/services/web-search/source.ts) — built-in,
+   - [`getImageGenerationTools(storage)`](../../../src/core/services/ai/sources/image-generation.ts) — built-in,
+   - `storage.toolPrefs.readDisabled()` — user-disabled filter.
+
+   Output: merged tool list (caller-supplied wins on `name`
+   collision) and lookup sets used to classify tool calls later.
 4. **Dispatch `chat` action.** Build `ActionArgs` from
-   `input.actionArgs` plus the resolved `profile` and the full
-   message history (`priorMessages` + `userMessage`).
-5. **Stream and persist.** For every event the action yields, call
-   [`persistTerminal`](../../../src/core/services/ai/stream.ts)
-   (no-op for non-terminal events) and `yield { threadId, title,
-   result }` to the caller. The terminal event saves the
-   assistant's response to `storage.messages` **only if**
-   `responseMessage.status?.reason !== "error"`. Cancelled
-   responses still get saved — they carry the partial text the
-   user has already seen.
+   `input.actionArgs` plus the resolved `profile`, full message
+   history, and merged `tools`.
+5. **Drive the provider stream** via [`processStream`](../../../src/core/services/ai/stream.ts):
+   - first delta → `storage.messages.create(...)` + emit `message-start`,
+   - subsequent deltas → `storage.messages.update(...)` + emit `message-delta`,
+   - terminal `isEnd` → emit `message-end` (or `message-incomplete`),
+   - unresolved tool call in the terminal message → emit
+     `tool-call-pending` with `autoAllow` derived from
+     `storage.toolPrefs.readAllowAlways()`.
+6. **Wrap in [`runChatStream`](../../../src/core/services/ai/engine.ts).**
+   For every `tool-call-pending`:
+   - If the tool came from `toolsAdapter` / built-in source →
+     execute server-side via [`executeAdapterTool`](../../../src/core/services/ai/tools.ts),
+     persist the result, resume the chat with the augmented
+     history, and recursively re-enter `runChatStream` so further
+     adapter tool calls keep auto-executing.
+   - Otherwise — pass the event through to the consumer; control
+     returns to await an `approveToolCall` / `denyToolCall`
+     follow-up call.
+7. **Final title yield** (new threads only): once the inner
+   stream exits, await `titlePromise`, persist via
+   `storage.threads.update`, and emit a second `thread-title` with
+   the real title.
 
 ### Errors
 
 `sendWithStream` throws synchronously if profile resolution fails —
-no thread is created, no message is persisted. After the first
-yield, errors flow through the action's normal error path
-(`responseMessage.status.reason === "error"`); those are *not*
+no thread is created, no message is persisted. Provider-side
+errors surface as `message-incomplete` events; the message is not
 written to storage.
 
 ### Example
 
 ```ts
-const engine = new AIEngine({ storage });
+const engine = new AIEngine({ storage, toolsAdapter });
 
-// Continue an existing thread
-for await (const { threadId, title, result } of engine.sendWithStream({
-  threadId: "f3b2…",
-  userMessage: { role: "user", content: [{ type: "text", text: "What's next?" }] },
+for await (const event of engine.sendWithStream({
+  userMessage: { role: "user", content: [{ type: "text", text: "Hi!" }] },
   actionArgs: { isReasoning: true, signal: ac.signal },
 })) {
-  if ("isEnd" in result) {
-    console.log("done:", result.responseMessage);
-  } else {
-    renderDelta(result);
+  switch (event.type) {
+    case "message-delta":
+      renderDelta(event.message);
+      break;
+    case "tool-call-pending":
+      // event.autoAllow tells you whether to skip the approval dialog.
+      // Execute the tool yourself, then call engine.approveToolCall(...).
+      break;
+    case "thread-title":
+      console.log("title:", event.title);
+      break;
   }
 }
-
-// Start a new thread; engine generates the title for you
-const stream = engine.sendWithStream({
-  userMessage: { role: "user", content: [{ type: "text", text: "Hi!" }] },
-});
-const first = await stream.next();
-console.log(first.value?.title); // e.g. "Casual greeting"
 ```
+
+---
+
+## Tool-call lifecycle
+
+Tool calls fall into two paths depending on where the tool came
+from:
+
+**Adapter / built-in tools** (web-search, image-generation, anything
+contributed by `toolsAdapter`):
+
+```
+sendWithStream
+  → tool-call-pending (intercepted by runChatStream)
+  → executeAdapterTool (callTool + persist result)
+  → resumeChat → new processStream
+  → runChatStream recurses
+```
+
+The consumer never sees `tool-call-pending` for these — execution
+is fully server-side.
+
+**User tools** (anything in `actionArgs.tools` not also in the
+adapter / built-in lists):
+
+```
+sendWithStream → tool-call-pending → consumer
+                                       │
+                                       ├─ executes the tool
+                                       │
+                                       ├─ approveToolCall(result)  → resumeChat → stream
+                                       │
+                                       └─ denyToolCall()           → resumeChat → stream
+                                            (result = "User deny tool call")
+```
+
+The consumer is responsible for the actual dispatch and for any
+`beforeToolCall` / `afterToolResult` middleware. The engine just
+persists the supplied result and resumes.
+
+---
+
+## `approveToolCall`
+
+```ts
+async *approveToolCall(input: ApproveToolCallInput): AsyncGenerator<ChatEvent>;
+```
+
+```ts
+type ApproveToolCallInput = ToolCallData & {
+  result: unknown;
+  /** Persist `toolName` to `storage.toolPrefs.allowAlways`. */
+  allowAlways?: boolean;
+};
+```
+
+Persists `result` onto the assistant message that issued the call
+and resumes the chat. Wrapped in `runChatStream` so any further
+adapter tool calls in the resumed round still auto-execute.
+
+When `allowAlways: true`, the engine appends the prefixed tool
+name to `storage.toolPrefs.allowAlways`; subsequent rounds surface
+`tool-call-pending` with `autoAllow: true` and the consumer skips
+the dialog.
+
+## `denyToolCall`
+
+```ts
+async *denyToolCall(input: DenyToolCallInput): AsyncGenerator<ChatEvent>;
+```
+
+```ts
+type DenyToolCallInput = ToolCallData;
+```
+
+Same as `approveToolCall` but the persisted result is the literal
+string `"User deny tool call"` — no consumer-supplied value, no
+allow-list write.
 
 ---
 
@@ -354,15 +477,22 @@ when reading or extending the engine.
 
 | File                                                                           | Exports                                | Role |
 | ------------------------------------------------------------------------------ | -------------------------------------- | ---- |
-| [`engine.ts`](../../../src/core/services/ai/engine.ts)                          | `AIEngine`                             | Public class — composes `AssignmentsEngine` + `ThreadsEngine` and dispatches actions |
-| [`types.ts`](../../../src/core/services/ai/types.ts)                            | `AIEngineDeps`, `SendStreamInput`, `SendInput`, `SendCustomInput`, `SendResult` | Type definitions for every public input / output |
-| [`stream.ts`](../../../src/core/services/ai/stream.ts)                          | `persistTerminal`                      | Save the assistant's response on the terminal `isEnd` event, except when `status.reason === "error"`. |
+| [`engine.ts`](../../../src/core/services/ai/engine.ts)                          | `AIEngine`                             | Public class — `sendWithStream` / `approveToolCall` / `denyToolCall` / `send` / `sendCustom`, plus the private `runChatStream` interceptor for adapter tool calls. |
+| [`types.ts`](../../../src/core/services/ai/types.ts)                            | `AIEngineDeps`, `SendStreamInput`, `SendInput`, `SendCustomInput`, `SendResult`, `ApproveToolCallInput`, `DenyToolCallInput`, `ToolCallData`, `ChatEvent` | Type definitions for every public input / output |
+| [`stream.ts`](../../../src/core/services/ai/stream.ts)                          | `processStream`, `persistTerminal`     | Drive a `SendMessageResult` stream end-to-end into `ChatEvent`s. Persist deltas + terminal message; emit `tool-call-pending` with `autoAllow` set from `storage.toolPrefs`. |
+| [`tool-call.ts`](../../../src/core/services/ai/tool-call.ts)                    | `ToolCallPart`, `readToolCall`, `readToolCallArgs`, `replaceContentPart`, `patchToolCallArgs`, `patchToolCallResult`, `resumeChat` | Tool-call message-part helpers + `resumeChat` (persists result, resumes a fresh `processStream` merged into the same assistant bubble). |
+| [`tools.ts`](../../../src/core/services/ai/tools.ts)                            | `ToolContext`, `buildToolContext`, `executeAdapterTool`, `resolveToolSource`, `mergeToolsByName` | Tool-list aggregation and adapter-tool dispatch. Used by `sendWithStream` / `approveToolCall` / `denyToolCall`. |
+| [`sources/image-generation.ts`](../../../src/core/services/ai/sources/image-generation.ts) | `getImageGenerationTools`, `callImageGenerationTool`, `IMAGE_GENERATION_TYPE` | Built-in image-generation source — `getTools` gated by an explicit `ActionType.ImageGeneration` assignment; `callTool` resolves the profile + provider at call time. |
 | [`actions.ts`](../../../src/core/services/ai/actions.ts)                        | `runSync`, `drainToFinal`, `SYNC_ACTIONS` | Sync-action registry keyed by `ActionType`; helper that drains a stream to its terminal message. |
 | [`custom.ts`](../../../src/core/services/ai/custom.ts)                          | `runCustomStream`, `runCustomOnce`     | Build `CustomArgs` against the `Default` profile (resolved via `AssignmentsEngine`) and dispatch `custom` / `customSync`. |
 | [`index.ts`](../../../src/core/services/ai/index.ts)                            | barrel                                 | Re-exports `AIEngine` and the public types |
 
-Profile resolution and thread bootstrap, which used to live in
-local `profile.ts` and `thread.ts` helpers, are now delegated to
+Built-in web-search lives in
+[`core/services/web-search/source.ts`](../../../src/core/services/web-search/source.ts) —
+in the same folder as `WebSearchEngine` (config persistence) so
+both pieces of the feature stay together.
+
+Profile resolution and thread bootstrap are delegated to
 [`AssignmentsEngine`](./assignments-engine.md) and
 [`ThreadsEngine`](./threads-engine.md). `AIEngine` constructs them
 from `storage` by default; pass your own through `AIEngineDeps`
@@ -372,15 +502,19 @@ to share instances.
 
 ## Persistence semantics — at a glance
 
-| Trigger                                  | Storage write                                                |
-| ---------------------------------------- | ------------------------------------------------------------ |
-| `sendWithStream`, new thread             | `threads.create`, `messages.create` (user)                   |
-| `sendWithStream`, existing thread        | `messages.create` (user), `threads.touch`                    |
-| `sendWithStream`, terminal event, OK     | `messages.create` (assistant)                                |
-| `sendWithStream`, terminal event, error  | *no write*                                                   |
-| `sendWithStream`, terminal event, cancel | `messages.create` (assistant) — partial text is preserved    |
-| `send`                                   | *no write*                                                   |
-| `sendCustom`                             | *no write*                                                   |
+| Trigger                                                  | Storage write                                                |
+| -------------------------------------------------------- | ------------------------------------------------------------ |
+| `sendWithStream`, new thread                             | `threads.create("New chat", profileId)`, `messages.create` (user) |
+| `sendWithStream`, existing thread                        | `threads.appendUserMessage` (touches thread + persists user) |
+| `sendWithStream`, first delta                            | `messages.create` (assistant placeholder)                    |
+| `sendWithStream`, subsequent deltas / terminal           | `messages.update` (assistant)                                |
+| `sendWithStream`, new thread, after stream ends          | `threads.update(threadId, generatedTitle)`                   |
+| `approveToolCall`, `allowAlways: true`                   | `toolPrefs.upsertAllowAlways([...prev, toolName])`           |
+| `approveToolCall` / `denyToolCall`, resume               | `messages.update` (writes `result` onto the tool-call part)  |
+| Adapter / built-in tool intercepted by `runChatStream`   | Same as above (executes server-side, then resumes)           |
+| Provider-side error → `message-incomplete`               | *no write*                                                   |
+| `send`                                                   | *no write*                                                   |
+| `sendCustom`                                             | *no write*                                                   |
 
 ---
 

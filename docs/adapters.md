@@ -1,7 +1,7 @@
 # Adapters
 
 The widget never imports a concrete persistence engine, settings
-backend, or platform capability. Three adapter interfaces are
+backend, or platform capability. Four adapter interfaces are
 host-supplied, and each is consumed via React context (or directly
 when running headless).
 
@@ -10,6 +10,7 @@ when running headless).
 | [`SettingsAdapter`](#settingsadapter) | [`src/shared/settings-adapter.ts`](../src/shared/settings-adapter.ts) |
 | [`StorageAdapter`](#storageadapter) | [`src/core/storage/adapter.ts`](../src/core/storage/adapter.ts) |
 | [`PlatformAdapter`](#platformadapter) | [`src/ui/platform/types.ts`](../src/ui/platform/types.ts) |
+| [`ToolsAdapter`](#toolsadapter) (optional) | [`src/core/tools-adapter.ts`](../src/core/tools-adapter.ts) |
 
 ## `SettingsAdapter`
 
@@ -230,3 +231,78 @@ const platform: PlatformAdapter = {
   },
 };
 ```
+
+## `ToolsAdapter`
+
+Optional pluggable runtime tool source. The engine calls
+`getTools()` server-side alongside the built-in web-search /
+image-generation sources, then dispatches `callTool(...)`
+automatically when the model picks one of the adapter's tools —
+no UI approval round-trip.
+
+```ts
+interface ToolsAdapter {
+  /**
+   * Tools grouped by `serverType` (the same key used in
+   * `storage.toolPrefs.disabled`). Grouping lets the engine apply
+   * the persisted disabled-tool filter without parsing prefixes
+   * out of tool names.
+   */
+  getTools(): Promise<Record<string, TMCPItem[]>>;
+
+  /**
+   * Execute a tool by name. Implementations should stringify
+   * thrown errors into the result so the model can react to them
+   * rather than aborting the stream.
+   */
+  callTool(toolName: string, args: Record<string, unknown>): Promise<unknown>;
+
+  /**
+   * Notify the adapter that the user denied a pending tool call.
+   * The engine resumes the chat with `"User deny tool call"`
+   * regardless of the return value — this hook exists for
+   * telemetry, cleanup, or cancelling work the adapter pre-staged
+   * on `getTools`.
+   */
+  denyTool(toolName: string, args: Record<string, unknown>): Promise<void>;
+}
+```
+
+Pass it to the widget via the `toolsAdapter` prop or directly to
+`AIEngine` deps in headless mode. Adapter-served tools never
+surface in the approval dialog — they execute the moment the
+model picks them, results stream back in the next assistant
+message.
+
+### Stub example
+
+```ts
+const toolsAdapter: ToolsAdapter = {
+  async getTools() {
+    return {
+      "demo-server-a": [
+        {
+          name: "echo_a",
+          description: "Echo input back.",
+          inputSchema: {
+            type: "object",
+            properties: { text: { type: "string" } },
+          },
+        },
+      ],
+    };
+  },
+  async callTool(name, args) {
+    if (name === "echo_a") {
+      return JSON.stringify({ data: { echo: args.text ?? null } });
+    }
+    return JSON.stringify({ data: { ok: true, called: name, args } });
+  },
+  async denyTool() {
+    /* telemetry / cleanup */
+  },
+};
+```
+
+A runnable version lives in
+[`samples/basic/src/adapters/toolsAdapter.ts`](../samples/basic/src/adapters/toolsAdapter.ts).

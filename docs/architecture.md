@@ -89,9 +89,10 @@ There is no global singleton. Two widgets on the same page have
 two independent `AppContext` instances.
 
 `SettingsAdapter` is **not** part of `AppContext` — it is consumed
-locally by `Servers` (auto-allow list) and the widget shell.
-Persistence routes through `storage` (preferences, MCP servers,
-tool prefs, …).
+by the widget shell only. Auto-allow tool entries live in
+`storage.toolPrefs`, written by the engine when `approveToolCall`
+is called with `allowAlways: true`. Persistence routes through
+`storage` (preferences, MCP servers, tool prefs, web search, …).
 
 ## `core/services` — engines
 
@@ -131,22 +132,35 @@ is a stateless thin client over its SDK — credentials and state are
 threaded in per call. See
 [`core/providers/README.md`](./core/providers/README.md).
 
-## Tool system (`ui/tools/Servers`)
+## Tool system
 
-Four tool sources are unified by the `Servers` class. It lives in
-`ui/tools/` because it consumes `PlatformAdapter` and the React
-event bus, but the engines treat it as a generic `ToolDispatcher`
-through the `core/services/tools` boundary.
+Tool sources are split between **engine-side** (auto-executed by
+`AIEngine` via `runChatStream`) and **client-side** (executed in
+the browser, gated by an approval dialog when not auto-allowed):
 
 ```
-Servers
-├── HostToolSource   — tools from the embedding app (PlatformHostTools)
-├── WebSearch        — Exa / ONLYOFFICE web search (always auto-allowed)
-├── ImageGeneration  — built-in `generate_image` (always auto-allowed)
-└── CustomServers    — MCP servers via JSON-RPC 2.0 (HTTP / STDIO)
+engine-side (core/services)
+├── ToolsAdapter             — pluggable, optional (interface in core/tools-adapter.ts)
+├── getWebSearchTools         — built-in, gated by storage.webSearch
+└── getImageGenerationTools   — built-in, gated by ActionType.ImageGeneration
+
+client-side (ui/tools/Servers)
+├── HostToolSource            — tools from the embedding app (PlatformHostTools)
+└── CustomServers             — MCP servers via JSON-RPC 2.0 (HTTP / STDIO)
 ```
 
-See [`ui/tools.md`](./ui/tools.md) for the full surface and
+The engine merges both groups in
+[`buildToolContext`](../src/core/services/ai/tools.ts), filters
+disabled tools through `storage.toolPrefs`, and feeds the result
+to the model. When the model picks an engine-side tool, the
+engine executes it directly and resumes the chat. When it picks a
+host or MCP tool, the engine emits `tool-call-pending` and the UI
+dispatches via `servers.callTools(...)`, then resumes via
+`api.ai.approveToolCall({ result })`.
+
+See [`ui/tools.md`](./ui/tools.md) for the UI side,
+[`adapters.md`](./adapters.md#toolsadapter) for the adapter
+contract, and
 [`core/services/tools-engine.md`](./core/services/tools-engine.md)
 for the persistence side (custom MCP server CRUD + tool prefs).
 
@@ -209,20 +223,28 @@ Two complementary mechanisms:
      └── callbacksManager.emit("onStreamDelta")
      │
 7. If toolCall:
-     ├── middlewareRunner.runBeforeToolCall(ctx) — deny / approve / modify args
-     ├── Servers.checkAllowAlways(type, name)
-     │   ├── auto-approve  → Servers.callTools()
-     │   └── needs approval → emit "onToolCallPending" → wait
-     ├── middlewareRunner.runAfterToolResult(ctx)
-     └── provider continues generation
+     ├── engine-side (adapter / built-in):
+     │     ├── runChatStream auto-executes via dispatchAdapterTool
+     │     ├── resumeChat → new processStream → recurse
+     │     └── (UI never sees tool-call-pending for these)
+     │
+     └── user-side (host / MCP):
+           ├── emit tool-call-pending (with autoAllow flag)
+           ├── ui middlewareRunner.runBeforeToolCall(ctx) — deny / approve / modify args
+           ├── if autoAllow or middleware approve → servers.callTools(...)
+           │   else → approval dialog → user decides
+           ├── middlewareRunner.runAfterToolResult(ctx)
+           └── api.ai.approveToolCall({ result, allowAlways? }) — engine persists, resumes
      │
 8. Stream ends:
      ├── middlewareRunner.runBeforeDisplay(ctx)
-     ├── storage.messages.create(...)
+     ├── storage.messages.update(...)
      └── callbacksManager.emit("onStreamEnd", "onMessageSent")
      │
-9. ThreadsEngine auto-generates title (async)
-     └── callbacksManager.emit("onThreadsUpdated", { kind: "renamed" })
+9. ThreadsEngine title (parallel): for new threads, the engine
+   yields a placeholder thread-title up-front and a second one
+   with the generated title once the stream and titlePromise both
+   settle.
 ```
 
 ## Where things live (paths)

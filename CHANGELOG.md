@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.2.0
+
+Tool flow refactored — built-in tools execute server-side, user
+tools dispatch client-side, allow-always state lives in storage.
+
+- New optional `ToolsAdapter` widget prop (`getTools` / `callTool` /
+  `denyTool`). Adapter-served and built-in (`web-search`,
+  `image-generation`) tools are auto-executed in `runChatStream`
+  without an approval dialog.
+- `AIEngine.sendWithStream` now yields `ChatEvent` (was `SendResult`).
+  `tool-call-pending` carries `autoAllow` from
+  `storage.toolPrefs.allowAlways`.
+- One-phase tool flow — `approveToolCall({ result, allowAlways? })`
+  persists the result and resumes; `denyToolCall()` resumes with
+  `"User deny tool call"`. `continueAfterToolCall` and
+  `tool-call-executed` are gone.
+- `WebSearchEngine.setActiveConfig(config)` — direct write without
+  `testConnection`. Settings page now goes through `api.webSearch.*`,
+  which fixes the divergence between UI cache and `storage.webSearch`.
+- `Servers` (UI) shrunk to `hostToolSource` + `customServers`.
+  `WebSearch` / `ImageGeneration` UI classes removed; sources moved
+  to `core/services/web-search/source.ts` and
+  `core/services/ai/sources/image-generation.ts`.
+- `ToolDispatcher` interface and `createServersDispatcher` removed —
+  the engine no longer needs a runtime dispatcher.
+- `ToolsAdapter.getTools()` returns `Record<serverType, TMCPItem[]>`;
+  the engine filters disabled tools per group instead of parsing
+  prefixes.
+- `runChatStream` now also wraps `approveToolCall` / `denyToolCall`
+  resumes — adapter tools in follow-up rounds keep auto-executing.
+
+| File / area | Change |
+| --- | --- |
+| `src/core/tools-adapter.ts` | New `ToolsAdapter` interface |
+| `src/core/services/ai/tools.ts` | New — `buildToolContext`, `executeAdapterTool`, `resolveToolSource`, `mergeToolsByName` |
+| `src/core/services/ai/sources/image-generation.ts` | New — `getImageGenerationTools`, `callImageGenerationTool` |
+| `src/core/services/web-search/source.ts` | New — `getWebSearchTools`, `callWebSearchTool`, `WEB_SEARCH_TYPE` |
+| `src/ui/tools/dispatcher.ts` | Removed |
+| `src/ui/tools/sources/{WebSearch,ImageGeneration}.ts` | Removed |
+| `samples/basic/src/adapters/toolsAdapter.ts` | New — example `ToolsAdapter` with two stub groups |
+
+```ts
+// New widget prop
+<AIChatWidget
+  storage={storage}
+  toolsAdapter={toolsAdapter}
+  /* … */
+/>
+
+// One-phase approve
+const stream = api.ai.approveToolCall({
+  threadId, messageId, idx, message,
+  result,         // <-- caller-supplied
+  allowAlways,    // <-- engine writes to storage.toolPrefs
+  actionArgs: { isReasoning, tools },
+});
+```
+
 ## 0.1.22
 
 - Fix infinite `fetchModels` loop in `EditModelCard` that exhausted the browser's network pool (`net::ERR_INSUFFICIENT_RESOURCES`). `fetchModels` in `useModelForm` is now memoized via `useCallback`, so the effect that seeds models on mount no longer re-fires on every render.

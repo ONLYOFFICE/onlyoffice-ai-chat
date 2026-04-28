@@ -20,9 +20,12 @@ AI provider profiles.
 
 `core/` runs both on the server and the client; this engine has
 no DOM / browser APIs anywhere — it uses standard `fetch`
-directly. The runtime tool source still lives in
-[`src/tools/sources/WebSearch.ts`](../../../src/tools/sources/WebSearch.ts);
-the engine is the part that runs on the server.
+directly. The runtime tool source lives in the same folder
+([`source.ts`](../../../src/core/services/web-search/source.ts)) —
+`getWebSearchTools(storage)` enumerates the two tools when a
+config is persisted, `callWebSearchTool(storage, name, args)`
+dispatches them server-side. `AIEngine` resolves both via
+[`buildToolContext`](../../../src/core/services/ai/tools.ts).
 
 ---
 
@@ -53,6 +56,7 @@ The engine is stateless across calls. Share one instance per
 | [`isConfigured`](#isconfigured)         | `boolean`                            | ❌                         | ❌         |
 | [`testConnection`](#testconnection)     | `true \| TErrorData`                 | ❌                         | ✅ shape + live |
 | [`configure`](#configure)               | `WebSearchMutationResult`            | `webSearch.upsert` (when valid) | ✅ shape + live |
+| [`setActiveConfig`](#setactiveconfig)   | `void`                               | `webSearch.upsert`         | ❌         |
 | [`clear`](#clear)                       | `void`                               | `webSearch.delete`         | ❌         |
 
 ---
@@ -175,6 +179,24 @@ settings form.
 
 ---
 
+## `setActiveConfig`
+
+```ts
+async setActiveConfig(config: WebSearchConfig): Promise<void>;
+```
+
+Persists `config` directly via `storage.webSearch.upsert(config)`
+**without** running `testConnection`. Use this when the form
+already validates locally on every keystroke and a network
+round-trip per blur would be noisy. The settings page in
+[`samples/basic`](../../../samples/basic) goes through
+`setActiveConfig` for that reason.
+
+When you do want validation before persist, use
+[`configure`](#configure) instead.
+
+---
+
 ## `clear`
 
 ```ts
@@ -196,6 +218,7 @@ search not configured".
 | `testConnection`                         | *no write* (network only)                                    |
 | `configure`, success                     | `webSearch.upsert(config)` — single round-trip               |
 | `configure`, validation failure          | *no write*                                                   |
+| `setActiveConfig`                        | `webSearch.upsert(config)` — no validation                   |
 | `clear`, configured                      | `webSearch.delete()`                                         |
 | `clear`, not configured                  | *no write* (idempotent short-circuit)                        |
 
@@ -206,6 +229,7 @@ search not configured".
 | File                                                                          | Exports                                  | Role |
 | ----------------------------------------------------------------------------- | ---------------------------------------- | ---- |
 | [`engine.ts`](../../../src/core/services/web-search/engine.ts)                 | `WebSearchEngine`                        | Public class |
+| [`source.ts`](../../../src/core/services/web-search/source.ts)                 | `getWebSearchTools`, `callWebSearchTool`, `WEB_SEARCH_TYPE` | Runtime tool source — assembled into the tool list and dispatched by `AIEngine` |
 | [`validation.ts`](../../../src/core/services/web-search/validation.ts)         | `validateConfigShape`, `testWebSearchConnection` | Pure shape check + live HTTP test, exported for direct UI use |
 | [`types.ts`](../../../src/core/services/web-search/types.ts)                   | `WebSearchEngineDeps`, `WebSearchMutationResult`, re-exported `WebSearchConfig` | Type definitions |
 | [`index.ts`](../../../src/core/services/web-search/index.ts)                   | barrel                                   | Re-exports |

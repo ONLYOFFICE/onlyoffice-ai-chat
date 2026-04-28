@@ -1,9 +1,15 @@
 # Tools (UI side)
 
-`Servers` is the unified tool runtime that lives in `ui/tools/`.
-It aggregates four tool sources, decides which need user approval,
-and executes calls on behalf of the active provider. Pages and
+`Servers` is the UI-side aggregator over the **external** tool
+providers — the host (`hostToolSource`) and the user's MCP
+servers (`customServers`). It lives in `ui/tools/` because it
+consumes `PlatformAdapter` and the React event bus. Pages and
 hooks consume it through `ToolsProvider` / `useToolsContext`.
+
+Built-in tools (web-search, image-generation) are sourced and
+dispatched **engine-side** — they never go through `Servers`. See
+[`core/services/web-search`](../core/services/web-search-engine.md)
+and [`core/services/ai/sources/image-generation.ts`](../../src/core/services/ai/sources/image-generation.ts).
 
 For the **persistence** side — custom MCP server CRUD, per-tool
 disabled / auto-approve flags — see
@@ -19,41 +25,51 @@ import {
 import type {
   HostTool,
   HostToolGroup,
-  ToolSource,
 } from "@onlyoffice/ai-chat/tools";
 ```
 
 ## Architecture
 
 ```
-Servers
+Servers (UI)
 ├── HostToolSource    — tools registered via PlatformHostTools / hostToolGroups
-├── WebSearch         — Exa or ONLYOFFICE web search (always auto-approved)
-├── ImageGeneration   — built-in `generate_image` (always auto-approved)
 └── CustomServers     — MCP servers via JSON-RPC 2.0 (HTTP + STDIO)
+
+Engine (server-side, see core/services/ai/tools.ts)
+├── ToolsAdapter         — pluggable runtime tool source (optional)
+├── getWebSearchTools     — built-in, gated by storage.webSearch
+└── getImageGenerationTools — built-in, gated by an explicit
+                             ActionType.ImageGeneration assignment
 ```
 
-`Servers.checkAllowAlways(type, name)` decides whether a call needs
-approval. `Servers.callTools(type, name, args)` routes to the right
-source. The persistent allow-list is stored under
-`SettingsAdapter` key `"allowAlwaysTools"` (comma-separated).
+The chat lifecycle:
+
+1. `useMessages` reads the **flat** UI tool list from
+   `useServersStore.tools` (host + MCP custom, all of them — UI
+   no longer filters disabled, the engine does).
+2. `api.ai.sendWithStream({ actionArgs: { tools } })` → engine.
+3. Engine merges UI tools with adapter-served tools and built-ins
+   in `buildToolContext`, applies the `storage.toolPrefs.disabled`
+   filter, and feeds the result to the model.
+4. When the model picks a built-in / adapter tool, the engine
+   executes it server-side and resumes — UI never sees a pending
+   event for those.
+5. When the model picks a host or MCP tool, the engine emits
+   `tool-call-pending` with `autoAllow` derived from
+   `storage.toolPrefs.allowAlways`. UI dispatches via
+   `servers.callTools(...)` and resumes via
+   `api.ai.approveToolCall({ result })`.
 
 ## Constructor
 
 ```ts
-new Servers(
-  settings: SettingsAdapter,
-  platform: PlatformAdapter,
-  eventBus: ChatEventBus,
-  assignments: AssignmentsEngine,
-  callbacksManager?: CallbacksManager | null,
-);
+new Servers(platform: PlatformAdapter, eventBus: ChatEventBus);
 ```
 
-`callbacksManager` is optional — pass one to receive
-`onWebSearchUpdated` / `onServersUpdated` events. `assignments` is
-used by `ImageGeneration` to resolve the profile bound to
-`ActionType.ImageGeneration` at call time.
+Just two args — no `SettingsAdapter`, no `AssignmentsEngine`, no
+`CallbacksManager`. Web-search config and allow-always state live
+server-side now (`storage.webSearch` and `storage.toolPrefs`),
+reached through `api.webSearch` / `api.tools`.
 
 ## `ToolsProvider`
 
@@ -67,7 +83,7 @@ context.
   eventBus={eventBus}
 >
   <App />
-</ToolsProvider>;
+</ToolsProvider>
 ```
 
 Inside any descendant:
@@ -120,32 +136,6 @@ Tool names are namespaced by group id when exposed to the model:
 - `true` — show approval dialog. The user can approve once, deny,
   or pick "always allow" to auto-approve future calls.
 
-## Web search
-
-Two tools: `web_search` (keyword) and `web_crawling` (full-page
-extraction). Providers: `Exa` and `ONLYOFFICE`. Always
-auto-approved.
-
-Configuration is normally driven by the `WebSearchPage` UI through
-`WebSearchEngine` — see
-[`../core/services/web-search-engine.md`](../core/services/web-search-engine.md).
-
-Programmatic toggle:
-
-```ts
-servers.webSearch.setData({ provider: "Exa", key: "exa-..." });
-servers.webSearch.getEnabled(); // true
-servers.webSearch.setData(null);
-```
-
-## Image generation
-
-The `ImageGeneration` source exposes a single `generate_image` tool
-that routes at call time to whichever profile is bound to
-`ActionType.ImageGeneration` (typically Stability AI or OpenAI).
-Always auto-approved. Enabled automatically when a non-`Default`
-image generation profile is bound.
-
 ## Custom MCP servers
 
 Two transports:
@@ -192,37 +182,44 @@ tool list changes; `useServers` subscribes to refresh the UI.
 
 | Method | Description |
 | --- | --- |
-| `getTools()` | Returns all tools from all sources, keyed by source id |
+| `getTools()` | Returns host + MCP custom tools, grouped by source id |
 | `callTools(type, name, args)` | Execute a tool by source type + name |
-| `checkAllowAlways(type, name)` | True iff the tool should auto-approve |
-| `setAllowAlways(value, type, name)` | Add to / remove from the persistent allow list |
+| `getServerType(name)` | Reverse-lookup the source type for a prefixed tool name |
+| `setCustomServers(config)` / `startCustomServers()` / `restartCustomServer(type)` / `deleteCustomServer(type)` | Custom MCP server lifecycle |
+| `getCustomServers()` / `getCustomServersStoped()` / `getCustomServersLogs()` | Custom MCP server runtime state |
+| `getHostToolGroupIds()` | Group ids registered via `hostToolGroups` |
+
+Allow-always state is owned by `storage.toolPrefs` server-side.
+The engine reads it inline when emitting `tool-call-pending`; the
+`approveToolCall` payload's `allowAlways: true` flag persists new
+entries. The UI no longer reads or writes the list directly.
 
 For full method coverage, read
 [`src/ui/tools/servers.ts`](../../src/ui/tools/servers.ts).
 
-## Custom `ToolSource`
+## Built-in source authoring
+
+When you need a new server-side tool source (similar to the
+built-in web-search / image-generation), drop it under
+[`src/core/services/ai/sources/`](../../src/core/services/ai/sources/)
+or in its own engine folder:
 
 ```ts
-const mySource: ToolSource = {
-  id: "my-custom-source",
-  autoAllow: true,
-  getTools() {
-    return [
-      {
-        name: "current_time",
-        description: "Returns the current UTC time",
-        inputSchema: { type: "object", properties: {} },
-        source: "my-custom-source",
-        checked: true,
-      },
-    ];
-  },
-  async callTool(_name, _args) {
-    return { time: new Date().toISOString() };
-  },
-};
+// in `core/services/<your-feature>/source.ts`
+export const YOUR_TYPE = "your-type";
+
+export async function getYourTools(storage: StorageAdapter): Promise<TMCPItem[]> {
+  // gate availability on storage state, return tool descriptors
+}
+
+export async function callYourTool(
+  storage: StorageAdapter,
+  bareName: string,
+  args: Record<string, unknown>
+): Promise<string> {
+  // dispatch by `bareName`, return JSON.stringify(...)
+}
 ```
 
-Built-in implementations: `HostToolSource`, `WebSearch`,
-`ImageGeneration`, `CustomServers`. See
-[`src/ui/tools/sources/`](../../src/ui/tools/sources/).
+Then wire it into [`buildToolContext`](../../src/core/services/ai/tools.ts)
+and [`dispatchAdapterTool`](../../src/core/services/ai/tools.ts).

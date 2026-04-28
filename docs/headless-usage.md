@@ -54,7 +54,7 @@ const ai = new AIEngine({
   storage,
   assignments,
   threads,
-  // toolDispatcher: optional — pass one to enable tool calls
+  // toolsAdapter: optional — pluggable runtime tool source
 });
 ```
 
@@ -68,22 +68,21 @@ const profiles = new ProfilesEngine({ storage }); // builds its own assignments
 
 ## Streaming a chat reply
 
-`AIEngine.sendStream` returns an `AsyncGenerator<ChatEvent>`. Drive
-it directly:
+`AIEngine.sendWithStream` returns an `AsyncGenerator<ChatEvent>`.
+Drive it directly:
 
 ```ts
 import type { ChatEvent } from "@onlyoffice/ai-chat/services";
 
 await storage.init();
 
-const profile = (await storage.profiles.getAll())[0];
-if (!profile) throw new Error("No profile configured");
-
-const stream = ai.sendStream({
+const stream = ai.sendWithStream({
   threadId: "thread-1",
-  text: "Summarize the attached doc.",
-  profileId: profile.id,
-  // files, images, extendedThinking, … as needed
+  userMessage: {
+    role: "user",
+    content: [{ type: "text", text: "Summarize the attached doc." }],
+  },
+  actionArgs: { isReasoning: true /* signal, tools, … */ },
 });
 
 for await (const event of stream) {
@@ -94,7 +93,9 @@ for await (const event of stream) {
       // event.message is a ThreadMessageLike
       break;
     case "tool-call-pending":
-      // No UI in headless mode — approve or deny via the dispatcher.
+      // event.autoAllow tells you whether the user already opted into
+      // auto-approve. In headless mode you typically dispatch the tool
+      // yourself, then call ai.approveToolCall({ ..., result }).
       break;
     case "thread-title":
       console.log("Auto-titled:", event.title);
@@ -129,23 +130,45 @@ returns the terminal message.
 
 ## Tool calls (optional)
 
-Pass a `toolDispatcher` to `AIEngine` if your bot should be able to
-call tools. The simplest dispatcher just maps `name → handler`:
+Pass a `toolsAdapter` to `AIEngine` if your bot should expose
+tools to the model. The engine resolves `getTools()` server-side
+alongside built-in web-search / image-generation, then dispatches
+`callTool(...)` automatically when the model picks one — no UI
+round-trip. See [`adapters.md`](./adapters.md#toolsadapter) for
+the contract.
 
 ```ts
-import type { ToolDispatcher } from "@onlyoffice/ai-chat/services";
+import type { ToolsAdapter } from "@onlyoffice/ai-chat";
 
-const dispatcher: ToolDispatcher = {
-  async listTools() { return [/* TMCPItem[] */]; },
-  async callTool(name, args) { /* …return string… */ },
-  checkAutoApprove() { return true; },
+const adapter: ToolsAdapter = {
+  async getTools() {
+    return {
+      "my-tools": [
+        {
+          name: "echo",
+          description: "Echo input back.",
+          inputSchema: {
+            type: "object",
+            properties: { text: { type: "string" } },
+          },
+        },
+      ],
+    };
+  },
+  async callTool(name, args) {
+    if (name === "echo") return JSON.stringify({ data: args });
+    return JSON.stringify({ error: `Unknown: ${name}` });
+  },
+  async denyTool() {},
 };
 
-const ai = new AIEngine({ storage, toolDispatcher: dispatcher });
+const ai = new AIEngine({ storage, toolsAdapter: adapter });
 ```
 
-Inside the React widget, `ui/tools/Servers` provides this dispatcher
-via `createServersDispatcher(servers)`.
+For tools you'd rather pause and approve manually (e.g. file
+writes), pass them through `actionArgs.tools` — those surface as
+`tool-call-pending` events for you to handle, and resume via
+`ai.approveToolCall({ ..., result })` / `ai.denyToolCall(...)`.
 
 ## Middleware
 
