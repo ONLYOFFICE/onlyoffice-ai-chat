@@ -1,51 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChatEventBus } from "../../events";
+import type { ChatEventBus } from "../../providers/EventsProvider";
 import type { PlatformAdapter } from "../../platform/types";
-import type { SettingsAdapter } from "../../../shared/settings-adapter";
 import type { TMCPItem } from "../../../types";
-
-const mockSettings = {
-  get: vi.fn().mockReturnValue(null),
-  set: vi.fn(),
-  remove: vi.fn(),
-};
 
 const mockPlatform = {
   file: null,
   process: null,
-  env: { platform: "desktop" },
+  env: { theme: "light", systemTheme: "light", locale: "en", devicePixelRatio: 1 },
   hostTools: null,
-};
+  clouds: null,
+} as unknown as PlatformAdapter;
 
 const mockEventBus = {
   on: vi.fn(),
   off: vi.fn(),
   emit: vi.fn(),
-};
+} as unknown as ChatEventBus;
 
 const mockHostToolSource = {
   getGroupIds: vi.fn().mockReturnValue([]),
   getToolsByGroup: vi.fn().mockResolvedValue({}),
-  isAutoAllow: vi.fn().mockReturnValue(false),
   callTool: vi.fn().mockResolvedValue("host-result"),
+  setGroups: vi.fn(),
 };
 
 const mockCustomServers = {
   getTools: vi.fn().mockResolvedValue({}),
   callToolFromMCP: vi.fn().mockResolvedValue("custom-result"),
   getServerType: vi.fn().mockReturnValue("my-server"),
-};
-
-const mockWebSearch = {
-  getTools: vi.fn().mockResolvedValue([]),
-  callTools: vi.fn().mockResolvedValue("web-result"),
-};
-
-const mockImageGeneration = {
-  getTools: vi.fn().mockReturnValue([]),
-  callTools: vi.fn().mockResolvedValue("image-result"),
-  setEnabled: vi.fn(),
-  getEnabled: vi.fn().mockReturnValue(false),
+  setCustomServers: vi.fn(),
+  startCustomServers: vi.fn(),
+  restartCustomServer: vi.fn(),
+  deleteCustomServer: vi.fn(),
+  customServers: {},
+  stoppedCustomServers: [],
+  customServersLogs: {},
 };
 
 vi.mock("../sources/HostToolSource", () => ({
@@ -64,22 +53,6 @@ vi.mock("../sources/CustomServers", () => ({
   },
 }));
 
-vi.mock("../sources/WebSearch", () => ({
-  WebSearch: class {
-    constructor() {
-      return mockWebSearch;
-    }
-  },
-}));
-
-vi.mock("../sources/ImageGeneration", () => ({
-  ImageGeneration: class {
-    constructor() {
-      return mockImageGeneration;
-    }
-  },
-}));
-
 import Servers from "../servers";
 
 describe("Servers", () => {
@@ -87,108 +60,19 @@ describe("Servers", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSettings.get.mockReturnValue(null);
     mockHostToolSource.getGroupIds.mockReturnValue([]);
     mockHostToolSource.getToolsByGroup.mockResolvedValue({});
-    mockHostToolSource.isAutoAllow.mockReturnValue(false);
     mockCustomServers.getTools.mockResolvedValue({});
-    mockWebSearch.getTools.mockResolvedValue([]);
-    mockImageGeneration.getTools.mockReturnValue([]);
-    mockImageGeneration.getEnabled.mockReturnValue(false);
-    servers = new Servers(
-      mockSettings as unknown as SettingsAdapter,
-      mockPlatform as unknown as PlatformAdapter,
-      mockEventBus as unknown as ChatEventBus,
-      {
-        tryResolveForAction: vi.fn().mockResolvedValue(null),
-      } as unknown as import("../../../core/services").AssignmentsEngine
-    );
-  });
-
-  describe("constructor", () => {
-    it("reads allowAlways from localStorage", () => {
-      expect(mockSettings.get).toHaveBeenCalledWith("allowAlwaysTools");
-    });
-
-    it("parses stored allowAlways tools", () => {
-      mockSettings.get.mockReturnValue("server_tool1,server_tool2");
-      const s = new Servers(
-        mockSettings as unknown as SettingsAdapter,
-        mockPlatform as unknown as PlatformAdapter,
-        mockEventBus as unknown as ChatEventBus,
-        {
-          tryResolveForAction: vi.fn().mockResolvedValue(null),
-        } as unknown as import("../../../core/services").AssignmentsEngine
-      );
-      expect(s.allowAlways).toEqual(["server_tool1", "server_tool2"]);
-    });
-
-    it("defaults to empty array when localStorage returns null", () => {
-      expect(servers.allowAlways).toEqual([]);
-    });
-  });
-
-  describe("checkAllowAlways", () => {
-    it("returns true for web-search type", () => {
-      expect(servers.checkAllowAlways("web-search", "web_search")).toBe(true);
-    });
-
-    it("returns true if hostToolSource.isAutoAllow returns true", () => {
-      mockHostToolSource.getGroupIds.mockReturnValue(["desktop-editor"]);
-      mockHostToolSource.isAutoAllow.mockReturnValue(true);
-      expect(servers.checkAllowAlways("desktop-editor", "read_file")).toBe(
-        true
-      );
-    });
-
-    it("returns true if tool is in allowAlways list", () => {
-      servers.allowAlways = ["myserver_mytool"];
-      expect(servers.checkAllowAlways("myserver", "mytool")).toBe(true);
-    });
-
-    it("returns false otherwise", () => {
-      expect(servers.checkAllowAlways("unknown", "unknown_tool")).toBe(false);
-    });
-  });
-
-  describe("setAllowAlways", () => {
-    it("adds tool to list and saves to localStorage", () => {
-      servers.setAllowAlways(true, "myserver", "mytool");
-      expect(servers.allowAlways).toContain("myserver_mytool");
-      expect(mockSettings.set).toHaveBeenCalledWith(
-        "allowAlwaysTools",
-        "myserver_mytool"
-      );
-    });
-
-    it("removes tool from list and saves to localStorage", () => {
-      servers.allowAlways = ["myserver_mytool", "other_tool"];
-      servers.setAllowAlways(false, "myserver", "mytool");
-      expect(servers.allowAlways).not.toContain("myserver_mytool");
-      expect(servers.allowAlways).toContain("other_tool");
-      expect(mockSettings.set).toHaveBeenCalledWith(
-        "allowAlwaysTools",
-        "other_tool"
-      );
-    });
-
-    it("ignores web-search type", () => {
-      servers.setAllowAlways(true, "web-search", "web_search");
-      expect(servers.allowAlways).toEqual([]);
-      expect(mockSettings.set).not.toHaveBeenCalled();
-    });
+    servers = new Servers(mockPlatform, mockEventBus);
   });
 
   describe("getTools", () => {
-    it("aggregates tools from all 3 sources", async () => {
+    it("aggregates tools from host and custom sources", async () => {
       const hostTools: Record<string, TMCPItem[]> = {
         "desktop-editor": [
           { name: "read_file", description: "Read", inputSchema: {} },
         ],
       };
-      const webTools: TMCPItem[] = [
-        { name: "web_search", description: "Search", inputSchema: {} },
-      ];
       const customTools: Record<string, TMCPItem[]> = {
         "my-mcp": [
           { name: "custom_tool", description: "Custom", inputSchema: {} },
@@ -196,15 +80,12 @@ describe("Servers", () => {
       };
 
       mockHostToolSource.getToolsByGroup.mockResolvedValue(hostTools);
-      mockWebSearch.getTools.mockResolvedValue(webTools);
       mockCustomServers.getTools.mockResolvedValue(customTools);
 
       const result = await servers.getTools();
 
       expect(result).toEqual({
         "desktop-editor": hostTools["desktop-editor"],
-        "web-search": webTools,
-        "image-generation": [],
         "my-mcp": customTools["my-mcp"],
       });
     });
@@ -222,17 +103,7 @@ describe("Servers", () => {
       expect(result).toBe("host-result");
     });
 
-    it("routes to webSearch for web-search type", async () => {
-      const result = await servers.callTools("web-search", "web_search", {
-        query: "test",
-      });
-      expect(mockWebSearch.callTools).toHaveBeenCalledWith("web_search", {
-        query: "test",
-      });
-      expect(result).toBe("web-result");
-    });
-
-    it("routes to customServers for other types", async () => {
+    it("routes to customServers for non-host types", async () => {
       const result = await servers.callTools("my-mcp", "custom_tool", {
         arg: "val",
       });
@@ -246,23 +117,44 @@ describe("Servers", () => {
   });
 
   describe("getServerType", () => {
-    it("checks hostToolSource groups first", () => {
+    it("returns host group id when name has host group prefix", () => {
       mockHostToolSource.getGroupIds.mockReturnValue(["desktop-editor"]);
       const result = servers.getServerType("desktop-editor_read_file");
       expect(result).toBe("desktop-editor");
     });
 
-    it("returns web-search for web-search prefixed names", () => {
-      const result = servers.getServerType("web-search_web_search");
-      expect(result).toBe("web-search");
-    });
-
-    it("falls through to customServers for other names", () => {
+    it("falls through to customServers for non-host names", () => {
       mockCustomServers.getServerType.mockReturnValue("my-mcp");
       const result = servers.getServerType("my-mcp_custom_tool");
       expect(result).toBe("my-mcp");
       expect(mockCustomServers.getServerType).toHaveBeenCalledWith(
         "my-mcp_custom_tool"
+      );
+    });
+  });
+
+  describe("custom server delegations", () => {
+    it("setCustomServers delegates", () => {
+      servers.setCustomServers({ mcpServers: {} });
+      expect(mockCustomServers.setCustomServers).toHaveBeenCalled();
+    });
+
+    it("startCustomServers delegates", () => {
+      servers.startCustomServers();
+      expect(mockCustomServers.startCustomServers).toHaveBeenCalled();
+    });
+
+    it("restartCustomServer delegates", () => {
+      servers.restartCustomServer("my-mcp");
+      expect(mockCustomServers.restartCustomServer).toHaveBeenCalledWith(
+        "my-mcp"
+      );
+    });
+
+    it("deleteCustomServer delegates", () => {
+      servers.deleteCustomServer("my-mcp");
+      expect(mockCustomServers.deleteCustomServer).toHaveBeenCalledWith(
+        "my-mcp"
       );
     });
   });

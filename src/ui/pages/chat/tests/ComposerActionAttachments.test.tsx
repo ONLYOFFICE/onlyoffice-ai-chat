@@ -28,7 +28,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useAttachmentsStore: () => ({
       addAttachmentFile: mockAddAttachmentFile,
@@ -53,7 +53,7 @@ vi.mock("../../../platform/context", () => ({
   }),
 }));
 
-vi.mock("../../../../tools/context", () => ({
+vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     eventBus: { emit: mockEmit },
   }),
@@ -496,7 +496,7 @@ describe("ComposerActionAttachment", () => {
         tooltipText?: string;
       }[];
       const wsItem = items.find((i) => i.text === "WebSearch");
-      expect(wsItem?.tooltipText).toBe("");
+      expect(wsItem?.tooltipText).toBe("EnableWebSearch");
     });
   });
 

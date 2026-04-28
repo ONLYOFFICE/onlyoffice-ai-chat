@@ -6,7 +6,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useProfilesStore: () => ({
       profiles: [{ id: "p1", name: "GPT-4", providerType: "openai" }],

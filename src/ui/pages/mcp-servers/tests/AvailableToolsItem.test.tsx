@@ -13,7 +13,7 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
-vi.mock("../../../../tools/context", () => ({
+vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     servers: {
       getCustomServersStoped: mockGetCustomServersStoped,
@@ -21,7 +21,7 @@ vi.mock("../../../../tools/context", () => ({
   }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useServersStore: () => ({
       changeToolStatus: mockChangeToolStatus,

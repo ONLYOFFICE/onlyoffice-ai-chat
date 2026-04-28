@@ -10,7 +10,7 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     provider: {
       getProvidersInfo: () => [
@@ -245,7 +245,7 @@ describe("ModelConfigForm", () => {
     fireEvent.click(screen.getByTestId("item-openai"));
     expect(onChange).toHaveBeenCalledWith("provider", {
       type: "openai",
-      baseUrl: "https://api.openai.com",
+      baseUrl: "https://api.openai.com/v1",
     });
   });
 

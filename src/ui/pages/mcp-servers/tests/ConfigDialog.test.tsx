@@ -16,7 +16,7 @@ vi.mock("../../../platform/context", () => ({
   }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useServersStore: () => ({
       saveConfig: mockSaveConfig,

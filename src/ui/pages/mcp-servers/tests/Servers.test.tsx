@@ -16,7 +16,7 @@ const mockServersInstance = {
 };
 const mockToolsContext = { servers: mockServersInstance };
 
-vi.mock("../../../../tools/context", () => ({
+vi.mock("../../../tools/context", () => ({
   useToolsContext: () => mockToolsContext,
 }));
 
@@ -24,7 +24,7 @@ const mockServersStoreState = {
   servers: { "host-editor": [{ name: "t1", description: "", inputSchema: {} }] },
 };
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useServersStore: () => mockServersStoreState,
   }),

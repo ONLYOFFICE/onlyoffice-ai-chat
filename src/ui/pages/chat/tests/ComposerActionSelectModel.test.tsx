@@ -11,7 +11,7 @@ const mockSetCurrentProviderTools = vi.fn();
 const mockSetCurrentProviderPrevMessages = vi.fn();
 const mockUseStores = vi.fn();
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => mockUseStores(),
 }));
 

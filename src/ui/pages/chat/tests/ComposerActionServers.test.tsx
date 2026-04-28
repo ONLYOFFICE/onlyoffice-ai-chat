@@ -15,7 +15,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useServersStore: () => ({
       servers: mockServers,
@@ -30,7 +30,7 @@ vi.mock("../../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../../tools/context", () => ({
+vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     eventBus: { emit: mockEmit },
   }),

@@ -2,31 +2,22 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-const mockGetProviderInfo = vi.fn().mockReturnValue({ name: "OpenAI" });
-const mockGetProvidersModels = vi.fn().mockResolvedValue({
-  models: new Map([
-    [
-      "OpenAI",
-      [
-        { id: "gpt-4", name: "GPT-4", provider: "openai", capabilities: 0 },
-        { id: "gpt-3.5", name: "GPT-3.5", provider: "openai", capabilities: 0 },
-      ],
-    ],
-  ]),
-  errors: new Map(),
-});
+const mockGetProviderModels = vi.fn();
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    provider: {
-      getProviderInfo: mockGetProviderInfo,
-      getProvidersModels: mockGetProvidersModels,
-    },
     useCloudsStore: () => ({ externalOnlyofficeConfig: undefined }),
+  }),
+}));
+
+vi.mock("../../../../core/providers", () => ({
+  getProvider: () => ({
+    getName: () => "OpenAI",
+    getProviderModels: mockGetProviderModels,
   }),
 }));
 
@@ -52,19 +43,10 @@ const initialValues: ModelFormValues = {
 describe("useModelForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetProviderInfo.mockReturnValue({ name: "OpenAI" });
-    mockGetProvidersModels.mockResolvedValue({
-      models: new Map([
-        [
-          "OpenAI",
-          [
-            { id: "gpt-4", name: "GPT-4", provider: "openai", capabilities: 0 },
-            { id: "gpt-3.5", name: "GPT-3.5", provider: "openai", capabilities: 0 },
-          ],
-        ],
-      ]),
-      errors: new Map(),
-    });
+    mockGetProviderModels.mockResolvedValue([
+      { id: "gpt-4", name: "GPT-4", provider: "openai", capabilities: 0 },
+      { id: "gpt-3.5", name: "GPT-3.5", provider: "openai", capabilities: 0 },
+    ]);
   });
 
   it("returns initial state", () => {
@@ -94,7 +76,7 @@ describe("useModelForm", () => {
     });
     expect(result.current.values.provider).toBe("openai");
     expect(result.current.values.baseUrl).toBe("https://api.openai.com");
-    expect(mockGetProvidersModels).toHaveBeenCalled();
+    expect(mockGetProviderModels).toHaveBeenCalled();
   });
 
   it("handleChange for apiKey triggers debounced fetchModels", () => {
@@ -202,7 +184,7 @@ describe("useModelForm", () => {
     await act(async () => {
       await result.current.fetchModels("openai" as never, "sk-key", "");
     });
-    expect(mockGetProvidersModels).not.toHaveBeenCalled();
+    expect(mockGetProviderModels).not.toHaveBeenCalled();
   });
 
   it("fetchModels populates models on success", async () => {
@@ -219,20 +201,16 @@ describe("useModelForm", () => {
     expect(result.current.values.profileName).toBe("OpenAI - GPT-4");
   });
 
-  it("fetchModels handles provider errors", async () => {
-    mockGetProvidersModels.mockResolvedValue({
-      models: new Map(),
-      errors: new Map([["OpenAI", { field: "key", message: "Invalid key" }]]),
-    });
+  it("fetchModels yields empty model list when provider returns non-array", async () => {
+    mockGetProviderModels.mockResolvedValue({ unexpected: true });
     const { result } = renderHook(() => useModelForm(initialValues));
     await act(async () => {
       await result.current.fetchModels(
         "openai" as never,
-        "bad-key",
+        "sk-key",
         "https://api.openai.com"
       );
     });
-    expect(result.current.errors.key).toBe("Invalid key");
     expect(result.current.models).toEqual([]);
   });
 

@@ -6,7 +6,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useMessageStore: () => ({
       messages: [],
@@ -24,8 +24,9 @@ vi.mock("../../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../../hooks", () => ({
+vi.mock("../../../hooks", () => ({
   useMessages: () => ({ onNew: vi.fn() }),
+  useThread: vi.fn(),
 }));
 
 vi.mock("../../initial-setup", () => ({

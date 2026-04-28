@@ -101,7 +101,7 @@ describe("HostToolSource", () => {
       const tool = source.getToolsByGroup()["desktop-editor"][0];
 
       expect(tool).toEqual({
-        name: "read_file",
+        name: "desktop-editor_read_file",
         description: "Read a file",
         inputSchema: {
           type: "object",

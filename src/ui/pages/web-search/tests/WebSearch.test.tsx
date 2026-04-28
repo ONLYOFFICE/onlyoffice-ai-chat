@@ -19,7 +19,7 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
-vi.mock("../../../../tools/context", () => ({
+vi.mock("../../../tools/context", () => ({
   useToolsContext: () => mockToolsContext,
 }));
 
@@ -33,12 +33,23 @@ const mockStoreState: {
   externalOnlyofficeConfig?: { baseUrl: string; apiKey?: string };
 } = {};
 
-vi.mock("../../../../store/context", () => ({
+const mockApi = {
+  webSearch: {
+    getActiveConfig: vi.fn().mockResolvedValue(null),
+    setActiveConfig: vi.fn().mockResolvedValue(undefined),
+    clear: vi.fn().mockResolvedValue(undefined),
+  },
+};
+const mockCallbacksManager = { emit: vi.fn() };
+
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useCloudsStore: () => ({
       cloudProviders: mockCloudProviders,
       externalOnlyofficeConfig: mockStoreState.externalOnlyofficeConfig,
     }),
+    api: mockApi,
+    callbacksManager: mockCallbacksManager,
   }),
 }));
 
@@ -136,8 +147,9 @@ import { WebSearch } from "../sub-components";
 
 describe("WebSearch", () => {
   beforeEach(() => {
-    mockSetWebSearchData.mockClear();
-    mockGetWebSearchData.mockReturnValue(null);
+    mockApi.webSearch.setActiveConfig.mockClear();
+    mockApi.webSearch.clear.mockClear();
+    mockApi.webSearch.getActiveConfig.mockResolvedValue(null);
     mockCloudProviders.length = 0;
     mockStoreState.externalOnlyofficeConfig = undefined;
   });
@@ -174,15 +186,15 @@ describe("WebSearch", () => {
     expect(screen.getByText("WebSearchDescription")).toBeInTheDocument();
   });
 
-  it("initializes from existing web search data", () => {
-    mockGetWebSearchData.mockReturnValue({
+  it("initializes from existing web search data", async () => {
+    mockApi.webSearch.getActiveConfig.mockResolvedValue({
       provider: "Exa",
       key: "test-key-123",
       baseUrl: "https://api.exa.ai",
     });
     render(<WebSearch />);
-    const apiInput = screen.getByTestId("input-EnterKey");
-    expect(apiInput).toHaveValue("test-key-123");
+    const apiInput = await screen.findByDisplayValue("test-key-123");
+    expect(apiInput).toBeInTheDocument();
   });
 
   it("renders Get API Key link for Exa", () => {
@@ -250,7 +262,7 @@ describe("WebSearch", () => {
     fireEvent.change(apiInput, { target: { value: "my-api-key" } });
     fireEvent.blur(apiInput);
 
-    expect(mockSetWebSearchData).toHaveBeenCalledWith({
+    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith({
       provider: "Exa",
       key: "my-api-key",
       baseUrl: "https://api.exa.ai",
@@ -263,7 +275,7 @@ describe("WebSearch", () => {
     fireEvent.change(apiInput, { target: { value: "" } });
     fireEvent.blur(apiInput);
 
-    expect(mockSetWebSearchData).toHaveBeenCalledWith(null);
+    expect(mockApi.webSearch.clear).toHaveBeenCalled();
   });
 
   it("saves data with base URL for provider without predefined baseUrl", () => {
@@ -277,7 +289,7 @@ describe("WebSearch", () => {
     fireEvent.change(apiInput, { target: { value: "key-123" } });
     fireEvent.blur(apiInput);
 
-    expect(mockSetWebSearchData).toHaveBeenCalledWith({
+    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith({
       provider: "ONLYOFFICE",
       key: "key-123",
       baseUrl: "https://custom.api.com",
@@ -295,7 +307,7 @@ describe("WebSearch", () => {
     fireEvent.change(apiInput, { target: { value: "key-123" } });
     fireEvent.blur(apiInput);
 
-    expect(mockSetWebSearchData).toHaveBeenCalledWith(null);
+    expect(mockApi.webSearch.clear).toHaveBeenCalled();
   });
 
   it("handles cloud provider selection", () => {
@@ -308,7 +320,7 @@ describe("WebSearch", () => {
     render(<WebSearch />);
     fireEvent.click(screen.getByTestId("combo-item-https://cloud.example.com"));
 
-    expect(mockSetWebSearchData).toHaveBeenCalledWith({
+    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith({
       provider: "https://cloud.example.com",
       key: "cloud-key",
       baseUrl: "https://cloud.example.com",
@@ -364,6 +376,7 @@ describe("WebSearch", () => {
     render(<WebSearch />);
     fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
 
-    expect(mockSetWebSearchData).not.toHaveBeenCalled();
+    expect(mockApi.webSearch.setActiveConfig).not.toHaveBeenCalled();
+    expect(mockApi.webSearch.clear).not.toHaveBeenCalled();
   });
 });

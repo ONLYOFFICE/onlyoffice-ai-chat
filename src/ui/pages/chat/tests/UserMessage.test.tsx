@@ -3,7 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 
 const mockAddPrompt = vi.fn();
-const mockAddFolder = vi.fn().mockReturnValue("new-folder-id");
+const mockAddFolder = vi.fn().mockResolvedValue("new-folder-id");
 let mockFolders: { id: string; name: string }[] = [];
 const mockMessageContent = {
   current: [{ type: "text", text: "Hello world" }] as unknown[],
@@ -13,7 +13,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: "en" } }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     usePromptsStore: () => ({
       addPrompt: mockAddPrompt,
@@ -393,7 +393,10 @@ describe("UserMessage", () => {
         onClick: () => void;
       }[];
       items[0].onClick();
-      expect(mockAddPrompt).toHaveBeenCalledWith("Hello world");
+      expect(mockAddPrompt).toHaveBeenCalledWith({
+        name: "Hello world",
+        text: "Hello world",
+      });
     });
 
     it("SaveAIPrompt joins multiple text items with newline", () => {
@@ -408,7 +411,10 @@ describe("UserMessage", () => {
         onClick: () => void;
       }[];
       items[0].onClick();
-      expect(mockAddPrompt).toHaveBeenCalledWith("Line 1\nLine 2");
+      expect(mockAddPrompt).toHaveBeenCalledWith({
+        name: "Line 1\nLine 2".slice(0, 15),
+        text: "Line 1\nLine 2",
+      });
     });
 
     it("SaveAIPromptToTable has subMenu with NewFolder option", () => {
@@ -449,7 +455,11 @@ describe("UserMessage", () => {
         subMenu?: { text: string; onClick: () => void }[];
       }[];
       items[1].subMenu![0].onClick();
-      expect(mockAddPrompt).toHaveBeenCalledWith("Hello world", "f1");
+      expect(mockAddPrompt).toHaveBeenCalledWith({
+        name: "Hello world",
+        text: "Hello world",
+        folderId: "f1",
+      });
     });
 
     it("clicking NewFolder opens the NewFolderDialog", () => {
@@ -508,15 +518,18 @@ describe("UserMessage", () => {
       expect(saveBtn).toBeDisabled();
     });
 
-    it("clicking Save calls addFolder and addPrompt then closes", () => {
+    it("clicking Save calls addFolder and addPrompt then closes", async () => {
       openNewFolderDialog();
       const buttons = screen.getAllByRole("button");
       const saveBtn = buttons.find((b) => b.textContent === "Save")!;
       fireEvent.click(saveBtn);
       expect(mockAddFolder).toHaveBeenCalledWith("NewFolder");
-      expect(mockAddPrompt).toHaveBeenCalledWith(
-        "Hello world",
-        "new-folder-id"
+      await vi.waitFor(() =>
+        expect(mockAddPrompt).toHaveBeenCalledWith({
+          name: "Hello world",
+          text: "Hello world",
+          folderId: "new-folder-id",
+        })
       );
       // Dialog should be closed after save
       const dialogContent = screen.queryByTestId("dialog-content");

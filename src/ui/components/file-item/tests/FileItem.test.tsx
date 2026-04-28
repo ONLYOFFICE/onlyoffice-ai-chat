@@ -23,7 +23,7 @@ vi.mock("../../../platform/context", () => ({
 const mockDeleteFile = vi.fn();
 const mockDeleteImage = vi.fn();
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useAttachmentsStore: () => ({
       deleteAttachmentFile: mockDeleteFile,

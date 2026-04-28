@@ -12,7 +12,7 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
-vi.mock("../../../../tools/context", () => ({
+vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     servers: {
       getCustomServers: mockGetCustomServers,
@@ -26,7 +26,7 @@ vi.mock("../../../../config", () => ({
   MAX_TOOL_COUNT_WITH_WEB_SEARCH: 102,
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useServersStore: () => ({
       servers: {

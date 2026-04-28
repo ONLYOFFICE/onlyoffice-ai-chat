@@ -17,7 +17,7 @@ vi.mock("../../../providers/LocalesProvider", () => ({
   }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useThreadsStore: (selector?: (s: unknown) => unknown) => {
       const state = { onDeleteThread: mockOnDeleteThread };

@@ -17,6 +17,30 @@ vi.mock("../ui/providers/LocalesProvider", () => ({
   loadLocale: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Global mock for ThemeProvider — components call useTheme() at render time.
+vi.mock("../ui/providers/ThemeProvider/context", () => ({
+  useTheme: () => ({
+    themeId: "theme-light",
+    themeType: "light" as const,
+    setThemeId: vi.fn(),
+    scale: 1,
+    portalContainer: null,
+  }),
+  ThemeProvider: ({ children }: { children: unknown }) => children,
+  getThemeType: () => "light" as const,
+}));
+
+vi.mock("../ui/providers/ThemeProvider", () => ({
+  useTheme: () => ({
+    themeId: "theme-light",
+    themeType: "light" as const,
+    setThemeId: vi.fn(),
+    scale: 1,
+    portalContainer: null,
+  }),
+  ThemeProvider: ({ children }: { children: unknown }) => children,
+}));
+
 // Keep react-i18next mock for any remaining direct usages and internal bridge
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({

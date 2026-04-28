@@ -22,7 +22,7 @@ const mockManageToolData = {
   idx: 0,
 };
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useServersStore: () => ({
       manageToolData: mockManageToolData,

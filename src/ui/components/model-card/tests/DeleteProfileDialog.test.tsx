@@ -17,7 +17,7 @@ vi.mock("../../../providers/LocalesProvider", () => ({
   }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useProfilesStore: () => ({
       deleteProfile: mockDeleteProfile,

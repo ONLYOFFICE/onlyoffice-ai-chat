@@ -4,7 +4,7 @@ import { act, fireEvent, render, waitFor } from "@testing-library/react";
 
 const mockUseStores = vi.fn();
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => mockUseStores(),
 }));
 

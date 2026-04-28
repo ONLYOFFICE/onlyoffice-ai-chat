@@ -8,7 +8,7 @@ vi.mock("react-i18next", () => ({
 
 const mockUseStores = vi.fn();
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => mockUseStores(),
 }));
 

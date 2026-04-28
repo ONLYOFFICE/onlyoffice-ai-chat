@@ -1,30 +1,23 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { AppContext } from "../../../app-context";
 import { createMessageStore } from "../create-message-store";
+import type { ServerAPI } from "../../providers/ApiProvider";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function makeCtx(overrides?: Partial<AppContext>): AppContext {
+function makeCtx(): AppContext {
   return {
-    storage: {
-      messages: {
-        getByThread: vi.fn().mockResolvedValue([]),
-      },
-    },
-    provider: {
-      setCurrentProviderPrevMessages: vi.fn(),
-      stopMessage: vi.fn(),
-    },
     callbacksManager: {
       emit: vi.fn(),
       setCallbacks: vi.fn(),
       getCallbacks: vi.fn().mockReturnValue({}),
     },
-    ...overrides,
   } as unknown as AppContext;
+}
+
+function makeApi(readMessages = vi.fn().mockResolvedValue([])): ServerAPI {
+  return {
+    threads: { readMessages },
+  } as unknown as ServerAPI;
 }
 
 function makeMsg(
@@ -41,14 +34,16 @@ function makeMsg(
 
 describe("createMessageStore", () => {
   let ctx: AppContext;
+  let api: ServerAPI;
 
   beforeEach(() => {
     vi.clearAllMocks();
     ctx = makeCtx();
+    api = makeApi();
   });
 
   it("starts with empty state", () => {
-    const store = createMessageStore(ctx);
+    const store = createMessageStore({ ctx, api });
     const state = store.getState();
     expect(state.messages).toEqual([]);
     expect(state.isStreamRunning).toBe(false);
@@ -57,7 +52,7 @@ describe("createMessageStore", () => {
 
   describe("setIsStreamRunning / setIsRequestRunning", () => {
     it("toggles stream running", () => {
-      const store = createMessageStore(ctx);
+      const store = createMessageStore({ ctx, api });
       store.getState().setIsStreamRunning(true);
       expect(store.getState().isStreamRunning).toBe(true);
       store.getState().setIsStreamRunning(false);
@@ -65,7 +60,7 @@ describe("createMessageStore", () => {
     });
 
     it("toggles request running", () => {
-      const store = createMessageStore(ctx);
+      const store = createMessageStore({ ctx, api });
       store.getState().setIsRequestRunning(true);
       expect(store.getState().isRequestRunning).toBe(true);
     });
@@ -73,13 +68,13 @@ describe("createMessageStore", () => {
 
   describe("addMessage", () => {
     it("appends message to list", () => {
-      const store = createMessageStore(ctx);
+      const store = createMessageStore({ ctx, api });
       store.getState().addMessage(makeMsg("user", "hello"));
       expect(store.getState().messages).toHaveLength(1);
     });
 
     it("replaces last message if it has incomplete status", () => {
-      const store = createMessageStore(ctx);
+      const store = createMessageStore({ ctx, api });
       store
         .getState()
         .addMessage(makeMsg("assistant", "partial", { type: "incomplete" }));
@@ -91,7 +86,7 @@ describe("createMessageStore", () => {
     });
 
     it("does not replace last message if it has complete status", () => {
-      const store = createMessageStore(ctx);
+      const store = createMessageStore({ ctx, api });
       store
         .getState()
         .addMessage(makeMsg("assistant", "done", { type: "complete" }));
@@ -102,7 +97,7 @@ describe("createMessageStore", () => {
 
   describe("updateLastMessage", () => {
     it("replaces the last message", () => {
-      const store = createMessageStore(ctx);
+      const store = createMessageStore({ ctx, api });
       store.getState().addMessage(makeMsg("user", "a"));
       store.getState().addMessage(makeMsg("assistant", "b"));
       store.getState().updateLastMessage(makeMsg("assistant", "b-updated"));
@@ -114,75 +109,60 @@ describe("createMessageStore", () => {
   });
 
   describe("fetchPrevMessages", () => {
-    it("fetches messages from storage and sets them", async () => {
+    it("fetches messages and sets them", async () => {
       const msgs = [makeMsg("user", "prev")];
-      const getByThread = vi.fn().mockResolvedValue(msgs);
-      ctx = makeCtx({
-        storage: { messages: { getByThread } },
-      } as unknown as Partial<AppContext>);
-      const store = createMessageStore(ctx);
+      const readMessages = vi.fn().mockResolvedValue(msgs);
+      api = makeApi(readMessages);
+      const store = createMessageStore({ ctx, api });
 
       await store.getState().fetchPrevMessages("thread-1");
 
-      expect(getByThread).toHaveBeenCalledWith("thread-1");
+      expect(readMessages).toHaveBeenCalledWith("thread-1");
       expect(store.getState().messages).toEqual(msgs);
-      expect(
-        (
-          ctx.provider as {
-            setCurrentProviderPrevMessages: ReturnType<typeof vi.fn>;
-          }
-        ).setCurrentProviderPrevMessages
-      ).toHaveBeenCalledWith(msgs);
     });
 
     it("discards stale results if thread changed", async () => {
       const slowMsgs = [makeMsg("user", "old")];
-      const getByThread = vi.fn().mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(() => resolve(slowMsgs), 50);
-          })
-      );
-      ctx = makeCtx({
-        storage: { messages: { getByThread } },
-      } as unknown as Partial<AppContext>);
-      const store = createMessageStore(ctx);
+      const readMessages = vi.fn().mockImplementation((threadId: string) => {
+        if (threadId === "thread-1") {
+          return new Promise((resolve) => setTimeout(() => resolve(slowMsgs), 50));
+        }
+        return Promise.resolve([]);
+      });
+      api = makeApi(readMessages);
+      const store = createMessageStore({ ctx, api });
 
       const p = store.getState().fetchPrevMessages("thread-1");
-      // Switch thread before first fetch resolves
-      store.getState().fetchPrevMessages("thread-2");
+      await store.getState().fetchPrevMessages("thread-2");
       await p;
-      // Messages should not be set for stale thread
-      // (thread-2 has no messages from the empty mock)
       expect(store.getState()._currentThreadId).toBe("thread-2");
+      expect(store.getState().messages).toEqual([]);
     });
   });
 
   describe("stopMessage", () => {
-    it("stops stream and calls provider.stopMessage", () => {
-      const store = createMessageStore(ctx);
+    it("aborts stream and emits onStreamStop", () => {
+      const store = createMessageStore({ ctx, api });
+      const abort = new AbortController();
+      const abortSpy = vi.spyOn(abort, "abort");
+      store.getState().setAbortController(abort);
       store.getState().setIsStreamRunning(true);
       store.getState().stopMessage();
+      expect(abortSpy).toHaveBeenCalled();
       expect(store.getState().isStreamRunning).toBe(false);
-      expect(
-        (ctx.provider as { stopMessage: ReturnType<typeof vi.fn> }).stopMessage
-      ).toHaveBeenCalled();
+      expect(ctx.callbacksManager.emit).toHaveBeenCalledWith(
+        "onStreamStop",
+        expect.any(Object)
+      );
     });
   });
 
   describe("clearMessages", () => {
-    it("clears messages and resets provider history", () => {
-      const store = createMessageStore(ctx);
+    it("clears messages", () => {
+      const store = createMessageStore({ ctx, api });
       store.getState().addMessage(makeMsg("user", "hello"));
       store.getState().clearMessages();
       expect(store.getState().messages).toEqual([]);
-      expect(
-        (
-          ctx.provider as {
-            setCurrentProviderPrevMessages: ReturnType<typeof vi.fn>;
-          }
-        ).setCurrentProviderPrevMessages
-      ).toHaveBeenCalledWith([]);
     });
   });
 });

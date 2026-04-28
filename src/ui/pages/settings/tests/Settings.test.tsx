@@ -10,7 +10,7 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useProfilesStore: (selector?: (s: unknown) => unknown) => {
       const state = { profiles: [{ id: "p1" }] };

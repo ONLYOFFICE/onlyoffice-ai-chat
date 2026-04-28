@@ -51,10 +51,14 @@ describe("createAIApi", () => {
     api.send({ a: 1 } as never);
     api.sendCustom({ b: 2 } as never);
     api.sendWithStream({ c: 3 } as never);
+    api.approveToolCall({ d: 4 } as never);
+    api.denyToolCall({ e: 5 } as never);
     expectCall(1, "ai", "send", [{ a: 1 }]);
     expectCall(2, "ai", "sendCustom", [{ b: 2 }]);
     expectCall(3, "ai", "sendWithStream", [{ c: 3 }]);
-    expect(mockedCallRoute).toHaveBeenCalledTimes(3);
+    expectCall(4, "ai", "approveToolCall", [{ d: 4 }]);
+    expectCall(5, "ai", "denyToolCall", [{ e: 5 }]);
+    expect(mockedCallRoute).toHaveBeenCalledTimes(5);
   });
 });
 
@@ -102,11 +106,15 @@ describe("createProfilesApi", () => {
     api.delete("1");
     api.listModels("1");
     api.testConnection("1");
+    api.getById("1");
+    api.list();
     expectCall(1, "profiles", "create", [{ name: "p" }]);
     expectCall(2, "profiles", "update", [{ id: "1" }]);
     expectCall(3, "profiles", "delete", ["1"]);
     expectCall(4, "profiles", "listModels", ["1"]);
     expectCall(5, "profiles", "testConnection", ["1"]);
+    expectCall(6, "profiles", "getById", ["1"]);
+    expectCall(7, "profiles", "list", []);
   });
 });
 
@@ -124,6 +132,8 @@ describe("createPromptsApi", () => {
     api.listFolders();
     api.export();
     api.importBundle({ items: [] } as never, { mode: "merge" } as never);
+    api.getById("1");
+    api.getFolderById("f1");
     expectCall(1, "prompts", "create", [{ title: "t" }]);
     expectCall(2, "prompts", "update", ["1", { title: "x" }]);
     expectCall(3, "prompts", "move", ["1", "f1"]);
@@ -138,6 +148,8 @@ describe("createPromptsApi", () => {
       { items: [] },
       { mode: "merge" },
     ]);
+    expectCall(12, "prompts", "getById", ["1"]);
+    expectCall(13, "prompts", "getFolderById", ["f1"]);
   });
 });
 
@@ -154,6 +166,10 @@ describe("createThreadsApi", () => {
     api.regenerateTitle("t1", { id: "p1" } as never);
     api.list();
     api.readMessages("t1", 10, 0);
+    api.getById("t1");
+    api.getMessageById("m1");
+    api.updateMessage("m1", { role: "user" } as never);
+    api.deleteMessage("m1");
     expectCall(1, "threads", "create", [{ title: "t" }]);
     expectCall(2, "threads", "openOrCreate", [{ profile: "p" }]);
     expectCall(3, "threads", "appendUserMessage", [
@@ -168,6 +184,10 @@ describe("createThreadsApi", () => {
     expectCall(8, "threads", "regenerateTitle", ["t1", { id: "p1" }]);
     expectCall(9, "threads", "list", []);
     expectCall(10, "threads", "readMessages", ["t1", 10, 0]);
+    expectCall(11, "threads", "getById", ["t1"]);
+    expectCall(12, "threads", "getMessageById", ["m1"]);
+    expectCall(13, "threads", "updateMessage", ["m1", { role: "user" }]);
+    expectCall(14, "threads", "deleteMessage", ["m1"]);
   });
 });
 

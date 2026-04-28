@@ -33,7 +33,7 @@ vi.mock("../../../platform/context", () => ({
   }),
 }));
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useRouter: (selector?: (s: unknown) => unknown) => {
       const state = { currentPage };

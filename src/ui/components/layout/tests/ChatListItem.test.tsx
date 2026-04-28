@@ -289,7 +289,10 @@ describe("ChatListItem", () => {
     fireEvent.mouseEnter(container);
     fireEvent.click(screen.getByTestId("menu-Save"));
 
-    expect(defaultProps.onDownloadThread).toHaveBeenCalledWith("thread-1");
+    expect(defaultProps.onDownloadThread).toHaveBeenCalledWith(
+      "thread-1",
+      "Test Thread"
+    );
   });
 
   it("calls onClearThreadHistory when ClearHistory is clicked", () => {

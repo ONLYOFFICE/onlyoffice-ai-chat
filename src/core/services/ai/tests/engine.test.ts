@@ -81,6 +81,14 @@ function makeStorage() {
       touch: vi.fn(),
       delete: vi.fn(),
     },
+    webSearch: {
+      read: vi.fn(async () => null),
+    },
+    toolPrefs: {
+      readAllowAlways: vi.fn(async () => []),
+      readDisabled: vi.fn(async () => []),
+      upsertAllowAlways: vi.fn(),
+    },
     messages: {
       create: vi.fn(
         async (

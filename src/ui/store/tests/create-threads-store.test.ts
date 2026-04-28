@@ -1,0 +1,215 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { CallbacksManager } from "../../providers/EventsProvider";
+import type { PlatformAdapter } from "../../platform/types";
+import type { ServerAPI } from "../../providers/ApiProvider";
+import { createThreadsStore } from "../create-threads-store";
+import type { MessageStoreState } from "../create-message-store";
+import type { ProfilesStoreState } from "../create-profiles-store";
+import type { StoreApi, UseBoundStore } from "zustand";
+import type { Thread } from "../../../types";
+
+type ProfilesStore = UseBoundStore<StoreApi<ProfilesStoreState>>;
+type MessageStore = UseBoundStore<StoreApi<MessageStoreState>>;
+
+function makeDeps(initialThreads: Thread[] = []) {
+  const profilesGetState = vi.fn(() => ({
+    getProfileById: vi.fn((id: string) => ({ id, name: `p-${id}` })),
+    setSessionChatProfile: vi.fn(),
+  }));
+  const useProfilesStore = {
+    getState: profilesGetState,
+  } as unknown as ProfilesStore;
+
+  const clearMessages = vi.fn();
+  const useMessageStore = {
+    getState: () => ({ clearMessages }),
+  } as unknown as MessageStore;
+
+  const api = {
+    threads: {
+      list: vi.fn().mockResolvedValue(initialThreads),
+      getById: vi.fn().mockResolvedValue(null),
+      touch: vi.fn().mockResolvedValue(undefined),
+      readMessages: vi.fn().mockResolvedValue([]),
+      rename: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+      clearMessages: vi.fn().mockResolvedValue(undefined),
+    },
+  } as unknown as ServerAPI;
+
+  const saveAsFile = vi.fn();
+  const platform = {
+    file: { saveAsFile },
+  } as unknown as PlatformAdapter;
+
+  const callbacksManager = { emit: vi.fn() } as unknown as CallbacksManager;
+  return {
+    api,
+    platform,
+    useProfilesStore,
+    useMessageStore,
+    callbacksManager,
+    profilesGetState,
+    clearMessages,
+    saveAsFile,
+  };
+}
+
+const mkThread = (id: string, title = `t-${id}`): Thread =>
+  ({ threadId: id, title, lastEditDate: 1, profileId: undefined }) as Thread;
+
+describe("createThreadsStore", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("starts empty", () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    expect(s.getState().threadId).toBe("");
+    expect(s.getState().threads).toEqual([]);
+  });
+
+  it("initThreads loads from api", async () => {
+    const deps = makeDeps([mkThread("a"), mkThread("b")]);
+    const s = createThreadsStore(deps);
+    await s.getState().initThreads();
+    expect(s.getState().threads).toHaveLength(2);
+  });
+
+  it("insertThread uses existing thread when found", async () => {
+    const deps = makeDeps();
+    deps.api.threads.getById = vi
+      .fn()
+      .mockResolvedValue(mkThread("a", "old-title"));
+    const s = createThreadsStore(deps);
+    await s.getState().insertThread("a", "ignored-title");
+    expect(s.getState().threadId).toBe("a");
+    expect(s.getState().threads[0].title).toBe("old-title");
+    expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
+      "onThreadsUpdated",
+      { kind: "created", threadId: "a", title: "ignored-title" }
+    );
+  });
+
+  it("insertThread creates placeholder when not in storage", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    await s.getState().insertThread("z", "new-title", { profileId: "p1" });
+    expect(s.getState().threads[0].threadId).toBe("z");
+    expect(s.getState().threads[0].title).toBe("new-title");
+  });
+
+  it("insertThread dedupes existing entry", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    s.setState({ threads: [mkThread("a"), mkThread("b")] });
+    await s.getState().insertThread("a", "fresh");
+    expect(s.getState().threads.map((t) => t.threadId)).toEqual(["a", "b"]);
+  });
+
+  it("insertNewMessageToThread no-ops when no active thread", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    await s.getState().insertNewMessageToThread();
+    expect(deps.api.threads.touch).not.toHaveBeenCalled();
+  });
+
+  it("insertNewMessageToThread bumps lastEdit and updates profileId", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    s.setState({ threadId: "a", threads: [mkThread("a")] });
+    await s
+      .getState()
+      .insertNewMessageToThread({ profileId: "p2" } as { profileId: string });
+    expect(deps.api.threads.touch).toHaveBeenCalledWith("a", "p2");
+    expect(s.getState().threads[0].profileId).toBe("p2");
+  });
+
+  it("onSwitchToNewThread clears threadId and emits", () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    s.setState({ threadId: "a" });
+    s.getState().onSwitchToNewThread();
+    expect(s.getState().threadId).toBe("");
+    expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
+      "onThreadsUpdated",
+      { kind: "switched", threadId: "", previousThreadId: "a" }
+    );
+  });
+
+  it("onSwitchToThread sets threadId and emits", () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    s.setState({ threads: [mkThread("a")] });
+    s.getState().onSwitchToThread("a");
+    expect(s.getState().threadId).toBe("a");
+    expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
+      "onThreadsUpdated",
+      { kind: "switched", threadId: "a", previousThreadId: "" }
+    );
+  });
+
+  it("onDownloadThread fetches messages and saves via platform", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    await s.getState().onDownloadThread("a", "My Chat");
+    expect(deps.api.threads.readMessages).toHaveBeenCalledWith("a");
+    expect(deps.saveAsFile).toHaveBeenCalledWith(
+      expect.any(String),
+      "My Chat.docx"
+    );
+  });
+
+  it("onDownloadThread defaults filename when title is empty", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    await s.getState().onDownloadThread("a");
+    expect(deps.saveAsFile).toHaveBeenCalledWith(
+      expect.any(String),
+      "Chat Export.docx"
+    );
+  });
+
+  it("onRenameThread updates title and persists", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    s.setState({ threads: [mkThread("a", "old")] });
+    await s.getState().onRenameThread("a", "renamed");
+    expect(s.getState().threads[0].title).toBe("renamed");
+    expect(deps.api.threads.rename).toHaveBeenCalledWith("a", "renamed");
+  });
+
+  it("onDeleteThread switches to new when deleting active thread", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    s.setState({ threadId: "a", threads: [mkThread("a"), mkThread("b")] });
+    await s.getState().onDeleteThread("a");
+    expect(s.getState().threadId).toBe("");
+    expect(s.getState().threads.map((t) => t.threadId)).toEqual(["b"]);
+    expect(deps.api.threads.delete).toHaveBeenCalledWith("a");
+  });
+
+  it("onDeleteThread leaves active id when deleting other thread", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    s.setState({ threadId: "a", threads: [mkThread("a"), mkThread("b")] });
+    await s.getState().onDeleteThread("b");
+    expect(s.getState().threadId).toBe("a");
+  });
+
+  it("onClearThreadHistory clears messages when active matches", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    s.setState({ threadId: "a" });
+    await s.getState().onClearThreadHistory("a");
+    expect(deps.api.threads.clearMessages).toHaveBeenCalledWith("a");
+    expect(deps.clearMessages).toHaveBeenCalled();
+  });
+
+  it("onClearThreadHistory leaves messages alone when not active", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    s.setState({ threadId: "other" });
+    await s.getState().onClearThreadHistory("a");
+    expect(deps.clearMessages).not.toHaveBeenCalled();
+  });
+});

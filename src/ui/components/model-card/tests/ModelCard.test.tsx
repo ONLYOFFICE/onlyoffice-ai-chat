@@ -10,12 +10,8 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
-vi.mock("../../../../store/context", () => ({
-  useStores: () => ({
-    provider: {
-      getProviderInfo: (type: string) => ({ name: type.toUpperCase() }),
-    },
-  }),
+vi.mock("../../../../core/providers", () => ({
+  getProvider: (type: string) => ({ getName: () => type.toUpperCase() }),
 }));
 
 vi.mock("../../icon", () => ({

@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 
 const mockGoToChat = vi.fn();
 
-vi.mock("../../../../store/context", () => ({
+vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useRouter: () => ({
       goToChat: mockGoToChat,
