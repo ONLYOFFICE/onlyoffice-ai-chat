@@ -60,10 +60,10 @@ multiple parents, or substitute a test double.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  UI / hooks / higher-level services                              │
-│  (ChatEngine, ProfilesService, ThreadsService, AIChatWidget…)    │
+│  ui/                                                             │
+│   AIChatWidget · pages · hooks · stores · ApiProvider            │
 └─────────────────────┬────────────────────────────────────────────┘
-                      │ instantiate per-AppContext, call methods
+                      │ calls through ServerAPI (in-process or remote)
                       ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │  core/services                                                   │
@@ -80,10 +80,11 @@ multiple parents, or substitute a test double.
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-`core/services/` lives below the higher-level `src/services/`
-layer (which holds Zustand-coupled glue like `ChatEngine`,
-`ProfilesService`, etc.) and above the storage / actions /
-providers primitives.
+`core/services/` is the only orchestration layer between the UI
+and the storage / actions / providers primitives. The UI reaches
+it through `ServerAPI` (see
+[`../../ui/providers/api.md`](../../ui/providers/api.md)), which
+routes calls in-process by default and over HTTP when configured.
 
 These services own:
 
@@ -122,10 +123,10 @@ These services own:
 
 These services do **not** own:
 
-- UI state (Zustand stores) — that's the higher-level
-  `src/services/` layer.
+- UI state (Zustand stores) — that's `ui/store/`.
 - Streaming UX (deltas, tool approvals, abort wiring) — that's
-  `ChatEngine` in `src/services/`.
+  driven by `ui/hooks/useMessages` on top of
+  `AIEngine.sendStream`.
 - Adapter implementations — every service here depends on
   [`StorageAdapter`](../../../src/core/storage/adapter.ts)
   interfaces only.

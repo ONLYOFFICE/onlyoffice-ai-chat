@@ -1,0 +1,29 @@
+# `ui/providers/` — pluggable React providers
+
+Five React context providers expose the widget's customization
+points. Each can be used inside `AIChatWidget` (via props) or
+standalone (wrap your tree directly).
+
+| Provider | Doc | Customizes |
+| --- | --- | --- |
+| `ApiProvider` | [`api.md`](./api.md) | In-process or remote engine routing |
+| `ComponentsProvider` | [`components.md`](./components.md) | UI primitive overrides (buttons, inputs, dialogs, …) |
+| `ImagesProvider` | [`images.md`](./images.md) | Icon / image overrides |
+| `LocalesProvider` (`I18nProvider`) | [`locales.md`](./locales.md) | i18n: 43 bundled locales, custom strings |
+| `ThemeProvider` | [`theme.md`](./theme.md) | Themes, CSS-variable tokens, dark/light resolution |
+
+All five are also re-exported from the package root:
+
+```ts
+import {
+  ApiProvider,
+  ComponentsProvider,
+  ImagesProvider,
+  I18nProvider,
+  ThemeProvider,
+} from "@onlyoffice/ai-chat";
+```
+
+The accessor hooks live on the same modules
+(`useComponents`, `useImages`, `useI18n`, `useTheme`, `useApi`) and
+are exported alongside the providers.

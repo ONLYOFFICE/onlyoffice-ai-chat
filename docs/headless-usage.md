@@ -1,376 +1,198 @@
 # Headless Usage
 
-Use the library's stores, services, and page components without the
-all-in-one `AIChatWidget` wrapper. This is useful when you need:
+Drive `core/services` engines without rendering `AIChatWidget`. Use
+this when you want chat, summarization, OCR, or web-search routed
+through the library's profile / assignment / thread machinery from
+non-React code (a CLI bot, a server worker, an admin script).
 
-- Custom layouts or routing
-- Direct store/service access from non-React code
-- Only specific pages (e.g., just the settings page)
-- Programmatic chat control without rendering UI
+For reference on what each engine does, read
+[`core/services/README.md`](./core/services/README.md). For the
+storage contract you must implement, read
+[`adapters.md`](./adapters.md).
 
----
-
-## When to Use Headless Mode
+## When to go headless
 
 | Scenario | Use |
-|----------|-----|
+| --- | --- |
 | Drop-in chat sidebar | `AIChatWidget` |
-| Custom layout with library pages | Headless with page components |
-| Bot / automation (no UI) | Headless with `ChatEngine` only |
-| Embed settings page in your own shell | Headless with `SettingsPage` |
+| Custom shell with library pages | `AIChatWidget` providers + the page exports |
+| Bot / cron / admin script | `core/services` engines directly |
+| Embed only the settings page | The page export inside your own provider stack |
 
----
+If you only need programmatic control while keeping the UI, prefer
+the [imperative ref](./ui/imperative.md) instead.
 
-## Manual AppContext Assembly
+## Constructing engines
 
-The `AppContext` is the dependency injection container. In `AIChatWidget`,
-it is built automatically. In headless mode, you assemble it yourself:
+All eight engines take a `{ storage, … }` deps object. They hold no
+per-call state — re-use is safe.
 
 ```ts
 import {
-  type AppContext,
-  type SettingsAdapter,
-  type StorageAdapter,
-  type PlatformAdapter,
-  CallbacksManager,
-  ChatEventBus,
-  MiddlewareRunner,
-  Servers,
-} from "@onlyoffice/ai-chat";
-import Provider from "@onlyoffice/ai-chat/providers";
+  AIEngine,
+  AssignmentsEngine,
+  PreferencesEngine,
+  ProfilesEngine,
+  PromptsEngine,
+  ThreadsEngine,
+  ToolsEngine,
+  WebSearchEngine,
+} from "@onlyoffice/ai-chat/services";
+import type { StorageAdapter } from "@onlyoffice/ai-chat/storage";
 
-// 1. Create adapters (see adapters.md)
-const settings: SettingsAdapter = { /* ... */ };
-const storage: StorageAdapter = { /* ... */ };
-const platform: PlatformAdapter = { /* ... */ };
+const storage: StorageAdapter = /* host-supplied */;
 
-// 2. Build the context
-const provider = new Provider();
-provider.setSettings(settings);
+const assignments = new AssignmentsEngine({ storage });
+const threads     = new ThreadsEngine({ storage });
+const profiles    = new ProfilesEngine({ storage, assignments });
+const tools       = new ToolsEngine({ storage });
+const prompts     = new PromptsEngine({ storage });
+const webSearch   = new WebSearchEngine({ storage });
+const preferences = new PreferencesEngine({ storage });
 
-const eventBus = new ChatEventBus();
-const callbacksManager = new CallbacksManager();
-// Pass the callbacksManager so Servers can emit `onWebSearchUpdated`.
-const servers = new Servers(settings, platform, eventBus, callbacksManager);
-const middlewareRunner = new MiddlewareRunner([]);
-
-const ctx: AppContext = {
-  settings,
+const ai = new AIEngine({
   storage,
-  platform,
-  provider,
-  servers,
-  eventBus,
-  callbacksManager,
-  middlewareRunner,
-  // Optional external configuration:
-  onlyofficeConfig: undefined,   // { baseUrl, apiKey? } for external ONLYOFFICE AI
-  hiddenProviders: undefined,    // ProviderType[] to hide from model pickers
-};
-```
-
----
-
-## Creating Stores
-
-Once you have an `AppContext`, create the Zustand store bundle:
-
-```ts
-import { createStores } from "@onlyoffice/ai-chat/store";
-import type { StoreKeys } from "@onlyoffice/ai-chat";
-
-const storeKeys: StoreKeys = {
-  defaultProfile: "ai.defaultProfile",
-  chatProfile: "ai.chatProfile",
-  summarizationProfile: "ai.summarizationProfile",
-  translationProfile: "ai.translationProfile",
-  textAnalysisProfile: "ai.textAnalysisProfile",
-  imageGenerationProfile: "ai.imageGenerationProfile",
-  ocrProfile: "ai.ocrProfile",
-  visionProfile: "ai.visionProfile",
-  deepMode: "ai.deepMode",
-  mcpServers: "ai.mcpServers",
-  disabledTools: "ai.disabledTools",
-  systemPromptAppendix: "ai.systemPromptAppendix",
-};
-
-const stores = createStores({ keys: storeKeys, ctx });
-```
-
-The returned `Stores` object contains all Zustand hooks plus service
-instances:
-
-```ts
-interface Stores {
-  // Zustand store hooks
-  useMessageStore:     UseBoundStore<StoreApi<MessageStoreState>>;
-  useProfilesStore:    UseBoundStore<StoreApi<ProfilesStoreState>>;
-  useThreadsStore:     UseBoundStore<StoreApi<ThreadsStoreState>>;
-  useServersStore:     UseBoundStore<StoreApi<ServersStoreState>>;
-  usePromptsStore:     UseBoundStore<StoreApi<PromptsStoreState>>;
-  useAttachmentsStore: UseBoundStore<StoreApi<AttachmentsStoreState>>;
-  useThemeStore:       UseBoundStore<StoreApi<ThemeStoreState>>;
-  useRouter:           UseBoundStore<StoreApi<RouterStoreState>>;
-  useCloudsStore:      UseBoundStore<StoreApi<CloudsStoreState>>;
-
-  // Services
-  chatEngine:          ChatEngine;
-  provider:            Provider;
-  callbacksManager:    CallbacksManager;
-  middlewareRunner:     MiddlewareRunner;
-
-  // Selectors
-  selectCurrentChatProfile: (s: ProfilesStoreState) => Profile | null;
-}
-```
-
----
-
-## Accessing Stores
-
-Zustand stores from `createStores` are standard `useBoundStore` hooks. Use
-them in React components or read/subscribe outside React:
-
-### Inside React
-
-```tsx
-function MessageCount() {
-  const { useMessageStore } = useStores();
-  const messages = useMessageStore((s) => s.messages);
-  return <span>{messages.length} messages</span>;
-}
-```
-
-### Outside React (getState / subscribe)
-
-```ts
-// Read current state
-const currentMessages = stores.useMessageStore.getState().messages;
-const profiles = stores.useProfilesStore.getState().profiles;
-
-// Subscribe to changes
-const unsubscribe = stores.useThreadsStore.subscribe((state) => {
-  console.log("Threads changed:", state.threads.length);
+  assignments,
+  threads,
+  // toolDispatcher: optional — pass one to enable tool calls
 });
 ```
 
----
-
-## Using ChatEngine Directly
-
-`ChatEngine` orchestrates the full message lifecycle. Its `sendMessage` method is an async generator that yields `ChatEvent` objects:
+Sub-services are optional. If you don't pass them, the parent
+constructs its own:
 
 ```ts
-const { chatEngine, useProfilesStore } = stores;
+const ai = new AIEngine({ storage });        // builds its own assignments + threads
+const profiles = new ProfilesEngine({ storage }); // builds its own assignments
+```
 
-// Load profiles from storage once.
-await useProfilesStore.getState().init();
+## Streaming a chat reply
 
-// Pick a profile — either the configured chat profile or any profile by id.
-const profile = useProfilesStore.getState().chatProfile
-  ?? useProfilesStore.getState().defaultProfile;
+`AIEngine.sendStream` returns an `AsyncGenerator<ChatEvent>`. Drive
+it directly:
+
+```ts
+import type { ChatEvent } from "@onlyoffice/ai-chat/services";
+
+await storage.init();
+
+const profile = (await storage.profiles.getAll())[0];
 if (!profile) throw new Error("No profile configured");
 
-// Drive the generator directly.
-for await (const event of chatEngine.sendMessage({
-  text: "Hello, assistant!",
+const stream = ai.sendStream({
   threadId: "thread-1",
-  existingMessages: [],
-  extendedThinking: false,
+  text: "Summarize the attached doc.",
   profileId: profile.id,
-})) {
+  // files, images, extendedThinking, … as needed
+});
+
+for await (const event of stream) {
   switch (event.type) {
     case "message-start":
     case "message-delta":
     case "message-end":
-      process.stdout.write(
-        typeof event.message.content === "string"
-          ? event.message.content
-          : ""
-      );
+      // event.message is a ThreadMessageLike
       break;
     case "tool-call-pending":
-      // Approve programmatically — there is no UI in headless mode.
+      // No UI in headless mode — approve or deny via the dispatcher.
       break;
     case "thread-title":
-      console.log("Auto-generated title:", event.title);
+      console.log("Auto-titled:", event.title);
       break;
   }
 }
 ```
 
-### ChatEvent Types
+See [`core/services/ai-engine.md`](./core/services/ai-engine.md)
+for the full input/output schema.
+
+## One-shot actions
+
+For non-conversational calls (summarize, translate, OCR, vision,
+analyze, image generation, custom prompt) bypass thread machinery
+and call the action directly via `AIEngine.send`:
 
 ```ts
-type ChatEvent =
-  | { type: "message-start"; message: ThreadMessageLike; messageUID: string }
-  | { type: "message-delta"; message: ThreadMessageLike; messageUID: string }
-  | { type: "message-end"; message: ThreadMessageLike; messageUID: string }
-  | { type: "message-incomplete"; message: ThreadMessageLike }
-  | { type: "tool-call-pending"; message: ThreadMessageLike;
-      idx: number; messageUID: string }
-  | { type: "thread-title"; title: string; profileId?: string };
+import { ActionType } from "@onlyoffice/ai-chat";
+
+const result = await ai.send({
+  action: ActionType.Summarization,
+  text: "...long article...",
+  profileId: profile.id,
+});
+console.log(result.message);
 ```
 
----
+The engine resolves the action's `CapabilitiesUI` mask, picks the
+assigned profile (falling back to `Default`), runs the action, and
+returns the terminal message.
 
-## Using Individual Page Components
+## Tool calls (optional)
 
-The library exports page-level components that you can compose into your
-own layout. They require the full provider stack to be in place.
-
-### Available Pages
+Pass a `toolDispatcher` to `AIEngine` if your bot should be able to
+call tools. The simplest dispatcher just maps `name → handler`:
 
 ```ts
-import {
-  ChatPage,
-  SettingsPage,
-  EmptyScreenPage,
-  AiModelsPage,
-  ModelAssignmentPage,
-  McpServersPage,
-  WebSearchPage,
-} from "@onlyoffice/ai-chat/pages";
+import type { ToolDispatcher } from "@onlyoffice/ai-chat/services";
+
+const dispatcher: ToolDispatcher = {
+  async listTools() { return [/* TMCPItem[] */]; },
+  async callTool(name, args) { /* …return string… */ },
+  checkAutoApprove() { return true; },
+};
+
+const ai = new AIEngine({ storage, toolDispatcher: dispatcher });
 ```
 
-(The first-run / initial-setup flow is rendered *inside* `ChatPage` automatically when no profiles exist; there is no standalone `InitialSetupPage` export.)
-
-### Building the Provider Stack
-
-Wrap pages in the required context providers:
-
-```tsx
-import {
-  EventsProvider,
-  CallbacksManager,
-  SettingsProvider,
-  PlatformProvider,
-  I18nProvider,
-  ComponentsProvider,
-  StoresProvider,
-  ThemeProvider,
-  ImagesProvider,
-  StorageProvider,
-  ToolsProvider,
-  WidgetConfigProvider,
-} from "@onlyoffice/ai-chat";
-import "@onlyoffice/ai-chat/styles";
-
-function CustomChatApp() {
-  // ctx and stores created as shown above
-
-  return (
-    <EventsProvider callbacksManager={ctx.callbacksManager}>
-      <SettingsProvider settings={ctx.settings}>
-        <PlatformProvider platform={ctx.platform}>
-          <I18nProvider locale="en">
-            <ComponentsProvider>
-              <WidgetConfigProvider config={{ hideProfilePicker: false }}>
-                <StoresProvider stores={stores}>
-                  <ThemeProvider theme="light">
-                    <ImagesProvider>
-                      <ToolsProvider
-                        hostToolGroups={[]}
-                        servers={ctx.servers}
-                        eventBus={ctx.eventBus}
-                      >
-                        <StorageProvider storage={ctx.storage}>
-                          {/* Your custom layout */}
-                          <MyCustomLayout />
-                        </StorageProvider>
-                      </ToolsProvider>
-                    </ImagesProvider>
-                  </ThemeProvider>
-                </StoresProvider>
-              </WidgetConfigProvider>
-          </I18nProvider>
-        </PlatformProvider>
-      </SettingsProvider>
-    </EventsProvider>
-  );
-}
-
-function MyCustomLayout() {
-  const { useRouter } = useStores();
-  const { currentPage } = useRouter();
-
-  switch (currentPage) {
-    case "settings":
-      return <SettingsPage />;
-    default:
-      return <ChatPage />; // ChatPage handles empty/initial-setup internally
-  }
-}
-```
-
----
-
-## Imperative Widget Ref
-
-If you use `AIChatWidget` but need programmatic control, use `ref`:
-
-```tsx
-import { useRef } from "react";
-import { AIChatWidget, type AIChatWidgetRef } from "@onlyoffice/ai-chat";
-
-function App() {
-  const chatRef = useRef<AIChatWidgetRef>(null);
-
-  const sendProgrammatically = () => {
-    chatRef.current?.sendMessage("Summarize this document");
-  };
-
-  return (
-    <>
-      <button onClick={sendProgrammatically}>Auto-send</button>
-      <AIChatWidget ref={chatRef} storage={storage} settings={settings}
-                    platform={platform} storeKeys={storeKeys} />
-    </>
-  );
-}
-```
-
----
+Inside the React widget, `ui/tools/Servers` provides this dispatcher
+via `createServersDispatcher(servers)`.
 
 ## Middleware
 
-Register middleware to intercept the chat lifecycle at various points:
+Construct a `MiddlewareRunner` and pass it to whichever surface
+respects it. In headless mode, you call middleware hooks yourself
+around the engine call (or wrap `AIEngine` in your own facade).
 
 ```ts
-import type { ChatMiddleware } from "@onlyoffice/ai-chat/middleware";
+import { MiddlewareRunner, type ChatMiddleware } from "@onlyoffice/ai-chat/middleware";
 
-const loggingMiddleware: ChatMiddleware = {
+const logger: ChatMiddleware = {
   beforeSend: async (ctx) => {
-    console.log("Sending:", ctx.text);
+    console.log("send:", ctx.text.slice(0, 80));
     return { action: "continue" };
-  },
-  onStreamChunk: async (ctx) => {
-    return { action: "continue" };
-  },
-  beforeToolCall: async (ctx) => {
-    console.log("Tool call:", ctx.toolName, ctx.toolArgs);
-    return { action: "continue" };
-  },
-  afterToolResult: async (ctx) => {
-    return { action: "continue" };
-  },
-  onError: async (ctx) => {
-    console.error("Chat error:", ctx.error);
-    return { action: "default" };
   },
 };
 
-// Pass middleware when creating the AppContext
-const middlewareRunner = new MiddlewareRunner([loggingMiddleware]);
+const runner = new MiddlewareRunner([logger]);
 ```
 
-### Middleware Hooks
+See [`core/middleware/README.md`](./core/middleware/README.md) for
+the six hooks and their result shapes.
 
-| Hook | When | Can |
-|------|------|-----|
-| `beforeSend` | Before user message sent | Block, modify text/files |
-| `onStreamChunk` | Each streamed chunk | Skip, replace chunk |
-| `beforeToolCall` | Before tool execution | Deny, approve, modify args |
-| `afterToolResult` | After tool returns | Skip, replace result |
-| `beforeDisplay` | Before message shown in UI | Skip, replace message |
-| `onError` | On any error | Retry, fallback, suppress |
+## Mounting the React shell with custom layout
+
+If you need React UI but not the default `AIChatWidget` shell —
+e.g. settings on a dedicated route — pages are exported and can be
+mounted inside the same provider stack the widget uses internally.
+Build the same `AppContext`, pass it to `createStores`, then render
+the page inside the providers chain.
+
+The full provider chain is:
+
+```
+EventsProvider
+  PlatformProvider
+    I18nProvider
+      ComponentsProvider
+        WidgetConfigProvider
+          ApiProvider
+            StoresProvider
+              ThemeProvider
+                ImagesProvider
+                  ToolsProvider
+                    <Page />
+```
+
+See [`ui/pages.md`](./ui/pages.md) for a runnable example and
+[`ui/providers/README.md`](./ui/providers/README.md) for what each
+provider injects.
