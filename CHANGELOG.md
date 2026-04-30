@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.2.4
+
+Slim install: nearly every runtime dep moved to (optional) peer.
+
+- `dependencies` now only ships `lodash.clonedeep`. Provider SDKs
+  (`@anthropic-ai/sdk`, `@google/genai`, `@mistralai/mistralai`,
+  `openai`) and every UI dep (Radix, framer-motion, codemirror,
+  react-shiki, react-svg, react-i18next, i18next, zustand, …) are
+  now optional peer dependencies — install only what you actually
+  use.
+- `react`, `react-dom`, `@assistant-ui/react`, `assistant-stream` are
+  required peers.
+- All `dependencies` / `peerDependencies` are now externalized in
+  `vite.config.ts`; `dist/index.js` shrinks from ~3.5 MB to ~36 KB
+  and `dist/core/*` only imports the four provider SDKs at runtime.
+- Removed unused packages from `dependencies`:
+  `@assistant-ui/react-ai-sdk`, `@lmstudio/sdk`,
+  `@openrouter/ai-sdk-provider`, `ollama`, `together-ai`,
+  `@radix-ui/react-avatar`, `@radix-ui/react-select`.
+- Server-only consumers can now `npm i @onlyoffice/ai-chat` plus the
+  provider SDK they target and skip the entire UI tree.
+
 ## 0.2.3
 
 Internal refactor — platform module moved under providers folder.

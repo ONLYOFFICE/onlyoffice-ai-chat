@@ -3,6 +3,27 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import dts from "vite-plugin-dts";
 import { resolve } from "path";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const pkg = require("./package.json") as {
+  dependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+};
+
+// Treat every declared dep / peer-dep as external so consumers resolve them
+// from their own node_modules instead of getting a duplicated bundled copy.
+// Keeps `dist/` slim and lets server-only consumers install just `core` plus
+// whichever provider SDK they actually use.
+const externalPackages = [
+  ...Object.keys(pkg.dependencies ?? {}),
+  ...Object.keys(pkg.peerDependencies ?? {}),
+];
+const externalPattern = new RegExp(
+  `^(${externalPackages
+    .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|")})(/.*)?$`
+);
 
 const entries = {
   index: resolve(__dirname, "src/index.ts"),
@@ -42,7 +63,7 @@ export default defineConfig({
       formats: ["es"],
     },
     rollupOptions: {
-      external: ["react", "react-dom", "react/jsx-runtime", /^react-dom\//],
+      external: [externalPattern, "react/jsx-runtime"],
       output: {
         assetFileNames: "styles/index.[ext]",
         globals: {
