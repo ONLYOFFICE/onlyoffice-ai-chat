@@ -121,8 +121,24 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       initialThreadId: string,
       options?: { hasAssistantPlaceholder?: boolean }
     ) => {
+      // `isStreamRunning` covers the whole round; `isRequestRunning` is true
+      // only while a chunk is actively flowing. We start with the request
+      // flag off so the "Analyzing" indicator surfaces immediately on submit
+      // and stays visible until the first chunk lands. Each chunk flips it
+      // back on and arms a 300ms idle timer — if no further chunk arrives
+      // within that window the indicator reappears until the next chunk.
       setIsStreamRunning(true);
-      setIsRequestRunning(true);
+      setIsRequestRunning(false);
+
+      let idleTimer: ReturnType<typeof setTimeout> | null = null;
+      const markChunk = () => {
+        setIsRequestRunning(true);
+        if (idleTimer !== null) clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          idleTimer = null;
+          setIsRequestRunning(false);
+        }, 300);
+      };
 
       let assistantPlaceholderAdded =
         options?.hasAssistantPlaceholder ?? false;
@@ -147,6 +163,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           }
 
           if (event.type === "tool-call-pending") {
+            markChunk();
             await handleToolCallPending(event);
             // Don't return — the engine may still yield `thread-title`
             // for new threads after the stream pauses on a tool call.
@@ -155,6 +172,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           }
 
           if (event.type === "message-incomplete") {
+            markChunk();
             if (!middlewareRunner.isEmpty) {
               const status = event.message.status as
                 | { reason?: string; error?: unknown; type?: string }
@@ -191,6 +209,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           }
 
           // message-start | message-delta | message-end
+          markChunk();
           const isTerminal = event.type === "message-end";
 
           let chunk = event.message;
@@ -253,6 +272,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           });
         }
       } finally {
+        if (idleTimer !== null) {
+          clearTimeout(idleTimer);
+          idleTimer = null;
+        }
         setIsStreamRunning(false);
         setIsRequestRunning(false);
         setAbortController(undefined);

@@ -93,7 +93,11 @@ export function createMessageStore(deps: {
     stopMessage: () => {
       const { _abortController } = get();
       _abortController?.abort();
-      set({ isStreamRunning: false, _abortController: undefined });
+      set({
+        isStreamRunning: false,
+        isRequestRunning: false,
+        _abortController: undefined,
+      });
       ctx.callbacksManager.emit("onStreamStop", {
         threadId: get()._currentThreadId,
         messageUID: "",
