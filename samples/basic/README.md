@@ -39,31 +39,45 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## Architecture
 
-The `@onlyoffice/ai-chat` widget requires three adapter implementations:
+The `@onlyoffice/ai-chat` widget is wired up in [src/App.tsx](src/App.tsx) with three required adapters and two optional tool sources:
 
-| Adapter | Implementation | Purpose |
-|---------|---------------|---------|
-| `SettingsAdapter` | `localStorage` | Key-value store for settings (selected profiles, feature flags, MCP server configs) |
-| `StorageAdapter` | `IndexedDB` | Persistent storage for threads, messages, profiles, prompts, and prompt folders |
-| `PlatformAdapter` | Browser defaults | Host environment capabilities (theme, locale, device info) |
+| Prop | Implementation | Purpose |
+|------|---------------|---------|
+| `storage` | IndexedDB ([src/adapters/storage.ts](src/adapters/storage.ts)) | Persistent storage for threads, messages, profiles, prompts, folders, assignments, preferences, MCP servers, tool preferences, and web-search config |
+| `settings` | `localStorage` ([src/adapters/settings.ts](src/adapters/settings.ts)) | Key-value store for selected profiles, feature flags, and other small scalars |
+| `platform` | Browser defaults ([src/adapters/platform.ts](src/adapters/platform.ts)) | Host environment capabilities (theme, locale, device pixel ratio, system-theme change events) |
+| `storeKeys` | Plain object ([src/store-keys.ts](src/store-keys.ts)) | Maps logical setting names to namespaced `ai-chat.*` storage keys |
+| `hostToolGroups` | In-browser stubs ([src/adapters/hostTools.ts](src/adapters/hostTools.ts)) | Demo host tools the model can call (`current_time`, `user_agent`, `random_number`) |
+| `toolsAdapter` | Stub ([src/adapters/toolsAdapter.ts](src/adapters/toolsAdapter.ts)) | Pluggable server-side tool source — `getTools()` returns a `serverType → tools[]` grouping the engine resolves automatically (no UI approval round-trip) |
 
 ### StorageAdapter (IndexedDB)
 
-The IndexedDB storage in `src/adapters/storage.ts` creates a database `ai-chat-sample` with 5 object stores:
+The IndexedDB storage in [src/adapters/storage.ts](src/adapters/storage.ts) creates a database `ai-chat-sample` with 10 object stores:
 
 - **threads** — chat sessions (key: `threadId`, indexed by `lastEditDate`)
 - **messages** — individual messages (key: `id`, indexed by `threadId`)
 - **profiles** — AI provider profiles (key: `id`)
 - **prompts** — saved prompt templates (key: `id`, indexed by `folderId`)
 - **promptFolders** — prompt folder grouping (key: `id`)
+- **assignments** — per-`ActionType` profile bindings (key: `actionType`)
+- **preferences** — scalar user preferences such as deep-mode (key: `key`)
+- **mcpServers** — custom MCP server registrations (key: `name`)
+- **toolPrefs** — disabled / auto-approved tool lists (key: `key`)
+- **webSearch** — singleton web-search provider configuration (key: `key`)
+
+The schema lives at `DB_VERSION = 2` and `onupgradeneeded` creates each store conditionally so the sample upgrades cleanly from older copies.
 
 ### SettingsAdapter (localStorage)
 
-A thin wrapper around `localStorage.getItem/setItem/removeItem` in `src/adapters/settings.ts`. All keys are namespaced with `ai-chat.*` prefix via the `StoreKeys` mapping.
+A thin wrapper around `localStorage.getItem/setItem/removeItem` in [src/adapters/settings.ts](src/adapters/settings.ts). All keys are namespaced with `ai-chat.*` prefix via the `StoreKeys` mapping in [src/store-keys.ts](src/store-keys.ts).
 
 ### PlatformAdapter (browser)
 
-Minimal browser adapter in `src/adapters/platform.ts` with null sub-adapters for unavailable capabilities (file operations, process spawning, host tools, cloud integration). Includes system theme change detection via `matchMedia`.
+Minimal browser adapter in [src/adapters/platform.ts](src/adapters/platform.ts) with `null` sub-adapters for unavailable capabilities (file operations, process spawning, host tools, cloud integration). Includes system theme change detection via `matchMedia`.
+
+### Host tools and ToolsAdapter
+
+[src/adapters/hostTools.ts](src/adapters/hostTools.ts) registers a small playground of browser-side tools the LLM can call directly — two auto-allow (`current_time`, `user_agent`) and one that opts into the approval dialog (`random_number`). [src/adapters/toolsAdapter.ts](src/adapters/toolsAdapter.ts) is a stub server-style `ToolsAdapter` returning two demo groups (`demo-server-a`, `demo-server-b`) — swap the `callTool` body with real backend logic when you wire up your own tool registry.
 
 ## Customization
 
