@@ -158,6 +158,30 @@ export type {
 } from "./core/services";
 
 // ---------------------------------------------------------------------------
+// API (server-bridge layer — switches between in-process engines and HTTP)
+// ---------------------------------------------------------------------------
+
+export {
+  ApiProvider,
+  DEFAULT_SERVER_API_ROUTES,
+  createServerAPI,
+  useApi,
+} from "./ui/providers/ApiProvider";
+export type {
+  ServerAPI,
+  ServerAPIConfig,
+  ServerAPIEngines,
+  ServerAPIRoutes,
+} from "./ui/providers/ApiProvider";
+
+// ---------------------------------------------------------------------------
+// Actions (headless per-action execution against a resolved profile)
+// ---------------------------------------------------------------------------
+
+export { providerFor } from "./core/actions/provider";
+export type { ActionArgs } from "./core/actions/types";
+
+// ---------------------------------------------------------------------------
 // Settings (key/value adapter contract — implemented by the host)
 // ---------------------------------------------------------------------------
 

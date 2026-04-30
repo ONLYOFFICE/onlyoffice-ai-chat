@@ -71,10 +71,13 @@ import { ChatPage, SettingsPage } from "@onlyoffice/ai-chat/pages";
 import {
   ApiProvider,
   ComponentsProvider,
+  DEFAULT_SERVER_API_ROUTES,
   I18nProvider,
   ImagesProvider,
   ThemeProvider,
   WidgetConfigProvider,
+  createServerAPI,
+  type ServerAPIConfig,
   // re-exported via the main entry point
 } from "@onlyoffice/ai-chat";
 import { ChatEventBus } from "@onlyoffice/ai-chat/events";
@@ -93,9 +96,7 @@ function CustomShell() {
     const webSearch = new WebSearchEngine({ storage });
     const preferences = new PreferencesEngine({ storage });
 
-    const servers = new Servers(
-      settings, platform, eventBus, assignments, callbacksManager,
-    );
+    const servers = new Servers(platform, eventBus);
 
     const ai = new AIEngine({ storage, assignments, threads });
 
@@ -109,13 +110,14 @@ function CustomShell() {
       threads, tools, webSearch,
     };
 
-    const serverApiConfig = {
+    const serverApiConfig: ServerAPIConfig = {
       origin: "",
       baseUrl: "",
-      routes: undefined as unknown as never, // use DEFAULT_SERVER_API_ROUTES
+      routes: DEFAULT_SERVER_API_ROUTES,
     };
 
-    const stores = createStores({ keys: storeKeys, ctx, api: undefined as never });
+    const api = createServerAPI(serverApiConfig, engines);
+    const stores = createStores({ keys: storeKeys, ctx, api });
     return { ctx, stores, engines, serverApiConfig };
   }, []);
 

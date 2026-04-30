@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.2.5
+
+Expose the server-API layer and headless action helper.
+
+- Re-export from main entry: `ApiProvider`, `useApi`, `createServerAPI`,
+  `DEFAULT_SERVER_API_ROUTES`, types `ServerAPI`, `ServerAPIConfig`,
+  `ServerAPIEngines`, `ServerAPIRoutes`.
+- Re-export `providerFor` + type `ActionArgs` for headless per-action
+  execution against a resolved profile.
+- New subpath `@onlyoffice/ai-chat/providers/ApiProvider` for direct
+  imports / better tree-shaking.
+- Docs: fix `Servers` constructor signature (`new Servers(platform,
+  eventBus)`); drop `undefined as never` hacks in the standalone-page
+  example now that the routes constant and factory are public.
+
+```ts
+import {
+  ApiProvider, createServerAPI, DEFAULT_SERVER_API_ROUTES,
+  type ServerAPIConfig,
+} from "@onlyoffice/ai-chat";
+```
+
 ## 0.2.4
 
 Slim install: nearly every runtime dep moved to (optional) peer.
