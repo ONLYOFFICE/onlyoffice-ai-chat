@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.2.8
+
+`ThemeProvider` no longer leaks the scoped preflight onto its
+`children`.
+
+- The outer themed `<div>` is no longer the `aui-root` / portal
+  container. A dedicated empty `<div className="aui-root" />` is
+  rendered as a sibling of `children` and used as the Radix portal
+  target.
+- Result: in headless mode, host content wrapped in `<ThemeProvider>`
+  is *not* hit by the reset; dialogs / dropdowns / tooltips still
+  inherit the full preflight because they portal into the dedicated
+  scope.
+
+## 0.2.7
+
+(skipped — superseded by 0.2.8 before publish.)
+
+## 0.2.6
+
+Scope Tailwind preflight to the widget — host pages are no longer
+affected.
+
+- New post-build step (`scripts/scope-preflight.mjs`) rewrites every
+  selector inside `@layer base { ... }` in `dist/styles/index.css`
+  with a `:where(.aui-root)` prefix; `html` / `:host` are remapped
+  onto `:where(.aui-root)` itself so the same defaults cascade
+  inside the widget. `:where()` keeps specificity at 0 so host CSS
+  always wins.
+- `aui-root` is auto-applied on `Layout`, every page root
+  (`ChatPage`, `SettingsPage`, `AiModelsPage`, `ModelAssignmentPage`,
+  `McpServersPage`, `WebSearchPage`, `EmptyScreenPage`, initial
+  setup), and the `ThemeProvider` portal-container `<div>`.
+- `DropdownMenu` now mounts inside `DropdownMenu.Portal` with
+  `container={portalContainer}` so dropdowns inherit the scope —
+  matches what `Tooltip` and `Dialog` already do.
+
 ## 0.2.5
 
 Expose the server-API layer and headless action helper.

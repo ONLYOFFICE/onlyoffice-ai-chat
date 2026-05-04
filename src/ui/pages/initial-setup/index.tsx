@@ -17,7 +17,7 @@ const InitialSetup = () => {
   const isAddCardOpen = activeCard === "add";
 
   return (
-    <div className="flex h-full w-full bg-[var(--layout-background-color)]">
+    <div className="aui-root flex h-full w-full bg-[var(--layout-background-color)]">
       <div className="w-full max-w-[560px] flex flex-col">
         <h1 className="select-none text-[20px] font-bold leading-[28px] text-[var(--settings-header-color)] mb-[24px]">
           {t("AIModels")}

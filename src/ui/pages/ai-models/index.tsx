@@ -16,7 +16,7 @@ const AiModelsPage = ({
   const { t } = useI18n();
 
   return (
-    <div className="flex h-full w-full bg-[var(--layout-background-color)]">
+    <div className="aui-root flex h-full w-full bg-[var(--layout-background-color)]">
       <div className="w-full max-w-[560px]">
         <>
           {!hideHeader && (

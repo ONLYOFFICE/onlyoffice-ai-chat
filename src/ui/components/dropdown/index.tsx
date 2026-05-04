@@ -73,6 +73,7 @@ const DropdownMenuComponent = ({
       >
         {trigger}
       </DropdownMenu.Trigger>
+      <DropdownMenu.Portal container={portalContainer ?? undefined}>
       <DropdownMenu.Content
         ref={dropdownRef}
         side={effectiveSide}
@@ -100,6 +101,7 @@ const DropdownMenuComponent = ({
           />
         ))}
       </DropdownMenu.Content>
+      </DropdownMenu.Portal>
     </DropdownMenu.Root>
   );
 };

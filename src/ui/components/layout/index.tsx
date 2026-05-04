@@ -24,7 +24,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div
-      className={`h-[100vh] ${isRTL ? "font-rtl" : ""}`}
+      className={`aui-root h-[100vh] ${isRTL ? "font-rtl" : ""}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
       <main

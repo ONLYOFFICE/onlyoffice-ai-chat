@@ -26,7 +26,7 @@ const Settings = ({
   const profiles = useProfilesStore((s) => s.profiles);
 
   return (
-    <div className="flex justify-center h-full bg-[var(--layout-background-color)]">
+    <div className="aui-root flex justify-center h-full bg-[var(--layout-background-color)]">
       <div
         className={`flex flex-col gap-[16px] box-border max-w-[640px] w-[640px] overflow-hidden${noPadding ? "" : " mx-[32px] mt-[32px]"}`}
       >

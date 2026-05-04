@@ -163,11 +163,15 @@ export const ThemeProvider = ({
     <ThemeContext.Provider value={value}>
       {customStyleContent ? <style>{customStyleContent}</style> : null}
       <div
-        ref={containerRef}
         className={`${themeId} relative`}
         style={inlineStyle as React.CSSProperties | undefined}
       >
         {children}
+        {/* Dedicated portal container with `aui-root` so Radix dialogs /
+            dropdowns / tooltips inherit the scoped preflight, while
+            ThemeProvider's `children` (which can be host content in
+            headless mode) stay outside the reset scope. */}
+        <div ref={containerRef} className="aui-root" />
       </div>
     </ThemeContext.Provider>
   );
