@@ -31,6 +31,12 @@ export interface HostTool {
   /** Unique tool name (e.g. "insert_text", "get_selection"). Will be prefixed with "{group.id}_" internally */
   name: string;
 
+  /**
+   * Optional custom label shown in the tools list UI (e.g. `"Insert text"`).
+   * Falls back to {@link name} if not provided. Never sent to the model.
+   */
+  displayName?: string;
+
   /** Human-readable description shown to the AI model and in the tools list UI */
   description: string;
 

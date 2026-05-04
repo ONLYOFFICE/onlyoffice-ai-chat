@@ -193,7 +193,6 @@ vi.mock("../../../components/input", () => ({
   Input: ({
     value,
     onChange,
-    ..._props
   }: {
     value?: string;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -324,12 +323,14 @@ describe("ComposerActionPrompts", () => {
       ];
       render(<ComposerActionPrompts />);
       // This prompt is in a folder, so it shows in the folder's subMenu
+      type SubMenuItem = {
+        text: string;
+        onClick?: () => void;
+        subMenu?: SubMenuItem[];
+      };
       const items = mockDropdownItems as {
         text: string;
-        subMenu?: {
-          text: string;
-          subMenu?: { text: string; onClick: () => void }[];
-        }[];
+        subMenu?: SubMenuItem[];
       }[];
       // The folder item
       const folderItem = items.find((i) => i.text === "Folder 1")!;

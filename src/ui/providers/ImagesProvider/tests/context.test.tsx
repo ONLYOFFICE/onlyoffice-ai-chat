@@ -54,7 +54,7 @@ describe("ImagesProvider", () => {
         </ImagesProvider>
       ),
     });
-    expect(result.current.getImageSrc("logo" as never, "light", 1).isSvg).toBe(
+    expect(result.current.getImageSrc("logo" as never, "light", 1)?.isSvg).toBe(
       true
     );
   });

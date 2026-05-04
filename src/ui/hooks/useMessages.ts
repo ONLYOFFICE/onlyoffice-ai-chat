@@ -139,6 +139,16 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           setIsRequestRunning(false);
         }, 300);
       };
+      // Hold the request flag without arming the idle timer — used while
+      // a tool is executing so the "Analyzing" indicator stays hidden
+      // until the model produces the next chunk.
+      const holdBusy = () => {
+        setIsRequestRunning(true);
+        if (idleTimer !== null) {
+          clearTimeout(idleTimer);
+          idleTimer = null;
+        }
+      };
 
       let assistantPlaceholderAdded =
         options?.hasAssistantPlaceholder ?? false;
@@ -163,7 +173,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           }
 
           if (event.type === "tool-call-pending") {
-            markChunk();
+            holdBusy();
             await handleToolCallPending(event);
             // Don't return — the engine may still yield `thread-title`
             // for new threads after the stream pauses on a tool call.

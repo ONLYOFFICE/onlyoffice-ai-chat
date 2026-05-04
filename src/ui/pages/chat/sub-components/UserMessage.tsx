@@ -4,7 +4,7 @@ import {
   useMessage,
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { Dialog } from "../../../components/dialog";
@@ -66,11 +66,16 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
               isRTL ? "flex-row-reverse justify-end" : "flex-row justify-end"
             )}
           >
-            <Button variant="default" onClick={onClose} className="h-[36px]">
+            <Button
+              type="button"
+              variant="default"
+              onClick={onClose}
+              className="h-[36px]"
+            >
               {t("Cancel")}
             </Button>
             <Button
-              onClick={onSave}
+              type="submit"
               disabled={!folderName.trim()}
               className="h-[36px]"
             >
@@ -99,19 +104,38 @@ const UserActionBar = () => {
       .map((item) => item.text)
       .join("\n");
 
+  const [copied, setCopied] = useState(false);
+  const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
+    },
+    []
+  );
+
+  const onCopy = useCallback(() => {
+    const text = getMessageText();
+    if (!text) return;
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
+      copyResetTimer.current = setTimeout(() => setCopied(false), 3000);
+    });
+    // getMessageText reads from `message`, captured fresh each render — no
+    // dependency array needed beyond the message identity below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [message]);
+
   return (
     <>
       <ActionBarPrimitive.Root className="col-start-2 mt-1 flex justify-end gap-[8px]">
-        <ActionBarPrimitive.Copy asChild>
-          <TooltipIconButton tooltip={t("CopyToClipboard")}>
-            <MessagePrimitive.If copied>
-              <IconButton iconName="checked" size={24} isStroke disabled />
-            </MessagePrimitive.If>
-            <MessagePrimitive.If copied={false}>
-              <IconButton iconName="btn-copy" size={24} />
-            </MessagePrimitive.If>
-          </TooltipIconButton>
-        </ActionBarPrimitive.Copy>
+        <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onCopy}>
+          {copied ? (
+            <IconButton iconName="checked" size={24} isStroke disabled />
+          ) : (
+            <IconButton iconName="btn-copy" size={24} />
+          )}
+        </TooltipIconButton>
         <DropdownMenu
           open={isOpen}
           onOpenChange={setIsOpen}

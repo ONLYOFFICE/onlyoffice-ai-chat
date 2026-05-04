@@ -1,5 +1,99 @@
 # Changelog
 
+## 0.2.9
+
+Fix: restore the missing padding on the initial-setup page so the
+"AI Models" form no longer butts up against the left edge of the
+chat surface — adds the same `mx-[32px] mt-[32px]` wrapper margin
+used by `SettingsPage`.
+
+Fix: web-search toggle inside the composer actually flips state.
+
+- The composer dropdown was reaching into `servers["web-search"]` —
+  but web-search is resolved engine-side per request and never
+  populates the UI's `servers` aggregator, so the click handler was
+  throwing on `servers["web-search"][0].name` and silently failing.
+- Toggle now drives `disabledTools["web-search"]` directly with the
+  built-in tool names (`web_search`, `web_crawling`); checked state
+  reflects "configured AND at least one tool not disabled".
+
+UX: model picker in the profile connection form is now sorted
+alphabetically (case-insensitive `localeCompare`) so finding a
+specific model in long catalogues (OpenAI, OpenRouter, etc.) doesn't
+require scrolling through the provider's native ordering.
+
+Fix: ONLYOFFICE-AI profiles can now be picked in Model Assignment.
+
+- The ONLYOFFICE catalogue endpoint doesn't expose per-model
+  capabilities, so models were emitted with `capabilities: undefined`
+  → assignment validation rejected every ONLYOFFICE profile for
+  "lacking capabilities" and the localStorage write never landed
+  (the UI still updated optimistically, masking the silent failure).
+- Defaulted ONLYOFFICE-AI models to `Chat | Vision | Tools`, the
+  same broad fallback the generic OpenAI-compatible provider uses.
+
+Fix: creating a prompt folder no longer creates two folders.
+
+- The Save button in the "New AI prompt folder" dialog had its own
+  `onClick={onSave}` *and* sat inside a `<form onSubmit>` — clicking
+  Save fired `onSave` twice (once via `onClick`, once via the form's
+  default submit). The Save button is now a plain `type="submit"`
+  driven by the form, and Cancel is `type="button"` so it can't
+  accidentally submit the form either.
+
+Fix: hide the "Analyzing" indicator while a tool is executing.
+
+- On `tool-call-pending` the request-busy flag is now held without
+  arming the 300ms idle timer (`holdBusy()` instead of `markChunk()`)
+  so the indicator stays suppressed until the model produces the
+  next chunk in the resumed stream.
+
+Fix: copy button on user messages now actually copies.
+
+- Replace `ActionBarPrimitive.Copy` (which was wired to runtime
+  `composer.isEditing` / `isCopied` state that doesn't always
+  populate for user messages from `useExternalStoreRuntime`) with an
+  explicit `navigator.clipboard.writeText` handler driven by local
+  `copied` state — same UX (3-second checkmark feedback), but
+  reliable for user-authored messages.
+
+OpenRouter image generation now works (e.g. `openai/gpt-4o-image`,
+`gpt-5-image`).
+
+- `OpenRouterProvider.imageGeneration` overrides the default OpenAI
+  path (`/images/generations`) — OpenRouter doesn't expose that
+  endpoint. Goes through `/chat/completions` with
+  `modalities: ["image", "text"]` instead and returns the base64 from
+  the `message.images[0].image_url.url` data-URI.
+
+Optional `displayName` for host tools and tool groups.
+
+- New optional `HostTool.displayName` — custom label shown in the
+  tools list UI; falls back to `name` when omitted. Never sent to
+  the model.
+- New optional propagation through `TMCPItem.displayName` so the
+  field flows from `HostToolGroup` definitions to the UI.
+- `HostToolGroup.name` is now actually used in the UI (was
+  previously rendering the group `id` instead). New
+  `Servers#getHostToolGroupDisplayName(groupId)` resolves it with a
+  fallback to `id`.
+
+```ts
+const editorTools: HostToolGroup = {
+  id: "desktop_editor",
+  name: "Desktop Editor",
+  tools: [
+    {
+      name: "insert_text",
+      displayName: "Insert text",
+      description: "Insert text at the current cursor position",
+      inputSchema: { /* … */ },
+      handler: async (args) => { /* … */ },
+    },
+  ],
+};
+```
+
 ## 0.2.8
 
 `ThemeProvider` no longer leaks the scoped preflight onto its

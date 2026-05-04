@@ -27,7 +27,12 @@ describe("onlyoffice/models", () => {
 
       const out = await listModels(creds);
       expect(out).toEqual([
-        { id: "gpt-4", name: "gpt-4", provider: "onlyoffice" },
+        {
+          id: "gpt-4",
+          name: "gpt-4",
+          provider: "onlyoffice",
+          capabilities: expect.any(Number),
+        },
       ]);
       expect(fetchMock).toHaveBeenCalledWith(
         `https://portal.example.com/api/2.0/ai/chats/models?provider=${ONLYOFFICE_PROVIDER_ID}`,

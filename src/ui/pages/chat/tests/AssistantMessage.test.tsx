@@ -67,7 +67,7 @@ vi.mock("@assistant-ui/react", () => ({
                     text: c.text,
                     type: c.type,
                     parentId: mockMessageParentId,
-                  } as unknown)}
+                  } as Record<string, unknown>)}
                 />
               );
             }

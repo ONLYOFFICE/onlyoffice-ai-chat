@@ -67,6 +67,7 @@ const defaultProps = {
   status: { type: "running" as const },
   args: { query: "hello" },
   addResult: vi.fn(),
+  resume: vi.fn(),
 };
 
 describe("ToolFallback", () => {

@@ -27,7 +27,10 @@ describe("anthropic helpers", () => {
 
   it("createErrorResult emits an incomplete message with the error", () => {
     const err = new Error("boom");
-    const result = createErrorResult(err);
+    const result = createErrorResult(err) as {
+      isEnd: true;
+      responseMessage: { status?: unknown };
+    };
     expect(result.isEnd).toBe(true);
     expect(result.responseMessage.status).toEqual({
       type: "incomplete",

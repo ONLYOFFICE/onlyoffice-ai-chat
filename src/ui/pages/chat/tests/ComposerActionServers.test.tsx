@@ -10,6 +10,7 @@ let mockServers: Record<string, { name: string; enabled: boolean }[]> = {};
 let mockWebSearchEnabled = false;
 let mockGetWebSearchEnabled = () => false;
 let mockExtendedThinking = false;
+let mockDisabledTools: Record<string, string[]> = {};
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -22,6 +23,7 @@ vi.mock("../../../store/context", () => ({
       changeToolStatus: mockChangeToolStatus,
       webSearchEnabled: mockWebSearchEnabled,
       getWebSearchEnabled: mockGetWebSearchEnabled,
+      disabledTools: mockDisabledTools,
     }),
     useProfilesStore: () => ({
       extendedThinking: mockExtendedThinking,
@@ -97,6 +99,7 @@ describe("ServersSettings", () => {
     mockWebSearchEnabled = false;
     mockGetWebSearchEnabled = () => false;
     mockExtendedThinking = false;
+    mockDisabledTools = {};
     mockDropdownItems = [];
     mockOnOpenChange = undefined;
   });
@@ -165,39 +168,65 @@ describe("ServersSettings", () => {
       expect(wsItem?.tooltipText).toBe("");
     });
 
-    it("onToggleChange calls changeToolStatus and emits tools-changed", () => {
+    it("onToggleChange flips every web-search tool and emits tools-changed", async () => {
       mockGetWebSearchEnabled = () => true;
-      mockWebSearchEnabled = false;
+      mockWebSearchEnabled = true;
+      // All tools disabled → toggle is OFF; clicking should enable all.
+      mockDisabledTools = { "web-search": ["web_search", "web_crawling"] };
       render(<ServersSettings />);
       const items = mockDropdownItems as {
         text: string;
-        onToggleChange?: () => void;
+        onToggleChange?: () => Promise<void> | void;
       }[];
       const wsItem = items.find((i) => i.text === "WebSearch")!;
-      wsItem.onToggleChange!();
+      await wsItem.onToggleChange!();
       expect(mockChangeToolStatus).toHaveBeenCalledWith(
         "web-search",
-        "web-search-tool",
+        "web_search",
+        true
+      );
+      expect(mockChangeToolStatus).toHaveBeenCalledWith(
+        "web-search",
+        "web_crawling",
         true
       );
       expect(mockEmit).toHaveBeenCalledWith("tools-changed");
     });
 
-    it("toggles from enabled to disabled", () => {
+    it("toggles from enabled to disabled", async () => {
       mockGetWebSearchEnabled = () => true;
       mockWebSearchEnabled = true;
+      // No web-search tools disabled → toggle is ON; clicking should disable all.
+      mockDisabledTools = {};
       render(<ServersSettings />);
       const items = mockDropdownItems as {
         text: string;
-        onToggleChange?: () => void;
+        onToggleChange?: () => Promise<void> | void;
       }[];
       const wsItem = items.find((i) => i.text === "WebSearch")!;
-      wsItem.onToggleChange!();
+      await wsItem.onToggleChange!();
       expect(mockChangeToolStatus).toHaveBeenCalledWith(
         "web-search",
-        "web-search-tool",
+        "web_search",
         false
       );
+      expect(mockChangeToolStatus).toHaveBeenCalledWith(
+        "web-search",
+        "web_crawling",
+        false
+      );
+    });
+
+    it("does nothing when web-search is not configured", async () => {
+      mockWebSearchEnabled = false;
+      render(<ServersSettings />);
+      const items = mockDropdownItems as {
+        text: string;
+        onToggleChange?: () => Promise<void> | void;
+      }[];
+      const wsItem = items.find((i) => i.text === "WebSearch")!;
+      await wsItem.onToggleChange!();
+      expect(mockChangeToolStatus).not.toHaveBeenCalled();
     });
   });
 

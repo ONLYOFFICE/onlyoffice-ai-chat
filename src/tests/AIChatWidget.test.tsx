@@ -232,7 +232,7 @@ const defaultProps = {
     prompts: "prompts",
     servers: "servers",
     clouds: "clouds",
-  } as Parameters<typeof AIChatWidget>[0]["storeKeys"],
+  } as unknown as Parameters<typeof AIChatWidget>[0]["storeKeys"],
 };
 
 describe("AIChatWidget", () => {

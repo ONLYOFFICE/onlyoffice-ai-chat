@@ -30,10 +30,13 @@ describe("runBeforeSend", () => {
         .mockResolvedValue({ action: "continue", text: "hello" }),
     };
     const m2: ChatMiddleware = {
-      beforeSend: vi.fn(async (ctx) => ({
-        action: "continue",
-        files: ctx.text === "hello" ? ["a"] : [],
-      })),
+      beforeSend: vi.fn(
+        async (ctx) =>
+          ({
+            action: "continue",
+            files: ctx.text === "hello" ? ["a"] : [],
+          }) as never
+      ),
     };
     const r = new MiddlewareRunner([m1, m2]);
     const out = await r.runBeforeSend(baseSendCtx);
@@ -101,8 +104,8 @@ describe("runBeforeToolCall", () => {
         .mockResolvedValue({ action: "continue", args: { x: 1 } }),
     };
     const m2: ChatMiddleware = {
-      beforeToolCall: vi.fn(async (ctx) => ({
-        action: "continue",
+      beforeToolCall: vi.fn(async (ctx: { toolArgs: unknown }) => ({
+        action: "continue" as const,
         args: { ...(ctx.toolArgs as object), y: 2 },
       })),
     };

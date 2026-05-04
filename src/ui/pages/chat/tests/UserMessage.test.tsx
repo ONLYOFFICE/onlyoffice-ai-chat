@@ -229,7 +229,6 @@ vi.mock("../../../components/input", () => ({
   Input: ({
     value,
     onChange,
-    ..._props
   }: {
     value?: string;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -300,7 +299,7 @@ describe("UserMessage", () => {
   it("renders action bar with copy and dropdown", () => {
     render(<UserMessage />);
     expect(screen.getByTestId("action-bar")).toBeInTheDocument();
-    expect(screen.getByTestId("action-copy")).toBeInTheDocument();
+    expect(screen.getByTestId("icon-btn-btn-copy")).toBeInTheDocument();
     expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
   });
 
@@ -362,10 +361,10 @@ describe("UserMessage", () => {
     expect(copyTooltip).toBeInTheDocument();
   });
 
-  it("renders copied and not-copied icon states", () => {
+  it("renders the copy icon in its initial (not-copied) state", () => {
     render(<UserMessage />);
-    expect(screen.getByTestId("icon-btn-checked")).toBeInTheDocument();
     expect(screen.getByTestId("icon-btn-btn-copy")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-checked")).not.toBeInTheDocument();
   });
 
   it("renders the more button in dropdown trigger", () => {

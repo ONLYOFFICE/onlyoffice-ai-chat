@@ -9,7 +9,7 @@ vi.unmock("../../ThemeProvider");
 // Provide platform + stores for the real ThemeProvider.
 const themeStoreState = {
   themeId: "theme-light",
-  themeType: "light" as const,
+  themeType: "light" as "light" | "dark",
   scale: 1,
   setThemeId: vi.fn((id: string) => {
     themeStoreState.themeId = id;
@@ -21,7 +21,7 @@ const themeStoreState = {
 const platformValue = {
   env: {
     theme: "theme-light",
-    systemTheme: "light" as const,
+    systemTheme: "light" as "light" | "dark",
     locale: "en",
     devicePixelRatio: 1,
     onEnvironmentChange: undefined as

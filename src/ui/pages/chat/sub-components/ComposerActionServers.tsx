@@ -4,13 +4,26 @@ import { useComponents } from "../../../providers/ComponentsProvider";
 import { useStores } from "../../../store/context";
 import { useToolsContext } from "../../../tools/context";
 
+// Built-in web-search tool names — kept in sync with
+// `getWebSearchTools` in `core/services/web-search/source.ts`. The
+// engine resolves these on the fly per-request, so they never appear
+// in the UI's `servers` aggregator and the composer toggle has to
+// flip them through `disabledTools["web-search"]` directly.
+const WEB_SEARCH_TYPE = "web-search";
+const WEB_SEARCH_TOOL_NAMES = ["web_search", "web_crawling"];
+
 const ServersSettings = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const { useServersStore, useProfilesStore } = useStores();
   const { eventBus } = useToolsContext();
-  const { servers, changeToolStatus, webSearchEnabled, getWebSearchEnabled } =
+  const { servers, changeToolStatus, webSearchEnabled, disabledTools } =
     useServersStore();
   const { extendedThinking, toggleExtendedThinking } = useProfilesStore();
+
+  const webSearchDisabledNames = disabledTools[WEB_SEARCH_TYPE] ?? [];
+  const webSearchActive =
+    webSearchEnabled &&
+    WEB_SEARCH_TOOL_NAMES.some((n) => !webSearchDisabledNames.includes(n));
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -40,14 +53,18 @@ const ServersSettings = () => {
         },
         icon: <IconButton iconName="btn-web-search" size={24} disableHover />,
         withToggle: true,
-        toggleChecked: webSearchEnabled,
+        toggleChecked: webSearchActive,
         toggleDisabled: !webSearchEnabled,
         tooltipText: webSearchEnabled ? "" : t("EnableWebSearch"),
-        onToggleChange: () => {
-          changeToolStatus(
-            "web-search",
-            servers["web-search"][0].name,
-            !webSearchEnabled
+        onToggleChange: async () => {
+          if (!webSearchEnabled) return;
+          const next = !webSearchActive;
+          // Flip every web-search tool at once so the composer toggle
+          // matches the user's mental model of "web search on / off".
+          await Promise.all(
+            WEB_SEARCH_TOOL_NAMES.map((name) =>
+              changeToolStatus(WEB_SEARCH_TYPE, name, next)
+            )
           );
           eventBus.emit("tools-changed");
         },
@@ -144,7 +161,7 @@ const ServersSettings = () => {
       changeToolStatus,
       t,
       webSearchEnabled,
-      getWebSearchEnabled,
+      webSearchActive,
       toggleExtendedThinking,
       extendedThinking,
       eventBus,

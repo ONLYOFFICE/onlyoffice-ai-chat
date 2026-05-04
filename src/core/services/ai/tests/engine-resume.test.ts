@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Profile } from "../../../types";
 import { AbstractBaseProvider } from "../../../providers";
-import { registerProvider, unregisterProvider } from "../../../providers";
+import {
+  registerProvider,
+  unregisterProvider,
+  type ProviderConstructor,
+} from "../../../providers";
 import type { StorageAdapter } from "../../../storage";
 import { AIEngine } from "../engine";
 
@@ -11,11 +15,13 @@ const sendMessageSyncMock = vi.fn();
 
 class StubProvider extends AbstractBaseProvider {
   async *sendMessage(
-    args: unknown
-  ): AsyncGenerator<{ isEnd: boolean; responseMessage: ThreadMessageLike }> {
+    args: Parameters<AbstractBaseProvider["sendMessage"]>[0]
+  ): ReturnType<AbstractBaseProvider["sendMessage"]> {
     yield* sendMessageMock(args);
   }
-  async sendMessageSync(args: unknown): Promise<string> {
+  async sendMessageSync(
+    args: Parameters<AbstractBaseProvider["sendMessageSync"]>[0]
+  ): Promise<string> {
     return sendMessageSyncMock(args);
   }
   static getName(): string {
@@ -102,7 +108,7 @@ async function* arrayToStream(items: { isEnd: boolean; responseMessage: ThreadMe
 }
 
 beforeEach(() => {
-  registerProvider(STUB, StubProvider);
+  registerProvider(STUB, StubProvider as unknown as ProviderConstructor);
   sendMessageMock.mockReset();
   sendMessageSyncMock.mockReset();
 });

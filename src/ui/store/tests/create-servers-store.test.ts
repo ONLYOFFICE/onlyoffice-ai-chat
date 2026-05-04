@@ -149,7 +149,9 @@ describe("createServersStore", () => {
     const s = createServersStore(deps);
     const data = { threadId: "t", message: {}, idx: 0, messageId: "m" };
     s.getState().setManageToolData(
-      data as unknown as Parameters<typeof s.getState.prototype>[0]
+      data as unknown as Parameters<
+        ReturnType<typeof s.getState>["setManageToolData"]
+      >[0]
     );
     expect(s.getState().manageToolData).toEqual(data);
     s.getState().setManageToolData(undefined);

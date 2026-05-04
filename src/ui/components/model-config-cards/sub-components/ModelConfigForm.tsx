@@ -116,11 +116,15 @@ export const ModelConfigForm = ({
       : undefined) ??
     providersInfo.find((p) => p.type === values.provider)?.name;
 
-  const modelItems = models.map((m) => ({
-    text: m.name,
-    id: m.id,
-    onClick: () => onChange("model", m.id),
-  }));
+  const modelItems = [...models]
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+    )
+    .map((m) => ({
+      text: m.name,
+      id: m.id,
+      onClick: () => onChange("model", m.id),
+    }));
 
   const isExternalOnlyoffice =
     values.provider === "onlyoffice" && !!externalOnlyofficeConfig;

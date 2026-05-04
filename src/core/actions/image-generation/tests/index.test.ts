@@ -20,7 +20,10 @@ vi.mock("../prompt", () => ({
   systemPrompt: "default-image-prompt",
 }));
 
-const profile = { id: "p", modelId: "m" } as ActionArgs["profile"];
+const profile = {
+  id: "p",
+  modelId: "m",
+} as unknown as ActionArgs["profile"];
 
 describe("generateImage", () => {
   it("uses provider.imageGeneration with extracted user prompt", async () => {

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 const mockGetCustomServers = vi.fn().mockReturnValue({});
@@ -17,6 +17,7 @@ vi.mock("../../../tools/context", () => ({
     servers: {
       getCustomServers: mockGetCustomServers,
       getHostToolGroupIds: () => ["desktop-editor"],
+      getHostToolGroupDisplayName: (id: string) => id,
     },
   }),
 }));

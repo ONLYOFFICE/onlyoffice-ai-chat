@@ -107,7 +107,7 @@ export const AIChatWidget = React.forwardRef<
   (
     {
       storage,
-      settings,
+      settings: _settings,
       platform,
       locale,
       translations,
@@ -210,7 +210,6 @@ export const AIChatWidget = React.forwardRef<
       return { ctx, stores, engines, serverApiConfig };
     }, [
       storage,
-      settings,
       platform,
       storeKeys,
       middleware,

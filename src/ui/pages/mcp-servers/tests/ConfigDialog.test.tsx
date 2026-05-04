@@ -112,7 +112,7 @@ vi.mock("codemirror", () => {
   class MockEditorView {
     static updateListener = {
       of: (cb: unknown) => {
-        editorUpdateListener = cb;
+        editorUpdateListener = cb as typeof editorUpdateListener;
         return {};
       },
     };

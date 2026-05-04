@@ -9,6 +9,7 @@ import { Icon } from "../../../components/icon";
 
 type AvailableToolsItemProps = {
   name: string;
+  displayName?: string;
   mcpItems: TMCPItem[];
   isLoading: boolean;
   disableEnable: boolean;
@@ -16,6 +17,7 @@ type AvailableToolsItemProps = {
 
 const AvailableToolsItem = ({
   name,
+  displayName,
   mcpItems,
   isLoading,
   disableEnable,
@@ -111,7 +113,7 @@ const AvailableToolsItem = ({
             <Icon name="chevron" width={6} height={3} isStroke />
           </div>
           <p className="text-[var(--servers-available-tools-item-name-color)] font-bold">
-            {name}
+            {displayName ?? name}
           </p>
           {!isLoadingAction && isStoped ? (
             <IconButton
@@ -160,7 +162,7 @@ const AvailableToolsItem = ({
               >
                 <div className="flex items-center justify-between w-full h-full">
                   <p className="text-[var(--servers-available-tools-item-name-color)] leading-[20px]">
-                    {tool.name}
+                    {tool.displayName ?? tool.name}
                   </p>
                   <ToggleButton
                     checked={tool.enabled ?? false}

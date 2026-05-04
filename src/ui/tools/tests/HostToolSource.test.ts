@@ -102,6 +102,7 @@ describe("HostToolSource", () => {
 
       expect(tool).toEqual({
         name: "desktop-editor_read_file",
+        displayName: "read_file",
         description: "Read a file",
         inputSchema: {
           type: "object",

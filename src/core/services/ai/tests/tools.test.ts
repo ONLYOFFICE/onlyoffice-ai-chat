@@ -5,6 +5,7 @@ import {
   mergeToolsByName,
   resolveToolSource,
 } from "../tools";
+import type { ToolsAdapter } from "../../../tools-adapter";
 
 const {
   callWebSearchToolMock,
@@ -90,11 +91,12 @@ describe("buildToolContext", () => {
   it("merges adapter, web-search, image-gen and user tools", async () => {
     getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
     getImageGenerationToolsMock.mockResolvedValue([tool("generate_image")]);
-    const adapter = {
+    const adapter: ToolsAdapter = {
       getTools: vi
         .fn()
         .mockResolvedValue({ custom: [tool("ad_tool")] }),
       callTool: vi.fn(),
+      denyTool: vi.fn(),
     };
     const userTools = [tool("user_tool"), tool("ad_tool", "user-override")];
 
@@ -117,9 +119,10 @@ describe("buildToolContext", () => {
       tool("web_crawling"),
     ]);
     getImageGenerationToolsMock.mockResolvedValue([]);
-    const adapter = {
+    const adapter: ToolsAdapter = {
       getTools: vi.fn().mockResolvedValue({}),
       callTool: vi.fn(),
+      denyTool: vi.fn(),
     };
     const ctx = await buildToolContext(
       makeStorage({ "web-search": ["web_crawling"] }),
@@ -216,9 +219,10 @@ describe("executeAdapterTool", () => {
   });
 
   it("dispatches custom tool via the adapter when provided", async () => {
-    const adapter = {
+    const adapter: ToolsAdapter = {
       callTool: vi.fn().mockResolvedValue("adapter-result"),
       getTools: vi.fn(),
+      denyTool: vi.fn(),
     };
     resumeChatMock.mockImplementation(async function* () {});
     const gen = executeAdapterTool(

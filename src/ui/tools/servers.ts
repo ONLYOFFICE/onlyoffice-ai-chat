@@ -79,6 +79,10 @@ class Servers {
     return this.hostToolSource.getGroupIds();
   };
 
+  getHostToolGroupDisplayName = (groupId: string): string => {
+    return this.hostToolSource.getGroupDisplayName(groupId);
+  };
+
   getCustomServers = () => {
     return this.customServers.customServers;
   };

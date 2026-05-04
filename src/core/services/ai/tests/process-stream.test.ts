@@ -167,7 +167,7 @@ describe("processStream", () => {
       message: ThreadMessageLike;
     };
     expect(Array.isArray(last.message.content)).toBe(true);
-    const content = last.message.content as { type: string }[];
+    const content = last.message.content as unknown as { type: string }[];
     expect(content[0].type).toBe("tool-call");
     expect(content[content.length - 1]).toMatchObject({ type: "text" });
   });

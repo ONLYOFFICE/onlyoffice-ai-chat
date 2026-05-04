@@ -86,7 +86,7 @@ describe("createWidgetRef", () => {
         states.profilesState.profiles[0] as ReturnType<
           typeof states.profilesState.getProfileById
         >
-    );
+    ) as unknown as Parameters<typeof createWidgetRef>[1];
     const eventBus = { emit: vi.fn() } as unknown as ChatEventBus;
     const ref = createWidgetRef(
       stores,

@@ -1,3 +1,4 @@
+import { CapabilitiesUI } from "../../../shared/capabilities-ui";
 import type { TErrorData } from "../../../shared/error-data";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
@@ -40,10 +41,19 @@ export const listModels = async (
   const json = await response.json();
   const models: OnlyOfficeModel[] = json.response ?? json;
 
+  // Capabilities of the upstream model are not exposed by the
+  // ONLYOFFICE catalogue endpoint. Default to the broad mask (Chat +
+  // Vision + Tools) — same fallback as the generic OpenAI-compatible
+  // provider — so model-assignment validation doesn't reject every
+  // ONLYOFFICE profile for "lacking capabilities".
+  const defaultCaps =
+    CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
+
   return models.map((m) => ({
     id: m.modelId,
     name: m.modelId,
     provider: "onlyoffice" as const,
+    capabilities: defaultCaps,
   }));
 };
 

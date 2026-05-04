@@ -1,11 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { callRoute } from "../fetcher";
-import { DEFAULT_SERVER_API_ROUTES, type ServerAPIConfig } from "../index";
+import {
+  DEFAULT_SERVER_API_ROUTES,
+  type ServerAPIConfig,
+  type ServerAPIEngines,
+} from "../index";
 
 const baseRoutes = DEFAULT_SERVER_API_ROUTES;
 
 function makeEngines() {
-  return {
+  const stub = {
     ai: {
       send: vi.fn().mockResolvedValue("send-engine"),
       sendCustom: vi.fn().mockResolvedValue("custom-engine"),
@@ -17,7 +21,8 @@ function makeEngines() {
       clearDeepMode: vi.fn().mockResolvedValue(undefined),
       isDeepModeSet: vi.fn().mockResolvedValue(true),
     },
-  } as never;
+  };
+  return stub as unknown as ServerAPIEngines & typeof stub;
 }
 
 describe("callRoute", () => {

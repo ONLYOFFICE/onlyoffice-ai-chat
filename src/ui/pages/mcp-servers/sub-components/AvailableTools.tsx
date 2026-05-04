@@ -81,6 +81,7 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
             <AvailableToolsItem
               key={groupId}
               name={groupId}
+              displayName={serversInstance.getHostToolGroupDisplayName(groupId)}
               mcpItems={servers[groupId] ?? []}
               isLoading={false}
               disableEnable={disableEnable}

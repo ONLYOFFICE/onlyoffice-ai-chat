@@ -28,6 +28,7 @@ export class HostToolSource {
     for (const group of this.groups) {
       result[group.id] = group.tools.map((tool) => ({
         name: `${group.id}_${tool.name}`,
+        displayName: tool.displayName ?? tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
       }));
@@ -41,10 +42,17 @@ export class HostToolSource {
     return this.groups.flatMap((group) =>
       group.tools.map((tool) => ({
         name: `${group.id}_${tool.name}`,
+        displayName: tool.displayName ?? tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
       }))
     );
+  }
+
+  /** Resolve a group's display label: explicit `name` falls back to `id`. */
+  getGroupDisplayName(groupId: string): string {
+    const group = this.groups.find((g) => g.id === groupId);
+    return group?.name ?? groupId;
   }
 
   /**

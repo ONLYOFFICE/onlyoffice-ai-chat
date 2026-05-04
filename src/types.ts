@@ -15,6 +15,12 @@ export type TMCPItem = {
   /** Tool name as registered on the MCP server (e.g. `"web_search"`, `"insert_text"`). */
   name: string;
 
+  /**
+   * Optional human-readable name shown in the tools list UI. Falls back to
+   * {@link name} if not provided. Never sent to the model.
+   */
+  displayName?: string;
+
   /** Human-readable description shown to the AI model and in the tools list UI. */
   description: string;
 

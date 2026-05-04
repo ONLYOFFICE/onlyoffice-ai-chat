@@ -59,12 +59,11 @@ vi.mock("../../input", () => ({
     placeholder,
     value,
     onChange,
-    _onClear,
   }: {
     placeholder: string;
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    _onClear: () => void;
+    onClear?: () => void;
   }) => (
     <input
       data-testid="search-input"
