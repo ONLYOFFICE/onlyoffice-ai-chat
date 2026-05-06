@@ -15,7 +15,7 @@ export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
   const { Button } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
-  const { profiles } = useProfilesStore();
+  const profiles = useProfilesStore((s) => s.profiles);
   // Only one Add or Edit card may be open at a time across the whole list.
   const [activeCard, setActiveCard] = useState<ActiveCard>(null);
   const isAddCardOpen = activeCard === "add";

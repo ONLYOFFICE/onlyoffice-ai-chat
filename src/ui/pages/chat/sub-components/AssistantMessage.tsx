@@ -86,7 +86,7 @@ const AssistantActionBar = () => {
   const { IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
   const { useMessageStore } = useStores();
-  const { isStreamRunning, messages } = useMessageStore();
+  const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const platform = usePlatform();
 
   const message = useMessage();
@@ -96,7 +96,10 @@ const AssistantActionBar = () => {
   const onDownload = async () => {
     if (!platform.file) return;
 
-    const parentMessage = messages[Number(message.parentId)];
+    // Read the messages snapshot lazily so the action bar doesn't
+    // re-subscribe to the whole `messages` array on every streaming token.
+    const parentMessage =
+      useMessageStore.getState().messages[Number(message.parentId)];
 
     const mdValue = convertMessagesToMd([parentMessage, message]);
 
@@ -134,7 +137,7 @@ const AssistantActionBar = () => {
   );
 };
 
-export const AssistantMessage = () => {
+export const AssistantMessage = memo(() => {
   return (
     <MessagePrimitive.Root asChild>
       <motion.div
@@ -158,4 +161,4 @@ export const AssistantMessage = () => {
       </motion.div>
     </MessagePrimitive.Root>
   );
-};
+});

@@ -82,7 +82,8 @@ const readFile = (file: File, as: "dataURL" | "text"): Promise<string> =>
  */
 export const useChatDropAttachments = () => {
   const { useAttachmentsStore } = useStores();
-  const { addAttachmentFile, addAttachmentImage } = useAttachmentsStore();
+  const addAttachmentFile = useAttachmentsStore((s) => s.addAttachmentFile);
+  const addAttachmentImage = useAttachmentsStore((s) => s.addAttachmentImage);
 
   const [isDragOver, setIsDragOver] = React.useState(false);
   // dragenter/dragleave fire for every nested element, so track depth and

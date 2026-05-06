@@ -30,20 +30,29 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useAttachmentsStore: () => ({
-      addAttachmentFile: mockAddAttachmentFile,
-      addAttachmentImage: mockAddAttachmentImage,
-    }),
-    useServersStore: () => ({
-      servers: mockServers,
-      changeToolStatus: mockChangeToolStatus,
-      webSearchEnabled: mockWebSearchEnabled,
-      getWebSearchEnabled: mockGetWebSearchEnabled,
-    }),
-    useProfilesStore: () => ({
-      extendedThinking: mockExtendedThinking,
-      toggleExtendedThinking: mockToggleExtendedThinking,
-    }),
+    useAttachmentsStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        addAttachmentFile: mockAddAttachmentFile,
+        addAttachmentImage: mockAddAttachmentImage,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
+    useServersStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        servers: mockServers,
+        changeToolStatus: mockChangeToolStatus,
+        webSearchEnabled: mockWebSearchEnabled,
+        getWebSearchEnabled: mockGetWebSearchEnabled,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
+    useProfilesStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        extendedThinking: mockExtendedThinking,
+        toggleExtendedThinking: mockToggleExtendedThinking,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

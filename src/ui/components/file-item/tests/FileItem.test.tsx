@@ -25,10 +25,13 @@ const mockDeleteImage = vi.fn();
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useAttachmentsStore: () => ({
-      deleteAttachmentFile: mockDeleteFile,
-      deleteAttachmentImage: mockDeleteImage,
-    }),
+    useAttachmentsStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        deleteAttachmentFile: mockDeleteFile,
+        deleteAttachmentImage: mockDeleteImage,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

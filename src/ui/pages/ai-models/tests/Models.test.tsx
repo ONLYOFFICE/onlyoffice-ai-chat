@@ -31,7 +31,10 @@ vi.mock("../../../providers/ComponentsProvider", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useProfilesStore: () => ({ profiles }),
+    useProfilesStore: (selector?: (s: unknown) => unknown) => {
+      const state = { profiles };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

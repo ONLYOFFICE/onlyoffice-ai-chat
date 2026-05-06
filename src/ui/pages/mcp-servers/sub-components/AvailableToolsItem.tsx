@@ -33,7 +33,7 @@ const AvailableToolsItem = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   const { useServersStore } = useStores();
-  const { changeToolStatus } = useServersStore();
+  const changeToolStatus = useServersStore((s) => s.changeToolStatus);
 
   const onEnableAllTools = useCallback(() => {
     mcpItems

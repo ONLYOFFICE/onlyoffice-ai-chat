@@ -21,7 +21,8 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
   const [customServers, setCustomServers] = React.useState({});
 
   const { useServersStore } = useStores();
-  const { servers, webSearchEnabled } = useServersStore();
+  const servers = useServersStore((s) => s.servers);
+  const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
 
   const enabledCount = React.useMemo(
     () =>

@@ -29,6 +29,19 @@ vi.mock("../../../hooks", () => ({
   useThread: vi.fn(),
 }));
 
+vi.mock("../../../hooks/useEnsureProfiles", () => ({
+  default: () => {},
+}));
+vi.mock("../../../hooks/useEnsureThreads", () => ({
+  default: () => {},
+}));
+vi.mock("../../../hooks/useEnsurePrompts", () => ({
+  default: () => {},
+}));
+vi.mock("../../../hooks/useEnsureTools", () => ({
+  default: () => {},
+}));
+
 vi.mock("../../initial-setup", () => ({
   default: () => <div data-testid="initial-setup" />,
 }));

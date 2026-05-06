@@ -19,7 +19,7 @@ const ManageToolDialog = ({
   const { Button, Checkbox, DialogContent } = useComponents();
   const { t } = useI18n();
   const { useServersStore } = useStores();
-  const { manageToolData } = useServersStore();
+  const manageToolData = useServersStore((s) => s.manageToolData);
 
   const [isAllowAlways, setIsAllowAlways] = useState(false);
 

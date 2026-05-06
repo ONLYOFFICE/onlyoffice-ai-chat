@@ -17,30 +17,33 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useProfilesStore: () => ({
-      profiles: [
-        { id: "p1", name: "GPT-4", capabilities: 0x01 },
-        { id: "p2", name: "DALL-E", capabilities: 0x02 },
-        { id: "p3", name: "Vision Model", capabilities: 0x80 },
-        { id: "p4", name: "All Caps", capabilities: undefined },
-      ],
-      defaultProfile: { id: "p1", name: "GPT-4" },
-      chatProfile: null,
-      summarizationProfile: null,
-      translationProfile: null,
-      textAnalysisProfile: null,
-      imageGenerationProfile: { id: "p2", name: "DALL-E" },
-      ocrProfile: null,
-      visionProfile: null,
-      setDefaultProfile: mockSetDefaultProfile,
-      setChatProfile: mockSetChatProfile,
-      setSummarizationProfile: mockSetSummarizationProfile,
-      setTranslationProfile: mockSetTranslationProfile,
-      setTextAnalysisProfile: mockSetTextAnalysisProfile,
-      setImageGenerationProfile: mockSetImageGenerationProfile,
-      setOcrProfile: mockSetOcrProfile,
-      setVisionProfile: mockSetVisionProfile,
-    }),
+    useProfilesStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        profiles: [
+          { id: "p1", name: "GPT-4", capabilities: 0x01 },
+          { id: "p2", name: "DALL-E", capabilities: 0x02 },
+          { id: "p3", name: "Vision Model", capabilities: 0x80 },
+          { id: "p4", name: "All Caps", capabilities: undefined },
+        ],
+        defaultProfile: { id: "p1", name: "GPT-4" },
+        chatProfile: null,
+        summarizationProfile: null,
+        translationProfile: null,
+        textAnalysisProfile: null,
+        imageGenerationProfile: { id: "p2", name: "DALL-E" },
+        ocrProfile: null,
+        visionProfile: null,
+        setDefaultProfile: mockSetDefaultProfile,
+        setChatProfile: mockSetChatProfile,
+        setSummarizationProfile: mockSetSummarizationProfile,
+        setTranslationProfile: mockSetTranslationProfile,
+        setTextAnalysisProfile: mockSetTextAnalysisProfile,
+        setImageGenerationProfile: mockSetImageGenerationProfile,
+        setOcrProfile: mockSetOcrProfile,
+        setVisionProfile: mockSetVisionProfile,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

@@ -22,6 +22,7 @@ const mockHostToolSource = {
   getToolsByGroup: vi.fn().mockResolvedValue({}),
   callTool: vi.fn().mockResolvedValue("host-result"),
   setGroups: vi.fn(),
+  getGroupDisplayName: vi.fn().mockReturnValue("Display"),
 };
 
 const mockCustomServers = {
@@ -32,9 +33,9 @@ const mockCustomServers = {
   startCustomServers: vi.fn(),
   restartCustomServer: vi.fn(),
   deleteCustomServer: vi.fn(),
-  customServers: {},
-  stoppedCustomServers: [],
-  customServersLogs: {},
+  customServers: { foo: { command: "x" } },
+  stoppedCustomServers: ["bar"],
+  customServersLogs: { foo: ["log1"] },
 };
 
 vi.mock("../sources/HostToolSource", () => ({
@@ -155,6 +156,40 @@ describe("Servers", () => {
       servers.deleteCustomServer("my-mcp");
       expect(mockCustomServers.deleteCustomServer).toHaveBeenCalledWith(
         "my-mcp"
+      );
+    });
+  });
+
+  describe("host tool group accessors", () => {
+    it("getHostToolGroupIds delegates to hostToolSource.getGroupIds", () => {
+      mockHostToolSource.getGroupIds.mockReturnValue(["a", "b"]);
+      expect(servers.getHostToolGroupIds()).toEqual(["a", "b"]);
+      expect(mockHostToolSource.getGroupIds).toHaveBeenCalled();
+    });
+
+    it("getHostToolGroupDisplayName delegates with the group id", () => {
+      mockHostToolSource.getGroupDisplayName.mockReturnValue("My Group");
+      expect(servers.getHostToolGroupDisplayName("grp")).toBe("My Group");
+      expect(mockHostToolSource.getGroupDisplayName).toHaveBeenCalledWith(
+        "grp"
+      );
+    });
+  });
+
+  describe("custom server state accessors", () => {
+    it("getCustomServers exposes underlying customServers map", () => {
+      expect(servers.getCustomServers()).toBe(mockCustomServers.customServers);
+    });
+
+    it("getCustomServersStoped exposes stopped list", () => {
+      expect(servers.getCustomServersStoped()).toBe(
+        mockCustomServers.stoppedCustomServers
+      );
+    });
+
+    it("getCustomServersLogs exposes logs map", () => {
+      expect(servers.getCustomServersLogs()).toBe(
+        mockCustomServers.customServersLogs
       );
     });
   });

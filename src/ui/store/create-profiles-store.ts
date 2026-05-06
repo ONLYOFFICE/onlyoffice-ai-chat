@@ -81,10 +81,10 @@ export function createProfilesStore(deps: {
     return profiles;
   };
 
-  const loadAssignmentsState = async (
-    profiles: Profile[]
-  ): Promise<Partial<ProfilesStoreState>> => {
-    const assignments = await api.assignments.getAllAssignments();
+  const buildAssignmentsState = (
+    profiles: Profile[],
+    assignments: Record<string, string>
+  ): Partial<ProfilesStoreState> => {
     const byId = new Map(profiles.map((p) => [p.id, p]));
 
     const lookup = (actionType: ActionType): Profile | null => {
@@ -99,6 +99,13 @@ export function createProfilesStore(deps: {
       next[field] = lookup(FIELD_TO_ACTION[field]);
     }
     return next;
+  };
+
+  const loadAssignmentsState = async (
+    profiles: Profile[]
+  ): Promise<Partial<ProfilesStoreState>> => {
+    const assignments = await api.assignments.getAllAssignments();
+    return buildAssignmentsState(profiles, assignments);
   };
 
   const makeTaskSetter =
@@ -143,12 +150,15 @@ export function createProfilesStore(deps: {
       extendedThinking: false,
 
       init: async () => {
-        const [rawProfiles, deepMode] = await Promise.all([
+        // All three reads are independent — fan them out in one round
+        // so the widget can hydrate in a single network/storage trip.
+        const [rawProfiles, deepMode, assignments] = await Promise.all([
           api.profiles.list(),
           api.preferences.getDeepMode(),
+          api.assignments.getAllAssignments(),
         ]);
         const profiles = backfillCapabilities(rawProfiles);
-        const assignmentsState = await loadAssignmentsState(profiles);
+        const assignmentsState = buildAssignmentsState(profiles, assignments);
         set({
           profiles,
           extendedThinking: !!deepMode,

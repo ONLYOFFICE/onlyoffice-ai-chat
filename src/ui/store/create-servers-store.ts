@@ -104,14 +104,34 @@ export function createServersStore(deps: {
     },
 
     changeToolStatus: async (type, name, enabled) => {
-      const current = get().disabledTools[type] ?? [];
+      const state = get();
+      const current = state.disabledTools[type] ?? [];
       const next = enabled
         ? current.filter((n) => n !== name)
         : Array.from(new Set([...current, name]));
       await api.tools.setDisabled(type, next);
 
-      const built = await buildToolsList();
-      set(built);
+      // Optimistic local flip: just toggle `enabled` on the matching tool.
+      // Avoids re-running `buildToolsList` (host getTools + getDisabled +
+      // webSearch.isConfigured) on every checkbox click.
+      const flip = (items: TMCPItem[]) =>
+        items.map((tool) =>
+          tool.name === name ? { ...tool, enabled } : tool
+        );
+      const nextServers =
+        state.servers[type] !== undefined
+          ? { ...state.servers, [type]: flip(state.servers[type]) }
+          : state.servers;
+      const nextTools = state.tools.map((tool) =>
+        tool.name === name ? { ...tool, enabled } : tool
+      );
+
+      set({
+        servers: nextServers,
+        tools: nextTools,
+        disabledTools: { ...state.disabledTools, [type]: next },
+      });
+
       callbacksManager.emit("onServersUpdated", {
         kind: "tool-toggled",
         toolType: type,

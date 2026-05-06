@@ -13,6 +13,10 @@ import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useStores } from "../../store/context";
 import { useMessages } from "../../hooks";
+import useEnsureProfiles from "../../hooks/useEnsureProfiles";
+import useEnsureThreads from "../../hooks/useEnsureThreads";
+import useEnsurePrompts from "../../hooks/useEnsurePrompts";
+import useEnsureTools from "../../hooks/useEnsureTools";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
 import { Composer } from "./sub-components/Composer";
 import { UserMessage } from "./sub-components/UserMessage";
@@ -26,7 +30,8 @@ import "./Thread.css";
 const ThreadInner = () => {
   const { Loader } = useComponents();
   const { useMessageStore } = useStores();
-  const { isStreamRunning, isRequestRunning } = useMessageStore();
+  const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
+  const isRequestRunning = useMessageStore((s) => s.isRequestRunning);
   const { t } = useI18n();
   const { isDragOver, handlers } = useChatDropAttachments();
 
@@ -95,8 +100,13 @@ const ThreadInner = () => {
 
 const Thread = () => {
   const { useMessageStore, useProfilesStore } = useStores();
-  const { messages, stopMessage } = useMessageStore();
-  const { profiles } = useProfilesStore();
+  useEnsureProfiles();
+  useEnsureThreads();
+  useEnsurePrompts();
+  useEnsureTools();
+  const messages = useMessageStore((s) => s.messages);
+  const stopMessage = useMessageStore((s) => s.stopMessage);
+  const hasProfiles = useProfilesStore((s) => s.profiles.length > 0);
   const { onNew } = useMessages({ isReady: true });
 
   const onCancel = useCallback(async () => {
@@ -118,7 +128,7 @@ const Thread = () => {
     },
   });
 
-  if (!profiles.length) {
+  if (!hasProfiles) {
     return <InitialSetup />;
   }
 

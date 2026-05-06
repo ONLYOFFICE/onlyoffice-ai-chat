@@ -9,7 +9,8 @@ import { SelectModel } from "./ComposerActionSelectModel";
 const Composer = () => {
   const { useAttachmentsStore, useProfilesStore, selectCurrentChatProfile } =
     useStores();
-  const { attachmentFiles, attachmentImages } = useAttachmentsStore();
+  const attachmentFiles = useAttachmentsStore((s) => s.attachmentFiles);
+  const attachmentImages = useAttachmentsStore((s) => s.attachmentImages);
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const { hideProfilePicker } = useWidgetConfig();
   const { t } = useI18n();

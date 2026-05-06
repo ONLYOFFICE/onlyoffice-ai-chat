@@ -1,4 +1,5 @@
 import { useI18n } from "../../providers/LocalesProvider";
+import useEnsureProfiles from "../../hooks/useEnsureProfiles";
 import { Models } from "./sub-components";
 
 interface AiModelsPageProps {
@@ -14,6 +15,7 @@ const AiModelsPage = ({
 }: AiModelsPageProps) => {
   void noPadding;
   const { t } = useI18n();
+  useEnsureProfiles();
 
   return (
     <div className="aui-root flex h-full w-full bg-[var(--layout-background-color)]">

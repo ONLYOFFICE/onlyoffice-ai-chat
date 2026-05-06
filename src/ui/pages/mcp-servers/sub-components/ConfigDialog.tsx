@@ -21,7 +21,8 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
   const { t } = useI18n();
   const platform = usePlatform();
   const { useServersStore } = useStores();
-  const { saveConfig, getConfig } = useServersStore();
+  const saveConfig = useServersStore((s) => s.saveConfig);
+  const getConfig = useServersStore((s) => s.getConfig);
 
   const editorRef = React.useRef<HTMLDivElement>(null);
   const viewRef = React.useRef<EditorView | null>(null);

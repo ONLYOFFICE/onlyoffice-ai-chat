@@ -37,7 +37,12 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
   const { isRTL } = useI18n();
   const platform = usePlatform();
   const { useAttachmentsStore } = useStores();
-  const { deleteAttachmentFile, deleteAttachmentImage } = useAttachmentsStore();
+  const deleteAttachmentFile = useAttachmentsStore(
+    (s) => s.deleteAttachmentFile
+  );
+  const deleteAttachmentImage = useAttachmentsStore(
+    (s) => s.deleteAttachmentImage
+  );
 
   const handleDelete = () => {
     if ("path" in file && file.path) deleteAttachmentFile(file.path);

@@ -44,15 +44,21 @@ function setupStores(overrides?: {
   const profiles = overrides?.profiles ?? [];
   const currentProfile = overrides?.currentProfile ?? null;
 
+  const profilesState = {
+    profiles,
+    setSessionChatProfile: mockSetSessionChatProfile,
+    sessionChatProfile: currentProfile,
+    chatProfile: null,
+    defaultProfile: null,
+  };
+  const selectCurrentChatProfile = (s: typeof profilesState) =>
+    s.sessionChatProfile ?? s.chatProfile ?? s.defaultProfile;
   mockUseStores.mockReturnValue({
-    useProfilesStore: (selector?: unknown) => {
-      if (typeof selector === "function") {
-        return currentProfile;
-      }
-      return {
-        profiles,
-        setSessionChatProfile: mockSetSessionChatProfile,
-      };
+    useProfilesStore: (
+      selector?: (s: typeof profilesState) => unknown
+    ) => {
+      if (typeof selector === "function") return selector(profilesState);
+      return profilesState;
     },
     useServersStore: () => ({
       tools: [],
@@ -60,7 +66,7 @@ function setupStores(overrides?: {
     useMessageStore: () => ({
       messages: [],
     }),
-    selectCurrentChatProfile: () => currentProfile,
+    selectCurrentChatProfile,
     provider: {
       setCurrentProviderTools: mockSetCurrentProviderTools,
       setCurrentProviderPrevMessages: mockSetCurrentProviderPrevMessages,

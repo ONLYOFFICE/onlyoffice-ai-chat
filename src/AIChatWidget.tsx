@@ -61,9 +61,6 @@ import type {
 import type { AIChatWidgetRef } from "./ui/providers/ImperativeProvider";
 import { createWidgetRef, type RefCallbacks } from "./ui/providers/ImperativeProvider";
 import useMessages from "./ui/hooks/useMessages";
-import useProfiles from "./ui/hooks/useProfiles";
-import useServers from "./ui/hooks/useServers";
-import useThread from "./ui/hooks/useThreads";
 
 export interface AIChatWidgetProps {
   storage: StorageAdapter;
@@ -311,9 +308,10 @@ const AppInner = ({
   const { fetchClouds } = useCloudsStore();
   const { servers, eventBus } = useToolsContext();
 
-  useThread({ isReady });
-  useServers({ isReady });
-  useProfiles({ isReady });
+  // Each page mounted under <Thread /> or <Settings /> declares its own
+  // data dependencies via `useEnsureProfiles` / `useEnsureThreads` / etc.
+  // The widget only gates render on `isReady` so migration finishes
+  // before any page-level fetch fires.
 
   const { onNew, approveToolCall, denyToolCall } = useMessages({
     isReady,
@@ -375,6 +373,8 @@ const AppInner = ({
       setIsReady(true);
     }
   }, [onMigrate]);
+
+  if (!isReady) return null;
 
   return (
     <Layout>

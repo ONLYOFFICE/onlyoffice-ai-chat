@@ -8,12 +8,19 @@ import type { Profile } from "../../../../types";
 const SelectModel = () => {
   const { ComboBox } = useComponents();
   const { useProfilesStore, selectCurrentChatProfile } = useStores();
-  const { profiles, setSessionChatProfile } = useProfilesStore();
+  const profiles = useProfilesStore((s) => s.profiles);
+  const setSessionChatProfile = useProfilesStore(
+    (s) => s.setSessionChatProfile
+  );
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const { t } = useI18n();
 
-  const chatProfiles = profiles.filter(
-    (p) => !p.capabilities || (p.capabilities & CapabilitiesUI.Chat) !== 0
+  const chatProfiles = React.useMemo(
+    () =>
+      profiles.filter(
+        (p) => !p.capabilities || (p.capabilities & CapabilitiesUI.Chat) !== 0
+      ),
+    [profiles]
   );
 
   const onSelectProfile = React.useCallback(
@@ -30,12 +37,16 @@ const SelectModel = () => {
     }
   }, [currentProfile, chatProfiles, onSelectProfile]);
 
-  const items = chatProfiles.map((p) => ({
-    text: p.name,
-    id: p.id,
-    onClick: () => onSelectProfile(p),
-    checked: p.id === currentProfile?.id,
-  }));
+  const items = React.useMemo(
+    () =>
+      chatProfiles.map((p) => ({
+        text: p.name,
+        id: p.id,
+        onClick: () => onSelectProfile(p),
+        checked: p.id === currentProfile?.id,
+      })),
+    [chatProfiles, currentProfile, onSelectProfile]
+  );
 
   return (
     <ComboBox

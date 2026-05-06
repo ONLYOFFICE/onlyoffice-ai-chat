@@ -1,4 +1,5 @@
 import { useI18n } from "../../providers/LocalesProvider";
+import useEnsureTools from "../../hooks/useEnsureTools";
 import { Servers } from "./sub-components";
 
 interface McpServersPageProps {
@@ -9,6 +10,7 @@ interface McpServersPageProps {
 const McpServersPage = ({ hideHeader, noPadding }: McpServersPageProps) => {
   void noPadding;
   const { t } = useI18n();
+  useEnsureTools();
 
   return (
     <div className="aui-root flex h-full w-full bg-[var(--layout-background-color)]">

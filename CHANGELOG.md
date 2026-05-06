@@ -1,5 +1,92 @@
 # Changelog
 
+## 0.2.11
+
+Perf: pages now declare their own data dependencies — opening
+`AiModelsPage` no longer triggers tool/thread/prompt fetches that
+the page doesn't need. In headless mode each page is fully
+self-sufficient.
+
+| Page | Hooks fired on mount |
+|---|---|
+| `ChatPage` | profiles + threads + prompts + tools |
+| `Settings` | profiles |
+| `AiModelsPage` | profiles |
+| `ModelAssignmentPage` | profiles |
+| `McpServersPage` | tools |
+| `WebSearchPage` | — |
+
+- New page-level hooks: `useEnsureProfiles`, `useEnsureThreads`,
+  `useEnsurePrompts`, `useEnsureTools`. Each calls its store's
+  `init` in a `useEffect` on mount and re-fires when the page
+  remounts (so navigating away and back refreshes the data).
+- `AIChatWidget` no longer calls `useProfiles` / `useThread` /
+  `useServers` globally in `AppInner`. Render is gated on
+  `isReady` so migration completes before any page-level fetch.
+- The legacy `useProfiles` / `useThread` / `useServers` hooks
+  remain exported for back-compat — but they are no longer used
+  internally and you should prefer the per-page `useEnsureX`
+  variants.
+
+```tsx
+// headless: each page handles its own init
+{currentPage === "ai-models" && <AiModelsPage />}
+{currentPage === "mcp-servers" && <McpServersPage />}
+{currentPage === "chat" && <ChatPage />}
+```
+
+## 0.2.10
+
+Perf: trimmed redundant work across the chat UI — store subscriptions
+re-render only on the slice they read, the tool list updates locally
+on toggle instead of refetching, and the bootstrap fan-out is one
+round-trip instead of two.
+
+- Replaced `const { a, b } = useXxxStore()` with per-field selectors
+  in 20+ components (`Thread`, `Composer`, `AssistantMessage`,
+  `UserMessage`, `ComposerActionPrompts`, `ComposerActionAttachments`,
+  `ComposerActionServers`, `ComposerActionSelectModel`,
+  `ManageToolDialog`, `useMessages`, all of `pages/mcp-servers/*`,
+  `pages/ai-models`, `pages/model-assignment`, `pages/initial-setup`,
+  `DeleteChatDialog`, `DeleteProfileDialog`, `FileItem`,
+  `useChatDropAttachments`).
+- `changeToolStatus` now flips the `enabled` flag in-place instead of
+  re-running `buildToolsList` (no extra `api.tools.getDisabled` /
+  `api.webSearch.isConfigured` / host `getTools` calls per click).
+- `useServers` no longer polls every 5 minutes — `tools-changed`
+  events drive refreshes. Initial mount calls `getTools` once
+  instead of twice.
+- `ProfilesService.init` now fans out `profiles.list`,
+  `preferences.getDeepMode`, and `assignments.getAllAssignments` in
+  one `Promise.all` (was 2 + 1 sequential).
+- `AssistantMessage` is now wrapped in `React.memo`, so the
+  per-token array recreation in the message store no longer
+  cascades a re-render through every assistant bubble.
+- `ComposerActionSelectModel` memoizes its filtered profile list
+  and dropdown items so the auto-select effect doesn't re-fire on
+  every parent render.
+
+```ts
+// before
+const { servers, changeToolStatus } = useServersStore();
+// after
+const servers = useServersStore((s) => s.servers);
+const changeToolStatus = useServersStore((s) => s.changeToolStatus);
+```
+
+Fix: `ActionType` is now exported from a single canonical source —
+`shared/action-type` (8 values, including `Default`). The duplicate
+truncated 7-value copies in `src/capabilities.ts` and
+`src/core/capabilities.ts` re-export from there. Consumers of
+`@onlyoffice/ai-chat` and `@onlyoffice/ai-chat/core` see the same
+`ActionType.Default` member that `AssignmentsStorage` already relied
+on internally.
+
+Tests: 2206 across 211 files; coverage rose to 95.6% statements /
+86.8% branches (from 94.5% / 85.2%) — added targeted tests around
+`useMessages` stream branches, `HostToolSource` error paths,
+`servers` accessors, and `changeToolStatus` optimistic update.
+
 ## 0.2.9
 
 Fix: restore the missing padding on the initial-setup page so the

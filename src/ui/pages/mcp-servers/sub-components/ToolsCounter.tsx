@@ -10,7 +10,8 @@ const TOOLS_COUNTER_THRESHOLD = 90;
 const ToolsCounter = () => {
   const { t } = useI18n();
   const { useServersStore } = useStores();
-  const { tools, webSearchEnabled } = useServersStore();
+  const tools = useServersStore((s) => s.tools);
+  const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
 
   const allToolsCount = webSearchEnabled ? tools.length - 2 : tools.length;
   const maxCount = webSearchEnabled

@@ -16,9 +16,14 @@ const ServersSettings = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const { useServersStore, useProfilesStore } = useStores();
   const { eventBus } = useToolsContext();
-  const { servers, changeToolStatus, webSearchEnabled, disabledTools } =
-    useServersStore();
-  const { extendedThinking, toggleExtendedThinking } = useProfilesStore();
+  const servers = useServersStore((s) => s.servers);
+  const changeToolStatus = useServersStore((s) => s.changeToolStatus);
+  const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
+  const disabledTools = useServersStore((s) => s.disabledTools);
+  const extendedThinking = useProfilesStore((s) => s.extendedThinking);
+  const toggleExtendedThinking = useProfilesStore(
+    (s) => s.toggleExtendedThinking
+  );
 
   const webSearchDisabledNames = disabledTools[WEB_SEARCH_TYPE] ?? [];
   const webSearchActive =

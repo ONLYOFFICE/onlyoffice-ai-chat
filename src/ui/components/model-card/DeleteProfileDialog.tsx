@@ -16,7 +16,7 @@ const DeleteProfileDialog = ({
 }: DeleteProfileDialogProps) => {
   const { Button, DialogContent } = useComponents();
   const { useProfilesStore } = useStores();
-  const { deleteProfile } = useProfilesStore();
+  const deleteProfile = useProfilesStore((s) => s.deleteProfile);
   const { t, isRTL } = useI18n();
 
   const onSubmitAction = React.useCallback(async () => {

@@ -18,7 +18,7 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const { servers: serversInstance } = useToolsContext();
   const { useServersStore } = useStores();
-  const { servers } = useServersStore();
+  const servers = useServersStore((s) => s.servers);
   const [customServers, setCustomServers] = React.useState({});
 
   React.useEffect(() => {

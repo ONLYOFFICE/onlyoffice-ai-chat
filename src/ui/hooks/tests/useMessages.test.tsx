@@ -94,7 +94,10 @@ vi.mock("../../store/context", () => ({
         selector ? selector(stores.serversState) : stores.serversState) as never,
       { getState: () => stores.serversState }
     ),
-    useAttachmentsStore: () => stores.attachmentsState,
+    useAttachmentsStore: (
+      selector?: (s: typeof stores.attachmentsState) => unknown
+    ) =>
+      selector ? selector(stores.attachmentsState) : stores.attachmentsState,
     useProfilesStore: (
       selector?: (s: typeof stores.profilesState) => unknown
     ) => (selector ? selector(stores.profilesState) : stores.profilesState),
@@ -379,5 +382,404 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
       await result.current.denyToolCall();
     });
     expect(apiAi.denyToolCall).toHaveBeenCalled();
+  });
+
+  it("approveToolCall aborts when middleware afterToolResult returns skip", async () => {
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: {},
+    });
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runAfterToolResult.mockResolvedValue({ action: "skip" });
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.approveToolCall(false);
+    });
+    expect(apiAi.approveToolCall).not.toHaveBeenCalled();
+    expect(stores.messageState.setIsStreamRunning).toHaveBeenCalledWith(false);
+    expect(stores.messageState.setIsRequestRunning).toHaveBeenCalledWith(false);
+  });
+
+  it("approveToolCall replaces result when middleware returns continue", async () => {
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: {},
+    });
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runAfterToolResult.mockResolvedValue({
+      action: "continue",
+      result: "rewritten",
+    });
+    apiAi.approveToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.approveToolCall(false);
+    });
+    expect(apiAi.approveToolCall).toHaveBeenCalledWith(
+      expect.objectContaining({ result: "rewritten" })
+    );
+  });
+
+  it("approveToolCall noops when readToolCall returns null", async () => {
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    readToolCallMock.mockReturnValue(null);
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.approveToolCall(false);
+    });
+    expect(servers.callTools).not.toHaveBeenCalled();
+  });
+});
+
+describe("useMessages stream branches", () => {
+  it("handles thread-title by claiming and inserting the thread", async () => {
+    stores.profilesState.chatProfile = profile;
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "thread-title",
+          threadId: "newT",
+          title: "Generated",
+          profileId: "p2",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    expect(stores.messageState.claimThreadId).toHaveBeenCalledWith("newT");
+    expect(stores.threadsState.insertThread).toHaveBeenCalledWith(
+      "newT",
+      "Generated",
+      expect.objectContaining({ profileId: "p2" })
+    );
+  });
+
+  it("falls back to current profile when thread-title omits profileId", async () => {
+    stores.profilesState.chatProfile = profile;
+    apiAi.sendWithStream.mockReturnValue(
+      arr([{ type: "thread-title", threadId: "t", title: "T" }])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    expect(stores.threadsState.insertThread).toHaveBeenCalledWith(
+      "t",
+      "T",
+      expect.objectContaining({ profileId: "p1" })
+    );
+  });
+
+  it("calls insertNewMessageToThread when thread already exists", async () => {
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "tExist";
+    stores.threadsState.threads = [{ threadId: "tExist" }] as never;
+    apiAi.sendWithStream.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    expect(stores.threadsState.insertNewMessageToThread).toHaveBeenCalledWith({
+      profileId: "p1",
+    });
+    expect(apiAi.sendWithStream).toHaveBeenCalledWith(
+      expect.objectContaining({ threadId: "tExist" })
+    );
+  });
+
+  it("skips chunk when middleware runOnStreamChunk returns skip", async () => {
+    stores.profilesState.chatProfile = profile;
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runOnStreamChunk.mockResolvedValue({ action: "skip" });
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "message-start",
+          message: { role: "assistant", content: "x" },
+          messageId: "m1",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    // user message is added but no assistant message because the only chunk was skipped
+    expect(stores.messageState.addMessage).toHaveBeenCalledTimes(1);
+    expect(callbacksManager.emit).not.toHaveBeenCalledWith(
+      "onStreamStart",
+      expect.any(Object)
+    );
+  });
+
+  it("replaces chunk when middleware runOnStreamChunk returns continue with chunk", async () => {
+    stores.profilesState.chatProfile = profile;
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runOnStreamChunk.mockResolvedValue({
+      action: "continue",
+      chunk: { role: "assistant", content: "rewritten" },
+    });
+    middlewareRunner.runBeforeDisplay.mockResolvedValue({ action: "continue" });
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "message-start",
+          message: { role: "assistant", content: "raw" },
+          messageId: "m1",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    const calls = stores.messageState.addMessage.mock.calls;
+    const assistantCall = calls[calls.length - 1][0] as {
+      content: string;
+    };
+    expect(assistantCall.content).toBe("rewritten");
+  });
+
+  it("skips display when beforeDisplay middleware returns skip", async () => {
+    stores.profilesState.chatProfile = profile;
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runOnStreamChunk.mockResolvedValue({ action: "continue" });
+    middlewareRunner.runBeforeDisplay.mockResolvedValue({ action: "skip" });
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "message-start",
+          message: { role: "assistant", content: "x" },
+          messageId: "m1",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    // only the user message goes through addMessage
+    expect(stores.messageState.addMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("rewrites display when beforeDisplay middleware returns continue with message", async () => {
+    stores.profilesState.chatProfile = profile;
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runOnStreamChunk.mockResolvedValue({ action: "continue" });
+    middlewareRunner.runBeforeDisplay.mockResolvedValue({
+      action: "continue",
+      message: { role: "assistant", content: "patched" },
+    });
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "message-start",
+          message: { role: "assistant", content: "raw" },
+          messageId: "m1",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    const calls = stores.messageState.addMessage.mock.calls;
+    const assistantCall = calls[calls.length - 1][0] as { content: string };
+    expect(assistantCall.content).toBe("patched");
+  });
+
+  it("middleware deny on tool-call-pending triggers denyToolCall and not callTools", async () => {
+    stores.profilesState.chatProfile = profile;
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runBeforeToolCall.mockResolvedValue({ action: "deny" });
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: {},
+    });
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "tool-call-pending",
+          message: { role: "assistant", content: [] },
+          idx: 0,
+          messageId: "m1",
+          threadId: "t1",
+          autoAllow: false,
+        },
+      ])
+    );
+    apiAi.denyToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    expect(apiAi.denyToolCall).toHaveBeenCalled();
+    expect(servers.callTools).not.toHaveBeenCalled();
+  });
+
+  it("middleware approve on tool-call-pending dispatches without dialog", async () => {
+    stores.profilesState.chatProfile = profile;
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runBeforeToolCall.mockResolvedValue({ action: "approve" });
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: { q: 1 },
+    });
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "tool-call-pending",
+          message: { role: "assistant", content: [] },
+          idx: 0,
+          messageId: "m1",
+          threadId: "t1",
+          autoAllow: false,
+        },
+      ])
+    );
+    apiAi.approveToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    expect(servers.callTools).toHaveBeenCalled();
+    expect(stores.serversState.setManageToolData).not.toHaveBeenCalledWith(
+      expect.objectContaining({ idx: 0, threadId: "t1" })
+    );
+  });
+
+  it("middleware continue with rewritten args patches the dialog message", async () => {
+    stores.profilesState.chatProfile = profile;
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runBeforeToolCall.mockResolvedValue({
+      action: "continue",
+      args: { q: "patched" },
+    });
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: { q: "raw" },
+    });
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "tool-call-pending",
+          message: { role: "assistant", content: [] },
+          idx: 0,
+          messageId: "m1",
+          threadId: "t1",
+          autoAllow: false,
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    expect(patchToolCallArgsMock).toHaveBeenCalled();
+    expect(stores.serversState.setManageToolData).toHaveBeenCalled();
+  });
+
+  it("auto-allowed tool-call aborts when afterToolResult middleware returns skip", async () => {
+    stores.profilesState.chatProfile = profile;
+    middlewareRunner.isEmpty = false;
+    middlewareRunner.runBeforeToolCall.mockResolvedValue({ action: "continue" });
+    middlewareRunner.runAfterToolResult.mockResolvedValue({ action: "skip" });
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: {},
+    });
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "tool-call-pending",
+          message: { role: "assistant", content: [] },
+          idx: 0,
+          messageId: "m1",
+          threadId: "t1",
+          autoAllow: true,
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    expect(apiAi.approveToolCall).not.toHaveBeenCalled();
+  });
+
+  it("emits onStreamError on terminal incomplete status", async () => {
+    stores.profilesState.chatProfile = profile;
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "message-end",
+          message: {
+            role: "assistant",
+            content: "x",
+            status: { type: "incomplete", reason: "length", error: "trunc" },
+          },
+          messageId: "m1",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    expect(callbacksManager.emit).toHaveBeenCalledWith(
+      "onStreamError",
+      expect.objectContaining({
+        error: expect.objectContaining({ reason: "length" }),
+      })
+    );
   });
 });

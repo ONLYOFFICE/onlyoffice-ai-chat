@@ -23,9 +23,12 @@ vi.mock("../../../tools/context", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: () => ({
-      changeToolStatus: mockChangeToolStatus,
-    }),
+    useServersStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        changeToolStatus: mockChangeToolStatus,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

@@ -18,10 +18,13 @@ vi.mock("../../../providers/PlatformProvider/context", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: () => ({
-      saveConfig: mockSaveConfig,
-      getConfig: mockGetConfig,
-    }),
+    useServersStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        saveConfig: mockSaveConfig,
+        getConfig: mockGetConfig,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

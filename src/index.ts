@@ -414,6 +414,10 @@ export {
   useProfiles,
   useServers,
   useThread,
+  useEnsureProfiles,
+  useEnsureThreads,
+  useEnsurePrompts,
+  useEnsureTools,
 } from "./ui/hooks";
 
 // ---------------------------------------------------------------------------

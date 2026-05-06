@@ -1,4 +1,5 @@
 import { useI18n } from "../../providers/LocalesProvider";
+import useEnsureProfiles from "../../hooks/useEnsureProfiles";
 import { ModelAssignment } from "./sub-components";
 
 interface ModelAssignmentPageProps {
@@ -12,6 +13,7 @@ const ModelAssignmentPage = ({
 }: ModelAssignmentPageProps) => {
   void noPadding;
   const { t } = useI18n();
+  useEnsureProfiles();
 
   return (
     <div className="aui-root flex h-full w-full bg-[var(--layout-background-color)]">

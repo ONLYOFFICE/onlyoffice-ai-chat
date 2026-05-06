@@ -29,28 +29,31 @@ vi.mock("../../../../config", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: () => ({
-      servers: {
-        "desktop-editor": [
-          {
-            name: "tool1",
-            description: "desc",
-            inputSchema: {},
-            enabled: true,
-          },
-        ],
-        "custom-server": [
-          {
-            name: "tool2",
-            description: "desc2",
-            inputSchema: {},
-            enabled: false,
-          },
-        ],
-      },
-      tools: [],
-      webSearchEnabled: false,
-    }),
+    useServersStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        servers: {
+          "desktop-editor": [
+            {
+              name: "tool1",
+              description: "desc",
+              inputSchema: {},
+              enabled: true,
+            },
+          ],
+          "custom-server": [
+            {
+              name: "tool2",
+              description: "desc2",
+              inputSchema: {},
+              enabled: false,
+            },
+          ],
+        },
+        tools: [],
+        webSearchEnabled: false,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

@@ -1,6 +1,7 @@
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useStores } from "../../store/context";
+import useEnsureProfiles from "../../hooks/useEnsureProfiles";
 import AiModelsPage from "../ai-models";
 import ModelAssignmentPage from "../model-assignment";
 import McpServersPage from "../mcp-servers";
@@ -22,6 +23,7 @@ const Settings = ({
   const { Tabs } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
+  useEnsureProfiles();
 
   const profiles = useProfilesStore((s) => s.profiles);
 

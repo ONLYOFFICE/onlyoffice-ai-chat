@@ -11,7 +11,12 @@ const hostToolGroups: unknown[] = [];
 
 vi.mock("../../store/context", () => ({
   useStores: () => ({
-    useServersStore: () => ({ initServers, getTools }),
+    useServersStore: (
+      selector?: (s: { initServers: typeof initServers; getTools: typeof getTools }) => unknown
+    ) => {
+      const state = { initServers, getTools };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 
@@ -35,31 +40,39 @@ describe("useServers", () => {
     off.mockClear();
   });
 
-  it("syncs host tool groups and fetches tools on mount", () => {
+  it("syncs host tool groups on mount", () => {
     renderHook(() => useServers({ isReady: false }));
     expect(setGroups).toHaveBeenCalledWith(hostToolGroups);
-    expect(getTools).toHaveBeenCalled();
   });
 
-  it("initializes servers and starts polling when ready", () => {
+  it("does not fetch tools while not ready", () => {
+    renderHook(() => useServers({ isReady: false }));
+    expect(getTools).not.toHaveBeenCalled();
+  });
+
+  it("initializes servers when ready", () => {
     renderHook(() => useServers({ isReady: true }));
     expect(initServers).toHaveBeenCalled();
+  });
+
+  it("calls getTools exactly once on initial ready mount", () => {
+    // Refactor target: dedupe the initial fetch — the host-groups effect
+    // and the ready effect must not both fire getTools at startup.
+    renderHook(() => useServers({ isReady: true }));
+    expect(getTools).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not poll periodically", () => {
+    // Refactor target: rely on `tools-changed` events instead of polling.
+    renderHook(() => useServers({ isReady: true }));
     getTools.mockClear();
-    vi.advanceTimersByTime(1000 * 60 * 5);
-    expect(getTools).toHaveBeenCalled();
+    vi.advanceTimersByTime(1000 * 60 * 30);
+    expect(getTools).not.toHaveBeenCalled();
   });
 
   it("does not init servers when not ready", () => {
     renderHook(() => useServers({ isReady: false }));
     expect(initServers).not.toHaveBeenCalled();
-  });
-
-  it("clears interval on unmount", () => {
-    const { unmount } = renderHook(() => useServers({ isReady: true }));
-    getTools.mockClear();
-    unmount();
-    vi.advanceTimersByTime(1000 * 60 * 10);
-    expect(getTools).not.toHaveBeenCalled();
   });
 
   it("subscribes to tools-changed and re-fetches on event", () => {

@@ -37,10 +37,15 @@ const ComposerActionAttachment = () => {
   const { useAttachmentsStore, useServersStore, useProfilesStore } =
     useStores();
 
-  const { addAttachmentFile, addAttachmentImage } = useAttachmentsStore();
-  const { servers, changeToolStatus, webSearchEnabled} =
-    useServersStore();
-  const { extendedThinking, toggleExtendedThinking } = useProfilesStore();
+  const addAttachmentFile = useAttachmentsStore((s) => s.addAttachmentFile);
+  const addAttachmentImage = useAttachmentsStore((s) => s.addAttachmentImage);
+  const servers = useServersStore((s) => s.servers);
+  const changeToolStatus = useServersStore((s) => s.changeToolStatus);
+  const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
+  const extendedThinking = useProfilesStore((s) => s.extendedThinking);
+  const toggleExtendedThinking = useProfilesStore(
+    (s) => s.toggleExtendedThinking
+  );
 
   const onOpenChange = (open: boolean) => {
     setIsOpen(open);

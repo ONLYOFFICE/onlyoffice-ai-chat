@@ -62,11 +62,15 @@ function setupStores(overrides?: {
   currentProfile?: { id: string; name: string } | null;
   hideProfilePicker?: boolean;
 }) {
+  const attachmentsState = {
+    attachmentFiles: overrides?.attachmentFiles ?? [],
+    attachmentImages: overrides?.attachmentImages ?? [],
+  };
   mockUseStores.mockReturnValue({
-    useAttachmentsStore: () => ({
-      attachmentFiles: overrides?.attachmentFiles ?? [],
-      attachmentImages: overrides?.attachmentImages ?? [],
-    }),
+    useAttachmentsStore: (
+      selector?: (s: typeof attachmentsState) => unknown
+    ) =>
+      typeof selector === "function" ? selector(attachmentsState) : attachmentsState,
     useProfilesStore: (selector?: unknown) => {
       if (typeof selector === "function") {
         return overrides?.currentProfile ?? null;

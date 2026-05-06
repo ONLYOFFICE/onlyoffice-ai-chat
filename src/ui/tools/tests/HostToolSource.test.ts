@@ -196,4 +196,107 @@ describe("HostToolSource", () => {
       expect(source.isAutoAllow("desktop-editor", "nonexistent")).toBe(false);
     });
   });
+
+  // ==========================================================================
+  // getGroupDisplayName
+  // ==========================================================================
+
+  describe("getGroupDisplayName", () => {
+    it("returns the group's name when set", () => {
+      source.setGroups(makeGroups());
+      expect(source.getGroupDisplayName("desktop-editor")).toBe(
+        "Desktop Editor"
+      );
+    });
+
+    it("falls back to the group id when name is missing", () => {
+      source.setGroups([
+        { id: "no-name", tools: [] } as unknown as HostToolGroup,
+      ]);
+      expect(source.getGroupDisplayName("no-name")).toBe("no-name");
+    });
+
+    it("returns the requested id when group is unknown", () => {
+      source.setGroups(makeGroups());
+      expect(source.getGroupDisplayName("missing")).toBe("missing");
+    });
+  });
+
+  // ==========================================================================
+  // callTool — non-string handler results
+  // ==========================================================================
+
+  describe("callTool result normalisation", () => {
+    const makeGroupWithHandler = (
+      handler: (args: Record<string, unknown>) => unknown
+    ): HostToolGroup[] => [
+      {
+        id: "g",
+        name: "G",
+        tools: [
+          {
+            name: "t",
+            description: "",
+            inputSchema: {},
+            handler: handler as (
+              args: Record<string, unknown>
+            ) => Promise<unknown>,
+          },
+        ],
+      },
+    ];
+
+    it("returns '{}' when handler resolves with undefined", async () => {
+      source.setGroups(makeGroupWithHandler(() => undefined));
+      expect(await source.callTool("t", {})).toBe("{}");
+    });
+
+    it("returns '{}' when handler resolves with null", async () => {
+      source.setGroups(makeGroupWithHandler(() => null));
+      expect(await source.callTool("t", {})).toBe("{}");
+    });
+
+    it("JSON-stringifies non-string handler results", async () => {
+      source.setGroups(makeGroupWithHandler(() => ({ a: 1, b: [2, 3] })));
+      expect(await source.callTool("t", {})).toBe(
+        JSON.stringify({ a: 1, b: [2, 3] })
+      );
+    });
+
+    it("returns serialisation-error payload when result has cycles", async () => {
+      const cyclic: Record<string, unknown> = {};
+      cyclic.self = cyclic;
+      source.setGroups(makeGroupWithHandler(() => cyclic));
+
+      const result = await source.callTool("t", {});
+
+      expect(JSON.parse(result as string)).toEqual({
+        error: "Tool result is not serialisable.",
+      });
+    });
+
+    it("returns stringified error when handler throws an Error", async () => {
+      source.setGroups(
+        makeGroupWithHandler(() => {
+          throw new Error("boom");
+        })
+      );
+
+      const result = await source.callTool("t", {});
+
+      expect(JSON.parse(result as string)).toEqual({ error: "boom" });
+    });
+
+    it("returns stringified error when handler throws a non-Error value", async () => {
+      source.setGroups(
+        makeGroupWithHandler(() => {
+          throw "raw-string";
+        })
+      );
+
+      const result = await source.callTool("t", {});
+
+      expect(JSON.parse(result as string)).toEqual({ error: "raw-string" });
+    });
+  });
 });

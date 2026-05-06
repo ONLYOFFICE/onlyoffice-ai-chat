@@ -12,7 +12,7 @@ type DeleteChatDialogProps = {
 const DeleteChatDialog = ({ id, onClose }: DeleteChatDialogProps) => {
   const { Button, DialogContent } = useComponents();
   const { useThreadsStore } = useStores();
-  const { onDeleteThread } = useThreadsStore();
+  const onDeleteThread = useThreadsStore((s) => s.onDeleteThread);
   const { t, isRTL } = useI18n();
 
   const onSubmitAction = React.useCallback(async () => {

@@ -19,9 +19,12 @@ vi.mock("../../../providers/LocalesProvider", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useProfilesStore: () => ({
-      deleteProfile: mockDeleteProfile,
-    }),
+    useProfilesStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        deleteProfile: mockDeleteProfile,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

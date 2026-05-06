@@ -50,25 +50,29 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     selectCurrentChatProfile,
   } = useStores();
 
-  const {
-    messages,
-    setIsStreamRunning,
-    setIsRequestRunning,
-    setAbortController,
-    addMessage,
-    updateLastMessage,
-    fetchPrevMessages,
-    claimThreadId,
-  } = useMessageStore();
-  const { threadId, insertThread, insertNewMessageToThread } =
-    useThreadsStore();
-  const { setManageToolData, tools } = useServersStore();
-  const {
-    attachmentFiles,
-    clearAttachmentFiles,
-    attachmentImages,
-    clearAttachmentImages,
-  } = useAttachmentsStore();
+  const messages = useMessageStore((s) => s.messages);
+  const setIsStreamRunning = useMessageStore((s) => s.setIsStreamRunning);
+  const setIsRequestRunning = useMessageStore((s) => s.setIsRequestRunning);
+  const setAbortController = useMessageStore((s) => s.setAbortController);
+  const addMessage = useMessageStore((s) => s.addMessage);
+  const updateLastMessage = useMessageStore((s) => s.updateLastMessage);
+  const fetchPrevMessages = useMessageStore((s) => s.fetchPrevMessages);
+  const claimThreadId = useMessageStore((s) => s.claimThreadId);
+  const threadId = useThreadsStore((s) => s.threadId);
+  const insertThread = useThreadsStore((s) => s.insertThread);
+  const insertNewMessageToThread = useThreadsStore(
+    (s) => s.insertNewMessageToThread
+  );
+  const setManageToolData = useServersStore((s) => s.setManageToolData);
+  const tools = useServersStore((s) => s.tools);
+  const attachmentFiles = useAttachmentsStore((s) => s.attachmentFiles);
+  const clearAttachmentFiles = useAttachmentsStore(
+    (s) => s.clearAttachmentFiles
+  );
+  const attachmentImages = useAttachmentsStore((s) => s.attachmentImages);
+  const clearAttachmentImages = useAttachmentsStore(
+    (s) => s.clearAttachmentImages
+  );
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const extendedThinking = useProfilesStore((s) => s.extendedThinking);
   const { servers } = useToolsContext();

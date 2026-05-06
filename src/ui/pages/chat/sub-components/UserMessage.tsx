@@ -24,7 +24,8 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
   const { Button, DialogContent, Input } = useComponents();
   const { t, isRTL } = useI18n();
   const { usePromptsStore } = useStores();
-  const { addFolder, addPrompt } = usePromptsStore();
+  const addFolder = usePromptsStore((s) => s.addFolder);
+  const addPrompt = usePromptsStore((s) => s.addPrompt);
   const [folderName, setFolderName] = useState(t("NewFolder"));
 
   const onSave = useCallback(async () => {
@@ -93,7 +94,8 @@ const UserActionBar = () => {
   const { t } = useI18n();
   const message = useMessage();
   const { usePromptsStore } = useStores();
-  const { addPrompt, folders } = usePromptsStore();
+  const addPrompt = usePromptsStore((s) => s.addPrompt);
+  const folders = usePromptsStore((s) => s.folders);
   const [isOpen, setIsOpen] = useState(false);
   const [isNewFolderDialogVisible, setIsNewFolderDialogVisible] =
     useState(false);

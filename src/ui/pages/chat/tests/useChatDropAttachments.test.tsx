@@ -15,10 +15,13 @@ const setupStores = (overrides?: {
   addAttachmentImage?: (i: unknown) => void;
 }) => {
   mockUseStores.mockReturnValue({
-    useAttachmentsStore: () => ({
-      addAttachmentFile: overrides?.addAttachmentFile ?? vi.fn(),
-      addAttachmentImage: overrides?.addAttachmentImage ?? vi.fn(),
-    }),
+    useAttachmentsStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        addAttachmentFile: overrides?.addAttachmentFile ?? vi.fn(),
+        addAttachmentImage: overrides?.addAttachmentImage ?? vi.fn(),
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   });
 };
 

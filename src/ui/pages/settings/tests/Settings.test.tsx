@@ -35,6 +35,13 @@ vi.mock("../../web-search/sub-components", () => ({
   WebSearch: () => <div data-testid="web-search" />,
 }));
 
+vi.mock("../../../hooks/useEnsureProfiles", () => ({
+  default: () => {},
+}));
+vi.mock("../../../hooks/useEnsureTools", () => ({
+  default: () => {},
+}));
+
 import Settings from "../index";
 
 describe("SettingsPage", () => {

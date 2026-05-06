@@ -4,3 +4,7 @@ export { default as useMessages } from "./useMessages";
 export { default as useProfiles } from "./useProfiles";
 export { default as useServers } from "./useServers";
 export { default as useThread } from "./useThreads";
+export { default as useEnsureProfiles } from "./useEnsureProfiles";
+export { default as useEnsureThreads } from "./useEnsureThreads";
+export { default as useEnsurePrompts } from "./useEnsurePrompts";
+export { default as useEnsureTools } from "./useEnsureTools";

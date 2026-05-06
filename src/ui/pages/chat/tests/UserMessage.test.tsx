@@ -15,11 +15,14 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    usePromptsStore: () => ({
-      addPrompt: mockAddPrompt,
-      addFolder: mockAddFolder,
-      folders: mockFolders,
-    }),
+    usePromptsStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        addPrompt: mockAddPrompt,
+        addFolder: mockAddFolder,
+        folders: mockFolders,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

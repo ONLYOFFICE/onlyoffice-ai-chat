@@ -77,6 +77,34 @@ describe("createProfilesStore", () => {
     expect(s.getState().defaultProfile?.id).toBe("1");
   });
 
+  it("init fans out profiles/deepMode/assignments in parallel", async () => {
+    const deps = makeDeps([profile("1")]);
+    // Capture call timing: each mock records when it was invoked relative
+    // to the others. If init parallelizes them, all three should start
+    // before any await resolves (i.e. record the same tick).
+    const callOrder: string[] = [];
+    deps.api.profiles.list = vi.fn(async () => {
+      callOrder.push("profiles");
+      return [profile("1")];
+    });
+    deps.api.preferences.getDeepMode = vi.fn(async () => {
+      callOrder.push("deepMode");
+      return false;
+    });
+    deps.api.assignments.getAllAssignments = vi.fn(async () => {
+      callOrder.push("assignments");
+      return {};
+    });
+    const s = createProfilesStore(deps);
+    await s.getState().init();
+
+    expect(deps.api.profiles.list).toHaveBeenCalledTimes(1);
+    expect(deps.api.assignments.getAllAssignments).toHaveBeenCalledTimes(1);
+    expect(deps.api.preferences.getDeepMode).toHaveBeenCalledTimes(1);
+    // All three calls were initiated before any of them resolved.
+    expect(callOrder).toEqual(["profiles", "deepMode", "assignments"]);
+  });
+
   it("init backfills missing capabilities", async () => {
     const broken = profile("1");
     (broken as unknown as { capabilities: unknown }).capabilities = undefined;

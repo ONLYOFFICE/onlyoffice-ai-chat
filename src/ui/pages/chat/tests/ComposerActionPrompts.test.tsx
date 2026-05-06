@@ -23,15 +23,18 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    usePromptsStore: () => ({
-      prompts: mockPrompts,
-      folders: mockFolders,
-      editPrompt: mockEditPrompt,
-      removePrompt: mockRemovePrompt,
-      renameFolder: mockRenameFolder,
-      removeFolder: mockRemoveFolder,
-      addFolder: mockAddFolder,
-    }),
+    usePromptsStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        prompts: mockPrompts,
+        folders: mockFolders,
+        editPrompt: mockEditPrompt,
+        removePrompt: mockRemovePrompt,
+        renameFolder: mockRenameFolder,
+        removeFolder: mockRemoveFolder,
+        addFolder: mockAddFolder,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

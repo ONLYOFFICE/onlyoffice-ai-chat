@@ -10,7 +10,10 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: () => mockUseServersStore(),
+    useServersStore: (selector?: (s: unknown) => unknown) => {
+      const state = mockUseServersStore();
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

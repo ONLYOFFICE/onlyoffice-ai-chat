@@ -133,6 +133,89 @@ describe("createServersStore", () => {
     expect(deps.api.tools.setDisabled).toHaveBeenCalledWith("mcp", ["a"]);
   });
 
+  describe("changeToolStatus — optimistic local update", () => {
+    it("flips enabled flag locally without re-fetching disabled / webSearch / host tools", async () => {
+      const deps = makeDeps({
+        grouped: {
+          mcp: [
+            { name: "a", enabled: true },
+            { name: "b", enabled: true },
+          ],
+        },
+        disabled: {},
+      });
+      const s = createServersStore(deps);
+      // Seed initial state via getTools, then clear call counters.
+      await s.getState().getTools();
+      vi.clearAllMocks();
+
+      await s.getState().changeToolStatus("mcp", "a", false);
+
+      expect(deps.api.tools.setDisabled).toHaveBeenCalledTimes(1);
+      expect(deps.api.tools.setDisabled).toHaveBeenCalledWith("mcp", ["a"]);
+      // Refactor target: do NOT rebuild the whole tool tree on toggle.
+      expect(deps.api.tools.getDisabled).not.toHaveBeenCalled();
+      expect(deps.api.webSearch.isConfigured).not.toHaveBeenCalled();
+      expect(deps.servers.getTools).not.toHaveBeenCalled();
+
+      const st = s.getState();
+      expect(st.disabledTools).toEqual({ mcp: ["a"] });
+      expect(st.servers.mcp).toEqual([
+        { name: "a", enabled: false },
+        { name: "b", enabled: true },
+      ]);
+      expect(st.tools.find((t) => t.name === "a")?.enabled).toBe(false);
+      expect(st.tools.find((t) => t.name === "b")?.enabled).toBe(true);
+    });
+
+    it("re-enables a tool by removing it from disabledTools and flipping its flag", async () => {
+      const deps = makeDeps({
+        grouped: {
+          mcp: [
+            { name: "a", enabled: false },
+            { name: "b", enabled: true },
+          ],
+        },
+        disabled: { mcp: ["a"] },
+      });
+      const s = createServersStore(deps);
+      await s.getState().getTools();
+      vi.clearAllMocks();
+
+      await s.getState().changeToolStatus("mcp", "a", true);
+
+      expect(deps.api.tools.setDisabled).toHaveBeenCalledWith("mcp", []);
+      expect(deps.api.tools.getDisabled).not.toHaveBeenCalled();
+      expect(deps.servers.getTools).not.toHaveBeenCalled();
+
+      const st = s.getState();
+      expect(st.disabledTools).toEqual({ mcp: [] });
+      expect(st.servers.mcp.find((t) => t.name === "a")?.enabled).toBe(true);
+    });
+
+    it("emits tool-toggled callback after optimistic update", async () => {
+      const deps = makeDeps({
+        grouped: { mcp: [{ name: "a", enabled: true }] },
+        disabled: {},
+      });
+      const s = createServersStore(deps);
+      await s.getState().getTools();
+      vi.clearAllMocks();
+
+      await s.getState().changeToolStatus("mcp", "a", false);
+
+      expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
+        "onServersUpdated",
+        {
+          kind: "tool-toggled",
+          toolType: "mcp",
+          toolName: "a",
+          enabled: false,
+        }
+      );
+    });
+  });
+
   it("callTools resolves server type and dispatches", async () => {
     const deps = makeDeps();
     const s = createServersStore(deps);

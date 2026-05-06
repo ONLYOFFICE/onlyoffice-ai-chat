@@ -12,6 +12,10 @@ vi.mock("../sub-components", () => ({
   ),
 }));
 
+vi.mock("../../../hooks/useEnsureTools", () => ({
+  default: () => {},
+}));
+
 import McpServersPage from "../index";
 
 describe("McpServersPage", () => {

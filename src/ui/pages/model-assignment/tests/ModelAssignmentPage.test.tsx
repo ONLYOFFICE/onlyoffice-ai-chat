@@ -10,6 +10,10 @@ vi.mock("../sub-components", () => ({
   ModelAssignment: () => <div data-testid="model-assignment" />,
 }));
 
+vi.mock("../../../hooks/useEnsureProfiles", () => ({
+  default: () => {},
+}));
+
 import ModelAssignmentPage from "../index";
 
 describe("ModelAssignmentPage", () => {

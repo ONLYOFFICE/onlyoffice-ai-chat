@@ -26,7 +26,7 @@ const EditPromptDialog = ({
   const { Button, DialogContent, FieldContainer, Input } = useComponents();
   const { t, isRTL } = useI18n();
   const { usePromptsStore } = useStores();
-  const { editPrompt } = usePromptsStore();
+  const editPrompt = usePromptsStore((s) => s.editPrompt);
   const [name, setName] = useState(initialName);
   const [text, setText] = useState(initialText);
 
@@ -119,7 +119,7 @@ const RenameFolderDialog = ({
   const { Button, DialogContent, Input } = useComponents();
   const { t, isRTL } = useI18n();
   const { usePromptsStore } = useStores();
-  const { renameFolder } = usePromptsStore();
+  const renameFolder = usePromptsStore((s) => s.renameFolder);
   const [name, setName] = useState(initialName);
 
   const onSave = useCallback(() => {
@@ -182,7 +182,7 @@ const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
   const { Button, DialogContent } = useComponents();
   const { t, isRTL } = useI18n();
   const { usePromptsStore } = useStores();
-  const { removeFolder } = usePromptsStore();
+  const removeFolder = usePromptsStore((s) => s.removeFolder);
 
   const onConfirm = useCallback(() => {
     removeFolder(folderId);
@@ -225,7 +225,10 @@ const ComposerActionPrompts = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
   const { usePromptsStore } = useStores();
-  const { prompts, folders, editPrompt, removePrompt } = usePromptsStore();
+  const prompts = usePromptsStore((s) => s.prompts);
+  const folders = usePromptsStore((s) => s.folders);
+  const editPrompt = usePromptsStore((s) => s.editPrompt);
+  const removePrompt = usePromptsStore((s) => s.removePrompt);
   const composerRuntime = useComposerRuntime();
   const [isOpen, setIsOpen] = useState(false);
   const [renamingFolder, setRenamingFolder] = useState<{

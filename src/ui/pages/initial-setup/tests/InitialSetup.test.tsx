@@ -8,9 +8,12 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useProfilesStore: () => ({
-      profiles: [{ id: "p1", name: "GPT-4", providerType: "openai" }],
-    }),
+    useProfilesStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        profiles: [{ id: "p1", name: "GPT-4", providerType: "openai" }],
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

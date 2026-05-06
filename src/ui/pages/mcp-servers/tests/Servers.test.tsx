@@ -26,7 +26,11 @@ const mockServersStoreState = {
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: () => mockServersStoreState,
+    useServersStore: (selector?: (s: unknown) => unknown) => {
+      return typeof selector === "function"
+        ? selector(mockServersStoreState)
+        : mockServersStoreState;
+    },
   }),
 }));
 

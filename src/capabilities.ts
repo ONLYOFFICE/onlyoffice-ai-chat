@@ -74,14 +74,8 @@ export function inferCapabilities(
   return CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
 }
 
-export const ActionType = {
-  Chat: "Chat",
-  Summarization: "Summarization",
-  Translation: "Translation",
-  TextAnalyze: "TextAnalyze",
-  ImageGeneration: "ImageGeneration",
-  OCR: "OCR",
-  Vision: "Vision",
-} as const;
-
-export type ActionType = (typeof ActionType)[keyof typeof ActionType];
+// Re-export the canonical ActionType (with `Default`) from `shared/`.
+// Internal storage and assignments rely on the `Default` member, so the
+// public surface must include it. Keeping a local copy here drifted —
+// see the prior version of this file.
+export { ActionType } from "./shared/action-type";

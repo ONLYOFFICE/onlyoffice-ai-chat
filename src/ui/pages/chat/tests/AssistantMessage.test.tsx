@@ -16,10 +16,26 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useMessageStore: () => ({
-      isStreamRunning: mockIsStreamRunning,
-      messages: mockMessages,
-    }),
+    useMessageStore: Object.assign(
+      ((
+        selector?: (s: {
+          isStreamRunning: boolean;
+          messages: unknown[];
+        }) => unknown
+      ) => {
+        const state = {
+          isStreamRunning: mockIsStreamRunning,
+          messages: mockMessages,
+        };
+        return typeof selector === "function" ? selector(state) : state;
+      }) as never,
+      {
+        getState: () => ({
+          isStreamRunning: mockIsStreamRunning,
+          messages: mockMessages,
+        }),
+      }
+    ),
   }),
 }));
 

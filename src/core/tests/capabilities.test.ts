@@ -40,6 +40,7 @@ describe("inferCapabilities", () => {
 describe("ActionType", () => {
   it("exports the correct keys", () => {
     expect(Object.keys(ActionType)).toEqual([
+      "Default",
       "Chat",
       "Summarization",
       "Translation",

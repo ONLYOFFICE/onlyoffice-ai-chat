@@ -18,17 +18,23 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: () => ({
-      servers: mockServers,
-      changeToolStatus: mockChangeToolStatus,
-      webSearchEnabled: mockWebSearchEnabled,
-      getWebSearchEnabled: mockGetWebSearchEnabled,
-      disabledTools: mockDisabledTools,
-    }),
-    useProfilesStore: () => ({
-      extendedThinking: mockExtendedThinking,
-      toggleExtendedThinking: mockToggleExtendedThinking,
-    }),
+    useServersStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+      const state = {
+        servers: mockServers,
+        changeToolStatus: mockChangeToolStatus,
+        webSearchEnabled: mockWebSearchEnabled,
+        getWebSearchEnabled: mockGetWebSearchEnabled,
+        disabledTools: mockDisabledTools,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
+    useProfilesStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+      const state = {
+        extendedThinking: mockExtendedThinking,
+        toggleExtendedThinking: mockToggleExtendedThinking,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
   }),
 }));
 

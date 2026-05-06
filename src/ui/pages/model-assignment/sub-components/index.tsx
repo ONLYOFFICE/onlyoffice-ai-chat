@@ -8,25 +8,33 @@ const ModelAssignment = () => {
   const { ComboBox, FieldContainer } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
-  const {
-    profiles,
-    defaultProfile,
-    chatProfile,
-    summarizationProfile,
-    translationProfile,
-    textAnalysisProfile,
-    imageGenerationProfile,
-    ocrProfile,
-    visionProfile,
-    setDefaultProfile,
-    setChatProfile,
-    setSummarizationProfile,
-    setTranslationProfile,
-    setTextAnalysisProfile,
-    setImageGenerationProfile,
-    setOcrProfile,
-    setVisionProfile,
-  } = useProfilesStore();
+  const profiles = useProfilesStore((s) => s.profiles);
+  const defaultProfile = useProfilesStore((s) => s.defaultProfile);
+  const chatProfile = useProfilesStore((s) => s.chatProfile);
+  const summarizationProfile = useProfilesStore((s) => s.summarizationProfile);
+  const translationProfile = useProfilesStore((s) => s.translationProfile);
+  const textAnalysisProfile = useProfilesStore((s) => s.textAnalysisProfile);
+  const imageGenerationProfile = useProfilesStore(
+    (s) => s.imageGenerationProfile
+  );
+  const ocrProfile = useProfilesStore((s) => s.ocrProfile);
+  const visionProfile = useProfilesStore((s) => s.visionProfile);
+  const setDefaultProfile = useProfilesStore((s) => s.setDefaultProfile);
+  const setChatProfile = useProfilesStore((s) => s.setChatProfile);
+  const setSummarizationProfile = useProfilesStore(
+    (s) => s.setSummarizationProfile
+  );
+  const setTranslationProfile = useProfilesStore(
+    (s) => s.setTranslationProfile
+  );
+  const setTextAnalysisProfile = useProfilesStore(
+    (s) => s.setTextAnalysisProfile
+  );
+  const setImageGenerationProfile = useProfilesStore(
+    (s) => s.setImageGenerationProfile
+  );
+  const setOcrProfile = useProfilesStore((s) => s.setOcrProfile);
+  const setVisionProfile = useProfilesStore((s) => s.setVisionProfile);
 
   const defaultItems = profiles.map((p) => ({
     text: p.name,
