@@ -42,6 +42,12 @@ const engine = new ProfilesEngine({ storage });
 ```ts
 type ProfilesEngineDeps = {
   storage: StorageAdapter;
+  /**
+   * Optional — the engine constructs its own `AssignmentsEngine`
+   * from `storage` when omitted. Pass an existing instance to share
+   * a single sub-engine across `ProfilesEngine` and `AIEngine`.
+   */
+  assignments?: AssignmentsEngine;
 };
 ```
 
@@ -58,6 +64,8 @@ The engine is stateless — share one instance per `AppContext`.
 | [`delete`](#delete)                  | `void`                                 | `profiles` + cascading `assignments` | ❌ |
 | [`listModels`](#listmodels)          | `Model[]`                              | ❌                                  | ❌ |
 | [`testConnection`](#testconnection)  | `true \| TErrorData`                   | ❌                                  | ✅ credentials only |
+| [`getById`](#getbyid--list)          | `Profile \| undefined`                 | ❌                                  | ❌ |
+| [`list`](#getbyid--list)             | `Profile[]`                            | ❌                                  | ❌ |
 
 ---
 
@@ -289,6 +297,20 @@ else showFieldError(result.field, result.message);
 
 ---
 
+## `getById` / `list`
+
+Direct passthroughs to `storage.profiles.readById` /
+`storage.profiles.readAll` — no business logic, just a single-API
+surface for callers that already hold the engine (e.g. routed
+through `api.profiles.*` over HTTP).
+
+```ts
+async getById(id: string): Promise<Profile | undefined>;
+async list(): Promise<Profile[]>;
+```
+
+---
+
 ## Validation rules
 
 Centralised in
@@ -345,7 +367,7 @@ can be unit-tested without mocking storage.
 | `delete`, deleted holds `Default`, others remain | `assignments.update("Default", next.id)` + (`assignments.deleteMany` if orphans) + `profiles.delete` |
 | `delete`, deleted holds `Default`, last profile  | `assignments.delete("Default")` + `profiles.delete`                     |
 | `delete`, only orphan per-action assignments     | `assignments.deleteMany([...])` + `profiles.delete`                     |
-| `listModels`, `testConnection`           | *no write*                                                                      |
+| `listModels`, `testConnection`, `getById`, `list` | *no write*                                                             |
 
 ---
 
