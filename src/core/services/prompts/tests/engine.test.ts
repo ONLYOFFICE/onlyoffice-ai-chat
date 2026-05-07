@@ -34,9 +34,21 @@ function makeStorage(seed: {
           return p;
         }
       ),
-      createMany: vi.fn(async (ps: Prompt[]) => {
-        prompts = [...prompts, ...ps];
-      }),
+      createMany: vi.fn(
+        async (
+          inputs: Omit<Prompt, "id" | "createdAt" | "updatedAt">[]
+        ): Promise<Prompt[]> => {
+          const now = Date.now();
+          const persisted: Prompt[] = inputs.map((input) => ({
+            ...input,
+            id: crypto.randomUUID(),
+            createdAt: now,
+            updatedAt: now,
+          }));
+          prompts = [...prompts, ...persisted];
+          return persisted;
+        }
+      ),
       readById: vi.fn(async (id: string) =>
         prompts.find((p) => p.id === id) ?? null
       ),
@@ -85,9 +97,21 @@ function makeStorage(seed: {
           return f;
         }
       ),
-      createMany: vi.fn(async (fs: PromptFolder[]) => {
-        folders = [...folders, ...fs];
-      }),
+      createMany: vi.fn(
+        async (
+          inputs: Omit<PromptFolder, "id" | "createdAt" | "updatedAt">[]
+        ): Promise<PromptFolder[]> => {
+          const now = Date.now();
+          const persisted: PromptFolder[] = inputs.map((input) => ({
+            ...input,
+            id: crypto.randomUUID(),
+            createdAt: now,
+            updatedAt: now,
+          }));
+          folders = [...folders, ...persisted];
+          return persisted;
+        }
+      ),
       readById: vi.fn(async (id: string) =>
         folders.find((f) => f.id === id) ?? null
       ),
@@ -448,8 +472,55 @@ describe("PromptsEngine import / export", () => {
     expect(result.success).toBe(true);
     if (!result.success) throw new Error();
     expect(result.imported).toEqual({ folders: 1, prompts: 1 });
-    expect(snapshot().folders.map((f) => f.id)).toEqual(["f-new"]);
-    expect(snapshot().prompts.map((p) => p.id)).toEqual(["p-new"]);
+    const snap = snapshot();
+    expect(snap.folders.map((f) => f.name)).toEqual(["NewF"]);
+    expect(snap.prompts.map((p) => p.name)).toEqual(["New"]);
+    // Old entries gone
+    expect(snap.folders.some((f) => f.name === "OldF")).toBe(false);
+    expect(snap.prompts.some((p) => p.name === "Old")).toBe(false);
+  });
+
+  it("replace mode remaps prompt.folderId to storage-assigned folder ids", async () => {
+    const { storage, snapshot } = makeStorage();
+    const engine = new PromptsEngine({ storage });
+    const result = await engine.importBundle({
+      version: 1,
+      folders: [
+        { id: "bundle-f1", name: "F1", createdAt: 1, updatedAt: 1 },
+        { id: "bundle-f2", name: "F2", createdAt: 1, updatedAt: 1 },
+      ],
+      prompts: [
+        {
+          id: "bundle-p1",
+          name: "P1",
+          text: "T1",
+          folderId: "bundle-f1",
+          createdAt: 1,
+          updatedAt: 1,
+        },
+        {
+          id: "bundle-p2",
+          name: "P2",
+          text: "T2",
+          folderId: "bundle-f2",
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+    const snap = snapshot();
+    const f1 = snap.folders.find((f) => f.name === "F1");
+    const f2 = snap.folders.find((f) => f.name === "F2");
+    const p1 = snap.prompts.find((p) => p.name === "P1");
+    const p2 = snap.prompts.find((p) => p.name === "P2");
+    expect(f1).toBeDefined();
+    expect(f2).toBeDefined();
+    // Prompt folderId points at the freshly-minted folder ids, not the
+    // bundle ones.
+    expect(p1?.folderId).toBe(f1!.id);
+    expect(p2?.folderId).toBe(f2!.id);
+    expect(p1?.folderId).not.toBe("bundle-f1");
   });
 
   it("replace mode handles empty bundle without calling createMany", async () => {
@@ -468,7 +539,7 @@ describe("PromptsEngine import / export", () => {
     expect(storage.prompts.createMany).not.toHaveBeenCalled();
   });
 
-  it("merge mode upserts entries by id", async () => {
+  it("merge mode matches folders by name and prompts by (name, folderId)", async () => {
     const existingFolder: PromptFolder = {
       id: "f1",
       name: "Existing",
@@ -477,12 +548,12 @@ describe("PromptsEngine import / export", () => {
     };
     const existingPrompt: Prompt = {
       id: "p1",
-      name: "OldName",
-      text: "",
+      name: "Same",
+      text: "old",
       createdAt: 1,
       updatedAt: 1,
     };
-    const { storage } = makeStorage({
+    const { storage, snapshot } = makeStorage({
       prompts: [existingPrompt],
       folders: [existingFolder],
     });
@@ -491,15 +562,26 @@ describe("PromptsEngine import / export", () => {
       {
         version: 1,
         folders: [
-          { ...existingFolder, name: "Renamed" },
-          { id: "f2", name: "New", createdAt: 1, updatedAt: 1 },
+          // Same name → matches existing folder, no insert
+          { id: "bundle-f1", name: "Existing", createdAt: 1, updatedAt: 1 },
+          // New name → fresh folder
+          { id: "bundle-f2", name: "Brand New", createdAt: 1, updatedAt: 1 },
         ],
         prompts: [
-          { ...existingPrompt, name: "NewName" },
+          // (name=Same, folderId=null) → updates existingPrompt.text
           {
-            id: "p2",
-            name: "NewPrompt",
-            text: "",
+            id: "bundle-p1",
+            name: "Same",
+            text: "fresh",
+            createdAt: 1,
+            updatedAt: 1,
+          },
+          // New prompt under the brand-new folder
+          {
+            id: "bundle-p2",
+            name: "Other",
+            text: "T",
+            folderId: "bundle-f2",
             createdAt: 1,
             updatedAt: 1,
           },
@@ -508,15 +590,22 @@ describe("PromptsEngine import / export", () => {
       { mode: "merge" }
     );
     expect(result.success).toBe(true);
-    expect(storage.promptFolders.createMany).toHaveBeenCalledWith([
-      { id: "f2", name: "New", createdAt: 1, updatedAt: 1 },
-    ]);
-    expect(storage.promptFolders.update).toHaveBeenCalledWith(
-      "f1",
-      "Renamed"
-    );
-    expect(storage.prompts.createMany).toHaveBeenCalled();
-    expect(storage.prompts.update).toHaveBeenCalled();
+
+    const snap = snapshot();
+    // Folder "Existing" not duplicated.
+    expect(snap.folders.filter((f) => f.name === "Existing")).toHaveLength(1);
+    // "Brand New" created.
+    const brandNew = snap.folders.find((f) => f.name === "Brand New");
+    expect(brandNew).toBeDefined();
+
+    // Existing prompt updated in place (id preserved, text replaced).
+    const same = snap.prompts.find((p) => p.name === "Same");
+    expect(same?.id).toBe("p1");
+    expect(same?.text).toBe("fresh");
+
+    // New prompt created under the freshly-minted folder id.
+    const other = snap.prompts.find((p) => p.name === "Other");
+    expect(other?.folderId).toBe(brandNew!.id);
   });
 
   it("merge mode without new entries skips createMany calls", async () => {
@@ -533,11 +622,17 @@ describe("PromptsEngine import / export", () => {
       {
         version: 1,
         folders: [],
-        prompts: [{ ...existing, text: "updated" }],
+        // Bundle id differs from existing.id but (name, folderId)
+        // matches → update path, no createMany.
+        prompts: [{ ...existing, id: "different-id", text: "updated" }],
       },
       { mode: "merge" }
     );
     expect(result.success).toBe(true);
     expect(storage.prompts.createMany).not.toHaveBeenCalled();
+    expect(storage.prompts.update).toHaveBeenCalledWith("p1", {
+      text: "updated",
+      folderId: null,
+    });
   });
 });

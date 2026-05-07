@@ -282,49 +282,116 @@ export class PromptsEngine {
       )
     );
 
+    // Insert folders, build oldId → newId map so prompt.folderId
+    // references survive across storages that mint fresh ids.
+    const folderIdMap = new Map<string, string>();
     if (bundle.folders.length > 0) {
-      await this.deps.storage.promptFolders.createMany(bundle.folders);
+      const persisted = await this.deps.storage.promptFolders.createMany(
+        bundle.folders.map(({ name }) => ({ name }))
+      );
+      bundle.folders.forEach((src, i) => {
+        const next = persisted[i];
+        if (next) folderIdMap.set(src.id, next.id);
+      });
     }
+
     if (bundle.prompts.length > 0) {
-      await this.deps.storage.prompts.createMany(bundle.prompts);
+      await this.deps.storage.prompts.createMany(
+        bundle.prompts.map((p) => {
+          const next: Omit<Prompt, "id" | "createdAt" | "updatedAt"> = {
+            name: p.name,
+            text: p.text,
+          };
+          if (p.folderId) {
+            const remapped = folderIdMap.get(p.folderId);
+            if (remapped) next.folderId = remapped;
+          }
+          return next;
+        })
+      );
     }
   }
 
-  /** Idempotent upsert per entry. Used by `importBundle({ mode: "merge" })`. */
+  /**
+   * Idempotent upsert per entry. Used by `importBundle({ mode: "merge" })`.
+   *
+   * Match keys are natural, not id-based: folders match by `name`,
+   * prompts by `(name, folderId)`. Bundle ids are not stable across
+   * storages (server-authoritative backends mint fresh ones), so id
+   * matching would never hit on a fresh import.
+   */
   private async mergeBundle(bundle: PromptBundle): Promise<void> {
     const [existingFolders, existingPrompts] = await Promise.all([
       this.deps.storage.promptFolders.readAll(),
       this.deps.storage.prompts.readAll(),
     ]);
-    const folderIds = new Set(existingFolders.map((f) => f.id));
-    const promptIds = new Set(existingPrompts.map((p) => p.id));
 
-    const newFolders = bundle.folders.filter((f) => !folderIds.has(f.id));
-    const updatedFolders = bundle.folders.filter((f) => folderIds.has(f.id));
+    const folderByName = new Map(
+      existingFolders.map((f) => [f.name, f] as const)
+    );
+    const folderIdMap = new Map<string, string>();
+    const newFolderInputs: Array<{ name: string }> = [];
+    const newFolderSources: PromptFolder[] = [];
 
-    if (newFolders.length > 0) {
-      await this.deps.storage.promptFolders.createMany(newFolders);
+    for (const f of bundle.folders) {
+      const existing = folderByName.get(f.name);
+      if (existing) {
+        folderIdMap.set(f.id, existing.id);
+      } else {
+        newFolderInputs.push({ name: f.name });
+        newFolderSources.push(f);
+      }
     }
-    await Promise.all(
-      updatedFolders.map((f) =>
-        this.deps.storage.promptFolders.update(f.id, f.name)
+    if (newFolderInputs.length > 0) {
+      const persisted =
+        await this.deps.storage.promptFolders.createMany(newFolderInputs);
+      newFolderSources.forEach((src, i) => {
+        const next = persisted[i];
+        if (next) folderIdMap.set(src.id, next.id);
+      });
+    }
+
+    const promptKey = (name: string, folderId: string | null) =>
+      `${name}\x00${folderId ?? ""}`;
+    const existingPromptByKey = new Map(
+      existingPrompts.map(
+        (p) => [promptKey(p.name, p.folderId ?? null), p] as const
       )
     );
 
-    const newPrompts = bundle.prompts.filter((p) => !promptIds.has(p.id));
-    const updatedPrompts = bundle.prompts.filter((p) => promptIds.has(p.id));
+    const newPromptInputs: Array<Omit<Prompt, "id" | "createdAt" | "updatedAt">> =
+      [];
+    const updates: Array<{
+      id: string;
+      patch: { name?: string; text?: string; folderId?: string | null };
+    }> = [];
 
-    if (newPrompts.length > 0) {
-      await this.deps.storage.prompts.createMany(newPrompts);
-    }
-    await Promise.all(
-      updatedPrompts.map((p) =>
-        this.deps.storage.prompts.update(p.id, {
+    for (const p of bundle.prompts) {
+      const remappedFolderId = p.folderId
+        ? (folderIdMap.get(p.folderId) ?? null)
+        : null;
+      const key = promptKey(p.name, remappedFolderId);
+      const existing = existingPromptByKey.get(key);
+      if (existing) {
+        updates.push({
+          id: existing.id,
+          patch: { text: p.text, folderId: remappedFolderId },
+        });
+      } else {
+        const next: Omit<Prompt, "id" | "createdAt" | "updatedAt"> = {
           name: p.name,
           text: p.text,
-          folderId: p.folderId ?? null,
-        })
-      )
+        };
+        if (remappedFolderId) next.folderId = remappedFolderId;
+        newPromptInputs.push(next);
+      }
+    }
+
+    if (newPromptInputs.length > 0) {
+      await this.deps.storage.prompts.createMany(newPromptInputs);
+    }
+    await Promise.all(
+      updates.map((u) => this.deps.storage.prompts.update(u.id, u.patch))
     );
   }
 }

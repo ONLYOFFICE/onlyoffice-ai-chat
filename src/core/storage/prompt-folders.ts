@@ -19,14 +19,19 @@ export interface PromptFoldersStorage {
   ): Promise<PromptFolder>;
 
   /**
-   * Create multiple folders in a single backend round-trip. Used by
-   * import flows that preserve original ids and timestamps from a
-   * bundle.
+   * Bulk-insert folders. Storage assigns `id`, `createdAt`, and
+   * `updatedAt` for each entry — callers may NOT assume that ids or
+   * timestamps from a bundle survive the round-trip
+   * (server-authoritative implementations generate fresh ones).
    *
-   * @param folders - The fully-formed folders to persist (ids and
-   *   timestamps included).
+   * @param folders - The folder bodies (without `id` / `createdAt` /
+   *   `updatedAt`).
+   * @returns Persisted folders in input order, with storage-assigned
+   *   fields populated.
    */
-  createMany(folders: PromptFolder[]): Promise<void>;
+  createMany(
+    folders: Omit<PromptFolder, "id" | "createdAt" | "updatedAt">[]
+  ): Promise<PromptFolder[]>;
 
   /**
    * Find a folder by ID.

@@ -19,14 +19,19 @@ export interface PromptsStorage {
   ): Promise<Prompt>;
 
   /**
-   * Create multiple prompts in a single backend round-trip. Used by
-   * import flows that preserve original ids and timestamps from a
-   * bundle.
+   * Bulk-insert prompts. Storage assigns `id`, `createdAt`, and
+   * `updatedAt` for each entry — callers may NOT assume that ids or
+   * timestamps from a bundle survive the round-trip
+   * (server-authoritative implementations generate fresh ones).
    *
-   * @param prompts - The fully-formed prompts to persist (ids and
-   *   timestamps included).
+   * @param prompts - The prompt bodies (without `id` / `createdAt` /
+   *   `updatedAt`).
+   * @returns Persisted prompts in input order, with storage-assigned
+   *   fields populated.
    */
-  createMany(prompts: Prompt[]): Promise<void>;
+  createMany(
+    prompts: Omit<Prompt, "id" | "createdAt" | "updatedAt">[]
+  ): Promise<Prompt[]>;
 
   /**
    * Find a prompt by ID.

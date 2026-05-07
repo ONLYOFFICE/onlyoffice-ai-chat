@@ -40,6 +40,20 @@ strictly disjoint by the implementation. `profiles`, `messages`,
 See [`docs/core/storage/storage.md`](../../../docs/core/storage/storage.md#entity-scoping-entityid)
 for the contract and rationale.
 
+## `createMany` is storage-authoritative
+
+`ProfilesStorage`, `PromptsStorage`, and `PromptFoldersStorage` all
+expose a `createMany` for bulk insert. The contract is the same as
+`create`: storage assigns `id`, `createdAt`, and `updatedAt`. Callers
+pass `Omit<T, "id" | "createdAt" | "updatedAt">[]` and get back the
+persisted records (in input order) with storage-assigned fields
+populated.
+
+Bundle ids do **not** survive an import round-trip. The
+`PromptsEngine.importBundle` flow uses the returned ids to remap
+`prompt.folderId` references — custom storage implementations must
+follow the same rule (drop incoming ids, mint fresh ones, return them).
+
 ## Full documentation
 
 See [`docs/core/storage/`](../../../docs/core/storage/README.md):

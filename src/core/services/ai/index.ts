@@ -6,6 +6,7 @@ export type {
   ApproveToolCallInput,
   ChatEvent,
   DenyToolCallInput,
+  RegenerateStreamInput,
   SendCustomInput,
   SendInput,
   SendResult,

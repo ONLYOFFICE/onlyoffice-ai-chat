@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.4.0
+
+**Breaking** `PromptsStorage.createMany` and
+`PromptFoldersStorage.createMany` now match the `ProfilesStorage.createMany`
+shape — they accept `Omit<T, "id" | "createdAt" | "updatedAt">[]` and
+return the persisted records with storage-assigned ids.
+
+Why: the previous contract required storage to honor caller-supplied
+ids, which only works for client-authoritative backends (IndexedDB).
+HTTP-backed storage cannot accept arbitrary ids without a server-side
+`INSERT … WITH ID` endpoint, breaking import-bundle round-trips. The
+new contract is storage-agnostic.
+
+Migration:
+
+- Custom storage implementations: drop incoming `id` / `createdAt` /
+  `updatedAt`, generate fresh ones, return the persisted array in
+  input order.
+- Hosts calling `importBundle({ mode: "merge" })`: bundle ids are no
+  longer used as the merge key — folders match by `name`, prompts by
+  `(name, folderId)`. If your bundles relied on id stability, switch
+  to `mode: "replace"`.
+
+`importBundle` engine-side: now remaps `folderId` references using the
+returned folder ids. Round-trip `export → importBundle` works through
+any storage.
+
+```ts
+// before
+createMany(prompts: Prompt[]): Promise<void>;
+// after
+createMany(
+  prompts: Omit<Prompt, "id" | "createdAt" | "updatedAt">[]
+): Promise<Prompt[]>;
+```
+
+## 0.3.3
+
+- Re-export `RegenerateStreamInput` from `@onlyoffice/ai-chat` (via
+  `core/services/ai` and `core/services` barrels). Fixes asymmetry with
+  the other `*Input` types for public `AIEngine` methods — hosts no
+  longer need `Parameters<AIEngine["regenerateStream"]>[0]` to type the
+  controller payload.
+
+```ts
+import type { RegenerateStreamInput } from "@onlyoffice/ai-chat";
+```
+
 ## 0.3.2
 
 Re-roll the last assistant reply with one click. The built-in action bar
