@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.4.2
+
+- `AssignmentsStorage` write methods (`create`, `update`, `delete`,
+  `upsertMany`, `deleteMany`) now accept an optional opaque `entityId`
+  parameter, matching `readByType`. Lets adapters scope assignment
+  writes per entity ("room") — for example, a per-room Chat profile
+  alongside the globally assigned one. Existing call sites are
+  unaffected since the parameter is optional.
+
+## 0.4.1
+
+- Fixes a thread-rendering bug where messages got grouped by role
+  (all assistants, then all users) after switching threads or while
+  streaming. Root cause: in-flight messages reached the assistant-ui
+  runtime without an `id`, forcing it onto an index-based fallback
+  that produced phantom branches in the message tree.
+- New `user-message-stored` event in `ChatEvent`, yielded by
+  `AIEngine.sendWithStream` once storage has persisted the user
+  message and before the assistant stream starts. Carries the
+  storage-assigned `id` and `createdAt`. The built-in UI uses it
+  instead of an optimistic placeholder so the runtime always sees a
+  fully-identified message.
+- `processStream` now stamps the storage-assigned `id` onto every
+  in-flight message before emitting `message-start` / `message-delta`
+  / `message-end` / `tool-call-pending`, so streaming assistant
+  messages also carry a stable id from the first chunk.
+- `ThreadsEngine.appendUserMessage` now returns the persisted
+  `ThreadMessageLike` (the `id` is on the returned object). Update
+  call sites that read the previous string return value.
+
 ## 0.4.0
 
 **Breaking** `PromptsStorage.createMany` and
