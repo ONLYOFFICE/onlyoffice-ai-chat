@@ -62,6 +62,33 @@ beforeSend: async (ctx) => {
 }
 ```
 
+### Tool-calling fallback for non-function-calling models
+
+- **New** `Profile.canUseTool?: boolean` — set by a live probe at
+  profile create / update (when `modelId`, `providerType` or
+  `baseUrl` change). The probe asks the model to call a fake tool
+  and records whether it actually emitted a `tool-call`.
+- **New** text-protocol fallback in every action: when
+  `canUseTool === false`, history is sanitised
+  (`tool-call` / `tool-result` parts → `<TOOL_CALL>{...}</TOOL_CALL>`
+  and `<TOOL_RESULT>...</TOOL_RESULT>` plain text), the API request
+  goes out without a `tools` field. For streaming actions
+  (`chat`, `custom`) the tools description is also injected into
+  the system prompt and the response stream is parsed by a
+  state machine that turns the model's `<TOOL_CALL>` block into a
+  synthetic `tool-call` content part — the rest of the
+  approval / resume loop works unchanged. Broken JSON or an
+  unclosed tag falls back to plain text.
+
+```ts
+// Local model without function-calling now still routes through tools:
+//
+//  user: "search the web for X"
+//   →  systemPrompt += <tools listing + format rules>
+//   →  model emits: <TOOL_CALL>{"name":"web_search","arguments":{"q":"X"}}</TOOL_CALL>
+//   →  parsed → ManageToolDialog → execute → <TOOL_RESULT>... fed back
+```
+
 ## 0.2.11
 
 Perf: pages now declare their own data dependencies — opening

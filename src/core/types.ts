@@ -203,6 +203,13 @@ export type Profile = {
   /** Bitmask of capabilities supported by the selected model. */
   capabilities?: number;
 
+  /**
+   * Result of the live tool-capability probe performed at create time and
+   * on changes to `modelId` / `providerType` / `baseUrl`. `undefined` means
+   * the probe has never run for this profile (legacy record).
+   */
+  canUseTool?: boolean;
+
   /** Whether this profile uses a cloud-hosted provider (e.g. ONLYOFFICE DocSpace). */
   isCloudProvider?: boolean;
 

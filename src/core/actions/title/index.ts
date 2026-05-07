@@ -1,3 +1,7 @@
+import {
+  isFallbackProfile,
+  transformHistoryToText,
+} from "../chat/fallback-tools";
 import { providerFor } from "../provider";
 import { resolveSystemPrompt } from "../system-prompt";
 import type { ActionArgs } from "../types";
@@ -10,8 +14,11 @@ import { systemPrompt } from "./prompt";
  * returns nothing; callers decide their own fallback.
  */
 export const generateTitle = async (args: ActionArgs): Promise<string> => {
+  const messages = isFallbackProfile(args.profile)
+    ? transformHistoryToText(args.messages)
+    : args.messages;
   const title = await providerFor(args).sendMessageSync({
-    messages: args.messages,
+    messages,
     model: args.profile.modelId,
     systemPrompt: resolveSystemPrompt(systemPrompt, args.prompt),
     signal: args.signal,

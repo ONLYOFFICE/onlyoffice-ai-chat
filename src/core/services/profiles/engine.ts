@@ -4,6 +4,7 @@ import type { Model } from "../../../shared/model";
 import type { Profile } from "../../types";
 import { AssignmentsEngine } from "../assignments";
 import { credsOf, loadProfile, providerFor } from "./lookup";
+import { probeToolCapability } from "./probe-tools";
 import type {
   CreateProfileInput,
   ProfileMutationResult,
@@ -41,7 +42,8 @@ export class ProfilesEngine {
     const error = await validateProfile(existing, input);
     if (error) return { success: false, error };
 
-    const profile = await storage.profiles.create({ ...input });
+    const canUseTool = await probeToolCapability(input);
+    const profile = await storage.profiles.create({ ...input, canUseTool });
 
     // First profile ever — promote it to the default slot. Other
     // per-action assignments stay unset; the user opts into those
@@ -57,7 +59,8 @@ export class ProfilesEngine {
     const { storage } = this.deps;
     const existing = await storage.profiles.readAll();
 
-    if (!existing.some((p) => p.id === profile.id)) {
+    const prev = existing.find((p) => p.id === profile.id);
+    if (!prev) {
       return {
         success: false,
         error: { field: "name", message: "Profile not found" },
@@ -67,8 +70,17 @@ export class ProfilesEngine {
     const error = await validateProfile(existing, profile, profile.id);
     if (error) return { success: false, error };
 
-    await storage.profiles.update(profile);
-    return { success: true, profile };
+    const probeTriggers =
+      prev.modelId !== profile.modelId ||
+      prev.providerType !== profile.providerType ||
+      prev.baseUrl !== profile.baseUrl;
+    const canUseTool = probeTriggers
+      ? await probeToolCapability(profile)
+      : (profile.canUseTool ?? prev.canUseTool);
+
+    const next: Profile = { ...profile, canUseTool };
+    await storage.profiles.update(next);
+    return { success: true, profile: next };
   }
 
   async delete(id: string): Promise<void> {

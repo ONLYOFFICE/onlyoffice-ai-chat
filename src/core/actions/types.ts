@@ -16,7 +16,10 @@ export type SystemPromptOverride =
   | { mode: "append"; text: string };
 
 export type ActionArgs = {
-  profile: Pick<Profile, "providerType" | "baseUrl" | "key" | "modelId">;
+  profile: Pick<
+    Profile,
+    "providerType" | "baseUrl" | "key" | "modelId" | "canUseTool"
+  >;
   messages: ThreadMessageLike[];
   tools?: TMCPItem[];
   isReasoning?: boolean;

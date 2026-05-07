@@ -1,4 +1,8 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
+import {
+  isFallbackProfile,
+  transformHistoryToText,
+} from "../chat/fallback-tools";
 import { providerFor } from "../provider";
 import { resolveSystemPrompt } from "../system-prompt";
 import type { ActionArgs } from "../types";
@@ -60,8 +64,11 @@ export const generateImage = async (
     };
   }
 
+  const messages = isFallbackProfile(args.profile)
+    ? transformHistoryToText(args.messages)
+    : args.messages;
   const text = await provider.sendMessageSync({
-    messages: args.messages,
+    messages,
     model: args.profile.modelId,
     systemPrompt: resolveSystemPrompt(systemPrompt, args.prompt),
     signal: args.signal,
