@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.3.2
+
+Re-roll the last assistant reply with one click. The built-in action bar
+under every assistant message now ships a Regenerate button next to Copy
+and Save; under the hood the `useExternalStoreRuntime` `onReload`
+callback routes into a new engine method and a programmatic API on
+`useMessages` for hosts that need to trigger it from their own UI.
+
+- **New** `AIEngine.regenerateStream({ threadId, entityId?, actionArgs? })` —
+  reads `storage.messages.readByThread`, deletes every trailing message
+  after the last user message (covers tool-call hops + the old
+  assistant reply via `storage.messages.delete`), then streams a fresh
+  reply through the same `processStream` + `runChatStream` pipeline as
+  `sendWithStream`. The user message itself is left untouched — its
+  storage row, attachments and id stay intact. Default route:
+  `POST ai/regenerate-stream`.
+- **New** `useMessages().regenerate(parentIndex)` — the hook returns it
+  alongside `onNew` / `approveToolCall` / `denyToolCall`. No-ops when a
+  stream is already running, the parent isn't a user message, or
+  there's no active thread.
+- **New** `MessageStoreState.truncateMessagesAfter(index)` — drops every
+  message after `index` from the in-memory store; used by the
+  regenerate flow before the new stream lands.
+- **New** built-in `ActionBarPrimitive.Reload` button in the assistant
+  action bar (icon `btn-reset`, tooltip `t("Regenerate")`). Disabled
+  during streaming and on `incomplete + error` states, identical to
+  Copy / Save. Wired through `useExternalStoreRuntime.onReload` in
+  `Thread`.
+- i18n: new `Regenerate` key (en + ru); other locales fall back to en.
+
+```tsx
+const { regenerate } = useMessages({ isReady: true });
+// re-roll the assistant reply that follows messages[parentIndex]
+await regenerate(parentIndex);
+```
+
 ## 0.3.1
 
 Hosts can now append custom buttons to the action bar under every

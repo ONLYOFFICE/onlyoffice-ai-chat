@@ -18,6 +18,8 @@ export function createAIApi(
       callRoute(config, "ai", "sendCustom", [input], engines),
     sendWithStream: (input) =>
       callRoute(config, "ai", "sendWithStream", [input], engines),
+    regenerateStream: (input) =>
+      callRoute(config, "ai", "regenerateStream", [input], engines),
     approveToolCall: (input) =>
       callRoute(config, "ai", "approveToolCall", [input], engines),
     denyToolCall: (input) =>

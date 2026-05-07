@@ -24,6 +24,7 @@ export const DEFAULT_AI_ROUTES: Record<AIEngineMethod, RouteSpec> = {
   send: { method: "POST", path: "ai/send" },
   sendCustom: { method: "POST", path: "ai/send-custom" },
   sendWithStream: { method: "POST", path: "ai/send-with-stream" },
+  regenerateStream: { method: "POST", path: "ai/regenerate-stream" },
   approveToolCall: { method: "POST", path: "ai/approve-tool-call" },
   denyToolCall: { method: "POST", path: "ai/deny-tool-call" },
 };
@@ -83,6 +84,28 @@ export type SendStreamInput = {
    * {@link AssignmentsEngine.resolveForAction} (so the storage layer
    * can return an entity-specific Chat profile) and persisted on a
    * freshly created thread. The engine never inspects the value.
+   */
+  entityId?: string;
+};
+
+/**
+ * Payload for {@link AIEngine.regenerateStream}. The engine drops every
+ * trailing message after the last user message in the thread (the
+ * previous assistant reply plus any tool-call hops) and streams a fresh
+ * reply against the unchanged user prompt. The thread must already
+ * exist — regenerate only operates on persisted history.
+ */
+export type RegenerateStreamInput = {
+  /** Target thread (must exist). */
+  threadId: string;
+
+  /** Forwarded to the underlying action. `profile` and `messages` are owned by the engine. */
+  actionArgs?: Omit<ActionArgs, "profile" | "messages">;
+
+  /**
+   * Opaque scope token forwarded to
+   * {@link AssignmentsEngine.resolveForAction} (so the storage layer
+   * can return an entity-specific Chat profile).
    */
   entityId?: string;
 };

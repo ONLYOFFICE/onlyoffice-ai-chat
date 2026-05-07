@@ -108,6 +108,45 @@ describe("createMessageStore", () => {
     });
   });
 
+  describe("truncateMessagesAfter", () => {
+    it("keeps messages[0..index] and drops the rest", () => {
+      const store = createMessageStore({ ctx, api });
+      store.getState().addMessage(makeMsg("user", "a"));
+      store.getState().addMessage(makeMsg("assistant", "b"));
+      store.getState().addMessage(makeMsg("user", "c"));
+      store.getState().addMessage(makeMsg("assistant", "d"));
+
+      store.getState().truncateMessagesAfter(0);
+
+      expect(store.getState().messages).toHaveLength(1);
+      expect(
+        (store.getState().messages[0].content as unknown as { text: string }[])[0].text
+      ).toBe("a");
+    });
+
+    it("preserves all messages when index is the last one", () => {
+      const store = createMessageStore({ ctx, api });
+      store.getState().addMessage(makeMsg("user", "a"));
+      store.getState().addMessage(makeMsg("assistant", "b"));
+
+      store.getState().truncateMessagesAfter(1);
+
+      expect(store.getState().messages).toHaveLength(2);
+    });
+
+    it("ignores negative indices and out-of-range values", () => {
+      const store = createMessageStore({ ctx, api });
+      store.getState().addMessage(makeMsg("user", "a"));
+      store.getState().addMessage(makeMsg("assistant", "b"));
+
+      store.getState().truncateMessagesAfter(-1);
+      expect(store.getState().messages).toHaveLength(2);
+
+      store.getState().truncateMessagesAfter(5);
+      expect(store.getState().messages).toHaveLength(2);
+    });
+  });
+
   describe("fetchPrevMessages", () => {
     it("fetches messages and sets them", async () => {
       const msgs = [makeMsg("user", "prev")];

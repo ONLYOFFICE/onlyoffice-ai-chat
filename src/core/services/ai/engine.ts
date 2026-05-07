@@ -27,6 +27,7 @@ import type {
   ApproveToolCallInput,
   ChatEvent,
   DenyToolCallInput,
+  RegenerateStreamInput,
   SendCustomInput,
   SendInput,
   SendStreamInput,
@@ -188,6 +189,77 @@ export class AIEngine {
       await this.deps.storage.threads.update(threadId, title);
       yield { type: "thread-title", threadId, title, profileId };
     }
+  }
+
+  /**
+   * Re-roll the last assistant reply in an existing thread. Drops every
+   * trailing message after the last user message (the previous reply
+   * plus any tool-call hops), persists the deletion, and streams a
+   * fresh reply against the unchanged user prompt. Skips title
+   * generation and thread creation — the thread must already exist.
+   */
+  async *regenerateStream(
+    input: RegenerateStreamInput
+  ): AsyncGenerator<ChatEvent> {
+    const { profileId, profile } = await this.assignments.resolveForAction(
+      ActionType.Chat,
+      input.entityId
+    );
+
+    const stored = await this.deps.storage.messages.readByThread(input.threadId);
+
+    let lastUserIdx = -1;
+    for (let i = stored.length - 1; i >= 0; i--) {
+      if (stored[i].role === "user") {
+        lastUserIdx = i;
+        break;
+      }
+    }
+    if (lastUserIdx < 0) return;
+
+    const tail = stored.slice(lastUserIdx + 1);
+    for (const m of tail) {
+      if (m.id) await this.deps.storage.messages.delete(m.id);
+    }
+
+    const priorMessages = stored.slice(0, lastUserIdx + 1);
+
+    const toolCtx = await buildToolContext(
+      this.deps.storage,
+      this.deps.toolsAdapter,
+      input.actionArgs?.tools ?? [],
+      input.entityId
+    );
+
+    const actionArgs: ActionArgs = {
+      ...input.actionArgs,
+      profile,
+      messages: await resolveAttachmentRefs(
+        priorMessages,
+        this.deps.storage.attachments
+      ),
+      tools: toolCtx.mergedTools,
+    };
+
+    const stream = processStream(chat(actionArgs), {
+      storage: this.deps.storage,
+      threadId: input.threadId,
+      profile,
+      profileId,
+      tools: toolCtx.mergedTools,
+      isReasoning: input.actionArgs?.isReasoning,
+      signal: input.actionArgs?.signal,
+      entityId: input.entityId,
+    });
+
+    yield* this.runChatStream(stream, toolCtx, {
+      profile,
+      profileId,
+      tools: toolCtx.mergedTools,
+      isReasoning: input.actionArgs?.isReasoning,
+      signal: input.actionArgs?.signal,
+      entityId: input.entityId,
+    });
   }
 
   /**

@@ -182,6 +182,11 @@ const AssistantActionBar = () => {
           </MessagePrimitive.If>
         </TooltipIconButton>
       </ActionBarPrimitive.Copy>
+      <ActionBarPrimitive.Reload asChild>
+        <TooltipIconButton tooltip={t("Regenerate")}>
+          <IconButton iconName="btn-reset" size={24} isStroke />
+        </TooltipIconButton>
+      </ActionBarPrimitive.Reload>
       <div>
         <TooltipIconButton tooltip={t("Save")}>
           <IconButton

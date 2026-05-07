@@ -21,11 +21,13 @@ vi.mock("../../../core/services/ai/tool-call", () => ({
 const stores = {
   messageState: {
     messages: [] as unknown[],
+    isStreamRunning: false,
     setIsStreamRunning: vi.fn(),
     setIsRequestRunning: vi.fn(),
     setAbortController: vi.fn(),
     addMessage: vi.fn(),
     updateLastMessage: vi.fn(),
+    truncateMessagesAfter: vi.fn(),
     fetchPrevMessages: vi.fn().mockResolvedValue(undefined),
     claimThreadId: vi.fn(),
     _currentThreadId: "",
@@ -68,6 +70,7 @@ const middlewareRunner = {
 
 const apiAi = {
   sendWithStream: vi.fn(),
+  regenerateStream: vi.fn(),
   approveToolCall: vi.fn(),
   denyToolCall: vi.fn(),
 };
@@ -158,7 +161,9 @@ beforeEach(() => {
   stores.profilesState.defaultProfile = null;
   stores.profilesState.extendedThinking = false;
   middlewareRunner.isEmpty = true;
+  stores.messageState.isStreamRunning = false;
   apiAi.sendWithStream.mockReset();
+  apiAi.regenerateStream.mockReset();
   apiAi.approveToolCall.mockReset();
   apiAi.denyToolCall.mockReset();
   readToolCallMock.mockReset();
@@ -807,5 +812,97 @@ describe("useMessages stream branches", () => {
         error: expect.objectContaining({ reason: "length" }),
       })
     );
+  });
+});
+
+describe("useMessages.regenerate", () => {
+  it("no-ops when no current profile", async () => {
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate(0);
+    });
+    expect(apiAi.regenerateStream).not.toHaveBeenCalled();
+    expect(stores.messageState.truncateMessagesAfter).not.toHaveBeenCalled();
+  });
+
+  it("no-ops when there is no active threadId", async () => {
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "";
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate(0);
+    });
+    expect(apiAi.regenerateStream).not.toHaveBeenCalled();
+  });
+
+  it("no-ops when stream is already running", async () => {
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.messageState.isStreamRunning = true;
+    stores.messageState.messages = [
+      { role: "user", content: [{ type: "text", text: "hi" }] },
+    ];
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate(0);
+    });
+    expect(apiAi.regenerateStream).not.toHaveBeenCalled();
+  });
+
+  it("no-ops when parent at index is not a user message", async () => {
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.messageState.messages = [
+      { role: "user", content: [{ type: "text", text: "hi" }] },
+      { role: "assistant", content: [{ type: "text", text: "ok" }] },
+    ];
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      // index 1 points to the assistant reply, not a user message
+      await result.current.regenerate(1);
+    });
+    expect(apiAi.regenerateStream).not.toHaveBeenCalled();
+  });
+
+  it("truncates after parent and calls api.ai.regenerateStream", async () => {
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.messageState.messages = [
+      { role: "user", content: [{ type: "text", text: "hi" }] },
+      { role: "assistant", content: [{ type: "text", text: "old" }] },
+    ];
+    apiAi.regenerateStream.mockReturnValue(arr([]));
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate(0);
+    });
+
+    expect(stores.messageState.truncateMessagesAfter).toHaveBeenCalledWith(0);
+    expect(apiAi.regenerateStream).toHaveBeenCalledTimes(1);
+    const arg = apiAi.regenerateStream.mock.calls[0][0];
+    expect(arg).toMatchObject({ threadId: "t1" });
+    expect(arg.actionArgs).toBeDefined();
+    expect(arg.actionArgs.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("forwards extendedThinking, tools, and systemPrompt via actionArgs", async () => {
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.profilesState.extendedThinking = true;
+    stores.serversState.tools = [{ name: "foo" }];
+    stores.messageState.messages = [
+      { role: "user", content: [{ type: "text", text: "hi" }] },
+    ];
+    apiAi.regenerateStream.mockReturnValue(arr([]));
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate(0);
+    });
+
+    const arg = apiAi.regenerateStream.mock.calls[0][0];
+    expect(arg.actionArgs.isReasoning).toBe(true);
+    expect(arg.actionArgs.tools).toEqual([{ name: "foo" }]);
   });
 });

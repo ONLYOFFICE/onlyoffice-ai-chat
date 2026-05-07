@@ -107,11 +107,19 @@ const Thread = () => {
   const messages = useMessageStore((s) => s.messages);
   const stopMessage = useMessageStore((s) => s.stopMessage);
   const hasProfiles = useProfilesStore((s) => s.profiles.length > 0);
-  const { onNew } = useMessages({ isReady: true });
+  const { onNew, regenerate } = useMessages({ isReady: true });
 
   const onCancel = useCallback(async () => {
     stopMessage();
   }, [stopMessage]);
+
+  const onReload = useCallback(
+    async (parentId: string | null) => {
+      if (parentId === null) return;
+      await regenerate(Number(parentId));
+    },
+    [regenerate]
+  );
 
   const convertMessage = useCallback((m: ThreadMessageLike) => m, []);
 
@@ -119,6 +127,7 @@ const Thread = () => {
     messages,
     onNew,
     onCancel,
+    onReload,
     convertMessage,
     adapters: {
       attachments: new CompositeAttachmentAdapter([

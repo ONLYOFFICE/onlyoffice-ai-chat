@@ -147,6 +147,13 @@ vi.mock("@assistant-ui/react", () => ({
       children: React.ReactNode;
       asChild?: boolean;
     }) => <div data-testid="action-copy">{children}</div>,
+    Reload: ({
+      children,
+      asChild: _asChild,
+    }: {
+      children: React.ReactNode;
+      asChild?: boolean;
+    }) => <div data-testid="action-reload">{children}</div>,
   },
   ErrorPrimitive: {
     Root: ({
@@ -351,6 +358,17 @@ describe("AssistantMessage", () => {
   it("renders save icon button", () => {
     render(<AssistantMessage />);
     expect(screen.getByTestId("icon-btn-btn-save")).toBeInTheDocument();
+  });
+
+  it("renders the Regenerate (Reload) button", () => {
+    render(<AssistantMessage />);
+    expect(screen.getByTestId("action-reload")).toBeInTheDocument();
+    const tooltips = screen.getAllByTestId("tooltip-btn");
+    const regenTooltip = tooltips.find(
+      (el) => el.getAttribute("data-tooltip") === "Regenerate"
+    );
+    expect(regenTooltip).toBeInTheDocument();
+    expect(screen.getByTestId("icon-btn-btn-reset")).toBeInTheDocument();
   });
 
   describe("onDownload", () => {

@@ -61,6 +61,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const setAbortController = useMessageStore((s) => s.setAbortController);
   const addMessage = useMessageStore((s) => s.addMessage);
   const updateLastMessage = useMessageStore((s) => s.updateLastMessage);
+  const truncateMessagesAfter = useMessageStore(
+    (s) => s.truncateMessagesAfter
+  );
   const fetchPrevMessages = useMessageStore((s) => s.fetchPrevMessages);
   const claimThreadId = useMessageStore((s) => s.claimThreadId);
   const threadId = useThreadsStore((s) => s.threadId);
@@ -694,8 +697,54 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     useServersStore,
   ]);
 
+  const regenerate = useCallback(
+    async (parentIndex: number) => {
+      if (!currentProfile) return;
+      if (!threadId) return;
+
+      const state = useMessageStore.getState();
+      if (state.isStreamRunning) return;
+
+      const msgs = state.messages;
+      const parent = msgs[parentIndex];
+      if (!parent || parent.role !== "user") return;
+
+      truncateMessagesAfter(parentIndex);
+
+      const controller = new AbortController();
+      setAbortController(controller);
+
+      const stream = api.ai.regenerateStream({
+        threadId,
+        entityId,
+        actionArgs: {
+          isReasoning: extendedThinking,
+          signal: controller.signal,
+          tools: tools.length > 0 ? tools : undefined,
+          prompt: systemPrompt,
+        },
+      });
+
+      await processStream(stream, threadId);
+    },
+    [
+      api,
+      currentProfile,
+      entityId,
+      extendedThinking,
+      processStream,
+      setAbortController,
+      systemPrompt,
+      threadId,
+      tools,
+      truncateMessagesAfter,
+      useMessageStore,
+    ]
+  );
+
   return {
     onNew,
+    regenerate,
     approveToolCall,
     denyToolCall,
   };

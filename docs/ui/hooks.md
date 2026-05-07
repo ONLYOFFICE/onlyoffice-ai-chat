@@ -72,12 +72,15 @@ the chat profile is resolved per-entity (if the host has set
 one up).
 
 ```ts
-const { onNew, approveToolCall, denyToolCall } = useMessages({ isReady });
+const { onNew, regenerate, approveToolCall, denyToolCall } = useMessages({
+  isReady,
+});
 ```
 
 | Returned | Description |
 | --- | --- |
 | `onNew(message)` | Submit a new user message (text + attachments). Same entry point the composer's "Send" uses. |
+| `regenerate(parentIndex)` | Re-roll the assistant reply that follows `messages[parentIndex]` (a user message). Wired into the built-in `Reload` button under each assistant message — the host can also call it programmatically. No-ops if a stream is already running, the parent isn't a user message, or there's no active thread. |
 | `approveToolCall(allowAlways?)` | Approve the pending tool call. Pass `true` to add it to the persistent allow list. |
 | `denyToolCall()` | Deny the pending tool call and continue the conversation. |
 

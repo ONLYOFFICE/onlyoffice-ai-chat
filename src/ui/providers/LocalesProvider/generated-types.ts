@@ -99,6 +99,7 @@ export type TranslationKey =
   | "PromptText"
   | "Provider"
   | "RecentFiles"
+  | "Regenerate"
   | "Rename"
   | "RenameFolder"
   | "ResetSettings"

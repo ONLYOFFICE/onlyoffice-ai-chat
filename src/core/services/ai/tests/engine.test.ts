@@ -106,6 +106,9 @@ function makeStorage() {
       ),
       readByThread: vi.fn(async () => [...messages]),
       update: vi.fn(),
+      delete: vi.fn(async (id: string) => {
+        messages = messages.filter((m) => m.id !== id);
+      }),
       deleteByThread: vi.fn(async () => {
         messages = [];
       }),
@@ -216,6 +219,132 @@ describe("AIEngine.sendWithStream entity scope", () => {
       "New chat",
       "p1",
       undefined
+    );
+  });
+});
+
+describe("AIEngine.regenerateStream", () => {
+  it("drops the previous assistant reply and re-streams against the same user prompt", async () => {
+    const oldAssistant: ThreadMessageLike = {
+      id: "asst-old",
+      role: "assistant",
+      content: [{ type: "text", text: "old reply" }],
+    };
+    const userPersisted: ThreadMessageLike = {
+      id: "user-1",
+      role: "user",
+      content: [{ type: "text", text: "hi" }],
+    };
+    const fresh: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "fresh reply" }],
+    };
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([{ isEnd: true, responseMessage: fresh }])
+    );
+
+    const { storage } = makeStorage();
+    // Seed storage.messages.readByThread with the existing user + old assistant
+    (storage.messages.readByThread as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      [userPersisted, oldAssistant]
+    );
+
+    const engine = new AIEngine({ storage });
+    const yielded = [];
+    for await (const ev of engine.regenerateStream({ threadId: "t1" })) {
+      yielded.push(ev);
+    }
+
+    expect(storage.messages.delete).toHaveBeenCalledWith("asst-old");
+    // The provider call received only the user message in `messages` (no old reply).
+    const callArgs = sendMessageMock.mock.calls[0][0] as {
+      messages: ThreadMessageLike[];
+    };
+    expect(callArgs.messages).toHaveLength(1);
+    expect(callArgs.messages[0]).toMatchObject(userPersisted);
+    // Stream emitted message-end for the fresh reply.
+    expect(yielded.some((e) => e.type === "message-end")).toBe(true);
+  });
+
+  it("returns early when there is no user message in the thread", async () => {
+    const { storage } = makeStorage();
+    (storage.messages.readByThread as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      []
+    );
+
+    const engine = new AIEngine({ storage });
+    const yielded = [];
+    for await (const ev of engine.regenerateStream({ threadId: "t1" })) {
+      yielded.push(ev);
+    }
+
+    expect(yielded).toHaveLength(0);
+    expect(sendMessageMock).not.toHaveBeenCalled();
+    expect(storage.messages.delete).not.toHaveBeenCalled();
+  });
+
+  it("deletes every trailing message after the last user message (tool-call hops)", async () => {
+    const userPersisted: ThreadMessageLike = {
+      id: "user-1",
+      role: "user",
+      content: [{ type: "text", text: "do tool" }],
+    };
+    const toolCallAsst: ThreadMessageLike = {
+      id: "asst-tool",
+      role: "assistant",
+      content: [{ type: "text", text: "calling tool" }],
+    };
+    const toolResult: ThreadMessageLike = {
+      id: "tool-result",
+      role: "assistant",
+      content: [{ type: "text", text: "tool result" }],
+    };
+    const finalAsst: ThreadMessageLike = {
+      id: "asst-final",
+      role: "assistant",
+      content: [{ type: "text", text: "final" }],
+    };
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+
+    const { storage } = makeStorage();
+    (storage.messages.readByThread as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      [userPersisted, toolCallAsst, toolResult, finalAsst]
+    );
+
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.regenerateStream({ threadId: "t1" })) {
+      // drain
+    }
+
+    const deletedIds = (storage.messages.delete as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c: unknown[]) => c[0]
+    );
+    expect(deletedIds).toEqual(["asst-tool", "tool-result", "asst-final"]);
+  });
+
+  it("forwards entityId to assignments.readByType", async () => {
+    const userPersisted: ThreadMessageLike = {
+      id: "u",
+      role: "user",
+      content: [{ type: "text", text: "hi" }],
+    };
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    (storage.messages.readByThread as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      [userPersisted]
+    );
+
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.regenerateStream({
+      threadId: "t1",
+      entityId: "e1",
+    })) {
+      // drain
+    }
+
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Chat,
+      "e1"
     );
   });
 });

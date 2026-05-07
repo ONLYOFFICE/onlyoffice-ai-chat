@@ -30,6 +30,12 @@ export interface MessageStoreState {
   addMessage: (message: ThreadMessageLike) => void;
   /** Replace the last message in the list (used during streaming updates). */
   updateLastMessage: (message: ThreadMessageLike) => void;
+  /**
+   * Drop every message after `index`, keeping `messages[0..index]`.
+   * Used by the regenerate flow to discard the previous assistant reply
+   * (and any trailing tool-call hops) before re-streaming.
+   */
+  truncateMessagesAfter: (index: number) => void;
   /** Load persisted messages for the given thread from the core threads engine. */
   fetchPrevMessages: (threadId: string) => Promise<void>;
   /**
@@ -88,6 +94,12 @@ export function createMessageStore(deps: {
     updateLastMessage: (message) => {
       const { messages } = get();
       set({ messages: [...messages.slice(0, -1), message] });
+    },
+
+    truncateMessagesAfter: (index) => {
+      const { messages } = get();
+      if (index < 0 || index >= messages.length - 1) return;
+      set({ messages: messages.slice(0, index + 1) });
     },
 
     stopMessage: () => {

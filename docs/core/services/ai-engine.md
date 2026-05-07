@@ -14,6 +14,7 @@ It exposes five call shapes:
 | Method                | Streams? | Touches storage? | Profile slot           | Action     |
 | --------------------- | -------- | ---------------- | ---------------------- | ---------- |
 | [`sendWithStream`](#sendwithstream) | ✅ stream | ✅ thread + messages | `Chat` → `Default`     | `chat`     |
+| [`regenerateStream`](#regeneratestream) | ✅ stream | ✅ delete + messages | `Chat` → `Default`     | `chat`     |
 | [`approveToolCall`](#approvetoolcall) | ✅ stream | ✅ messages | `Chat` → `Default` | resumes `chat` |
 | [`denyToolCall`](#denytoolcall) | ✅ stream | ✅ messages | `Chat` → `Default` | resumes `chat` |
 | [`send`](#send)               | one-shot | ❌ no writes        | `<actionType>` → `Default` | any registered action |
@@ -228,6 +229,56 @@ sendWithStream → tool-call-pending → consumer
 The consumer is responsible for the actual dispatch and for any
 `beforeToolCall` / `afterToolResult` middleware. The engine just
 persists the supplied result and resumes.
+
+---
+
+## `regenerateStream`
+
+```ts
+async *regenerateStream(input: RegenerateStreamInput): AsyncGenerator<ChatEvent>;
+```
+
+```ts
+type RegenerateStreamInput = {
+  threadId: string;                          // must already exist
+  actionArgs?: Omit<ActionArgs, "profile" | "messages">;
+  entityId?: string;
+};
+```
+
+Re-rolls the latest assistant reply in an existing thread. Reads
+the persisted history via `storage.messages.readByThread`, finds
+the last `user` message, deletes every trailing message
+(`storage.messages.delete` per id — covers tool-call hops + the
+old assistant reply), and streams a fresh reply through the same
+`processStream` + `runChatStream` pipeline as `sendWithStream`.
+
+Skips the title-generation / placeholder-thread branch of
+`sendWithStream` — `regenerateStream` only operates on a thread
+that already exists. Returns silently (no events) when the thread
+has no `user` message.
+
+The user message itself is **not** deleted or re-created — its
+storage row, attachments, and id are left intact, so the regenerated
+reply lands against the same prompt with no extra writes.
+
+### Example
+
+```ts
+for await (const event of engine.regenerateStream({
+  threadId: "t-42",
+  actionArgs: { isReasoning: true },
+})) {
+  if (event.type === "message-end") {
+    console.log("fresh reply:", event.message);
+  }
+}
+```
+
+The UI ships this wired into `ActionBarPrimitive.Reload` under
+each assistant message, with a programmatic
+[`useMessages().regenerate(parentIndex)`](../../ui/hooks.md#usemessagesisready)
+on top for hosts that need to trigger it from elsewhere.
 
 ---
 
