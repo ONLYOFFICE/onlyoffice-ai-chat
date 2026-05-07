@@ -2,6 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import { describe, expect, it } from "vitest";
 import {
   convertMessagesToMd,
+  getMessageText,
   getMessageTitleFromMd,
   removeSpecialCharacter,
 } from "../../utils";
@@ -114,6 +115,105 @@ describe("convertMessagesToMd", () => {
       { role: "assistant", content: "assistant string" },
     ];
     expect(convertMessagesToMd(messages)).toBe("assistant string\n\n");
+  });
+});
+
+describe("getMessageText", () => {
+  it("returns the string content as-is", () => {
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: "plain string body",
+    };
+    expect(getMessageText(message)).toBe("plain string body");
+  });
+
+  it("returns empty string for non-string non-array content", () => {
+    // @ts-expect-error — testing runtime safety
+    expect(getMessageText({ role: "assistant", content: undefined })).toBe("");
+    // @ts-expect-error — testing runtime safety
+    expect(getMessageText({ role: "assistant", content: null })).toBe("");
+    // @ts-expect-error — testing runtime safety
+    expect(getMessageText({ role: "assistant", content: 42 })).toBe("");
+  });
+
+  it("joins multiple text parts with double newline", () => {
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        { type: "text", text: "alpha" },
+        { type: "text", text: "beta" },
+      ],
+    };
+    expect(getMessageText(message)).toBe("alpha\n\nbeta");
+  });
+
+  it("does not prefix user messages with `## ` (no role decoration)", () => {
+    const message: ThreadMessageLike = {
+      role: "user",
+      content: [{ type: "text", text: "hi" }],
+    };
+    expect(getMessageText(message)).toBe("hi");
+  });
+
+  it("includes bare-string parts in array content", () => {
+    const message = {
+      role: "assistant",
+      content: ["raw chunk", { type: "text", text: "structured" }],
+    } as unknown as ThreadMessageLike;
+    expect(getMessageText(message)).toBe("raw chunk\n\nstructured");
+  });
+
+  it("skips tool-call parts", () => {
+    const message = {
+      role: "assistant",
+      content: [
+        { type: "text", text: "before" },
+        { type: "tool-call", toolName: "search", args: {} },
+        { type: "text", text: "after" },
+      ],
+    } as unknown as ThreadMessageLike;
+    expect(getMessageText(message)).toBe("before\n\nafter");
+  });
+
+  it("skips null/undefined/non-object parts in array", () => {
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        // @ts-expect-error — testing runtime safety
+        null,
+        // @ts-expect-error — testing runtime safety
+        undefined,
+        // @ts-expect-error — testing runtime safety
+        42,
+        { type: "text", text: "kept" },
+      ],
+    };
+    expect(getMessageText(message)).toBe("kept");
+  });
+
+  it("skips text parts with non-string text field", () => {
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      // @ts-expect-error — testing runtime safety
+      content: [{ type: "text", text: 123 }, { type: "text", text: "ok" }],
+    };
+    expect(getMessageText(message)).toBe("ok");
+  });
+
+  it("returns empty string when array has no text parts", () => {
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        // @ts-expect-error — testing runtime behavior with unknown type
+        { type: "image", url: "http://example.com" },
+      ],
+    };
+    expect(getMessageText(message)).toBe("");
+  });
+
+  it("returns empty string for empty array", () => {
+    const message: ThreadMessageLike = { role: "assistant", content: [] };
+    expect(getMessageText(message)).toBe("");
   });
 });
 

@@ -3,9 +3,10 @@ import {
   ErrorPrimitive,
   MessagePrimitive,
   useMessage,
+  type ThreadMessageLike,
 } from "@assistant-ui/react";
 import { motion } from "framer-motion";
-import { memo, useState } from "react";
+import { isValidElement, memo, useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
@@ -13,7 +14,11 @@ import { Icon } from "../../../components/icon";
 import { MarkdownContent } from "../../../components/markdown";
 import { ToolFallback } from "../../../components/tool-fallback";
 import { convertMessagesToMd, getMessageTitleFromMd } from "../../../../shared/utils";
+import { getMessageText } from "../../../../utils";
+import logger from "../../../../shared/logger";
 import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
+import type { AssistantAction } from "../assistant-actions";
 
 const ThinkingMarkdownText = memo(
   ({
@@ -82,12 +87,66 @@ const MessageError = () => {
   );
 };
 
+const CustomActionButton = ({
+  action,
+  message,
+}: {
+  action: AssistantAction;
+  message: ThreadMessageLike;
+}) => {
+  const { IconButton, TooltipIconButton } = useComponents();
+
+  const text = getMessageText(message);
+  const markdown = convertMessagesToMd([message]);
+  const ctx = { text, message, markdown };
+
+  if (action.isVisible && !action.isVisible(ctx)) return null;
+
+  const onClick = () => {
+    try {
+      const result = action.onClick(ctx);
+      if (result && typeof (result as Promise<unknown>).then === "function") {
+        (result as Promise<unknown>).catch((err) => {
+          logger.error(`AssistantAction "${action.id}" failed:`, err);
+        });
+      }
+    } catch (err) {
+      logger.error(`AssistantAction "${action.id}" failed:`, err);
+    }
+  };
+
+  return (
+    <div>
+      <TooltipIconButton tooltip={action.tooltip}>
+        {typeof action.icon === "string" ? (
+          <IconButton
+            iconName={action.icon}
+            size={24}
+            onClick={onClick}
+            isStroke
+          />
+        ) : isValidElement(action.icon) ? (
+          <button
+            type="button"
+            onClick={onClick}
+            aria-label={action.tooltip}
+            className="bg-transparent border-0 p-0 cursor-pointer"
+          >
+            {action.icon}
+          </button>
+        ) : null}
+      </TooltipIconButton>
+    </div>
+  );
+};
+
 const AssistantActionBar = () => {
   const { IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
   const { useMessageStore } = useStores();
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const platform = usePlatform();
+  const { assistantActions } = useWidgetConfig();
 
   const message = useMessage();
 
@@ -133,6 +192,13 @@ const AssistantActionBar = () => {
           />
         </TooltipIconButton>
       </div>
+      {assistantActions?.map((action) => (
+        <CustomActionButton
+          key={action.id}
+          action={action}
+          message={message as unknown as ThreadMessageLike}
+        />
+      ))}
     </ActionBarPrimitive.Root>
   );
 };

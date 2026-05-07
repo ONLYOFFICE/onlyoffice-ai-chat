@@ -265,12 +265,22 @@ Runtime toggles to adjust built-in UI. Pass directly as `AIChatWidget` props:
 | `hideSettingsButton` | `boolean` | Hide the gear button in the header. The settings page stays reachable via `router.setCurrentPage("settings")`. |
 | `onSettingsClick` | `() => void` | Fully override the click on the header settings button — the built-in `setCurrentPage` toggle is not invoked when this is set. |
 | `isSettingsActive` | `boolean` | Force the header settings button into its active (highlighted) state. When `undefined`, falls back to `currentPage === "settings"`. |
+| `assistantActions` | `AssistantAction[]` | Extra buttons rendered under every assistant message, appended after the built-in Copy and Save. Each `onClick` receives `{ text, markdown, message }` of the assistant reply. Hidden during streaming and on error states (same as the built-ins). |
 
 ```tsx
 <AIChatWidget
   hideProfilePicker
   onSettingsClick={() => openHostSettings()}
   isSettingsActive={isHostSettingsOpen}
+  assistantActions={[
+    {
+      id: "insert-into-doc",
+      tooltip: "Insert into document",
+      icon: "btn-copy", // built-in IconName, custom registered name, or a React node
+      onClick: ({ text }) => host.insertText(text),
+      isVisible: ({ text }) => text.length > 0, // optional
+    },
+  ]}
   ...props
 />
 ```

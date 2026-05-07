@@ -42,6 +42,34 @@ export const convertMessagesToMd = (messages: ThreadMessageLike[]) => {
 };
 
 /**
+ * Extracts the plain-text content of a single message — joins all `text`
+ * parts of `message.content` (plus bare-string parts) with newlines and
+ * skips tool-call parts. No role prefix, no Markdown headings.
+ *
+ * @param message - The message to extract text from.
+ * @returns The plain text content of the message.
+ */
+export const getMessageText = (message: ThreadMessageLike): string => {
+  if (typeof message.content === "string") return message.content;
+
+  if (!Array.isArray(message.content)) return "";
+
+  const parts: string[] = [];
+  message.content.forEach((part: ThreadMessageLike["content"]) => {
+    if (typeof part === "string") {
+      parts.push(part);
+      return;
+    }
+    if (!part || typeof part !== "object" || !("type" in part)) return;
+    if (part.type === "text" && "text" in part && typeof part.text === "string") {
+      parts.push(part.text);
+    }
+  });
+
+  return parts.join("\n\n");
+};
+
+/**
  * Strips characters that are invalid in file names (`\ / : * " < > | ?`).
  *
  * @param str - The input string.

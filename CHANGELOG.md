@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.3.1
+
+Hosts can now append custom buttons to the action bar under every
+assistant message — alongside the built-in Copy and Save — and route
+the message text into their own flows (insert into doc, translate,
+read aloud, send to a task tracker, …).
+
+- **New** `AIChatWidgetProps.assistantActions?: AssistantAction[]` — also
+  available on `WidgetConfig` for headless mounts. Each action gets
+  `{ id, tooltip, icon, onClick, isVisible? }`. `icon` accepts a
+  built-in `IconName`, a custom registered name (via `images`), or a
+  React node. `onClick` receives `{ text, markdown, message }` and may
+  be sync or async — thrown / rejected errors are logged, never
+  surfaced.
+- **New** `getMessageText(message)` utility — joins text parts of a
+  `ThreadMessageLike` with `\n\n`, skips tool-call parts. Re-exported
+  from the package root.
+- Custom actions inherit the built-in visibility rules: hidden while
+  streaming and on `incomplete + error` message status, identical to
+  Copy / Save.
+
+```tsx
+<AIChatWidget
+  assistantActions={[
+    {
+      id: "insert-into-doc",
+      tooltip: "Insert into document",
+      icon: "btn-copy",
+      onClick: ({ text }) => host.insertText(text),
+    },
+  ]}
+  ...props
+/>
+```
+
 ## 0.3.0
 
 Attachments are now persisted in their own IndexedDB store and

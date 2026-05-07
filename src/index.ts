@@ -45,6 +45,11 @@ export {
   type WidgetConfigProviderProps,
 } from "./widget-config";
 
+export type {
+  AssistantAction,
+  AssistantActionContext,
+} from "./ui/pages/chat/assistant-actions";
+
 // ---------------------------------------------------------------------------
 // Imperative Ref
 // ---------------------------------------------------------------------------
@@ -426,7 +431,11 @@ export {
 // Utilities
 // ---------------------------------------------------------------------------
 
-export { convertMessagesToMd, getMessageTitleFromMd } from "./utils";
+export {
+  convertMessagesToMd,
+  getMessageText,
+  getMessageTitleFromMd,
+} from "./utils";
 
 export {
   isDjVu,

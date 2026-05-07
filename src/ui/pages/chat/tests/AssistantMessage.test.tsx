@@ -9,6 +9,7 @@ let mockMessages: unknown[] = [];
 let mockMessageStatus: unknown = { type: "complete" };
 let mockMessageParentId = "0";
 let mockMessageContent: unknown[] = [{ type: "text", text: "Hello" }];
+let mockAssistantActions: unknown[] | undefined = undefined;
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -241,6 +242,21 @@ vi.mock("../../../../shared/utils", () => ({
   getMessageTitleFromMd: vi.fn(() => "Title"),
 }));
 
+vi.mock("../../../../utils", () => ({
+  getMessageText: vi.fn((m: { content: unknown }) => {
+    if (typeof m.content === "string") return m.content;
+    if (!Array.isArray(m.content)) return "";
+    return (m.content as { type: string; text?: string }[])
+      .filter((p) => p.type === "text" && typeof p.text === "string")
+      .map((p) => p.text)
+      .join("\n\n");
+  }),
+}));
+
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => ({ assistantActions: mockAssistantActions }),
+}));
+
 import { AssistantMessage } from "../sub-components/AssistantMessage";
 
 describe("AssistantMessage", () => {
@@ -252,6 +268,7 @@ describe("AssistantMessage", () => {
     mockMessageStatus = { type: "complete" };
     mockMessageParentId = "0";
     mockMessageContent = [{ type: "text", text: "Hello" }];
+    mockAssistantActions = undefined;
   });
 
   it("renders without crash", () => {
@@ -453,6 +470,203 @@ describe("AssistantMessage", () => {
         (el) => el.getAttribute("data-name") === "arrow.right"
       );
       expect(arrowIcon?.className).toContain("rotate-90");
+    });
+  });
+
+  describe("custom assistantActions", () => {
+    it("renders nothing extra when assistantActions is undefined", () => {
+      mockAssistantActions = undefined;
+      render(<AssistantMessage />);
+      // Only built-in icons: btn-copy, checked, btn-save
+      expect(screen.queryByTestId("icon-btn-my-icon")).not.toBeInTheDocument();
+    });
+
+    it("renders a custom action button after Save", () => {
+      mockAssistantActions = [
+        {
+          id: "translate",
+          tooltip: "Translate it",
+          icon: "my-icon",
+          onClick: vi.fn(),
+        },
+      ];
+      render(<AssistantMessage />);
+      expect(screen.getByTestId("icon-btn-my-icon")).toBeInTheDocument();
+      const tooltips = screen.getAllByTestId("tooltip-btn");
+      const customTooltip = tooltips.find(
+        (el) => el.getAttribute("data-tooltip") === "Translate it"
+      );
+      expect(customTooltip).toBeInTheDocument();
+    });
+
+    it("calls onClick with text + markdown + raw message", () => {
+      const onClick = vi.fn();
+      mockMessageContent = [
+        { type: "text", text: "Line one" },
+        { type: "text", text: "Line two" },
+      ];
+      mockAssistantActions = [
+        { id: "a", tooltip: "T", icon: "my-icon", onClick },
+      ];
+      render(<AssistantMessage />);
+      fireEvent.click(screen.getByTestId("icon-btn-my-icon"));
+      expect(onClick).toHaveBeenCalledTimes(1);
+      const arg = onClick.mock.calls[0][0];
+      expect(arg.text).toBe("Line one\n\nLine two");
+      expect(arg.markdown).toBe("# Title\nContent");
+      expect(arg.message.content).toBe(mockMessageContent);
+    });
+
+    it("respects isVisible() — hides when it returns false", () => {
+      mockAssistantActions = [
+        {
+          id: "a",
+          tooltip: "T",
+          icon: "my-icon",
+          onClick: vi.fn(),
+          isVisible: () => false,
+        },
+      ];
+      render(<AssistantMessage />);
+      expect(screen.queryByTestId("icon-btn-my-icon")).not.toBeInTheDocument();
+    });
+
+    it("renders multiple actions in given order", () => {
+      mockAssistantActions = [
+        { id: "a", tooltip: "A", icon: "icon-a", onClick: vi.fn() },
+        { id: "b", tooltip: "B", icon: "icon-b", onClick: vi.fn() },
+      ];
+      render(<AssistantMessage />);
+      expect(screen.getByTestId("icon-btn-icon-a")).toBeInTheDocument();
+      expect(screen.getByTestId("icon-btn-icon-b")).toBeInTheDocument();
+    });
+
+    it("hides custom actions during streaming (via action-bar hidden)", () => {
+      mockIsStreamRunning = true;
+      mockAssistantActions = [
+        { id: "a", tooltip: "T", icon: "my-icon", onClick: vi.fn() },
+      ];
+      render(<AssistantMessage />);
+      const actionBar = screen.getByTestId("action-bar");
+      expect(actionBar.getAttribute("data-hidden")).toBe("true");
+    });
+
+    it("does not render action bar (incl. custom actions) on incomplete+error", () => {
+      mockMessageStatus = { type: "incomplete", error: "boom" };
+      mockAssistantActions = [
+        { id: "a", tooltip: "T", icon: "my-icon", onClick: vi.fn() },
+      ];
+      render(<AssistantMessage />);
+      expect(screen.queryByTestId("action-bar")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("icon-btn-my-icon")).not.toBeInTheDocument();
+    });
+
+    it("swallows synchronous errors thrown by onClick", () => {
+      const onClick = vi.fn(() => {
+        throw new Error("boom");
+      });
+      mockAssistantActions = [
+        { id: "a", tooltip: "T", icon: "my-icon", onClick },
+      ];
+      render(<AssistantMessage />);
+      expect(() =>
+        fireEvent.click(screen.getByTestId("icon-btn-my-icon"))
+      ).not.toThrow();
+      expect(onClick).toHaveBeenCalled();
+    });
+
+    it("does not throw when onClick returns a rejected promise", async () => {
+      const onClick = vi.fn(() => Promise.reject(new Error("async boom")));
+      mockAssistantActions = [
+        { id: "a", tooltip: "T", icon: "my-icon", onClick },
+      ];
+      render(<AssistantMessage />);
+      expect(() =>
+        fireEvent.click(screen.getByTestId("icon-btn-my-icon"))
+      ).not.toThrow();
+      // Let the rejection propagate through the .catch handler
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
+    it("supports a React node as icon (renders custom button)", () => {
+      const onClick = vi.fn();
+      mockAssistantActions = [
+        {
+          id: "a",
+          tooltip: "Custom node",
+          icon: <span data-testid="custom-icon-node">★</span>,
+          onClick,
+        },
+      ];
+      render(<AssistantMessage />);
+      const node = screen.getByTestId("custom-icon-node");
+      expect(node).toBeInTheDocument();
+      // The wrapping <button> uses tooltip as aria-label
+      const btn = node.closest("button")!;
+      expect(btn.getAttribute("aria-label")).toBe("Custom node");
+      fireEvent.click(btn);
+      expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
+    it("renders nothing when icon is neither string nor a React element", () => {
+      mockAssistantActions = [
+        { id: "bad", tooltip: "T", icon: 42, onClick: vi.fn() },
+      ];
+      render(<AssistantMessage />);
+      // Tooltip wrapper still renders, but no icon-button / no clickable child
+      const tooltips = screen.getAllByTestId("tooltip-btn");
+      const badTooltip = tooltips.find(
+        (el) => el.getAttribute("data-tooltip") === "T"
+      );
+      expect(badTooltip).toBeInTheDocument();
+      expect(badTooltip!.querySelector("button")).toBeNull();
+    });
+
+    it("passes the same content array reference as message.content", () => {
+      const onClick = vi.fn();
+      mockMessageContent = [{ type: "text", text: "ref-test" }];
+      mockAssistantActions = [
+        { id: "a", tooltip: "T", icon: "my-icon", onClick },
+      ];
+      render(<AssistantMessage />);
+      fireEvent.click(screen.getByTestId("icon-btn-my-icon"));
+      const arg = onClick.mock.calls[0][0];
+      // identity check — consumer can mutate / inspect parts directly
+      expect(arg.message.content).toBe(mockMessageContent);
+    });
+
+    it("passes empty text when content is empty array", () => {
+      const onClick = vi.fn();
+      mockMessageContent = [];
+      mockAssistantActions = [
+        { id: "a", tooltip: "T", icon: "my-icon", onClick },
+      ];
+      render(<AssistantMessage />);
+      fireEvent.click(screen.getByTestId("icon-btn-my-icon"));
+      expect(onClick.mock.calls[0][0].text).toBe("");
+    });
+
+    it("re-evaluates isVisible with current message text", () => {
+      const isVisible = vi.fn(({ text }: { text: string }) =>
+        text.includes("show")
+      );
+      mockMessageContent = [{ type: "text", text: "please show me" }];
+      mockAssistantActions = [
+        {
+          id: "a",
+          tooltip: "T",
+          icon: "my-icon",
+          onClick: vi.fn(),
+          isVisible,
+        },
+      ];
+      render(<AssistantMessage />);
+      expect(screen.getByTestId("icon-btn-my-icon")).toBeInTheDocument();
+      expect(isVisible).toHaveBeenCalled();
+      const callArg = isVisible.mock.calls[0][0];
+      expect(callArg.text).toBe("please show me");
     });
   });
 });

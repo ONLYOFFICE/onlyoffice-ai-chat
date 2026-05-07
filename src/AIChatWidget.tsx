@@ -55,6 +55,7 @@ import type { ToolsAdapter } from "./core/tools-adapter";
 import type { HostToolGroup } from "./ui/tools/types";
 import { WidgetConfigProvider } from "./widget-config";
 import type { SystemPromptOverride } from "./core/actions";
+import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type {
   ProviderType,
   TOnlyOfficeConfig,
@@ -113,6 +114,12 @@ export interface AIChatWidgetProps {
   systemPrompt?: SystemPromptOverride;
   /** Optional remote API routing — defaults to in-process engines. */
   apiConfig?: Partial<Pick<ServerAPIConfig, "origin" | "baseUrl" | "headers">>;
+  /**
+   * Extra buttons rendered under every assistant message, appended after
+   * the built-in Copy and Save. Each action's `onClick` receives the text
+   * (and the raw message) of the corresponding assistant reply.
+   */
+  assistantActions?: AssistantAction[];
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -148,6 +155,7 @@ export const AIChatWidget = React.forwardRef<
       entityId,
       systemPrompt,
       apiConfig,
+      assistantActions,
     },
     ref
   ) => {
@@ -160,6 +168,7 @@ export const AIChatWidget = React.forwardRef<
         isDialogFullscreen,
         entityId,
         systemPrompt,
+        assistantActions,
       }),
       [
         hideProfilePicker,
@@ -169,6 +178,7 @@ export const AIChatWidget = React.forwardRef<
         isDialogFullscreen,
         entityId,
         systemPrompt,
+        assistantActions,
       ]
     );
 

@@ -39,4 +39,21 @@ describe("WidgetConfigProvider", () => {
     );
     expect(getByText("child")).toBeInTheDocument();
   });
+
+  it("exposes assistantActions through useWidgetConfig", () => {
+    const onClick = () => {};
+    const config = {
+      assistantActions: [
+        { id: "translate", tooltip: "Translate", icon: "btn-copy", onClick },
+      ],
+    };
+    const { result } = renderHook(() => useWidgetConfig(), {
+      wrapper: ({ children }) => (
+        <WidgetConfigProvider config={config}>{children}</WidgetConfigProvider>
+      ),
+    });
+    expect(result.current.assistantActions).toHaveLength(1);
+    expect(result.current.assistantActions?.[0].id).toBe("translate");
+    expect(result.current.assistantActions?.[0].onClick).toBe(onClick);
+  });
 });

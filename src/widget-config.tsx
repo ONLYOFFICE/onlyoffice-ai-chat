@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import type { SystemPromptOverride } from "./core/actions";
+import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 
 export interface WidgetConfig {
   /**
@@ -49,6 +50,14 @@ export interface WidgetConfig {
    * see {@link SystemPromptOverride}.
    */
   systemPrompt?: SystemPromptOverride;
+  /**
+   * Extra buttons rendered in the action bar under each assistant message,
+   * appended after the built-in Copy and Save. Each action receives the
+   * plain text (and Markdown / raw message) of the assistant message on
+   * click. Hidden during streaming and on error states, identical to the
+   * built-ins.
+   */
+  assistantActions?: AssistantAction[];
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});
