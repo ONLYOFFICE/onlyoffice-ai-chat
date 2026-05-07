@@ -262,11 +262,14 @@ describe("WebSearch", () => {
     fireEvent.change(apiInput, { target: { value: "my-api-key" } });
     fireEvent.blur(apiInput);
 
-    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith({
-      provider: "Exa",
-      key: "my-api-key",
-      baseUrl: "https://api.exa.ai",
-    });
+    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith(
+      {
+        provider: "Exa",
+        key: "my-api-key",
+        baseUrl: "https://api.exa.ai",
+      },
+      undefined
+    );
   });
 
   it("clears web search data when API key is empty on blur", () => {
@@ -289,11 +292,14 @@ describe("WebSearch", () => {
     fireEvent.change(apiInput, { target: { value: "key-123" } });
     fireEvent.blur(apiInput);
 
-    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith({
-      provider: "ONLYOFFICE",
-      key: "key-123",
-      baseUrl: "https://custom.api.com",
-    });
+    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith(
+      {
+        provider: "ONLYOFFICE",
+        key: "key-123",
+        baseUrl: "https://custom.api.com",
+      },
+      undefined
+    );
   });
 
   it("sets null when base URL is invalid and provider has no default", () => {
@@ -320,12 +326,15 @@ describe("WebSearch", () => {
     render(<WebSearch />);
     fireEvent.click(screen.getByTestId("combo-item-https://cloud.example.com"));
 
-    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith({
-      provider: "https://cloud.example.com",
-      key: "cloud-key",
-      baseUrl: "https://cloud.example.com",
-      isCloudProvider: true,
-    });
+    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith(
+      {
+        provider: "https://cloud.example.com",
+        key: "cloud-key",
+        baseUrl: "https://cloud.example.com",
+        isCloudProvider: true,
+      },
+      undefined
+    );
   });
 
   it("hides API key input for cloud provider", () => {

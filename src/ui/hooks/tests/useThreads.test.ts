@@ -40,6 +40,12 @@ vi.mock("../../store/context", () => ({
   useStores: () => mockStores,
 }));
 
+const mockWidgetConfig: { entityId?: string } = {};
+
+vi.mock("../../../widget-config", () => ({
+  useWidgetConfig: () => mockWidgetConfig,
+}));
+
 // ---------------------------------------------------------------------------
 // Import after mocks
 // ---------------------------------------------------------------------------
@@ -54,6 +60,7 @@ describe("useThreads", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     effectCallbacks.length = 0;
+    mockWidgetConfig.entityId = undefined;
   });
 
   it("returns an empty object", () => {
@@ -86,5 +93,26 @@ describe("useThreads", () => {
 
     expect(mockInitThreads).not.toHaveBeenCalled();
     expect(mockInitPrompts).not.toHaveBeenCalled();
+  });
+
+  it("forwards WidgetConfig.entityId to initThreads", () => {
+    mockWidgetConfig.entityId = "e1";
+    useThreads({ isReady: true });
+
+    for (const fn of effectCallbacks) {
+      fn();
+    }
+
+    expect(mockInitThreads).toHaveBeenCalledWith("e1");
+  });
+
+  it("calls initThreads with undefined in passthrough mode", () => {
+    useThreads({ isReady: true });
+
+    for (const fn of effectCallbacks) {
+      fn();
+    }
+
+    expect(mockInitThreads).toHaveBeenCalledWith(undefined);
   });
 });

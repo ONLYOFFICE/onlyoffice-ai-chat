@@ -102,7 +102,7 @@ export const handleFunctionCall = (
   const content = [...responseMessage.content];
   const toolCallPart = {
     type: "tool-call",
-    toolCallId: `${functionCall.name}_${Date.now()}`,
+    toolCallId: crypto.randomUUID(),
     toolName: functionCall.name,
     args: functionCall.args,
     argsText: JSON.stringify(functionCall.args),

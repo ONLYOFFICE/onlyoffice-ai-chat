@@ -1,5 +1,67 @@
 # Changelog
 
+## 0.3.0
+
+Attachments are now persisted in their own IndexedDB store and
+referenced by id — composer drafts, persisted messages and
+middleware all carry lightweight refs (`{id, title, kind, ...}`),
+and core hydrates them inline only when the provider is about to
+see the message. Threads with attachments load and re-stream
+faster, and middleware no longer pulls megabytes of base64
+through every hook.
+
+- **New** `AttachmentsStorage` (`storage.attachments`) with
+  `create`, `readManyByIds`, `update`, `delete`,
+  `deleteByMessage`, `deleteByThread`. The IndexedDB schema
+  bumps to `DB_VERSION = 3` to add the new store. Custom
+  storage implementations must add an `attachments` field and
+  cascade from `messages.delete` / `deleteByThread`.
+- **New** `AttachmentsEngine` service —
+  `saveFile / saveImage / get / getMany / delete / linkToMessage` —
+  exposed through `api.attachments` so a server-hosted core can
+  serve every call over HTTP via `DEFAULT_ATTACHMENTS_ROUTES`.
+- **New** ref encoding for `ThreadMessageLike.content[]`:
+  - File: `{type:"file", mimeType: JSON({ref, title, kind, path?, type?}), data:""}`
+  - Image: `{type:"image", image: JSON({ref, title, kind}), name: title}`
+- **New** `core/actions/attachment-resolution.ts` —
+  `resolveAttachmentRefs` swaps refs for hydrated inline blocks
+  before the provider is called. Legacy inline blocks pass
+  through untouched (no migration required).
+- **Breaking** middleware/callbacks contract:
+  - `BeforeSendContext.files / .images` now `TAttachmentRef[]`
+    (was `TAttachmentFile[]` / `TAttachmentImage[]`).
+  - `BeforeSendContext.resolveAttachment(id)` added — call it
+    when a middleware needs the raw payload.
+  - `MessageSentEvent.attachments.files / .images` now
+    `TAttachmentRef[]`.
+- **Breaking** zustand attachments store: `addAttachmentFile` /
+  `addAttachmentImage` are now async (write to storage first) and
+  delete / clear cascade the storage delete. The composer button
+  and DnD handler `await` the new signatures. Per-attachment
+  ids replace `path` / `name` as the delete key.
+- Composer file picker now caps imports at 5 (was off-by-one at
+  6, despite the 5-item store limit).
+- `useMessages` clears both `attachmentFiles` and
+  `attachmentImages` on thread switch (images previously leaked
+  across thread navigation).
+
+```ts
+// before — middleware sees full base64
+beforeSend: async (ctx) => {
+  for (const img of ctx.images) console.log(img.base64.length);
+  return { action: "continue" };
+}
+
+// after — middleware sees refs, hydrates on demand
+beforeSend: async (ctx) => {
+  for (const ref of ctx.images) {
+    const full = await ctx.resolveAttachment(ref.id);
+    console.log(full?.base64?.length);
+  }
+  return { action: "continue" };
+}
+```
+
 ## 0.2.11
 
 Perf: pages now declare their own data dependencies — opening

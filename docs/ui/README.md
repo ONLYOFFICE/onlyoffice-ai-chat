@@ -29,7 +29,7 @@ EventsProvider           — CallbacksManager + ChatCallbacks props
   PlatformProvider        — PlatformAdapter
     I18nProvider           — locale + translations
       ComponentsProvider    — UI primitive overrides
-        WidgetConfigProvider — UI runtime flags (hideProfilePicker, …)
+        WidgetConfigProvider — UI runtime flags (entityId, hideProfilePicker, …)
           ApiProvider         — ServerAPI (in-process or remote engines)
             StoresProvider      — Zustand bundle
               ThemeProvider      — theme + tokens
@@ -40,6 +40,21 @@ EventsProvider           — CallbacksManager + ChatCallbacks props
 
 If you want to mount pages without the widget shell, replicate this
 chain — see [`pages.md`](./pages.md).
+
+## Entity-scoped widgets ("rooms")
+
+`WidgetConfig.entityId` binds a widget instance to a host entity
+(a document, a channel, a group). The id is opaque — it is
+forwarded by the UI layer to every scoped storage call (threads
+list, MCP servers, tool prefs, deep-mode preference, web-search
+config, and the Chat assignment lookup). Threads created in an
+entity-bound widget are tagged with the entity and won't appear
+in the unscoped sidebar; the `Default` profile fallback is
+intentionally global so a room without its own configuration
+keeps working. The value is fixed at mount — switching entity
+requires re-mounting the widget. See
+[`docs/core/storage/storage.md`](../core/storage/storage.md#entity-scoping-entityid)
+for the persistence contract.
 
 ## What is exported, and from where
 

@@ -43,11 +43,14 @@ provider.
 | Field | Type |
 | --- | --- |
 | `text` | `string` |
-| `files` | `TAttachmentFile[]` |
-| `images` | `TAttachmentImage[]` |
+| `files` | `TAttachmentRef[]` |
+| `images` | `TAttachmentRef[]` |
 | `threadId` | `string` |
 | `profile` | `Profile \| null` |
 | `existingMessages` | `ThreadMessageLike[]` |
+| `resolveAttachment` | `(id) => Promise<{ title, kind, content?, base64?, path?, type? } \| null>` |
+
+`files`/`images` carry **lightweight refs** (`{ id, title, kind, path?, type? }`) — the heavy payload (file text, image base64) lives in `storage.attachments` and is hydrated by core just before the provider sees the message. If a middleware needs the raw content (e.g. for content scanning), call `resolveAttachment(id)` to fetch it on demand.
 
 Result: `{ action: "continue", text?, files?, images? }` or
 `{ action: "block", reason? }`.

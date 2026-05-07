@@ -29,10 +29,15 @@ has resolved (and any host-side migration has finished).
 
 Loads threads and prompt templates from `StorageAdapter` into
 `useThreadsStore` / `usePromptsStore` once `isReady` flips to
-`true`.
+`true`. Threads are scoped by
+[`WidgetConfig.entityId`](../../src/widget-config.tsx) — when
+the host has bound the widget to an entity, only that entity's
+threads are loaded; otherwise the unscoped (global / passthrough)
+list is loaded. Re-fires when `entityId` changes. Prompts are
+not scoped.
 
 - Returns: nothing (side-effect only)
-- Required providers: `StoresProvider`
+- Required providers: `StoresProvider`, `WidgetConfigProvider`
 
 ### `useProfiles({ isReady })`
 
@@ -59,7 +64,12 @@ five minutes, and rebuilds the tool list when the event bus fires
 The core chat loop. Drives `AIEngine.sendStream`, renders streaming
 chunks into `useMessageStore`, persists messages to
 `StorageAdapter.messages`, orchestrates tool-call approval, and
-emits every `ChatCallbacks` event.
+emits every `ChatCallbacks` event. The current
+[`WidgetConfig.entityId`](../../src/widget-config.tsx) is forwarded
+on every `sendWithStream` / `approveToolCall` / `denyToolCall`
+call, so a freshly created thread is bound to the entity and
+the chat profile is resolved per-entity (if the host has set
+one up).
 
 ```ts
 const { onNew, approveToolCall, denyToolCall } = useMessages({ isReady });

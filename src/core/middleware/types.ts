@@ -1,5 +1,21 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
-import type { Profile, TAttachmentFile, TAttachmentImage } from "../types";
+import type { Profile, TAttachmentRef } from "../types";
+
+/**
+ * Hydration helper passed to middleware that need to read raw
+ * attachment payloads (file text content, image base64). Returns
+ * `null` when the id is unknown / has been deleted.
+ */
+export type ResolveAttachmentFn = (
+  id: string
+) => Promise<{
+  title: string;
+  kind: "file" | "image";
+  content?: string;
+  base64?: string;
+  path?: string;
+  type?: number;
+} | null>;
 
 // --- beforeSend ---
 
@@ -14,11 +30,19 @@ export interface BeforeSendContext {
   /** The raw text content of the user message. */
   text: string;
 
-  /** File attachments included with the message (PDFs, documents, etc.). */
-  files: TAttachmentFile[];
+  /**
+   * File attachment refs (lightweight `{id, title, kind, ...meta}`).
+   * Raw content lives in `storage.attachments` — call
+   * {@link BeforeSendContext.resolveAttachment} to fetch it.
+   */
+  files: TAttachmentRef[];
 
-  /** Image attachments included with the message. */
-  images: TAttachmentImage[];
+  /**
+   * Image attachment refs (lightweight `{id, title, kind, ...meta}`).
+   * Raw base64 lives in `storage.attachments` — call
+   * {@link BeforeSendContext.resolveAttachment} to fetch it.
+   */
+  images: TAttachmentRef[];
 
   /** ID of the thread the message belongs to. */
   threadId: string;
@@ -28,6 +52,12 @@ export interface BeforeSendContext {
 
   /** Messages already present in the thread before this send. */
   existingMessages: ThreadMessageLike[];
+
+  /**
+   * Hydration helper — fetches the raw payload (file text /image base64)
+   * for a single attachment id. Returns `null` for unknown / deleted ids.
+   */
+  resolveAttachment: ResolveAttachmentFn;
 }
 
 /**
@@ -40,8 +70,8 @@ export type BeforeSendResult =
   | {
       action: "continue";
       text?: string;
-      files?: TAttachmentFile[];
-      images?: TAttachmentImage[];
+      files?: TAttachmentRef[];
+      images?: TAttachmentRef[];
     }
   | { action: "block"; reason?: string };
 

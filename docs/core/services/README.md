@@ -9,7 +9,7 @@ action call cannot express on its own: profile resolution, thread
 lifecycle, credential validation, capability checks, assignment
 cascade.
 
-There are eight services today:
+There are nine services today:
 
 | Document                                                | Class             | Topic |
 | ------------------------------------------------------- | ----------------- | ----- |
@@ -21,6 +21,7 @@ There are eight services today:
 | [`prompts-engine.md`](./prompts-engine.md)              | `PromptsEngine`   | Prompt + folder CRUD with scoped name uniqueness, atomic move, versioned import / export |
 | [`web-search-engine.md`](./web-search-engine.md)        | `WebSearchEngine` | Singleton web-search config with live credential validation and atomic switch |
 | [`preferences-engine.md`](./preferences-engine.md)      | `PreferencesEngine` | Scalar preferences with default-fallback `get` and idempotent `set` |
+| [`attachments-engine.md`](./attachments-engine.md)      | `AttachmentsEngine` | Local-only draft attachments — saves files / images to `storage.attachments` and binds them to messages |
 
 ## How they compose
 
@@ -121,6 +122,21 @@ These services own:
   nothing has been persisted, idempotent writes
   (`PreferencesEngine`).
 
+### Entity scoping (`entityId`) pass-through
+
+Every engine forwards an optional `entityId` argument straight
+to storage without inspecting it (the `AIEngine` family takes it
+as a field on `SendStreamInput` / `SendInput`; the others as a
+trailing positional argument). The semantics are owned by the
+storage layer — see
+[`docs/core/storage/storage.md`](../storage/storage.md#entity-scoping-entityid).
+Engines never resolve "which entity" themselves; the host carries
+the value down from
+[`WidgetConfig.entityId`](../../../src/widget-config.tsx). The
+one notable rule the engines do enforce is that
+`AssignmentsEngine`'s `Default` fallback lookup is unscoped, so
+hosts get global defaults even inside a room.
+
 These services do **not** own:
 
 - UI state (Zustand stores) — that's `ui/store/`.
@@ -214,4 +230,10 @@ export type { WebSearchEngineDeps, WebSearchMutationResult } from "./web-search"
 
 export { PreferencesEngine, DEFAULT_PREFERENCES } from "./preferences";
 export type { PreferenceDefaults, PreferencesEngineDeps } from "./preferences";
+
+export { AttachmentsEngine, DEFAULT_ATTACHMENTS_ROUTES } from "./attachments";
+export type {
+  AttachmentsEngineDeps,
+  AttachmentsEngineMethod,
+} from "./attachments";
 ```

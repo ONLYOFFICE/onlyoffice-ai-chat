@@ -14,68 +14,47 @@
  */
 export interface ToolPrefsStorage {
   // --- Disabled tools ---
+  //
+  // Each method takes an optional opaque `entityId` last argument. When
+  // provided the implementation should scope the read/write to that
+  // entity ("room"); when omitted the unscoped (global) entry is used.
+
+  createDisabled(
+    disabled: Record<string, string[]>,
+    entityId?: string
+  ): Promise<void>;
+
+  readDisabled(entityId?: string): Promise<Record<string, string[]>>;
+
+  updateDisabled(
+    disabled: Record<string, string[]>,
+    entityId?: string
+  ): Promise<void>;
 
   /**
-   * Save the disabled-tools map for the first time. Throws if one already
-   * exists.
+   * Idempotent write — `create` if no entry has been persisted yet in
+   * the requested scope, `update` otherwise.
    */
-  createDisabled(disabled: Record<string, string[]>): Promise<void>;
+  upsertDisabled(
+    disabled: Record<string, string[]>,
+    entityId?: string
+  ): Promise<void>;
 
-  /**
-   * Read the disabled-tools map.
-   *
-   * @returns The persisted map, or `{}` if nothing is stored.
-   */
-  readDisabled(): Promise<Record<string, string[]>>;
-
-  /**
-   * Replace the existing disabled-tools map. Throws if none exists.
-   */
-  updateDisabled(disabled: Record<string, string[]>): Promise<void>;
-
-  /**
-   * Idempotent write — `create` if no entry has been persisted yet,
-   * `update` otherwise. Lets callers replace the disabled-tools map
-   * without first checking whether the row exists.
-   */
-  upsertDisabled(disabled: Record<string, string[]>): Promise<void>;
-
-  /**
-   * Clear every disabled-tool entry. Subsequent `readDisabled()` calls
-   * return `{}`.
-   */
-  deleteDisabled(): Promise<void>;
+  deleteDisabled(entityId?: string): Promise<void>;
 
   // --- Auto-approved tools ---
 
-  /**
-   * Save the auto-approved list for the first time. Throws if one already
-   * exists.
-   */
-  createAllowAlways(tokens: string[]): Promise<void>;
+  createAllowAlways(tokens: string[], entityId?: string): Promise<void>;
+
+  readAllowAlways(entityId?: string): Promise<string[]>;
+
+  updateAllowAlways(tokens: string[], entityId?: string): Promise<void>;
 
   /**
-   * Read the flat list of auto-approved `"type_name"` tokens.
-   *
-   * @returns The persisted list, or `[]` if nothing is stored.
+   * Idempotent write — `create` if no entry has been persisted yet in
+   * the requested scope, `update` otherwise.
    */
-  readAllowAlways(): Promise<string[]>;
+  upsertAllowAlways(tokens: string[], entityId?: string): Promise<void>;
 
-  /**
-   * Replace the existing auto-approved list. Throws if none exists.
-   */
-  updateAllowAlways(tokens: string[]): Promise<void>;
-
-  /**
-   * Idempotent write — `create` if no entry has been persisted yet,
-   * `update` otherwise. Lets callers replace the auto-approved list
-   * without first checking whether the row exists.
-   */
-  upsertAllowAlways(tokens: string[]): Promise<void>;
-
-  /**
-   * Clear the auto-approved list. Subsequent `readAllowAlways()` calls
-   * return `[]`.
-   */
-  deleteAllowAlways(): Promise<void>;
+  deleteAllowAlways(entityId?: string): Promise<void>;
 }

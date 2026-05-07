@@ -3,40 +3,85 @@ import type { McpServerConfig } from "../../../storage";
 import type { StorageAdapter } from "../../../storage";
 import { ToolsEngine } from "../engine";
 
-function makeStorage(seed: {
-  servers?: Record<string, McpServerConfig>;
-  disabled?: Record<string, string[]>;
-  allow?: string[];
-} = {}) {
-  let servers: Record<string, McpServerConfig> = { ...(seed.servers ?? {}) };
-  let disabled: Record<string, string[]> = { ...(seed.disabled ?? {}) };
-  let allow: string[] = [...(seed.allow ?? [])];
+type Scope = {
+  servers: Record<string, McpServerConfig>;
+  disabled: Record<string, string[]>;
+  allow: string[];
+};
+
+function makeStorage(
+  seed: {
+    servers?: Record<string, McpServerConfig>;
+    disabled?: Record<string, string[]>;
+    allow?: string[];
+    /** Per-entity scopes — independent of the global one. */
+    entityScopes?: Record<string, Partial<Scope>>;
+  } = {}
+) {
+  const global: Scope = {
+    servers: { ...(seed.servers ?? {}) },
+    disabled: { ...(seed.disabled ?? {}) },
+    allow: [...(seed.allow ?? [])],
+  };
+  const entities: Record<string, Scope> = {};
+  for (const [k, v] of Object.entries(seed.entityScopes ?? {})) {
+    entities[k] = {
+      servers: { ...(v.servers ?? {}) },
+      disabled: { ...(v.disabled ?? {}) },
+      allow: [...(v.allow ?? [])],
+    };
+  }
+
+  const scopeFor = (entityId?: string): Scope => {
+    if (entityId === undefined) return global;
+    if (!entities[entityId]) {
+      entities[entityId] = { servers: {}, disabled: {}, allow: [] };
+    }
+    return entities[entityId];
+  };
 
   const storage = {
     mcpServers: {
-      create: vi.fn(async (name: string, c: McpServerConfig) => {
-        servers[name] = c;
-      }),
-      readByName: vi.fn(async (name: string) => servers[name] ?? null),
-      readAll: vi.fn(async () => ({ ...servers })),
-      update: vi.fn(async (name: string, c: McpServerConfig) => {
-        servers[name] = c;
-      }),
-      replaceAll: vi.fn(async (m: Record<string, McpServerConfig>) => {
-        servers = { ...m };
-      }),
-      delete: vi.fn(async (name: string) => {
-        delete servers[name];
+      create: vi.fn(
+        async (name: string, c: McpServerConfig, entityId?: string) => {
+          scopeFor(entityId).servers[name] = c;
+        }
+      ),
+      readByName: vi.fn(
+        async (name: string, entityId?: string) =>
+          scopeFor(entityId).servers[name] ?? null
+      ),
+      readAll: vi.fn(async (entityId?: string) => ({
+        ...scopeFor(entityId).servers,
+      })),
+      update: vi.fn(
+        async (name: string, c: McpServerConfig, entityId?: string) => {
+          scopeFor(entityId).servers[name] = c;
+        }
+      ),
+      replaceAll: vi.fn(
+        async (m: Record<string, McpServerConfig>, entityId?: string) => {
+          scopeFor(entityId).servers = { ...m };
+        }
+      ),
+      delete: vi.fn(async (name: string, entityId?: string) => {
+        delete scopeFor(entityId).servers[name];
       }),
     },
     toolPrefs: {
-      readDisabled: vi.fn(async () => ({ ...disabled })),
-      upsertDisabled: vi.fn(async (d: Record<string, string[]>) => {
-        disabled = { ...d };
-      }),
-      readAllowAlways: vi.fn(async () => [...allow]),
-      upsertAllowAlways: vi.fn(async (l: string[]) => {
-        allow = [...l];
+      readDisabled: vi.fn(async (entityId?: string) => ({
+        ...scopeFor(entityId).disabled,
+      })),
+      upsertDisabled: vi.fn(
+        async (d: Record<string, string[]>, entityId?: string) => {
+          scopeFor(entityId).disabled = { ...d };
+        }
+      ),
+      readAllowAlways: vi.fn(async (entityId?: string) => [
+        ...scopeFor(entityId).allow,
+      ]),
+      upsertAllowAlways: vi.fn(async (l: string[], entityId?: string) => {
+        scopeFor(entityId).allow = [...l];
       }),
     },
   } as unknown as StorageAdapter;
@@ -44,10 +89,18 @@ function makeStorage(seed: {
   return {
     storage,
     snapshot: () => ({
-      servers: { ...servers },
-      disabled: { ...disabled },
-      allow: [...allow],
+      servers: { ...global.servers },
+      disabled: { ...global.disabled },
+      allow: [...global.allow],
     }),
+    entitySnapshot: (entityId: string): Scope | undefined =>
+      entities[entityId]
+        ? {
+            servers: { ...entities[entityId].servers },
+            disabled: { ...entities[entityId].disabled },
+            allow: [...entities[entityId].allow],
+          }
+        : undefined,
   };
 }
 
@@ -236,5 +289,92 @@ describe("ToolsEngine allow-always", () => {
     expect(await engine.getAllowAlways()).toEqual(["a_b"]);
     expect(await engine.isAllowAlways("a", "b")).toBe(true);
     expect(await engine.isAllowAlways("a", "c")).toBe(false);
+  });
+});
+
+describe("ToolsEngine entity scope", () => {
+  it("addCustomServer + listCustomServers persist into the requested scope", async () => {
+    const { storage, snapshot, entitySnapshot } = makeStorage();
+    const engine = new ToolsEngine({ storage });
+    await engine.addCustomServer("e-only", { url: "http://x" }, "e1");
+    expect(snapshot().servers).toEqual({});
+    expect(entitySnapshot("e1")?.servers).toEqual({
+      "e-only": { url: "http://x" },
+    });
+    expect(await engine.listCustomServers("e1")).toEqual({
+      "e-only": { url: "http://x" },
+    });
+    expect(await engine.listCustomServers()).toEqual({});
+  });
+
+  it("same server name can coexist across scopes without colliding", async () => {
+    const { storage } = makeStorage();
+    const engine = new ToolsEngine({ storage });
+    const a = await engine.addCustomServer("foo", { url: "http://a" }, "e1");
+    const b = await engine.addCustomServer("foo", { url: "http://b" }, "e2");
+    expect(a.success).toBe(true);
+    expect(b.success).toBe(true);
+    expect(await engine.getCustomServer("foo", "e1")).toEqual({
+      url: "http://a",
+    });
+    expect(await engine.getCustomServer("foo", "e2")).toEqual({
+      url: "http://b",
+    });
+    expect(await engine.getCustomServer("foo")).toBeNull();
+  });
+
+  it("setDisabled + getDisabled scope independently", async () => {
+    const { storage, snapshot, entitySnapshot } = makeStorage();
+    const engine = new ToolsEngine({ storage });
+    await engine.setDisabled("mcp", ["a"], "e1");
+    expect(snapshot().disabled).toEqual({});
+    expect(entitySnapshot("e1")?.disabled).toEqual({ mcp: ["a"] });
+    expect(await engine.getDisabled("e1")).toEqual({ mcp: ["a"] });
+    expect(await engine.getDisabled()).toEqual({});
+  });
+
+  it("isToolDisabled honors entity scope", async () => {
+    const { storage } = makeStorage({
+      entityScopes: { e1: { disabled: { mcp: ["a"] } } },
+    });
+    const engine = new ToolsEngine({ storage });
+    expect(await engine.isToolDisabled("mcp", "a", "e1")).toBe(true);
+    expect(await engine.isToolDisabled("mcp", "a")).toBe(false);
+  });
+
+  it("setAllowAlways + isAllowAlways scope independently", async () => {
+    const { storage, snapshot, entitySnapshot } = makeStorage();
+    const engine = new ToolsEngine({ storage });
+    await engine.setAllowAlways("mcp", "tool1", true, "e1");
+    expect(snapshot().allow).toEqual([]);
+    expect(entitySnapshot("e1")?.allow).toEqual(["mcp_tool1"]);
+    expect(await engine.isAllowAlways("mcp", "tool1", "e1")).toBe(true);
+    expect(await engine.isAllowAlways("mcp", "tool1")).toBe(false);
+  });
+
+  it("removeCustomServer only deletes from the requested scope", async () => {
+    const { storage, entitySnapshot, snapshot } = makeStorage({
+      servers: { foo: { url: "http://global" } },
+      entityScopes: { e1: { servers: { foo: { url: "http://entity" } } } },
+    });
+    const engine = new ToolsEngine({ storage });
+    await engine.removeCustomServer("foo", "e1");
+    expect(entitySnapshot("e1")?.servers).toEqual({});
+    expect(snapshot().servers).toEqual({ foo: { url: "http://global" } });
+  });
+
+  it("replaceAllCustomServers replaces only the requested scope", async () => {
+    const { storage, entitySnapshot, snapshot } = makeStorage({
+      servers: { keep: { url: "http://keep" } },
+    });
+    const engine = new ToolsEngine({ storage });
+    await engine.replaceAllCustomServers(
+      { newOne: { url: "http://new" } },
+      "e1"
+    );
+    expect(entitySnapshot("e1")?.servers).toEqual({
+      newOne: { url: "http://new" },
+    });
+    expect(snapshot().servers).toEqual({ keep: { url: "http://keep" } });
   });
 });

@@ -1,4 +1,5 @@
 import type { AssignmentsStorage } from "./assignments";
+import type { AttachmentsStorage } from "./attachments";
 import type { McpServersStorage } from "./mcp-servers";
 import type { MessagesStorage } from "./messages";
 import type { PreferencesStorage } from "./preferences";
@@ -34,6 +35,7 @@ import type { WebSearchStorage } from "./web-search";
  *   mcpServers: new MyMcpServersStorage(),
  *   toolPrefs: new MyToolPrefsStorage(),
  *   webSearch: new MyWebSearchStorage(),
+ *   attachments: new MyAttachmentsStorage(),
  *
  *   async init() {
  *     // Open database connection, run migrations, etc.
@@ -75,6 +77,9 @@ export interface StorageAdapter {
 
   /** Singleton web-search provider configuration. */
   webSearch: WebSearchStorage;
+
+  /** User-message attachment storage (files + images). */
+  attachments: AttachmentsStorage;
 
   /**
    * Initialize the storage backend (create DB/tables, run migrations).

@@ -77,6 +77,13 @@ export interface CreateStoresConfig {
   keys: StoreKeys;
   ctx: AppContext;
   api: ServerAPI;
+  /**
+   * Opaque scope token (entity / "room") forwarded to every scoped API
+   * call. When `undefined`, stores operate on the unscoped (passthrough)
+   * namespace. Fixed for the lifetime of the bundle — re-create the
+   * stores with a new value to switch scope.
+   */
+  entityId?: string;
 }
 
 /**
@@ -88,10 +95,10 @@ export interface CreateStoresConfig {
  * mutable state.
  */
 export function createStores(config: CreateStoresConfig): Stores {
-  const { keys, ctx, api } = config;
+  const { keys, ctx, api, entityId } = config;
 
   const useMessageStore = createMessageStore({ ctx, api });
-  const useProfilesStore = createProfilesStore({ keys, ctx, api });
+  const useProfilesStore = createProfilesStore({ keys, ctx, api, entityId });
   const useThreadsStore = createThreadsStore({
     api,
     platform: ctx.platform,
@@ -103,9 +110,13 @@ export function createStores(config: CreateStoresConfig): Stores {
     ctx,
     api,
     callbacksManager: ctx.callbacksManager,
+    entityId,
   });
   const usePromptsStore = createPromptsStore({ api });
-  const useAttachmentsStore = createAttachmentsStore();
+  const useAttachmentsStore = createAttachmentsStore({
+    attachments: api.attachments,
+    entityId,
+  });
   const useThemeStore = createThemeStore(ctx);
   const useRouter = createRouterStore();
   const useCloudsStore = createCloudsStore(ctx);

@@ -59,7 +59,7 @@ const ComposerActionAttachment = () => {
         path,
         isSpreadsheetFile ? 260 : 69
       );
-      addAttachmentFile({ path, content, type });
+      await addAttachmentFile({ path, content, type });
     },
     [platform.file, addAttachmentFile]
   );
@@ -69,14 +69,14 @@ const ComposerActionAttachment = () => {
     const files = await platform.file.pickFiles();
     if (!files) return;
 
-    for (const file of files.slice(0, 6)) {
+    for (const file of files.slice(0, 5)) {
       const type = platform.file.getFileType(file.path);
       const isSpreadsheetFile = isSpreadsheet(type);
       const content = await platform.file.convertFileToText(
         file.path,
         isSpreadsheetFile ? 260 : 69
       );
-      addAttachmentFile({ path: file.path, content: content || "", type });
+      await addAttachmentFile({ path: file.path, content: content || "", type });
     }
   };
 
@@ -206,9 +206,9 @@ const ComposerActionAttachment = () => {
 
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const base64 = event.target?.result as string;
-        addAttachmentImage({ name: file.name, base64 });
+        await addAttachmentImage({ name: file.name, base64 });
       };
       reader.readAsDataURL(file);
     });

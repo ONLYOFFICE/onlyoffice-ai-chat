@@ -220,6 +220,9 @@ export type Prompt = {
 /**
  * File attachment for sending documents to the AI model.
  * Files are converted to text before being sent to the provider.
+ *
+ * Internal hydrated form — used by the resolver and storage records.
+ * UI-side draft state and middleware/callbacks see {@link TAttachmentRef}.
  */
 export type TAttachmentFile = {
   /** File path in the host application's file system. */
@@ -234,6 +237,9 @@ export type TAttachmentFile = {
 
 /**
  * Image attachment for sending images to the AI model (vision/OCR).
+ *
+ * Internal hydrated form. UI-side draft state and middleware/callbacks
+ * see {@link TAttachmentRef}.
  */
 export type TAttachmentImage = {
   /** Image file name (e.g. `"screenshot.png"`). */
@@ -241,6 +247,33 @@ export type TAttachmentImage = {
 
   /** Base64-encoded image data. */
   base64: string;
+};
+
+/**
+ * Lightweight attachment reference held by the composer draft state and
+ * passed into middleware (`beforeSend`) and the `onMessageSent` callback.
+ *
+ * The full payload (file text content / image base64) lives in
+ * `storage.attachments` and is hydrated only inside core right before
+ * the provider sees the message. Hosts that need raw content from a
+ * middleware should call the `resolveAttachment(id)` helper available
+ * on `BeforeSendContext`.
+ */
+export type TAttachmentRef = {
+  /** Storage-assigned id (UUID). */
+  id: string;
+
+  /** Display label (filename or user-visible title). */
+  title: string;
+
+  /** Discriminates between files and images. */
+  kind: "file" | "image";
+
+  /** Original host file path (only for `kind === "file"`). */
+  path?: string;
+
+  /** ONLYOFFICE file type code (only for `kind === "file"`). */
+  type?: number;
 };
 
 /**

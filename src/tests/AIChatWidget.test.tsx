@@ -56,6 +56,7 @@ vi.mock("../core/middleware", () => ({
 vi.mock("../core/services", () => ({
   AIEngine: class {},
   AssignmentsEngine: class {},
+  AttachmentsEngine: class {},
   PreferencesEngine: class {},
   ProfilesEngine: class {},
   PromptsEngine: class {},

@@ -19,12 +19,23 @@ export interface AssignmentsStorage {
   create(actionType: ActionType, profileId: string): Promise<void>;
 
   /**
-   * Get the profile ID assigned to an action type.
+   * Get the profile ID assigned to an action type, optionally scoped
+   * to an entity ("room").
+   *
+   * The engine treats `entityId` as opaque and forwards it untouched —
+   * implementations decide what to do with it. Typical usage: when
+   * `actionType === ActionType.Chat` and `entityId != null`, return the
+   * entity's per-room chat profile instead of the globally assigned one.
+   * For all other action types `entityId` is normally ignored.
    *
    * @param actionType - The action to look up.
+   * @param entityId - Optional opaque scope token.
    * @returns The assigned profile ID, or `null` if no assignment exists.
    */
-  readByType(actionType: ActionType): Promise<string | null>;
+  readByType(
+    actionType: ActionType,
+    entityId?: string
+  ): Promise<string | null>;
 
   /**
    * Retrieve every assignment as a map. Missing entries are omitted.

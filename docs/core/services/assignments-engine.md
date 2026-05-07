@@ -102,16 +102,25 @@ action right now?". Used by `AIEngine` for every public method.
 ### Signature
 
 ```ts
-async resolveForAction(actionType: ActionType): Promise<ResolvedAssignment>;
+async resolveForAction(
+  actionType: ActionType,
+  /** Opaque scope token — see WidgetConfig.entityId. */
+  entityId?: string
+): Promise<ResolvedAssignment>;
 
 type ResolvedAssignment = { profileId: string; profile: Profile };
 ```
 
 ### What it does
 
-1. `storage.assignments.readByType(actionType)` — direct lookup.
+1. `storage.assignments.readByType(actionType, entityId)` —
+   scoped direct lookup. Storage typically honours `entityId`
+   only when `actionType === ActionType.Chat`, returning a
+   per-room chat profile when one is configured.
 2. If `null`, fall back to
-   `storage.assignments.readByType(ActionType.Default)`.
+   `storage.assignments.readByType(ActionType.Default)` —
+   **always unscoped**, since the engine treats per-entity
+   defaults as out of scope.
 3. If both are `null`, throw
    `"No profile assigned to ActionType.<X> and no default set"`.
 4. Read the resolved profile from `storage.profiles`.
@@ -140,7 +149,10 @@ instead of throwing when both the specific slot and `Default` are
 empty.
 
 ```ts
-async tryResolveForAction(actionType: ActionType): Promise<ResolvedAssignment | null>;
+async tryResolveForAction(
+  actionType: ActionType,
+  entityId?: string
+): Promise<ResolvedAssignment | null>;
 ```
 
 The "assigned profile not found" branch still throws — a dangling

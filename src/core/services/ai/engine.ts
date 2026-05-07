@@ -1,6 +1,11 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { ActionType } from "../../../shared/action-type";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import {
+  extractRefIdsFromMessage,
+  resolveAttachmentRefs,
+} from "../../actions/attachment-resolution";
+import { AttachmentsEngine } from "../attachments";
 import { chat } from "../../actions/chat";
 import { generateTitle } from "../../actions/title";
 import type { ActionArgs } from "../../actions/types";
@@ -65,17 +70,21 @@ export class AIEngine {
   private readonly assignments: AssignmentsEngine;
   private readonly threads: ThreadsEngine;
 
+  private readonly attachments: AttachmentsEngine;
+
   constructor(deps: AIEngineDeps) {
     this.deps = deps;
     this.assignments =
       deps.assignments ?? new AssignmentsEngine({ storage: deps.storage });
     this.threads =
       deps.threads ?? new ThreadsEngine({ storage: deps.storage });
+    this.attachments = new AttachmentsEngine({ storage: deps.storage });
   }
 
   async *sendWithStream(input: SendStreamInput): AsyncGenerator<ChatEvent> {
     const { profileId, profile } = await this.assignments.resolveForAction(
-      ActionType.Chat
+      ActionType.Chat,
+      input.entityId
     );
 
     let threadId = input.threadId ?? "";
@@ -85,10 +94,15 @@ export class AIEngine {
 
     if (!isNewThread) {
       priorMessages = await this.deps.storage.messages.readByThread(threadId);
-      await this.threads.appendUserMessage(
+      const messageId = await this.threads.appendUserMessage(
         threadId,
         input.userMessage,
         profileId
+      );
+      await this.attachments.linkToMessage(
+        extractRefIdsFromMessage(input.userMessage),
+        messageId,
+        threadId
       );
     } else {
       // Create the thread up-front with a placeholder title so the stream
@@ -97,10 +111,21 @@ export class AIEngine {
       // assistant reply have settled.
       const placeholder = await this.deps.storage.threads.create(
         "New chat",
-        profileId
+        profileId,
+        input.entityId
       );
       threadId = placeholder.threadId;
-      await this.deps.storage.messages.create(threadId, input.userMessage);
+      const stored = await this.deps.storage.messages.create(
+        threadId,
+        input.userMessage
+      );
+      if (stored.id) {
+        await this.attachments.linkToMessage(
+          extractRefIdsFromMessage(input.userMessage),
+          stored.id,
+          threadId
+        );
+      }
 
       // Surface the placeholder thread to the UI immediately so it shows up
       // in the threads list and the active threadId switches over before the
@@ -124,13 +149,17 @@ export class AIEngine {
     const toolCtx = await buildToolContext(
       this.deps.storage,
       this.deps.toolsAdapter,
-      input.actionArgs?.tools ?? []
+      input.actionArgs?.tools ?? [],
+      input.entityId
     );
 
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
       profile,
-      messages: [...priorMessages, input.userMessage],
+      messages: await resolveAttachmentRefs(
+        [...priorMessages, input.userMessage],
+        this.deps.storage.attachments
+      ),
       tools: toolCtx.mergedTools,
     };
 
@@ -142,6 +171,7 @@ export class AIEngine {
       tools: toolCtx.mergedTools,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
+      entityId: input.entityId,
     });
 
     yield* this.runChatStream(stream, toolCtx, {
@@ -150,6 +180,7 @@ export class AIEngine {
       tools: toolCtx.mergedTools,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
+      entityId: input.entityId,
     });
 
     if (titlePromise) {
@@ -171,12 +202,14 @@ export class AIEngine {
     if (input.allowAlways) {
       const toolCall = readToolCall(input.message, input.idx);
       if (toolCall) {
-        const current = await this.deps.storage.toolPrefs.readAllowAlways();
+        const current = await this.deps.storage.toolPrefs.readAllowAlways(
+          input.entityId
+        );
         if (!current.includes(toolCall.toolName)) {
-          await this.deps.storage.toolPrefs.upsertAllowAlways([
-            ...current,
-            toolCall.toolName,
-          ]);
+          await this.deps.storage.toolPrefs.upsertAllowAlways(
+            [...current, toolCall.toolName],
+            input.entityId
+          );
         }
       }
     }
@@ -204,13 +237,15 @@ export class AIEngine {
     result: unknown
   ): AsyncGenerator<ChatEvent> {
     const { profile, profileId } = await this.assignments.resolveForAction(
-      ActionType.Chat
+      ActionType.Chat,
+      input.entityId
     );
 
     const toolCtx = await buildToolContext(
       this.deps.storage,
       this.deps.toolsAdapter,
-      input.actionArgs?.tools ?? []
+      input.actionArgs?.tools ?? [],
+      input.entityId
     );
     const runCtx: AdapterRunContext = {
       profile,
@@ -218,6 +253,7 @@ export class AIEngine {
       tools: toolCtx.mergedTools,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
+      entityId: input.entityId,
     };
 
     const resumed = resumeChat(
@@ -233,6 +269,7 @@ export class AIEngine {
         isReasoning: input.actionArgs?.isReasoning,
         signal: input.actionArgs?.signal,
         tools: toolCtx.mergedTools,
+        entityId: input.entityId,
       }
     );
 
@@ -279,7 +316,8 @@ export class AIEngine {
 
   async send(input: SendInput): Promise<ThreadMessageLike> {
     const { profile } = await this.assignments.resolveForAction(
-      input.actionType
+      input.actionType,
+      input.entityId
     );
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
@@ -300,4 +338,5 @@ export class AIEngine {
       : runCustomOnce(this.assignments, input);
   }
 }
+
 

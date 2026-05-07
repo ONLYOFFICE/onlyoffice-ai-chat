@@ -185,7 +185,8 @@ describe("executeAdapterTool", () => {
     expect(callWebSearchToolMock).toHaveBeenCalledWith(
       expect.anything(),
       "web_search",
-      { q: 1 }
+      { q: 1 },
+      undefined
     );
     expect(resumeChatMock).toHaveBeenCalledWith(
       expect.anything(),

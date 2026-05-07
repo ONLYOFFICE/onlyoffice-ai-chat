@@ -5,6 +5,7 @@ import { getApiKeyLink } from "../../../../shared/api-key-links";
 import { cn } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
+import { useWidgetConfig } from "../../../../widget-config";
 
 type WebSearchProps = {
   variant?: "tab" | "page";
@@ -36,6 +37,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const { t, isRTL } = useI18n();
   const { eventBus } = useToolsContext();
   const { useCloudsStore, api, callbacksManager } = useStores();
+  const { entityId } = useWidgetConfig();
   const { cloudProviders, externalOnlyofficeConfig, hiddenWebSearchProviders } =
     useCloudsStore();
   const hiddenWebSearchSet = React.useMemo(
@@ -68,9 +70,9 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
       lastPersistedRef.current = data;
       selfInitiatedRef.current = true;
       if (data) {
-        await api.webSearch.setActiveConfig(data);
+        await api.webSearch.setActiveConfig(data, entityId);
       } else {
-        await api.webSearch.clear();
+        await api.webSearch.clear(entityId);
       }
       eventBus.emit("web-search-changed");
       if (changed) {
@@ -81,7 +83,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
         });
       }
     },
-    [api, callbacksManager, eventBus]
+    [api, callbacksManager, eventBus, entityId]
   );
 
   const allProviders = React.useMemo<WebSearchProvider[]>(
@@ -119,7 +121,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
         selfInitiatedRef.current = false;
         return;
       }
-      const data = (await api.webSearch.getActiveConfig()) as
+      const data = (await api.webSearch.getActiveConfig(entityId)) as
         | WebSearchData
         | null;
       if (cancelled) return;
@@ -143,7 +145,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
       cancelled = true;
       eventBus.off("web-search-changed", syncFromStorage);
     };
-  }, [api, eventBus]);
+  }, [api, eventBus, entityId]);
 
   const saveData = (desc: WebSearchProvider) => {
     const resolvedUrl = desc.baseUrl ?? baseUrl;

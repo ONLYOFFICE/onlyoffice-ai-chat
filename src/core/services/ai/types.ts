@@ -77,6 +77,14 @@ export type SendStreamInput = {
 
   /** Forwarded to the underlying action. `profile` and `messages` are owned by the engine. */
   actionArgs?: Omit<ActionArgs, "profile" | "messages">;
+
+  /**
+   * Opaque scope token forwarded to
+   * {@link AssignmentsEngine.resolveForAction} (so the storage layer
+   * can return an entity-specific Chat profile) and persisted on a
+   * freshly created thread. The engine never inspects the value.
+   */
+  entityId?: string;
 };
 
 /**
@@ -97,6 +105,13 @@ export type SendInput = {
 
   /** Forwarded to the underlying action. `profile` and `messages` are owned by the engine. */
   actionArgs?: Omit<ActionArgs, "profile" | "messages">;
+
+  /**
+   * Opaque scope token forwarded to
+   * {@link AssignmentsEngine.resolveForAction}. Storage decides whether
+   * to apply it (typically only for `ActionType.Chat`).
+   */
+  entityId?: string;
 };
 
 /**
@@ -121,7 +136,7 @@ export type SendCustomInput = {
  * abort signal, `isReasoning` flag, and tool list as the original
  * `sendWithStream` request.
  */
-export type ToolCallData = Pick<SendStreamInput, "actionArgs"> & {
+export type ToolCallData = Pick<SendStreamInput, "actionArgs" | "entityId"> & {
   /** Thread the assistant message belongs to. */
   threadId: string;
 

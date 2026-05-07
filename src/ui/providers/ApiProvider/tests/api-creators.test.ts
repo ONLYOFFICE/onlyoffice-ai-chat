@@ -73,8 +73,8 @@ describe("createAssignmentsApi", () => {
     api.getAssignment("Chat" as never);
     api.getAllAssignments();
     api.cascadeProfileDelete("p1");
-    expectCall(1, "assignments", "resolveForAction", ["Chat"]);
-    expectCall(2, "assignments", "tryResolveForAction", ["Chat"]);
+    expectCall(1, "assignments", "resolveForAction", ["Chat", undefined]);
+    expectCall(2, "assignments", "tryResolveForAction", ["Chat", undefined]);
     expectCall(3, "assignments", "assign", ["Chat", "p1"]);
     expectCall(4, "assignments", "unassign", ["Chat"]);
     expectCall(5, "assignments", "bulkAssign", [[{ a: 1 }]]);
@@ -91,10 +91,10 @@ describe("createPreferencesApi", () => {
     api.setDeepMode(true as never);
     api.clearDeepMode();
     api.isDeepModeSet();
-    expectCall(1, "preferences", "getDeepMode", []);
-    expectCall(2, "preferences", "setDeepMode", [true]);
-    expectCall(3, "preferences", "clearDeepMode", []);
-    expectCall(4, "preferences", "isDeepModeSet", []);
+    expectCall(1, "preferences", "getDeepMode", [undefined]);
+    expectCall(2, "preferences", "setDeepMode", [true, undefined]);
+    expectCall(3, "preferences", "clearDeepMode", [undefined]);
+    expectCall(4, "preferences", "isDeepModeSet", [undefined]);
   });
 });
 
@@ -182,7 +182,7 @@ describe("createThreadsApi", () => {
     expectCall(6, "threads", "delete", ["t1"]);
     expectCall(7, "threads", "clearMessages", ["t1"]);
     expectCall(8, "threads", "regenerateTitle", ["t1", { id: "p1" }]);
-    expectCall(9, "threads", "list", []);
+    expectCall(9, "threads", "list", [undefined]);
     expectCall(10, "threads", "readMessages", ["t1", 10, 0]);
     expectCall(11, "threads", "getById", ["t1"]);
     expectCall(12, "threads", "getMessageById", ["m1"]);
@@ -207,18 +207,26 @@ describe("createToolsApi", () => {
     api.setAllowAlways("custom" as never, "t1", true);
     api.getAllowAlways();
     api.isAllowAlways("custom" as never, "t1");
-    expectCall(1, "tools", "addCustomServer", ["s", cfg]);
-    expectCall(2, "tools", "updateCustomServer", ["s", cfg]);
-    expectCall(3, "tools", "removeCustomServer", ["s"]);
-    expectCall(4, "tools", "getCustomServer", ["s"]);
-    expectCall(5, "tools", "listCustomServers", []);
-    expectCall(6, "tools", "replaceAllCustomServers", [{ s: cfg }]);
-    expectCall(7, "tools", "setDisabled", ["custom", ["t1"]]);
-    expectCall(8, "tools", "getDisabled", []);
-    expectCall(9, "tools", "isToolDisabled", ["custom", "t1"]);
-    expectCall(10, "tools", "setAllowAlways", ["custom", "t1", true]);
-    expectCall(11, "tools", "getAllowAlways", []);
-    expectCall(12, "tools", "isAllowAlways", ["custom", "t1"]);
+    expectCall(1, "tools", "addCustomServer", ["s", cfg, undefined]);
+    expectCall(2, "tools", "updateCustomServer", ["s", cfg, undefined]);
+    expectCall(3, "tools", "removeCustomServer", ["s", undefined]);
+    expectCall(4, "tools", "getCustomServer", ["s", undefined]);
+    expectCall(5, "tools", "listCustomServers", [undefined]);
+    expectCall(6, "tools", "replaceAllCustomServers", [
+      { s: cfg },
+      undefined,
+    ]);
+    expectCall(7, "tools", "setDisabled", ["custom", ["t1"], undefined]);
+    expectCall(8, "tools", "getDisabled", [undefined]);
+    expectCall(9, "tools", "isToolDisabled", ["custom", "t1", undefined]);
+    expectCall(10, "tools", "setAllowAlways", [
+      "custom",
+      "t1",
+      true,
+      undefined,
+    ]);
+    expectCall(11, "tools", "getAllowAlways", [undefined]);
+    expectCall(12, "tools", "isAllowAlways", ["custom", "t1", undefined]);
   });
 });
 
@@ -230,11 +238,11 @@ describe("createWebSearchApi", () => {
     api.testConnection({ apiKey: "k" } as never);
     api.configure({ apiKey: "k" } as never);
     api.clear();
-    expectCall(1, "webSearch", "getActiveConfig", []);
-    expectCall(2, "webSearch", "isConfigured", []);
+    expectCall(1, "webSearch", "getActiveConfig", [undefined]);
+    expectCall(2, "webSearch", "isConfigured", [undefined]);
     expectCall(3, "webSearch", "testConnection", [{ apiKey: "k" }]);
-    expectCall(4, "webSearch", "configure", [{ apiKey: "k" }]);
-    expectCall(5, "webSearch", "clear", []);
+    expectCall(4, "webSearch", "configure", [{ apiKey: "k" }, undefined]);
+    expectCall(5, "webSearch", "clear", [undefined]);
   });
 });
 

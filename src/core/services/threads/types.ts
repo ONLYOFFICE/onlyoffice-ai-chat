@@ -49,6 +49,11 @@ export type OpenOrCreateInput = {
   profile: Profile;
   profileId: string;
   firstMessage: ThreadMessageLike;
+  /**
+   * Opaque scope token persisted on a freshly created thread. Ignored
+   * when `threadId` is provided (the existing thread keeps its scope).
+   */
+  entityId?: string;
 };
 
 /** Resolved thread state returned by {@link ThreadsEngine.openOrCreate}. */

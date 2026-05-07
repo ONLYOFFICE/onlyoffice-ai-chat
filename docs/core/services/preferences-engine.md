@@ -71,20 +71,27 @@ streaming chat. Per-provider behaviour:
 the caller; the host typically threads `engine.getDeepMode()`
 into that arg.
 
+All four methods accept an optional `entityId` last argument
+that scopes the read/write to a "room" (see
+[`WidgetConfig.entityId`](../../../src/widget-config.tsx)). When
+omitted, they operate on the unscoped (global) value.
+
 ### `getDeepMode`
 
 ```ts
-async getDeepMode(): Promise<boolean>;
+async getDeepMode(entityId?: string): Promise<boolean>;
 ```
 
-Returns the persisted value if one exists, otherwise the
-configured default. **Never returns `null`** — that's the whole
-point of having an engine over the storage.
+Returns the persisted value for `entityId` if one exists,
+otherwise the configured default. **Never returns `null`** —
+that's the whole point of having an engine over the storage. The
+default is the same across scopes; per-entity defaults are not a
+concept the engine tracks.
 
 ### `setDeepMode`
 
 ```ts
-async setDeepMode(value: boolean): Promise<void>;
+async setDeepMode(value: boolean, entityId?: string): Promise<void>;
 ```
 
 Idempotent — uses `upsertDeepMode` so callers don't have to
@@ -95,16 +102,17 @@ across reloads, distinct from "never set").
 ### `clearDeepMode`
 
 ```ts
-async clearDeepMode(): Promise<void>;
+async clearDeepMode(entityId?: string): Promise<void>;
 ```
 
-Removes the persisted value. Future `getDeepMode` calls fall back
-to the default. Use for "Reset to default" UX.
+Removes the persisted value in the requested scope. Future
+`getDeepMode` calls in that scope fall back to the default. Use
+for "Reset to default" UX.
 
 ### `isDeepModeSet`
 
 ```ts
-async isDeepModeSet(): Promise<boolean>;
+async isDeepModeSet(entityId?: string): Promise<boolean>;
 ```
 
 True if the user has explicitly persisted *some* value (regardless

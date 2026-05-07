@@ -13,3 +13,4 @@ export type {
   ThreadsStoreState,
 } from "./create-stores";
 export { createStores } from "./create-stores";
+export { selectImageBase64 } from "./create-attachments-store";

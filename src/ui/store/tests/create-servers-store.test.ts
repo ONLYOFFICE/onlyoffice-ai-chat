@@ -105,7 +105,11 @@ describe("createServersStore", () => {
     });
     const s = createServersStore(deps);
     await s.getState().changeToolStatus("mcp", "a", false);
-    expect(deps.api.tools.setDisabled).toHaveBeenCalledWith("mcp", ["a"]);
+    expect(deps.api.tools.setDisabled).toHaveBeenCalledWith(
+      "mcp",
+      ["a"],
+      undefined
+    );
     expect(deps.callbacksManager.emit).toHaveBeenCalledWith("onServersUpdated", {
       kind: "tool-toggled",
       toolType: "mcp",
@@ -122,7 +126,11 @@ describe("createServersStore", () => {
     const s = createServersStore(deps);
     s.setState({ disabledTools: { mcp: ["a", "b"] } });
     await s.getState().changeToolStatus("mcp", "a", true);
-    expect(deps.api.tools.setDisabled).toHaveBeenCalledWith("mcp", ["b"]);
+    expect(deps.api.tools.setDisabled).toHaveBeenCalledWith(
+      "mcp",
+      ["b"],
+      undefined
+    );
   });
 
   it("changeToolStatus dedupes when disabling already-disabled tool", async () => {
@@ -130,7 +138,11 @@ describe("createServersStore", () => {
     const s = createServersStore(deps);
     s.setState({ disabledTools: { mcp: ["a"] } });
     await s.getState().changeToolStatus("mcp", "a", false);
-    expect(deps.api.tools.setDisabled).toHaveBeenCalledWith("mcp", ["a"]);
+    expect(deps.api.tools.setDisabled).toHaveBeenCalledWith(
+      "mcp",
+      ["a"],
+      undefined
+    );
   });
 
   describe("changeToolStatus — optimistic local update", () => {
@@ -152,7 +164,11 @@ describe("createServersStore", () => {
       await s.getState().changeToolStatus("mcp", "a", false);
 
       expect(deps.api.tools.setDisabled).toHaveBeenCalledTimes(1);
-      expect(deps.api.tools.setDisabled).toHaveBeenCalledWith("mcp", ["a"]);
+      expect(deps.api.tools.setDisabled).toHaveBeenCalledWith(
+      "mcp",
+      ["a"],
+      undefined
+    );
       // Refactor target: do NOT rebuild the whole tool tree on toggle.
       expect(deps.api.tools.getDisabled).not.toHaveBeenCalled();
       expect(deps.api.webSearch.isConfigured).not.toHaveBeenCalled();
@@ -184,7 +200,11 @@ describe("createServersStore", () => {
 
       await s.getState().changeToolStatus("mcp", "a", true);
 
-      expect(deps.api.tools.setDisabled).toHaveBeenCalledWith("mcp", []);
+      expect(deps.api.tools.setDisabled).toHaveBeenCalledWith(
+        "mcp",
+        [],
+        undefined
+      );
       expect(deps.api.tools.getDisabled).not.toHaveBeenCalled();
       expect(deps.servers.getTools).not.toHaveBeenCalled();
 
@@ -254,7 +274,8 @@ describe("createServersStore", () => {
     const config = { mcpServers: { a: { command: "x" } } };
     await s.getState().saveConfig(config);
     expect(deps.api.tools.replaceAllCustomServers).toHaveBeenCalledWith(
-      config.mcpServers
+      config.mcpServers,
+      undefined
     );
     expect(deps.servers.setCustomServers).toHaveBeenCalledWith(config);
     expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
@@ -267,7 +288,10 @@ describe("createServersStore", () => {
     const deps = makeDeps();
     const s = createServersStore(deps);
     await s.getState().deleteCustomServer("foo");
-    expect(deps.api.tools.removeCustomServer).toHaveBeenCalledWith("foo");
+    expect(deps.api.tools.removeCustomServer).toHaveBeenCalledWith(
+      "foo",
+      undefined
+    );
     expect(deps.servers.deleteCustomServer).toHaveBeenCalledWith("foo");
     expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
       "onServersUpdated",

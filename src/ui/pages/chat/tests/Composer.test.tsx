@@ -61,6 +61,7 @@ function setupStores(overrides?: {
   attachmentImages?: { name: string; base64: string }[];
   currentProfile?: { id: string; name: string } | null;
   hideProfilePicker?: boolean;
+  entityId?: string;
 }) {
   const attachmentsState = {
     attachmentFiles: overrides?.attachmentFiles ?? [],
@@ -81,6 +82,7 @@ function setupStores(overrides?: {
   });
   mockUseWidgetConfig.mockReturnValue({
     hideProfilePicker: overrides?.hideProfilePicker ?? false,
+    entityId: overrides?.entityId,
   });
 }
 
@@ -151,5 +153,19 @@ describe("Composer", () => {
     render(<Composer />);
     expect(screen.queryByText("Ask")).not.toBeInTheDocument();
     expect(screen.queryByTestId("select-model")).not.toBeInTheDocument();
+  });
+
+  it("hides the profile selector when entityId is set (room mode)", () => {
+    setupStores({ entityId: "e1" });
+    render(<Composer />);
+    expect(screen.queryByText("Ask")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("select-model")).not.toBeInTheDocument();
+  });
+
+  it("shows the profile selector in passthrough mode (entityId undefined)", () => {
+    setupStores({ entityId: undefined });
+    render(<Composer />);
+    expect(screen.getByText("Ask")).toBeInTheDocument();
+    expect(screen.getByTestId("select-model")).toBeInTheDocument();
   });
 });

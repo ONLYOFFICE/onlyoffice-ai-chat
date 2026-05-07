@@ -59,14 +59,15 @@ export type ToolContext = {
 export async function buildToolContext(
   storage: StorageAdapter,
   adapter: ToolsAdapter | undefined,
-  userTools: TMCPItem[]
+  userTools: TMCPItem[],
+  entityId?: string
 ): Promise<ToolContext> {
   const [adapterCustom, webSearchTools, imageGenerationTools, disabled] =
     await Promise.all([
       adapter?.getTools() ?? Promise.resolve<Record<string, TMCPItem[]>>({}),
-      getWebSearchTools(storage),
+      getWebSearchTools(storage, entityId),
       getImageGenerationTools(storage),
-      storage.toolPrefs.readDisabled(),
+      storage.toolPrefs.readDisabled(entityId),
     ]);
 
   const grouped: Record<string, TMCPItem[]> = {
@@ -148,6 +149,8 @@ export type AdapterRunContext = {
   tools: TMCPItem[];
   isReasoning?: boolean;
   signal?: AbortSignal;
+  /** Opaque scope token forwarded to scoped storage reads in resume rounds. */
+  entityId?: string;
 };
 
 /**
@@ -174,7 +177,8 @@ export async function* executeAdapterTool(
     storage,
     adapter,
     toolCall.toolName,
-    args
+    args,
+    ctx.entityId
   );
 
   yield* resumeChat(
@@ -190,6 +194,7 @@ export async function* executeAdapterTool(
       isReasoning: ctx.isReasoning,
       signal: ctx.signal,
       tools: ctx.tools,
+      entityId: ctx.entityId,
     }
   );
 }
@@ -205,10 +210,11 @@ async function dispatchAdapterTool(
   storage: StorageAdapter,
   adapter: ToolsAdapter | undefined,
   toolName: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  entityId?: string
 ): Promise<unknown> {
   if (toolName === "web_search" || toolName === "web_crawling") {
-    return callWebSearchTool(storage, toolName, args);
+    return callWebSearchTool(storage, toolName, args, entityId);
   }
   if (toolName === "generate_image") {
     return callImageGenerationTool(storage, toolName, args);

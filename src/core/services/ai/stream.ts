@@ -64,6 +64,11 @@ export type ProcessStreamContext = {
   isReasoning?: boolean;
   signal?: AbortSignal;
   isResume?: boolean;
+  /**
+   * Opaque scope token forwarded to scoped storage reads (e.g.
+   * `toolPrefs.readAllowAlways`). Engine never inspects it.
+   */
+  entityId?: string;
   /** Existing assistant messageId to update when `isResume` is true. */
   resumeMessageId?: string;
   /**
@@ -144,7 +149,9 @@ export async function* processStream(
           }
 
           const toolName = readToolCall(final, toolIdx)?.toolName ?? null;
-          const allowList = await storage.toolPrefs.readAllowAlways();
+          const allowList = await storage.toolPrefs.readAllowAlways(
+            ctx.entityId
+          );
           const autoAllow = !!toolName && allowList.includes(toolName);
 
           yield {

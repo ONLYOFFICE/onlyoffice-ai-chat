@@ -56,7 +56,9 @@ export interface MessagesStorage {
   update(messageId: string, message: ThreadMessageLike): Promise<void>;
 
   /**
-   * Delete a single message by ID.
+   * Delete a single message by ID. Implementations must cascade-delete
+   * any attachments owned by the message via
+   * `attachments.deleteByMessage(messageId)`.
    *
    * @param messageId - The message to remove.
    */
@@ -64,7 +66,9 @@ export interface MessagesStorage {
 
   /**
    * Delete all messages in a thread. Used for clearing history or as
-   * part of a cascading thread delete.
+   * part of a cascading thread delete. Implementations must cascade-
+   * delete any attachments owned by the thread via
+   * `attachments.deleteByThread(threadId)`.
    *
    * @param threadId - The thread whose messages should be removed.
    */

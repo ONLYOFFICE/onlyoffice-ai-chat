@@ -12,6 +12,7 @@ import { FileItem } from "../../../components/file-item";
 import { MarkdownText } from "../../../components/markdown";
 import { cn } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
+import { selectImageBase64 } from "../../../store/create-attachments-store";
 import type { TAttachmentFile } from "../../../../types";
 import { PROMPT_DIALOG_CLASS } from "./ComposerActionPrompts";
 
@@ -207,19 +208,13 @@ export const UserMessage = memo(() => {
   const message = useMessage();
   const { isRTL } = useI18n();
 
-  const images = message.content
+  const images: ImageItem[] = message.content
     .filter((item) => item.type === "image")
-    .map((item) => item.image);
+    .map((item) => parseImageBlock(item.image));
 
   const files: TAttachmentFile[] = message.content
     .filter((item) => item.type === "file")
-    .map((item) => {
-      return {
-        type: JSON.parse(item.mimeType).type,
-        content: item.data,
-        path: JSON.parse(item.mimeType).path,
-      };
-    });
+    .map((item) => parseFileBlock(item.mimeType, item.data));
 
   return (
     <MessagePrimitive.Root asChild>
@@ -233,13 +228,8 @@ export const UserMessage = memo(() => {
         {images.length > 0 || files.length > 0 ? (
           <div className="col-span-full col-start-1 row-start-1 mb-[8px] overflow-x-auto">
             <div className="flex flex-row gap-[8px] w-max justify-end ms-auto">
-              {images.map((src) => (
-                <img
-                  key={src}
-                  src={src}
-                  alt=""
-                  className="h-[72px] w-[72px] rounded-[8px] object-cover"
-                />
+              {images.map((img, i) => (
+                <ImagePreview key={img.refId ?? `${img.inline}-${i}`} item={img} />
               ))}
               {files.map((file) => (
                 <FileItem key={file.path} file={file} withoutClose />
@@ -264,3 +254,94 @@ export const UserMessage = memo(() => {
     </MessagePrimitive.Root>
   );
 });
+
+// ---------------------------------------------------------------------------
+// Attachment block parsing (legacy inline + new ref form)
+// ---------------------------------------------------------------------------
+
+type ImageItem = { refId?: string; inline?: string };
+
+function parseRefMeta(value: unknown): {
+  ref: string;
+  title: string;
+  kind: "file" | "image";
+  path?: string;
+  type?: number;
+} | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  if (value[0] !== "{" || !value.includes('"ref"')) return null;
+  try {
+    const parsed = JSON.parse(value);
+    if (
+      parsed &&
+      typeof parsed.ref === "string" &&
+      typeof parsed.title === "string" &&
+      (parsed.kind === "file" || parsed.kind === "image")
+    ) {
+      return parsed;
+    }
+  } catch {
+    /* fallthrough */
+  }
+  return null;
+}
+
+function parseFileBlock(mimeType: string, data: string): TAttachmentFile {
+  const ref = parseRefMeta(mimeType);
+  if (ref) {
+    return {
+      // FileItem renders icon + name from `path` and `type`. Title is
+      // already the leaf filename in the ref-form.
+      path: ref.path ?? ref.title,
+      type: ref.type ?? 0,
+      content: "",
+    };
+  }
+  // Legacy inline block.
+  try {
+    const meta = JSON.parse(mimeType);
+    return { path: meta.path, type: meta.type, content: data };
+  } catch {
+    return { path: "", type: 0, content: data };
+  }
+}
+
+function parseImageBlock(image: string): ImageItem {
+  const ref = parseRefMeta(image);
+  if (ref) return { refId: ref.ref };
+  return { inline: image };
+}
+
+const ImagePreview = ({ item }: { item: ImageItem }) => {
+  const { api, useAttachmentsStore } = useStores();
+  const cachedBase64 = useAttachmentsStore(selectImageBase64(item.refId));
+  const [fetchedSrc, setFetchedSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (item.inline) return;
+    if (!item.refId || cachedBase64) return;
+    let cancelled = false;
+    api.attachments.get(item.refId).then((rec) => {
+      if (cancelled) return;
+      setFetchedSrc(rec?.base64 ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, item.inline, item.refId, cachedBase64]);
+
+  const src = item.inline ?? cachedBase64 ?? fetchedSrc;
+
+  if (!src) {
+    return (
+      <div className="h-[72px] w-[72px] rounded-[8px] bg-[var(--background-tertiary)]" />
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      className="h-[72px] w-[72px] rounded-[8px] object-cover"
+    />
+  );
+};

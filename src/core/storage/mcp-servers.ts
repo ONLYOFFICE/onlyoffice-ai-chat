@@ -13,47 +13,53 @@ export type McpServerConfig = Record<string, unknown>;
 export interface McpServersStorage {
   /**
    * Register a new server by name. Throws if a server with the same name
-   * already exists.
+   * already exists in the same scope.
    *
-   * @param name - Unique server name.
-   * @param config - Transport-specific configuration blob.
+   * `entityId` is opaque to the caller — when provided the implementation
+   * should scope the registry to that entity (so two entities can each
+   * have a server named `"foo"` without colliding); when omitted the
+   * unscoped (global) registry is used.
    */
-  create(name: string, config: McpServerConfig): Promise<void>;
+  create(
+    name: string,
+    config: McpServerConfig,
+    entityId?: string
+  ): Promise<void>;
 
   /**
-   * Look up a single server configuration by name.
-   *
-   * @param name - The server name to fetch.
-   * @returns The configuration, or `null` if no entry exists.
+   * Look up a single server configuration by name in the requested scope.
+   * Returns `null` when the server does not exist in that scope.
    */
-  readByName(name: string): Promise<McpServerConfig | null>;
+  readByName(
+    name: string,
+    entityId?: string
+  ): Promise<McpServerConfig | null>;
 
-  /**
-   * Retrieve every registered server as a name→config map.
-   */
-  readAll(): Promise<Record<string, McpServerConfig>>;
+  /** Retrieve every registered server in the requested scope. */
+  readAll(entityId?: string): Promise<Record<string, McpServerConfig>>;
 
   /**
    * Replace the configuration of an existing server. Throws if no server
-   * with that name is registered.
-   *
-   * @param name - The server name to update.
-   * @param config - The new transport-specific configuration.
+   * with that name is registered in the requested scope.
    */
-  update(name: string, config: McpServerConfig): Promise<void>;
+  update(
+    name: string,
+    config: McpServerConfig,
+    entityId?: string
+  ): Promise<void>;
 
   /**
-   * Atomically replace the full registry. Bulk utility for imports and
-   * restores; outside the strict CRUD surface.
-   *
-   * @param servers - The new complete set of servers.
+   * Atomically replace the full registry in the requested scope. Bulk
+   * utility for imports and restores; outside the strict CRUD surface.
    */
-  replaceAll(servers: Record<string, McpServerConfig>): Promise<void>;
+  replaceAll(
+    servers: Record<string, McpServerConfig>,
+    entityId?: string
+  ): Promise<void>;
 
   /**
-   * Remove a server by name. No-op if the entry is missing.
-   *
-   * @param name - The server name to remove.
+   * Remove a server by name from the requested scope. No-op if the
+   * entry is missing.
    */
-  delete(name: string): Promise<void>;
+  delete(name: string, entityId?: string): Promise<void>;
 }

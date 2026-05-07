@@ -75,6 +75,20 @@ describe("createThreadsStore", () => {
     expect(s.getState().threads).toHaveLength(2);
   });
 
+  it("initThreads forwards entityId to api.threads.list", async () => {
+    const deps = makeDeps([mkThread("a")]);
+    const s = createThreadsStore(deps);
+    await s.getState().initThreads("e1");
+    expect(deps.api.threads.list).toHaveBeenCalledWith("e1");
+  });
+
+  it("initThreads passes undefined entityId in passthrough mode", async () => {
+    const deps = makeDeps([mkThread("a")]);
+    const s = createThreadsStore(deps);
+    await s.getState().initThreads();
+    expect(deps.api.threads.list).toHaveBeenCalledWith(undefined);
+  });
+
   it("insertThread uses existing thread when found", async () => {
     const deps = makeDeps();
     deps.api.threads.getById = vi

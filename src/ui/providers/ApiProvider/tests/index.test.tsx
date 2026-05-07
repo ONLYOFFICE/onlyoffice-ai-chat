@@ -11,6 +11,7 @@ import {
 import {
   DEFAULT_AI_ROUTES,
   DEFAULT_ASSIGNMENTS_ROUTES,
+  DEFAULT_ATTACHMENTS_ROUTES,
   DEFAULT_PREFERENCES_ROUTES,
   DEFAULT_PROFILES_ROUTES,
   DEFAULT_PROMPTS_ROUTES,
@@ -31,6 +32,7 @@ describe("DEFAULT_SERVER_API_ROUTES", () => {
     expect(DEFAULT_SERVER_API_ROUTES).toEqual({
       ai: DEFAULT_AI_ROUTES,
       assignments: DEFAULT_ASSIGNMENTS_ROUTES,
+      attachments: DEFAULT_ATTACHMENTS_ROUTES,
       preferences: DEFAULT_PREFERENCES_ROUTES,
       profiles: DEFAULT_PROFILES_ROUTES,
       prompts: DEFAULT_PROMPTS_ROUTES,
@@ -46,6 +48,7 @@ describe("createServerAPI", () => {
     const api = createServerAPI(config);
     expect(typeof api.ai.send).toBe("function");
     expect(typeof api.assignments.assign).toBe("function");
+    expect(typeof api.attachments.saveFile).toBe("function");
     expect(typeof api.preferences.getDeepMode).toBe("function");
     expect(typeof api.profiles.create).toBe("function");
     expect(typeof api.prompts.create).toBe("function");

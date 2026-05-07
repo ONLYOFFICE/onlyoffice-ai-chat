@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { ReadonlyJSONObject } from "assistant-stream/utils";
+import { resolveAttachmentRefs } from "../../actions/attachment-resolution";
 import { chat } from "../../actions/chat";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
@@ -119,6 +120,8 @@ export async function* resumeChat(
     isReasoning?: boolean;
     signal?: AbortSignal;
     tools?: ActionArgs["tools"];
+    /** Opaque scope token forwarded to scoped storage reads. */
+    entityId?: string;
   }
 ): AsyncGenerator<ChatEvent> {
   const toolCall = readToolCall(input.message, input.idx);
@@ -139,7 +142,7 @@ export async function* resumeChat(
 
   const actionArgs: ActionArgs = {
     profile: input.profile,
-    messages: history,
+    messages: await resolveAttachmentRefs(history, ctx.storage.attachments),
     tools: input.tools,
     isReasoning: input.isReasoning,
     signal: input.signal,
@@ -159,6 +162,7 @@ export async function* resumeChat(
     tools: input.tools,
     isReasoning: input.isReasoning,
     signal: input.signal,
+    entityId: input.entityId,
     isResume: true,
     resumeMessageId: input.messageId,
     resumeBaseMessage: updatedMessage,

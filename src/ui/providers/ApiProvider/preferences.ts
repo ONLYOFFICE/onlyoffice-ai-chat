@@ -16,13 +16,19 @@ export function createPreferencesApi(
   engines?: ServerAPIEngines
 ): PreferencesApi {
   return {
-    getDeepMode: () =>
-      callRoute(config, "preferences", "getDeepMode", [], engines),
-    setDeepMode: (value) =>
-      callRoute(config, "preferences", "setDeepMode", [value], engines),
-    clearDeepMode: () =>
-      callRoute(config, "preferences", "clearDeepMode", [], engines),
-    isDeepModeSet: () =>
-      callRoute(config, "preferences", "isDeepModeSet", [], engines),
+    getDeepMode: (entityId) =>
+      callRoute(config, "preferences", "getDeepMode", [entityId], engines),
+    setDeepMode: (value, entityId) =>
+      callRoute(
+        config,
+        "preferences",
+        "setDeepMode",
+        [value, entityId],
+        engines
+      ),
+    clearDeepMode: (entityId) =>
+      callRoute(config, "preferences", "clearDeepMode", [entityId], engines),
+    isDeepModeSet: (entityId) =>
+      callRoute(config, "preferences", "isDeepModeSet", [entityId], engines),
   };
 }

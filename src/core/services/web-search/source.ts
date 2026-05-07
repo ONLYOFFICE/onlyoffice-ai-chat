@@ -17,9 +17,10 @@ export const WEB_SEARCH_TYPE = "web-search";
  * without a round-trip to the UI's `Servers` aggregator.
  */
 export async function getWebSearchTools(
-  storage: StorageAdapter
+  storage: StorageAdapter,
+  entityId?: string
 ): Promise<TMCPItem[]> {
-  const config = await storage.webSearch.read();
+  const config = await storage.webSearch.read(entityId);
   if (!config) return [];
 
   return [
@@ -64,9 +65,10 @@ export async function getWebSearchTools(
 export async function callWebSearchTool(
   storage: StorageAdapter,
   bareName: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  entityId?: string
 ): Promise<string> {
-  const config = await storage.webSearch.read();
+  const config = await storage.webSearch.read(entityId);
   if (!config) {
     return JSON.stringify({ error: "Web search is not configured." });
   }

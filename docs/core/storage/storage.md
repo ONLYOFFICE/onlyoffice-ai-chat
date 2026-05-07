@@ -31,6 +31,7 @@ interface StorageAdapter {
   mcpServers: McpServersStorage;
   toolPrefs: ToolPrefsStorage;
   webSearch: WebSearchStorage;
+  attachments: AttachmentsStorage;
 
   init(): Promise<void>;   // open DB, run migrations
   close(): Promise<void>;  // flush + release resources
@@ -44,6 +45,63 @@ behave correctly after `init` resolves.
 
 ---
 
+## Entity scoping (`entityId`)
+
+Six of the ten sub-storages accept an optional `entityId` argument
+on every method. It is the persistence-layer side of the
+[`WidgetConfig.entityId`](../../../src/widget-config.tsx) "rooms"
+feature: the host binds the widget to an entity (a document, a
+channel, an `onlyoffice` room, …) and the data scoped to that
+entity is segregated from the global / unscoped namespace and from
+every other entity.
+
+| Sub-storage         | Scoped methods                                       | What `entityId` selects |
+| ------------------- | ---------------------------------------------------- | ----------------------- |
+| `threads`           | `create`, `readAll`                                  | The entity a new thread is bound to / the entity-filtered list. `readById` / `update` / `touch` / `delete` are addressed by `threadId` and need no scope. |
+| `assignments`       | `readByType`                                         | An entity-specific Chat profile. `Default` fallback is always unscoped. |
+| `preferences`       | every method                                         | Per-entity scalar overrides (e.g. deep-mode toggle). |
+| `mcpServers`        | every method                                         | Per-entity MCP server registry — names can collide across entities. |
+| `toolPrefs`         | every method (both quartets)                         | Per-entity disabled / auto-approve sets. |
+| `webSearch`         | every method                                         | Per-entity singleton config. |
+
+`profiles`, `messages`, `prompts`, and `promptFolders` are
+intentionally **not** scoped. Profiles and the prompt library are
+shared across entities; messages live inside a thread, which
+already carries the scope.
+
+### Contract
+
+- **`entityId` is opaque.** Engines and UI never inspect it; they
+  forward whatever the host passed via `WidgetConfig`.
+- **`undefined` means "unscoped".** Two entities use storage:
+  - `entityId === "<id>"` → the entity's namespace.
+  - `entityId === undefined` → the global / passthrough namespace.
+  Implementations must keep the two strictly disjoint — a row
+  written with no scope is invisible to a scoped read, and vice
+  versa.
+- **Argument position is always last and always optional.** This
+  preserves backward compatibility: callers that don't pass it
+  fall through to the unscoped namespace.
+- **Cascade rules are scope-local.** `threads.delete(threadId)`
+  still drops every message in the thread regardless of
+  `entityId` — the thread row carries the binding, so the
+  implementation already knows which scope to clean up.
+
+### Implementing an entity-scoped backend
+
+The built-in IndexedDB implementation models scope as a composite
+key: `(entityId ?? "__root__", payloadKey)`. Other valid shapes:
+
+- A single table per scope (one IndexedDB store, REST collection,
+  SQLite table) keyed by `entityId`.
+- A single global table with an indexed `entityId` column and the
+  `null`-equivalent representing the unscoped row.
+
+Either is fine — the contract only mandates **isolation**, not
+the storage layout.
+
+---
+
 ## `ThreadsStorage`
 
 > Source: [`threads.ts`](../../../src/core/storage/threads.ts)
@@ -52,9 +110,13 @@ A thread is a single chat session: title, optional `profileId`
 binding, and a `lastEditDate` used to sort the sidebar.
 
 ```ts
-create(title: string, profileId?: string): Promise<Thread>;   // storage assigns threadId + lastEditDate
+create(
+  title: string,
+  profileId?: string,
+  entityId?: string                              // binds the thread to an entity scope
+): Promise<Thread>;                              // storage assigns threadId + lastEditDate
 readById(threadId: string): Promise<Thread | null>;
-readAll(): Promise<Thread[]>;                      // sorted by lastEditDate desc
+readAll(entityId?: string): Promise<Thread[]>;   // scope-filtered, sorted by lastEditDate desc
 update(threadId: string, title?: string): Promise<void>;
 touch(
   threadId: string,
@@ -77,6 +139,12 @@ delete(threadId: string): Promise<void>;           // cascading: also drops mess
   message in the thread (typically by delegating to
   `MessagesStorage.deleteByThread`). Engines / services rely on
   that — they never call both manually.
+- **Scope is set at creation and frozen.** `create(title, profile,
+  entityId)` records the binding; `readAll(entityId)` filters by
+  it. There is no API to reassign a thread to a different entity
+  — by design, since it would invalidate any per-room ACL the
+  host enforces. `readById` ignores scope (the `threadId` is
+  globally unique).
 
 ---
 
@@ -217,7 +285,10 @@ to resolve "which profile runs the chat action".
 
 ```ts
 create(actionType: ActionType, profileId: string): Promise<void>; // throws if exists
-readByType(actionType: ActionType): Promise<string | null>;
+readByType(
+  actionType: ActionType,
+  entityId?: string                                // optional scope; see below
+): Promise<string | null>;
 readAll(): Promise<Partial<Record<ActionType, string>>>;
 update(actionType: ActionType, profileId: string): Promise<void>; // throws if missing
 upsertMany(
@@ -243,8 +314,13 @@ deleteMany(actionTypes: ActionType[]): Promise<void>;             // batched, no
   `ProfilesEngine.delete` calls `deleteMany` for orphaned slots
   without checking presence first.
 - **The `Default` slot** is the global fallback. Engines look up
-  `readByType(<actionType>)` first and fall back to
-  `readByType(ActionType.Default)` if it returns `null`.
+  `readByType(<actionType>, entityId)` first and fall back to
+  `readByType(ActionType.Default)` (unscoped) if it returns `null`.
+- **`entityId` is opaque and only meaningful on `readByType`.**
+  Implementations typically honour it for `ActionType.Chat` (so a
+  room can pin a different chat profile than the global one) and
+  ignore it elsewhere. The `Default` lookup is intentionally
+  unscoped — there is no per-entity default.
 
 ---
 
@@ -258,12 +334,17 @@ no stringly-typed keys, no JSON parsing at call sites.
 Today the only entry is the **deep-mode** toggle (extended thinking):
 
 ```ts
-createDeepMode(value: boolean): Promise<void>;   // throws if already set
-readDeepMode(): Promise<boolean | null>;          // null = never set, fall back to default
-updateDeepMode(value: boolean): Promise<void>;   // throws if never set
-upsertDeepMode(value: boolean): Promise<void>;   // idempotent — used by PreferencesEngine
-deleteDeepMode(): Promise<void>;                  // clears, future reads return null
+createDeepMode(value: boolean, entityId?: string): Promise<void>;   // throws if already set in scope
+readDeepMode(entityId?: string): Promise<boolean | null>;            // null = never set in scope
+updateDeepMode(value: boolean, entityId?: string): Promise<void>;   // throws if never set in scope
+upsertDeepMode(value: boolean, entityId?: string): Promise<void>;   // idempotent — used by PreferencesEngine
+deleteDeepMode(entityId?: string): Promise<void>;                    // clears the scope's entry
 ```
+
+Each method takes an optional `entityId` last argument — when
+provided, the read/write is scoped to that entity, otherwise it
+operates on the unscoped (global) value. See
+[Entity scoping (`entityId`)](#entity-scoping-entityid).
 
 The shape is intentionally extensible: a new scalar pref adds
 five new methods (`create`/`read`/`update`/`upsert`/`delete`).
@@ -281,12 +362,26 @@ Custom MCP server registrations, keyed by user-supplied name.
 ```ts
 type McpServerConfig = Record<string, unknown>;  // transport-agnostic blob
 
-create(name: string, config: McpServerConfig): Promise<void>; // throws on dup
-readByName(name: string): Promise<McpServerConfig | null>;
-readAll(): Promise<Record<string, McpServerConfig>>;
-update(name: string, config: McpServerConfig): Promise<void>;  // throws if missing
-replaceAll(servers: Record<string, McpServerConfig>): Promise<void>;  // import/restore
-delete(name: string): Promise<void>;
+create(
+  name: string,
+  config: McpServerConfig,
+  entityId?: string
+): Promise<void>;                                              // throws on dup *in scope*
+readByName(
+  name: string,
+  entityId?: string
+): Promise<McpServerConfig | null>;
+readAll(entityId?: string): Promise<Record<string, McpServerConfig>>;
+update(
+  name: string,
+  config: McpServerConfig,
+  entityId?: string
+): Promise<void>;                                              // throws if missing in scope
+replaceAll(
+  servers: Record<string, McpServerConfig>,
+  entityId?: string
+): Promise<void>;                                              // import/restore
+delete(name: string, entityId?: string): Promise<void>;
 ```
 
 ### Semantics
@@ -298,6 +393,10 @@ delete(name: string): Promise<void>;
 - **`replaceAll` is an explicit bulk endpoint.** Outside the
   CRUD surface, but the only sane primitive for "import a JSON
   file the user uploaded".
+- **Server names are unique per scope, not globally.** Two
+  entities can both register a server named `"github"` without
+  colliding. Cross-scope reads / writes are not provided —
+  callers carry the `entityId` from the widget mount.
 
 ---
 
@@ -314,11 +413,20 @@ is `"web-search"`, `"image-generation"`, an MCP server name, or
 a host-tool group id. A tool not in the map is enabled.
 
 ```ts
-createDisabled(disabled: Record<string, string[]>): Promise<void>;  // throws if exists
-readDisabled(): Promise<Record<string, string[]>>;                  // {} if unset
-updateDisabled(disabled: Record<string, string[]>): Promise<void>;  // throws if missing
-upsertDisabled(disabled: Record<string, string[]>): Promise<void>;  // idempotent — used by ToolsEngine
-deleteDisabled(): Promise<void>;                                     // future reads return {}
+createDisabled(
+  disabled: Record<string, string[]>,
+  entityId?: string
+): Promise<void>;                                                    // throws if exists in scope
+readDisabled(entityId?: string): Promise<Record<string, string[]>>;  // {} if unset
+updateDisabled(
+  disabled: Record<string, string[]>,
+  entityId?: string
+): Promise<void>;                                                    // throws if missing in scope
+upsertDisabled(
+  disabled: Record<string, string[]>,
+  entityId?: string
+): Promise<void>;                                                    // idempotent — used by ToolsEngine
+deleteDisabled(entityId?: string): Promise<void>;                    // future reads return {}
 ```
 
 ### Auto-approved tools
@@ -327,16 +435,18 @@ Flat list of `"type_name"` tokens the user has chosen to always
 allow without per-call confirmation.
 
 ```ts
-createAllowAlways(tokens: string[]): Promise<void>;    // throws if exists
-readAllowAlways(): Promise<string[]>;                   // [] if unset
-updateAllowAlways(tokens: string[]): Promise<void>;    // throws if missing
-upsertAllowAlways(tokens: string[]): Promise<void>;    // idempotent — used by ToolsEngine
-deleteAllowAlways(): Promise<void>;                     // future reads return []
+createAllowAlways(tokens: string[], entityId?: string): Promise<void>; // throws if exists in scope
+readAllowAlways(entityId?: string): Promise<string[]>;                  // [] if unset
+updateAllowAlways(tokens: string[], entityId?: string): Promise<void>; // throws if missing in scope
+upsertAllowAlways(tokens: string[], entityId?: string): Promise<void>; // idempotent — used by ToolsEngine
+deleteAllowAlways(entityId?: string): Promise<void>;                    // future reads return []
 ```
 
 The two sets are independent — a tool can be neither, one, or
 the other. The "always" list takes effect after the user clicks
-"Approve always" in a tool-call dialog.
+"Approve always" in a tool-call dialog. Both sets are scoped by
+`entityId` independently, so a room can grant tool auto-approval
+that does not leak to the global namespace or to sibling rooms.
 
 ---
 
@@ -356,17 +466,71 @@ type WebSearchConfig = {
   isCloudProvider?: boolean;
 };
 
-create(config: WebSearchConfig): Promise<void>;   // throws if exists
-read(): Promise<WebSearchConfig | null>;
-update(config: WebSearchConfig): Promise<void>;   // throws if missing
-upsert(config: WebSearchConfig): Promise<void>;   // idempotent — used by WebSearchEngine
-delete(): Promise<void>;                           // future reads return null
+create(config: WebSearchConfig, entityId?: string): Promise<void>; // throws if exists in scope
+read(entityId?: string): Promise<WebSearchConfig | null>;
+update(config: WebSearchConfig, entityId?: string): Promise<void>; // throws if missing in scope
+upsert(config: WebSearchConfig, entityId?: string): Promise<void>; // idempotent — used by WebSearchEngine
+delete(entityId?: string): Promise<void>;                           // future reads return null
 ```
 
 The "create then update / never overwrite via create" pattern
 mirrors `PreferencesStorage` and `ToolPrefsStorage` — the same
 idea: distinguish initialization from replacement at the type
 level, so callers never accidentally clobber existing config.
+
+The singleton is *per scope* — every entity has its own active
+provider, and the unscoped namespace has its own. Switching
+scopes does not roll over the previous scope's config.
+
+---
+
+## `AttachmentsStorage`
+
+> Source: [`attachments.ts`](../../../src/core/storage/attachments.ts)
+
+Persistent records for files and images attached to user messages.
+Composer drafts write here eagerly so the in-memory state holds
+only lightweight `{ id, title, kind, ... }` refs; the resolver in
+`core/actions/attachment-resolution.ts` hydrates them inline right
+before the provider sees the message.
+
+```ts
+type Attachment = {
+  id: string;
+  kind: "file" | "image";
+  title: string;
+  content?: string;     // file text
+  base64?: string;      // image data URL
+  path?: string;        // file source path
+  type?: number;        // ONLYOFFICE file type code
+  messageId?: string;   // bound after the user message is persisted
+  threadId?: string;    // bound after the user message is persisted
+  entityId?: string;    // entity scope at draft creation time
+  createdAt: number;
+};
+
+create(input: Omit<Attachment, "id" | "createdAt">): Promise<Attachment>;
+readById(id: string): Promise<Attachment | null>;
+readManyByIds(ids: string[]): Promise<(Attachment | null)[]>;
+update(id: string, patch: Partial<Attachment>): Promise<void>;
+delete(id: string): Promise<void>;
+deleteMany(ids: string[]): Promise<void>;           // batch — single round trip
+deleteByMessage(messageId: string): Promise<void>;  // cascade from messages.delete
+deleteByThread(threadId: string): Promise<void>;    // cascade from messages.deleteByThread
+```
+
+Storage owns id and `createdAt` generation (callers never
+synthesize them). `MessagesStorage.delete` and `deleteByThread`
+must call `attachments.deleteByMessage` / `deleteByThread` so
+removing a message — or the thread that owns it — also purges
+its attachments. Drafts the user adds and then never sends are
+intentionally left as orphans for now (no GC).
+
+`entityId` is captured at draft creation so composer drafts in
+one entity ("room") stay isolated from drafts in another. Once
+an attachment is linked to a message via `update`, the entity is
+also implied by the owning thread — the field is then redundant
+but harmless.
 
 ---
 

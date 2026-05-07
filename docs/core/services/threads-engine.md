@@ -72,7 +72,12 @@ thread") and don't need the model to derive one.
 ### Signature
 
 ```ts
-async create(input: { title: string; profileId?: string }): Promise<string>;
+async create(input: {
+  title: string;
+  profileId?: string;
+  /** Opaque scope token persisted on the new thread; see WidgetConfig.entityId. */
+  entityId?: string;
+}): Promise<string>;
 ```
 
 ### Example
@@ -259,13 +264,18 @@ the engine so callers that already have a `ThreadsEngine` don't
 need to also reach for `storage.threads` / `storage.messages`.
 
 ```ts
-async list(): Promise<Thread[]>;     // sorted by lastEditDate desc
+async list(entityId?: string): Promise<Thread[]>;  // scope-filtered, sorted by lastEditDate desc
 async readMessages(
   threadId: string,
   limit?: number,
   startIndex?: number
 ): Promise<ThreadMessageLike[]>;     // sorted by timestamp asc
 ```
+
+`list(entityId)` filters threads by the entity scope they were
+created in: `undefined` returns only threads bound to no entity,
+a string id returns only threads bound to that entity. See
+[`StorageAdapter.threads.readAll`](../../../src/core/storage/threads.ts).
 
 ---
 

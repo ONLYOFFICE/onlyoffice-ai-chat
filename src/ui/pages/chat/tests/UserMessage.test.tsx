@@ -23,6 +23,19 @@ vi.mock("../../../store/context", () => ({
       };
       return typeof selector === "function" ? selector(state) : state;
     },
+    useAttachmentsStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        attachmentFiles: [],
+        attachmentImages: [],
+        _imageCache: {} as Record<string, string>,
+      };
+      return typeof selector === "function" ? selector(state) : state;
+    },
+    api: {
+      attachments: {
+        get: vi.fn(async () => null),
+      },
+    },
   }),
 }));
 

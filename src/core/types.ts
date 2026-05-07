@@ -121,6 +121,25 @@ export type TAttachmentImage = {
 };
 
 /**
+ * Lightweight attachment reference held by composer drafts and
+ * surfaced through middleware/callbacks. The full payload lives in
+ * `storage.attachments` and is hydrated by core just before the
+ * provider sees the message.
+ */
+export type TAttachmentRef = {
+  /** Storage-assigned id (UUID). */
+  id: string;
+  /** Display label (filename or user-visible title). */
+  title: string;
+  /** Discriminates between files and images. */
+  kind: "file" | "image";
+  /** Original host file path (only for `kind === "file"`). */
+  path?: string;
+  /** ONLYOFFICE file type code (only for `kind === "file"`). */
+  type?: number;
+};
+
+/**
  * Handle to an external process spawned for MCP STDIO server transport.
  *
  * @see {@link PlatformProcessRunner.createProcess}

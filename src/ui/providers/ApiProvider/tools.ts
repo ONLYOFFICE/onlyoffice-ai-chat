@@ -13,63 +13,88 @@ export function createToolsApi(
   engines?: ServerAPIEngines
 ): ToolsApi {
   return {
-    addCustomServer: (name, serverConfig) =>
+    addCustomServer: (name, serverConfig, entityId) =>
       callRoute(
         config,
         "tools",
         "addCustomServer",
-        [name, serverConfig],
+        [name, serverConfig, entityId],
         engines
       ),
-    updateCustomServer: (name, serverConfig) =>
+    updateCustomServer: (name, serverConfig, entityId) =>
       callRoute(
         config,
         "tools",
         "updateCustomServer",
-        [name, serverConfig],
+        [name, serverConfig, entityId],
         engines
       ),
-    removeCustomServer: (name) =>
-      callRoute(config, "tools", "removeCustomServer", [name], engines),
-    getCustomServer: (name) =>
-      callRoute(config, "tools", "getCustomServer", [name], engines),
-    listCustomServers: () =>
-      callRoute(config, "tools", "listCustomServers", [], engines),
-    replaceAllCustomServers: (map) =>
-      callRoute(config, "tools", "replaceAllCustomServers", [map], engines),
-    setDisabled: (serverType, toolNames) =>
+    removeCustomServer: (name, entityId) =>
+      callRoute(
+        config,
+        "tools",
+        "removeCustomServer",
+        [name, entityId],
+        engines
+      ),
+    getCustomServer: (name, entityId) =>
+      callRoute(
+        config,
+        "tools",
+        "getCustomServer",
+        [name, entityId],
+        engines
+      ),
+    listCustomServers: (entityId) =>
+      callRoute(
+        config,
+        "tools",
+        "listCustomServers",
+        [entityId],
+        engines
+      ),
+    replaceAllCustomServers: (map, entityId) =>
+      callRoute(
+        config,
+        "tools",
+        "replaceAllCustomServers",
+        [map, entityId],
+        engines
+      ),
+    setDisabled: (serverType, toolNames, entityId) =>
       callRoute(
         config,
         "tools",
         "setDisabled",
-        [serverType, toolNames],
+        [serverType, toolNames, entityId],
         engines
       ),
-    getDisabled: () => callRoute(config, "tools", "getDisabled", [], engines),
-    isToolDisabled: (serverType, toolName) =>
+    getDisabled: (entityId) =>
+      callRoute(config, "tools", "getDisabled", [entityId], engines),
+    isToolDisabled: (serverType, toolName, entityId) =>
       callRoute(
         config,
         "tools",
         "isToolDisabled",
-        [serverType, toolName],
+        [serverType, toolName, entityId],
         engines
       ),
-    setAllowAlways: (serverType, toolName, value) =>
+    setAllowAlways: (serverType, toolName, value, entityId) =>
       callRoute(
         config,
         "tools",
         "setAllowAlways",
-        [serverType, toolName, value],
+        [serverType, toolName, value, entityId],
         engines
       ),
-    getAllowAlways: () =>
-      callRoute(config, "tools", "getAllowAlways", [], engines),
-    isAllowAlways: (serverType, toolName) =>
+    getAllowAlways: (entityId) =>
+      callRoute(config, "tools", "getAllowAlways", [entityId], engines),
+    isAllowAlways: (serverType, toolName, entityId) =>
       callRoute(
         config,
         "tools",
         "isAllowAlways",
-        [serverType, toolName],
+        [serverType, toolName, entityId],
         engines
       ),
   };

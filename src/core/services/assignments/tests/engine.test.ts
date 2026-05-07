@@ -20,11 +20,19 @@ function makeProfile(overrides: Partial<Profile> = {}): Profile {
 function makeStorage(seed: {
   profiles?: Profile[];
   assignments?: Partial<Record<ActionType, string>>;
+  /**
+   * Per-entity overrides. When `readByType` is called with an `entityId`
+   * matching a key here, returns the inner action-type → profileId map
+   * instead of the global one. Mirrors the typical host implementation
+   * where each entity persists its own chat profile.
+   */
+  entityAssignments?: Record<string, Partial<Record<ActionType, string>>>;
 } = {}) {
   let profiles = [...(seed.profiles ?? [])];
   let assignments: Partial<Record<ActionType, string>> = {
     ...(seed.assignments ?? {}),
   };
+  const entityAssignments = { ...(seed.entityAssignments ?? {}) };
 
   const storage = {
     profiles: {
@@ -35,7 +43,13 @@ function makeStorage(seed: {
       }),
     },
     assignments: {
-      readByType: vi.fn(async (t: ActionType) => assignments[t] ?? null),
+      readByType: vi.fn(async (t: ActionType, entityId?: string) => {
+        if (entityId !== undefined && entityAssignments[entityId]) {
+          const scoped = entityAssignments[entityId][t];
+          if (scoped !== undefined) return scoped;
+        }
+        return assignments[t] ?? null;
+      }),
       readAll: vi.fn(async () => ({ ...assignments })),
       update: vi.fn(async (t: ActionType, id: string) => {
         assignments[t] = id;
@@ -109,6 +123,74 @@ describe("AssignmentsEngine.resolveForAction", () => {
     const { storage } = makeStorage();
     const engine = new AssignmentsEngine({ storage });
     expect(await engine.tryResolveForAction(ActionType.Chat)).toBeNull();
+  });
+});
+
+describe("AssignmentsEngine entity scope", () => {
+  it("forwards entityId to storage.assignments.readByType", async () => {
+    const profile = makeProfile();
+    const { storage } = makeStorage({
+      profiles: [profile],
+      assignments: { [ActionType.Chat]: profile.id },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    await engine.resolveForAction(ActionType.Chat, "e1");
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Chat,
+      "e1"
+    );
+  });
+
+  it("returns the entity-specific profile when storage scopes by entityId", async () => {
+    const global = makeProfile({ id: "global" });
+    const room = makeProfile({ id: "room" });
+    const { storage } = makeStorage({
+      profiles: [global, room],
+      assignments: { [ActionType.Chat]: global.id },
+      entityAssignments: { e1: { [ActionType.Chat]: room.id } },
+    });
+    const engine = new AssignmentsEngine({ storage });
+
+    const unscoped = await engine.resolveForAction(ActionType.Chat);
+    expect(unscoped.profileId).toBe(global.id);
+
+    const scoped = await engine.resolveForAction(ActionType.Chat, "e1");
+    expect(scoped.profileId).toBe(room.id);
+  });
+
+  it("throws when entity-specific profile id points at a missing profile", async () => {
+    const global = makeProfile({ id: "global" });
+    const { storage } = makeStorage({
+      profiles: [global],
+      assignments: { [ActionType.Chat]: global.id },
+      entityAssignments: { e1: { [ActionType.Chat]: "ghost" } },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    await expect(
+      engine.resolveForAction(ActionType.Chat, "e1")
+    ).rejects.toThrow("Assigned profile not found: ghost");
+  });
+
+  it("tryResolveForAction returns the entity-specific profile when storage scopes", async () => {
+    const room = makeProfile({ id: "room" });
+    const { storage } = makeStorage({
+      profiles: [room],
+      entityAssignments: { e1: { [ActionType.Chat]: room.id } },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.tryResolveForAction(ActionType.Chat, "e1");
+    expect(result?.profileId).toBe(room.id);
+  });
+
+  it("falls back to the unscoped Default lookup when the entity has no specific binding", async () => {
+    const fallback = makeProfile({ id: "fallback" });
+    const { storage } = makeStorage({
+      profiles: [fallback],
+      assignments: { [ActionType.Default]: fallback.id },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.resolveForAction(ActionType.Chat, "e1");
+    expect(result.profileId).toBe(fallback.id);
   });
 });
 

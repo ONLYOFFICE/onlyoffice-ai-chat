@@ -39,6 +39,14 @@ function makeConfig() {
     assignments: {
       getAllAssignments: vi.fn().mockResolvedValue({}),
     },
+    attachments: {
+      saveFile: vi.fn(),
+      saveImage: vi.fn(),
+      get: vi.fn(),
+      getMany: vi.fn(),
+      delete: vi.fn(),
+      linkToMessage: vi.fn(),
+    },
     preferences: { getDeepMode: vi.fn().mockResolvedValue(false) },
     tools: {
       getDisabled: vi.fn().mockResolvedValue({}),

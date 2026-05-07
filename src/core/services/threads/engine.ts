@@ -37,10 +37,15 @@ export class ThreadsEngine {
    * are populated). Use {@link openOrCreate} when the title should be
    * auto-generated from the first user message.
    */
-  async create(input: { title: string; profileId?: string }): Promise<Thread> {
+  async create(input: {
+    title: string;
+    profileId?: string;
+    entityId?: string;
+  }): Promise<Thread> {
     const thread = await this.deps.storage.threads.create(
       input.title,
-      input.profileId
+      input.profileId,
+      input.entityId
     );
     return thread;
   }
@@ -69,7 +74,8 @@ export class ThreadsEngine {
     const title = generated || "New chat";
     const thread = await this.deps.storage.threads.create(
       title,
-      input.profileId
+      input.profileId,
+      input.entityId
     );
     return { threadId: thread.threadId, title, priorMessages: [] };
   }
@@ -156,9 +162,13 @@ export class ThreadsEngine {
     return title;
   }
 
-  /** List all threads, sorted by `lastEditDate` desc — passthrough. */
-  async list(): Promise<Thread[]> {
-    return this.deps.storage.threads.readAll();
+  /**
+   * List threads in scope, sorted by `lastEditDate` desc — passthrough.
+   * `entityId` is opaque to the engine and forwarded to storage; see
+   * {@link ThreadsStorage.readAll} for the scoping semantics.
+   */
+  async list(entityId?: string): Promise<Thread[]> {
+    return this.deps.storage.threads.readAll(entityId);
   }
 
   /** Read messages from a thread — passthrough with same pagination. */

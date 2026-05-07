@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import {
   DEFAULT_AI_ROUTES,
   DEFAULT_ASSIGNMENTS_ROUTES,
+  DEFAULT_ATTACHMENTS_ROUTES,
   DEFAULT_PREFERENCES_ROUTES,
   DEFAULT_PROFILES_ROUTES,
   DEFAULT_PROMPTS_ROUTES,
@@ -14,6 +15,8 @@ import type {
   AIEngineMethod,
   AssignmentsEngine,
   AssignmentsEngineMethod,
+  AttachmentsEngine,
+  AttachmentsEngineMethod,
   PreferencesEngine,
   PreferencesEngineMethod,
   ProfilesEngine,
@@ -30,6 +33,10 @@ import type {
 } from "../../../core/services";
 import { createAIApi, type AIApi } from "./ai";
 import { createAssignmentsApi, type AssignmentsApi } from "./assignments";
+import {
+  createAttachmentsApi,
+  type AttachmentsApi,
+} from "./attachments";
 import { createPreferencesApi, type PreferencesApi } from "./preferences";
 import { createProfilesApi, type ProfilesApi } from "./profiles";
 import { createPromptsApi, type PromptsApi } from "./prompts";
@@ -40,6 +47,7 @@ import { createWebSearchApi, type WebSearchApi } from "./web-search";
 export interface ServerAPIRoutes {
   ai: Record<AIEngineMethod, RouteSpec>;
   assignments: Record<AssignmentsEngineMethod, RouteSpec>;
+  attachments: Record<AttachmentsEngineMethod, RouteSpec>;
   preferences: Record<PreferencesEngineMethod, RouteSpec>;
   profiles: Record<ProfilesEngineMethod, RouteSpec>;
   prompts: Record<PromptsEngineMethod, RouteSpec>;
@@ -52,6 +60,7 @@ export interface ServerAPIRoutes {
 export const DEFAULT_SERVER_API_ROUTES: ServerAPIRoutes = {
   ai: DEFAULT_AI_ROUTES,
   assignments: DEFAULT_ASSIGNMENTS_ROUTES,
+  attachments: DEFAULT_ATTACHMENTS_ROUTES,
   preferences: DEFAULT_PREFERENCES_ROUTES,
   profiles: DEFAULT_PROFILES_ROUTES,
   prompts: DEFAULT_PROMPTS_ROUTES,
@@ -75,6 +84,7 @@ export interface ServerAPIConfig {
 export interface ServerAPIEngines {
   ai: AIEngine;
   assignments: AssignmentsEngine;
+  attachments: AttachmentsEngine;
   preferences: PreferencesEngine;
   profiles: ProfilesEngine;
   prompts: PromptsEngine;
@@ -87,6 +97,7 @@ export interface ServerAPIEngines {
 export interface ServerAPI {
   ai: AIApi;
   assignments: AssignmentsApi;
+  attachments: AttachmentsApi;
   preferences: PreferencesApi;
   profiles: ProfilesApi;
   prompts: PromptsApi;
@@ -105,6 +116,7 @@ export function createServerAPI(
   return {
     ai: createAIApi(config, engines),
     assignments: createAssignmentsApi(config, engines),
+    attachments: createAttachmentsApi(config, engines),
     preferences: createPreferencesApi(config, engines),
     profiles: createProfilesApi(config, engines),
     prompts: createPromptsApi(config, engines),

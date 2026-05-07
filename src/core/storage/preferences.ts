@@ -8,34 +8,22 @@
  */
 export interface PreferencesStorage {
   // --- Deep mode (extended thinking toggle) ---
+  //
+  // Each method takes an optional opaque `entityId` last argument. When
+  // provided the implementation should scope the read/write to that
+  // entity ("room"); when omitted the unscoped (global) value is used.
+
+  createDeepMode(value: boolean, entityId?: string): Promise<void>;
+
+  readDeepMode(entityId?: string): Promise<boolean | null>;
+
+  updateDeepMode(value: boolean, entityId?: string): Promise<void>;
 
   /**
-   * Persist the deep-mode toggle for the first time. Throws if already set.
+   * Idempotent write — `create` if no value has been persisted yet in
+   * the requested scope, `update` otherwise.
    */
-  createDeepMode(value: boolean): Promise<void>;
+  upsertDeepMode(value: boolean, entityId?: string): Promise<void>;
 
-  /**
-   * Read the deep-mode toggle.
-   *
-   * @returns The persisted boolean, or `null` if never set.
-   */
-  readDeepMode(): Promise<boolean | null>;
-
-  /**
-   * Replace the deep-mode toggle. Throws if never set.
-   */
-  updateDeepMode(value: boolean): Promise<void>;
-
-  /**
-   * Idempotent write — `create` if the toggle has never been
-   * persisted, `update` otherwise. Used by `PreferencesEngine` to
-   * collapse the create/update branch into a single call.
-   */
-  upsertDeepMode(value: boolean): Promise<void>;
-
-  /**
-   * Clear the deep-mode toggle so future reads fall back to the
-   * application default.
-   */
-  deleteDeepMode(): Promise<void>;
+  deleteDeepMode(entityId?: string): Promise<void>;
 }

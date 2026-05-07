@@ -1,6 +1,8 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type {
   AssignmentsStorage,
+  Attachment,
+  AttachmentsStorage,
   McpServerConfig,
   McpServersStorage,
   MessagesStorage,
@@ -20,7 +22,7 @@ import type {
 } from "@onlyoffice/ai-chat";
 import { ActionType } from "@onlyoffice/ai-chat";
 
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -94,6 +96,15 @@ function openDatabase(dbName: string): Promise<IDBDatabase> {
 
       if (!db.objectStoreNames.contains("webSearch")) {
         db.createObjectStore("webSearch", { keyPath: "key" });
+      }
+
+      if (!db.objectStoreNames.contains("attachments")) {
+        const attachments = db.createObjectStore("attachments", {
+          keyPath: "id",
+        });
+        attachments.createIndex("messageId", "messageId");
+        attachments.createIndex("threadId", "threadId");
+        attachments.createIndex("entityId", "entityId");
       }
     };
 
@@ -274,6 +285,7 @@ class IDBMessages implements MessagesStorage {
       .transaction("messages", "readwrite")
       .objectStore("messages");
     await req(store.delete(messageId));
+    await deleteAttachmentsByMessage(this.db, messageId);
   }
 
   async deleteByThread(threadId: string): Promise<void> {
@@ -287,7 +299,43 @@ class IDBMessages implements MessagesStorage {
       store.delete(key);
     }
     await tx(t);
+    await deleteAttachmentsByThread(this.db, threadId);
   }
+}
+
+// Cascade helpers — co-located with `IDBMessages` so its delete paths
+// can purge owned attachments without holding a back-reference to
+// `IDBAttachments`. Mirrors the `attachments` index layout below.
+async function deleteAttachmentsByMessage(
+  db: IDBDatabase,
+  messageId: string
+): Promise<void> {
+  const t = db.transaction("attachments", "readwrite");
+  const store = t.objectStore("attachments");
+  const index = store.index("messageId");
+  const keys: IDBValidKey[] = await req(
+    index.getAllKeys(IDBKeyRange.only(messageId))
+  );
+  for (const key of keys) {
+    store.delete(key);
+  }
+  await tx(t);
+}
+
+async function deleteAttachmentsByThread(
+  db: IDBDatabase,
+  threadId: string
+): Promise<void> {
+  const t = db.transaction("attachments", "readwrite");
+  const store = t.objectStore("attachments");
+  const index = store.index("threadId");
+  const keys: IDBValidKey[] = await req(
+    index.getAllKeys(IDBKeyRange.only(threadId))
+  );
+  for (const key of keys) {
+    store.delete(key);
+  }
+  await tx(t);
 }
 
 // ---------------------------------------------------------------------------
@@ -868,6 +916,85 @@ class IDBWebSearch implements WebSearchStorage {
 }
 
 // ---------------------------------------------------------------------------
+// Attachments
+// ---------------------------------------------------------------------------
+
+class IDBAttachments implements AttachmentsStorage {
+  constructor(private db: IDBDatabase) {}
+
+  async create(
+    input: Omit<Attachment, "id" | "createdAt">
+  ): Promise<Attachment> {
+    const stored: Attachment = {
+      ...input,
+      id: uuid(),
+      createdAt: Date.now(),
+    };
+    const store = this.db
+      .transaction("attachments", "readwrite")
+      .objectStore("attachments");
+    await req(store.add(stored));
+    return stored;
+  }
+
+  async readById(id: string): Promise<Attachment | null> {
+    const store = this.db
+      .transaction("attachments", "readonly")
+      .objectStore("attachments");
+    return (await req(store.get(id))) ?? null;
+  }
+
+  async readManyByIds(ids: string[]): Promise<(Attachment | null)[]> {
+    if (ids.length === 0) return [];
+    const store = this.db
+      .transaction("attachments", "readonly")
+      .objectStore("attachments");
+    return Promise.all(
+      ids.map(async (id) => (await req(store.get(id))) ?? null)
+    );
+  }
+
+  async update(id: string, patch: Partial<Attachment>): Promise<void> {
+    const t = this.db.transaction("attachments", "readwrite");
+    const store = t.objectStore("attachments");
+    const existing: Attachment | undefined = await req(store.get(id));
+    if (existing) {
+      // Preserve identity fields — `id` and `createdAt` cannot be patched.
+      store.put({
+        ...existing,
+        ...patch,
+        id: existing.id,
+        createdAt: existing.createdAt,
+      });
+    }
+    await tx(t);
+  }
+
+  async delete(id: string): Promise<void> {
+    const store = this.db
+      .transaction("attachments", "readwrite")
+      .objectStore("attachments");
+    await req(store.delete(id));
+  }
+
+  async deleteMany(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const t = this.db.transaction("attachments", "readwrite");
+    const store = t.objectStore("attachments");
+    for (const id of ids) store.delete(id);
+    await tx(t);
+  }
+
+  deleteByMessage(messageId: string): Promise<void> {
+    return deleteAttachmentsByMessage(this.db, messageId);
+  }
+
+  deleteByThread(threadId: string): Promise<void> {
+    return deleteAttachmentsByThread(this.db, threadId);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
@@ -887,6 +1014,7 @@ export async function createStorage(
     mcpServers: new IDBMcpServers(db),
     toolPrefs: new IDBToolPrefs(db),
     webSearch: new IDBWebSearch(db),
+    attachments: new IDBAttachments(db),
     async init() {
       /* DB already opened */
     },

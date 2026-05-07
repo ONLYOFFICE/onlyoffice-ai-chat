@@ -343,7 +343,7 @@ describe("ComposerActionAttachment", () => {
       expect(mockAddAttachmentFile).not.toHaveBeenCalled();
     });
 
-    it("limits picked files to 6", async () => {
+    it("limits picked files to 5", async () => {
       const files = Array.from({ length: 10 }, (_, i) => ({
         path: `/docs/file${i}.docx`,
       }));
@@ -365,7 +365,7 @@ describe("ComposerActionAttachment", () => {
       });
 
       await waitFor(() => {
-        expect(mockAddAttachmentFile).toHaveBeenCalledTimes(6);
+        expect(mockAddAttachmentFile).toHaveBeenCalledTimes(5);
       });
     });
 

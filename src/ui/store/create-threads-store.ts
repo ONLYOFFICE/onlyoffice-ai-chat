@@ -19,8 +19,12 @@ export interface ThreadsStoreState {
   threadId: string;
   /** All persisted threads, ordered most-recent first. */
   threads: Thread[];
-  /** Load all threads from persistent storage. */
-  initThreads: () => Promise<void>;
+  /**
+   * Load threads from persistent storage scoped to `entityId`. Pass
+   * `undefined` (the unscoped/passthrough mode) to load only threads
+   * not bound to any entity.
+   */
+  initThreads: (entityId?: string) => Promise<void>;
   /**
    * Register a thread that the core engine has already persisted (for
    * example, a fresh thread created by `AIEngine.sendWithThread`):
@@ -69,8 +73,8 @@ export function createThreadsStore(deps: {
     threadId: "",
     threads: [],
 
-    initThreads: async () => {
-      const threads = await api.threads.list();
+    initThreads: async (entityId) => {
+      const threads = await api.threads.list(entityId);
       set({ threads });
     },
 

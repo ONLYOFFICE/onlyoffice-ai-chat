@@ -74,6 +74,13 @@ type SendStreamInput = {
   userMessage: ThreadMessageLike;
   /** Forwarded to the underlying action. `profile` and `messages` are owned by the engine. */
   actionArgs?: Omit<ActionArgs, "profile" | "messages">;
+  /**
+   * Opaque scope token (see `WidgetConfig.entityId`). Forwarded to
+   * `AssignmentsEngine.resolveForAction` (so storage can return an
+   * entity-specific Chat profile) and persisted on a freshly created
+   * thread. The engine never inspects the value.
+   */
+  entityId?: string;
 };
 
 type ChatEvent =
@@ -236,6 +243,10 @@ type ApproveToolCallInput = ToolCallData & {
   /** Persist `toolName` to `storage.toolPrefs.allowAlways`. */
   allowAlways?: boolean;
 };
+// `ToolCallData` carries the original `actionArgs` and `entityId` —
+// when `allowAlways: true` is combined with a non-empty `entityId`,
+// the auto-approve token is written to the entity-scoped allow list,
+// not the global one.
 ```
 
 Persists `result` onto the assistant message that issued the call
@@ -282,6 +293,12 @@ type SendInput = {
   actionType: ActionType;
   userMessage: ThreadMessageLike;
   actionArgs?: Omit<ActionArgs, "profile" | "messages">;
+  /**
+   * Opaque scope token forwarded to
+   * `AssignmentsEngine.resolveForAction`. Storage decides whether to
+   * apply it (typically only for `ActionType.Chat`).
+   */
+  entityId?: string;
 };
 ```
 

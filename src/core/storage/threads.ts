@@ -12,11 +12,19 @@ export interface ThreadsStorage {
   /**
    * Create a new thread and persist it to storage.
    *
-   * @param threadId - Unique identifier for the thread.
    * @param title - Human-readable title shown in the sidebar.
    * @param profileId - Optional profile ID that owns this thread.
+   * @param entityId - Optional opaque scope token (entity / "room") the
+   *   thread is bound to. When provided, the implementation should
+   *   persist it on the record so subsequent {@link readAll} calls with
+   *   the same `entityId` return this thread. When omitted, the thread
+   *   belongs to the unscoped (passthrough) area.
    */
-  create(title: string, profileId?: string): Promise<Thread>;
+  create(
+    title: string,
+    profileId?: string,
+    entityId?: string
+  ): Promise<Thread>;
 
   /**
    * Find a thread by its ID.
@@ -27,11 +35,17 @@ export interface ThreadsStorage {
   readById(threadId: string): Promise<Thread | null>;
 
   /**
-   * Retrieve all threads sorted by `lastEditDate` descending (newest first).
+   * Retrieve threads sorted by `lastEditDate` descending (newest first),
+   * filtered by entity scope.
    *
-   * @returns An array of all persisted threads.
+   * - `entityId === undefined` → return only threads created in the
+   *   unscoped (passthrough) area, i.e. without an entity binding.
+   * - `entityId === "<id>"` → return only threads bound to that entity.
+   *
+   * @param entityId - Optional opaque scope token (entity / "room").
+   * @returns An array of persisted threads in scope.
    */
-  readAll(): Promise<Thread[]>;
+  readAll(entityId?: string): Promise<Thread[]>;
 
   /**
    * Update a thread's title. The caller is responsible for bumping

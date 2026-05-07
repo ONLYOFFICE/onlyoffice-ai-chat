@@ -179,9 +179,10 @@ describe("AIEngine.approveToolCall", () => {
     })) {
       void _;
     }
-    expect(storage.toolPrefs.upsertAllowAlways).toHaveBeenCalledWith([
-      "search",
-    ]);
+    expect(storage.toolPrefs.upsertAllowAlways).toHaveBeenCalledWith(
+      ["search"],
+      undefined
+    );
   });
 
   it("does not duplicate already-allowed tool", async () => {

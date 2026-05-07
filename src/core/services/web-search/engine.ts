@@ -28,19 +28,24 @@ export class WebSearchEngine {
     this.deps = deps;
   }
 
-  /** Read the active configuration, or `null` if not configured. */
-  async getActiveConfig(): Promise<WebSearchConfig | null> {
-    return this.deps.storage.webSearch.read();
+  /**
+   * Read the active configuration in scope, or `null` if not configured.
+   * `entityId` is opaque and forwarded to storage as-is.
+   */
+  async getActiveConfig(
+    entityId?: string
+  ): Promise<WebSearchConfig | null> {
+    return this.deps.storage.webSearch.read(entityId);
   }
 
-  /** Convenience: is web search currently configured? */
-  async isConfigured(): Promise<boolean> {
-    return (await this.deps.storage.webSearch.read()) !== null;
+  /** Convenience: is web search currently configured in scope? */
+  async isConfigured(entityId?: string): Promise<boolean> {
+    return (await this.deps.storage.webSearch.read(entityId)) !== null;
   }
 
   /**
    * Validate `config` against the live backend without persisting.
-   * Use for "Test" buttons in the settings form.
+   * Stateless w.r.t. storage — no `entityId` argument.
    */
   async testConnection(
     config: WebSearchConfig
@@ -49,37 +54,38 @@ export class WebSearchEngine {
   }
 
   /**
-   * Validate + persist atomically. The new config is only stored when
-   * `testConnection` returns `true`. Replaces any previously stored
-   * configuration in a single `storage.webSearch.upsert` call.
+   * Validate + persist atomically in scope. The new config is only
+   * stored when `testConnection` returns `true`.
    */
   async configure(
-    config: WebSearchConfig
+    config: WebSearchConfig,
+    entityId?: string
   ): Promise<WebSearchMutationResult> {
     const result = await testWebSearchConnection(config);
     if (result !== true) return { success: false, error: result };
 
-    await this.deps.storage.webSearch.upsert(config);
+    await this.deps.storage.webSearch.upsert(config, entityId);
     return { success: true, config };
   }
 
   /**
    * Persist `config` directly without running `testConnection`. Use for
-   * settings UIs that already validate the form locally and want to
-   * save partial / mid-edit state without a network round-trip on every
-   * keystroke.
+   * settings UIs that already validate the form locally.
    */
-  async setActiveConfig(config: WebSearchConfig): Promise<void> {
-    await this.deps.storage.webSearch.upsert(config);
+  async setActiveConfig(
+    config: WebSearchConfig,
+    entityId?: string
+  ): Promise<void> {
+    await this.deps.storage.webSearch.upsert(config, entityId);
   }
 
   /**
-   * Remove the persisted configuration. No-op if web search was not
-   * configured. Idempotent — safe to call from "Reset" UX.
+   * Remove the persisted configuration in scope. No-op if web search was
+   * not configured for that scope.
    */
-  async clear(): Promise<void> {
-    if ((await this.deps.storage.webSearch.read()) !== null) {
-      await this.deps.storage.webSearch.delete();
+  async clear(entityId?: string): Promise<void> {
+    if ((await this.deps.storage.webSearch.read(entityId)) !== null) {
+      await this.deps.storage.webSearch.delete(entityId);
     }
   }
 }

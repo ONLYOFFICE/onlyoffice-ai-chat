@@ -23,6 +23,7 @@ StorageAdapter
 ├── mcpServers     custom MCP server configs
 ├── toolPrefs      disabled / auto-approved tools
 ├── webSearch      web-search provider config (singleton)
+├── attachments    user-message attachments (files + images, ref-only persistence)
 └── lifecycle      init() / close()
 ```
 
@@ -30,6 +31,19 @@ The adapter is created by the host, registered through React
 context (`StorageProvider`), and consumed everywhere via
 `useStorage()` or via dependency injection into `core/services/`
 and the higher-level `src/services/` layer.
+
+### Entity scoping (`entityId`)
+
+`threads`, `assignments`, `preferences`, `mcpServers`,
+`toolPrefs`, and `webSearch` accept an optional `entityId` last
+argument that scopes each call to a "room" — the persistence
+side of [`WidgetConfig.entityId`](../../../src/widget-config.tsx).
+`undefined` means the unscoped (global) namespace; a string id
+selects an isolated per-entity namespace. `profiles`, `messages`,
+`prompts`, and `promptFolders` are intentionally unscoped (they
+are either shared across entities or already addressed by an id
+that carries the scope). See [`storage.md`](./storage.md#entity-scoping-entityid)
+for the full contract.
 
 See also: [`docs/adapters.md`](../../adapters.md) for the
 adapter pattern at the widget level, and [`docs/architecture.md`](../../architecture.md)

@@ -359,7 +359,10 @@ describe("createProfilesStore", () => {
     const s = createProfilesStore(deps);
     await s.getState().toggleExtendedThinking();
     expect(s.getState().extendedThinking).toBe(true);
-    expect(deps.api.preferences.setDeepMode).toHaveBeenCalledWith(true);
+    expect(deps.api.preferences.setDeepMode).toHaveBeenCalledWith(
+      true,
+      undefined
+    );
     expect(deps.emit).toHaveBeenCalledWith("onExtendedThinkingUpdated", {
       enabled: true,
     });

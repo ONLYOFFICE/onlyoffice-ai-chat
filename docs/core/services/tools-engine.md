@@ -48,6 +48,23 @@ type ToolsEngineDeps = {
 The engine is stateless across calls; share one instance per
 `AppContext`.
 
+### Entity scoping (`entityId`)
+
+Every public method takes an optional `entityId` last argument
+that is forwarded straight to storage without inspection (see
+[`WidgetConfig.entityId`](../../../src/widget-config.tsx)). The
+storage layer decides how to scope each entry:
+
+- The MCP server registry is per-scope — names are unique within
+  a scope, so two rooms can each register `"github"` without
+  colliding.
+- Disabled and auto-approve tool sets are per-scope — toggling a
+  tool off in one room does not affect the global namespace or
+  any sibling room.
+
+Pass `undefined` to operate on the unscoped (global) namespace,
+which is what callers without a `WidgetConfig.entityId` get.
+
 ---
 
 ## Methods at a glance
@@ -103,7 +120,8 @@ type McpTransportConfig =
 ```ts
 async addCustomServer(
   name: string,
-  config: McpServerConfig
+  config: McpServerConfig,
+  entityId?: string
 ): Promise<ToolsMutationResult>;
 ```
 
@@ -116,7 +134,8 @@ async addCustomServer(
 ```ts
 async updateCustomServer(
   name: string,
-  config: McpServerConfig
+  config: McpServerConfig,
+  entityId?: string
 ): Promise<ToolsMutationResult>;
 ```
 
@@ -127,7 +146,7 @@ async updateCustomServer(
 ### `removeCustomServer`
 
 ```ts
-async removeCustomServer(name: string): Promise<void>;
+async removeCustomServer(name: string, entityId?: string): Promise<void>;
 ```
 
 `storage.mcpServers.delete` is idempotent — calling on a missing
@@ -139,8 +158,13 @@ up lazily next time the panel opens.
 ### `getCustomServer` / `listCustomServers`
 
 ```ts
-async getCustomServer(name: string): Promise<McpServerConfig | null>;
-async listCustomServers(): Promise<Record<string, McpServerConfig>>;
+async getCustomServer(
+  name: string,
+  entityId?: string
+): Promise<McpServerConfig | null>;
+async listCustomServers(
+  entityId?: string
+): Promise<Record<string, McpServerConfig>>;
 ```
 
 Direct passthroughs.
@@ -149,7 +173,8 @@ Direct passthroughs.
 
 ```ts
 async replaceAllCustomServers(
-  map: Record<string, McpServerConfig>
+  map: Record<string, McpServerConfig>,
+  entityId?: string
 ): Promise<ToolsBulkResult>;
 ```
 
@@ -179,7 +204,11 @@ enabled.
 ### `setDisabled`
 
 ```ts
-async setDisabled(serverType: string, toolNames: string[]): Promise<void>;
+async setDisabled(
+  serverType: string,
+  toolNames: string[],
+  entityId?: string
+): Promise<void>;
 ```
 
 Atomic update of one server's disabled list:
@@ -192,7 +221,7 @@ Atomic update of one server's disabled list:
 ### `getDisabled`
 
 ```ts
-async getDisabled(): Promise<Record<string, string[]>>;
+async getDisabled(entityId?: string): Promise<Record<string, string[]>>;
 ```
 
 Direct passthrough.
@@ -200,7 +229,11 @@ Direct passthrough.
 ### `isToolDisabled`
 
 ```ts
-async isToolDisabled(serverType: string, toolName: string): Promise<boolean>;
+async isToolDisabled(
+  serverType: string,
+  toolName: string,
+  entityId?: string
+): Promise<boolean>;
 ```
 
 Read the map and check membership. Convenience wrapper used by
@@ -220,7 +253,8 @@ tokens. The `_` separator is why server names can't contain `_`
 async setAllowAlways(
   serverType: string,
   toolName: string,
-  value: boolean
+  value: boolean,
+  entityId?: string
 ): Promise<void>;
 ```
 
@@ -231,7 +265,7 @@ either, the engine short-circuits on read).
 ### `getAllowAlways`
 
 ```ts
-async getAllowAlways(): Promise<string[]>;
+async getAllowAlways(entityId?: string): Promise<string[]>;
 ```
 
 Direct passthrough — returns the raw list of tokens.
@@ -239,7 +273,11 @@ Direct passthrough — returns the raw list of tokens.
 ### `isAllowAlways`
 
 ```ts
-async isAllowAlways(serverType: string, toolName: string): Promise<boolean>;
+async isAllowAlways(
+  serverType: string,
+  toolName: string,
+  entityId?: string
+): Promise<boolean>;
 ```
 
 Convenience wrapper. The tool runner asks this when deciding

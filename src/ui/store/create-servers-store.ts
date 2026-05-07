@@ -46,13 +46,14 @@ export function createServersStore(deps: {
   ctx: AppContext;
   api: ServerAPI;
   callbacksManager: CallbacksManager;
+  entityId?: string;
 }): UseBoundStore<StoreApi<ServersStoreState>> {
-  const { ctx, api, callbacksManager } = deps;
+  const { ctx, api, callbacksManager, entityId } = deps;
 
   const buildToolsList = async () => {
     const grouped = await ctx.servers.getTools();
-    const disabled = await api.tools.getDisabled();
-    const webSearchEnabled = await api.webSearch.isConfigured();
+    const disabled = await api.tools.getDisabled(entityId);
+    const webSearchEnabled = await api.webSearch.isConfigured(entityId);
 
     // Annotate each tool with its `enabled` flag derived from the
     // persisted disabled list — used by the permissions UI to render
@@ -109,7 +110,7 @@ export function createServersStore(deps: {
       const next = enabled
         ? current.filter((n) => n !== name)
         : Array.from(new Set([...current, name]));
-      await api.tools.setDisabled(type, next);
+      await api.tools.setDisabled(type, next, entityId);
 
       // Optimistic local flip: just toggle `enabled` on the matching tool.
       // Avoids re-running `buildToolsList` (host getTools + getDisabled +
@@ -147,16 +148,16 @@ export function createServersStore(deps: {
 
     setManageToolData: (data) => set({ manageToolData: data }),
 
-    getConfig: async () => api.tools.listCustomServers(),
+    getConfig: async () => api.tools.listCustomServers(entityId),
 
     saveConfig: async (config) => {
-      await api.tools.replaceAllCustomServers(config.mcpServers);
+      await api.tools.replaceAllCustomServers(config.mcpServers, entityId);
       ctx.servers.setCustomServers(config);
       callbacksManager.emit("onServersUpdated", { kind: "config-saved" });
     },
 
     deleteCustomServer: async (name) => {
-      await api.tools.removeCustomServer(name);
+      await api.tools.removeCustomServer(name, entityId);
       ctx.servers.deleteCustomServer(name);
       callbacksManager.emit("onServersUpdated", {
         kind: "server-deleted",
@@ -166,6 +167,6 @@ export function createServersStore(deps: {
 
     getCustomServersLogs: () => ctx.servers.getCustomServersLogs(),
 
-    getWebSearchEnabled: () => api.webSearch.isConfigured(),
+    getWebSearchEnabled: () => api.webSearch.isConfigured(entityId),
   }));
 }

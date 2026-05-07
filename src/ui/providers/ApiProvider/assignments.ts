@@ -16,20 +16,20 @@ export function createAssignmentsApi(
   engines?: ServerAPIEngines
 ): AssignmentsApi {
   return {
-    resolveForAction: (actionType) =>
+    resolveForAction: (actionType, entityId) =>
       callRoute(
         config,
         "assignments",
         "resolveForAction",
-        [actionType],
+        [actionType, entityId],
         engines
       ),
-    tryResolveForAction: (actionType) =>
+    tryResolveForAction: (actionType, entityId) =>
       callRoute(
         config,
         "assignments",
         "tryResolveForAction",
-        [actionType],
+        [actionType, entityId],
         engines
       ),
     assign: (actionType, profileId) =>

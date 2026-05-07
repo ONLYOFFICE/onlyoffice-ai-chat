@@ -134,8 +134,8 @@ fall back to `testWebSearchConnection` only when the user clicks
 ## `getActiveConfig` / `isConfigured`
 
 ```ts
-async getActiveConfig(): Promise<WebSearchConfig | null>;
-async isConfigured(): Promise<boolean>;
+async getActiveConfig(entityId?: string): Promise<WebSearchConfig | null>;
+async isConfigured(entityId?: string): Promise<boolean>;
 ```
 
 Direct passthroughs. Use them to decide whether the web-search
@@ -153,14 +153,18 @@ async testConnection(config: WebSearchConfig): Promise<true | TErrorData>;
 Validates the supplied config without persisting. Idiomatic
 "Test" button — the user fills in the form, hits Test, sees
 either a success toast or a field-scoped error before deciding
-to save.
+to save. **No `entityId` argument** — `testConnection` only hits
+the network, never touches storage.
 
 ---
 
 ## `configure`
 
 ```ts
-async configure(config: WebSearchConfig): Promise<WebSearchMutationResult>;
+async configure(
+  config: WebSearchConfig,
+  entityId?: string
+): Promise<WebSearchMutationResult>;
 
 type WebSearchMutationResult =
   | { success: true; config: WebSearchConfig }
@@ -168,10 +172,14 @@ type WebSearchMutationResult =
 ```
 
 1. Run `testWebSearchConnection(config)`.
-2. On `true`, call `storage.webSearch.upsert(config)` — single
-   round-trip, idempotent (creates on first save, replaces
-   afterwards).
+2. On `true`, call `storage.webSearch.upsert(config, entityId)` —
+   single round-trip, idempotent within the requested scope
+   (creates on first save, replaces afterwards).
 3. Return the persisted config.
+
+`entityId` is opaque and forwarded straight to storage — pass
+the `WidgetConfig.entityId` for per-room provider config, or
+omit it for the global singleton.
 
 On failure, **nothing is written** — the previous config (if
 any) stays in place. Use this when the user clicks "Save" in the
@@ -182,7 +190,10 @@ settings form.
 ## `setActiveConfig`
 
 ```ts
-async setActiveConfig(config: WebSearchConfig): Promise<void>;
+async setActiveConfig(
+  config: WebSearchConfig,
+  entityId?: string
+): Promise<void>;
 ```
 
 Persists `config` directly via `storage.webSearch.upsert(config)`
@@ -200,13 +211,14 @@ When you do want validation before persist, use
 ## `clear`
 
 ```ts
-async clear(): Promise<void>;
+async clear(entityId?: string): Promise<void>;
 ```
 
 Reads first to keep the call idempotent — deletion is skipped if
-the row is already absent so storage layers that throw on
-"delete missing row" stay quiet. Reverts the system to "web
-search not configured".
+the row is already absent in the requested scope so storage
+layers that throw on "delete missing row" stay quiet. Reverts
+the requested scope to "web search not configured" and leaves
+other scopes untouched.
 
 ---
 

@@ -128,14 +128,14 @@ export const useChatDropAttachments = () => {
       if (file.type.startsWith("image/")) {
         try {
           const base64 = await readFile(file, "dataURL");
-          addAttachmentImage({ name: file.name, base64 });
+          await addAttachmentImage({ name: file.name, base64 });
         } catch {
           // Reading failed — silently skip this file.
         }
       } else if (isTextFile(file)) {
         try {
           const content = await readFile(file, "text");
-          addAttachmentFile({ path: file.name, content, type: 0 });
+          await addAttachmentFile({ path: file.name, content, type: 0 });
         } catch {
           // Reading failed — silently skip this file.
         }

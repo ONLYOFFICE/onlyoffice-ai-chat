@@ -40,37 +40,37 @@ export class PreferencesEngine {
   // ---------------------------------------------------------------------------
 
   /**
-   * Read the deep-mode toggle, falling back to the configured
-   * default when no value has been persisted.
+   * Read the deep-mode toggle in scope, falling back to the configured
+   * default when no value has been persisted. `entityId` is opaque to
+   * the engine and forwarded to storage.
    */
-  async getDeepMode(): Promise<boolean> {
-    const stored = await this.deps.storage.preferences.readDeepMode();
+  async getDeepMode(entityId?: string): Promise<boolean> {
+    const stored = await this.deps.storage.preferences.readDeepMode(entityId);
     return stored ?? this.defaults.deepMode;
   }
 
   /**
-   * Persist the deep-mode toggle. Idempotent — safe to call without
-   * checking whether a value has already been written.
+   * Persist the deep-mode toggle in scope. Idempotent — safe to call
+   * without checking whether a value has already been written.
    */
-  async setDeepMode(value: boolean): Promise<void> {
-    await this.deps.storage.preferences.upsertDeepMode(value);
+  async setDeepMode(value: boolean, entityId?: string): Promise<void> {
+    await this.deps.storage.preferences.upsertDeepMode(value, entityId);
   }
 
   /**
-   * Clear the persisted toggle. Future {@link getDeepMode} calls
-   * fall back to the configured default.
+   * Clear the persisted toggle in scope. Future {@link getDeepMode}
+   * calls fall back to the configured default.
    */
-  async clearDeepMode(): Promise<void> {
-    await this.deps.storage.preferences.deleteDeepMode();
+  async clearDeepMode(entityId?: string): Promise<void> {
+    await this.deps.storage.preferences.deleteDeepMode(entityId);
   }
 
   /**
-   * True when the user has explicitly persisted a value (regardless
-   * of whether it's `true` or `false`). Use this to distinguish
-   * "user opted in/out" from "never set".
+   * True when the user has explicitly persisted a value in scope
+   * (regardless of whether it's `true` or `false`).
    */
-  async isDeepModeSet(): Promise<boolean> {
-    const stored = await this.deps.storage.preferences.readDeepMode();
+  async isDeepModeSet(entityId?: string): Promise<boolean> {
+    const stored = await this.deps.storage.preferences.readDeepMode(entityId);
     return stored !== null;
   }
 }

@@ -35,8 +35,11 @@ export class AssignmentsEngine {
    * if neither slot is set or the resolved ID is missing from
    * `storage.profiles`.
    */
-  async resolveForAction(actionType: ActionType): Promise<ResolvedAssignment> {
-    const result = await this.tryResolveForAction(actionType);
+  async resolveForAction(
+    actionType: ActionType,
+    entityId?: string
+  ): Promise<ResolvedAssignment> {
+    const result = await this.tryResolveForAction(actionType, entityId);
     if (!result) {
       throw new Error(
         `No profile assigned to ActionType.${actionType} and no default set`
@@ -49,13 +52,20 @@ export class AssignmentsEngine {
    * Same as {@link resolveForAction} but returns `null` instead of
    * throwing when no profile is available. Use this when the caller
    * wants to render a "not configured" state instead of crashing.
+   *
+   * `entityId` is opaque to the engine and forwarded to
+   * {@link AssignmentsStorage.readByType} so the storage layer can
+   * return an entity-specific profile (typically for `ActionType.Chat`).
+   * The `Default` fallback lookup is unscoped — entity-specific defaults
+   * are not a concept the engine tracks.
    */
   async tryResolveForAction(
-    actionType: ActionType
+    actionType: ActionType,
+    entityId?: string
   ): Promise<ResolvedAssignment | null> {
     const { storage } = this.deps;
     const profileId =
-      (await storage.assignments.readByType(actionType)) ??
+      (await storage.assignments.readByType(actionType, entityId)) ??
       (await storage.assignments.readByType(ActionType.Default));
     if (!profileId) return null;
 

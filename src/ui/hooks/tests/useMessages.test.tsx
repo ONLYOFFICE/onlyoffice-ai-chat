@@ -72,6 +72,16 @@ const apiAi = {
   denyToolCall: vi.fn(),
 };
 
+const apiAttachments = {
+  saveFile: vi.fn(),
+  saveImage: vi.fn(),
+  get: vi.fn(),
+  getMany: vi.fn(),
+  delete: vi.fn(),
+  deleteMany: vi.fn().mockResolvedValue(undefined),
+  linkToMessage: vi.fn(),
+};
+
 const servers = {
   getServerType: vi.fn((n: string) => `type_${n}`),
   callTools: vi.fn().mockResolvedValue("tool-result"),
@@ -94,14 +104,30 @@ vi.mock("../../store/context", () => ({
         selector ? selector(stores.serversState) : stores.serversState) as never,
       { getState: () => stores.serversState }
     ),
-    useAttachmentsStore: (
-      selector?: (s: typeof stores.attachmentsState) => unknown
-    ) =>
-      selector ? selector(stores.attachmentsState) : stores.attachmentsState,
+    useAttachmentsStore: Object.assign(
+      ((selector?: (s: typeof stores.attachmentsState) => unknown) =>
+        selector
+          ? selector(stores.attachmentsState)
+          : stores.attachmentsState) as never,
+      {
+        setState: (
+          patch:
+            | Partial<typeof stores.attachmentsState>
+            | ((s: typeof stores.attachmentsState) => Partial<
+                typeof stores.attachmentsState
+              >)
+        ) => {
+          const next =
+            typeof patch === "function" ? patch(stores.attachmentsState) : patch;
+          Object.assign(stores.attachmentsState, next);
+        },
+        getState: () => stores.attachmentsState,
+      }
+    ),
     useProfilesStore: (
       selector?: (s: typeof stores.profilesState) => unknown
     ) => (selector ? selector(stores.profilesState) : stores.profilesState),
-    api: { ai: apiAi },
+    api: { ai: apiAi, attachments: apiAttachments },
     callbacksManager,
     middlewareRunner,
     selectCurrentChatProfile: (s: typeof stores.profilesState) =>

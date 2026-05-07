@@ -1,5 +1,11 @@
 export type { HttpMethod, RouteSpec } from "./types";
 
+export { AttachmentsEngine, DEFAULT_ATTACHMENTS_ROUTES } from "./attachments";
+export type {
+  AttachmentsEngineDeps,
+  AttachmentsEngineMethod,
+} from "./attachments";
+
 export { AIEngine, DEFAULT_AI_ROUTES } from "./ai";
 export type {
   AIEngineDeps,

@@ -16,16 +16,23 @@ export function createWebSearchApi(
   engines?: ServerAPIEngines
 ): WebSearchApi {
   return {
-    getActiveConfig: () =>
-      callRoute(config, "webSearch", "getActiveConfig", [], engines),
-    isConfigured: () =>
-      callRoute(config, "webSearch", "isConfigured", [], engines),
+    getActiveConfig: (entityId) =>
+      callRoute(config, "webSearch", "getActiveConfig", [entityId], engines),
+    isConfigured: (entityId) =>
+      callRoute(config, "webSearch", "isConfigured", [entityId], engines),
     testConnection: (body) =>
       callRoute(config, "webSearch", "testConnection", [body], engines),
-    configure: (body) =>
-      callRoute(config, "webSearch", "configure", [body], engines),
-    setActiveConfig: (body) =>
-      callRoute(config, "webSearch", "setActiveConfig", [body], engines),
-    clear: () => callRoute(config, "webSearch", "clear", [], engines),
+    configure: (body, entityId) =>
+      callRoute(config, "webSearch", "configure", [body, entityId], engines),
+    setActiveConfig: (body, entityId) =>
+      callRoute(
+        config,
+        "webSearch",
+        "setActiveConfig",
+        [body, entityId],
+        engines
+      ),
+    clear: (entityId) =>
+      callRoute(config, "webSearch", "clear", [entityId], engines),
   };
 }

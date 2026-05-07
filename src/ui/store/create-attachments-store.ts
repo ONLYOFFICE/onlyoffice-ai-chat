@@ -1,66 +1,191 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
-import type { TAttachmentFile, TAttachmentImage } from "../../types";
+import type { TAttachmentRef } from "../../types";
+import type { AttachmentsApi } from "../providers/ApiProvider/attachments";
 
 /**
- * Zustand state for file and image attachments on the current message draft.
+ * Zustand state for file and image attachment refs on the current
+ * message draft.
  *
- * Tracks two separate lists (files and images), each capped at 5 items,
- * and provides add / delete / clear operations for both.
+ * Each add operation persists the full payload through `api.attachments`
+ * (in-process or remote depending on `ServerAPIConfig`) and keeps only
+ * the lightweight {@link TAttachmentRef} (`{id, title, kind, ...}`) in
+ * memory. Delete and clear operations cascade the storage delete so the
+ * draft never leaves orphan records when the user backs out of an
+ * attachment they just added.
+ *
+ * Image base64 payloads are kept in a transient cache (`_imageCache`)
+ * keyed by id so the composer thumbnail and the just-sent message
+ * bubble can render without round-tripping through `api.attachments.get`.
+ * The cache is dropped on explicit delete / clear, but **survives** the
+ * `setState` we use during `onNew` send-flow so the bubble that just
+ * appeared can still read it. Switching threads runs `clearAttachment*`
+ * which drops the cache.
  */
 export interface AttachmentsStoreState {
-  /** Files currently attached to the message draft (max 5). */
-  attachmentFiles: TAttachmentFile[];
-  /** Images currently attached to the message draft (max 5). */
-  attachmentImages: TAttachmentImage[];
-  /** Append a file attachment (no-op if the limit of 5 is reached). */
-  addAttachmentFile: (file: TAttachmentFile) => void;
-  /** Remove a file attachment by its path. */
-  deleteAttachmentFile: (path: string) => void;
-  /** Remove all file attachments. */
-  clearAttachmentFiles: () => void;
-  /** Append an image attachment (no-op if the limit of 5 is reached). */
-  addAttachmentImage: (image: TAttachmentImage) => void;
-  /** Remove an image attachment by its name. */
-  deleteAttachmentImage: (name: string) => void;
-  /** Remove all image attachments. */
-  clearAttachmentImages: () => void;
+  /** File refs currently attached to the draft (max 5). */
+  attachmentFiles: TAttachmentRef[];
+  /** Image refs currently attached to the draft (max 5). */
+  attachmentImages: TAttachmentRef[];
+  /**
+   * Transient `id → base64` cache for in-session image previews.
+   * Read via {@link selectImageBase64}; never serialized.
+   */
+  _imageCache: Record<string, string>;
+
+  /**
+   * Persist a file payload to storage and append the resulting ref.
+   * No-op (does not touch storage) when the limit of 5 is reached.
+   * Calls are serialized internally so concurrent invocations cannot
+   * race past the limit check.
+   */
+  addAttachmentFile: (input: {
+    path: string;
+    content: string;
+    type: number;
+    title?: string;
+  }) => Promise<void>;
+
+  /** Remove a file ref by id and delete the underlying storage record. */
+  deleteAttachmentFile: (id: string) => Promise<void>;
+
+  /** Remove all file refs (and their storage records). */
+  clearAttachmentFiles: () => Promise<void>;
+
+  /**
+   * Persist an image payload to storage and append the resulting ref.
+   * The base64 also lands in `_imageCache` so the composer thumbnail
+   * appears without a follow-up storage round trip. Serialized like
+   * {@link addAttachmentFile}.
+   */
+  addAttachmentImage: (input: {
+    name: string;
+    base64: string;
+    title?: string;
+  }) => Promise<void>;
+
+  /** Remove an image ref by id, drop its cached base64, and delete storage. */
+  deleteAttachmentImage: (id: string) => Promise<void>;
+
+  /** Remove all image refs (and their storage records, and cache entries). */
+  clearAttachmentImages: () => Promise<void>;
 }
 
-export function createAttachmentsStore(): UseBoundStore<
-  StoreApi<AttachmentsStoreState>
-> {
+export interface CreateAttachmentsStoreConfig {
+  /**
+   * `api.attachments` slice — routes every call in-process or over
+   * HTTP depending on `ServerAPIConfig`.
+   */
+  attachments: AttachmentsApi;
+  /**
+   * Entity scope forwarded to `attachments.saveFile / saveImage` so
+   * drafts created in one entity stay isolated from another entity's
+   * drafts. Mirrors the `entityId` plumbing on threads / assignments /
+   * web-search.
+   */
+  entityId?: string;
+}
+
+const ATTACHMENT_LIMIT = 5;
+
+/**
+ * Selector helper — read a cached base64 for a given attachment id.
+ * Returns `undefined` if the entry was never seen (history reload, or
+ * dropped by an earlier clear).
+ */
+export const selectImageBase64 =
+  (id: string | undefined) =>
+  (s: AttachmentsStoreState): string | undefined =>
+    id ? s._imageCache[id] : undefined;
+
+export function createAttachmentsStore(
+  config: CreateAttachmentsStoreConfig
+): UseBoundStore<StoreApi<AttachmentsStoreState>> {
+  const { attachments, entityId } = config;
+
+  // Per-store mutex — every `add*` call queues onto this chain so
+  // limit-check + storage-write + state-update cannot interleave with
+  // a parallel `add*` call. Without this, picking 6 files at once can
+  // bypass the 5-item cap because all 6 invocations read `length === 0`
+  // before any of them commits.
+  let chain: Promise<unknown> = Promise.resolve();
+  const queue = <T>(fn: () => Promise<T>): Promise<T> => {
+    const next = chain.then(fn, fn);
+    chain = next.catch(() => undefined);
+    return next;
+  };
+
   return create<AttachmentsStoreState>((set, get) => ({
     attachmentFiles: [],
     attachmentImages: [],
+    _imageCache: {},
 
-    addAttachmentFile: (file) => {
-      if (get().attachmentFiles.length >= 5) return;
-      set({
-        attachmentFiles: [...get().attachmentFiles, file],
+    addAttachmentFile: (input) =>
+      queue(async () => {
+        if (get().attachmentFiles.length >= ATTACHMENT_LIMIT) return;
+        const record = await attachments.saveFile(input, entityId);
+        const ref: TAttachmentRef = {
+          id: record.id,
+          title: record.title,
+          kind: "file",
+          path: record.path,
+          type: record.type,
+        };
+        set((s) => ({ attachmentFiles: [...s.attachmentFiles, ref] }));
+      }),
+
+    deleteAttachmentFile: async (id) => {
+      // Await storage first — if the remote delete fails we surface it
+      // and keep the ref visible so the user can retry. No silent split
+      // between UI and persistence.
+      await attachments.delete(id);
+      set((s) => ({
+        attachmentFiles: s.attachmentFiles.filter((f) => f.id !== id),
+      }));
+    },
+
+    clearAttachmentFiles: async () => {
+      const ids = get().attachmentFiles.map((f) => f.id);
+      set({ attachmentFiles: [] });
+      if (ids.length > 0) {
+        // Best-effort — if some deletes fail the orphans get caught by
+        // the future GC pass. Don't crash the UI on a network blip.
+        await attachments.deleteMany(ids).catch(() => undefined);
+      }
+    },
+
+    addAttachmentImage: (input) =>
+      queue(async () => {
+        if (get().attachmentImages.length >= ATTACHMENT_LIMIT) return;
+        const record = await attachments.saveImage(input, entityId);
+        const ref: TAttachmentRef = {
+          id: record.id,
+          title: record.title,
+          kind: "image",
+        };
+        set((s) => ({
+          attachmentImages: [...s.attachmentImages, ref],
+          _imageCache: { ...s._imageCache, [record.id]: input.base64 },
+        }));
+      }),
+
+    deleteAttachmentImage: async (id) => {
+      await attachments.delete(id);
+      set((s) => {
+        const cache = { ...s._imageCache };
+        delete cache[id];
+        return {
+          attachmentImages: s.attachmentImages.filter((i) => i.id !== id),
+          _imageCache: cache,
+        };
       });
     },
 
-    deleteAttachmentFile: (path) => {
-      set({
-        attachmentFiles: get().attachmentFiles.filter((f) => f.path !== path),
-      });
+    clearAttachmentImages: async () => {
+      const ids = get().attachmentImages.map((i) => i.id);
+      set({ attachmentImages: [], _imageCache: {} });
+      if (ids.length > 0) {
+        await attachments.deleteMany(ids).catch(() => undefined);
+      }
     },
-
-    clearAttachmentFiles: () => set({ attachmentFiles: [] }),
-
-    addAttachmentImage: (image) => {
-      if (get().attachmentImages.length >= 5) return;
-      set({
-        attachmentImages: [...get().attachmentImages, image],
-      });
-    },
-
-    deleteAttachmentImage: (name) => {
-      set({
-        attachmentImages: get().attachmentImages.filter((i) => i.name !== name),
-      });
-    },
-
-    clearAttachmentImages: () => set({ attachmentImages: [] }),
   }));
 }

@@ -26,6 +26,20 @@ into a single object that gets passed through React context:
 Plus the lifecycle hooks `init()` and `close()` on the aggregate
 adapter itself.
 
+## Entity scoping (`entityId`)
+
+Six sub-storages (`threads`, `assignments`, `preferences`,
+`mcpServers`, `toolPrefs`, `webSearch`) accept an optional
+`entityId` last argument on every method. It is the persistence
+side of [`WidgetConfig.entityId`](../widget-config.tsx) "rooms":
+`undefined` operates on the unscoped (global) namespace, a
+string id selects a per-entity namespace, and the two are kept
+strictly disjoint by the implementation. `profiles`, `messages`,
+`prompts`, and `promptFolders` are unscoped by design.
+
+See [`docs/core/storage/storage.md`](../../../docs/core/storage/storage.md#entity-scoping-entityid)
+for the contract and rationale.
+
 ## Full documentation
 
 See [`docs/core/storage/`](../../../docs/core/storage/README.md):

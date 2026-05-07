@@ -23,36 +23,33 @@ export type WebSearchConfig = {
  */
 export interface WebSearchStorage {
   /**
-   * Save a web-search configuration for the first time. Throws if a
-   * configuration already exists.
+   * Save a web-search configuration for the first time in the requested
+   * scope. Throws if one already exists in that scope.
    *
-   * @param config - The configuration to persist.
+   * `entityId` is opaque — when provided the implementation should scope
+   * the singleton to that entity ("room"); when omitted the unscoped
+   * (global) singleton is used.
    */
-  create(config: WebSearchConfig): Promise<void>;
+  create(config: WebSearchConfig, entityId?: string): Promise<void>;
 
   /**
-   * Read the active web-search configuration.
-   *
-   * @returns The stored configuration, or `null` if web-search is not set up.
+   * Read the active web-search configuration in the requested scope.
+   * Returns `null` when not configured for that scope.
    */
-  read(): Promise<WebSearchConfig | null>;
+  read(entityId?: string): Promise<WebSearchConfig | null>;
 
   /**
-   * Replace the existing web-search configuration. Throws if none exists.
-   *
-   * @param config - The replacement configuration.
+   * Replace the existing web-search configuration in the requested
+   * scope. Throws if none exists in that scope.
    */
-  update(config: WebSearchConfig): Promise<void>;
+  update(config: WebSearchConfig, entityId?: string): Promise<void>;
 
   /**
    * Idempotent write — `create` if no configuration has been persisted
-   * yet, `update` otherwise. Lets callers replace the singleton config
-   * without first checking whether the row exists.
+   * yet in the requested scope, `update` otherwise.
    */
-  upsert(config: WebSearchConfig): Promise<void>;
+  upsert(config: WebSearchConfig, entityId?: string): Promise<void>;
 
-  /**
-   * Remove the stored configuration. Subsequent `read()` calls return `null`.
-   */
-  delete(): Promise<void>;
+  /** Remove the stored configuration in the requested scope. */
+  delete(entityId?: string): Promise<void>;
 }

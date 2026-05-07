@@ -62,18 +62,27 @@ function makeStorage(seed: {
 
   const storage = {
     threads: {
-      create: vi.fn(async (title: string, profileId?: string) => {
-        const threadId = crypto.randomUUID();
-        const thread: Thread = {
-          threadId,
-          title,
-          profileId,
-          lastEditDate: Date.now(),
-        };
-        threads.push(thread);
-        return thread;
-      }),
-      readAll: vi.fn(async () => [...threads]),
+      create: vi.fn(
+        async (title: string, profileId?: string, entityId?: string) => {
+          const threadId = crypto.randomUUID();
+          const thread: Thread & { entityId?: string } = {
+            threadId,
+            title,
+            profileId,
+            lastEditDate: Date.now(),
+          };
+          if (entityId !== undefined) {
+            (thread as { entityId?: string }).entityId = entityId;
+          }
+          threads.push(thread);
+          return thread;
+        }
+      ),
+      readAll: vi.fn(async (entityId?: string) =>
+        threads.filter(
+          (t) => (t as { entityId?: string }).entityId === entityId
+        )
+      ),
       update: vi.fn(async (id: string, title?: string) => {
         const t = threads.find((x) => x.threadId === id);
         if (t) t.title = title ?? t.title;
@@ -297,6 +306,59 @@ describe("ThreadsEngine.regenerateTitle", () => {
     await expect(engine.regenerateTitle("t1", profile)).rejects.toThrow(
       /no messages to derive a title from/
     );
+  });
+});
+
+describe("ThreadsEngine entity scope", () => {
+  it("create() forwards entityId to storage.threads.create", async () => {
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    await engine.create({ title: "T", profileId: "p1", entityId: "e1" });
+    expect(storage.threads.create).toHaveBeenCalledWith("T", "p1", "e1");
+  });
+
+  it("create() omits entityId when not provided (passthrough mode)", async () => {
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    await engine.create({ title: "T", profileId: "p1" });
+    expect(storage.threads.create).toHaveBeenCalledWith("T", "p1", undefined);
+  });
+
+  it("openOrCreate() persists entityId on a freshly created thread", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Auto");
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    await engine.openOrCreate({
+      profile,
+      profileId: "p1",
+      firstMessage: userMessage,
+      entityId: "e1",
+    });
+    expect(storage.threads.create).toHaveBeenCalledWith("Auto", "p1", "e1");
+  });
+
+  it("list(entityId) forwards entityId to storage.threads.readAll", async () => {
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    await engine.list("e1");
+    expect(storage.threads.readAll).toHaveBeenCalledWith("e1");
+  });
+
+  it("list() returns only threads bound to the requested scope", async () => {
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    await engine.create({ title: "Global" });
+    await engine.create({ title: "Room A", entityId: "e1" });
+    await engine.create({ title: "Room B", entityId: "e2" });
+
+    const unscoped = await engine.list();
+    expect(unscoped.map((t) => t.title)).toEqual(["Global"]);
+
+    const roomA = await engine.list("e1");
+    expect(roomA.map((t) => t.title)).toEqual(["Room A"]);
+
+    const roomB = await engine.list("e2");
+    expect(roomB.map((t) => t.title)).toEqual(["Room B"]);
   });
 });
 

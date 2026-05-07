@@ -177,6 +177,66 @@ describe("AIEngine.sendWithStream", () => {
   });
 });
 
+describe("AIEngine.sendWithStream entity scope", () => {
+  it("forwards input.entityId to assignments.readByType and threads.create", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      entityId: "e1",
+    })) {
+      // drain
+    }
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Chat,
+      "e1"
+    );
+    expect(storage.threads.create).toHaveBeenCalledWith(
+      "New chat",
+      "p1",
+      "e1"
+    );
+  });
+
+  it("omits entityId when not provided (passthrough mode)", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({ userMessage })) {
+      // drain
+    }
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Chat,
+      undefined
+    );
+    expect(storage.threads.create).toHaveBeenCalledWith(
+      "New chat",
+      "p1",
+      undefined
+    );
+  });
+});
+
+describe("AIEngine.send entity scope", () => {
+  it("forwards input.entityId to assignments.readByType", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("summary");
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    await engine.send({
+      actionType: ActionType.Summarization,
+      userMessage,
+      entityId: "e1",
+    });
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Summarization,
+      "e1"
+    );
+  });
+});
+
 describe("AIEngine.send", () => {
   it("Chat dispatches via the streaming chat action and drains it", async () => {
     const final: ThreadMessageLike = {
