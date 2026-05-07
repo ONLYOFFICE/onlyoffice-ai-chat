@@ -1,6 +1,21 @@
 import { createContext, useContext, useMemo } from "react";
+import type { SystemPromptOverride } from "./core/actions";
 
 export interface WidgetConfig {
+  /**
+   * Opaque scope token for entity-bound chat ("rooms"). When set, the
+   * widget shows only threads belonging to this entity, new threads are
+   * created in this scope, and `assignments.resolveForAction(Chat, …)`
+   * receives this id so the storage layer can return an entity-specific
+   * chat profile instead of the global Chat assignment.
+   *
+   * The core (engines / actions) treats this value as opaque and only
+   * passes it through to storage methods — entity lifecycle and the
+   * "which profile per entity" mapping live entirely on the host side.
+   *
+   * Fixed at mount; live switching is not supported.
+   */
+  entityId?: string;
   hideProfilePicker?: boolean;
   /**
    * Hide the settings (gear) button in the header. The settings page itself
@@ -26,6 +41,14 @@ export interface WidgetConfig {
    * still wins when explicitly passed.
    */
   isDialogFullscreen?: boolean;
+  /**
+   * Override (replace or append) for the built-in chat system prompt.
+   * Forwarded as `actionArgs.prompt` on every `sendWithStream`,
+   * `approveToolCall`, and `denyToolCall` so the override survives the
+   * tool-call round-trip. Untouched by the engine/actions otherwise —
+   * see {@link SystemPromptOverride}.
+   */
+  systemPrompt?: SystemPromptOverride;
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});

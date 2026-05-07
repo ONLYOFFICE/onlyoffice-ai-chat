@@ -15,6 +15,7 @@ import type { ChatMiddleware } from "./core/middleware";
 import {
   AIEngine,
   AssignmentsEngine,
+  AttachmentsEngine,
   PreferencesEngine,
   ProfilesEngine,
   PromptsEngine,
@@ -53,6 +54,7 @@ import Servers from "./ui/tools/servers";
 import type { ToolsAdapter } from "./core/tools-adapter";
 import type { HostToolGroup } from "./ui/tools/types";
 import { WidgetConfigProvider } from "./widget-config";
+import type { SystemPromptOverride } from "./core/actions";
 import type {
   ProviderType,
   TOnlyOfficeConfig,
@@ -93,6 +95,22 @@ export interface AIChatWidgetProps {
   onSettingsClick?: () => void;
   isSettingsActive?: boolean;
   isDialogFullscreen?: boolean;
+  /**
+   * Opaque scope token for entity-bound chat ("rooms"). When set, the
+   * widget shows only threads belonging to this entity, all
+   * tools/servers/web-search/preferences/assignments lookups are
+   * scoped to this entity, and a fixed per-entity chat profile is used
+   * (resolved by the host's storage).
+   *
+   * Fixed at mount; live switching is not supported.
+   */
+  entityId?: string;
+  /**
+   * Custom system prompt for the chat action. Replaces or appends to
+   * the built-in prompt for every chat round (including tool-call
+   * resume rounds). Other action types are unaffected.
+   */
+  systemPrompt?: SystemPromptOverride;
   /** Optional remote API routing — defaults to in-process engines. */
   apiConfig?: Partial<Pick<ServerAPIConfig, "origin" | "baseUrl" | "headers">>;
 }
@@ -127,6 +145,8 @@ export const AIChatWidget = React.forwardRef<
       onSettingsClick,
       isSettingsActive,
       isDialogFullscreen,
+      entityId,
+      systemPrompt,
       apiConfig,
     },
     ref
@@ -138,6 +158,8 @@ export const AIChatWidget = React.forwardRef<
         onSettingsClick,
         isSettingsActive,
         isDialogFullscreen,
+        entityId,
+        systemPrompt,
       }),
       [
         hideProfilePicker,
@@ -145,6 +167,8 @@ export const AIChatWidget = React.forwardRef<
         onSettingsClick,
         isSettingsActive,
         isDialogFullscreen,
+        entityId,
+        systemPrompt,
       ]
     );
 
@@ -161,6 +185,7 @@ export const AIChatWidget = React.forwardRef<
       const prompts = new PromptsEngine({ storage });
       const webSearch = new WebSearchEngine({ storage });
       const preferences = new PreferencesEngine({ storage });
+      const attachments = new AttachmentsEngine({ storage });
 
       const servers = new Servers(platform, eventBus);
 
@@ -186,6 +211,7 @@ export const AIChatWidget = React.forwardRef<
       const engines = {
         ai,
         assignments,
+        attachments,
         preferences,
         profiles,
         prompts,
@@ -202,7 +228,12 @@ export const AIChatWidget = React.forwardRef<
       };
 
       const api = createServerAPI(serverApiConfig, engines);
-      const stores = createStores({ keys: storeKeys, ctx, api });
+      const stores = createStores({
+        keys: storeKeys,
+        ctx,
+        api,
+        entityId,
+      });
 
       return { ctx, stores, engines, serverApiConfig };
     }, [
@@ -215,6 +246,7 @@ export const AIChatWidget = React.forwardRef<
       hiddenWebSearchProviders,
       apiConfig,
       toolsAdapter,
+      entityId,
     ]);
 
     return (

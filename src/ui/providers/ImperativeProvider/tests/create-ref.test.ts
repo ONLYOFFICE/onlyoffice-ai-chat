@@ -1,15 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { setSystemPromptAppendix, getSystemPromptAppendix } = vi.hoisted(() => ({
-  setSystemPromptAppendix: vi.fn(),
-  getSystemPromptAppendix: vi.fn(() => "appendix"),
-}));
-
-vi.mock("../../../../core/providers/prompts", () => ({
-  setSystemPromptAppendix,
-  getSystemPromptAppendix,
-}));
-
 import { createWidgetRef } from "../create-ref";
 import type { Stores } from "../../../store/create-stores";
 import type Servers from "../../../tools/servers";
@@ -212,15 +202,5 @@ describe("createWidgetRef", () => {
     const { ref, eventBus } = build();
     ref.updateWebSearch();
     expect(eventBus.emit).toHaveBeenCalledWith("web-search-changed");
-  });
-
-  it("system prompt appendix get/set/clear/update", () => {
-    const { ref } = build();
-    ref.setSystemPromptAppendix("yo");
-    expect(setSystemPromptAppendix).toHaveBeenCalledWith("yo");
-    ref.clearSystemPromptAppendix();
-    expect(setSystemPromptAppendix).toHaveBeenLastCalledWith("");
-    expect(ref.getSystemPromptAppendix()).toBe("appendix");
-    ref.updateSystemPromptAppendix(); // no-op shouldn't throw
   });
 });

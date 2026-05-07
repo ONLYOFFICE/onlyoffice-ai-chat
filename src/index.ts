@@ -179,7 +179,7 @@ export type {
 // ---------------------------------------------------------------------------
 
 export { providerFor } from "./core/actions/provider";
-export type { ActionArgs } from "./core/actions/types";
+export type { ActionArgs, SystemPromptOverride } from "./core/actions/types";
 
 // ---------------------------------------------------------------------------
 // Settings (key/value adapter contract — implemented by the host)
@@ -200,6 +200,8 @@ export type { ToolsAdapter } from "./core/tools-adapter";
 
 export type {
   AssignmentsStorage,
+  Attachment,
+  AttachmentsStorage,
   McpServerConfig,
   McpServersStorage,
   MessagesStorage,
@@ -252,6 +254,7 @@ export type {
   ProviderType,
   TAttachmentFile,
   TAttachmentImage,
+  TAttachmentRef,
   Thread,
   TMCPItem,
   TProcess,
@@ -371,7 +374,6 @@ export type {
   StreamErrorEvent,
   StreamStartEvent,
   StreamStopEvent,
-  SystemPromptAppendixUpdatedEvent,
   ThreadsUpdateKind,
   ThreadsUpdatedEvent,
   ToolCallApprovedEvent,

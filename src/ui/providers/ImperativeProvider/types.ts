@@ -125,27 +125,4 @@ export interface AIChatWidgetRef {
 
   /** Re-read the extended-thinking (deep-mode) flag from settings. */
   updateExtendedThinking(): void;
-
-  // --- System prompt appendix ---
-
-  /**
-   * Set (or replace) the free-form text appended to the built-in system prompt
-   * on every provider request. Persists to `SettingsAdapter` and re-applies to
-   * all active providers. Passing an empty string behaves like
-   * {@link clearSystemPromptAppendix}.
-   */
-  setSystemPromptAppendix(text: string): void;
-
-  /** Remove the system-prompt appendix so providers use the built-in prompt alone. */
-  clearSystemPromptAppendix(): void;
-
-  /** Returns the current system-prompt appendix (empty string when unset). */
-  getSystemPromptAppendix(): string;
-
-  /**
-   * Re-read the system-prompt appendix from settings after the host mutates
-   * it out of band (e.g. cross-tab sync). Re-applies to all active providers
-   * and emits `onSystemPromptAppendixUpdated` if the value changed.
-   */
-  updateSystemPromptAppendix(): void;
 }

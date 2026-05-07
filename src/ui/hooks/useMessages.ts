@@ -1,12 +1,17 @@
 import type { AppendMessage, ThreadMessageLike } from "@assistant-ui/react";
 import type { ReadonlyJSONObject } from "assistant-stream/utils";
 import { useCallback, useEffect, useRef } from "react";
+import {
+  buildFileRefBlock,
+  buildImageRefBlock,
+} from "../../core/actions/attachment-resolution";
 import type { ChatEvent } from "../../core/services";
 import {
   patchToolCallArgs,
   patchToolCallResult,
   readToolCall,
 } from "../../core/services/ai/tool-call";
+import { useWidgetConfig } from "../../widget-config";
 import { useStores } from "../store/context";
 import { useToolsContext } from "../tools/context";
 
@@ -76,6 +81,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const extendedThinking = useProfilesStore((s) => s.extendedThinking);
   const { servers } = useToolsContext();
+  const { entityId, systemPrompt } = useWidgetConfig();
 
   const threadIdRef = useRef(threadId);
 
@@ -93,11 +99,13 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     if (claimedId === threadId && threadId) return;
     fetchPrevMessages(threadId);
     clearAttachmentFiles();
+    clearAttachmentImages();
   }, [
     threadId,
     isReady,
     fetchPrevMessages,
     clearAttachmentFiles,
+    clearAttachmentImages,
     useMessageStore,
   ]);
 
@@ -333,9 +341,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               messageId: event.messageId,
               idx: event.idx,
               message: event.message,
+              entityId,
               actionArgs: {
                 isReasoning: extendedThinking,
                 tools: tools.length > 0 ? tools : undefined,
+                prompt: systemPrompt,
               },
             });
             await processStream(next, resolvedThreadId);
@@ -417,9 +427,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           idx: event.idx,
           message: event.message,
           result,
+          entityId,
           actionArgs: {
             isReasoning: extendedThinking,
             tools: tools.length > 0 ? tools : undefined,
+            prompt: systemPrompt,
           },
         });
         await processStream(next, event.threadId, {
@@ -434,6 +446,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       callbacksManager,
       claimThreadId,
       currentProfile,
+      entityId,
       extendedThinking,
       insertThread,
       middlewareRunner,
@@ -443,6 +456,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setIsRequestRunning,
       setAbortController,
       setManageToolData,
+      systemPrompt,
       tools,
     ]
   );
@@ -452,13 +466,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     if (message.content[0].type !== "text") return;
 
     let text = message.content[0].text;
-    let files =
-      attachmentFiles.length > 0 ? [...attachmentFiles] : undefined;
-    let images =
-      attachmentImages.length > 0 ? [...attachmentImages] : undefined;
-
-    if (files) clearAttachmentFiles();
-    if (images) clearAttachmentImages();
+    const originalFiles = [...attachmentFiles];
+    const originalImages = [...attachmentImages];
+    let files = originalFiles.length > 0 ? [...originalFiles] : undefined;
+    let images = originalImages.length > 0 ? [...originalImages] : undefined;
 
     if (!middlewareRunner.isEmpty) {
       const result = await middlewareRunner.runBeforeSend({
@@ -468,7 +479,22 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         threadId,
         profile: currentProfile,
         existingMessages: messages,
+        resolveAttachment: async (id) => {
+          const rec = await api.attachments.get(id);
+          if (!rec) return null;
+          return {
+            title: rec.title,
+            kind: rec.kind,
+            content: rec.content,
+            base64: rec.base64,
+            path: rec.path,
+            type: rec.type,
+          };
+        },
       });
+      // Block path: leave the draft refs in place (both in zustand and
+      // in storage) so the user can edit and retry. Deleting them here
+      // would silently lose the upload.
       if (result.action === "block") return;
       if (result.action === "continue") {
         if (result.text !== undefined) text = result.text;
@@ -479,19 +505,47 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       }
     }
 
+    // Middleware approved — clear the draft store without cascading
+    // storage deletes (the refs going into the message will be linked
+    // by `AIEngine.sendWithStream` right after persistence). Refs that
+    // middleware FILTERED OUT need an explicit storage purge below,
+    // since `linkAttachments` only touches what's actually in the
+    // message.
+    useAttachmentsStore.setState({
+      attachmentFiles: [],
+      attachmentImages: [],
+    });
+
+    const finalIds = new Set<string>();
+    files?.forEach((f) => finalIds.add(f.id));
+    images?.forEach((i) => finalIds.add(i.id));
+    const excludedIds: string[] = [];
+    for (const f of originalFiles) {
+      if (!finalIds.has(f.id)) excludedIds.push(f.id);
+    }
+    for (const i of originalImages) {
+      if (!finalIds.has(i.id)) excludedIds.push(i.id);
+    }
+    if (excludedIds.length > 0) {
+      // Best-effort — orphaned excluded drafts get reclaimed by future
+      // GC if this fails.
+      api.attachments.deleteMany(excludedIds).catch(() => undefined);
+    }
+
     const userMessage: ThreadMessageLike = {
       role: "user",
       content: [
-        ...(files?.map((f) => ({
-          type: "file" as const,
-          mimeType: JSON.stringify({ path: f.path, type: f.type }),
-          data: f.content,
-        })) ?? []),
-        ...(images?.map((i) => ({
-          type: "image" as const,
-          image: i.base64,
-          name: i.name,
-        })) ?? []),
+        ...(files?.map((f) =>
+          buildFileRefBlock({
+            id: f.id,
+            title: f.title,
+            path: f.path,
+            type: f.type,
+          })
+        ) ?? []),
+        ...(images?.map((i) =>
+          buildImageRefBlock({ id: i.id, title: i.title })
+        ) ?? []),
         { type: "text" as const, text },
       ],
     };
@@ -518,10 +572,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     const stream = api.ai.sendWithStream({
       threadId: inputThreadId,
       userMessage,
+      entityId,
       actionArgs: {
         isReasoning: extendedThinking,
         signal: controller.signal,
         tools: tools.length > 0 ? tools : undefined,
+        prompt: systemPrompt,
       },
     });
 
@@ -580,9 +636,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         message: data.message,
         result,
         allowAlways,
+        entityId,
         actionArgs: {
           isReasoning: extendedThinking,
           tools: tools.length > 0 ? tools : undefined,
+          prompt: systemPrompt,
         },
       });
       await processStream(stream, data.threadId, {
@@ -592,6 +650,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     [
       api,
       callbacksManager,
+      entityId,
       extendedThinking,
       middlewareRunner,
       processStream,
@@ -599,6 +658,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setIsRequestRunning,
       setIsStreamRunning,
       setManageToolData,
+      systemPrompt,
       tools,
       updateLastMessage,
       useServersStore,
@@ -615,17 +675,21 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       messageId: data.messageId,
       idx: data.idx,
       message: data.message,
+      entityId,
       actionArgs: {
         isReasoning: extendedThinking,
         tools: tools.length > 0 ? tools : undefined,
+        prompt: systemPrompt,
       },
     });
     await processStream(stream, data.threadId);
   }, [
     api,
+    entityId,
     extendedThinking,
     processStream,
     setManageToolData,
+    systemPrompt,
     tools,
     useServersStore,
   ]);

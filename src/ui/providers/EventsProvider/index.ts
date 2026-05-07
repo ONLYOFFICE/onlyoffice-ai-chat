@@ -22,7 +22,6 @@ export type {
   StreamErrorEvent,
   StreamStartEvent,
   StreamStopEvent,
-  SystemPromptAppendixUpdatedEvent,
   ThreadsUpdateKind,
   ThreadsUpdatedEvent,
   ToolCallApprovedEvent,
