@@ -128,6 +128,11 @@ export async function* processStream(
   let inited = !!ctx.isResume;
   const base = ctx.resumeBaseMessage;
   const merge = (m: ThreadMessageLike) => (base ? mergeResume(base, m) : m);
+  // Stamp the storage-assigned id onto the in-flight message so the UI
+  // runtime tracks it by a stable id across deltas instead of falling
+  // back to an array-index id (which churns on every append).
+  const withId = (m: ThreadMessageLike): ThreadMessageLike =>
+    messageId ? { ...m, id: messageId } : m;
 
   for await (const result of stream) {
     if ("isEnd" in result) {
@@ -156,7 +161,7 @@ export async function* processStream(
 
           yield {
             type: "tool-call-pending",
-            message: final,
+            message: withId(final),
             idx: toolIdx,
             messageId,
             threadId,
@@ -173,7 +178,7 @@ export async function* processStream(
         await storage.messages.update(messageId, final);
       }
 
-      yield { type: "message-end", message: final, messageId };
+      yield { type: "message-end", message: withId(final), messageId };
       return;
     }
 
@@ -182,10 +187,10 @@ export async function* processStream(
       const stored = await storage.messages.create(threadId, merged);
       messageId = stored.id ?? "";
       inited = true;
-      yield { type: "message-start", message: merged, messageId };
+      yield { type: "message-start", message: withId(merged), messageId };
     } else {
       if (messageId) await storage.messages.update(messageId, merged);
-      yield { type: "message-delta", message: merged, messageId };
+      yield { type: "message-delta", message: withId(merged), messageId };
     }
   }
 }

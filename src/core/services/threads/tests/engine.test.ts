@@ -227,8 +227,9 @@ describe("ThreadsEngine.appendUserMessage", () => {
       threads: [{ threadId: "t1", title: "T" }],
     });
     const engine = new ThreadsEngine({ storage });
-    const id = await engine.appendUserMessage("t1", userMessage, "p1");
-    expect(id).toBe("00000000-0000-0000-0000-000000000001");
+    const stored = await engine.appendUserMessage("t1", userMessage, "p1");
+    expect(stored.id).toBe("00000000-0000-0000-0000-000000000001");
+    expect(stored.role).toBe("user");
     expect(storage.messages.create).toHaveBeenCalledWith("t1", userMessage);
     expect(storage.threads.touch).toHaveBeenCalledWith("t1", 1000, {
       profileId: "p1",

@@ -93,18 +93,26 @@ export class AIEngine {
     let priorMessages: ThreadMessageLike[] = [];
     const isNewThread = !threadId;
 
+    let storedUserMessage: ThreadMessageLike | null = null;
+
     if (!isNewThread) {
       priorMessages = await this.deps.storage.messages.readByThread(threadId);
-      const messageId = await this.threads.appendUserMessage(
+      storedUserMessage = await this.threads.appendUserMessage(
         threadId,
         input.userMessage,
         profileId
       );
+      const messageId = storedUserMessage.id!;
       await this.attachments.linkToMessage(
         extractRefIdsFromMessage(input.userMessage),
         messageId,
         threadId
       );
+      yield {
+        type: "user-message-stored",
+        message: storedUserMessage,
+        messageId,
+      };
     } else {
       // Create the thread up-front with a placeholder title so the stream
       // has a stable id to persist messages against. Generate the real
@@ -120,6 +128,7 @@ export class AIEngine {
         threadId,
         input.userMessage
       );
+      storedUserMessage = stored;
       if (stored.id) {
         await this.attachments.linkToMessage(
           extractRefIdsFromMessage(input.userMessage),
@@ -138,6 +147,14 @@ export class AIEngine {
         title: "New chat",
         profileId,
       };
+
+      if (stored.id) {
+        yield {
+          type: "user-message-stored",
+          message: stored,
+          messageId: stored.id,
+        };
+      }
 
       titlePromise = generateTitle({
         profile,

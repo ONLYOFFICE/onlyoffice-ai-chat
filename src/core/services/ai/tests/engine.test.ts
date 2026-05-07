@@ -152,10 +152,11 @@ describe("AIEngine.sendWithStream", () => {
     for await (const item of engine.sendWithStream({ userMessage })) {
       yielded.push(item);
     }
-    expect(yielded).toHaveLength(3);
+    expect(yielded).toHaveLength(4);
     expect(yielded[0]).toMatchObject({ type: "thread-title", title: "New chat" });
-    expect(yielded[1].type).toBe("message-end");
-    expect(yielded[2]).toMatchObject({ type: "thread-title", title: "My Title" });
+    expect(yielded[1].type).toBe("user-message-stored");
+    expect(yielded[2].type).toBe("message-end");
+    expect(yielded[3]).toMatchObject({ type: "thread-title", title: "My Title" });
     expect(threads).toHaveLength(1);
     expect(messages).toEqual(
       expect.arrayContaining([

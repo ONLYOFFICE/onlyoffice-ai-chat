@@ -84,13 +84,14 @@ export class ThreadsEngine {
    * Persist a user message in `threadId` and bump the thread's
    * `lastEditDate` to `Date.now()`. Optionally rebinds the thread to
    * `profileId` when the active profile has changed mid-conversation.
-   * Returns the generated message ID.
+   * Returns the persisted message (with storage-assigned `id` and
+   * `createdAt`).
    */
   async appendUserMessage(
     threadId: string,
     message: Omit<ThreadMessageLike, "id" | "createdAt">,
     profileId?: string
-  ): Promise<string> {
+  ): Promise<ThreadMessageLike> {
     const [stored] = await Promise.all([
       this.deps.storage.messages.create(threadId, message),
       this.deps.storage.threads.touch(threadId, Date.now(), { profileId }),
@@ -98,7 +99,7 @@ export class ThreadsEngine {
     if (!stored.id) {
       throw new Error(`storage.messages.create returned no id for ${threadId}`);
     }
-    return stored.id;
+    return stored;
   }
 
   /**

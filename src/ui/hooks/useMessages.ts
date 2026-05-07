@@ -187,6 +187,17 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             continue;
           }
 
+          if (event.type === "user-message-stored") {
+            // Storage just persisted the user message — render it now,
+            // with the storage-authoritative `id` and `createdAt`. We
+            // skip the optimistic-placeholder pattern entirely so
+            // assistant-ui's MessageRepository never sees a message
+            // without an id (which would force it onto an index-based
+            // fallback and produce phantom branches).
+            addMessage(event.message);
+            continue;
+          }
+
           if (event.type === "tool-call-pending") {
             holdBusy();
             await handleToolCallPending(event);
@@ -553,8 +564,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       ],
     };
 
-    addMessage(userMessage);
-
+    // Don't render an optimistic placeholder here — wait for the
+    // engine's `user-message-stored` event so the runtime gets a
+    // message with the storage-assigned `id` and `createdAt` from the
+    // start. The IDB write that produces it is sub-millisecond.
     callbacksManager.emit("onMessageSent", {
       threadId,
       message: userMessage,

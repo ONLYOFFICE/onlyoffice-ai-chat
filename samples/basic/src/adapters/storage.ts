@@ -421,13 +421,23 @@ class IDBPrompts implements PromptsStorage {
     return stored;
   }
 
-  async createMany(prompts: Prompt[]): Promise<void> {
+  async createMany(
+    inputs: Omit<Prompt, "id" | "createdAt" | "updatedAt">[]
+  ): Promise<Prompt[]> {
     const t = this.db.transaction("prompts", "readwrite");
     const store = t.objectStore("prompts");
-    for (const p of prompts) {
+    const now = Date.now();
+    const persisted: Prompt[] = inputs.map((input) => ({
+      ...input,
+      id: uuid(),
+      createdAt: now,
+      updatedAt: now,
+    }));
+    for (const p of persisted) {
       store.add(p);
     }
     await tx(t);
+    return persisted;
   }
 
   async readAll(): Promise<Prompt[]> {
@@ -520,13 +530,23 @@ class IDBPromptFolders implements PromptFoldersStorage {
     return stored;
   }
 
-  async createMany(folders: PromptFolder[]): Promise<void> {
+  async createMany(
+    inputs: Omit<PromptFolder, "id" | "createdAt" | "updatedAt">[]
+  ): Promise<PromptFolder[]> {
     const t = this.db.transaction("promptFolders", "readwrite");
     const store = t.objectStore("promptFolders");
-    for (const f of folders) {
+    const now = Date.now();
+    const persisted: PromptFolder[] = inputs.map((input) => ({
+      ...input,
+      id: uuid(),
+      createdAt: now,
+      updatedAt: now,
+    }));
+    for (const f of persisted) {
       store.add(f);
     }
     await tx(t);
+    return persisted;
   }
 
   async readAll(): Promise<PromptFolder[]> {

@@ -259,9 +259,9 @@ describe("useMessages.onNew", () => {
         content: [{ type: "text", text: "raw" }],
       } as never);
     });
-    const sent = stores.messageState.addMessage.mock.calls[0][0] as {
-      content: { type: string; text?: string }[];
-    };
+    const sent = (apiAi.sendWithStream.mock.calls[0][0] as {
+      userMessage: { content: { type: string; text?: string }[] };
+    }).userMessage;
     expect(sent.content.find((c) => c.type === "text")?.text).toBe("filtered");
   });
 
@@ -564,8 +564,11 @@ describe("useMessages stream branches", () => {
         content: [{ type: "text", text: "hi" }],
       } as never);
     });
-    // user message is added but no assistant message because the only chunk was skipped
-    expect(stores.messageState.addMessage).toHaveBeenCalledTimes(1);
+    // No assistant message lands because the only chunk was skipped.
+    // The user message is added by the engine's `user-message-stored`
+    // event, which this test does not emit — so addMessage is never
+    // called.
+    expect(stores.messageState.addMessage).not.toHaveBeenCalled();
     expect(callbacksManager.emit).not.toHaveBeenCalledWith(
       "onStreamStart",
       expect.any(Object)
@@ -622,8 +625,11 @@ describe("useMessages stream branches", () => {
         content: [{ type: "text", text: "hi" }],
       } as never);
     });
-    // only the user message goes through addMessage
-    expect(stores.messageState.addMessage).toHaveBeenCalledTimes(1);
+    // No message goes through addMessage: the assistant message is
+    // skipped by middleware, and the user message would land via the
+    // engine's `user-message-stored` event which this test does not
+    // emit.
+    expect(stores.messageState.addMessage).not.toHaveBeenCalled();
   });
 
   it("rewrites display when beforeDisplay middleware returns continue with message", async () => {

@@ -225,6 +225,19 @@ export type DenyToolCallInput = ToolCallData;
  */
 export type ChatEvent =
   | {
+      /**
+       * Emitted once per `sendWithStream` call, immediately after the
+       * user message has been persisted by storage and before the
+       * assistant stream starts. Carries the storage-assigned `id` and
+       * `createdAt`. The UI uses it to render the user bubble — no
+       * client-side optimistic placeholder is needed, which keeps the
+       * runtime tree free of phantom nodes from index-fallback ids.
+       */
+      type: "user-message-stored";
+      message: ThreadMessageLike;
+      messageId: string;
+    }
+  | {
       type: "message-start";
       message: ThreadMessageLike;
       messageId: string;
