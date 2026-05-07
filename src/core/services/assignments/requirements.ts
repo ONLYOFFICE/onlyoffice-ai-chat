@@ -15,6 +15,7 @@ import type { Profile } from "../../types";
 export const ACTION_REQUIREMENTS: Record<ActionType, number> = {
   [ActionType.Default]: CapabilitiesUI.None,
   [ActionType.Chat]: CapabilitiesUI.Chat,
+  [ActionType.Code]: CapabilitiesUI.Chat,
   [ActionType.Summarization]: CapabilitiesUI.Chat,
   [ActionType.Translation]: CapabilitiesUI.Chat,
   [ActionType.TextAnalyze]: CapabilitiesUI.Chat,

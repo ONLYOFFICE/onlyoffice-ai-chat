@@ -89,6 +89,18 @@ beforeSend: async (ctx) => {
 //   →  parsed → ManageToolDialog → execute → <TOOL_RESULT>... fed back
 ```
 
+### `Code` assignment slot
+
+- **New** `ActionType.Code` with `Chat` capability requirement —
+  exposed in the Model Assignment page and wired through the
+  profiles store (`codeProfile`, `setCodeProfile`,
+  `ModelAssignmentTask = "code"`).
+- **New** per-action fallback chain `ACTION_FALLBACKS`
+  (`Code → Chat`) honoured by `tryResolveForAction`. When the
+  `Code` slot is empty the resolver tries `Chat` (entity-scoped),
+  then falls back to the global `Default`. Existing slots
+  resolve straight to `Default` as before.
+
 ## 0.2.11
 
 Perf: pages now declare their own data dependencies — opening

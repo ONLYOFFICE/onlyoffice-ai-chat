@@ -23,7 +23,7 @@ import {
 | `ChatPage` | Message list + composer + streaming. Renders the first-run setup wizard inline when no profiles exist; wires its own `AssistantRuntimeProvider`. |
 | `SettingsPage` | Top-level settings screen (entry to AI models, model assignment, MCP, web search, prompts). |
 | `AiModelsPage` | Add / edit / delete provider profiles. |
-| `ModelAssignmentPage` | Bind profiles to `ActionType` slots (Chat, Summarization, Translation, OCR, Vision, …). |
+| `ModelAssignmentPage` | Bind profiles to `ActionType` slots (Chat, Code, Summarization, Translation, OCR, Vision, …). |
 | `McpServersPage` | Configure custom MCP servers; toggle individual tools. |
 | `WebSearchPage` | Web-search provider config (Exa, ONLYOFFICE). |
 | `EmptyScreenPage` | Placeholder used by internal routing; renderable standalone as a landing state. |

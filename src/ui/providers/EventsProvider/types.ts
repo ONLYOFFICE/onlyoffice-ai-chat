@@ -181,6 +181,7 @@ export interface CurrentChatProfileUpdatedEvent {
 export type ModelAssignmentTask =
   | "default"
   | "chat"
+  | "code"
   | "summarization"
   | "translation"
   | "textAnalysis"

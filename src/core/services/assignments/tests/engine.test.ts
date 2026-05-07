@@ -126,6 +126,70 @@ describe("AssignmentsEngine.resolveForAction", () => {
   });
 });
 
+describe("AssignmentsEngine.resolveForAction Code fallback chain", () => {
+  it("uses the Code slot when set", async () => {
+    const code = makeProfile({ id: "code" });
+    const chat = makeProfile({ id: "chat" });
+    const def = makeProfile({ id: "def" });
+    const { storage } = makeStorage({
+      profiles: [code, chat, def],
+      assignments: {
+        [ActionType.Code]: code.id,
+        [ActionType.Chat]: chat.id,
+        [ActionType.Default]: def.id,
+      },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.resolveForAction(ActionType.Code);
+    expect(result.profileId).toBe(code.id);
+  });
+
+  it("falls back to Chat when Code is empty", async () => {
+    const chat = makeProfile({ id: "chat" });
+    const def = makeProfile({ id: "def" });
+    const { storage } = makeStorage({
+      profiles: [chat, def],
+      assignments: {
+        [ActionType.Chat]: chat.id,
+        [ActionType.Default]: def.id,
+      },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.resolveForAction(ActionType.Code);
+    expect(result.profileId).toBe(chat.id);
+  });
+
+  it("falls back to Default when both Code and Chat are empty", async () => {
+    const def = makeProfile({ id: "def" });
+    const { storage } = makeStorage({
+      profiles: [def],
+      assignments: { [ActionType.Default]: def.id },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.resolveForAction(ActionType.Code);
+    expect(result.profileId).toBe(def.id);
+  });
+
+  it("forwards entityId to every step of the fallback chain", async () => {
+    const room = makeProfile({ id: "room" });
+    const { storage } = makeStorage({
+      profiles: [room],
+      entityAssignments: { e1: { [ActionType.Chat]: room.id } },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.resolveForAction(ActionType.Code, "e1");
+    expect(result.profileId).toBe(room.id);
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Code,
+      "e1"
+    );
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Chat,
+      "e1"
+    );
+  });
+});
+
 describe("AssignmentsEngine entity scope", () => {
   it("forwards entityId to storage.assignments.readByType", async () => {
     const profile = makeProfile();

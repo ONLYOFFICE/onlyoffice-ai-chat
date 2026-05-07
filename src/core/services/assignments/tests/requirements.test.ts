@@ -25,6 +25,7 @@ describe("ACTION_REQUIREMENTS", () => {
     expect(ACTION_REQUIREMENTS[ActionType.TextAnalyze]).toBe(
       CapabilitiesUI.Chat
     );
+    expect(ACTION_REQUIREMENTS[ActionType.Code]).toBe(CapabilitiesUI.Chat);
   });
 
   it("image-output action requires Image", () => {

@@ -31,6 +31,7 @@ export type TranslationKey =
   | "CheckInfo"
   | "ClearHistory"
   | "Close"
+  | "Code"
   | "ConfigurationError"
   | "Confirmation"
   | "ConnectAIModel"

@@ -69,6 +69,7 @@ profile must support to be a valid binding target.
 | ------------------- | ---------------------- |
 | `Default`           | (none — fallback slot) |
 | `Chat`              | `Chat`                 |
+| `Code`              | `Chat`                 |
 | `Summarization`     | `Chat`                 |
 | `Translation`       | `Chat`                 |
 | `TextAnalyze`       | `Chat`                 |
@@ -117,14 +118,19 @@ type ResolvedAssignment = { profileId: string; profile: Profile };
    scoped direct lookup. Storage typically honours `entityId`
    only when `actionType === ActionType.Chat`, returning a
    per-room chat profile when one is configured.
-2. If `null`, fall back to
+2. If `null` and the action declares a fallback in
+   `ACTION_FALLBACKS` (e.g. `Code → Chat`), look up the next
+   slot in the chain (still entity-scoped). Repeat until a slot
+   resolves or the chain ends. Existing slots have no entry in
+   the map and skip straight to step 3.
+3. If still `null`, fall back to
    `storage.assignments.readByType(ActionType.Default)` —
    **always unscoped**, since the engine treats per-entity
    defaults as out of scope.
-3. If both are `null`, throw
+4. If everything is `null`, throw
    `"No profile assigned to ActionType.<X> and no default set"`.
-4. Read the resolved profile from `storage.profiles`.
-5. If the row is missing, throw
+5. Read the resolved profile from `storage.profiles`.
+6. If the row is missing, throw
    `"Assigned profile not found: <id>"` — the assignment table
    has a dangling pointer (e.g. host mutated profiles out of band
    without going through `ProfilesEngine.delete`).
@@ -358,7 +364,7 @@ be present at that read.
 
 | File                                                                              | Exports                                | Role |
 | --------------------------------------------------------------------------------- | -------------------------------------- | ---- |
-| [`engine.ts`](../../../src/core/services/assignments/engine.ts)                    | `AssignmentsEngine`                    | Public class |
+| [`engine.ts`](../../../src/core/services/assignments/engine.ts)                    | `AssignmentsEngine`, `ACTION_FALLBACKS` | Public class + per-action fallback chain (`Code → Chat`) |
 | [`requirements.ts`](../../../src/core/services/assignments/requirements.ts)        | `ACTION_REQUIREMENTS`, `meetsRequirements` | `ActionType` → bitmask map; pure predicate |
 | [`types.ts`](../../../src/core/services/assignments/types.ts)                      | `AssignmentsEngineDeps`, `ResolvedAssignment`, `AssignmentMutationResult`, `BulkAssignmentResult` | Type definitions |
 | [`index.ts`](../../../src/core/services/assignments/index.ts)                      | barrel                                 | Re-exports |

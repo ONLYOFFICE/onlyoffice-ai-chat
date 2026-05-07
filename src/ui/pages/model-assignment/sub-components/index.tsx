@@ -11,6 +11,7 @@ const ModelAssignment = () => {
   const profiles = useProfilesStore((s) => s.profiles);
   const defaultProfile = useProfilesStore((s) => s.defaultProfile);
   const chatProfile = useProfilesStore((s) => s.chatProfile);
+  const codeProfile = useProfilesStore((s) => s.codeProfile);
   const summarizationProfile = useProfilesStore((s) => s.summarizationProfile);
   const translationProfile = useProfilesStore((s) => s.translationProfile);
   const textAnalysisProfile = useProfilesStore((s) => s.textAnalysisProfile);
@@ -21,6 +22,7 @@ const ModelAssignment = () => {
   const visionProfile = useProfilesStore((s) => s.visionProfile);
   const setDefaultProfile = useProfilesStore((s) => s.setDefaultProfile);
   const setChatProfile = useProfilesStore((s) => s.setChatProfile);
+  const setCodeProfile = useProfilesStore((s) => s.setCodeProfile);
   const setSummarizationProfile = useProfilesStore(
     (s) => s.setSummarizationProfile
   );
@@ -99,6 +101,20 @@ const ModelAssignment = () => {
             className="w-full"
             value={chatProfile?.name ?? t("DefaultModel")}
             items={taskItems(setChatProfile, CapabilitiesUI.Chat)}
+          />
+        </FieldContainer>
+
+        <FieldContainer
+          header={t("Code")}
+          isHorizontal
+          reserveErrorSpace={false}
+          className="mb-[24px]"
+          icon="code"
+        >
+          <ComboBox
+            className="w-full"
+            value={codeProfile?.name ?? t("DefaultModel")}
+            items={taskItems(setCodeProfile, CapabilitiesUI.Chat)}
           />
         </FieldContainer>
 

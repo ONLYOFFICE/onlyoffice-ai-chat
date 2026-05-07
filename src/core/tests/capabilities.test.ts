@@ -42,6 +42,7 @@ describe("ActionType", () => {
     expect(Object.keys(ActionType)).toEqual([
       "Default",
       "Chat",
+      "Code",
       "Summarization",
       "Translation",
       "TextAnalyze",

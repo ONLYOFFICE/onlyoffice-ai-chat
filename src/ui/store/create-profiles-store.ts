@@ -19,6 +19,7 @@ export interface ProfilesStoreState {
   profiles: Profile[];
   defaultProfile: Profile | null;
   chatProfile: Profile | null;
+  codeProfile: Profile | null;
   summarizationProfile: Profile | null;
   translationProfile: Profile | null;
   textAnalysisProfile: Profile | null;
@@ -40,6 +41,7 @@ export interface ProfilesStoreState {
   getProfileByName: (name: string, ignoreCase?: boolean) => Profile | null;
   setDefaultProfile: (profile: Profile) => Promise<void>;
   setChatProfile: (profile: Profile | null) => Promise<void>;
+  setCodeProfile: (profile: Profile | null) => Promise<void>;
   setSummarizationProfile: (profile: Profile | null) => Promise<void>;
   setTranslationProfile: (profile: Profile | null) => Promise<void>;
   setTextAnalysisProfile: (profile: Profile | null) => Promise<void>;
@@ -53,6 +55,7 @@ export interface ProfilesStoreState {
 
 const FIELD_TO_ACTION = {
   chatProfile: ActionType.Chat,
+  codeProfile: ActionType.Code,
   summarizationProfile: ActionType.Summarization,
   translationProfile: ActionType.Translation,
   textAnalysisProfile: ActionType.TextAnalyze,
@@ -141,6 +144,7 @@ export function createProfilesStore(deps: {
       profiles: [],
       defaultProfile: null,
       chatProfile: null,
+      codeProfile: null,
       summarizationProfile: null,
       translationProfile: null,
       textAnalysisProfile: null,
@@ -218,6 +222,7 @@ export function createProfilesStore(deps: {
             ),
             defaultProfile: update(state.defaultProfile),
             chatProfile: update(state.chatProfile),
+            codeProfile: update(state.codeProfile),
             summarizationProfile: update(state.summarizationProfile),
             translationProfile: update(state.translationProfile),
             textAnalysisProfile: update(state.textAnalysisProfile),
@@ -303,6 +308,8 @@ export function createProfilesStore(deps: {
           modelId: profile?.modelId,
         });
       },
+
+      setCodeProfile: makeTaskSetter("codeProfile", "code"),
 
       setSummarizationProfile: makeTaskSetter(
         "summarizationProfile",

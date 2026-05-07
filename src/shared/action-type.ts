@@ -1,6 +1,7 @@
 export const ActionType = {
   Default: "Default",
   Chat: "Chat",
+  Code: "Code",
   Summarization: "Summarization",
   Translation: "Translation",
   TextAnalyze: "TextAnalyze",

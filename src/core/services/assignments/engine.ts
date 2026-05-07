@@ -10,6 +10,16 @@ import type {
 } from "./types";
 
 /**
+ * Per-action fallback chain used by {@link AssignmentsEngine.tryResolveForAction}.
+ * If the primary slot is empty, the resolver walks this map before
+ * landing on the global `Default` slot. Existing slots resolve
+ * straight to `Default` (no entry here).
+ */
+export const ACTION_FALLBACKS: Partial<Record<ActionType, ActionType>> = {
+  [ActionType.Code]: ActionType.Chat,
+};
+
+/**
  * Assignment lifecycle orchestrator. Wraps `storage.assignments` with
  * the rules that plain CRUD can't express:
  *
@@ -64,9 +74,14 @@ export class AssignmentsEngine {
     entityId?: string
   ): Promise<ResolvedAssignment | null> {
     const { storage } = this.deps;
-    const profileId =
-      (await storage.assignments.readByType(actionType, entityId)) ??
-      (await storage.assignments.readByType(ActionType.Default));
+    let profileId: string | null = null;
+    let cur: ActionType | undefined = actionType;
+    while (cur) {
+      profileId = await storage.assignments.readByType(cur, entityId);
+      if (profileId) break;
+      cur = ACTION_FALLBACKS[cur];
+    }
+    profileId ??= await storage.assignments.readByType(ActionType.Default);
     if (!profileId) return null;
 
     const profile = await storage.profiles.readById(profileId);

@@ -201,6 +201,7 @@ What the system can do and which model can do what.
 const ActionType = {
   Default: "Default",
   Chat: "Chat",
+  Code: "Code",
   Summarization: "Summarization",
   Translation: "Translation",
   TextAnalyze: "TextAnalyze",
@@ -212,7 +213,7 @@ const ActionType = {
 type ActionType = (typeof ActionType)[keyof typeof ActionType];
 ```
 
-The eight slots
+The nine slots
 [`AssignmentsStorage`](../core/storage/storage.md#assignmentsstorage)
 keys on. Used in three places:
 
