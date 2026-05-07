@@ -103,7 +103,7 @@ holds no per-call state.
 | Engine | Responsibility |
 | --- | --- |
 | `AIEngine` | Streaming chat, one-shot actions, free-form custom prompts |
-| `ProfilesEngine` | Profile CRUD, credential check, cascade-on-delete |
+| `ProfilesEngine` | Profile CRUD, credential check, cascade-on-delete, tool-capability probe |
 | `AssignmentsEngine` | `ActionType → profileId` resolution, capability validation |
 | `ThreadsEngine` | Thread lifecycle, auto-titling, history clear |
 | `ToolsEngine` | Custom MCP servers + per-tool disabled / auto-approve prefs |

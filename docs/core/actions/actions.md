@@ -25,7 +25,10 @@ thread or persistence state.
 
 ```ts
 type ActionArgs = {
-  profile: Pick<Profile, "providerType" | "baseUrl" | "key" | "modelId">;
+  profile: Pick<
+    Profile,
+    "providerType" | "baseUrl" | "key" | "modelId" | "canUseTool"
+  >;
   messages: ThreadMessageLike[];
   tools?: TMCPItem[];
   isReasoning?: boolean;
@@ -36,7 +39,7 @@ type ActionArgs = {
 
 | Field          | Required | Used by                         |
 | -------------- | -------- | ------------------------------- |
-| `profile`      | ✅        | [`providerFor`](#providerfor) — picks the provider class and supplies credentials + model |
+| `profile`      | ✅        | [`providerFor`](#providerfor) — picks the provider class and supplies credentials + model. `canUseTool` toggles the [text-protocol fallback](#text-protocol-fallback-canusetool--false) |
 | `messages`     | ✅        | Forwarded to provider as the conversation history |
 | `tools`        |          | Forwarded to streaming actions only (`chat`, `custom`); ignored by sync actions |
 | `isReasoning`  |          | Forwarded as `withReasoning` to providers that opt in |
@@ -352,6 +355,68 @@ export const summarize = async (
 Streaming actions (`chat`, `custom`) follow the same skeleton but
 return / yield from `sendMessage` instead, and forward `tools` /
 `withReasoning` to the provider.
+
+---
+
+## Text-protocol fallback (`canUseTool === false`)
+
+> Source: [`chat/fallback-tools.ts`](../../../src/core/actions/chat/fallback-tools.ts)
+
+`Profile.canUseTool` is set by [`ProfilesEngine`](../services/profiles-engine.md)
+at create / update time via a live probe. When the resolved
+profile carries `canUseTool === false`, every action switches into
+a text-only protocol so models without native function-calling
+(many local Ollama / LM Studio builds, older OpenAI-compatible
+servers) still participate in the same approval / resume loop as
+native tool-calling models.
+
+The fallback has two layers, gated by what the action does:
+
+| Layer                 | Applies to                                              | What it does                                                                 |
+| --------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| History sanitisation  | every action                                            | Walks `args.messages` and rewrites `tool-call` / `tool-result` content parts as `<TOOL_CALL>{...}</TOOL_CALL>` text in the assistant turn, plus a synthetic user turn carrying `<TOOL_RESULT>...</TOOL_RESULT>`. The provider therefore never sees `role:"tool"` wire messages. |
+| Streaming intercept   | `chat`, `custom` (when `tools.length > 0`)              | Appends a tools listing + format rules to `systemPrompt`, drops the `tools` field from the API call, and pipes the upstream stream through a state machine that turns the model's `<TOOL_CALL>{"name","arguments"}</TOOL_CALL>` block into a synthetic `tool-call` content part. Broken JSON, an unclosed tag, or a missing `name` degrade gracefully into plain text. |
+
+The synthetic `tool-call` part is shape-compatible with the native
+provider streams, so `AIEngine`, `ManageToolDialog`, and the
+resume path don't need to know the difference.
+
+```ts
+// One round-trip in fallback mode:
+//
+//   user           → "Search the web for X"
+//   systemPrompt   → "<baked prompt>\n\n<tools listing + format rules>"
+//   model output   → "thinking <TOOL_CALL>{\"name\":\"web_search\",
+//                                          \"arguments\":{\"q\":\"X\"}}</TOOL_CALL>"
+//   stream wrapper → emits a synthetic tool-call part to the engine
+//   approval flow  → ManageToolDialog → execute → result captured
+//   next turn      → history rewritten as
+//                    assistant: "<TOOL_CALL>{...}</TOOL_CALL>"
+//                    user:      "<TOOL_RESULT>...</TOOL_RESULT>"
+```
+
+The exported helpers, all reusable from custom actions:
+
+| Export                                      | Used by                                              |
+| ------------------------------------------- | ---------------------------------------------------- |
+| `isFallbackProfile(profile)`                | `chat`, `custom`, every sync action                  |
+| `transformHistoryToText(messages)`          | every action that hits `sendMessageSync`             |
+| `streamWithTextProtocol(args, baseSystem)`  | `chat`, `custom` streaming branches                  |
+| `chatViaTextProtocol(args)`                 | thin wrapper that supplies the chat default prompt   |
+| `wrapStream(upstream)`                      | exported for testing                                 |
+| `buildToolsBlock(tools)`                    | exported for testing                                 |
+
+Limitations (intentional for v1):
+
+- One tool call per assistant turn. The format rules instruct the
+  model to emit at most one `<TOOL_CALL>` block.
+- No auto-retry on broken syntax — the raw text falls through to
+  the user, who can retry the prompt.
+- No streaming of partial tool-call arguments. The `<TOOL_CALL>`
+  block surfaces atomically once `</TOOL_CALL>` is seen.
+- The 10-character buffer in front of every emitted text chunk
+  prevents partial `<TOOL_…` prefixes from flickering in the UI;
+  the unsent tail flushes on `isEnd`.
 
 ---
 

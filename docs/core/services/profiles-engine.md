@@ -15,6 +15,13 @@ express on its own:
 - **Cascading cleanup** of `storage.assignments` rows when a
   profile is deleted, including promoting a new `Default` if the
   deleted profile held that slot.
+- **Tool-capability probe** — before persisting a `create`, and on
+  any `update` that changes `modelId` / `providerType` / `baseUrl`,
+  the engine asks the configured model to call a fake MCP tool
+  and stores the boolean outcome in `Profile.canUseTool`. Runtime
+  actions read this flag to switch into the text-protocol fallback
+  for models without native function-calling. See
+  [`probe-tools.ts`](../../../src/core/services/profiles/probe-tools.ts).
 - **Storage + provider joins** for `listModels` and
   `testConnection` — single calls that fetch the profile, look
   up the provider class, and run the relevant provider method.
@@ -90,9 +97,15 @@ type TErrorData = {
      thrown errors are normalized to `TErrorData`. Unknown
      `providerType` → `{ field: "name", message: "Unknown
      provider type: <type>" }`.
-3. **Materialize** the profile: assign `id = crypto.randomUUID()`,
-   `createdAt = Date.now()`.
-4. **Persist** via `storage.profiles.create(profile)`.
+3. **Probe tool capability** via
+   [`probeToolCapability`](../../../src/core/services/profiles/probe-tools.ts).
+   The probe issues a single streaming request with a fake MCP
+   tool and a 15-second timeout, returns `true` iff the model
+   emits a `tool-call` part, and never throws (network / abort /
+   provider errors collapse to `false`). The result is stored
+   verbatim in `Profile.canUseTool`.
+4. **Persist** via `storage.profiles.create({ ...input, canUseTool })`.
+   The engine generates `id` and `createdAt` itself.
 5. **Auto-assign default.** If `existing.length === 0`, also call
    `storage.assignments.create("Default", profile.id)`. Per-action
    slots (`Chat`, `Summarization`, …) stay unset — the user opts
@@ -147,8 +160,12 @@ async update(profile: Profile): Promise<ProfileMutationResult>;
    name doesn't collide with itself. Credentials are re-checked
    even if `key` / `baseUrl` haven't changed — keeping the rule
    uniform avoids "saved valid, drifted invalid" silently.
-3. **Persist** via `storage.profiles.update(profile)`.
-4. **Return** the updated profile.
+3. **Conditional re-probe.** `canUseTool` is recomputed via
+   `probeToolCapability` only when `modelId`, `providerType`, or
+   `baseUrl` differ from the previous version. A pure rename keeps
+   the existing flag (no extra round-trip).
+4. **Persist** via `storage.profiles.update({ ...profile, canUseTool })`.
+5. **Return** the updated profile.
 
 `update` does **not** touch `storage.assignments`. If the user
 changes `providerType`, existing assignments still point at this
@@ -311,6 +328,7 @@ can be unit-tested without mocking storage.
 | [`validation.ts`](../../../src/core/services/profiles/validation.ts)            | `validateProfile`, `checkCredentials`         | Name uniqueness + provider credential check |
 | (delegated)                                                                    | [`AssignmentsEngine.cascadeProfileDelete`](./assignments-engine.md#cascadeprofiledelete) | Default-slot promotion + orphan cleanup |
 | [`lookup.ts`](../../../src/core/services/profiles/lookup.ts)                    | `loadProfile`, `providerFor`, `credsOf`       | Storage / provider lookup helpers |
+| [`probe-tools.ts`](../../../src/core/services/profiles/probe-tools.ts)          | `probeToolCapability`                         | Live tool-capability probe (15 s timeout, never throws) |
 | [`index.ts`](../../../src/core/services/profiles/index.ts)                      | barrel                                        | Re-exports `ProfilesEngine` and public types |
 
 ---
