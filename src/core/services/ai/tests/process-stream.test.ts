@@ -65,7 +65,10 @@ describe("processStream", () => {
       events.push(e);
     }
     expect(events.map((e) => e.type)).toEqual(["message-incomplete"]);
+    // Errors are not persisted, but the payload still carries a stable
+    // id so the UI runtime can track it.
     expect(create).not.toHaveBeenCalled();
+    expect((events[0] as { message: { id?: string } }).message.id).toBeTruthy();
   });
 
   it("emits tool-call-pending and persists when assistant has unresolved tool-call", async () => {

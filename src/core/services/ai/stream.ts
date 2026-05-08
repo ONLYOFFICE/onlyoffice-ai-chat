@@ -139,7 +139,17 @@ export async function* processStream(
       const final = merge(result.responseMessage);
 
       if (final.status?.type === "incomplete") {
-        yield { type: "message-incomplete", message: final };
+        // Errors are intentionally not persisted (transient by design).
+        // But the runtime still needs a stable id on the payload so
+        // assistant-ui doesn't fall back to an index-based id and
+        // mis-link the message. Reuse the storage id from prior deltas
+        // when available; otherwise mint a transient one for this
+        // in-memory render only.
+        const id = messageId || crypto.randomUUID();
+        yield {
+          type: "message-incomplete",
+          message: { ...final, id } as ThreadMessageLike,
+        };
         return;
       }
 
