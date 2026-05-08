@@ -30,18 +30,22 @@ const DropdownMenuComponent = ({
   const handleOpenChange = (next: boolean) => {
     if (next && triggerRef.current && (!side || !align)) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const container = portalContainer ?? document.documentElement;
-      const cRect = container.getBoundingClientRect();
+      // Measure against the viewport: portalContainer is a dedicated empty
+      // node used only for scoping preflight, so its rect is 0×0 and unusable.
+      const viewportWidth =
+        window.innerWidth || document.documentElement.clientWidth;
+      const viewportHeight =
+        window.innerHeight || document.documentElement.clientHeight;
 
       if (!side) {
-        const spaceBelow = cRect.bottom - rect.bottom;
-        const spaceAbove = rect.top - cRect.top;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
         setComputedSide(spaceBelow >= spaceAbove ? "bottom" : "top");
       }
 
       if (!align) {
-        const spaceForStart = cRect.right - rect.left;
-        const spaceForEnd = rect.right - cRect.left;
+        const spaceForStart = viewportWidth - rect.left;
+        const spaceForEnd = rect.right;
         const pickStartInLTR = spaceForStart >= spaceForEnd;
         setComputedAlign(
           isRTL
@@ -80,7 +84,6 @@ const DropdownMenuComponent = ({
         align={effectiveAlign}
         sideOffset={sideOffset ?? 6}
         alignOffset={alignOffset}
-        collisionBoundary={portalContainer}
         collisionPadding={8}
         data-side={effectiveSide}
         data-align={effectiveAlign}
