@@ -65,6 +65,12 @@ export interface WidgetConfig {
    * item is an onClick-only entry; toggles and submenus are not supported.
    */
   composerActions?: ComposerAction[];
+  /**
+   * Handler for the "Import" link in the add-profile card. When provided,
+   * the host fully owns the click — the widget only calls `preventDefault`
+   * on the underlying anchor. When omitted, the link remains inert.
+   */
+  onProfileImportClick?: () => void;
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});

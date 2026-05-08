@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.3
+
+- New `onProfileImportClick` prop on `AIChatWidget` — host handler
+  for the "Import" link in the add-profile card. When provided, the
+  widget calls `preventDefault` and delegates the click. When omitted,
+  the link stays inert (existing behavior).
+
+```tsx
+<AIChatWidget onProfileImportClick={() => openMyImportDialog()} />
+```
+
 ## 0.4.2
 
 - New `composerActions` prop on `AIChatWidget` — inject custom

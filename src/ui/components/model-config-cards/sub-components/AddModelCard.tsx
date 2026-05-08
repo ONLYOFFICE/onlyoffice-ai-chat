@@ -3,6 +3,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
 import type { ProviderType } from "../../../../types";
 import { useComponents } from "../../../providers/ComponentsProvider";
+import { useWidgetConfig } from "../../../../widget-config";
 import { Tooltip, TooltipTrigger } from "../../tooltip";
 import { useModelForm } from "../hooks/useModelForm";
 import { ModelCardShell } from "./ModelCardShell";
@@ -33,6 +34,7 @@ export const AddModelCard = ({
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const { addProfile } = useProfilesStore();
+  const { onProfileImportClick } = useWidgetConfig();
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
   const {
@@ -79,7 +81,19 @@ export const AddModelCard = ({
   const footer = (
     <div className="flex flex-row justify-between items-center">
       <div className="flex flex-row items-center gap-[4px]">
-        <Link href="#">{t("Import")}</Link>
+        <Link
+          href="#"
+          onClick={
+            onProfileImportClick
+              ? (e) => {
+                  e.preventDefault();
+                  onProfileImportClick();
+                }
+              : undefined
+          }
+        >
+          {t("Import")}
+        </Link>
         <Tooltip open={isTooltipOpen}>
           <TooltipTrigger asChild>
             <IconButton
