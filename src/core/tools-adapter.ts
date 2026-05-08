@@ -8,6 +8,13 @@ import type { TMCPItem } from "../shared/mcp-item";
  * via {@link AIEngineDeps}. The built-in implementation aggregates host
  * tools, web-search, and MCP servers; alternative implementations can
  * fetch tools from a remote registry, a server-side dispatcher, etc.
+ *
+ * Every method receives the active `entityId` (opaque scope token for
+ * entity-bound chat, e.g. "rooms"). Implementations that don't care
+ * about scoping can ignore it; entity-aware ones can return a different
+ * tool list per room or route execution to a per-room backend. The
+ * value mirrors `WidgetConfig.entityId` and is `undefined` for global
+ * (non-scoped) chat.
  */
 export interface ToolsAdapter {
   /**
@@ -18,21 +25,26 @@ export interface ToolsAdapter {
    *
    * Grouping lets the engine apply the persisted disabled-tool filter
    * without parsing prefixes out of tool names.
+   *
+   * `config.attachmentId` carries the attachment ref ids of the current
+   * user message (de-duplicated, in order). Useful for adapters that
+   * surface attachment-specific tools (e.g. PDF parsers when a PDF is
+   * attached). The list is empty for messages without attachments and
+   * absent on resume rounds.
    */
-  getTools(): Promise<Record<string, TMCPItem[]>>;
+  getTools(
+    entityId?: string,
+    config?: { attachmentId: string[] }
+  ): Promise<Record<string, TMCPItem[]>>;
 
   /**
    * Execute a tool by name and return its raw result. Implementations
    * should stringify thrown errors into the result so the model can
    * react to them rather than aborting the stream.
    */
-  callTool(toolName: string, args: Record<string, unknown>): Promise<unknown>;
-
-  /**
-   * Notify the adapter that the user denied a pending tool call. The
-   * engine resumes the chat with `"User deny tool call"` regardless of
-   * the return value — this hook exists for telemetry, cleanup, or
-   * cancelling work the adapter pre-staged on `getTools`.
-   */
-  denyTool(toolName: string, args: Record<string, unknown>): Promise<void>;
+  callTool(
+    toolName: string,
+    args: Record<string, unknown>,
+    entityId?: string
+  ): Promise<unknown>;
 }

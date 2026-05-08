@@ -2,6 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import { ActionType } from "../../../shared/action-type";
 import type { SendMessageResult } from "../../../shared/send-message-args";
 import {
+  collectRefIds,
   extractRefIdsFromMessage,
   resolveAttachmentRefs,
 } from "../../actions/attachment-resolution";
@@ -168,7 +169,10 @@ export class AIEngine {
       this.deps.storage,
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
-      input.entityId
+      input.entityId,
+      {
+        attachmentId: collectRefIds([...priorMessages, input.userMessage]),
+      }
     );
 
     const actionArgs: ActionArgs = {
@@ -245,7 +249,8 @@ export class AIEngine {
       this.deps.storage,
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
-      input.entityId
+      input.entityId,
+      { attachmentId: collectRefIds(priorMessages) }
     );
 
     const actionArgs: ActionArgs = {

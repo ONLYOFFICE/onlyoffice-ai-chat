@@ -60,11 +60,13 @@ export async function buildToolContext(
   storage: StorageAdapter,
   adapter: ToolsAdapter | undefined,
   userTools: TMCPItem[],
-  entityId?: string
+  entityId?: string,
+  config?: { attachmentId: string[] }
 ): Promise<ToolContext> {
   const [adapterCustom, webSearchTools, imageGenerationTools, disabled] =
     await Promise.all([
-      adapter?.getTools() ?? Promise.resolve<Record<string, TMCPItem[]>>({}),
+      adapter?.getTools(entityId, config) ??
+        Promise.resolve<Record<string, TMCPItem[]>>({}),
       getWebSearchTools(storage, entityId),
       getImageGenerationTools(storage),
       storage.toolPrefs.readDisabled(entityId),
@@ -220,7 +222,7 @@ async function dispatchAdapterTool(
     return callImageGenerationTool(storage, toolName, args);
   }
   if (adapter) {
-    return adapter.callTool(toolName, args);
+    return adapter.callTool(toolName, args, entityId);
   }
   return JSON.stringify({ error: `No dispatcher for tool: ${toolName}` });
 }

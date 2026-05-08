@@ -135,7 +135,7 @@ export function extractRefIdsFromMessage(msg: ThreadMessageLike): string[] {
   return out;
 }
 
-function collectRefIds(messages: ThreadMessageLike[]): string[] {
+export function collectRefIds(messages: ThreadMessageLike[]): string[] {
   const ids: string[] = [];
   const seen = new Set<string>();
   for (const msg of messages) {

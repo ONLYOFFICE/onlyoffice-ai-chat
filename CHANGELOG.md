@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.4.4
+
+**Breaking** `ToolsAdapter` reshaped:
+
+- `getTools(entityId?, config?)` — receives the active `entityId`
+  and `config.attachmentId` (de-duplicated attachment ref ids
+  collected from every message of the current request). Lets the
+  adapter scope tools per room and surface attachment-specific
+  tools (e.g. PDF parser when a PDF is attached).
+- `callTool(name, args, entityId?)` — receives the active
+  `entityId` for per-room execution routing.
+- `denyTool` removed. The engine resumes with `"User deny tool
+  call"` itself; the hook had no callers.
+
+```ts
+const adapter: ToolsAdapter = {
+  async getTools(entityId, { attachmentId } = { attachmentId: [] }) {
+    return attachmentId.length
+      ? { pdf: [pdfParserTool] }
+      : { default: [echoTool] };
+  },
+  async callTool(name, args, entityId) {
+    /* … */
+  },
+};
+```
+
 ## 0.4.3
 
 - New `onProfileImportClick` prop on `AIChatWidget` — host handler

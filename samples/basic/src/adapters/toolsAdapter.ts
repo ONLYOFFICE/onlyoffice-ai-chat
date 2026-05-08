@@ -48,8 +48,4 @@ export const toolsAdapter: ToolsAdapter = {
     }
     return JSON.stringify({ data: { ok: true, called: toolName, args } });
   },
-
-  async denyTool() {
-    // No-op stub — telemetry / pre-staged work cleanup goes here.
-  },
 };

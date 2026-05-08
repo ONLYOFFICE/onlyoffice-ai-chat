@@ -96,7 +96,6 @@ describe("buildToolContext", () => {
         .fn()
         .mockResolvedValue({ custom: [tool("ad_tool")] }),
       callTool: vi.fn(),
-      denyTool: vi.fn(),
     };
     const userTools = [tool("user_tool"), tool("ad_tool", "user-override")];
 
@@ -122,7 +121,6 @@ describe("buildToolContext", () => {
     const adapter: ToolsAdapter = {
       getTools: vi.fn().mockResolvedValue({}),
       callTool: vi.fn(),
-      denyTool: vi.fn(),
     };
     const ctx = await buildToolContext(
       makeStorage({ "web-search": ["web_crawling"] }),
@@ -130,6 +128,34 @@ describe("buildToolContext", () => {
       []
     );
     expect(ctx.adapterTools.map((t) => t.name)).toEqual(["web_search"]);
+  });
+
+  it("forwards entityId to adapter.getTools", async () => {
+    getWebSearchToolsMock.mockResolvedValue([]);
+    getImageGenerationToolsMock.mockResolvedValue([]);
+    const getTools = vi.fn().mockResolvedValue({});
+    const adapter: ToolsAdapter = {
+      getTools,
+      callTool: vi.fn(),
+    };
+    await buildToolContext(makeStorage(), adapter, [], "room-1");
+    expect(getTools).toHaveBeenCalledWith("room-1", undefined);
+  });
+
+  it("forwards attachment ids to adapter.getTools", async () => {
+    getWebSearchToolsMock.mockResolvedValue([]);
+    getImageGenerationToolsMock.mockResolvedValue([]);
+    const getTools = vi.fn().mockResolvedValue({});
+    const adapter: ToolsAdapter = {
+      getTools,
+      callTool: vi.fn(),
+    };
+    await buildToolContext(makeStorage(), adapter, [], "room-1", {
+      attachmentId: ["a1", "a2"],
+    });
+    expect(getTools).toHaveBeenCalledWith("room-1", {
+      attachmentId: ["a1", "a2"],
+    });
   });
 
   it("works without an adapter", async () => {
@@ -223,7 +249,6 @@ describe("executeAdapterTool", () => {
     const adapter: ToolsAdapter = {
       callTool: vi.fn().mockResolvedValue("adapter-result"),
       getTools: vi.fn(),
-      denyTool: vi.fn(),
     };
     resumeChatMock.mockImplementation(async function* () {});
     const gen = executeAdapterTool(
@@ -244,7 +269,43 @@ describe("executeAdapterTool", () => {
     for await (const _ of gen) {
       void _;
     }
-    expect(adapter.callTool).toHaveBeenCalledWith("custom_tool", {});
+    expect(adapter.callTool).toHaveBeenCalledWith(
+      "custom_tool",
+      {},
+      undefined
+    );
+  });
+
+  it("forwards entityId to adapter.callTool", async () => {
+    const adapter: ToolsAdapter = {
+      callTool: vi.fn().mockResolvedValue("adapter-result"),
+      getTools: vi.fn(),
+    };
+    resumeChatMock.mockImplementation(async function* () {});
+    const gen = executeAdapterTool(
+      makeStorage(),
+      adapter,
+      {
+        type: "tool-call-pending",
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: {
+          role: "assistant",
+          content: [{ type: "tool-call", toolName: "custom_tool", args: {} }],
+        } as never,
+      } as never,
+      {
+        profile: {} as never,
+        profileId: "p",
+        tools: [],
+        entityId: "room-1",
+      }
+    );
+    for await (const _ of gen) {
+      void _;
+    }
+    expect(adapter.callTool).toHaveBeenCalledWith("custom_tool", {}, "room-1");
   });
 
   it("returns sentinel error when no dispatcher can handle the tool", async () => {

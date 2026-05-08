@@ -159,7 +159,6 @@ const adapter: ToolsAdapter = {
     if (name === "echo") return JSON.stringify({ data: args });
     return JSON.stringify({ error: `Unknown: ${name}` });
   },
-  async denyTool() {},
 };
 
 const ai = new AIEngine({ storage, toolsAdapter: adapter });

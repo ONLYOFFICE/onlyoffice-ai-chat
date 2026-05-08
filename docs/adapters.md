@@ -247,24 +247,29 @@ interface ToolsAdapter {
    * `storage.toolPrefs.disabled`). Grouping lets the engine apply
    * the persisted disabled-tool filter without parsing prefixes
    * out of tool names.
+   *
+   * `entityId` mirrors `WidgetConfig.entityId` (opaque per-room
+   * scope). `config.attachmentId` carries the attachment ref ids
+   * collected from every message of the current request — useful
+   * for surfacing attachment-specific tools (e.g. PDF parsers
+   * when a PDF is attached).
    */
-  getTools(): Promise<Record<string, TMCPItem[]>>;
+  getTools(
+    entityId?: string,
+    config?: { attachmentId: string[] }
+  ): Promise<Record<string, TMCPItem[]>>;
 
   /**
    * Execute a tool by name. Implementations should stringify
    * thrown errors into the result so the model can react to them
-   * rather than aborting the stream.
+   * rather than aborting the stream. `entityId` is forwarded so
+   * implementations can route execution per-room.
    */
-  callTool(toolName: string, args: Record<string, unknown>): Promise<unknown>;
-
-  /**
-   * Notify the adapter that the user denied a pending tool call.
-   * The engine resumes the chat with `"User deny tool call"`
-   * regardless of the return value — this hook exists for
-   * telemetry, cleanup, or cancelling work the adapter pre-staged
-   * on `getTools`.
-   */
-  denyTool(toolName: string, args: Record<string, unknown>): Promise<void>;
+  callTool(
+    toolName: string,
+    args: Record<string, unknown>,
+    entityId?: string
+  ): Promise<unknown>;
 }
 ```
 
@@ -272,13 +277,15 @@ Pass it to the widget via the `toolsAdapter` prop or directly to
 `AIEngine` deps in headless mode. Adapter-served tools never
 surface in the approval dialog — they execute the moment the
 model picks them, results stream back in the next assistant
-message.
+message. On user deny, the engine resumes with the literal
+string `"User deny tool call"` itself — there is no adapter
+hook for that path.
 
 ### Stub example
 
 ```ts
 const toolsAdapter: ToolsAdapter = {
-  async getTools() {
+  async getTools(entityId, config) {
     return {
       "demo-server-a": [
         {
@@ -292,14 +299,11 @@ const toolsAdapter: ToolsAdapter = {
       ],
     };
   },
-  async callTool(name, args) {
+  async callTool(name, args, entityId) {
     if (name === "echo_a") {
       return JSON.stringify({ data: { echo: args.text ?? null } });
     }
     return JSON.stringify({ data: { ok: true, called: name, args } });
-  },
-  async denyTool() {
-    /* telemetry / cleanup */
   },
 };
 ```
