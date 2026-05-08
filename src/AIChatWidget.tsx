@@ -62,8 +62,15 @@ import type {
   TOnlyOfficeConfig,
   WebSearchProviderId,
 } from "./types";
-import type { AIChatWidgetRef } from "./ui/providers/ImperativeProvider";
-import { createWidgetRef, type RefCallbacks } from "./ui/providers/ImperativeProvider";
+import type {
+  AIChatWidgetRef,
+  ComposerBridge,
+} from "./ui/providers/ImperativeProvider";
+import {
+  ComposerBridgeProvider,
+  createWidgetRef,
+  type RefCallbacks,
+} from "./ui/providers/ImperativeProvider";
 import useMessages from "./ui/hooks/useMessages";
 
 export interface AIChatWidgetProps {
@@ -391,6 +398,8 @@ const AppInner = ({
     denyToolCall,
   };
 
+  const composerBridgeRef = useRef<ComposerBridge>({ setText: null });
+
   useImperativeHandle(
     widgetRef,
     () =>
@@ -399,7 +408,8 @@ const AppInner = ({
         selectCurrentChatProfile,
         callbacksRef,
         servers,
-        eventBus
+        eventBus,
+        composerBridgeRef
       ),
     [stores, selectCurrentChatProfile, servers, eventBus]
   );
@@ -428,18 +438,20 @@ const AppInner = ({
   if (!isReady) return null;
 
   return (
-    <Layout>
-      {currentPage === "settings" ? <Settings /> : <Thread />}
-      {isManageToolOpen ? (
-        <ManageToolDialog
-          onAllow={approveToolCall}
-          onDeny={denyToolCall}
-          onClose={() => {
-            setIsManageToolOpen(false);
-            setManageToolData(undefined);
-          }}
-        />
-      ) : null}
-    </Layout>
+    <ComposerBridgeProvider bridgeRef={composerBridgeRef}>
+      <Layout>
+        {currentPage === "settings" ? <Settings /> : <Thread />}
+        {isManageToolOpen ? (
+          <ManageToolDialog
+            onAllow={approveToolCall}
+            onDeny={denyToolCall}
+            onClose={() => {
+              setIsManageToolOpen(false);
+              setManageToolData(undefined);
+            }}
+          />
+        ) : null}
+      </Layout>
+    </ComposerBridgeProvider>
   );
 };

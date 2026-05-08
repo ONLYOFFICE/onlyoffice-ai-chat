@@ -179,6 +179,10 @@ vi.mock("../ui/hooks/useProfiles", () => ({ default: vi.fn() }));
 
 vi.mock("../ui/providers/ImperativeProvider", () => ({
   createWidgetRef: vi.fn().mockReturnValue({}),
+  ComposerBridgeProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  useComposerBridge: () => null,
 }));
 
 // Page / layout components

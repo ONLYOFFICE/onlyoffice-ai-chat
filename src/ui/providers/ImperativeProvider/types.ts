@@ -36,6 +36,13 @@ export interface AIChatWidgetRef {
     }
   ): void;
 
+  /**
+   * Insert text into the composer input without sending it. Replaces the
+   * current input value. No-op if the composer is not mounted (e.g. the
+   * user is on the settings page or the initial-setup screen).
+   */
+  setComposerText(text: string): void;
+
   /** Stop the current streaming response. */
   stopStreaming(): void;
 

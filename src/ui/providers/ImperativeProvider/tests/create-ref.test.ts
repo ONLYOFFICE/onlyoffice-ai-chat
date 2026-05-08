@@ -78,20 +78,34 @@ describe("createWidgetRef", () => {
         >
     ) as unknown as Parameters<typeof createWidgetRef>[1];
     const eventBus = { emit: vi.fn() } as unknown as ChatEventBus;
+    const composerBridgeRef = { current: { setText: vi.fn() } };
     const ref = createWidgetRef(
       stores,
       select,
       callbacksRef,
       {} as Servers,
-      eventBus
+      eventBus,
+      composerBridgeRef
     );
-    return { ref, states, callbacks, eventBus };
+    return { ref, states, callbacks, eventBus, composerBridgeRef };
   }
 
   it("sendMessage delegates to callbacks.onNew with options", () => {
     const { ref, callbacks } = build();
     ref.sendMessage("hi", { files: [], images: [] });
     expect(callbacks.onNew).toHaveBeenCalledWith("hi", [], []);
+  });
+
+  it("setComposerText delegates to the composer bridge", () => {
+    const { ref, composerBridgeRef } = build();
+    ref.setComposerText("draft");
+    expect(composerBridgeRef.current.setText).toHaveBeenCalledWith("draft");
+  });
+
+  it("setComposerText is a no-op when no composer is mounted", () => {
+    const { ref, composerBridgeRef } = build();
+    composerBridgeRef.current.setText = null;
+    expect(() => ref.setComposerText("draft")).not.toThrow();
   });
 
   it("stopStreaming/isStreaming delegate to message store", () => {

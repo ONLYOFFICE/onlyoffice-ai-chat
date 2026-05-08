@@ -3,6 +3,7 @@ import type { ProfilesStoreState } from "../../store/create-profiles-store";
 import type Servers from "../../tools/servers";
 import type { ChatEventBus } from "../EventsProvider";
 import type { Profile } from "../../../types";
+import type { ComposerBridge } from "./composer-bridge";
 import type { AIChatWidgetRef } from "./types";
 
 /**
@@ -21,13 +22,18 @@ export function createWidgetRef(
   selectCurrentChatProfile: (s: ProfilesStoreState) => Profile | null,
   callbacksRef: { current: RefCallbacks },
   _servers: Servers,
-  eventBus: ChatEventBus
+  eventBus: ChatEventBus,
+  composerBridgeRef: { current: ComposerBridge }
 ): AIChatWidgetRef {
   return {
     // --- Messages ---
 
     sendMessage(text, options) {
       callbacksRef.current.onNew(text, options?.files, options?.images);
+    },
+
+    setComposerText(text) {
+      composerBridgeRef.current.setText?.(text);
     },
 
     stopStreaming() {

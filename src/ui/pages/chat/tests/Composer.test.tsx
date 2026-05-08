@@ -40,6 +40,7 @@ vi.mock("@assistant-ui/react", () => ({
       />
     ),
   },
+  useComposerRuntime: () => ({ setText: vi.fn() }),
 }));
 
 vi.mock("../sub-components/ComposerActionSelectModel", () => ({

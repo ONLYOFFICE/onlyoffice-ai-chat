@@ -1,8 +1,10 @@
-import { ComposerPrimitive } from "@assistant-ui/react";
+import { ComposerPrimitive, useComposerRuntime } from "@assistant-ui/react";
+import { useEffect } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { FileItem } from "../../../components/file-item";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
+import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { ComposerAction } from "./ComposerAction";
 import { SelectModel } from "./ComposerActionSelectModel";
 
@@ -14,6 +16,20 @@ const Composer = () => {
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const { hideProfilePicker, entityId } = useWidgetConfig();
   const { t } = useI18n();
+  const composerRuntime = useComposerRuntime();
+  const composerBridge = useComposerBridge();
+
+  useEffect(() => {
+    if (!composerBridge) return;
+    composerBridge.current.setText = (text: string) => {
+      composerRuntime.setText(text);
+    };
+    return () => {
+      if (composerBridge.current.setText) {
+        composerBridge.current.setText = null;
+      }
+    };
+  }, [composerBridge, composerRuntime]);
   // In entity ("room") mode the chat profile is fixed by the host —
   // the composer selector would let the user override it locally,
   // which contradicts the contract. Always hide.
