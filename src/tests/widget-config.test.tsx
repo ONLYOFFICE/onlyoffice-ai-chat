@@ -56,4 +56,21 @@ describe("WidgetConfigProvider", () => {
     expect(result.current.assistantActions?.[0].id).toBe("translate");
     expect(result.current.assistantActions?.[0].onClick).toBe(onClick);
   });
+
+  it("exposes composerActions through useWidgetConfig", () => {
+    const onClick = () => {};
+    const config = {
+      composerActions: [
+        { id: "snippets", text: "Snippets", icon: "btn-copy", onClick },
+      ],
+    };
+    const { result } = renderHook(() => useWidgetConfig(), {
+      wrapper: ({ children }) => (
+        <WidgetConfigProvider config={config}>{children}</WidgetConfigProvider>
+      ),
+    });
+    expect(result.current.composerActions).toHaveLength(1);
+    expect(result.current.composerActions?.[0].id).toBe("snippets");
+    expect(result.current.composerActions?.[0].onClick).toBe(onClick);
+  });
 });

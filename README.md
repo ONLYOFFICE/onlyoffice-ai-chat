@@ -266,6 +266,7 @@ Runtime toggles to adjust built-in UI. Pass directly as `AIChatWidget` props:
 | `onSettingsClick` | `() => void` | Fully override the click on the header settings button — the built-in `setCurrentPage` toggle is not invoked when this is set. |
 | `isSettingsActive` | `boolean` | Force the header settings button into its active (highlighted) state. When `undefined`, falls back to `currentPage === "settings"`. |
 | `assistantActions` | `AssistantAction[]` | Extra buttons rendered under every assistant message, appended after the built-in Copy and Save. Each `onClick` receives `{ text, markdown, message }` of the assistant reply. Hidden during streaming and on error states (same as the built-ins). |
+| `composerActions` | `ComposerAction[]` | Extra items appended to the composer's `+` (attachments) dropdown, rendered above the built-in Web Search / Extended Thinking block. Each item is `{ id, text, icon?, onClick }` — onClick-only (no toggles or submenus). |
 
 ```tsx
 <AIChatWidget
@@ -279,6 +280,14 @@ Runtime toggles to adjust built-in UI. Pass directly as `AIChatWidget` props:
       icon: "btn-copy", // built-in IconName, custom registered name, or a React node
       onClick: ({ text }) => host.insertText(text),
       isVisible: ({ text }) => text.length > 0, // optional
+    },
+  ]}
+  composerActions={[
+    {
+      id: "snippets",
+      text: "Snippets",
+      icon: "btn-copy", // optional — IconName, custom registered name, or a React node
+      onClick: () => host.openSnippetsPicker(),
     },
   ]}
   ...props

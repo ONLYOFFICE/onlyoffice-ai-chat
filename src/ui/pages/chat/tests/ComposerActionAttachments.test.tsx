@@ -23,6 +23,7 @@ let mockWebSearchEnabled = false;
 let mockGetWebSearchEnabled = () => false;
 let mockExtendedThinking = false;
 let mockPlatformFile: unknown = null;
+let mockComposerActions: unknown = undefined;
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -66,6 +67,10 @@ vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     eventBus: { emit: mockEmit },
   }),
+}));
+
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => ({ composerActions: mockComposerActions }),
 }));
 
 let mockDropdownItems: unknown[] = [];
@@ -146,6 +151,7 @@ describe("ComposerActionAttachment", () => {
     mockPlatformFile = null;
     mockDropdownItems = [];
     mockOnOpenChange = undefined;
+    mockComposerActions = undefined;
   });
 
   it("renders the dropdown trigger", () => {
@@ -174,9 +180,11 @@ describe("ComposerActionAttachment", () => {
   });
 
   describe("without platform.file", () => {
-    it("renders separator + web search + extended thinking = 3 items", () => {
+    it("renders web search + extended thinking = 2 items (no leading separator)", () => {
       render(<ComposerActionAttachment />);
-      expect(mockDropdownItems).toHaveLength(3);
+      expect(mockDropdownItems).toHaveLength(2);
+      const items = mockDropdownItems as { isSeparator?: boolean }[];
+      expect(items.find((i) => i.isSeparator)).toBeUndefined();
     });
 
     it("does not include AddLocalFile or AddLocalImage items", () => {
@@ -717,6 +725,102 @@ describe("ComposerActionAttachment", () => {
 
     it("renders recent files with correct icon for unknown type", async () => {
       await testFileIcon(999, "unknown-format");
+    });
+  });
+
+  describe("composerActions", () => {
+    it("renders nothing extra when composerActions is undefined", () => {
+      render(<ComposerActionAttachment />);
+      // baseline: web search + extended thinking
+      expect(mockDropdownItems).toHaveLength(2);
+    });
+
+    it("renders nothing extra when composerActions is empty", () => {
+      mockComposerActions = [];
+      render(<ComposerActionAttachment />);
+      expect(mockDropdownItems).toHaveLength(2);
+    });
+
+    it("renders custom items with id, text, and string icon", () => {
+      mockComposerActions = [
+        { id: "act-1", text: "Custom A", icon: "btn-zoomup", onClick: vi.fn() },
+      ];
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as { id?: string; text: string }[];
+      const custom = items.find((i) => i.id === "act-1");
+      expect(custom).toBeDefined();
+      expect(custom?.text).toBe("Custom A");
+    });
+
+    it("invokes onClick when custom item clicked", () => {
+      const onClick = vi.fn();
+      mockComposerActions = [{ id: "act-1", text: "Custom", onClick }];
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        id?: string;
+        onClick: () => void;
+      }[];
+      const custom = items.find((i) => i.id === "act-1")!;
+      custom.onClick();
+      expect(onClick).toHaveBeenCalled();
+    });
+
+    it("renders custom items above the separator", () => {
+      mockComposerActions = [
+        { id: "act-1", text: "Custom A", onClick: vi.fn() },
+      ];
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        id?: string;
+        text: string;
+        isSeparator?: boolean;
+      }[];
+      const customIdx = items.findIndex((i) => i.id === "act-1");
+      const sepIdx = items.findIndex((i) => i.isSeparator);
+      const wsIdx = items.findIndex((i) => i.text === "WebSearch");
+      expect(customIdx).toBeGreaterThanOrEqual(0);
+      expect(customIdx).toBeLessThan(sepIdx);
+      expect(sepIdx).toBeLessThan(wsIdx);
+    });
+
+    it("renders alongside file attachments above the separator", async () => {
+      mockGetRecentFiles.mockResolvedValue(JSON.stringify({ files: [] }));
+      mockPlatformFile = {
+        pickFiles: mockPickFiles,
+        convertFileToText: mockConvertFileToText,
+        getFileType: mockGetFileType,
+        getRecentFiles: mockGetRecentFiles,
+      };
+      mockComposerActions = [
+        { id: "act-1", text: "Custom", onClick: vi.fn() },
+      ];
+      await act(async () => {
+        render(<ComposerActionAttachment />);
+      });
+      const items = mockDropdownItems as {
+        id?: string;
+        text: string;
+        isSeparator?: boolean;
+      }[];
+      // AddLocalFile + AddLocalImage + custom + separator + ws + et = 6
+      expect(items).toHaveLength(6);
+      const customIdx = items.findIndex((i) => i.id === "act-1");
+      const sepIdx = items.findIndex((i) => i.isSeparator);
+      expect(customIdx).toBeLessThan(sepIdx);
+    });
+
+    it("supports ReactNode icon", () => {
+      const customIcon = <span data-testid="custom-icon">★</span>;
+      mockComposerActions = [
+        { id: "act-1", text: "Custom", icon: customIcon, onClick: vi.fn() },
+      ];
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        id?: string;
+        icon: React.ReactNode;
+      }[];
+      const custom = items.find((i) => i.id === "act-1")!;
+      expect(custom.icon).toBe(customIcon);
     });
   });
 });

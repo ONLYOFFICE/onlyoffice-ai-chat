@@ -15,6 +15,7 @@ import {
   isXps,
 } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
 
 const getFileIconName = (type: number): string => {
   if (isPdfForm(type)) return "pdf-form";
@@ -46,6 +47,7 @@ const ComposerActionAttachment = () => {
   const toggleExtendedThinking = useProfilesStore(
     (s) => s.toggleExtendedThinking
   );
+  const { composerActions } = useWidgetConfig();
 
   const onOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -155,13 +157,33 @@ const ComposerActionAttachment = () => {
     }
   }
 
-  items.push({
-    text: "",
-    onClick: () => {
-      // ignore
-    },
-    isSeparator: true,
-  });
+  if (composerActions && composerActions.length > 0) {
+    for (const action of composerActions) {
+      items.push({
+        id: action.id,
+        text: action.text,
+        icon:
+          typeof action.icon === "string" ? (
+            <IconButton iconName={action.icon} size={24} disableHover />
+          ) : (
+            action.icon
+          ),
+        onClick: () => {
+          void action.onClick();
+        },
+      });
+    }
+  }
+
+  if (items.length > 0) {
+    items.push({
+      text: "",
+      onClick: () => {
+        // ignore
+      },
+      isSeparator: true,
+    });
+  }
 
   items.push({
     text: t("WebSearch"),

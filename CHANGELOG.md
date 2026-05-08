@@ -2,12 +2,35 @@
 
 ## 0.4.2
 
+- New `composerActions` prop on `AIChatWidget` — inject custom
+  onClick-only items into the composer's `+` (attachments) dropdown,
+  rendered above the built-in Web Search / Extended Thinking block.
+  Each item is `{ id, text, icon?, onClick }`; `icon` accepts an
+  `IconName`, a custom registered icon name, or a React node.
+- The composer's `+` dropdown no longer renders a leading separator
+  when there are no attachment items above it (e.g. when `platform.file`
+  is absent and no `composerActions` are passed).
+- Removed the icon from the "Code" row in the model assignment page
+  to match the rest of the assignment fields.
+
+```tsx
+<AIChatWidget
+  composerActions={[
+    { id: "snippets", text: "Snippets", icon: "btn-copy", onClick: openSnippets },
+  ]}
+/>
+```
+
 - `AssignmentsStorage` write methods (`create`, `update`, `delete`,
   `upsertMany`, `deleteMany`) now accept an optional opaque `entityId`
   parameter, matching `readByType`. Lets adapters scope assignment
   writes per entity ("room") — for example, a per-room Chat profile
   alongside the globally assigned one. Existing call sites are
   unaffected since the parameter is optional.
+- Fixes the same role-grouping bug from 0.4.1 on the error path:
+  `message-incomplete` events now carry a stable id (reused from
+  prior stream deltas, or freshly minted when the error is the first
+  event). Failed messages remain non-persisted by design.
 
 ## 0.4.1
 

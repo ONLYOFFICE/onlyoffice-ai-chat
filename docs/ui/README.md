@@ -56,6 +56,50 @@ requires re-mounting the widget. See
 [`docs/core/storage/storage.md`](../core/storage/storage.md#entity-scoping-entityid)
 for the persistence contract.
 
+## Runtime flags (`WidgetConfig`)
+
+[`WidgetConfig`](../../src/widget-config.tsx) is the bag of UI runtime
+flags read through `useWidgetConfig()`. Most fields are simple
+toggles (`hideProfilePicker`, `hideSettingsButton`,
+`isDialogFullscreen`, …); two are extension points worth calling out:
+
+- **`assistantActions: AssistantAction[]`** — extra buttons rendered
+  under every assistant message, appended after the built-in Copy and
+  Save. Each action's `onClick` receives `{ text, markdown, message }`
+  of the assistant reply. Hidden during streaming and on error states.
+- **`composerActions: ComposerAction[]`** — extra items appended to
+  the composer's `+` (attachments) dropdown, rendered above the
+  built-in Web Search / Extended Thinking block. Items are
+  onClick-only (`{ id, text, icon?, onClick }`); toggles and submenus
+  are not supported. The dropdown's leading separator is suppressed
+  automatically when nothing renders above it (no `platform.file` and
+  no `composerActions`).
+
+```tsx
+<AIChatWidget
+  assistantActions={[
+    {
+      id: "insert",
+      tooltip: "Insert into document",
+      icon: "btn-copy",
+      onClick: ({ text }) => host.insertText(text),
+    },
+  ]}
+  composerActions={[
+    {
+      id: "snippets",
+      text: "Snippets",
+      icon: "btn-copy",
+      onClick: () => host.openSnippetsPicker(),
+    },
+  ]}
+/>
+```
+
+`icon` accepts a built-in `IconName`, a custom registered icon name
+(see [`providers/images.md`](./providers/images.md)), or a React
+node.
+
 ## What is exported, and from where
 
 The public surface lives in [`src/index.ts`](../../src/index.ts).

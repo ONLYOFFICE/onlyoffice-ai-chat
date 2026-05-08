@@ -50,6 +50,8 @@ export type {
   AssistantActionContext,
 } from "./ui/pages/chat/assistant-actions";
 
+export type { ComposerAction } from "./ui/pages/chat/composer-actions";
+
 // ---------------------------------------------------------------------------
 // Imperative Ref
 // ---------------------------------------------------------------------------

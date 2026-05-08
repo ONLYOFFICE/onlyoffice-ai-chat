@@ -56,6 +56,7 @@ import type { HostToolGroup } from "./ui/tools/types";
 import { WidgetConfigProvider } from "./widget-config";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
+import type { ComposerAction } from "./ui/pages/chat/composer-actions";
 import type {
   ProviderType,
   TOnlyOfficeConfig,
@@ -120,6 +121,11 @@ export interface AIChatWidgetProps {
    * (and the raw message) of the corresponding assistant reply.
    */
   assistantActions?: AssistantAction[];
+  /**
+   * Extra items appended to the composer's "+" (attachments) dropdown,
+   * rendered above the built-in Web Search / Extended Thinking block.
+   */
+  composerActions?: ComposerAction[];
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -156,6 +162,7 @@ export const AIChatWidget = React.forwardRef<
       systemPrompt,
       apiConfig,
       assistantActions,
+      composerActions,
     },
     ref
   ) => {
@@ -169,6 +176,7 @@ export const AIChatWidget = React.forwardRef<
         entityId,
         systemPrompt,
         assistantActions,
+        composerActions,
       }),
       [
         hideProfilePicker,
@@ -179,6 +187,7 @@ export const AIChatWidget = React.forwardRef<
         entityId,
         systemPrompt,
         assistantActions,
+        composerActions,
       ]
     );
 

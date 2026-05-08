@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo } from "react";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
+import type { ComposerAction } from "./ui/pages/chat/composer-actions";
 
 export interface WidgetConfig {
   /**
@@ -58,6 +59,12 @@ export interface WidgetConfig {
    * built-ins.
    */
   assistantActions?: AssistantAction[];
+  /**
+   * Extra items appended to the composer's "+" (attachments) dropdown,
+   * rendered above the built-in Web Search / Extended Thinking block. Each
+   * item is an onClick-only entry; toggles and submenus are not supported.
+   */
+  composerActions?: ComposerAction[];
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});
