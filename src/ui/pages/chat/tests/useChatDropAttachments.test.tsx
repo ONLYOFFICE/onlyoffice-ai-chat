@@ -61,9 +61,10 @@ describe("useChatDropAttachments", () => {
     await waitFor(() => {
       expect(addAttachmentImage).toHaveBeenCalledTimes(1);
     });
-    const call = addAttachmentImage.mock.calls[0][0];
-    expect(call.name).toBe("pic.png");
-    expect(call.base64.startsWith("data:image/png")).toBe(true);
+    const batch = addAttachmentImage.mock.calls[0][0];
+    expect(batch).toHaveLength(1);
+    expect(batch[0].name).toBe("pic.png");
+    expect(batch[0].base64.startsWith("data:image/png")).toBe(true);
   });
 
   it("reads dropped text files and adds them with type 0", async () => {
@@ -81,11 +82,9 @@ describe("useChatDropAttachments", () => {
     await waitFor(() => {
       expect(addAttachmentFile).toHaveBeenCalledTimes(1);
     });
-    expect(addAttachmentFile.mock.calls[0][0]).toEqual({
-      path: "notes.md",
-      content: "hello world",
-      type: 0,
-    });
+    expect(addAttachmentFile.mock.calls[0][0]).toEqual([
+      { path: "notes.md", content: "hello world", type: 0 },
+    ]);
   });
 
   it("recognises known text extensions even without a MIME type", async () => {
@@ -103,7 +102,8 @@ describe("useChatDropAttachments", () => {
     await waitFor(() => {
       expect(addAttachmentFile).toHaveBeenCalledTimes(1);
     });
-    expect(addAttachmentFile.mock.calls[0][0].path).toBe("script.ts");
+    expect(addAttachmentFile.mock.calls[0][0]).toHaveLength(1);
+    expect(addAttachmentFile.mock.calls[0][0][0].path).toBe("script.ts");
   });
 
   it("ignores unsupported binary formats", async () => {

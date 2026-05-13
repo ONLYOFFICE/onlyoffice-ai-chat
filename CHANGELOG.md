@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.21
+
+- Attachments: `addAttachmentFile` / `addAttachmentImage` now accept `Input | Input[]`. Batch form runs `saveFile` / `saveImage` in parallel via `Promise.all`, applies the 5-item cap atomically (extras silently dropped), and commits all refs in a single `set`. Single-input callers are unchanged.
+- Composer: DnD (`useChatDropAttachments`), local file picker (`selectLocalFile`), and image picker (`handleImageSelect`) now read all selected files in parallel and hand the whole batch to the store in one call instead of `await`-ing per file.
+
+```ts
+// single (unchanged)
+await addAttachmentFile({ path: "a.txt", content, type: 0 });
+// batch (new)
+await addAttachmentFile([
+  { path: "a.txt", content: c1, type: 0 },
+  { path: "b.md",  content: c2, type: 0 },
+]);
+```
+
 ## 0.4.20
 
 - Attachments: `resolveAttachmentRefs` now indexes `readManyByIds` results by `rec.id` instead of by position, so storage implementations may return records in any order or omit missing ids entirely. Interface contract for `AttachmentsStorage.readManyByIds` relaxed accordingly.

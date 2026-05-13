@@ -75,6 +75,9 @@ synthesizes them.
 
 ```
 [Composer / DnD]            (1) addAttachmentFile / addAttachmentImage
+                                (accept single input or array — batch
+                                 form fans out to save* via Promise.all
+                                 and applies the 5-item cap atomically)
         │
         ▼
 [AttachmentsEngine.save*] ─► storage.attachments.create

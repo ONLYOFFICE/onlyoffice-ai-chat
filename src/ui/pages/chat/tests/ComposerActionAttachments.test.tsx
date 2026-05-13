@@ -298,11 +298,9 @@ describe("ComposerActionAttachment", () => {
           "/docs/file1.docx",
           69
         );
-        expect(mockAddAttachmentFile).toHaveBeenCalledWith({
-          path: "/docs/file1.docx",
-          content: "file content",
-          type: 7,
-        });
+        expect(mockAddAttachmentFile).toHaveBeenCalledWith([
+          { path: "/docs/file1.docx", content: "file content", type: 7 },
+        ]);
       });
     });
 
@@ -373,7 +371,8 @@ describe("ComposerActionAttachment", () => {
       });
 
       await waitFor(() => {
-        expect(mockAddAttachmentFile).toHaveBeenCalledTimes(5);
+        expect(mockAddAttachmentFile).toHaveBeenCalledTimes(1);
+        expect(mockAddAttachmentFile.mock.calls[0][0]).toHaveLength(5);
       });
     });
 
@@ -600,15 +599,16 @@ describe("ComposerActionAttachment", () => {
       expect(mockReadAsDataURL).toHaveBeenCalledWith(file);
 
       // Simulate reader.onload
-      act(() => {
+      await act(async () => {
         capturedOnload!({
           target: { result: "data:image/png;base64,abc123" },
         });
       });
 
-      expect(mockAddAttachmentImage).toHaveBeenCalledWith({
-        name: "photo.png",
-        base64: "data:image/png;base64,abc123",
+      await waitFor(() => {
+        expect(mockAddAttachmentImage).toHaveBeenCalledWith([
+          { name: "photo.png", base64: "data:image/png;base64,abc123" },
+        ]);
       });
 
       Object.defineProperty(window, "FileReader", {

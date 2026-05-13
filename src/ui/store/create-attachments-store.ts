@@ -21,6 +21,19 @@ import type { AttachmentsApi } from "../providers/ApiProvider/attachments";
  * appeared can still read it. Switching threads runs `clearAttachment*`
  * which drops the cache.
  */
+export interface FileAttachmentInput {
+  path: string;
+  content: string;
+  type: number;
+  title?: string;
+}
+
+export interface ImageAttachmentInput {
+  name: string;
+  base64: string;
+  title?: string;
+}
+
 export interface AttachmentsStoreState {
   /** File refs currently attached to the draft (max 5). */
   attachmentFiles: TAttachmentRef[];
@@ -34,16 +47,15 @@ export interface AttachmentsStoreState {
 
   /**
    * Persist a file payload to storage and append the resulting ref.
-   * No-op (does not touch storage) when the limit of 5 is reached.
-   * Calls are serialized internally so concurrent invocations cannot
-   * race past the limit check.
+   * Accepts a single input or an array — the batch form runs `saveFile`
+   * in parallel via `Promise.all` and applies the 5-item limit atomically
+   * (items past the cap are silently dropped). No-op when the cap is
+   * already reached. Calls are serialized internally so concurrent
+   * invocations cannot race past the limit check.
    */
-  addAttachmentFile: (input: {
-    path: string;
-    content: string;
-    type: number;
-    title?: string;
-  }) => Promise<void>;
+  addAttachmentFile: (
+    input: FileAttachmentInput | FileAttachmentInput[]
+  ) => Promise<void>;
 
   /** Remove a file ref by id and delete the underlying storage record. */
   deleteAttachmentFile: (id: string) => Promise<void>;
@@ -53,15 +65,15 @@ export interface AttachmentsStoreState {
 
   /**
    * Persist an image payload to storage and append the resulting ref.
+   * Accepts a single input or an array — the batch form runs `saveImage`
+   * in parallel and applies the 5-item limit atomically (extras dropped).
    * The base64 also lands in `_imageCache` so the composer thumbnail
    * appears without a follow-up storage round trip. Serialized like
    * {@link addAttachmentFile}.
    */
-  addAttachmentImage: (input: {
-    name: string;
-    base64: string;
-    title?: string;
-  }) => Promise<void>;
+  addAttachmentImage: (
+    input: ImageAttachmentInput | ImageAttachmentInput[]
+  ) => Promise<void>;
 
   /** Remove an image ref by id, drop its cached base64, and delete storage. */
   deleteAttachmentImage: (id: string) => Promise<void>;
@@ -121,16 +133,24 @@ export function createAttachmentsStore(
 
     addAttachmentFile: (input) =>
       queue(async () => {
-        if (get().attachmentFiles.length >= ATTACHMENT_LIMIT) return;
-        const record = await attachments.saveFile(input, entityId);
-        const ref: TAttachmentRef = {
+        const remaining = ATTACHMENT_LIMIT - get().attachmentFiles.length;
+        if (remaining <= 0) return;
+        const inputs = (Array.isArray(input) ? input : [input]).slice(
+          0,
+          remaining
+        );
+        if (inputs.length === 0) return;
+        const records = await Promise.all(
+          inputs.map((i) => attachments.saveFile(i, entityId))
+        );
+        const refs: TAttachmentRef[] = records.map((record) => ({
           id: record.id,
           title: record.title,
           kind: "file",
           path: record.path,
           type: record.type,
-        };
-        set((s) => ({ attachmentFiles: [...s.attachmentFiles, ref] }));
+        }));
+        set((s) => ({ attachmentFiles: [...s.attachmentFiles, ...refs] }));
       }),
 
     deleteAttachmentFile: async (id) => {
@@ -155,16 +175,28 @@ export function createAttachmentsStore(
 
     addAttachmentImage: (input) =>
       queue(async () => {
-        if (get().attachmentImages.length >= ATTACHMENT_LIMIT) return;
-        const record = await attachments.saveImage(input, entityId);
-        const ref: TAttachmentRef = {
+        const remaining = ATTACHMENT_LIMIT - get().attachmentImages.length;
+        if (remaining <= 0) return;
+        const inputs = (Array.isArray(input) ? input : [input]).slice(
+          0,
+          remaining
+        );
+        if (inputs.length === 0) return;
+        const records = await Promise.all(
+          inputs.map((i) => attachments.saveImage(i, entityId))
+        );
+        const refs: TAttachmentRef[] = records.map((record) => ({
           id: record.id,
           title: record.title,
           kind: "image",
-        };
+        }));
+        const cacheAdditions: Record<string, string> = {};
+        records.forEach((record, i) => {
+          cacheAdditions[record.id] = inputs[i].base64;
+        });
         set((s) => ({
-          attachmentImages: [...s.attachmentImages, ref],
-          _imageCache: { ...s._imageCache, [record.id]: input.base64 },
+          attachmentImages: [...s.attachmentImages, ...refs],
+          _imageCache: { ...s._imageCache, ...cacheAdditions },
         }));
       }),
 

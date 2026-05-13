@@ -70,16 +70,23 @@ const ComposerActionAttachment = () => {
     if (!platform.file) return;
     const files = await platform.file.pickFiles();
     if (!files) return;
+    const fileApi = platform.file;
 
-    for (const file of files.slice(0, 5)) {
-      const type = platform.file.getFileType(file.path);
-      const isSpreadsheetFile = isSpreadsheet(type);
-      const content = await platform.file.convertFileToText(
-        file.path,
-        isSpreadsheetFile ? 260 : 69
-      );
-      await addAttachmentFile({ path: file.path, content: content || "", type });
-    }
+    // Convert every picked file in parallel, then push the whole batch to
+    // the store in one call. Slicing to 5 here mirrors the store-side cap
+    // and avoids paying for converts we'd just drop.
+    const inputs = await Promise.all(
+      files.slice(0, 5).map(async (file) => {
+        const type = fileApi.getFileType(file.path);
+        const isSpreadsheetFile = isSpreadsheet(type);
+        const content = await fileApi.convertFileToText(
+          file.path,
+          isSpreadsheetFile ? 260 : 69
+        );
+        return { path: file.path, content: content || "", type };
+      })
+    );
+    if (inputs.length > 0) await addAttachmentFile(inputs);
   };
 
   const [recentFiles, setRecentFiles] = React.useState<DropDownItemProps[]>([]);
@@ -222,20 +229,31 @@ const ComposerActionAttachment = () => {
     ),
   });
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const files = input.files;
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = event.target?.result as string;
-        await addAttachmentImage({ name: file.name, base64 });
-      };
-      reader.readAsDataURL(file);
-    });
+    const inputs = (
+      await Promise.all(
+        Array.from(files).map(
+          (file) =>
+            new Promise<{ name: string; base64: string } | null>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (event) =>
+                resolve({
+                  name: file.name,
+                  base64: event.target?.result as string,
+                });
+              reader.onerror = () => resolve(null);
+              reader.readAsDataURL(file);
+            })
+        )
+      )
+    ).filter((x) => x !== null);
 
-    e.target.value = "";
+    input.value = "";
+    if (inputs.length > 0) await addAttachmentImage(inputs);
   };
 
   return (

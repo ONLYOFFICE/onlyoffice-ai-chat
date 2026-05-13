@@ -124,25 +124,39 @@ export const useChatDropAttachments = () => {
     setIsDragOver(false);
 
     const files = Array.from(e.dataTransfer.files);
-    for (const file of files) {
-      if (file.type.startsWith("image/")) {
+    // Read every dropped file in parallel, then hand each batch to the
+    // store in one call. Per-file failures collapse to `null` so a single
+    // unreadable file can't sink the whole drop.
+    // Unsupported binary formats (e.g. .docx, .pdf) are ignored here —
+    // the attach-button flow handles those via the platform adapter.
+    const imageReads = files
+      .filter((f) => f.type.startsWith("image/"))
+      .map(async (f) => {
         try {
-          const base64 = await readFile(file, "dataURL");
-          await addAttachmentImage({ name: file.name, base64 });
+          return { name: f.name, base64: await readFile(f, "dataURL") };
         } catch {
-          // Reading failed — silently skip this file.
+          return null;
         }
-      } else if (isTextFile(file)) {
+      });
+    const textReads = files
+      .filter((f) => !f.type.startsWith("image/") && isTextFile(f))
+      .map(async (f) => {
         try {
-          const content = await readFile(file, "text");
-          await addAttachmentFile({ path: file.name, content, type: 0 });
+          return { path: f.name, content: await readFile(f, "text"), type: 0 };
         } catch {
-          // Reading failed — silently skip this file.
+          return null;
         }
-      }
-      // Unsupported binary formats (e.g. .docx, .pdf) are ignored here —
-      // the attach-button flow handles those via the platform adapter.
-    }
+      });
+
+    const [imageInputs, fileInputs] = await Promise.all([
+      Promise.all(imageReads).then((r) => r.filter((x) => x !== null)),
+      Promise.all(textReads).then((r) => r.filter((x) => x !== null)),
+    ]);
+
+    const work: Promise<unknown>[] = [];
+    if (imageInputs.length > 0) work.push(addAttachmentImage(imageInputs));
+    if (fileInputs.length > 0) work.push(addAttachmentFile(fileInputs));
+    await Promise.all(work);
   };
 
   return {
