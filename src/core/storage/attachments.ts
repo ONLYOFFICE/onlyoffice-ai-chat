@@ -101,6 +101,17 @@ export interface AttachmentsStorage {
    */
   update(id: string, patch: Partial<Attachment>): Promise<void>;
 
+  /**
+   * Patch a batch of attachments with the same `patch` in one round
+   * trip. Used by `AttachmentsEngine.linkToMessage` to bind every draft
+   * in a multi-attachment message to its owning message+thread at once.
+   * Implementations should commit the batch atomically (one IndexedDB
+   * transaction, one PATCH on a remote backend); missing ids are
+   * silently skipped. The `id` / `createdAt` fields on each record
+   * cannot be patched — implementations must preserve them.
+   */
+  updateManyByIds(ids: string[], patch: Partial<Attachment>): Promise<void>;
+
   /** Delete a single attachment by id. */
   delete(id: string): Promise<void>;
 

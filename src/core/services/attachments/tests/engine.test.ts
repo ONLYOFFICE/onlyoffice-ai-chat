@@ -23,6 +23,7 @@ const makeStorage = () => {
     readById: vi.fn(),
     readManyByIds: vi.fn(),
     update: vi.fn(async () => undefined),
+    updateManyByIds: vi.fn(async () => undefined),
     delete: vi.fn(),
     deleteMany: vi.fn(),
     deleteByMessage: vi.fn(),
@@ -90,6 +91,29 @@ describe("AttachmentsEngine.saveImagesMany", () => {
     expect(storage.create).not.toHaveBeenCalled();
     expect(out).toHaveLength(2);
     expect(out.every((r) => r.kind === "image")).toBe(true);
+  });
+});
+
+describe("AttachmentsEngine.linkToMessage", () => {
+  it("issues exactly one storage.updateManyByIds call with the shared patch", async () => {
+    const storage = makeStorage();
+    const engine = engineWith(storage);
+
+    await engine.linkToMessage(["a1", "a2", "a3"], "m-1", "t-1");
+
+    expect(storage.updateManyByIds).toHaveBeenCalledTimes(1);
+    expect(storage.update).not.toHaveBeenCalled();
+    expect(storage.updateManyByIds).toHaveBeenCalledWith(
+      ["a1", "a2", "a3"],
+      { messageId: "m-1", threadId: "t-1" }
+    );
+  });
+
+  it("is a no-op without touching storage when ids[] is empty", async () => {
+    const storage = makeStorage();
+    const engine = engineWith(storage);
+    await engine.linkToMessage([], "m", "t");
+    expect(storage.updateManyByIds).not.toHaveBeenCalled();
   });
 });
 

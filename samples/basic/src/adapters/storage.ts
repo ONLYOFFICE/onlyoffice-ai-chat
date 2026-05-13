@@ -987,10 +987,22 @@ class IDBAttachments implements AttachmentsStorage {
   }
 
   async update(id: string, patch: Partial<Attachment>): Promise<void> {
+    return this.updateManyByIds([id], patch);
+  }
+
+  async updateManyByIds(
+    ids: string[],
+    patch: Partial<Attachment>
+  ): Promise<void> {
+    if (ids.length === 0) return;
+    // Single transaction — every existing record gets patched atomically.
+    // Missing ids silently skip, mirroring the single-id `update` semantics
+    // and matching what `deleteMany` does for its own missing-id case.
     const t = this.db.transaction("attachments", "readwrite");
     const store = t.objectStore("attachments");
-    const existing: Attachment | undefined = await req(store.get(id));
-    if (existing) {
+    for (const id of ids) {
+      const existing: Attachment | undefined = await req(store.get(id));
+      if (!existing) continue;
       // Preserve identity fields — `id` and `createdAt` cannot be patched.
       store.put({
         ...existing,

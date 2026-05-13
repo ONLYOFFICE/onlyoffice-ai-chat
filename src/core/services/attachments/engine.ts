@@ -137,10 +137,11 @@ export class AttachmentsEngine {
    * Called after the user message has been persisted so the
    * cascade-on-message-delete (in `messages.delete`) can find them.
    *
-   * Uses `allSettled` so a single failed `update` doesn't abort the
-   * rest of the batch — partial linking is preferable to leaving the
-   * caller's list half-orphaned. Failures are silently swallowed; the
-   * record remains a draft and will be picked up by future GC.
+   * Issues a single `updateManyByIds` against storage — lands as one
+   * round trip on a remote backend, one IndexedDB transaction locally.
+   * Missing ids are silently skipped by the storage layer, preserving
+   * the prior "best-effort linking, draft survives" semantics without
+   * the N-way fan-out the previous `allSettled` implementation caused.
    */
   async linkToMessage(
     ids: string[],
@@ -148,11 +149,10 @@ export class AttachmentsEngine {
     threadId: string
   ): Promise<void> {
     if (ids.length === 0) return;
-    await Promise.allSettled(
-      ids.map((id) =>
-        this.deps.storage.attachments.update(id, { messageId, threadId })
-      )
-    );
+    await this.deps.storage.attachments.updateManyByIds(ids, {
+      messageId,
+      threadId,
+    });
   }
 }
 
