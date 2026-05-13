@@ -23,7 +23,9 @@ export const DEFAULT_ATTACHMENTS_ROUTES: Record<
   RouteSpec
 > = {
   saveFile: { method: "POST", path: "attachments/save-file" },
+  saveFilesMany: { method: "POST", path: "attachments/save-files-many" },
   saveImage: { method: "POST", path: "attachments/save-image" },
+  saveImagesMany: { method: "POST", path: "attachments/save-images-many" },
   get: { method: "POST", path: "attachments/get" },
   getMany: { method: "POST", path: "attachments/get-many" },
   delete: { method: "DELETE", path: "attachments/delete" },

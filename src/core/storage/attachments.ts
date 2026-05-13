@@ -65,6 +65,20 @@ export interface AttachmentsStorage {
   create(input: Omit<Attachment, "id" | "createdAt">): Promise<Attachment>;
 
   /**
+   * Persist a batch of attachments in a single round trip. Mirrors
+   * {@link create}: storage assigns each record's `id` / `createdAt`.
+   * Implementations should write the whole batch atomically when
+   * possible (one IndexedDB transaction, one POST on a remote backend)
+   * — issuing N independent `create` calls would defeat the optimization
+   * the composer relies on when the user drops multiple files at once.
+   *
+   * Order of the returned array matches the input.
+   */
+  createMany(
+    inputs: Omit<Attachment, "id" | "createdAt">[]
+  ): Promise<Attachment[]>;
+
+  /**
    * Fetch a single attachment by id.
    *
    * @returns The matching record, or `null` if not found.

@@ -25,6 +25,25 @@ const makeStubEngine = () => ({
     records.set(id, rec);
     return rec;
   }),
+  saveFilesMany: vi.fn(
+    async (
+      inputs: { path: string; content: string; type: number; title?: string }[]
+    ) =>
+      inputs.map((input) => {
+        const id = `att-${++nextId}`;
+        const rec: Attachment = {
+          id,
+          kind: "file",
+          title: input.title ?? input.path,
+          content: input.content,
+          path: input.path,
+          type: input.type,
+          createdAt: Date.now(),
+        };
+        records.set(id, rec);
+        return rec;
+      })
+  ),
   saveImage: vi.fn(async (input: { name: string; base64: string; title?: string }) => {
     const id = `att-${++nextId}`;
     const rec: Attachment = {
@@ -37,6 +56,21 @@ const makeStubEngine = () => ({
     records.set(id, rec);
     return rec;
   }),
+  saveImagesMany: vi.fn(
+    async (inputs: { name: string; base64: string; title?: string }[]) =>
+      inputs.map((input) => {
+        const id = `att-${++nextId}`;
+        const rec: Attachment = {
+          id,
+          kind: "image",
+          title: input.title ?? input.name,
+          base64: input.base64,
+          createdAt: Date.now(),
+        };
+        records.set(id, rec);
+        return rec;
+      })
+  ),
   get: vi.fn(async (id: string) => records.get(id) ?? null),
   getMany: vi.fn(async (ids: string[]) => ids.map((i) => records.get(i) ?? null)),
   delete: vi.fn(async (id: string) => {
@@ -97,7 +131,7 @@ describe("createAttachmentsStore", () => {
     it("enforces max 5 files (does not persist past limit)", async () => {
       const { store } = createStore();
       for (let i = 0; i < 6; i++) {
-         
+
         await store
           .getState()
           .addAttachmentFile({ path: `file-${i}`, content: "", type: 1 });
@@ -105,6 +139,48 @@ describe("createAttachmentsStore", () => {
       expect(store.getState().attachmentFiles).toHaveLength(5);
       // Only 5 storage records should exist — the 6th call is short-circuited.
       expect(records.size).toBe(5);
+    });
+
+    it("array input hits saveFilesMany exactly once (single round trip)", async () => {
+      const { store, engine } = createStore();
+      await store.getState().addAttachmentFile([
+        { path: "a.txt", content: "1", type: 1 },
+        { path: "b.txt", content: "2", type: 1 },
+        { path: "c.txt", content: "3", type: 1 },
+      ]);
+      // The whole batch lands on the engine via one call.
+      expect(
+        (engine as unknown as { saveFilesMany: { mock: { calls: unknown[] } } })
+          .saveFilesMany.mock.calls
+      ).toHaveLength(1);
+      expect(
+        (engine as unknown as { saveFile: { mock: { calls: unknown[] } } })
+          .saveFile.mock.calls
+      ).toHaveLength(0);
+      expect(store.getState().attachmentFiles).toHaveLength(3);
+    });
+
+    it("array input truncated to remaining slots in one batch call", async () => {
+      const { store, engine } = createStore();
+      // seed 3 → only 2 slots remain
+      await store.getState().addAttachmentFile([
+        { path: "a", content: "", type: 1 },
+        { path: "b", content: "", type: 1 },
+        { path: "c", content: "", type: 1 },
+      ]);
+      await store.getState().addAttachmentFile([
+        { path: "d", content: "", type: 1 },
+        { path: "e", content: "", type: 1 },
+        { path: "f", content: "", type: 1 },
+      ]);
+      expect(store.getState().attachmentFiles).toHaveLength(5);
+      const calls = (
+        engine as unknown as {
+          saveFilesMany: { mock: { calls: unknown[][] } };
+        }
+      ).saveFilesMany.mock.calls;
+      // Second call passes 2 inputs (truncated to remaining 2 slots), not 3.
+      expect((calls[1][0] as unknown[]).length).toBe(2);
     });
   });
 

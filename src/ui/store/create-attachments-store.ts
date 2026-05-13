@@ -140,9 +140,10 @@ export function createAttachmentsStore(
           remaining
         );
         if (inputs.length === 0) return;
-        const records = await Promise.all(
-          inputs.map((i) => attachments.saveFile(i, entityId))
-        );
+        // Single batch call — lands on the backend as one HTTP POST
+        // regardless of how many files the user dropped. Storage owns
+        // id/createdAt; we just stash the lightweight refs.
+        const records = await attachments.saveFilesMany(inputs, entityId);
         const refs: TAttachmentRef[] = records.map((record) => ({
           id: record.id,
           title: record.title,
@@ -182,9 +183,8 @@ export function createAttachmentsStore(
           remaining
         );
         if (inputs.length === 0) return;
-        const records = await Promise.all(
-          inputs.map((i) => attachments.saveImage(i, entityId))
-        );
+        // One batch call — see addAttachmentFile for rationale.
+        const records = await attachments.saveImagesMany(inputs, entityId);
         const refs: TAttachmentRef[] = records.map((record) => ({
           id: record.id,
           title: record.title,

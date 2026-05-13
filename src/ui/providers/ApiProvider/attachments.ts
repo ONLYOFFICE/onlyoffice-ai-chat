@@ -18,8 +18,24 @@ export function createAttachmentsApi(
   return {
     saveFile: (input, entityId) =>
       callRoute(config, "attachments", "saveFile", [input, entityId], engines),
+    saveFilesMany: (inputs, entityId) =>
+      callRoute(
+        config,
+        "attachments",
+        "saveFilesMany",
+        [inputs, entityId],
+        engines
+      ),
     saveImage: (input, entityId) =>
       callRoute(config, "attachments", "saveImage", [input, entityId], engines),
+    saveImagesMany: (inputs, entityId) =>
+      callRoute(
+        config,
+        "attachments",
+        "saveImagesMany",
+        [inputs, entityId],
+        engines
+      ),
     get: (id) => callRoute(config, "attachments", "get", [id], engines),
     getMany: (ids) =>
       callRoute(config, "attachments", "getMany", [ids], engines),

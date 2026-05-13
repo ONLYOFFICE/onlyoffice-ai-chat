@@ -945,15 +945,27 @@ class IDBAttachments implements AttachmentsStorage {
   async create(
     input: Omit<Attachment, "id" | "createdAt">
   ): Promise<Attachment> {
-    const stored: Attachment = {
+    const [stored] = await this.createMany([input]);
+    return stored;
+  }
+
+  async createMany(
+    inputs: Omit<Attachment, "id" | "createdAt">[]
+  ): Promise<Attachment[]> {
+    if (inputs.length === 0) return [];
+    const now = Date.now();
+    const stored: Attachment[] = inputs.map((input) => ({
       ...input,
       id: uuid(),
-      createdAt: Date.now(),
-    };
-    const store = this.db
-      .transaction("attachments", "readwrite")
-      .objectStore("attachments");
-    await req(store.add(stored));
+      createdAt: now,
+    }));
+    // Single transaction — every `store.add` shares the same scope so
+    // multi-file drops commit atomically (one IDB txn, one HTTP POST
+    // when this storage sits behind a remote backend).
+    const t = this.db.transaction("attachments", "readwrite");
+    const store = t.objectStore("attachments");
+    for (const rec of stored) store.add(rec);
+    await tx(t);
     return stored;
   }
 
