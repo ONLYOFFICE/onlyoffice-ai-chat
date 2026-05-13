@@ -74,8 +74,9 @@ export interface AttachmentsStorage {
   /**
    * Batch fetch multiple attachments by id. Used by the resolver to
    * hydrate refs from a full message-history scan in a single round
-   * trip. The result preserves caller order; missing ids are returned
-   * as `null` in their slot.
+   * trip. Implementations may return records in any order and omit
+   * missing ids entirely — the resolver matches by `rec.id`, not by
+   * position.
    */
   readManyByIds(ids: string[]): Promise<(Attachment | null)[]>;
 

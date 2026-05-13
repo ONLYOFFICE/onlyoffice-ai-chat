@@ -97,6 +97,9 @@ function parseRef(value: unknown): RefMeta | null {
  * provider doesn't choke on an empty payload.
  *
  * Issues a single batched `readManyByIds` regardless of message count.
+ * The returned records may arrive in any order, contain gaps, or be
+ * absent entirely — the resolver indexes them by `id` and treats every
+ * unmatched ref as missing.
  */
 export async function resolveAttachmentRefs(
   messages: ThreadMessageLike[],
@@ -107,9 +110,10 @@ export async function resolveAttachmentRefs(
 
   const records = await storage.readManyByIds(ids);
   const map = new Map<string, Attachment>();
-  for (let i = 0; i < ids.length; i += 1) {
-    const rec = records[i];
-    if (rec) map.set(ids[i], rec);
+  if (Array.isArray(records)) {
+    for (const rec of records) {
+      if (rec && typeof rec.id === "string") map.set(rec.id, rec);
+    }
   }
 
   return messages.map((msg) => hydrateMessage(msg, map));
