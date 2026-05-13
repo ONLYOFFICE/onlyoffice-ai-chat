@@ -3,7 +3,9 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 
 const mockSaveConfig = vi.fn();
-const mockGetConfig = vi.fn().mockReturnValue({ mcpServers: {} });
+// getConfig is async and resolves to the mcpServers map (not the wrapping
+// `{ mcpServers }` object — that wrapping happens inside the dialog).
+const mockGetConfig = vi.fn<() => Promise<Record<string, unknown>>>();
 const mockOnClose = vi.fn();
 
 vi.mock("react-i18next", () => ({
@@ -137,7 +139,7 @@ describe("ConfigDialog", () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     editorUpdateListener = null;
-    mockGetConfig.mockReturnValue({ mcpServers: {} });
+    mockGetConfig.mockResolvedValue({});
   });
 
   afterEach(() => {
@@ -184,17 +186,15 @@ describe("ConfigDialog", () => {
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it("initializes editor with config data after timeout", () => {
-    mockGetConfig.mockReturnValue({
-      mcpServers: { test: { url: "http://test" } },
-    });
+  it("initializes editor with config data after timeout", async () => {
+    mockGetConfig.mockResolvedValue({ test: { url: "http://test" } });
     mockEditorDestroy.mockClear();
     const { unmount } = render(
       <ConfigDialog open={true} onClose={mockOnClose} />
     );
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     // Editor was created - verify by unmounting and checking destroy
@@ -202,11 +202,11 @@ describe("ConfigDialog", () => {
     expect(mockEditorDestroy).toHaveBeenCalled();
   });
 
-  it("save button calls saveConfig and onClose with valid JSON", () => {
+  it("save button calls saveConfig and onClose with valid JSON", async () => {
     render(<ConfigDialog open={true} onClose={mockOnClose} />);
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     // The initial config { mcpServers: {} } is valid, so save should be enabled
@@ -216,11 +216,11 @@ describe("ConfigDialog", () => {
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it("save button is disabled when JSON is invalid", () => {
+  it("save button is disabled when JSON is invalid", async () => {
     render(<ConfigDialog open={true} onClose={mockOnClose} />);
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     // Simulate invalid JSON through update listener
@@ -237,11 +237,11 @@ describe("ConfigDialog", () => {
     expect(saveBtn).toBeDisabled();
   });
 
-  it("shows error message for invalid JSON format", () => {
+  it("shows error message for invalid JSON format", async () => {
     render(<ConfigDialog open={true} onClose={mockOnClose} />);
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     if (editorUpdateListener) {
@@ -256,11 +256,11 @@ describe("ConfigDialog", () => {
     expect(screen.getByText(/Invalid JSON format/)).toBeInTheDocument();
   });
 
-  it("shows error when valid JSON but no mcpServers key", () => {
+  it("shows error when valid JSON but no mcpServers key", async () => {
     render(<ConfigDialog open={true} onClose={mockOnClose} />);
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     if (editorUpdateListener) {
@@ -275,11 +275,11 @@ describe("ConfigDialog", () => {
     expect(screen.getByText("ConfigurationError")).toBeInTheDocument();
   });
 
-  it("validates and accepts valid JSON with mcpServers", () => {
+  it("validates and accepts valid JSON with mcpServers", async () => {
     render(<ConfigDialog open={true} onClose={mockOnClose} />);
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     if (editorUpdateListener) {
@@ -300,11 +300,11 @@ describe("ConfigDialog", () => {
     expect(saveBtn).not.toBeDisabled();
   });
 
-  it("handles Enter key on dialog-content to submit", () => {
+  it("handles Enter key on dialog-content to submit", async () => {
     render(<ConfigDialog open={true} onClose={mockOnClose} />);
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     // Simulate focusing the dialog content
@@ -324,11 +324,11 @@ describe("ConfigDialog", () => {
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it("does not submit on Enter when save is invalid", () => {
+  it("does not submit on Enter when save is invalid", async () => {
     render(<ConfigDialog open={true} onClose={mockOnClose} />);
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     // Make JSON invalid
@@ -359,13 +359,13 @@ describe("ConfigDialog", () => {
     expect(mockSaveConfig).not.toHaveBeenCalled();
   });
 
-  it("destroys editor view on unmount", () => {
+  it("destroys editor view on unmount", async () => {
     const { unmount } = render(
       <ConfigDialog open={true} onClose={mockOnClose} />
     );
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     unmount();
@@ -373,15 +373,15 @@ describe("ConfigDialog", () => {
     expect(mockEditorDestroy).toHaveBeenCalled();
   });
 
-  it("creates editor after initialization timeout", () => {
+  it("creates editor after initialization timeout", async () => {
     mockEditorDestroy.mockClear();
     const { unmount } = render(
       <ConfigDialog open={true} onClose={mockOnClose} />
     );
 
     // First timeout (50ms) triggers initializeEditor
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     // Editor was created - verify by unmounting and checking destroy is called
@@ -410,8 +410,8 @@ describe("ConfigDialog - platform local server validation", () => {
 
     render(<ConfigDialog open={true} onClose={mockOnClose} />);
 
-    act(() => {
-      vi.advanceTimersByTime(50);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
     });
 
     if (editorUpdateListener) {

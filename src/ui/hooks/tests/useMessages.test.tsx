@@ -43,6 +43,7 @@ const stores = {
     setManageToolData: vi.fn(),
     tools: [] as unknown[],
     manageToolData: undefined as unknown,
+    getTools: vi.fn().mockResolvedValue(undefined),
   },
   attachmentsState: {
     attachmentFiles: [] as unknown[],

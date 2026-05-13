@@ -56,10 +56,10 @@ describe("createServersStore", () => {
     expect(st.manageToolData).toBeUndefined();
   });
 
-  it("initServers starts custom servers", () => {
+  it("initServers starts custom servers", async () => {
     const deps = makeDeps();
     const s = createServersStore(deps);
-    s.getState().initServers();
+    await s.getState().initServers();
     expect(deps.servers.startCustomServers).toHaveBeenCalled();
   });
 
