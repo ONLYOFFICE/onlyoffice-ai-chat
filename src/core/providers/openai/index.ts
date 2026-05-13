@@ -17,6 +17,11 @@ import { openaiInfo } from "./info";
 import { convertMessages } from "./messages";
 import { listModels } from "./models";
 import {
+  convertMessagesToResponses,
+  convertToolsToResponses,
+} from "./responses-messages";
+import { processResponsesStream } from "./responses-stream";
+import {
   createErrorResponse,
   createStopResponse,
   processStream,
@@ -61,6 +66,11 @@ class OpenAIProvider extends AbstractBaseProvider {
   async *sendMessage(
     args: SendMessageArgs
   ): AsyncGenerator<SendMessageResult> {
+    if (args.useResponsesApi) {
+      yield* this.sendMessageResponses(args);
+      return;
+    }
+
     const { messages, model, systemPrompt, tools, withReasoning, signal } =
       args;
 
@@ -88,6 +98,45 @@ class OpenAIProvider extends AbstractBaseProvider {
   }
 
   /**
+   * Streaming path through OpenAI's Responses API (`/v1/responses`).
+   * Required for gpt-5+ reasoning models which reject `reasoning_effort`
+   * together with `tools` on `/v1/chat/completions`. Routed via the
+   * `useResponsesApi` flag on {@link SendMessageArgs}, which the action
+   * layer wires from `profile.useResponsesApi` after the live probe.
+   */
+  protected async *sendMessageResponses(
+    args: SendMessageArgs
+  ): AsyncGenerator<SendMessageResult> {
+    const { messages, model, systemPrompt, tools, withReasoning, signal } =
+      args;
+
+    try {
+      const input = convertMessagesToResponses(messages, this.downgradeSystem);
+      const responsesTools = convertToolsToResponses(tools ?? []);
+      const stream = await this.client.responses.create(
+        {
+          model,
+          instructions: systemPrompt,
+          input,
+          tools: responsesTools.length > 0 ? responsesTools : undefined,
+          reasoning: withReasoning ? { effort: "medium" } : undefined,
+          stream: true,
+        },
+        { signal }
+      );
+
+      yield* processResponsesStream(stream);
+    } catch (error) {
+      if (isAbortError(error, signal)) {
+        yield { isEnd: true, responseMessage: createStopResponse() };
+        return;
+      }
+      logger.error("OpenAI sendMessageResponses error:", error);
+      yield { isEnd: true, responseMessage: createErrorResponse(error) };
+    }
+  }
+
+  /**
    * Build the underlying streaming request. Isolated so subclasses
    * (e.g. ONLYOFFICE with raw fetch / SSE) can override transport details
    * while reusing the rest of `sendMessage`.
@@ -109,6 +158,39 @@ class OpenAIProvider extends AbstractBaseProvider {
       },
       { signal: params.signal }
     );
+  }
+
+  /**
+   * Live probe: try a minimal non-streaming `responses.create` call. If the
+   * endpoint accepts the model we route this profile through the Responses
+   * API going forward; any error (404 = endpoint missing on compatible
+   * backends, 400 = model unsupported there, etc.) returns `false` so the
+   * profile keeps using Chat Completions.
+   *
+   * Subclasses targeting non-OpenAI endpoints don't override this (the
+   * base class returns `false`), so the probe never hits Together / xAI /
+   * etc. — only the genuine `api.openai.com` endpoint pays the cost.
+   */
+  async checkResponsesApi(
+    modelId: string,
+    signal?: AbortSignal
+  ): Promise<boolean> {
+    try {
+      // Minimal probe — no max_output_tokens because reasoning models
+      // enforce a high minimum and would 400 with a low cap.
+      await this.client.responses.create(
+        {
+          model: modelId,
+          input: ".",
+          stream: false,
+        },
+        { signal }
+      );
+      return true;
+    } catch (error) {
+      logger.warn("OpenAI checkResponsesApi probe failed:", error);
+      return false;
+    }
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {

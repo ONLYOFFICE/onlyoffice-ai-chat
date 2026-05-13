@@ -30,6 +30,21 @@ export abstract class AbstractBaseProvider {
   abstract sendMessageSync(args: SendMessageSyncArgs): Promise<string>;
 
   imageGeneration?(args: ImageGenerationArgs): Promise<string>;
+
+  /**
+   * Probe whether this provider/model needs the OpenAI Responses API
+   * (`/v1/responses`) instead of Chat Completions. Default `false` —
+   * only the genuine OpenAI provider overrides this with a live request.
+   * All other subclasses (third-party OpenAI-compatible endpoints) keep
+   * the default and never issue a probe request, since their backends
+   * do not implement the Responses API.
+   */
+  async checkResponsesApi(
+    _modelId: string,
+    _signal?: AbortSignal
+  ): Promise<boolean> {
+    return false;
+  }
 }
 
 /**

@@ -4,6 +4,7 @@ import type { Model } from "../../../shared/model";
 import type { Profile } from "../../types";
 import { AssignmentsEngine } from "../assignments";
 import { credsOf, loadProfile, providerFor } from "./lookup";
+import { probeResponsesSupport } from "./probe-responses";
 import { probeToolCapability } from "./probe-tools";
 import type {
   CreateProfileInput,
@@ -42,8 +43,15 @@ export class ProfilesEngine {
     const error = await validateProfile(existing, input);
     if (error) return { success: false, error };
 
-    const canUseTool = await probeToolCapability(input);
-    const profile = await storage.profiles.create({ ...input, canUseTool });
+    const [canUseTool, useResponsesApi] = await Promise.all([
+      probeToolCapability(input),
+      probeResponsesSupport(input),
+    ]);
+    const profile = await storage.profiles.create({
+      ...input,
+      canUseTool,
+      useResponsesApi,
+    });
 
     // First profile ever — promote it to the default slot. Other
     // per-action assignments stay unset; the user opts into those
@@ -74,11 +82,17 @@ export class ProfilesEngine {
       prev.modelId !== profile.modelId ||
       prev.providerType !== profile.providerType ||
       prev.baseUrl !== profile.baseUrl;
-    const canUseTool = probeTriggers
-      ? await probeToolCapability(profile)
-      : (profile.canUseTool ?? prev.canUseTool);
+    const [canUseTool, useResponsesApi] = probeTriggers
+      ? await Promise.all([
+          probeToolCapability(profile),
+          probeResponsesSupport(profile),
+        ])
+      : [
+          profile.canUseTool ?? prev.canUseTool,
+          profile.useResponsesApi ?? prev.useResponsesApi,
+        ];
 
-    const next: Profile = { ...profile, canUseTool };
+    const next: Profile = { ...profile, canUseTool, useResponsesApi };
     await storage.profiles.update(next);
     return { success: true, profile: next };
   }

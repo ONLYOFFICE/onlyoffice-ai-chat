@@ -31,6 +31,7 @@ export const chat = (args: ActionArgs): AsyncGenerator<SendMessageResult> => {
     systemPrompt: baseSystem,
     tools: args.tools,
     withReasoning: args.isReasoning,
+    useResponsesApi: args.profile.useResponsesApi === true,
     signal: args.signal,
   });
 };

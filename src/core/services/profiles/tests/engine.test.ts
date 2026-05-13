@@ -3,6 +3,7 @@ import { ActionType } from "../../../../shared/action-type";
 import { ProfilesEngine } from "../engine";
 import {
   checkProviderMock,
+  checkResponsesApiMock,
   dummyModel,
   getProviderModelsMock,
   makeProfile,
@@ -16,6 +17,8 @@ beforeEach(() => {
   registerStubProvider();
   checkProviderMock.mockReset();
   getProviderModelsMock.mockReset();
+  checkResponsesApiMock.mockReset();
+  checkResponsesApiMock.mockResolvedValue(false);
   vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-0000-0000-000000000001");
   vi.spyOn(Date, "now").mockReturnValue(123456);
 });
@@ -165,6 +168,85 @@ describe("ProfilesEngine.listModels", () => {
       baseUrl: "https://stub",
       apiKey: "K",
     });
+  });
+});
+
+describe("ProfilesEngine probes (canUseTool + useResponsesApi)", () => {
+  it("runs both probes on create and persists their results", async () => {
+    checkProviderMock.mockResolvedValueOnce(true);
+    checkResponsesApiMock.mockResolvedValueOnce(true);
+    const { storage, snapshot } = makeStorage();
+    const engine = new ProfilesEngine({ storage });
+
+    const result = await engine.create({
+      name: "p",
+      providerType: PROFILE_STUB_TYPE,
+      baseUrl: "https://api.openai.com/v1",
+      key: "k",
+      modelId: "gpt-5.5",
+    });
+
+    expect(result.success).toBe(true);
+    expect(checkResponsesApiMock).toHaveBeenCalledWith(
+      "gpt-5.5",
+      expect.any(AbortSignal)
+    );
+    const saved = snapshot().profiles[0];
+    expect(saved.useResponsesApi).toBe(true);
+    // canUseTool is false here because the stub's sendMessage always
+    // throws — the probe collapses to false. The point is the field
+    // gets persisted alongside useResponsesApi.
+    expect(saved.canUseTool).toBe(false);
+  });
+
+  it("reuses cached useResponsesApi on update when model/provider/baseUrl unchanged", async () => {
+    checkProviderMock.mockResolvedValueOnce(true);
+    const seed = makeProfile({
+      id: "p1",
+      name: "Old",
+      modelId: "m1",
+      canUseTool: true,
+      useResponsesApi: true,
+    });
+    const { storage } = makeStorage({ profiles: [seed] });
+    const engine = new ProfilesEngine({ storage });
+
+    const result = await engine.update(
+      makeProfile({
+        id: "p1",
+        name: "New",
+        modelId: "m1",
+        canUseTool: true,
+        useResponsesApi: true,
+      })
+    );
+    expect(result.success).toBe(true);
+    expect(checkResponsesApiMock).not.toHaveBeenCalled();
+    if (!result.success) throw new Error("unreachable");
+    expect(result.profile.useResponsesApi).toBe(true);
+  });
+
+  it("re-probes useResponsesApi when modelId changes", async () => {
+    checkProviderMock.mockResolvedValueOnce(true);
+    checkResponsesApiMock.mockResolvedValueOnce(true);
+    const seed = makeProfile({
+      id: "p1",
+      modelId: "m1",
+      useResponsesApi: false,
+    });
+    const { storage } = makeStorage({ profiles: [seed] });
+    const engine = new ProfilesEngine({ storage });
+
+    const result = await engine.update(
+      makeProfile({ id: "p1", modelId: "gpt-5.5" })
+    );
+    expect(result.success).toBe(true);
+    expect(checkResponsesApiMock).toHaveBeenCalledWith(
+      "gpt-5.5",
+      expect.any(AbortSignal)
+    );
+    if (!result.success) throw new Error("unreachable");
+    expect(result.profile.useResponsesApi).toBe(true);
   });
 });
 

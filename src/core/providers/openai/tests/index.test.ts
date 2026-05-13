@@ -8,19 +8,24 @@ import {
 import { openaiInfo } from "../info";
 import { OpenAIProvider } from "../index";
 
-const { chatCreateMock, modelsListMock, imagesGenerateMock } = vi.hoisted(
-  () => ({
-    chatCreateMock: vi.fn(),
-    modelsListMock: vi.fn(),
-    imagesGenerateMock: vi.fn(),
-  })
-);
+const {
+  chatCreateMock,
+  modelsListMock,
+  imagesGenerateMock,
+  responsesCreateMock,
+} = vi.hoisted(() => ({
+  chatCreateMock: vi.fn(),
+  modelsListMock: vi.fn(),
+  imagesGenerateMock: vi.fn(),
+  responsesCreateMock: vi.fn(),
+}));
 
 vi.mock("openai", () => ({
   default: class MockOpenAI {
     chat = { completions: { create: chatCreateMock } };
     models = { list: modelsListMock };
     images = { generate: imagesGenerateMock };
+    responses = { create: responsesCreateMock };
   },
 }));
 
@@ -35,6 +40,7 @@ describe("OpenAIProvider", () => {
     chatCreateMock.mockReset();
     modelsListMock.mockReset();
     imagesGenerateMock.mockReset();
+    responsesCreateMock.mockReset();
   });
 
   describe("static identity", () => {
@@ -151,6 +157,149 @@ describe("OpenAIProvider", () => {
         })
       );
       expect(chatCreateMock.mock.calls[0]?.[0]?.tools?.length).toBe(1);
+    });
+  });
+
+  describe("sendMessage — Responses API path", () => {
+    async function* responsesIter(events: unknown[]) {
+      for (const e of events) yield e;
+    }
+
+    const minimalCompletion = () => ({
+      type: "response.completed",
+      sequence_number: 1,
+      response: {},
+    });
+
+    it("routes through client.responses.create when useResponsesApi is true", async () => {
+      responsesCreateMock.mockResolvedValueOnce(
+        responsesIter([minimalCompletion()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [{ role: "user", content: "Q" }],
+          model: "gpt-5.5",
+          systemPrompt: "be nice",
+          useResponsesApi: true,
+        })
+      );
+      expect(responsesCreateMock).toHaveBeenCalledTimes(1);
+      expect(chatCreateMock).not.toHaveBeenCalled();
+      const payload = responsesCreateMock.mock.calls[0]?.[0];
+      expect(payload.model).toBe("gpt-5.5");
+      expect(payload.instructions).toBe("be nice");
+      expect(payload.stream).toBe(true);
+    });
+
+    it("stays on chat.completions when useResponsesApi is undefined", async () => {
+      chatCreateMock.mockResolvedValueOnce(
+        createMockStream([createFinishChunk()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-4o",
+          systemPrompt: "",
+        })
+      );
+      expect(chatCreateMock).toHaveBeenCalledTimes(1);
+      expect(responsesCreateMock).not.toHaveBeenCalled();
+    });
+
+    it("maps withReasoning to reasoning.effort=medium on the Responses payload", async () => {
+      responsesCreateMock.mockResolvedValueOnce(
+        responsesIter([minimalCompletion()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-5.5",
+          systemPrompt: "",
+          useResponsesApi: true,
+          withReasoning: true,
+        })
+      );
+      expect(responsesCreateMock.mock.calls[0]?.[0]?.reasoning).toEqual({
+        effort: "medium",
+      });
+    });
+
+    it("converts tools to flat FunctionTool shape (no function: wrapping)", async () => {
+      responsesCreateMock.mockResolvedValueOnce(
+        responsesIter([minimalCompletion()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-5.5",
+          systemPrompt: "",
+          useResponsesApi: true,
+          tools: [{ name: "t", description: "d", inputSchema: {} }],
+        })
+      );
+      const tools = responsesCreateMock.mock.calls[0]?.[0]?.tools;
+      expect(tools).toHaveLength(1);
+      expect(tools[0]).toMatchObject({ type: "function", name: "t" });
+      expect(tools[0]).not.toHaveProperty("function");
+    });
+
+    it("yields cancelled response when signal aborts the Responses call", async () => {
+      const ac = new AbortController();
+      const error = new Error("aborted");
+      error.name = "AbortError";
+      responsesCreateMock.mockRejectedValueOnce(error);
+      ac.abort();
+
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      const frames = await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-5.5",
+          systemPrompt: "",
+          useResponsesApi: true,
+          signal: ac.signal,
+        })
+      );
+      const last = frames[frames.length - 1] as {
+        responseMessage: { status: { reason: string } };
+      };
+      expect(last.responseMessage.status.reason).toBe("cancelled");
+    });
+
+    it("yields an error response when responses.create throws", async () => {
+      responsesCreateMock.mockRejectedValueOnce(new Error("boom"));
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      const frames = await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-5.5",
+          systemPrompt: "",
+          useResponsesApi: true,
+        })
+      );
+      const last = frames[frames.length - 1] as {
+        responseMessage: { status: { reason: string } };
+      };
+      expect(last.responseMessage.status.reason).toBe("error");
+    });
+  });
+
+  describe("checkResponsesApi", () => {
+    it("returns true when responses.create succeeds", async () => {
+      responsesCreateMock.mockResolvedValueOnce({ id: "r-1" });
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await expect(p.checkResponsesApi("gpt-5.5")).resolves.toBe(true);
+      expect(responsesCreateMock.mock.calls[0]?.[0]?.stream).toBe(false);
+    });
+
+    it("returns false when responses.create rejects", async () => {
+      responsesCreateMock.mockRejectedValueOnce(new Error("404"));
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await expect(p.checkResponsesApi("nope")).resolves.toBe(false);
     });
   });
 

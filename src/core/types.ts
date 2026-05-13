@@ -210,6 +210,17 @@ export type Profile = {
    */
   canUseTool?: boolean;
 
+  /**
+   * Result of the live Responses-API probe (parallel to {@link canUseTool}).
+   * `true` means the model speaks `/v1/responses` and the OpenAI provider
+   * must route through `client.responses.create` — required for gpt-5+
+   * reasoning models that reject `reasoning_effort` together with `tools`
+   * on `/v1/chat/completions`. Probed at create time and whenever
+   * `modelId` / `providerType` / `baseUrl` change. `undefined` means the
+   * probe never ran (legacy record) — readers treat that as `false`.
+   */
+  useResponsesApi?: boolean;
+
   /** Whether this profile uses a cloud-hosted provider (e.g. ONLYOFFICE DocSpace). */
   isCloudProvider?: boolean;
 

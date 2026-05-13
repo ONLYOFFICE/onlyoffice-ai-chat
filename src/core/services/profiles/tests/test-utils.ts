@@ -10,6 +10,7 @@ import type { StorageAdapter } from "../../../storage";
 
 export const checkProviderMock = vi.fn();
 export const getProviderModelsMock = vi.fn();
+export const checkResponsesApiMock = vi.fn().mockResolvedValue(false);
 
 export class StubProfileProvider extends AbstractBaseProvider {
   // eslint-disable-next-line require-yield
@@ -18,6 +19,12 @@ export class StubProfileProvider extends AbstractBaseProvider {
   }
   async sendMessageSync(): Promise<string> {
     return "";
+  }
+  async checkResponsesApi(
+    modelId: string,
+    signal?: AbortSignal
+  ): Promise<boolean> {
+    return checkResponsesApiMock(modelId, signal);
   }
   static getName(): string {
     return "Profile Stub";

@@ -18,7 +18,12 @@ export type SystemPromptOverride =
 export type ActionArgs = {
   profile: Pick<
     Profile,
-    "providerType" | "baseUrl" | "key" | "modelId" | "canUseTool"
+    | "providerType"
+    | "baseUrl"
+    | "key"
+    | "modelId"
+    | "canUseTool"
+    | "useResponsesApi"
   >;
   messages: ThreadMessageLike[];
   tools?: TMCPItem[];

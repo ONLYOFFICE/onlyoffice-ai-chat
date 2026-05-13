@@ -102,6 +102,7 @@ describe("chat action", () => {
       systemPrompt: chatSystemPrompt,
       tools,
       withReasoning: true,
+      useResponsesApi: false,
       signal,
     });
   });
