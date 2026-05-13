@@ -71,9 +71,10 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
   React.useEffect(() => {
     if (!open) return;
 
-    const initializeEditor = () => {
+    const initializeEditor = async () => {
       if (editorRef.current && !viewRef.current) {
-        const initialDoc = JSON.stringify(getConfig(), null, 2);
+        const mcpServers = (await getConfig()) ?? {};
+        const initialDoc = JSON.stringify({ mcpServers }, null, 2);
 
         setValue(initialDoc);
         validateJson(initialDoc);

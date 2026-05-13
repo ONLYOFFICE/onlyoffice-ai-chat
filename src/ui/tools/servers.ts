@@ -67,6 +67,11 @@ class Servers {
     this.customServers.startCustomServers();
   };
 
+  /** Wait until every configured custom server is ready or stopped, bounded by `timeoutMs`. */
+  waitUntilCustomServersReady = (timeoutMs?: number): Promise<void> => {
+    return this.customServers.waitUntilReady(timeoutMs);
+  };
+
   restartCustomServer = (type: string) => {
     this.customServers.restartCustomServer(type);
   };

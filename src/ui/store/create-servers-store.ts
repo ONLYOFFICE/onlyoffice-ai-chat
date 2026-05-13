@@ -23,7 +23,7 @@ export interface ServersStoreState {
     messageId: string;
   };
   webSearchEnabled: boolean;
-  initServers: () => void;
+  initServers: () => Promise<void>;
   getTools: () => Promise<void>;
   reload: () => Promise<void>;
   changeToolStatus: (
@@ -54,6 +54,13 @@ export function createServersStore(deps: {
     const grouped = await ctx.servers.getTools();
     const disabled = await api.tools.getDisabled(entityId);
     const webSearchEnabled = await api.webSearch.isConfigured(entityId);
+    console.info("[mcp] buildToolsList grouped", {
+      groupedKeys: Object.keys(grouped),
+      counts: Object.fromEntries(
+        Object.entries(grouped).map(([k, v]) => [k, v.length])
+      ),
+      disabled,
+    });
 
     // Annotate each tool with its `enabled` flag derived from the
     // persisted disabled list — used by the permissions UI to render
@@ -74,6 +81,12 @@ export function createServersStore(deps: {
       flat.push(...annotated[type]);
     }
 
+    console.info("[mcp] buildToolsList result", {
+      flatCount: flat.length,
+      flatNames: flat.map((t) => t.name),
+      annotatedKeys: Object.keys(annotated),
+    });
+
     return {
       tools: flat,
       servers: annotated,
@@ -89,7 +102,19 @@ export function createServersStore(deps: {
     manageToolData: undefined,
     webSearchEnabled: false,
 
-    initServers: () => {
+    initServers: async () => {
+      // Reload the persisted MCP config from storage before starting —
+      // otherwise a widget instance that didn't see the in-memory
+      // `setCustomServers` (e.g. a chat mount that was created after the
+      // settings dialog saved a new config in a different instance)
+      // would run `startCustomServers` over an empty map and never spawn
+      // anything. Re-reading from storage covers the cross-instance and
+      // cold-start cases uniformly.
+      const mcpServers = (await api.tools.listCustomServers(entityId)) ?? {};
+      console.info("[mcp] initServers reloaded config", {
+        keys: Object.keys(mcpServers),
+      });
+      ctx.servers.setCustomServers({ mcpServers });
       ctx.servers.startCustomServers();
     },
 
@@ -99,6 +124,8 @@ export function createServersStore(deps: {
     },
 
     reload: async () => {
+      const mcpServers = (await api.tools.listCustomServers(entityId)) ?? {};
+      ctx.servers.setCustomServers({ mcpServers });
       ctx.servers.startCustomServers();
       const result = await buildToolsList();
       set(result);
@@ -153,6 +180,7 @@ export function createServersStore(deps: {
     saveConfig: async (config) => {
       await api.tools.replaceAllCustomServers(config.mcpServers, entityId);
       ctx.servers.setCustomServers(config);
+      ctx.servers.startCustomServers();
       callbacksManager.emit("onServersUpdated", { kind: "config-saved" });
     },
 

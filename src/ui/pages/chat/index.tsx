@@ -32,8 +32,34 @@ const ThreadInner = () => {
   const { useMessageStore } = useStores();
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const isRequestRunning = useMessageStore((s) => s.isRequestRunning);
+  const isToolPending = useMessageStore((s) => s.isToolPending);
+  const messages = useMessageStore((s) => s.messages);
   const { t } = useI18n();
   const { isDragOver, handlers } = useChatDropAttachments();
+
+  // Derive "tool is running" from the last assistant message — adapter
+  // tools are executed inside the engine and never surface as
+  // `tool-call-pending` to the UI, so `isToolPending` from the store
+  // misses them. Reading the message itself catches both paths: a
+  // tool-call part without a `result` means the tool hasn't returned.
+  const hasUnresolvedToolCall = (() => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant") return false;
+    if (!Array.isArray(last.content)) return false;
+    return last.content.some(
+      (p) =>
+        p &&
+        typeof p === "object" &&
+        (p as { type?: string }).type === "tool-call" &&
+        (p as { result?: unknown }).result === undefined
+    );
+  })();
+
+  const showAnalyzing =
+    !isRequestRunning &&
+    isStreamRunning &&
+    !isToolPending &&
+    !hasUnresolvedToolCall;
 
   return (
     <div
@@ -68,7 +94,7 @@ const ThreadInner = () => {
               }}
             />
 
-            {!isRequestRunning && isStreamRunning ? (
+            {showAnalyzing ? (
               <div className="flex items-center justify-center">
                 <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
                   <Loader />

@@ -58,6 +58,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const messages = useMessageStore((s) => s.messages);
   const setIsStreamRunning = useMessageStore((s) => s.setIsStreamRunning);
   const setIsRequestRunning = useMessageStore((s) => s.setIsRequestRunning);
+  const setIsToolPending = useMessageStore((s) => s.setIsToolPending);
   const setAbortController = useMessageStore((s) => s.setAbortController);
   const addMessage = useMessageStore((s) => s.addMessage);
   const updateLastMessage = useMessageStore((s) => s.updateLastMessage);
@@ -142,6 +143,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       // and stays visible until the first chunk lands. Each chunk flips it
       // back on and arms a 300ms idle timer — if no further chunk arrives
       // within that window the indicator reappears until the next chunk.
+      // Note: during tool execution the chat UI gates "Analyzing" on
+      // `isToolPending`, so we don't need any special handling here.
       setIsStreamRunning(true);
       setIsRequestRunning(false);
 
@@ -199,6 +202,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           }
 
           if (event.type === "tool-call-pending") {
+            setIsToolPending(true);
             holdBusy();
             await handleToolCallPending(event);
             // Don't return — the engine may still yield `thread-title`
@@ -350,6 +354,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             return;
           }
           if (mw.action === "deny") {
+            setIsToolPending(false);
             const next = api.ai.denyToolCall({
               threadId: event.threadId,
               messageId: event.messageId,
@@ -416,6 +421,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           if (mw.action === "skip") {
             setIsStreamRunning(false);
             setIsRequestRunning(false);
+            setIsToolPending(false);
             return;
           }
           if (mw.action === "continue" && mw.result !== undefined) {
@@ -434,6 +440,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         // mirrors this write to storage inside `resumeChat`.
         const patched = patchToolCallResult(event.message, event.idx, result);
         updateLastMessage(patched);
+
+        // Tool finished — give the UI a 300ms grace window before we
+        // allow the "Analyzing" indicator to surface, so the indicator
+        // doesn't flash between the tool spinner and the model's next
+        // chunk.
+        setTimeout(() => setIsToolPending(false), 300);
 
         const next = api.ai.approveToolCall({
           threadId: event.threadId,
@@ -468,6 +480,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       servers,
       setIsStreamRunning,
       setIsRequestRunning,
+      setIsToolPending,
       setAbortController,
       setManageToolData,
       systemPrompt,
@@ -585,6 +598,21 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     const controller = new AbortController();
     setAbortController(controller);
 
+    // Refresh the tool list from the store before sending — by this
+    // point the `tools-changed` event handler may have run with newly-
+    // arrived MCP tools, but our render-time `tools` snapshot is
+    // stale. Reading via `getState()` avoids waiting for React's
+    // commit and ships whatever the store currently has.
+    await useServersStore.getState().getTools();
+    const freshTools = useServersStore.getState().tools;
+    console.info("[mcp] onNew sending message", {
+      toolsCount: freshTools.length,
+      toolsNames: freshTools.map((t) => t.name),
+      toolsEnabled: freshTools
+        .filter((t) => t.enabled !== false)
+        .map((t) => t.name),
+    });
+
     const stream = api.ai.sendWithStream({
       threadId: inputThreadId,
       userMessage,
@@ -592,7 +620,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       actionArgs: {
         isReasoning: extendedThinking,
         signal: controller.signal,
-        tools: tools.length > 0 ? tools : undefined,
+        tools: freshTools.length > 0 ? freshTools : undefined,
         prompt: systemPrompt,
       },
     });
@@ -645,6 +673,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       const patched = patchToolCallResult(data.message, data.idx, result);
       updateLastMessage(patched);
 
+      setTimeout(() => setIsToolPending(false), 300);
+
       const stream = api.ai.approveToolCall({
         threadId: data.threadId,
         messageId: data.messageId,
@@ -673,6 +703,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       servers,
       setIsRequestRunning,
       setIsStreamRunning,
+      setIsToolPending,
       setManageToolData,
       systemPrompt,
       tools,
@@ -685,6 +716,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     const data = useServersStore.getState().manageToolData;
     setManageToolData(undefined);
     if (!data) return;
+
+    setIsToolPending(false);
 
     const stream = api.ai.denyToolCall({
       threadId: data.threadId,
@@ -704,6 +737,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     entityId,
     extendedThinking,
     processStream,
+    setIsToolPending,
     setManageToolData,
     systemPrompt,
     tools,
@@ -727,13 +761,16 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       const controller = new AbortController();
       setAbortController(controller);
 
+      await useServersStore.getState().getTools();
+      const freshTools = useServersStore.getState().tools;
+
       const stream = api.ai.regenerateStream({
         threadId,
         entityId,
         actionArgs: {
           isReasoning: extendedThinking,
           signal: controller.signal,
-          tools: tools.length > 0 ? tools : undefined,
+          tools: freshTools.length > 0 ? freshTools : undefined,
           prompt: systemPrompt,
         },
       });
@@ -752,6 +789,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       tools,
       truncateMessagesAfter,
       useMessageStore,
+      useServersStore,
     ]
   );
 

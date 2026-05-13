@@ -16,6 +16,13 @@ export interface MessageStoreState {
   isStreamRunning: boolean;
   /** `true` while a request (stream or non-stream) is in flight. */
   isRequestRunning: boolean;
+  /**
+   * `true` while at least one tool call is executing, plus a short grace
+   * window after it completes. While set, the chat UI suppresses the
+   * "Analyzing…" indicator so the tool's own spinner is the sole loading
+   * affordance.
+   */
+  isToolPending: boolean;
   /** Internal tracker for the thread whose messages are loaded; used to discard stale fetches. */
   _currentThreadId: string;
   /** Abort controller for the in-flight streaming request, if any. */
@@ -24,6 +31,8 @@ export interface MessageStoreState {
   setIsStreamRunning: (value: boolean) => void;
   /** Set the request-in-flight flag. */
   setIsRequestRunning: (value: boolean) => void;
+  /** Set the tool-pending flag. */
+  setIsToolPending: (value: boolean) => void;
   /** Replace the abort controller used by `stopMessage`. */
   setAbortController: (controller: AbortController | undefined) => void;
   /** Append a message. If the last message has status "incomplete", it is replaced instead. */
@@ -62,6 +71,7 @@ export function createMessageStore(deps: {
     messages: [],
     isStreamRunning: false,
     isRequestRunning: false,
+    isToolPending: false,
     _currentThreadId: "",
     _abortController: undefined,
 
@@ -77,6 +87,7 @@ export function createMessageStore(deps: {
 
     setIsStreamRunning: (value) => set({ isStreamRunning: value }),
     setIsRequestRunning: (value) => set({ isRequestRunning: value }),
+    setIsToolPending: (value) => set({ isToolPending: value }),
     setAbortController: (controller) => set({ _abortController: controller }),
 
     addMessage: (message) => {
@@ -108,6 +119,7 @@ export function createMessageStore(deps: {
       set({
         isStreamRunning: false,
         isRequestRunning: false,
+        isToolPending: false,
         _abortController: undefined,
       });
       ctx.callbacksManager.emit("onStreamStop", {

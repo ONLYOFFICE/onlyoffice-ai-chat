@@ -141,6 +141,12 @@ class CustomServers {
   }
 
   onProcess = (type: string, t: number, message: string) => {
+    logger.info("[mcp] onProcess", {
+      type,
+      stream: t === 0 ? "stdout" : t === 1 ? "stderr" : "exit",
+      length: message?.length ?? 0,
+      preview: typeof message === "string" ? message.slice(0, 200) : message,
+    });
     if (t === 0) {
       // stdout — parse JSON-RPC responses
       try {
@@ -178,8 +184,13 @@ class CustomServers {
             pending.resolve(JSON.stringify(correctJson.result));
           }
         }
-      } catch {
-        // ignore non-JSON stdout
+      } catch (err) {
+        logger.warn("[mcp] onProcess stdout JSON.parse failed", {
+          type,
+          length: message?.length ?? 0,
+          preview: typeof message === "string" ? message.slice(0, 200) : message,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
@@ -206,12 +217,30 @@ class CustomServers {
   setCustomServers = (servers: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => {
+    logger.info("[mcp] setCustomServers", {
+      receivedKeys: servers ? Object.keys(servers) : null,
+      mcpServersType: typeof servers?.mcpServers,
+      mcpServersKeys: servers?.mcpServers
+        ? Object.keys(servers.mcpServers)
+        : null,
+      raw: servers,
+    });
     this.customServers = servers.mcpServers;
   };
 
   getServerType = (name: string) => {
-    // Sort by length descending so longer prefixes match first
-    // (e.g., "my-server-v2" matches before "my-server")
+    // Resolve by actual tool ownership — MCP servers expose their tool
+    // names verbatim (no server-name prefix), so prefix-matching the
+    // configured server keys (as `HostToolSource` does) misses every
+    // MCP tool. Fall back to prefix-matching only if no live tool list
+    // claims the name, so a tool-call that fires before `tools/list`
+    // finishes still has a chance to route to the right server when
+    // the model happens to use a prefixed name.
+    for (const [serverType, tools] of Object.entries(this.tools)) {
+      if (tools.some((t) => t.name === name)) {
+        return serverType;
+      }
+    }
     const keys = Object.keys(this.customServers).sort(
       (a, b) => b.length - a.length
     );
@@ -224,11 +253,23 @@ class CustomServers {
   };
 
   startCustomServers = () => {
+    logger.info("[mcp] startCustomServers", {
+      customServersType: typeof this.customServers,
+      keys: this.customServers ? Object.keys(this.customServers) : null,
+      processAdapterAvailable: !!this.platform.process,
+      processIsAvailable: this.platform.process?.isAvailable?.() ?? null,
+    });
     const servers: string[] = [];
     Object.entries(this.customServers).forEach(([type, config]) => {
       servers.push(type);
 
-      if (isHttpServer(config)) {
+      const http = isHttpServer(config);
+      logger.info("[mcp] startCustomServers → dispatch", {
+        type,
+        transport: http ? "http" : "stdio",
+        configKeys: Object.keys(config ?? {}),
+      });
+      if (http) {
         this.startHttpServer(type, config);
       } else {
         this.startStdioServer(type, config);
@@ -252,8 +293,15 @@ class CustomServers {
 
   startHttpServer = (type: string, config: Record<string, unknown>) => {
     const { url, headers } = getHttpParams(config);
+    logger.info("[mcp] startHttpServer", {
+      type,
+      url,
+      headerKeys: headers ? Object.keys(headers) : null,
+      alreadyStarted: this.startedCustomServers[type] === url,
+    });
 
     if (this.startedCustomServers[type] === url) {
+      logger.info("[mcp] startHttpServer skip — same url", { type });
       return;
     }
 
@@ -278,11 +326,19 @@ class CustomServers {
 
   startStdioServer = (type: string, config: Record<string, unknown>) => {
     const { commandLine, env } = getParams(config);
+    logger.info("[mcp] startStdioServer", {
+      type,
+      commandLine,
+      envKeys: Object.keys(env),
+      alreadyStarted: this.startedCustomServers[type] === commandLine,
+      processAdapter: !!this.platform.process,
+    });
 
     if (
       this.startedCustomServers[type] &&
       this.startedCustomServers[type] === commandLine
     ) {
+      logger.info("[mcp] startStdioServer skip — same commandLine", { type });
       return;
     }
 
@@ -295,12 +351,20 @@ class CustomServers {
     ];
 
     const process = this.platform.process?.createProcess(commandLine, env);
-    if (!process) return;
+    if (!process) {
+      logger.error("[mcp] startStdioServer aborted — createProcess returned null/undefined", {
+        type,
+        commandLine,
+        processAdapter: !!this.platform.process,
+      });
+      return;
+    }
 
     process.onprocess = this.onProcess.bind(this, type);
 
     this.customServersProcesses[type] = process;
 
+    logger.info("[mcp] startStdioServer → process.start()", { type });
     process.start();
 
     this.startedCustomServers[type] = commandLine;
@@ -454,14 +518,20 @@ class CustomServers {
     const process = this.customServersProcesses[type];
 
     if (!process) {
+      logger.warn("[mcp] initCustomServer skipped — no process", { type });
       return;
     }
 
     let retries = 0;
     const maxRetries = 30;
+    logger.info("[mcp] initCustomServer start", { type, maxRetries });
 
     const interval = setInterval(() => {
       if (this.initedCustomServers[type]) {
+        logger.info("[mcp] initCustomServer → inited, fetching tools", {
+          type,
+          afterRetries: retries,
+        });
         clearInterval(interval);
         this.getToolsFromMCP(type);
         return;
@@ -472,6 +542,13 @@ class CustomServers {
         !this.customServersProcesses[type] ||
         retries >= maxRetries
       ) {
+        logger.warn("[mcp] initCustomServer giving up", {
+          type,
+          retries,
+          stopped: this.stoppedCustomServers.includes(type),
+          processGone: !this.customServersProcesses[type],
+          exhausted: retries >= maxRetries,
+        });
         clearInterval(interval);
         return;
       }
@@ -495,6 +572,10 @@ class CustomServers {
         const initBody = JSON.stringify(initRequest);
         const initMessage = `${initBody}\n`;
 
+        logger.info("[mcp] initCustomServer → stdin(initialize)", {
+          type,
+          attempt: retries,
+        });
         process.stdin(initMessage);
       } catch (error) {
         logger.error(`Error initializing custom server ${type}:`, error);
@@ -708,6 +789,59 @@ class CustomServers {
 
   getTools = () => {
     return this.tools;
+  };
+
+  /**
+   * Resolve once every configured custom server has either yielded its
+   * `tools/list` response OR transitioned to `stoppedCustomServers`
+   * (init failure / process exit). Bounded by `timeoutMs` so a hung
+   * server can never block a send indefinitely — after the deadline
+   * we resolve regardless and let the caller proceed with whatever
+   * tools have arrived so far.
+   *
+   * Subscribes to the `tools-changed` event bus so we don't poll —
+   * each tools/list response and each stop transition emits, and we
+   * re-evaluate on every emit.
+   */
+  waitUntilReady = (timeoutMs = 3000): Promise<void> => {
+    const expected = Object.keys(this.customServers);
+    if (expected.length === 0) return Promise.resolve();
+
+    const isReady = () =>
+      expected.every(
+        (type) =>
+          (this.tools[type]?.length ?? 0) > 0 ||
+          this.stoppedCustomServers.includes(type)
+      );
+
+    if (isReady()) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      let settled = false;
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        this.eventBus.off("tools-changed", onChange);
+        clearTimeout(timer);
+        resolve();
+      };
+      const onChange = () => {
+        if (isReady()) settle();
+      };
+      this.eventBus.on("tools-changed", onChange);
+      const timer = setTimeout(() => {
+        logger.warn("[mcp] waitUntilReady timeout", {
+          expected,
+          ready: expected.filter(
+            (t) =>
+              (this.tools[t]?.length ?? 0) > 0 ||
+              this.stoppedCustomServers.includes(t)
+          ),
+          timeoutMs,
+        });
+        settle();
+      }, timeoutMs);
+    });
   };
 }
 

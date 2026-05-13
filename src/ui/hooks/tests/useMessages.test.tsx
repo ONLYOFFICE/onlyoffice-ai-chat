@@ -24,6 +24,7 @@ const stores = {
     isStreamRunning: false,
     setIsStreamRunning: vi.fn(),
     setIsRequestRunning: vi.fn(),
+    setIsToolPending: vi.fn(),
     setAbortController: vi.fn(),
     addMessage: vi.fn(),
     updateLastMessage: vi.fn(),

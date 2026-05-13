@@ -13,6 +13,7 @@ vi.mock("../../../store/context", () => ({
       stopMessage: vi.fn(),
       isStreamRunning: false,
       isRequestRunning: false,
+      isToolPending: false,
     }),
     useProfilesStore: () => ({
       profiles: [{ id: "p1", name: "Test" }],
