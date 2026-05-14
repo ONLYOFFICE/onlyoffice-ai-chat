@@ -1,7 +1,7 @@
 import { ActionType } from "../../../shared/action-type";
 import type { TErrorData } from "../../../shared/error-data";
 import type { Model } from "../../../shared/model";
-import type { Profile } from "../../types";
+import type { Profile, ProviderType } from "../../types";
 import { AssignmentsEngine } from "../assignments";
 import { credsOf, loadProfile, providerFor } from "./lookup";
 import { probeResponsesSupport } from "./probe-responses";
@@ -107,6 +107,17 @@ export class ProfilesEngine {
     return providerFor(profile.providerType).getProviderModels(
       credsOf(profile)
     );
+  }
+
+  async listProviderModels(input: {
+    providerType: ProviderType;
+    baseUrl: string;
+    apiKey: string;
+  }): Promise<Model[]> {
+    return providerFor(input.providerType).getProviderModels({
+      baseUrl: input.baseUrl,
+      apiKey: input.apiKey,
+    });
   }
 
   async testConnection(profileId: string): Promise<true | TErrorData> {

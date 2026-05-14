@@ -23,6 +23,8 @@ export function createProfilesApi(
     delete: (id) => callRoute(config, "profiles", "delete", [id], engines),
     listModels: (profileId) =>
       callRoute(config, "profiles", "listModels", [profileId], engines),
+    listProviderModels: (input) =>
+      callRoute(config, "profiles", "listProviderModels", [input], engines),
     testConnection: (profileId) =>
       callRoute(config, "profiles", "testConnection", [profileId], engines),
     getById: (id) => callRoute(config, "profiles", "getById", [id], engines),

@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
 import { useDebouncedCallback } from "../../../hooks/useDebouncedCallback";
+import { useApi } from "../../../providers/ApiProvider";
 import { getProvider } from "../../../../core/providers";
 import type { Model, ProviderType } from "../../../../types";
 import type {
@@ -19,28 +20,6 @@ function getProviderName(type: ProviderType): string {
   return getProvider(type)?.getName() ?? type;
 }
 
-/**
- * Fetch the list of models a provider exposes via the static
- * {@link ProviderConstructor.getProviderModels}. Returns either the
- * model list or a structured error suitable for the form's
- * `setErrors` map.
- */
-async function fetchProviderModels(
-  type: ProviderType,
-  apiKey: string,
-  baseUrl: string
-): Promise<{ models: Model[] } | { error: { field: string; message: string } }> {
-  const provider = getProvider(type);
-  if (!provider) {
-    return {
-      error: { field: "name", message: `Unknown provider: ${type}` },
-    };
-  }
-  const result = await provider.getProviderModels({ baseUrl, apiKey });
-  if (Array.isArray(result)) return { models: result };
-  return { models: [] };
-}
-
 const fieldToErrorKey: Partial<
   Record<keyof ModelFormValues, keyof ModelFormErrors>
 > = {
@@ -51,6 +30,7 @@ const fieldToErrorKey: Partial<
 
 export const useModelForm = (initialValues: ModelFormValues) => {
   const { t } = useI18n();
+  const api = useApi();
   const { useCloudsStore } = useStores();
   const { externalOnlyofficeConfig } = useCloudsStore();
   const [values, setValues] = useState<ModelFormValues>(initialValues);
@@ -113,19 +93,25 @@ export const useModelForm = (initialValues: ModelFormValues) => {
       setIsLoading(true);
       const requestId = ++fetchModelsRequestIdRef.current;
       const providerName = getProviderName(providerType);
-      const result = await fetchProviderModels(providerType, apiKey, baseUrl);
-      if (requestId !== fetchModelsRequestIdRef.current) return;
-      setIsLoading(false);
-      if ("error" in result) {
-        setErrors((prev) => ({
-          ...prev,
-          [result.error.field]: result.error.message,
-        }));
+      let fetched: Model[];
+      try {
+        const result = await api.profiles.listProviderModels({
+          providerType,
+          baseUrl,
+          apiKey,
+        });
+        fetched = Array.isArray(result) ? result : [];
+      } catch (e) {
+        if (requestId !== fetchModelsRequestIdRef.current) return;
+        setIsLoading(false);
+        const message = e instanceof Error ? e.message : String(e);
+        setErrors((prev) => ({ ...prev, key: message }));
         setModels([]);
         setValues((prev) => ({ ...prev, model: "" }));
         return;
       }
-      const fetched = result.models;
+      if (requestId !== fetchModelsRequestIdRef.current) return;
+      setIsLoading(false);
       setModels(fetched);
 
       const displayName = options?.isCloudProvider
@@ -148,7 +134,7 @@ export const useModelForm = (initialValues: ModelFormValues) => {
         };
       });
     },
-    [t]
+    [t, api]
   );
 
   const debouncedFetchModels = useDebouncedCallback(fetchModels, 500);

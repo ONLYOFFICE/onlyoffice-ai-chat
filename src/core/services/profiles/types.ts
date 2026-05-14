@@ -25,6 +25,10 @@ export const DEFAULT_PROFILES_ROUTES: Record<ProfilesEngineMethod, RouteSpec> =
     update: { method: "PUT", path: "profiles/update" },
     delete: { method: "DELETE", path: "profiles/delete" },
     listModels: { method: "GET", path: "profiles/list-models" },
+    listProviderModels: {
+      method: "POST",
+      path: "profiles/list-provider-models",
+    },
     testConnection: { method: "POST", path: "profiles/test-connection" },
     getById: { method: "GET", path: "profiles/get-by-id" },
     list: { method: "GET", path: "profiles/list" },

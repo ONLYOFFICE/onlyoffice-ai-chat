@@ -63,6 +63,7 @@ The engine is stateless — share one instance per `AppContext`.
 | [`update`](#update)                  | `ProfileMutationResult`                | `profiles`                         | ✅ name + credentials |
 | [`delete`](#delete)                  | `void`                                 | `profiles` + cascading `assignments` | ❌ |
 | [`listModels`](#listmodels)          | `Model[]`                              | ❌                                  | ❌ |
+| [`listProviderModels`](#listprovidermodels) | `Model[]`                              | ❌                                  | ❌ |
 | [`testConnection`](#testconnection)  | `true \| TErrorData`                   | ❌                                  | ✅ credentials only |
 | [`getById`](#getbyid--list)          | `Profile \| undefined`                 | ❌                                  | ❌ |
 | [`list`](#getbyid--list)             | `Profile[]`                            | ❌                                  | ❌ |
@@ -269,6 +270,38 @@ unchanged.
 const models = await engine.listModels(profileId);
 setModelOptions(models);
 ```
+
+---
+
+## `listProviderModels`
+
+Same as [`listModels`](#listmodels) but takes raw credentials
+instead of a stored profile id. Used by the "add provider" form,
+where the user has typed a key but the profile does not exist yet
+— and by hosts that want this lookup routed through their core
+(`api.profiles.listProviderModels(...)` proxies to
+`POST profiles/list-provider-models`) so the browser does not call
+the provider API directly.
+
+### Signature
+
+```ts
+async listProviderModels(input: {
+  providerType: ProviderType;
+  baseUrl: string;
+  apiKey: string;
+}): Promise<Model[]>;
+```
+
+### What it does
+
+1. `providerFor(input.providerType)` — resolve the registered
+   provider class, throw `"Unknown provider type: <type>"` if not
+   registered.
+2. `Provider.getProviderModels({ baseUrl, apiKey })` — delegate to
+   the static method on the provider class. No storage access.
+
+Errors from the provider propagate unchanged.
 
 ---
 

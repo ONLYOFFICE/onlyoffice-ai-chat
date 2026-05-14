@@ -21,6 +21,18 @@ vi.mock("../../../../core/providers", () => ({
   }),
 }));
 
+vi.mock("../../../providers/ApiProvider", () => ({
+  useApi: () => ({
+    profiles: {
+      listProviderModels: (input: {
+        providerType: string;
+        baseUrl: string;
+        apiKey: string;
+      }) => mockGetProviderModels({ baseUrl: input.baseUrl, apiKey: input.apiKey }),
+    },
+  }),
+}));
+
 vi.mock("../../../../hooks/useDebouncedCallback", () => ({
   useDebouncedCallback: (fn: (...args: unknown[]) => void) => {
     const debounced = (...args: unknown[]) => fn(...args);
