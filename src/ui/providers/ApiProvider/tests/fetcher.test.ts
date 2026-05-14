@@ -220,4 +220,171 @@ describe("callRoute", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("streaming routes (NDJSON)", () => {
+    const config: ServerAPIConfig = {
+      origin: "https://api.example.com",
+      baseUrl: "/v1",
+      routes: baseRoutes,
+    };
+
+    function ndjsonResponse(
+      chunks: string[],
+      init: { ok?: boolean; status?: number; statusText?: string } = {}
+    ): Response {
+      const encoder = new TextEncoder();
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          for (const chunk of chunks) {
+            controller.enqueue(encoder.encode(chunk));
+          }
+          controller.close();
+        },
+      });
+      return {
+        ok: init.ok ?? true,
+        status: init.status ?? 200,
+        statusText: init.statusText ?? "OK",
+        body,
+        text: () => Promise.resolve(""),
+      } as unknown as Response;
+    }
+
+    async function collect(
+      iter: AsyncIterable<unknown>
+    ): Promise<unknown[]> {
+      const out: unknown[] = [];
+      for await (const ev of iter) out.push(ev);
+      return out;
+    }
+
+    it("yields parsed NDJSON events for sendWithStream", async () => {
+      fetchMock.mockResolvedValue(
+        ndjsonResponse([
+          '{"type":"message-start","messageId":"m1"}\n',
+          '{"type":"message-delta","messageId":"m1"}\n',
+          '{"type":"message-end","messageId":"m1"}\n',
+        ])
+      );
+      const stream = callRoute(
+        config,
+        "ai",
+        "sendWithStream",
+        [{ userMessage: { role: "user" } }] as never
+      ) as unknown as AsyncIterable<unknown>;
+      const events = await collect(stream);
+      expect(events).toEqual([
+        { type: "message-start", messageId: "m1" },
+        { type: "message-delta", messageId: "m1" },
+        { type: "message-end", messageId: "m1" },
+      ]);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe("https://api.example.com/v1/ai/send-with-stream");
+      expect(init.method).toBe("POST");
+    });
+
+    it("buffers events split across read boundaries", async () => {
+      // One JSON object split across two chunks; the newline arrives
+      // in the second chunk along with the start of the next event.
+      fetchMock.mockResolvedValue(
+        ndjsonResponse([
+          '{"type":"message-start","mes',
+          'sageId":"m1"}\n{"type":"message-delta",',
+          '"messageId":"m1"}\n',
+        ])
+      );
+      const stream = callRoute(
+        config,
+        "ai",
+        "regenerateStream",
+        [{ threadId: "t1" }] as never
+      ) as unknown as AsyncIterable<unknown>;
+      const events = await collect(stream);
+      expect(events).toEqual([
+        { type: "message-start", messageId: "m1" },
+        { type: "message-delta", messageId: "m1" },
+      ]);
+    });
+
+    it("yields the trailing event when the stream lacks a final newline", async () => {
+      fetchMock.mockResolvedValue(
+        ndjsonResponse([
+          '{"type":"message-start","messageId":"m1"}\n',
+          '{"type":"message-end","messageId":"m1"}',
+        ])
+      );
+      const stream = callRoute(
+        config,
+        "ai",
+        "sendWithStream",
+        [{}] as never
+      ) as unknown as AsyncIterable<unknown>;
+      const events = await collect(stream);
+      expect(events).toEqual([
+        { type: "message-start", messageId: "m1" },
+        { type: "message-end", messageId: "m1" },
+      ]);
+    });
+
+    it("completes without yielding on an empty stream", async () => {
+      fetchMock.mockResolvedValue(ndjsonResponse([]));
+      const stream = callRoute(
+        config,
+        "ai",
+        "approveToolCall",
+        [{}] as never
+      ) as unknown as AsyncIterable<unknown>;
+      const events = await collect(stream);
+      expect(events).toEqual([]);
+    });
+
+    it("ignores blank lines between events", async () => {
+      fetchMock.mockResolvedValue(
+        ndjsonResponse([
+          '{"type":"message-start","messageId":"m1"}\n',
+          "\n",
+          '{"type":"message-end","messageId":"m1"}\n',
+        ])
+      );
+      const stream = callRoute(
+        config,
+        "ai",
+        "denyToolCall",
+        [{}] as never
+      ) as unknown as AsyncIterable<unknown>;
+      const events = await collect(stream);
+      expect(events).toHaveLength(2);
+    });
+
+    it("throws on first iteration for non-2xx responses", async () => {
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        body: null,
+        text: () => Promise.resolve("boom"),
+      } as unknown as Response);
+      const stream = callRoute(
+        config,
+        "ai",
+        "sendWithStream",
+        [{}] as never
+      ) as unknown as AsyncIterable<unknown>;
+      await expect(collect(stream)).rejects.toThrow(/500/);
+    });
+
+    it("non-streaming methods on the same service still parse as JSON", async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ok: true }),
+      });
+      const res = await callRoute(
+        config,
+        "ai",
+        "send",
+        [{ q: 1 }] as never
+      );
+      expect(res).toEqual({ ok: true });
+    });
+  });
 });

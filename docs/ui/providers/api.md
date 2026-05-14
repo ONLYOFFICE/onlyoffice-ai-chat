@@ -127,6 +127,25 @@ Every method call now becomes `fetch(${origin}${baseUrl}${path})`
 with the configured headers. Implement those routes on the server
 by mounting the same engines against your storage.
 
+### Streaming routes (NDJSON)
+
+The four streaming methods on `AIEngine` —
+`sendWithStream`, `regenerateStream`, `approveToolCall`,
+`denyToolCall` — round-trip as **newline-delimited JSON** over HTTP:
+
+- `Content-Type: application/x-ndjson; charset=utf-8`
+- One `ChatEvent` per line, separated by `\n`
+- Headers flushed immediately (`X-Accel-Buffering: no`,
+  `Cache-Control: no-cache, no-transform`)
+- No SSE `data:` prefix, no terminator sentinel
+
+The remote branch consumes the response body chunk-by-chunk and
+exposes the result as the same `AsyncIterable<ChatEvent>` you'd
+get from calling the engine directly — `for await (const event
+of api.ai.sendWithStream(...))` works identically in headless and
+remote mode. Non-2xx responses surface as an error thrown from
+the first iteration.
+
 ## `useApi`
 
 ```ts
