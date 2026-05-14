@@ -4,6 +4,7 @@ import type {
 } from "@assistant-ui/react";
 import type { GenerateContentResponse } from "@google/genai";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import { toChatError } from "../../services/ai/error";
 
 // ---------------------------------------------------------------------------
 // Response factories
@@ -20,7 +21,11 @@ export const createErrorResponse = (error: unknown): ThreadMessageLike =>
   ({
     role: "assistant",
     content: "",
-    status: { type: "incomplete", reason: "error", error },
+    status: {
+      type: "incomplete",
+      reason: "error",
+      error: toChatError(error),
+    },
   }) as ThreadMessageLike;
 
 /** Terminal response when the caller aborted the stream. */

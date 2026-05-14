@@ -5,7 +5,7 @@ import {
   buildFileRefBlock,
   buildImageRefBlock,
 } from "../../core/actions/attachment-resolution";
-import type { ChatEvent } from "../../core/services";
+import type { ChatErrorPayload, ChatEvent } from "../../core/services";
 import {
   patchToolCallArgs,
   patchToolCallResult,
@@ -42,6 +42,23 @@ type UseMessagesProps = {
  * `onStreamError`, `onMessageSent`, `onToolCallResult`) are emitted
  * from this hook in lockstep with the events.
  */
+/**
+ * Pull a user-facing string out of `status.error`. Engine-side errors
+ * arrive as {@link ChatErrorPayload}, but the helper stays defensive
+ * against stale wire payloads (raw strings, plain Error-likes) so the
+ * `onStreamError` callback never surfaces `[object Object]`.
+ */
+function extractErrorMessage(error: unknown): string {
+  if (!error) return "";
+  if (typeof error === "string") return error;
+  if (typeof error === "object") {
+    const payload = error as Partial<ChatErrorPayload> & { message?: unknown };
+    if (typeof payload.message === "string") return payload.message;
+    if (typeof payload.code === "string") return payload.code;
+  }
+  return "";
+}
+
 const useMessages = ({ isReady }: UseMessagesProps) => {
   const {
     useMessageStore,
@@ -242,7 +259,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               messageUID: "",
               error: {
                 reason: status?.reason ?? "unknown",
-                message: String(status?.error ?? ""),
+                message: extractErrorMessage(status?.error),
               },
             });
             continue;

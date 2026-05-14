@@ -6,6 +6,7 @@ import type {
   ToolCallMessagePart,
 } from "@assistant-ui/react";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import { toChatError } from "../../services/ai/error";
 
 type ContentArray = (
   | TextMessagePart
@@ -31,7 +32,11 @@ export const createErrorResponse = (error: unknown): ThreadMessageLike =>
   ({
     role: "assistant",
     content: "",
-    status: { type: "incomplete", reason: "error", error },
+    status: {
+      type: "incomplete",
+      reason: "error",
+      error: toChatError(error),
+    },
   }) as ThreadMessageLike;
 
 /**

@@ -1,5 +1,7 @@
 export { AIEngine } from "./engine";
+export { toChatError } from "./error";
 export { DEFAULT_AI_ROUTES } from "./types";
+export type { ChatErrorPayload } from "./error";
 export type {
   AIEngineDeps,
   AIEngineMethod,

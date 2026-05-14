@@ -253,6 +253,13 @@ export type ChatEvent =
       messageId: string;
     }
   | {
+      /**
+       * The terminal message carries `status: { type: "incomplete",
+       * reason, error?: ChatErrorPayload }`. When `reason === "error"`,
+       * `error` is always a serializable {@link ChatErrorPayload} —
+       * raw `Error` instances are normalized by the engine before the
+       * event is yielded so the wire JSON-stringifies cleanly.
+       */
       type: "message-incomplete";
       message: ThreadMessageLike;
     }

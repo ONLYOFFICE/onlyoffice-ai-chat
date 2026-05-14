@@ -35,7 +35,7 @@ describe("anthropic helpers", () => {
     expect(result.responseMessage.status).toEqual({
       type: "incomplete",
       reason: "error",
-      error: err,
+      error: { code: "unknown", message: "boom" },
     });
   });
 

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import cloneDeep from "lodash.clonedeep";
+import { toChatError } from "../../services/ai/error";
 import type { StreamResult } from "./types";
 
 // =============================================================================
@@ -33,7 +34,7 @@ export const createErrorResult = (error: unknown): StreamResult => ({
     status: {
       type: "incomplete",
       reason: "error",
-      error,
+      error: toChatError(error),
     },
   } as ThreadMessageLike,
 });

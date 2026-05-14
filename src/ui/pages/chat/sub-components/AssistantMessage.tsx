@@ -1,10 +1,10 @@
 import {
   ActionBarPrimitive,
-  ErrorPrimitive,
   MessagePrimitive,
   useMessage,
   type ThreadMessageLike,
 } from "@assistant-ui/react";
+import type { ChatErrorPayload } from "../../../../core/services";
 import { motion } from "framer-motion";
 import { isValidElement, memo, useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
@@ -77,13 +77,55 @@ const ThinkingMarkdownText = memo(
   }
 );
 
+const LOCALIZED_ERROR_CODES = new Set([
+  "auth",
+  "model_not_found",
+  "rate_limit",
+  "timeout",
+  "network",
+  "aborted",
+]);
+
 const MessageError = () => {
+  const { t } = useI18n();
+  const message = useMessage();
+  const status = message.status as
+    | { type?: string; reason?: string; error?: ChatErrorPayload | unknown }
+    | undefined;
+
+  if (status?.type !== "incomplete" || status?.reason !== "error") return null;
+
+  const payload = status.error as ChatErrorPayload | undefined;
+  // Defensive: tolerate older payloads (string / Error) that pre-date
+  // engine-side normalization. Shouldn't happen in-process from this
+  // version onward, but keep the UI useful if a stale host proxies an
+  // un-normalized event.
+  const code =
+    payload && typeof payload === "object" && typeof payload.code === "string"
+      ? payload.code
+      : "unknown";
+  const fallback =
+    payload && typeof payload === "object" && typeof payload.message === "string"
+      ? payload.message
+      : typeof payload === "string"
+        ? payload
+        : t("Error");
+  const text = LOCALIZED_ERROR_CODES.has(code)
+    ? t(`ChatError.${code}`)
+    : fallback;
+
   return (
-    <MessagePrimitive.Error>
-      <ErrorPrimitive.Root className="border border-[var(--chat-message-error-border-color)] rounded-[4px] p-[6px]">
-        <ErrorPrimitive.Message className="text-[var(--chat-message-error-color)] text-[14px] leading-[20px] font-normal" />
-      </ErrorPrimitive.Root>
-    </MessagePrimitive.Error>
+    <div
+      role="alert"
+      className="border border-[var(--chat-message-error-border-color)] rounded-[4px] p-[6px]"
+    >
+      <div className="text-[var(--chat-message-error-color)] text-[14px] leading-[20px] font-normal">
+        {text}
+      </div>
+      <div className="text-[var(--chat-message-error-color)] text-[11px] leading-[16px] font-normal opacity-60 mt-[2px]">
+        {code}
+      </div>
+    </div>
   );
 };
 

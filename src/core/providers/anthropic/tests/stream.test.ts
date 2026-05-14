@@ -27,13 +27,13 @@ describe("anthropic/stream/response factories", () => {
   it("createEmptyResponse seeds a fresh shell", () => {
     expect(createEmptyResponse()).toEqual({ role: "assistant", content: [] });
   });
-  it("createErrorResponse carries the error", () => {
+  it("createErrorResponse normalizes the Error into a ChatErrorPayload", () => {
     const err = new Error("x");
     const out = createErrorResponse(err) as {
-      status: { reason: string; error: unknown };
+      status: { reason: string; error: { code: string; message: string } };
     };
     expect(out.status.reason).toBe("error");
-    expect(out.status.error).toBe(err);
+    expect(out.status.error).toEqual({ code: "unknown", message: "x" });
   });
   it("createStopResponse uses `cancelled`", () => {
     const out = createStopResponse() as { status: { reason: string } };

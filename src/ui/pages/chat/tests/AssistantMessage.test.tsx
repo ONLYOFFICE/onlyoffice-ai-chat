@@ -294,15 +294,48 @@ describe("AssistantMessage", () => {
     expect(screen.getByTestId("message-content")).toBeInTheDocument();
   });
 
-  it("renders message error wrapper", () => {
+  it("does not render error banner for complete messages", () => {
     render(<AssistantMessage />);
-    expect(screen.getByTestId("message-error-wrapper")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("renders error root and error message", () => {
+  it("renders typed error banner with localized text for known code", () => {
+    mockMessageStatus = {
+      type: "incomplete",
+      reason: "error",
+      error: { code: "auth", message: "401 Unauthorized" },
+    };
     render(<AssistantMessage />);
-    expect(screen.getByTestId("error-root")).toBeInTheDocument();
-    expect(screen.getByTestId("error-message")).toBeInTheDocument();
+    const alert = screen.getByRole("alert");
+    expect(alert).toBeInTheDocument();
+    // Localized text for known code, code chip below.
+    expect(alert.textContent).toContain("ChatError.auth");
+    expect(alert.textContent).toContain("auth");
+    expect(alert.textContent).not.toContain("[object Object]");
+  });
+
+  it("falls back to payload message for unknown error code", () => {
+    mockMessageStatus = {
+      type: "incomplete",
+      reason: "error",
+      error: { code: "weirdo", message: "Something went sideways" },
+    };
+    render(<AssistantMessage />);
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("Something went sideways");
+    expect(alert.textContent).not.toContain("[object Object]");
+  });
+
+  it("survives legacy plain-object errors without rendering [object Object]", () => {
+    mockMessageStatus = {
+      type: "incomplete",
+      reason: "error",
+      error: { message: "legacy message, no code" },
+    };
+    render(<AssistantMessage />);
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("legacy message, no code");
+    expect(alert.textContent).not.toContain("[object Object]");
   });
 
   it("renders action bar when status is complete", () => {

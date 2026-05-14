@@ -167,6 +167,44 @@ no thread is created, no message is persisted. Provider-side
 errors surface as `message-incomplete` events; the message is not
 written to storage.
 
+#### Error event payload
+
+When `status.reason === "error"`, `status.error` is always a
+`ChatErrorPayload` — never a raw `Error`. `Error` instances are
+non-serializable (`message` / `stack` / `name` are non-enumerable);
+the engine runs every error through `toChatError(err)` before
+yielding the event so hosts can pipe the NDJSON stream through
+stock `JSON.stringify` and the UI can render `error.message`
+without falling back to `[object Object]`.
+
+```ts
+type ChatErrorPayload = {
+  code: string;     // stable machine-readable kind
+  message: string;  // end-user-safe text
+  cause?: ChatErrorPayload;
+};
+```
+
+Canonical `code` values:
+
+| Code | Origin |
+|---|---|
+| `auth` | HTTP 401/403, `invalid_api_key`, `authentication_error` |
+| `model_not_found` | HTTP 404 referring to a model, or `not_found_error` with "model" in the message |
+| `rate_limit` | HTTP 429, `rate_limit_error` |
+| `timeout` | HTTP 408, or any error whose message mentions "timeout" |
+| `network` | `TypeError: fetch failed` / network-class failures |
+| `bad_request` | HTTP 400 |
+| `server` | HTTP ≥ 500 |
+| `not_found` | HTTP 404 (non-model) |
+| `aborted` | `AbortError` (caller-supplied signal) |
+| `unknown` | everything else |
+
+Stack traces are intentionally stripped from the payload —
+keep them in server logs. `toChatError` is exported from
+`@onlyoffice/ai-chat` for custom providers / middleware that want
+to surface the same shape.
+
 ### Example
 
 ```ts

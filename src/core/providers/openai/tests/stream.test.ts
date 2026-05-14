@@ -29,13 +29,25 @@ describe("openai/stream/response factories", () => {
     expect(createEmptyResponse()).toEqual({ role: "assistant", content: [] });
   });
 
-  it("createErrorResponse carries the error on status", () => {
+  it("createErrorResponse normalizes the Error into a ChatErrorPayload", () => {
     const err = new Error("boom");
     const out = createErrorResponse(err) as {
-      status: { reason: string; error: unknown };
+      status: { reason: string; error: { code: string; message: string } };
     };
     expect(out.status.reason).toBe("error");
-    expect(out.status.error).toBe(err);
+    expect(out.status.error).toEqual({ code: "unknown", message: "boom" });
+    // Survives JSON round-trip — the whole point of normalization.
+    expect(JSON.parse(JSON.stringify(out.status.error))).toEqual(
+      out.status.error
+    );
+  });
+
+  it("createErrorResponse maps OpenAI 401 to code 'auth'", () => {
+    const err = Object.assign(new Error("Incorrect API key"), { status: 401 });
+    const out = createErrorResponse(err) as {
+      status: { error: { code: string } };
+    };
+    expect(out.status.error.code).toBe("auth");
   });
 
   it("createStopResponse uses `cancelled` as the reason", () => {

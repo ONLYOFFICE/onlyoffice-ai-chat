@@ -115,6 +115,7 @@ export {
   ThreadsEngine,
   ToolsEngine,
   WebSearchEngine,
+  toChatError,
 } from "./core/services";
 export type {
   AIEngineDeps,
@@ -124,6 +125,7 @@ export type {
   AssignmentsEngineDeps,
   AssignmentsEngineMethod,
   BulkAssignmentResult,
+  ChatErrorPayload,
   ChatEvent,
   CreateProfileInput,
   CreatePromptInput,

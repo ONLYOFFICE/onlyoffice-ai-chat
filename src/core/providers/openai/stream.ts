@@ -5,6 +5,7 @@ import type {
 } from "@assistant-ui/react";
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import { toChatError } from "../../services/ai/error";
 
 /**
  * Extension of OpenAI's streaming delta that adds the non-standard
@@ -39,7 +40,11 @@ export const createErrorResponse = (error: unknown): ThreadMessageLike =>
   ({
     role: "assistant",
     content: "",
-    status: { type: "incomplete", reason: "error", error },
+    status: {
+      type: "incomplete",
+      reason: "error",
+      error: toChatError(error),
+    },
   }) as ThreadMessageLike;
 
 /**
