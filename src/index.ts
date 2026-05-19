@@ -290,6 +290,50 @@ export {
 } from "./ui/pages";
 
 // ---------------------------------------------------------------------------
+// Composite UI Components — high-level building blocks that can be reused
+// outside of the bundled pages (e.g. to assemble a custom widget layout).
+// Primitive components (Button, Input, Dialog primitives, …) are intentionally
+// not re-exported here — swap them via `ComponentsProvider` instead.
+// ---------------------------------------------------------------------------
+
+// Layout
+export { Layout } from "./ui/components/layout";
+export { Navigation } from "./ui/components/layout/sub-components/Header";
+export { ChatList } from "./ui/components/layout/sub-components/ChatList";
+export { ChatListItem } from "./ui/components/layout/sub-components/ChatListItem";
+export { DeleteChatDialog } from "./ui/components/layout/sub-components/DeleteChatDialog";
+
+// Chat page parts
+export { Composer } from "./ui/pages/chat/sub-components/Composer";
+export { ThreadWelcome } from "./ui/pages/chat/sub-components/Welcome";
+export { UserMessage } from "./ui/pages/chat/sub-components/UserMessage";
+export { AssistantMessage } from "./ui/pages/chat/sub-components/AssistantMessage";
+
+// Model cards / config
+export { ModelCard } from "./ui/components/model-card";
+export { DeleteProfileDialog } from "./ui/components/model-card/DeleteProfileDialog";
+export {
+  AddModelCard,
+  EditModelCard,
+  type ModelFormValues,
+} from "./ui/components/model-config-cards";
+
+// Tool & file UI
+export { ManageToolDialog } from "./ui/components/manage-tool-dialog";
+export { ToolFallback } from "./ui/components/tool-fallback";
+export { FileItem } from "./ui/components/file-item";
+
+// Markdown
+export { MarkdownText, MarkdownContent } from "./ui/components/markdown";
+
+// Misc
+export { ProviderLogo } from "./ui/components/provider-logo";
+export {
+  SyntaxHighlighter,
+  type HighlighterProps,
+} from "./ui/components/assistant-ui/shiki-highlighter";
+
+// ---------------------------------------------------------------------------
 // I18n
 // ---------------------------------------------------------------------------
 

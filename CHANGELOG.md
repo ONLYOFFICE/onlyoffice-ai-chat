@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.28
+
+- Public API: re-export composite UI building blocks so hosts can assemble a custom layout without forking. New named exports from `@onlyoffice/ai-chat`:
+  - Layout: `Layout`, `Navigation`, `ChatList`, `ChatListItem`, `DeleteChatDialog`.
+  - Chat parts: `Composer`, `ThreadWelcome`, `UserMessage`, `AssistantMessage`.
+  - Model: `ModelCard`, `DeleteProfileDialog`, `AddModelCard`, `EditModelCard`, type `ModelFormValues`.
+  - Tools/files: `ManageToolDialog`, `ToolFallback`, `FileItem`.
+  - Markdown: `MarkdownText`, `MarkdownContent`.
+  - Misc: `ProviderLogo`, `SyntaxHighlighter` + `HighlighterProps`.
+- Primitive components (Button, Input, Dialog primitives, …) are intentionally **not** re-exported — keep swapping them via `ComponentsProvider`.
+
+```ts
+import { Layout, Navigation, ChatList, Composer } from "@onlyoffice/ai-chat";
+```
+
 ## 0.4.27
 
 - AI errors are now serializable across the wire. When a provider call fails inside `sendWithStream` / `regenerateStream` / `approveToolCall` / `denyToolCall`, the engine emits `message-incomplete` with `status.error: ChatErrorPayload` — a plain `{ code, message, cause? }` object — instead of a raw `Error`. Previously hosts that serialized events via stock `JSON.stringify` lost the message and stack (non-enumerable on `Error`), so the browser received `{}` and the chat surface rendered `[object Object]`.
