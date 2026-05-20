@@ -44,7 +44,7 @@ export const openSSEStream = async (
   if (params.tools.length > 0) body.tools = params.tools;
   if (params.withReasoning) body.reasoning_effort = "medium";
 
-  const res = await fetch(`${creds.baseUrl}/chat/completions`, {
+  const res = await (creds.fetch ?? fetch)(`${creds.baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

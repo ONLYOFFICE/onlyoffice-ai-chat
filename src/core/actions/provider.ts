@@ -11,6 +11,7 @@ export function providerFor(args: ActionArgs): AbstractBaseProvider {
   const provider = createProvider(args.profile.providerType, {
     baseUrl: args.profile.baseUrl,
     apiKey: args.profile.key,
+    ...(args.fetch ? { fetch: args.fetch } : {}),
   });
   if (!provider) {
     throw new Error(`Unknown provider type: ${args.profile.providerType}`);

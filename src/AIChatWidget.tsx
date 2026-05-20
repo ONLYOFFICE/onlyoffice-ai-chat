@@ -55,6 +55,7 @@ import type { ToolsAdapter } from "./core/tools-adapter";
 import type { HostToolGroup } from "./ui/tools/types";
 import { useWidgetConfig, WidgetConfigProvider } from "./widget-config";
 import useEnsureProfiles from "./ui/hooks/useEnsureProfiles";
+import type { ProviderFetch } from "./shared/provider-credentials";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
@@ -216,11 +217,27 @@ export const AIChatWidget = React.forwardRef<
 
       const servers = new Servers(platform, eventBus);
 
+      // PlatformAdapter.fetchProxy takes a `string` URL; the provider
+      // SDKs pass `RequestInfo | URL`. Normalize before delegating so
+      // host implementations that only handle strings keep working.
+      const proxyFetch: ProviderFetch | undefined = platform.fetchProxy
+        ? (input, init) => {
+            const url =
+              typeof input === "string"
+                ? input
+                : input instanceof URL
+                  ? input.toString()
+                  : input.url;
+            return platform.fetchProxy!(url, init);
+          }
+        : undefined;
+
       const ai = new AIEngine({
         storage,
         assignments,
         threads,
         toolsAdapter,
+        ...(proxyFetch ? { fetchProxy: proxyFetch } : {}),
       });
 
       const ctx: AppContext = {

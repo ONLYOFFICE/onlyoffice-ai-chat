@@ -19,4 +19,5 @@ export const createAnthropicClient = (
     apiKey: creds.apiKey,
     baseURL: creds.baseUrl,
     dangerouslyAllowBrowser: true,
+    ...(creds.fetch ? { fetch: creds.fetch } : {}),
   });

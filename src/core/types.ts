@@ -224,6 +224,15 @@ export type Profile = {
   /** Whether this profile uses a cloud-hosted provider (e.g. ONLYOFFICE DocSpace). */
   isCloudProvider?: boolean;
 
+  /**
+   * Route every provider request through the host's `fetchProxy` instead
+   * of the global `fetch`. Useful when the host runs the widget in a
+   * sandbox without direct network access (CORS, custom auth, etc.).
+   * Has no effect when the {@link PlatformAdapter.fetchProxy} is not
+   * configured.
+   */
+  useProxy?: boolean;
+
   /** Creation timestamp (ms since epoch). Used to sort the AI models list newest-first. */
   createdAt?: number;
 };

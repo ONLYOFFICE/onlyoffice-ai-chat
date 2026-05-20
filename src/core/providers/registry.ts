@@ -1,3 +1,4 @@
+import type { ProviderCredentials } from "../../shared/provider-credentials";
 import type { ProviderType } from "../../shared/provider-type";
 
 import type { AbstractBaseProvider, ProviderConstructor } from "./base";
@@ -88,7 +89,7 @@ export const getSupportedProviderTypes = (): string[] => {
  */
 export const createProvider = (
   type: string,
-  creds: { baseUrl: string; apiKey?: string }
+  creds: ProviderCredentials
 ): AbstractBaseProvider | undefined => {
   const Ctor = getProvider(type);
   return Ctor ? new Ctor(creds) : undefined;

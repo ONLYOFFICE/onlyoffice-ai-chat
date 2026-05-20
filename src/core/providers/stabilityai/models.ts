@@ -46,7 +46,7 @@ export const checkCredentials = async (
     formData.append("prompt", "test");
     formData.append("output_format", "png");
 
-    const response = await fetch(url, {
+    const response = await (creds.fetch ?? fetch)(url, {
       method: "POST",
       headers: {
         Accept: "application/json",

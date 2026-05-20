@@ -42,7 +42,7 @@ export const inferCapabilities = (model: TogetherModel): number => {
 export const listModels = async (
   creds: ProviderCredentials
 ): Promise<Model[]> => {
-  const response = await fetch(`${creds.baseUrl}/models`, {
+  const response = await (creds.fetch ?? fetch)(`${creds.baseUrl}/models`, {
     headers: { Authorization: `Bearer ${creds.apiKey}` },
   });
   const models: TogetherModel[] = await response.json();

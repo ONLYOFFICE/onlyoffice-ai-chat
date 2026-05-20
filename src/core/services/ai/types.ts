@@ -60,6 +60,14 @@ export type AIEngineDeps = {
    * / `denyToolCall`.
    */
   toolsAdapter?: ToolsAdapter;
+
+  /**
+   * Custom fetch used in place of the global one whenever the resolved
+   * profile has `useProxy: true`. The engine wires this into every
+   * provider request (chat / title / regenerate / resume) for that
+   * profile. Typically the host's `PlatformAdapter.fetchProxy`.
+   */
+  fetchProxy?: import("../../../shared/provider-credentials").ProviderFetch;
 };
 
 /**

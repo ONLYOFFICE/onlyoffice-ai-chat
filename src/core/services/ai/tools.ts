@@ -153,6 +153,11 @@ export type AdapterRunContext = {
   signal?: AbortSignal;
   /** Opaque scope token forwarded to scoped storage reads in resume rounds. */
   entityId?: string;
+  /**
+   * Proxy fetch wired into resume rounds when the profile opts into
+   * `useProxy`. Mirrors {@link ActionArgs.fetch}.
+   */
+  fetch?: import("../../../shared/provider-credentials").ProviderFetch;
 };
 
 /**
@@ -197,6 +202,7 @@ export async function* executeAdapterTool(
       signal: ctx.signal,
       tools: ctx.tools,
       entityId: ctx.entityId,
+      fetch: ctx.fetch,
     }
   );
 }

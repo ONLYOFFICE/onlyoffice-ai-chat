@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { ActionType } from "../../../shared/action-type";
+import type { ProviderFetch } from "../../../shared/provider-credentials";
 import type { SendMessageResult } from "../../../shared/send-message-args";
 import { custom, customSync } from "../../actions/custom";
 import type { CustomArgs } from "../../actions/custom";
@@ -13,7 +14,8 @@ import type { SendCustomInput } from "./types";
  */
 async function buildArgs(
   assignments: AssignmentsEngine,
-  input: SendCustomInput
+  input: SendCustomInput,
+  fetchProxy: ProviderFetch | undefined
 ): Promise<CustomArgs> {
   const { profile } = await assignments.resolveForAction(ActionType.Default);
   return {
@@ -21,23 +23,26 @@ async function buildArgs(
     profile,
     messages: [input.userMessage],
     systemPrompt: input.systemPrompt,
+    fetch: profile.useProxy ? fetchProxy : undefined,
   };
 }
 
 /** Streaming custom-prompt path. Yields raw `SendMessageResult` events. */
 export async function* runCustomStream(
   assignments: AssignmentsEngine,
-  input: SendCustomInput
+  input: SendCustomInput,
+  fetchProxy?: ProviderFetch
 ): AsyncGenerator<SendMessageResult> {
-  const args = await buildArgs(assignments, input);
+  const args = await buildArgs(assignments, input, fetchProxy);
   yield* custom(args);
 }
 
 /** One-shot custom-prompt path. Awaits a single response message. */
 export async function runCustomOnce(
   assignments: AssignmentsEngine,
-  input: SendCustomInput
+  input: SendCustomInput,
+  fetchProxy?: ProviderFetch
 ): Promise<ThreadMessageLike> {
-  const args = await buildArgs(assignments, input);
+  const args = await buildArgs(assignments, input, fetchProxy);
   return customSync(args);
 }

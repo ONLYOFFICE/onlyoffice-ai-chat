@@ -12,8 +12,16 @@ import type { ProviderCredentials } from "../../../shared/provider-credentials";
  * @param creds - Base URL and optional API key.
  * @returns A ready-to-use `GoogleGenAI` client.
  */
-export const createGenAIClient = (creds: ProviderCredentials): GoogleGenAI =>
-  new GoogleGenAI({
+export const createGenAIClient = (creds: ProviderCredentials): GoogleGenAI => {
+  const httpOptions =
+    creds.baseUrl || creds.fetch
+      ? {
+          ...(creds.baseUrl ? { baseUrl: creds.baseUrl } : {}),
+          ...(creds.fetch ? { fetch: creds.fetch } : {}),
+        }
+      : undefined;
+  return new GoogleGenAI({
     apiKey: creds.apiKey ?? "",
-    httpOptions: creds.baseUrl ? { baseUrl: creds.baseUrl } : undefined,
+    httpOptions,
   });
+};

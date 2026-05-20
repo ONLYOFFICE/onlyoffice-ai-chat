@@ -17,4 +17,5 @@ export const createOpenAIClient = (creds: ProviderCredentials): OpenAI =>
     apiKey: creds.apiKey,
     baseURL: creds.baseUrl,
     dangerouslyAllowBrowser: true,
+    ...(creds.fetch ? { fetch: creds.fetch } : {}),
   });

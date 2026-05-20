@@ -69,9 +69,12 @@ export const checkCredentials = async (
   creds: ProviderCredentials
 ): Promise<boolean | TErrorData> => {
   try {
-    const response = await fetch(`${creds.baseUrl}/models/user`, {
-      headers: { Authorization: `Bearer ${creds.apiKey}` },
-    });
+    const response = await (creds.fetch ?? fetch)(
+      `${creds.baseUrl}/models/user`,
+      {
+        headers: { Authorization: `Bearer ${creds.apiKey}` },
+      }
+    );
     if (!response.ok) {
       if (!creds.apiKey) return ProviderErrors.emptyKey();
       if (response.status === 401) return ProviderErrors.invalidKey();
@@ -94,7 +97,7 @@ export const listModels = async (
   creds: ProviderCredentials
 ): Promise<Model[]> => {
   const url = creds.baseUrl || openrouterInfo.baseUrl;
-  const response = await fetch(`${url}/models`, {
+  const response = await (creds.fetch ?? fetch)(`${url}/models`, {
     headers: creds.apiKey ? { Authorization: `Bearer ${creds.apiKey}` } : {},
   });
   const json = await response.json();

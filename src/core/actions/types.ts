@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { TMCPItem } from "../../shared/mcp-item";
+import type { ProviderFetch } from "../../shared/provider-credentials";
 import type { Profile } from "../types";
 
 /**
@@ -24,10 +25,18 @@ export type ActionArgs = {
     | "modelId"
     | "canUseTool"
     | "useResponsesApi"
+    | "useProxy"
   >;
   messages: ThreadMessageLike[];
   tools?: TMCPItem[];
   isReasoning?: boolean;
   signal?: AbortSignal;
   prompt?: SystemPromptOverride;
+  /**
+   * Custom fetch routed through the host's `fetchProxy`. Set by the
+   * engine when {@link ActionArgs.profile.useProxy} is true and the
+   * engine was constructed with a `fetchProxy` dep. Threaded into
+   * {@link ProviderCredentials.fetch} by {@link providerFor}.
+   */
+  fetch?: ProviderFetch;
 };

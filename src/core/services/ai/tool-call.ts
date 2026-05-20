@@ -122,6 +122,8 @@ export async function* resumeChat(
     tools?: ActionArgs["tools"];
     /** Opaque scope token forwarded to scoped storage reads. */
     entityId?: string;
+    /** Proxy fetch — mirrors {@link ActionArgs.fetch}. */
+    fetch?: ActionArgs["fetch"];
   }
 ): AsyncGenerator<ChatEvent> {
   const toolCall = readToolCall(input.message, input.idx);
@@ -146,6 +148,7 @@ export async function* resumeChat(
     tools: input.tools,
     isReasoning: input.isReasoning,
     signal: input.signal,
+    fetch: input.fetch,
   };
 
   // Resume into the SAME assistant message: the new round's snapshots

@@ -69,7 +69,7 @@ export const generateImage = async (
   formData.append("output_format", "png");
   formData.append("aspect_ratio", toAspectRatio(width, height));
 
-  const response = await fetch(url, {
+  const response = await (creds.fetch ?? fetch)(url, {
     method: "POST",
     headers: {
       Accept: "application/json",

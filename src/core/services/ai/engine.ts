@@ -85,6 +85,21 @@ export class AIEngine {
   }
 
   /**
+   * Return the proxy fetch when the resolved profile opts into it.
+   * Used at every action-dispatch site to wire
+   * {@link PlatformAdapter.fetchProxy} into the provider request.
+   * Returns `undefined` either when the profile didn't request proxying
+   * or when the engine wasn't constructed with a `fetchProxy` dep.
+   */
+  private pickFetch(profile: {
+    useProxy?: boolean;
+  }):
+    | import("../../../shared/provider-credentials").ProviderFetch
+    | undefined {
+    return profile.useProxy ? this.deps.fetchProxy : undefined;
+  }
+
+  /**
    * Resolve the profile to use for a chat round. If `overrideId` is
    * supplied (the UI's session-level model pick from the composer), load
    * it directly from storage — that pick wins over the persisted Chat
@@ -180,6 +195,7 @@ export class AIEngine {
       titlePromise = generateTitle({
         profile,
         messages: [input.userMessage],
+        fetch: this.pickFetch(profile),
       })
         .then((t) => t || "New chat")
         .catch(() => "New chat");
@@ -195,6 +211,8 @@ export class AIEngine {
       }
     );
 
+    const proxiedFetch = this.pickFetch(profile);
+
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
       profile,
@@ -203,6 +221,7 @@ export class AIEngine {
         this.deps.storage.attachments
       ),
       tools: toolCtx.mergedTools,
+      fetch: proxiedFetch,
     };
 
     const stream = processStream(chat(actionArgs), {
@@ -223,6 +242,7 @@ export class AIEngine {
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
       entityId: input.entityId,
+      fetch: proxiedFetch,
     });
 
     if (titlePromise) {
@@ -273,6 +293,8 @@ export class AIEngine {
       { attachmentId: collectRefIds(priorMessages) }
     );
 
+    const proxiedFetch = this.pickFetch(profile);
+
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
       profile,
@@ -281,6 +303,7 @@ export class AIEngine {
         this.deps.storage.attachments
       ),
       tools: toolCtx.mergedTools,
+      fetch: proxiedFetch,
     };
 
     const stream = processStream(chat(actionArgs), {
@@ -301,6 +324,7 @@ export class AIEngine {
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
       entityId: input.entityId,
+      fetch: proxiedFetch,
     });
   }
 
@@ -361,6 +385,7 @@ export class AIEngine {
       input.actionArgs?.tools ?? [],
       input.entityId
     );
+    const proxiedFetch = this.pickFetch(profile);
     const runCtx: AdapterRunContext = {
       profile,
       profileId,
@@ -368,6 +393,7 @@ export class AIEngine {
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
       entityId: input.entityId,
+      fetch: proxiedFetch,
     };
 
     const resumed = resumeChat(
@@ -384,6 +410,7 @@ export class AIEngine {
         signal: input.actionArgs?.signal,
         tools: toolCtx.mergedTools,
         entityId: input.entityId,
+        fetch: proxiedFetch,
       }
     );
 
@@ -437,6 +464,7 @@ export class AIEngine {
       ...input.actionArgs,
       profile,
       messages: [input.userMessage],
+      fetch: this.pickFetch(profile),
     };
 
     return input.actionType === ActionType.Chat
@@ -448,8 +476,8 @@ export class AIEngine {
     input: SendCustomInput
   ): AsyncGenerator<SendMessageResult> | Promise<ThreadMessageLike> {
     return input.isStream
-      ? runCustomStream(this.assignments, input)
-      : runCustomOnce(this.assignments, input);
+      ? runCustomStream(this.assignments, input, this.deps.fetchProxy)
+      : runCustomOnce(this.assignments, input, this.deps.fetchProxy);
   }
 }
 

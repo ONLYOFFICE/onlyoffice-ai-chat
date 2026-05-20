@@ -78,7 +78,22 @@ vi.mock("../ui/store/context", () => ({
   ),
   useStores: () => ({
     useMessageStore: () => ({ messages: mockMessages, stopMessage: vi.fn() }),
-    useProfilesStore: () => ({ profiles: mockProfiles }),
+    useProfilesStore: Object.assign(
+      (selector?: (s: unknown) => unknown) => {
+        const state = {
+          profiles: mockProfiles,
+          initialized: true,
+          init: vi.fn(),
+        };
+        return selector ? selector(state) : state;
+      },
+      {
+        getState: () => ({
+          profiles: mockProfiles,
+          initialized: true,
+        }),
+      }
+    ),
     useServersStore: () => ({
       manageToolData: mockManageToolData,
       setManageToolData: mockSetManageToolData,
@@ -96,6 +111,7 @@ vi.mock("../ui/store/context", () => ({
     }),
     useCloudsStore: () => ({ fetchClouds: mockFetchClouds, cloudProviders: [] }),
     selectCurrentChatProfile: vi.fn(),
+    callbacksManager: { emit: vi.fn() },
   }),
 }));
 
@@ -163,6 +179,7 @@ vi.mock("../widget-config", () => ({
   WidgetConfigProvider: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
+  useWidgetConfig: () => ({ entityId: undefined, systemPrompt: undefined }),
 }));
 
 // Hooks

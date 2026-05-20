@@ -33,7 +33,7 @@ export const listModels = async (
     ? { Authorization: `Bearer ${creds.apiKey}` }
     : {};
 
-  const response = await fetch(
+  const response = await (creds.fetch ?? fetch)(
     `${baseUrl}/api/2.0/ai/chats/models?provider=${ONLYOFFICE_PROVIDER_ID}`,
     { headers }
   );
