@@ -132,6 +132,7 @@ const Thread = () => {
   useEnsureTools();
   const messages = useMessageStore((s) => s.messages);
   const stopMessage = useMessageStore((s) => s.stopMessage);
+  const profilesInitialized = useProfilesStore((s) => s.initialized);
   const hasProfiles = useProfilesStore((s) => s.profiles.length > 0);
   const { onNew, regenerate } = useMessages({ isReady: true });
 
@@ -162,6 +163,10 @@ const Thread = () => {
       ]),
     },
   });
+
+  if (!profilesInitialized) {
+    return <div className="aui-root h-full bg-[var(--layout-background-color)]" />;
+  }
 
   if (!hasProfiles) {
     return <InitialSetup />;

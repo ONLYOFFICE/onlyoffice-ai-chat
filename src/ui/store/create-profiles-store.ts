@@ -16,6 +16,7 @@ import type { Profile } from "../../types";
  * (chat, summarization, translation, etc.) via {@link ServerAPI.assignments}.
  */
 export interface ProfilesStoreState {
+  initialized: boolean;
   profiles: Profile[];
   defaultProfile: Profile | null;
   chatProfile: Profile | null;
@@ -141,6 +142,7 @@ export function createProfilesStore(deps: {
     set = setState;
 
     return {
+      initialized: false,
       profiles: [],
       defaultProfile: null,
       chatProfile: null,
@@ -167,6 +169,7 @@ export function createProfilesStore(deps: {
         set({
           profiles,
           extendedThinking: !!deepMode,
+          initialized: true,
           ...assignmentsState,
         } as Partial<ProfilesStoreState>);
       },
