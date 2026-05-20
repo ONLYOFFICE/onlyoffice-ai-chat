@@ -235,6 +235,28 @@ export interface ExtendedThinkingUpdatedEvent {
   enabled: boolean;
 }
 
+/**
+ * Fired once per widget lifetime, as soon as the profiles store has
+ * finished its first `init()` (profile list + assignments + deep-mode
+ * preference). After this fires:
+ *
+ * - `hasProfiles: true` — the widget is interactive, the host can call
+ *   the imperative `send()` / forward attachments / read the threads
+ *   list. If `currentProfileId` is also non-null, `sendWithStream` is
+ *   guaranteed to find a profile.
+ * - `hasProfiles: false` — the widget will route to the `InitialSetup`
+ *   screen; the host should not try to push messages until the user
+ *   creates a profile (watch `onProfilesUpdated` for that).
+ *
+ * Does not wait for threads / prompts / tools to load — those run in
+ * parallel and don't block the first message send.
+ */
+export interface ReadyEvent {
+  hasProfiles: boolean;
+  currentProfileId: string | null;
+  entityId?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Error events
 // ---------------------------------------------------------------------------
@@ -296,6 +318,8 @@ export interface ChatCallbacks {
   onServersUpdated?: (data: ServersUpdatedEvent) => void;
   onWebSearchUpdated?: (data: WebSearchUpdatedEvent) => void;
   onExtendedThinkingUpdated?: (data: ExtendedThinkingUpdatedEvent) => void;
+  // Lifecycle
+  onReady?: (data: ReadyEvent) => void;
   // Errors
   onError?: (data: ChatErrorEvent) => void;
 }

@@ -53,7 +53,8 @@ import { ToolsProvider, useToolsContext } from "./ui/tools/context";
 import Servers from "./ui/tools/servers";
 import type { ToolsAdapter } from "./core/tools-adapter";
 import type { HostToolGroup } from "./ui/tools/types";
-import { WidgetConfigProvider } from "./widget-config";
+import { useWidgetConfig, WidgetConfigProvider } from "./widget-config";
+import useEnsureProfiles from "./ui/hooks/useEnsureProfiles";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
@@ -355,16 +356,44 @@ const AppInner = ({
 
   const stores = useStores();
   const {
+    useProfilesStore,
     useServersStore,
     useRouter,
     useCloudsStore,
     selectCurrentChatProfile,
+    callbacksManager,
   } = stores;
 
   const { currentPage } = useRouter();
   const { manageToolData, setManageToolData } = useServersStore();
   const { fetchClouds } = useCloudsStore();
   const { servers, eventBus } = useToolsContext();
+  const { entityId } = useWidgetConfig();
+
+  // Kick off profile init at the widget level so `onReady` doesn't
+  // depend on which page mounts first. The page-level `useEnsureProfiles`
+  // calls remain — `init()` is idempotent and just re-syncs.
+  useEnsureProfiles();
+
+  const profilesInitialized = useProfilesStore((s) => s.initialized);
+  const readyEmittedRef = useRef(false);
+  useEffect(() => {
+    if (!profilesInitialized || readyEmittedRef.current) return;
+    readyEmittedRef.current = true;
+    const state = useProfilesStore.getState();
+    const current = selectCurrentChatProfile(state);
+    callbacksManager.emit("onReady", {
+      hasProfiles: state.profiles.length > 0,
+      currentProfileId: current?.id ?? null,
+      entityId,
+    });
+  }, [
+    profilesInitialized,
+    useProfilesStore,
+    selectCurrentChatProfile,
+    callbacksManager,
+    entityId,
+  ]);
 
   // Each page mounted under <Thread /> or <Settings /> declares its own
   // data dependencies via `useEnsureProfiles` / `useEnsureThreads` / etc.
