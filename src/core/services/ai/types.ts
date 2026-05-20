@@ -86,6 +86,15 @@ export type SendStreamInput = {
    * freshly created thread. The engine never inspects the value.
    */
   entityId?: string;
+
+  /**
+   * Session-level profile override. When set, the engine uses this
+   * profile for the current request without mutating the persisted
+   * `Chat` assignment — used by the UI to honor an ad-hoc model pick
+   * from the chat composer. Falls back to the assignment if the id no
+   * longer exists in storage.
+   */
+  profileId?: string;
 };
 
 /**
@@ -108,6 +117,11 @@ export type RegenerateStreamInput = {
    * can return an entity-specific Chat profile).
    */
   entityId?: string;
+
+  /**
+   * Session-level profile override — see {@link SendStreamInput.profileId}.
+   */
+  profileId?: string;
 };
 
 /**
@@ -159,7 +173,10 @@ export type SendCustomInput = {
  * abort signal, `isReasoning` flag, and tool list as the original
  * `sendWithStream` request.
  */
-export type ToolCallData = Pick<SendStreamInput, "actionArgs" | "entityId"> & {
+export type ToolCallData = Pick<
+  SendStreamInput,
+  "actionArgs" | "entityId" | "profileId"
+> & {
   /** Thread the assistant message belongs to. */
   threadId: string;
 

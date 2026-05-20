@@ -634,6 +634,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       threadId: inputThreadId,
       userMessage,
       entityId,
+      profileId: currentProfile.id,
       actionArgs: {
         isReasoning: extendedThinking,
         signal: controller.signal,
@@ -700,6 +701,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         result,
         allowAlways,
         entityId,
+        profileId: currentProfile?.id,
         actionArgs: {
           isReasoning: extendedThinking,
           tools: tools.length > 0 ? tools : undefined,
@@ -742,6 +744,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       idx: data.idx,
       message: data.message,
       entityId,
+      profileId: currentProfile?.id,
       actionArgs: {
         isReasoning: extendedThinking,
         tools: tools.length > 0 ? tools : undefined,
@@ -751,6 +754,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     await processStream(stream, data.threadId);
   }, [
     api,
+    currentProfile,
     entityId,
     extendedThinking,
     processStream,
@@ -784,6 +788,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       const stream = api.ai.regenerateStream({
         threadId,
         entityId,
+        profileId: currentProfile.id,
         actionArgs: {
           isReasoning: extendedThinking,
           signal: controller.signal,

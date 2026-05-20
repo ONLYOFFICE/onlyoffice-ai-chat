@@ -11,6 +11,7 @@ import { chat } from "../../actions/chat";
 import { generateTitle } from "../../actions/title";
 import type { ActionArgs } from "../../actions/types";
 import { AssignmentsEngine } from "../assignments";
+import type { ResolvedAssignment } from "../assignments/types";
 import { ThreadsEngine } from "../threads";
 import { drainToFinal, runSync } from "./actions";
 import { runCustomOnce, runCustomStream } from "./custom";
@@ -83,9 +84,28 @@ export class AIEngine {
     this.attachments = new AttachmentsEngine({ storage: deps.storage });
   }
 
+  /**
+   * Resolve the profile to use for a chat round. If `overrideId` is
+   * supplied (the UI's session-level model pick from the composer), load
+   * it directly from storage — that pick wins over the persisted Chat
+   * assignment for the current request without mutating the assignment.
+   * Falls back to {@link AssignmentsEngine.resolveForAction} when no
+   * override is given or the override id no longer exists.
+   */
+  private async resolveChatProfile(
+    overrideId: string | undefined,
+    entityId: string | undefined
+  ): Promise<ResolvedAssignment> {
+    if (overrideId) {
+      const profile = await this.deps.storage.profiles.readById(overrideId);
+      if (profile) return { profileId: overrideId, profile };
+    }
+    return this.assignments.resolveForAction(ActionType.Chat, entityId);
+  }
+
   async *sendWithStream(input: SendStreamInput): AsyncGenerator<ChatEvent> {
-    const { profileId, profile } = await this.assignments.resolveForAction(
-      ActionType.Chat,
+    const { profileId, profile } = await this.resolveChatProfile(
+      input.profileId,
       input.entityId
     );
 
@@ -222,8 +242,8 @@ export class AIEngine {
   async *regenerateStream(
     input: RegenerateStreamInput
   ): AsyncGenerator<ChatEvent> {
-    const { profileId, profile } = await this.assignments.resolveForAction(
-      ActionType.Chat,
+    const { profileId, profile } = await this.resolveChatProfile(
+      input.profileId,
       input.entityId
     );
 
@@ -330,8 +350,8 @@ export class AIEngine {
     input: DenyToolCallInput,
     result: unknown
   ): AsyncGenerator<ChatEvent> {
-    const { profile, profileId } = await this.assignments.resolveForAction(
-      ActionType.Chat,
+    const { profile, profileId } = await this.resolveChatProfile(
+      input.profileId,
       input.entityId
     );
 
