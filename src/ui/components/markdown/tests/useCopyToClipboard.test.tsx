@@ -1,11 +1,19 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
+
+let mockPlatformCopy: ((text: string) => void | Promise<void>) | undefined;
+
+vi.mock("../../../providers/PlatformProvider", () => ({
+  usePlatform: () => ({ copyToClipboard: mockPlatformCopy }),
+}));
+
 import useCopyToClipboard from "../hooks/useCopyToClipboard";
 
 describe("useCopyToClipboard", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    mockPlatformCopy = undefined;
     Object.assign(navigator, {
       clipboard: {
         writeText: vi.fn().mockResolvedValue(undefined),
@@ -15,6 +23,20 @@ describe("useCopyToClipboard", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("routes through platform.copyToClipboard when provided", async () => {
+    const platformCopy = vi.fn().mockResolvedValue(undefined);
+    mockPlatformCopy = platformCopy;
+    const { result } = renderHook(() => useCopyToClipboard());
+
+    await act(async () => {
+      result.current.copyToClipboard("hi");
+    });
+
+    expect(platformCopy).toHaveBeenCalledWith("hi");
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    expect(result.current.isCopied).toBe(true);
   });
 
   it("returns isCopied as false initially", () => {

@@ -150,6 +150,16 @@ export interface PlatformAdapter {
   /** Optional fetch wrapper for proxied HTTP requests (e.g. CORS proxy). If null — standard fetch is used */
   fetchProxy?: (url: string, init?: RequestInit) => Promise<Response>;
 
+  /**
+   * Optional host-supplied clipboard writer. When set, all in-chat copy
+   * actions (message "Copy", code block "Copy") delegate to it instead
+   * of calling `navigator.clipboard.writeText` directly — required in
+   * environments where the Clipboard API is unavailable (cross-origin
+   * iframe without `clipboard-write` permission, native WebView host,
+   * etc.). May return a `Promise` or be synchronous.
+   */
+  copyToClipboard?: (text: string) => void | Promise<void>;
+
   /** Cloud accounts connected in the host application. If null — cloud provider features are unavailable */
   clouds: PlatformClouds | null;
 }

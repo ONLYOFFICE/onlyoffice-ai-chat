@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePlatform } from "../../../providers/PlatformProvider";
 
 const useCopyToClipboard = ({
   copiedDuration = 3000,
@@ -6,11 +7,16 @@ const useCopyToClipboard = ({
   copiedDuration?: number;
 } = {}) => {
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const { copyToClipboard: platformCopy } = usePlatform();
 
   const copyToClipboard = (value: string) => {
     if (!value) return;
 
-    navigator.clipboard.writeText(value).then(() => {
+    const writer = platformCopy
+      ? () => Promise.resolve(platformCopy(value))
+      : () => navigator.clipboard.writeText(value);
+
+    writer().then(() => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), copiedDuration);
     });

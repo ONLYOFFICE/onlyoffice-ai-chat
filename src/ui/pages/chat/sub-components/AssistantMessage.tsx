@@ -6,7 +6,7 @@ import {
 } from "@assistant-ui/react";
 import type { ChatErrorPayload } from "../../../../core/services";
 import { motion } from "framer-motion";
-import { isValidElement, memo, useState } from "react";
+import { isValidElement, memo, useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
@@ -182,6 +182,40 @@ const CustomActionButton = ({
   );
 };
 
+const PlatformCopyButton = ({ text }: { text: string }) => {
+  const { IconButton, TooltipIconButton } = useComponents();
+  const { t } = useI18n();
+  const platform = usePlatform();
+  const [copied, setCopied] = useState(false);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+    },
+    []
+  );
+
+  const onClick = useCallback(() => {
+    if (!text || !platform.copyToClipboard) return;
+    void Promise.resolve(platform.copyToClipboard(text)).then(() => {
+      setCopied(true);
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+      resetTimer.current = setTimeout(() => setCopied(false), 3000);
+    });
+  }, [platform, text]);
+
+  return (
+    <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onClick}>
+      {copied ? (
+        <IconButton iconName="checked" size={24} isStroke disabled />
+      ) : (
+        <IconButton iconName="btn-copy" size={24} />
+      )}
+    </TooltipIconButton>
+  );
+};
+
 const AssistantActionBar = () => {
   const { IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
@@ -214,16 +248,20 @@ const AssistantActionBar = () => {
       hidden={isStreamRunning}
       className="col-start-3 row-start-2 ml-3 mt-3 flex gap-[8px]"
     >
-      <ActionBarPrimitive.Copy asChild>
-        <TooltipIconButton tooltip={t("CopyToClipboard")}>
-          <MessagePrimitive.If copied>
-            <IconButton iconName="checked" size={24} isStroke disabled />
-          </MessagePrimitive.If>
-          <MessagePrimitive.If copied={false}>
-            <IconButton iconName="btn-copy" size={24} />
-          </MessagePrimitive.If>
-        </TooltipIconButton>
-      </ActionBarPrimitive.Copy>
+      {platform.copyToClipboard ? (
+        <PlatformCopyButton text={getMessageText(message)} />
+      ) : (
+        <ActionBarPrimitive.Copy asChild>
+          <TooltipIconButton tooltip={t("CopyToClipboard")}>
+            <MessagePrimitive.If copied>
+              <IconButton iconName="checked" size={24} isStroke disabled />
+            </MessagePrimitive.If>
+            <MessagePrimitive.If copied={false}>
+              <IconButton iconName="btn-copy" size={24} />
+            </MessagePrimitive.If>
+          </TooltipIconButton>
+        </ActionBarPrimitive.Copy>
+      )}
       <ActionBarPrimitive.Reload asChild>
         <TooltipIconButton tooltip={t("Regenerate")}>
           <IconButton iconName="btn-reset" size={24} isStroke />

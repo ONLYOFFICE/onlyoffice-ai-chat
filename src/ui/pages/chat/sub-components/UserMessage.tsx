@@ -11,6 +11,7 @@ import { Dialog } from "../../../components/dialog";
 import { FileItem } from "../../../components/file-item";
 import { MarkdownText } from "../../../components/markdown";
 import { cn } from "../../../../shared/utils";
+import { usePlatform } from "../../../providers/PlatformProvider";
 import { useStores } from "../../../store/context";
 import { selectImageBase64 } from "../../../store/create-attachments-store";
 import type { TAttachmentFile } from "../../../../types";
@@ -95,6 +96,7 @@ const UserActionBar = () => {
   const { t } = useI18n();
   const message = useMessage();
   const { usePromptsStore } = useStores();
+  const { copyToClipboard: platformCopy } = usePlatform();
   const addPrompt = usePromptsStore((s) => s.addPrompt);
   const folders = usePromptsStore((s) => s.folders);
   const [isOpen, setIsOpen] = useState(false);
@@ -119,7 +121,10 @@ const UserActionBar = () => {
   const onCopy = useCallback(() => {
     const text = getMessageText();
     if (!text) return;
-    void navigator.clipboard.writeText(text).then(() => {
+    const write = platformCopy
+      ? Promise.resolve(platformCopy(text))
+      : navigator.clipboard.writeText(text);
+    void write.then(() => {
       setCopied(true);
       if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
       copyResetTimer.current = setTimeout(() => setCopied(false), 3000);
@@ -127,7 +132,7 @@ const UserActionBar = () => {
     // getMessageText reads from `message`, captured fresh each render — no
     // dependency array needed beyond the message identity below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [message]);
+  }, [message, platformCopy]);
 
   return (
     <>
