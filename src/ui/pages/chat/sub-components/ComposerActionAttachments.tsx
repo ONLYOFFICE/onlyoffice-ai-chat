@@ -17,6 +17,13 @@ import {
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 
+// Mirrored from `ComposerActionServers.tsx`. The engine resolves these
+// on the fly per-request, so they never appear in the UI's `servers`
+// aggregator — the composer toggle has to flip them through
+// `disabledTools["web-search"]` directly.
+const WEB_SEARCH_TYPE = "web-search";
+const WEB_SEARCH_TOOL_NAMES = ["web_search", "web_crawling"];
+
 const getFileIconName = (type: number): string => {
   if (isPdfForm(type)) return "pdf-form";
   if (isPdf(type)) return "pdf";
@@ -40,9 +47,14 @@ const ComposerActionAttachment = () => {
 
   const addAttachmentFile = useAttachmentsStore((s) => s.addAttachmentFile);
   const addAttachmentImage = useAttachmentsStore((s) => s.addAttachmentImage);
-  const servers = useServersStore((s) => s.servers);
   const changeToolStatus = useServersStore((s) => s.changeToolStatus);
   const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
+  const disabledTools = useServersStore((s) => s.disabledTools);
+
+  const webSearchDisabledNames = disabledTools[WEB_SEARCH_TYPE] ?? [];
+  const webSearchActive =
+    webSearchEnabled &&
+    WEB_SEARCH_TOOL_NAMES.some((n) => !webSearchDisabledNames.includes(n));
   const extendedThinking = useProfilesStore((s) => s.extendedThinking);
   const toggleExtendedThinking = useProfilesStore(
     (s) => s.toggleExtendedThinking
@@ -199,13 +211,17 @@ const ComposerActionAttachment = () => {
     },
     icon: <IconButton iconName="btn-web-search" size={24} disableHover />,
     withToggle: true,
-    toggleChecked: webSearchEnabled,
+    toggleChecked: webSearchActive,
     toggleDisabled: !webSearchEnabled,
     tooltipText: webSearchEnabled ? "" : t("EnableWebSearch"),
-    onToggleChange: () => {
-      const webSearchTool = servers["web-search"]?.[0];
-      if (!webSearchTool) return;
-      changeToolStatus("web-search", webSearchTool.name, !webSearchEnabled);
+    onToggleChange: async () => {
+      if (!webSearchEnabled) return;
+      const next = !webSearchActive;
+      await Promise.all(
+        WEB_SEARCH_TOOL_NAMES.map((name) =>
+          changeToolStatus(WEB_SEARCH_TYPE, name, next)
+        )
+      );
       eventBus.emit("tools-changed");
     },
   });
