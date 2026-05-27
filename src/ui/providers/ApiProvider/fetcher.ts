@@ -121,14 +121,28 @@ export function callRoute<
   }
 
   const route = (config.routes[service] as Record<string, RouteSpec>)[method];
-  const url = `${config.origin}${config.baseUrl}/${route.path}`;
+  let url = `${config.origin}${config.baseUrl}/${route.path}`;
   const init: RequestInit = { method: route.method };
   const allowsBody = route.method !== "GET";
   if (allowsBody && args.length > 0) {
     init.headers = { "Content-Type": "application/json", ...config.headers };
     init.body = JSON.stringify(args.length === 1 ? args[0] : args);
-  } else if (config.headers) {
-    init.headers = { ...config.headers };
+  } else {
+    if (route.method === "GET" && route.params && args.length > 0) {
+      const qs = new URLSearchParams();
+      route.params.forEach((name, i) => {
+        const value = args[i];
+        if (value === undefined || value === null) return;
+        if (typeof value === "string" && value === "") return;
+        qs.set(
+          name,
+          typeof value === "string" ? value : JSON.stringify(value)
+        );
+      });
+      const q = qs.toString();
+      if (q) url += `?${q}`;
+    }
+    if (config.headers) init.headers = { ...config.headers };
   }
 
   if (isStreamingRoute(service, method)) {

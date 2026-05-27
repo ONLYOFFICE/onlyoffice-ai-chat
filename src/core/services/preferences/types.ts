@@ -20,10 +20,18 @@ export const DEFAULT_PREFERENCES_ROUTES: Record<
   PreferencesEngineMethod,
   RouteSpec
 > = {
-  getDeepMode: { method: "GET", path: "preferences/get-deep-mode" },
+  getDeepMode: {
+    method: "GET",
+    path: "preferences/get-deep-mode",
+    params: ["entityId"],
+  },
   setDeepMode: { method: "PUT", path: "preferences/set-deep-mode" },
   clearDeepMode: { method: "DELETE", path: "preferences/clear-deep-mode" },
-  isDeepModeSet: { method: "GET", path: "preferences/is-deep-mode-set" },
+  isDeepModeSet: {
+    method: "GET",
+    path: "preferences/is-deep-mode-set",
+    params: ["entityId"],
+  },
 };
 
 /** Dependencies injected into a {@link PreferencesEngine} instance. */

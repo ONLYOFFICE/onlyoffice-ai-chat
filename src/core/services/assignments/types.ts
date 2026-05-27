@@ -26,15 +26,21 @@ export const DEFAULT_ASSIGNMENTS_ROUTES: Record<
   resolveForAction: {
     method: "GET",
     path: "assignments/resolve-for-action",
+    params: ["actionType", "entityId"],
   },
   tryResolveForAction: {
     method: "GET",
     path: "assignments/try-resolve-for-action",
+    params: ["actionType", "entityId"],
   },
   assign: { method: "PUT", path: "assignments/assign" },
   unassign: { method: "DELETE", path: "assignments/unassign" },
   bulkAssign: { method: "PUT", path: "assignments/bulk-assign" },
-  getAssignment: { method: "GET", path: "assignments/get-assignment" },
+  getAssignment: {
+    method: "GET",
+    path: "assignments/get-assignment",
+    params: ["actionType"],
+  },
   getAllAssignments: {
     method: "GET",
     path: "assignments/get-all-assignments",

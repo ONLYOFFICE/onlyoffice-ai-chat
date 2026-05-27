@@ -2,7 +2,7 @@
 
 > Sources: [`src/core/storage/`](../../../src/core/storage)
 
-`StorageAdapter` is a single object that bundles ten domain-specific
+`StorageAdapter` is a single object that bundles eleven domain-specific
 storage interfaces. The library reads / writes data exclusively
 through these interfaces; the built-in IndexedDB implementation,
 plus any third-party backend (REST, SQLite, in-memory, server-pushed,
@@ -47,7 +47,7 @@ behave correctly after `init` resolves.
 
 ## Entity scoping (`entityId`)
 
-Six of the ten sub-storages accept an optional `entityId` argument
+Six of the eleven sub-storages accept an optional `entityId` argument
 on every method. It is the persistence-layer side of the
 [`WidgetConfig.entityId`](../../../src/widget-config.tsx) "rooms"
 feature: the host binds the widget to an entity (a document, a

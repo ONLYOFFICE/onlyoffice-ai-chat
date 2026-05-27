@@ -150,7 +150,7 @@ These services do **not** own:
 
 ## Construction
 
-All eight services take a single dependency object:
+All nine services take a single dependency object:
 
 ```ts
 import {
@@ -162,6 +162,7 @@ import {
   PromptsEngine,
   WebSearchEngine,
   PreferencesEngine,
+  AttachmentsEngine,
 } from "@/core/services";
 
 const assignments = new AssignmentsEngine({ storage });
@@ -172,6 +173,7 @@ const tools = new ToolsEngine({ storage });
 const prompts = new PromptsEngine({ storage });
 const webSearch = new WebSearchEngine({ storage });
 const preferences = new PreferencesEngine({ storage });
+const attachments = new AttachmentsEngine({ storage });
 ```
 
 Sub-services are optional. If you don't pass them, the parent

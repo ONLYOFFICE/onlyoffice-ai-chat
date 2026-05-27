@@ -26,10 +26,22 @@ export const DEFAULT_THREADS_ROUTES: Record<ThreadsEngineMethod, RouteSpec> = {
   delete: { method: "DELETE", path: "threads/delete" },
   clearMessages: { method: "DELETE", path: "threads/clear-messages" },
   regenerateTitle: { method: "POST", path: "threads/regenerate-title" },
-  list: { method: "GET", path: "threads/list" },
-  readMessages: { method: "GET", path: "threads/read-messages" },
-  getById: { method: "GET", path: "threads/get-by-id" },
-  getMessageById: { method: "GET", path: "threads/get-message-by-id" },
+  list: { method: "GET", path: "threads/list", params: ["entityId"] },
+  readMessages: {
+    method: "GET",
+    path: "threads/read-messages",
+    params: ["threadId", "limit", "startIndex"],
+  },
+  getById: {
+    method: "GET",
+    path: "threads/get-by-id",
+    params: ["threadId"],
+  },
+  getMessageById: {
+    method: "GET",
+    path: "threads/get-message-by-id",
+    params: ["messageId"],
+  },
   updateMessage: { method: "PUT", path: "threads/update-message" },
   deleteMessage: { method: "DELETE", path: "threads/delete-message" },
 };

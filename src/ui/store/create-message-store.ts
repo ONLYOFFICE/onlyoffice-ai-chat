@@ -76,14 +76,29 @@ export function createMessageStore(deps: {
     _abortController: undefined,
 
     fetchPrevMessages: async (threadId: string) => {
+      console.log("[ai-chat] fetchPrevMessages start", threadId);
       set({ _currentThreadId: threadId });
       const fetchedMessages = await api.threads.readMessages(threadId);
       const current = get();
-      if (current._currentThreadId !== threadId) return;
+      if (current._currentThreadId !== threadId) {
+        console.warn("[ai-chat] fetchPrevMessages aborted: claim changed", {
+          expected: threadId,
+          actual: current._currentThreadId,
+        });
+        return;
+      }
+      console.log(
+        "[ai-chat] fetchPrevMessages done",
+        threadId,
+        fetchedMessages.length
+      );
       set({ messages: fetchedMessages });
     },
 
-    claimThreadId: (threadId) => set({ _currentThreadId: threadId }),
+    claimThreadId: (threadId) => {
+      console.log("[ai-chat] claimThreadId", threadId);
+      set({ _currentThreadId: threadId });
+    },
 
     setIsStreamRunning: (value) => set({ isStreamRunning: value }),
     setIsRequestRunning: (value) => set({ isRequestRunning: value }),
@@ -129,6 +144,7 @@ export function createMessageStore(deps: {
     },
 
     clearMessages: () => {
+      console.trace("[ai-chat] clearMessages CALLED");
       set({ messages: [] });
     },
   }));

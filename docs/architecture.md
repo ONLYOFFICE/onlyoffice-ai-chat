@@ -83,7 +83,7 @@ inside `useMemo`, not in `useEffect`) and threaded into:
 
 - `createStores({ keys, ctx, api })` — the Zustand bundle
 - `Servers` — unified tool system
-- All eight engines via the `ApiProvider`
+- All nine engines via the `ApiProvider`
 
 There is no global singleton. Two widgets on the same page have
 two independent `AppContext` instances.
@@ -96,7 +96,7 @@ is called with `allowAlways: true`. Persistence routes through
 
 ## `core/services` — engines
 
-Eight engines orchestrate business logic between actions, providers,
+Nine engines orchestrate business logic between actions, providers,
 and storage. Each takes a single `{ storage, … }` deps object and
 holds no per-call state.
 
@@ -110,6 +110,7 @@ holds no per-call state.
 | `PromptsEngine` | Prompts and folders, scoped uniqueness, import/export |
 | `WebSearchEngine` | Singleton web-search config + live credential check |
 | `PreferencesEngine` | Scalar preferences with default-fallback get |
+| `AttachmentsEngine` | Local-only draft attachments, persists to `storage.attachments` and binds them to messages |
 
 See [`core/services/README.md`](./core/services/README.md) for the
 detailed reference.

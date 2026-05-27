@@ -24,13 +24,14 @@ the [imperative ref](./ui/providers/imperative.md) instead.
 
 ## Constructing engines
 
-All eight engines take a `{ storage, … }` deps object. They hold no
+All nine engines take a `{ storage, … }` deps object. They hold no
 per-call state — re-use is safe.
 
 ```ts
 import {
   AIEngine,
   AssignmentsEngine,
+  AttachmentsEngine,
   PreferencesEngine,
   ProfilesEngine,
   PromptsEngine,
@@ -49,6 +50,7 @@ const tools       = new ToolsEngine({ storage });
 const prompts     = new PromptsEngine({ storage });
 const webSearch   = new WebSearchEngine({ storage });
 const preferences = new PreferencesEngine({ storage });
+const attachments = new AttachmentsEngine({ storage });
 
 const ai = new AIEngine({
   storage,

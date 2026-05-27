@@ -30,15 +30,19 @@ export const DEFAULT_PROMPTS_ROUTES: Record<PromptsEngineMethod, RouteSpec> = {
   update: { method: "PUT", path: "prompts/update" },
   move: { method: "PUT", path: "prompts/move" },
   delete: { method: "DELETE", path: "prompts/delete" },
-  list: { method: "GET", path: "prompts/list" },
+  list: { method: "GET", path: "prompts/list", params: ["folderId"] },
   createFolder: { method: "POST", path: "prompts/create-folder" },
   renameFolder: { method: "PUT", path: "prompts/rename-folder" },
   deleteFolder: { method: "DELETE", path: "prompts/delete-folder" },
   listFolders: { method: "GET", path: "prompts/list-folders" },
   export: { method: "GET", path: "prompts/export" },
   importBundle: { method: "POST", path: "prompts/import-bundle" },
-  getById: { method: "GET", path: "prompts/get-by-id" },
-  getFolderById: { method: "GET", path: "prompts/get-folder-by-id" },
+  getById: { method: "GET", path: "prompts/get-by-id", params: ["id"] },
+  getFolderById: {
+    method: "GET",
+    path: "prompts/get-folder-by-id",
+    params: ["id"],
+  },
 };
 
 /** Dependencies injected into a {@link PromptsEngine} instance. */

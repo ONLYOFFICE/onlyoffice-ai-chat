@@ -121,9 +121,17 @@ export function createThreadsStore(deps: {
     },
 
     onSwitchToNewThread: () => {
+      console.trace("[ai-chat] onSwitchToNewThread CALLED");
       const previousThreadId = get().threadId;
       applyThreadContextFromThread(undefined);
       set({ threadId: "" });
+      // Reset the message list synchronously: in headless setups
+      // (custom router that mounts/unmounts ChatPage on page change)
+      // there is no `useMessages` instance subscribed between switches,
+      // so the reactive effect cannot be relied on.
+      const messageStore = useMessageStore.getState();
+      messageStore.claimThreadId("");
+      messageStore.clearMessages();
       callbacksManager.emit("onThreadsUpdated", {
         kind: "switched",
         threadId: "",
@@ -132,10 +140,20 @@ export function createThreadsStore(deps: {
     },
 
     onSwitchToThread: (id) => {
+      console.log("[ai-chat] onSwitchToThread", id);
       const previousThreadId = get().threadId;
       const thread = get().threads.find((t) => t.threadId === id);
       applyThreadContextFromThread(thread);
       set({ threadId: id });
+      // Load the thread's messages directly. The `useMessages` effect
+      // also reacts to `threadId` changes, but it only runs when the
+      // chat page is mounted — custom routers may unmount and remount
+      // ChatPage on every page switch, which makes purely-reactive
+      // loading miss the transition. Calling `fetchPrevMessages` here
+      // synchronously sets `_currentThreadId`, so the effect — if it
+      // runs after the remount — short-circuits via the claim check
+      // and we don't double-fetch.
+      void useMessageStore.getState().fetchPrevMessages(id);
       callbacksManager.emit("onThreadsUpdated", {
         kind: "switched",
         threadId: id,

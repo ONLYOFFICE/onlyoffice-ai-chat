@@ -27,9 +27,9 @@ documentation tree:
 
 | Doc | Topic |
 | --- | --- |
-| [`core/services/README.md`](./core/services/README.md) | Eight engine classes — `AIEngine`, `ProfilesEngine`, `AssignmentsEngine`, `ThreadsEngine`, `ToolsEngine`, `PromptsEngine`, `WebSearchEngine`, `PreferencesEngine` |
+| [`core/services/README.md`](./core/services/README.md) | Nine engine classes — `AIEngine`, `ProfilesEngine`, `AssignmentsEngine`, `ThreadsEngine`, `ToolsEngine`, `PromptsEngine`, `WebSearchEngine`, `PreferencesEngine`, `AttachmentsEngine` |
 | [`core/providers/README.md`](./core/providers/README.md) | `AbstractBaseProvider`, registry, 16 built-in providers |
-| [`core/storage/README.md`](./core/storage/README.md) | `StorageAdapter` and the ten domain sub-storages |
+| [`core/storage/README.md`](./core/storage/README.md) | `StorageAdapter` and the eleven domain sub-storages |
 | [`core/actions/README.md`](./core/actions/README.md) | One-shot actions: chat, summarization, translation, OCR, etc. |
 | [`core/middleware/README.md`](./core/middleware/README.md) | `ChatMiddleware` pipeline + `MiddlewareRunner` |
 
@@ -53,7 +53,7 @@ documentation tree:
 | [`ui/providers/api.md`](./ui/providers/api.md) | `ApiProvider` — in-process or remote engine routing |
 | [`ui/providers/components.md`](./ui/providers/components.md) | Override built-in UI primitives |
 | [`ui/providers/images.md`](./ui/providers/images.md) | Override icons / images |
-| [`ui/providers/locales.md`](./ui/providers/locales.md) | i18n: 43 bundled locales, custom translations |
+| [`ui/providers/locales.md`](./ui/providers/locales.md) | i18n: 41 bundled locales, custom translations |
 | [`ui/providers/theme.md`](./ui/providers/theme.md) | Built-in themes, custom tokens, dark/light resolution |
 
 ## Public API

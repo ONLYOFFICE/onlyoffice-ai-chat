@@ -22,18 +22,42 @@ export const DEFAULT_TOOLS_ROUTES: Record<ToolsEngineMethod, RouteSpec> = {
     method: "DELETE",
     path: "tools/remove-custom-server",
   },
-  getCustomServer: { method: "GET", path: "tools/get-custom-server" },
-  listCustomServers: { method: "GET", path: "tools/list-custom-servers" },
+  getCustomServer: {
+    method: "GET",
+    path: "tools/get-custom-server",
+    params: ["name", "entityId"],
+  },
+  listCustomServers: {
+    method: "GET",
+    path: "tools/list-custom-servers",
+    params: ["entityId"],
+  },
   replaceAllCustomServers: {
     method: "PUT",
     path: "tools/replace-all-custom-servers",
   },
   setDisabled: { method: "PUT", path: "tools/set-disabled" },
-  getDisabled: { method: "GET", path: "tools/get-disabled" },
-  isToolDisabled: { method: "GET", path: "tools/is-tool-disabled" },
+  getDisabled: {
+    method: "GET",
+    path: "tools/get-disabled",
+    params: ["entityId"],
+  },
+  isToolDisabled: {
+    method: "GET",
+    path: "tools/is-tool-disabled",
+    params: ["serverType", "toolName", "entityId"],
+  },
   setAllowAlways: { method: "PUT", path: "tools/set-allow-always" },
-  getAllowAlways: { method: "GET", path: "tools/get-allow-always" },
-  isAllowAlways: { method: "GET", path: "tools/is-allow-always" },
+  getAllowAlways: {
+    method: "GET",
+    path: "tools/get-allow-always",
+    params: ["entityId"],
+  },
+  isAllowAlways: {
+    method: "GET",
+    path: "tools/is-allow-always",
+    params: ["serverType", "toolName", "entityId"],
+  },
 };
 
 /** Dependencies injected into a {@link ToolsEngine} instance. */

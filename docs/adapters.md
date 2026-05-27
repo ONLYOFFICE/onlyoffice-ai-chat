@@ -52,9 +52,9 @@ function namespaced(prefix: string): SettingsAdapter {
 
 ## `StorageAdapter`
 
-Aggregates ten domain-specific sub-storages plus lifecycle methods.
-All data methods are `Promise`-based so any backend (IndexedDB,
-SQLite, REST) plugs in identically.
+Aggregates eleven domain-specific sub-storages plus lifecycle
+methods. All data methods are `Promise`-based so any backend
+(IndexedDB, SQLite, REST) plugs in identically.
 
 ```ts
 interface StorageAdapter {
@@ -68,6 +68,7 @@ interface StorageAdapter {
   mcpServers:     McpServersStorage;
   toolPrefs:      ToolPrefsStorage;
   webSearch:      WebSearchStorage;
+  attachments:    AttachmentsStorage;
 
   init():  Promise<void>;
   close(): Promise<void>;
@@ -86,6 +87,7 @@ interface StorageAdapter {
 | `mcpServers` | Custom MCP server transport config |
 | `toolPrefs` | Per-tool disabled / auto-approve flags |
 | `webSearch` | Singleton web-search provider config |
+| `attachments` | User-message attachments (files + images) |
 
 `init()` runs once before any other method (open DB, run
 migrations). `close()` runs on widget unmount.

@@ -9,4 +9,11 @@ export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export type RouteSpec = {
   method: HttpMethod;
   path: string;
+  /**
+   * Names of positional engine-method arguments, in order. For GET
+   * routes the fetcher serializes `args[i]` as `params[i]=value` in
+   * the URL query string. Ignored for non-GET methods (those use a
+   * JSON body).
+   */
+  params?: readonly string[];
 };

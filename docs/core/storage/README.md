@@ -2,8 +2,7 @@
 
 This folder contains **type-only** contracts. The library defines
 *what* persistence looks like; concrete backends (IndexedDB, REST,
-in-memory, …) live outside `core/`. The built-in IndexedDB
-implementation is at [`src/storage/`](../../../src/storage/).
+in-memory, …) live outside `core/` and are supplied by the host.
 
 | Document                          | Topic |
 | --------------------------------- | ----- |
@@ -27,10 +26,9 @@ StorageAdapter
 └── lifecycle      init() / close()
 ```
 
-The adapter is created by the host, registered through React
-context (`StorageProvider`), and consumed everywhere via
-`useStorage()` or via dependency injection into `core/services/`
-and the higher-level `src/services/` layer.
+The adapter is created by the host, supplied to the widget via the
+`storage` prop, and consumed by dependency injection into
+`core/services/` engines.
 
 ### Entity scoping (`entityId`)
 

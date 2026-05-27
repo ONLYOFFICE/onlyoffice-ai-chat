@@ -8,7 +8,7 @@ import {
 } from "@assistant-ui/react";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { motion } from "framer-motion";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useStores } from "../../store/context";
@@ -125,7 +125,7 @@ const ThreadInner = () => {
 };
 
 const Thread = () => {
-  const { useMessageStore, useProfilesStore } = useStores();
+  const { useMessageStore, useProfilesStore, useRouter } = useStores();
   useEnsureProfiles();
   useEnsureThreads();
   useEnsurePrompts();
@@ -134,7 +134,25 @@ const Thread = () => {
   const stopMessage = useMessageStore((s) => s.stopMessage);
   const profilesInitialized = useProfilesStore((s) => s.initialized);
   const hasProfiles = useProfilesStore((s) => s.profiles.length > 0);
+  const currentPage = useRouter((s) => s.currentPage);
+  const setCurrentPage = useRouter((s) => s.setCurrentPage);
   const { onNew, regenerate } = useMessages({ isReady: true });
+
+  // Keep `router.currentPage` in sync with what the Thread actually
+  // renders. When profiles are missing, this component shows the
+  // initial-setup screen; headless consumers expect `currentPage` to
+  // reflect that. When the user finishes setup and profiles appear,
+  // flip back to "chat" — but only if we owned the "initial-setup"
+  // value, never override an explicit navigation to "settings" /
+  // "history".
+  useEffect(() => {
+    if (!profilesInitialized) return;
+    if (!hasProfiles && currentPage === "chat") {
+      setCurrentPage("initial-setup");
+    } else if (hasProfiles && currentPage === "initial-setup") {
+      setCurrentPage("chat");
+    }
+  }, [profilesInitialized, hasProfiles, currentPage, setCurrentPage]);
 
   const onCancel = useCallback(async () => {
     stopMessage();

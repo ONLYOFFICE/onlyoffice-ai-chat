@@ -21,8 +21,10 @@ function makeDeps(initialThreads: Thread[] = []) {
   } as unknown as ProfilesStore;
 
   const clearMessages = vi.fn();
+  const claimThreadId = vi.fn();
+  const fetchPrevMessages = vi.fn().mockResolvedValue(undefined);
   const useMessageStore = {
-    getState: () => ({ clearMessages }),
+    getState: () => ({ clearMessages, claimThreadId, fetchPrevMessages }),
   } as unknown as MessageStore;
 
   const api = {
@@ -51,6 +53,8 @@ function makeDeps(initialThreads: Thread[] = []) {
     callbacksManager,
     profilesGetState,
     clearMessages,
+    claimThreadId,
+    fetchPrevMessages,
     saveAsFile,
   };
 }
@@ -138,24 +142,27 @@ describe("createThreadsStore", () => {
     expect(s.getState().threads[0].profileId).toBe("p2");
   });
 
-  it("onSwitchToNewThread clears threadId and emits", () => {
+  it("onSwitchToNewThread clears threadId, resets messages, and emits", () => {
     const deps = makeDeps();
     const s = createThreadsStore(deps);
     s.setState({ threadId: "a" });
     s.getState().onSwitchToNewThread();
     expect(s.getState().threadId).toBe("");
+    expect(deps.claimThreadId).toHaveBeenCalledWith("");
+    expect(deps.clearMessages).toHaveBeenCalled();
     expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
       "onThreadsUpdated",
       { kind: "switched", threadId: "", previousThreadId: "a" }
     );
   });
 
-  it("onSwitchToThread sets threadId and emits", () => {
+  it("onSwitchToThread sets threadId, loads messages, and emits", () => {
     const deps = makeDeps();
     const s = createThreadsStore(deps);
     s.setState({ threads: [mkThread("a")] });
     s.getState().onSwitchToThread("a");
     expect(s.getState().threadId).toBe("a");
+    expect(deps.fetchPrevMessages).toHaveBeenCalledWith("a");
     expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
       "onThreadsUpdated",
       { kind: "switched", threadId: "a", previousThreadId: "" }

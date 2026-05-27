@@ -347,30 +347,39 @@ Import only what you need for better tree-shaking:
 import { AIChatWidget } from "@onlyoffice/ai-chat";
 import { Provider } from "@onlyoffice/ai-chat/providers";
 import { createStores } from "@onlyoffice/ai-chat/store";
-import { ChatEngine } from "@onlyoffice/ai-chat/services";
+import { AIEngine } from "@onlyoffice/ai-chat/services";
 import type { Thread, Profile } from "@onlyoffice/ai-chat/types";
 import { isDjVu, isPdf } from "@onlyoffice/ai-chat/utils";
 ```
 
-Available subpaths: `/providers`, `/services`, `/store`, `/storage`, `/settings`, `/platform`, `/tools`, `/events`, `/middleware`, `/i18n`, `/theme`, `/components`, `/images`, `/pages`, `/hooks`, `/types`, `/utils`.
+Available subpaths: `/core`, `/providers`, `/services`, `/storage`, `/middleware`, `/store`, `/tools`, `/events`, `/hooks`, `/pages`, `/platform`, `/imperative`, `/types`, `/styles`, `/styles/themes`.
 
 ## Documentation
 
 | Guide | Description |
 |-------|-------------|
+| [Documentation index](docs/README.md) | Full documentation tree |
 | [Getting Started](docs/getting-started.md) | Step-by-step setup with Vite, Next.js |
-| [Adapters](docs/adapters.md) | StorageAdapter, SettingsAdapter, PlatformAdapter implementation |
-| [Providers](docs/providers.md) | Built-in providers, custom provider tutorial |
-| [Tools & MCP](docs/tools-and-mcp.md) | Host tools, web search, MCP servers |
-| [Events & Middleware](docs/events-and-middleware.md) | Event catalog, middleware pipeline |
-| [Theming](docs/theming.md) | CSS variables, custom themes |
-| [I18n](docs/i18n.md) | Locales, custom translations |
-| [Component Overrides](docs/component-overrides.md) | Replace built-in UI components |
-| [Imperative API](docs/imperative-api.md) | Ref methods reference |
-| [Pages](docs/pages.md) | Standalone page components |
-| [Hooks](docs/hooks.md) | Runtime hooks (`useMessages`, `useProfiles`, `useChatDropAttachments`, …) |
-| [Headless Usage](docs/headless-usage.md) | Manual AppContext, custom UI |
-| [Architecture](docs/architecture.md) | Data flow, dependency injection |
+| [Architecture](docs/architecture.md) | Adapter pattern, `AppContext`, layer cake, data flow |
+| [Adapters](docs/adapters.md) | `StorageAdapter`, `SettingsAdapter`, `PlatformAdapter` contracts |
+| [Headless Usage](docs/headless-usage.md) | Use `core/` engines without the widget UI |
+| [Core services](docs/core/services/README.md) | Nine engine classes — `AIEngine`, `ProfilesEngine`, … |
+| [Core providers](docs/core/providers/README.md) | `AbstractBaseProvider`, registry, 16 built-in providers |
+| [Core storage](docs/core/storage/README.md) | `StorageAdapter` and the eleven domain sub-storages |
+| [Core actions](docs/core/actions/README.md) | One-shot actions (chat, summarization, translation, OCR, …) |
+| [Core middleware](docs/core/middleware/README.md) | `ChatMiddleware` pipeline + `MiddlewareRunner` |
+| [Shared primitives](docs/shared/README.md) | Provider/model/capability/action types, errors, abort, logger |
+| [UI overview](docs/ui/README.md) | React layer index |
+| [UI hooks](docs/ui/hooks.md) | `useMessages`, `useProfiles`, `useServers`, `useThread`, helpers |
+| [UI pages](docs/ui/pages.md) | The seven exported page components |
+| [UI tools](docs/ui/tools.md) | `ToolsProvider`, `Servers`, `HostToolGroup`, MCP transport |
+| [Imperative API](docs/ui/providers/imperative.md) | `AIChatWidgetRef` — programmatic widget control |
+| [Events](docs/ui/providers/events.md) | `ChatCallbacks`, `ChatEventBus`, `CallbacksManager` |
+| [Theming](docs/ui/providers/theme.md) | Built-in themes, custom tokens, dark/light resolution |
+| [Locales](docs/ui/providers/locales.md) | i18n: 41 bundled locales, custom translations |
+| [Component overrides](docs/ui/providers/components.md) | Override built-in UI primitives |
+| [Image overrides](docs/ui/providers/images.md) | Override icons / images |
+| [Api provider](docs/ui/providers/api.md) | `ApiProvider` — in-process or remote engine routing |
 
 ## License
 

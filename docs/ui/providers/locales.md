@@ -1,6 +1,6 @@
 # `I18nProvider` (locales)
 
-The library ships 43 bundled locales powered by **i18next**. Locale
+The library ships 41 bundled locales powered by **i18next**. Locale
 bundles are lazy-loaded — only the active locale and English (the
 fallback) are fetched at runtime. Custom strings, custom languages,
 and live locale switching are all supported.

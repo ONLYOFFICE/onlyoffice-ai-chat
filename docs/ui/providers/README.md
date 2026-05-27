@@ -12,7 +12,7 @@ Each can be used inside `AIChatWidget` (via props) or standalone
 | `EventsProvider` | [`events.md`](./events.md) | Host-facing `ChatCallbacks`, internal `ChatEventBus` |
 | `ImagesProvider` | [`images.md`](./images.md) | Icon / image overrides |
 | `ImperativeProvider` | [`imperative.md`](./imperative.md) | `AIChatWidgetRef` — programmatic widget control |
-| `LocalesProvider` (`I18nProvider`) | [`locales.md`](./locales.md) | i18n: 43 bundled locales, custom strings |
+| `LocalesProvider` (`I18nProvider`) | [`locales.md`](./locales.md) | i18n: 41 bundled locales, custom strings |
 | `PlatformProvider` | — (see [`adapters.md`](../../adapters.md#platformadapter)) | Host-supplied `PlatformAdapter` (file/process/clouds/env) |
 | `ThemeProvider` | [`theme.md`](./theme.md) | Themes, CSS-variable tokens, dark/light resolution |
 

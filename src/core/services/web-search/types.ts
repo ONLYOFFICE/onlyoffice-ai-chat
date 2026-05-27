@@ -21,8 +21,16 @@ export const DEFAULT_WEB_SEARCH_ROUTES: Record<
   WebSearchEngineMethod,
   RouteSpec
 > = {
-  getActiveConfig: { method: "GET", path: "web-search/get-active-config" },
-  isConfigured: { method: "GET", path: "web-search/is-configured" },
+  getActiveConfig: {
+    method: "GET",
+    path: "web-search/get-active-config",
+    params: ["entityId"],
+  },
+  isConfigured: {
+    method: "GET",
+    path: "web-search/is-configured",
+    params: ["entityId"],
+  },
   testConnection: { method: "POST", path: "web-search/test-connection" },
   configure: { method: "PUT", path: "web-search/configure" },
   setActiveConfig: { method: "PUT", path: "web-search/set-active-config" },

@@ -6,22 +6,38 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
+const messageState = {
+  messages: [],
+  stopMessage: vi.fn(),
+  isStreamRunning: false,
+  isRequestRunning: false,
+  isToolPending: false,
+};
+const profilesState = {
+  profiles: [{ id: "p1", name: "Test" }],
+  initialized: true,
+};
+const routerState = {
+  currentPage: "chat" as const,
+  setCurrentPage: vi.fn(),
+};
+const attachmentsState = {
+  addAttachmentFile: vi.fn(),
+  addAttachmentImage: vi.fn(),
+};
+
+const makeStore = <T,>(state: T) => {
+  const hook = (selector?: (s: T) => unknown) =>
+    selector ? selector(state) : state;
+  return hook;
+};
+
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useMessageStore: () => ({
-      messages: [],
-      stopMessage: vi.fn(),
-      isStreamRunning: false,
-      isRequestRunning: false,
-      isToolPending: false,
-    }),
-    useProfilesStore: () => ({
-      profiles: [{ id: "p1", name: "Test" }],
-    }),
-    useAttachmentsStore: () => ({
-      addAttachmentFile: vi.fn(),
-      addAttachmentImage: vi.fn(),
-    }),
+    useMessageStore: makeStore(messageState),
+    useProfilesStore: makeStore(profilesState),
+    useRouter: makeStore(routerState),
+    useAttachmentsStore: makeStore(attachmentsState),
   }),
 }));
 
