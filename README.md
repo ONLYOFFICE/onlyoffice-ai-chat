@@ -267,6 +267,8 @@ Runtime toggles to adjust built-in UI. Pass directly as `AIChatWidget` props:
 | `isSettingsActive` | `boolean` | Force the header settings button into its active (highlighted) state. When `undefined`, falls back to `currentPage === "settings"`. |
 | `assistantActions` | `AssistantAction[]` | Extra buttons rendered under every assistant message, appended after the built-in Copy and Save. Each `onClick` receives `{ text, markdown, message }` of the assistant reply. Hidden during streaming and on error states (same as the built-ins). |
 | `composerActions` | `ComposerAction[]` | Extra items appended to the composer's `+` (attachments) dropdown, rendered above the built-in Web Search / Extended Thinking block. Each item is `{ id, text, icon?, onClick }` — onClick-only (no toggles or submenus). |
+| `onProfileImportClick` | `() => Promise<Partial<ModelFormValues> \| null \| void>` | Handler for the "Import" link in the add-profile card. The host owns the entire import flow (file picker, parsing, `registerProvider`, etc.). Returning a `Partial<ModelFormValues>` pre-fills the form (provider/baseUrl/apiKey/model/profileName); `null`/`undefined` leaves the form untouched. When `provider`+`baseUrl` are returned, the model list is refreshed automatically and any imported `model` is preserved if available. |
+| `onDownloadTemplate` | `() => void` | Handler for the "Download template" link in the add-profile card's info tooltip. Used by hosts that ship a downloadable JSON / config template for custom providers. The widget calls `preventDefault`; everything else is the host's responsibility. |
 
 ```tsx
 <AIChatWidget

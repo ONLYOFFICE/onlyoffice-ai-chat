@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo } from "react";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
+import type { ModelFormValues } from "./ui/components/model-config-cards/sub-components/ModelConfigForm";
 
 export interface WidgetConfig {
   /**
@@ -66,11 +67,38 @@ export interface WidgetConfig {
    */
   composerActions?: ComposerAction[];
   /**
-   * Handler for the "Import" link in the add-profile card. When provided,
-   * the host fully owns the click — the widget only calls `preventDefault`
-   * on the underlying anchor. When omitted, the link remains inert.
+   * Handler for the "Import" link in the add-profile card. The host
+   * owns the entire import flow (file picker, parsing, registering a
+   * custom provider via `registerProvider`, etc.); the widget only
+   * calls `preventDefault` on the anchor before invoking the callback.
+   *
+   * Return value (optional, awaited):
+   * - `Partial<ModelFormValues>` — fields to pre-fill in the
+   *   add-profile form. Provided fields are merged onto the current
+   *   values; absent fields are left untouched. When `provider` and
+   *   `baseUrl` are present, the model list is refreshed automatically
+   *   and any imported `model` is preserved if it appears in that
+   *   list.
+   * - `null` / `undefined` / no return — leave the form as is (use
+   *   this on cancel or error).
+   *
+   * Synchronous `() => void` handlers from older hosts remain valid
+   * — they fall under the "no return" case.
    */
-  onProfileImportClick?: () => void;
+  onProfileImportClick?: () =>
+    | void
+    | Partial<ModelFormValues>
+    | null
+    | Promise<Partial<ModelFormValues> | null | void>;
+  /**
+   * Handler for the "Download template" link shown in the add-profile
+   * card's info tooltip. Used by hosts that ship a downloadable JSON /
+   * config template for custom providers. The widget calls
+   * `preventDefault` on the underlying anchor; everything else (fetch,
+   * save dialog, etc.) is the host's responsibility. When omitted, the
+   * link remains inert.
+   */
+  onDownloadTemplate?: () => void;
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});

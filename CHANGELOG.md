@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.39
+
+- New `WidgetConfig.onDownloadTemplate?: () => void` callback. Wired to the "Download template" link in the add-profile card's info tooltip; without it the link stays inert. Hosts use it to serve a downloadable JSON template for their custom providers.
+- `WidgetConfig.onProfileImportClick` is now optionally async and may return a `Partial<ModelFormValues>` to pre-fill the add-profile form after a successful import. Returning `null` / `undefined` / nothing (or a sync `() => void` — backward compatible) leaves the form untouched. When `provider` and `baseUrl` are returned, the model list is refreshed automatically and any imported `model` is preserved if it appears in the upstream list.
+
+```ts
+<AIChatWidget
+  onProfileImportClick={async () => {
+    const data = await pickAndParseTemplate();
+    if (!data) return null;
+    registerProvider(data.providerType, data.providerClass);
+    return {
+      provider: data.providerType,
+      baseUrl: data.baseUrl,
+      apiKey: data.apiKey,
+      model: data.modelId,
+      profileName: data.suggestedName,
+    };
+  }}
+  onDownloadTemplate={() => host.downloadFile("custom-provider-template.json")}
+/>
+```
+
 ## 0.4.38
 
 - New built-in provider `"external"`. It has no SDK and no transport of its own — every HTTP call is delegated to a new `PlatformAdapter.externalFetch` hook, while response parsing is reused from an existing provider selected via the new `Profile.basedOn` field. The widget bridges `platform.externalFetch` into the engine alongside `fetchProxy`; the engine wires it into `ProviderCredentials.fetch` for every request from a `providerType: "external"` profile (independent of the `useProxy` flag). Currently only `basedOn: "openai"` is implemented — other reserved values throw a clear error at request time. Hosts use this when they want to own authentication / routing / the network call entirely, but still reuse the library's stream and tool-call parsing. `basedOn` lives in the type only — no UI changes.

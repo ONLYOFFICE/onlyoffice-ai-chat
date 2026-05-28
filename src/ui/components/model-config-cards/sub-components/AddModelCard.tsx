@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
@@ -34,7 +35,7 @@ export const AddModelCard = ({
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const { addProfile } = useProfilesStore();
-  const { onProfileImportClick } = useWidgetConfig();
+  const { onProfileImportClick, onDownloadTemplate } = useWidgetConfig();
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
   const {
@@ -46,9 +47,31 @@ export const AddModelCard = ({
     errors,
     setErrors,
     isFormValid,
+    fetchModels,
     handleChange,
     isOnlyofficeAISetupIncomplete,
   } = useModelForm(INITIAL_VALUES);
+
+  const handleImportClick = async (e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (!onProfileImportClick) return;
+    const result = await onProfileImportClick();
+    if (!result) return;
+    const merged = { ...values, ...result };
+    setValues(merged);
+    setErrors({});
+    if (merged.provider && merged.baseUrl) {
+      fetchModels(
+        merged.provider as ProviderType,
+        merged.apiKey,
+        merged.baseUrl,
+        {
+          keepModelIfExists: true,
+          isCloudProvider: merged.isCloudProvider,
+        }
+      );
+    }
+  };
 
   const handleAdd = async () => {
     setIsLoading(true);
@@ -83,14 +106,7 @@ export const AddModelCard = ({
       <div className="flex flex-row items-center gap-[4px]">
         <Link
           href="#"
-          onClick={
-            onProfileImportClick
-              ? (e) => {
-                  e.preventDefault();
-                  onProfileImportClick();
-                }
-              : undefined
-          }
+          onClick={onProfileImportClick ? handleImportClick : undefined}
         >
           {t("Import")}
         </Link>
@@ -118,6 +134,14 @@ export const AddModelCard = ({
                 variant="primary"
                 href="#"
                 className="text-[12px] leading-[16px]"
+                onClick={
+                  onDownloadTemplate
+                    ? (e) => {
+                        e.preventDefault();
+                        onDownloadTemplate();
+                      }
+                    : undefined
+                }
               >
                 {t("DownloadTemplate")}
               </Link>
