@@ -2,7 +2,7 @@
 
 ## Project
 
-**@onlyoffice/ai-chat** — headless AI chat widget library with 16 built-in providers, MCP tool support, and pluggable adapters.
+**@onlyoffice/ai-chat** — headless AI chat widget library with 17 built-in providers, MCP tool support, and pluggable adapters.
 
 ## Commands
 
@@ -27,7 +27,7 @@ React 18/19, TypeScript 5.8, Vite 7, Zustand 5, Radix UI, TailwindCSS 4, Framer 
 ```
 src/
   core/                      Pure business logic — no React, no browser-only APIs
-    providers/               16 built-in AI providers + AbstractBaseProvider + registry
+    providers/               17 built-in AI providers + AbstractBaseProvider + registry
     services/                Engine classes (orchestration layer, named *Engine)
     storage/                 StorageAdapter contract + eleven domain sub-storages
     actions/                 One-shot actions (chat, summarization, translation, OCR, …)
@@ -58,7 +58,7 @@ src/
 ## Architecture
 
 - **Adapter pattern**: `StorageAdapter`, `SettingsAdapter`, `PlatformAdapter` — all injected via React context, no direct implementation imports.
-- **Provider system**: `AbstractBaseProvider<TOOL, MESSAGE, CLIENT>` base class. 16 concrete implementations + dynamic registry (`registerProvider` / `unregisterProvider`). Streaming via `AsyncGenerator`.
+- **Provider system**: `AbstractBaseProvider<TOOL, MESSAGE, CLIENT>` base class. 17 concrete implementations + dynamic registry (`registerProvider` / `unregisterProvider`). Streaming via `AsyncGenerator`.
 - **Services layer (engines)**: Zero UI dependencies. Nine engine classes orchestrate domain logic — `AIEngine` (streaming chat, one-shot actions, custom prompts), `ProfilesEngine`, `AssignmentsEngine`, `ThreadsEngine`, `ToolsEngine`, `PromptsEngine`, `WebSearchEngine`, `PreferencesEngine`, `AttachmentsEngine`.
 - **Tool system**: Two sources unified by the `Servers` class — `HostToolSource` (host-provided tools) and `CustomServers` (MCP via JSON-RPC 2.0 over HTTP/STDIO). Web search is its own engine (`WebSearchEngine`, Exa API).
 - **Capabilities bitmask**: `CapabilitiesUI` (Chat, Image, Embeddings, Audio, Vision, Tools) filters profiles per `ActionType` (Summarization, Translation, OCR, …).

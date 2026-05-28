@@ -1,7 +1,7 @@
 import type { BuiltinProviderType } from "./builtin-provider-type";
 
 /**
- * Provider type identifier. Accepts all 16 built-in types with autocomplete,
+ * Provider type identifier. Accepts all 17 built-in types with autocomplete,
  * plus any custom `string` for dynamically registered providers.
  *
  * @example

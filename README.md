@@ -1,6 +1,6 @@
 # @onlyoffice/ai-chat
 
-Headless AI chat widget library for React with 16 built-in providers, MCP tool support, 41 locales, 7 themes, and pluggable adapters.
+Headless AI chat widget library for React with 17 built-in providers, MCP tool support, 41 locales, 7 themes, and pluggable adapters.
 
 ## Features
 
@@ -136,7 +136,7 @@ See [Adapters](docs/adapters.md) for full implementation examples.
 
 ## Providers
 
-16 built-in AI providers, plus runtime registration of custom ones:
+17 built-in AI providers, plus runtime registration of custom ones:
 
 ```ts
 import { registerProvider } from "@onlyoffice/ai-chat/providers";
@@ -364,7 +364,7 @@ Available subpaths: `/core`, `/providers`, `/services`, `/storage`, `/middleware
 | [Adapters](docs/adapters.md) | `StorageAdapter`, `SettingsAdapter`, `PlatformAdapter` contracts |
 | [Headless Usage](docs/headless-usage.md) | Use `core/` engines without the widget UI |
 | [Core services](docs/core/services/README.md) | Nine engine classes — `AIEngine`, `ProfilesEngine`, … |
-| [Core providers](docs/core/providers/README.md) | `AbstractBaseProvider`, registry, 16 built-in providers |
+| [Core providers](docs/core/providers/README.md) | `AbstractBaseProvider`, registry, 17 built-in providers |
 | [Core storage](docs/core/storage/README.md) | `StorageAdapter` and the eleven domain sub-storages |
 | [Core actions](docs/core/actions/README.md) | One-shot actions (chat, summarization, translation, OCR, …) |
 | [Core middleware](docs/core/middleware/README.md) | `ChatMiddleware` pipeline + `MiddlewareRunner` |

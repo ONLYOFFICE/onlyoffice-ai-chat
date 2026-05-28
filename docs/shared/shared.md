@@ -143,7 +143,7 @@ host integrations to pass connection info into the widget.
 type ProviderType = BuiltinProviderType | (string & {});
 ```
 
-The `(string & {})` trick keeps autocomplete on the 16 built-in
+The `(string & {})` trick keeps autocomplete on the 17 built-in
 strings while still permitting custom values for runtime-registered
 providers. A plain `BuiltinProviderType | string` would collapse
 to `string` and lose the autocomplete; the empty-object intersection

@@ -1,5 +1,9 @@
 /**
- * Union of all 16 built-in AI provider type identifiers.
+ * Union of all 17 built-in AI provider type identifiers.
+ *
+ * The `"external"` provider has no built-in transport — it delegates
+ * every HTTP request to `PlatformAdapter.externalFetch` and parses the
+ * response with the inner provider selected by `Profile.basedOn`.
  *
  * @see {@link ProviderType} for the full type that also accepts custom strings.
  */
@@ -19,4 +23,5 @@ export type BuiltinProviderType =
   | "zhipu"
   | "stabilityai"
   | "gpt4all"
-  | "onlyoffice";
+  | "onlyoffice"
+  | "external";

@@ -65,7 +65,11 @@ export type Thread = {
 };
 
 /**
- * Union of all 16 built-in AI provider type identifiers.
+ * Union of all 17 built-in AI provider type identifiers.
+ *
+ * The `"external"` provider has no built-in transport — it delegates
+ * every HTTP request to `PlatformAdapter.externalFetch` and parses the
+ * response with the inner provider selected by `Profile.basedOn`.
  *
  * @see {@link ProviderType} for the full type that also accepts custom strings.
  */
@@ -85,10 +89,11 @@ export type BuiltinProviderType =
   | "zhipu"
   | "stabilityai"
   | "gpt4all"
-  | "onlyoffice";
+  | "onlyoffice"
+  | "external";
 
 /**
- * Provider type identifier. Accepts all 16 built-in types with autocomplete,
+ * Provider type identifier. Accepts all 17 built-in types with autocomplete,
  * plus any custom `string` for dynamically registered providers.
  *
  * @example
@@ -322,8 +327,20 @@ export type Profile = {
   /** User-defined profile display name. */
   name: string;
 
-  /** Provider type for this profile. */
+  /**
+   * Provider type for this profile. Use `"external"` to delegate all
+   * HTTP transport to `PlatformAdapter.externalFetch` while reusing an
+   * existing provider's response parser — see {@link Profile.basedOn}.
+   */
   providerType: ProviderType;
+
+  /**
+   * Selects the response-format parser used by the `"external"`
+   * provider. Ignored for any other `providerType`. Currently only
+   * `"openai"` is implemented — other values are reserved and throw at
+   * request time.
+   */
+  basedOn?: BuiltinProviderType;
 
   /** Base URL of the provider API. */
   baseUrl: string;

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.4.38
+
+- New built-in provider `"external"`. It has no SDK and no transport of its own — every HTTP call is delegated to a new `PlatformAdapter.externalFetch` hook, while response parsing is reused from an existing provider selected via the new `Profile.basedOn` field. The widget bridges `platform.externalFetch` into the engine alongside `fetchProxy`; the engine wires it into `ProviderCredentials.fetch` for every request from a `providerType: "external"` profile (independent of the `useProxy` flag). Currently only `basedOn: "openai"` is implemented — other reserved values throw a clear error at request time. Hosts use this when they want to own authentication / routing / the network call entirely, but still reuse the library's stream and tool-call parsing. `basedOn` lives in the type only — no UI changes.
+
+```ts
+const platform: PlatformAdapter = {
+  // ...
+  externalFetch: async (url, init) => myHostClient.proxiedFetch(url, init),
+};
+
+await api.profiles.add({
+  name: "Hosted GPT",
+  providerType: "external",
+  basedOn: "openai",
+  baseUrl: "https://api.openai.com/v1",
+  modelId: "gpt-4o-mini",
+  key: "sk-...",
+});
+```
+
 ## 0.4.37
 
 - GET requests now serialize positional arguments as named query-string params. `RouteSpec` gains an optional `params: readonly string[]`; the fetcher maps `args[i]` → `params[i]=value` in the URL. Previously every GET silently dropped its arguments, so `api.threads.readMessages(threadId)` hit the backend without `threadId` and got an empty list — clicking a thread in `<ChatList />` rendered a blank chat. All GET routes in `core/services/*/types.ts` now declare their param names (`threads/read-messages` → `[threadId, limit, startIndex]`, etc.). `undefined`, `null`, and `""` values are omitted from the URL. Backends need to read these from the query string.

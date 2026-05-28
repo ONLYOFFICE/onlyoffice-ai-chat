@@ -68,6 +68,14 @@ export type AIEngineDeps = {
    * profile. Typically the host's `PlatformAdapter.fetchProxy`.
    */
   fetchProxy?: import("../../../shared/provider-credentials").ProviderFetch;
+
+  /**
+   * Transport hook for the `"external"` provider. Required for any
+   * profile with `providerType: "external"`; the engine wires it into
+   * every provider request for such profiles, independent of
+   * `useProxy`. Typically the host's `PlatformAdapter.externalFetch`.
+   */
+  externalFetch?: import("../../../shared/provider-credentials").ProviderFetch;
 };
 
 /**

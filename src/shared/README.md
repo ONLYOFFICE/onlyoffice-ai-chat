@@ -10,7 +10,7 @@ from anywhere without creating a cycle, and code in any layer
 | ---------------------------------------------------- | ---------------------------------------- | ----- |
 | [`abort.ts`](./abort.ts)                             | `isAbortError`                           | Cross-SDK cancellation detection |
 | [`action-type.ts`](./action-type.ts)                 | `ActionType` (object + type)             | Enum of supported AI actions |
-| [`builtin-provider-type.ts`](./builtin-provider-type.ts) | `BuiltinProviderType`                | Union of 16 built-in provider strings |
+| [`builtin-provider-type.ts`](./builtin-provider-type.ts) | `BuiltinProviderType`                | Union of 17 built-in provider strings |
 | [`capabilities-ui.ts`](./capabilities-ui.ts)         | `CapabilitiesUI`                         | Capability bitmask constants |
 | [`capabilities.ts`](./capabilities.ts)               | `Capabilities`                           | `number` alias for the bitmask |
 | [`error-data.ts`](./error-data.ts)                   | `TErrorData`                             | Field-scoped form-error shape |

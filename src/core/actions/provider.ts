@@ -12,6 +12,7 @@ export function providerFor(args: ActionArgs): AbstractBaseProvider {
     baseUrl: args.profile.baseUrl,
     apiKey: args.profile.key,
     ...(args.fetch ? { fetch: args.fetch } : {}),
+    ...(args.profile.basedOn ? { basedOn: args.profile.basedOn } : {}),
   });
   if (!provider) {
     throw new Error(`Unknown provider type: ${args.profile.providerType}`);

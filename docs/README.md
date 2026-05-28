@@ -1,6 +1,6 @@
 # `@onlyoffice/ai-chat` — documentation
 
-Documentation for the headless AI chat widget library: 16 built-in
+Documentation for the headless AI chat widget library: 17 built-in
 providers, MCP tool support, pluggable React UI, and a fully
 host-driven adapter layer.
 
@@ -28,7 +28,7 @@ documentation tree:
 | Doc | Topic |
 | --- | --- |
 | [`core/services/README.md`](./core/services/README.md) | Nine engine classes — `AIEngine`, `ProfilesEngine`, `AssignmentsEngine`, `ThreadsEngine`, `ToolsEngine`, `PromptsEngine`, `WebSearchEngine`, `PreferencesEngine`, `AttachmentsEngine` |
-| [`core/providers/README.md`](./core/providers/README.md) | `AbstractBaseProvider`, registry, 16 built-in providers |
+| [`core/providers/README.md`](./core/providers/README.md) | `AbstractBaseProvider`, registry, 17 built-in providers |
 | [`core/storage/README.md`](./core/storage/README.md) | `StorageAdapter` and the eleven domain sub-storages |
 | [`core/actions/README.md`](./core/actions/README.md) | One-shot actions: chat, summarization, translation, OCR, etc. |
 | [`core/middleware/README.md`](./core/middleware/README.md) | `ChatMiddleware` pipeline + `MiddlewareRunner` |

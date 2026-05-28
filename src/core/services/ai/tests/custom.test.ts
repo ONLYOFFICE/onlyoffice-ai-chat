@@ -2,10 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SendMessageResult } from "../../../../shared/send-message-args";
 import { AbstractBaseProvider } from "../../../providers";
-import {
-  registerProvider,
-  unregisterProvider,
-} from "../../../providers";
+import { registerProvider, unregisterProvider } from "../../../providers";
 import { AssignmentsEngine } from "../../assignments";
 import type { StorageAdapter } from "../../../storage";
 import { runCustomOnce, runCustomStream } from "../custom";
@@ -86,11 +83,15 @@ describe("runCustomStream", () => {
     );
     const assignments = makeAssignments();
     const collected: SendMessageResult[] = [];
-    for await (const item of runCustomStream(assignments, {
-      isStream: true,
-      systemPrompt: "P",
-      userMessage,
-    })) {
+    for await (const item of runCustomStream(
+      assignments,
+      {
+        isStream: true,
+        systemPrompt: "P",
+        userMessage,
+      },
+      () => undefined
+    )) {
       collected.push(item);
     }
     expect(collected).toHaveLength(1);
@@ -102,11 +103,15 @@ describe("runCustomOnce", () => {
   it("returns a wrapped assistant message", async () => {
     sendMessageSyncMock.mockResolvedValueOnce("text");
     const assignments = makeAssignments();
-    const result = await runCustomOnce(assignments, {
-      isStream: false,
-      systemPrompt: "P",
-      userMessage,
-    });
+    const result = await runCustomOnce(
+      assignments,
+      {
+        isStream: false,
+        systemPrompt: "P",
+        userMessage,
+      },
+      () => undefined
+    );
     expect(result).toEqual({
       role: "assistant",
       content: [{ type: "text", text: "text" }],

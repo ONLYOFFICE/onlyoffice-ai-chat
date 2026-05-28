@@ -109,12 +109,13 @@ UI automatically.
 
 ```ts
 interface PlatformAdapter {
-  file:        PlatformFileOperations | null;
-  process:     PlatformProcessRunner | null;
-  hostTools:   PlatformHostTools | null;
-  clouds:      PlatformClouds | null;
-  env:         PlatformEnvironment;
-  fetchProxy?: (url: string, init?: RequestInit) => Promise<Response>;
+  file:           PlatformFileOperations | null;
+  process:        PlatformProcessRunner | null;
+  hostTools:      PlatformHostTools | null;
+  clouds:         PlatformClouds | null;
+  env:            PlatformEnvironment;
+  fetchProxy?:    (url: string, init?: RequestInit) => Promise<Response>;
+  externalFetch?: (url: string, init?: RequestInit) => Promise<Response>;
 }
 ```
 
@@ -207,6 +208,36 @@ const platform: PlatformAdapter = {
     fetch(`/api/proxy?url=${encodeURIComponent(url)}`, init),
 };
 ```
+
+Per-profile opt-in: set `Profile.useProxy: true` on a profile to
+route all its provider traffic through `fetchProxy`. Profiles without
+the flag continue to use the global `fetch`.
+
+### `externalFetch`
+
+Transport hook used exclusively by the [`external`](./core/providers/built-in.md#external)
+built-in provider. The external provider has no SDK and no
+fallback `fetch` — every request it makes (chat completions, sync
+text, model listing, connection probes) is delegated to this
+function. The host is responsible for the network call,
+authentication, and URL routing; the library only parses the
+response in the format chosen by `Profile.basedOn` (currently
+`"openai"`).
+
+```ts
+const platform: PlatformAdapter = {
+  // ...
+  externalFetch: async (url, init) =>
+    fetch("/api/ai/external", {
+      ...init,
+      headers: { ...init?.headers, "x-upstream-url": url },
+    }),
+};
+```
+
+Required for every profile with `providerType: "external"` —
+absence raises a clear error at request time. Independent of
+`Profile.useProxy` and `fetchProxy`.
 
 ### Browser-only example with environment sync
 

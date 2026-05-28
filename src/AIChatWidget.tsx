@@ -217,19 +217,29 @@ export const AIChatWidget = React.forwardRef<
 
       const servers = new Servers(platform, eventBus);
 
-      // PlatformAdapter.fetchProxy takes a `string` URL; the provider
-      // SDKs pass `RequestInfo | URL`. Normalize before delegating so
-      // host implementations that only handle strings keep working.
+      // PlatformAdapter.fetchProxy / externalFetch take a `string`
+      // URL; the provider SDKs pass `RequestInfo | URL`. Normalize
+      // before delegating so host implementations that only handle
+      // strings keep working.
+      const normalizeFetch = (
+        host: (url: string, init?: RequestInit) => Promise<Response>
+      ): ProviderFetch => {
+        return (input, init) => {
+          const url =
+            typeof input === "string"
+              ? input
+              : input instanceof URL
+                ? input.toString()
+                : input.url;
+          return host(url, init);
+        };
+      };
+
       const proxyFetch: ProviderFetch | undefined = platform.fetchProxy
-        ? (input, init) => {
-            const url =
-              typeof input === "string"
-                ? input
-                : input instanceof URL
-                  ? input.toString()
-                  : input.url;
-            return platform.fetchProxy!(url, init);
-          }
+        ? normalizeFetch(platform.fetchProxy)
+        : undefined;
+      const externalFetch: ProviderFetch | undefined = platform.externalFetch
+        ? normalizeFetch(platform.externalFetch)
         : undefined;
 
       const ai = new AIEngine({
@@ -238,6 +248,7 @@ export const AIChatWidget = React.forwardRef<
         threads,
         toolsAdapter,
         ...(proxyFetch ? { fetchProxy: proxyFetch } : {}),
+        ...(externalFetch ? { externalFetch } : {}),
       });
 
       const ctx: AppContext = {

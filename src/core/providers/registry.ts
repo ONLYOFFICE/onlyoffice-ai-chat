@@ -4,6 +4,7 @@ import type { ProviderType } from "../../shared/provider-type";
 import type { AbstractBaseProvider, ProviderConstructor } from "./base";
 import { AnthropicProvider } from "./anthropic";
 import { DeepSeekProvider } from "./deepseek";
+import { ExternalProvider } from "./external";
 import { GenAIProvider } from "./genai";
 import { GPT4AllProvider } from "./gpt4all";
 import { GroqProvider } from "./groq";
@@ -44,6 +45,7 @@ const builtinProviders: Record<ProviderType, ProviderConstructor> = {
   zhipu: ZhipuProvider,
   stabilityai: StabilityAIProvider,
   gpt4all: GPT4AllProvider,
+  external: ExternalProvider,
 };
 
 const customProviders = new Map<string, ProviderConstructor>();

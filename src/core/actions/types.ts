@@ -20,6 +20,7 @@ export type ActionArgs = {
   profile: Pick<
     Profile,
     | "providerType"
+    | "basedOn"
     | "baseUrl"
     | "key"
     | "modelId"

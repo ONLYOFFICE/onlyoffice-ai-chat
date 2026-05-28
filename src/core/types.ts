@@ -185,8 +185,24 @@ export type Profile = {
   /** User-defined profile display name. */
   name: string;
 
-  /** Provider type for this profile. */
+  /**
+   * Provider type for this profile. Use `"external"` to delegate all
+   * HTTP transport to {@link PlatformAdapter.externalFetch} while
+   * reusing an existing provider's response parser — see
+   * {@link Profile.basedOn} for the format selector.
+   */
   providerType: ProviderType;
+
+  /**
+   * Selects the response-format parser used by the `"external"`
+   * provider. Ignored for any other `providerType`.
+   *
+   * Currently the only supported value is `"openai"` — passing
+   * anything else raises an error at request time. Reserved values
+   * (`"anthropic"`, `"mistral"`, `"genai"`, …) are accepted by the
+   * type but not yet implemented.
+   */
+  basedOn?: BuiltinProviderType;
 
   /** Base URL of the provider API. */
   baseUrl: string;

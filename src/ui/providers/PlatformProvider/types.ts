@@ -151,6 +151,23 @@ export interface PlatformAdapter {
   fetchProxy?: (url: string, init?: RequestInit) => Promise<Response>;
 
   /**
+   * Transport hook used exclusively by the `"external"` built-in
+   * provider. The external provider has no SDK and no built-in
+   * transport of its own — every HTTP request it makes (chat
+   * completions, model listing, connection probes, image generation)
+   * is delegated to this function. The host is responsible for
+   * authentication, routing, and the actual network call; the library
+   * only takes care of parsing the response in the format chosen by
+   * `Profile.basedOn` (currently `"openai"` only).
+   *
+   * Required when any `Profile` has `providerType: "external"` —
+   * absence raises a clear error at request time and is independent of
+   * the {@link Profile.useProxy} flag (which governs the unrelated
+   * `fetchProxy` hook above).
+   */
+  externalFetch?: (url: string, init?: RequestInit) => Promise<Response>;
+
+  /**
    * Optional host-supplied clipboard writer. When set, all in-chat copy
    * actions (message "Copy", code block "Copy") delegate to it instead
    * of calling `navigator.clipboard.writeText` directly — required in

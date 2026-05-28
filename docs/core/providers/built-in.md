@@ -2,7 +2,7 @@
 
 > Sources: [`src/core/providers/<name>/`](../../../src/core/providers)
 
-The library ships with 16 built-in provider implementations,
+The library ships with 17 built-in provider implementations,
 registered import-time in
 [`registry.ts`](../../../src/core/providers/registry.ts). All
 satisfy the [contract](./providers.md#the-contract) defined in
@@ -28,6 +28,7 @@ satisfy the [contract](./providers.md#the-contract) defined in
 | `together`          | TogetherAI        | `https://api.together.xyz/v1`                          | `OpenAIProvider`       | ✅           | ✅            | ✅        | ✅    |
 | `xai`               | xAI               | `https://api.x.ai/v1`                                   | `OpenAIProvider`       | ✅           | ✅            | ✅        | ✅    |
 | `zhipu`             | Zhipu             | `https://open.bigmodel.cn/api/paas/v4`                  | `OpenAIProvider`       | ✅           | ✅            | ✅        | ✅    |
+| `external`          | External          | host-supplied (via `PlatformAdapter.externalFetch`)     | delegated via `basedOn` | depends on `basedOn` | depends on `basedOn` | depends on `basedOn` | depends on `basedOn` |
 
 > **Image generation** in this table refers to the optional
 > `imageGeneration(args)` method. Most OpenAI-compatible providers
@@ -228,6 +229,52 @@ but whether the backend serves OpenAI's `/v1/images/generations`
 shape is up to that backend. Most don't; for those, either
 override `imageGeneration` to throw or use a different provider
 (typically `stabilityai`) for image flows.
+
+---
+
+## External
+
+> Source: [`external/`](../../../src/core/providers/external)
+
+| Field                  | Value |
+| ---------------------- | ----- |
+| Type                   | `external` |
+| SDK                    | — (delegated to `basedOn`) |
+| Parent class           | `AbstractBaseProvider` |
+| Transport              | host-supplied via [`PlatformAdapter.externalFetch`](../../adapters.md#externalfetch) |
+| Streaming / sync       | delegated to the inner provider class chosen by `Profile.basedOn` |
+| `checkProvider` strategy | delegated to the inner provider |
+
+`ExternalProvider` is a thin delegate: in its constructor it
+resolves an inner provider class from `creds.basedOn` (currently
+only `"openai"` is implemented) and forwards every call to it.
+The inner SDK receives `creds.fetch = PlatformAdapter.externalFetch`,
+so the host owns every HTTP request while the library reuses the
+existing OpenAI stream / sync / image / models parsers.
+
+Configuration shape:
+
+```ts
+await api.profiles.add({
+  name: "Hosted GPT",
+  providerType: "external",
+  basedOn: "openai",
+  baseUrl: "https://api.openai.com/v1",
+  modelId: "gpt-4o-mini",
+  key: "sk-...",
+});
+```
+
+Behavioral notes:
+
+- `Profile.useProxy` is ignored for external profiles; the
+  external transport is always `externalFetch`.
+- `Profile.basedOn` is required at request time. Reserved values
+  other than `"openai"` (e.g. `"anthropic"`, `"mistral"`, `"genai"`)
+  throw a clear `ExternalProvider: basedOn "<name>" is not supported yet`
+  error.
+- `imageGeneration` is forwarded only when the inner provider
+  implements it; otherwise it throws.
 
 ---
 

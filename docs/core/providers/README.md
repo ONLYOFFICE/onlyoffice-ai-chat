@@ -1,13 +1,13 @@
 # `core/providers` — full reference
 
 Stateless thin clients that translate the library's internal call
-shape into a concrete provider SDK call. 16 built-in providers
+shape into a concrete provider SDK call. 17 built-in providers
 plus a runtime registry for custom ones.
 
 | Document                                  | Topic |
 | ----------------------------------------- | ----- |
 | [`providers.md`](./providers.md)          | Base class, registry, error helpers, custom providers |
-| [`built-in.md`](./built-in.md)            | All 16 built-in providers — identity, transport, capabilities, quirks |
+| [`built-in.md`](./built-in.md)            | All 17 built-in providers — identity, transport, capabilities, quirks |
 
 ## Quick map
 

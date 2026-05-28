@@ -8,6 +8,16 @@ import type { AssignmentsEngine } from "../assignments";
 import type { SendCustomInput } from "./types";
 
 /**
+ * Picks the custom fetch (if any) for the resolved profile. Owned by
+ * the engine so the same `external`/`useProxy` logic is applied to
+ * the custom-prompt path.
+ */
+export type PickFetch = (profile: {
+  providerType?: string;
+  useProxy?: boolean;
+}) => ProviderFetch | undefined;
+
+/**
  * Resolve the `Default` profile via the supplied
  * {@link AssignmentsEngine} and produce {@link CustomArgs} for the
  * custom-prompt action. Shared between streaming and one-shot paths.
@@ -15,7 +25,7 @@ import type { SendCustomInput } from "./types";
 async function buildArgs(
   assignments: AssignmentsEngine,
   input: SendCustomInput,
-  fetchProxy: ProviderFetch | undefined
+  pickFetch: PickFetch
 ): Promise<CustomArgs> {
   const { profile } = await assignments.resolveForAction(ActionType.Default);
   return {
@@ -23,7 +33,7 @@ async function buildArgs(
     profile,
     messages: [input.userMessage],
     systemPrompt: input.systemPrompt,
-    fetch: profile.useProxy ? fetchProxy : undefined,
+    fetch: pickFetch(profile),
   };
 }
 
@@ -31,9 +41,9 @@ async function buildArgs(
 export async function* runCustomStream(
   assignments: AssignmentsEngine,
   input: SendCustomInput,
-  fetchProxy?: ProviderFetch
+  pickFetch: PickFetch
 ): AsyncGenerator<SendMessageResult> {
-  const args = await buildArgs(assignments, input, fetchProxy);
+  const args = await buildArgs(assignments, input, pickFetch);
   yield* custom(args);
 }
 
@@ -41,8 +51,8 @@ export async function* runCustomStream(
 export async function runCustomOnce(
   assignments: AssignmentsEngine,
   input: SendCustomInput,
-  fetchProxy?: ProviderFetch
+  pickFetch: PickFetch
 ): Promise<ThreadMessageLike> {
-  const args = await buildArgs(assignments, input, fetchProxy);
+  const args = await buildArgs(assignments, input, pickFetch);
   return customSync(args);
 }

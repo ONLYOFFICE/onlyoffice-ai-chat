@@ -79,23 +79,37 @@ export class AIEngine {
     this.deps = deps;
     this.assignments =
       deps.assignments ?? new AssignmentsEngine({ storage: deps.storage });
-    this.threads =
-      deps.threads ?? new ThreadsEngine({ storage: deps.storage });
+    this.threads = deps.threads ?? new ThreadsEngine({ storage: deps.storage });
     this.attachments = new AttachmentsEngine({ storage: deps.storage });
   }
 
   /**
-   * Return the proxy fetch when the resolved profile opts into it.
-   * Used at every action-dispatch site to wire
-   * {@link PlatformAdapter.fetchProxy} into the provider request.
-   * Returns `undefined` either when the profile didn't request proxying
-   * or when the engine wasn't constructed with a `fetchProxy` dep.
+   * Resolve the custom fetch (if any) to wire into the provider
+   * request for the given profile. Two independent code paths:
+   *
+   * - `providerType === "external"` — the External provider has no
+   *   transport of its own; the engine **must** supply
+   *   {@link PlatformAdapter.externalFetch} as `creds.fetch`. Throws a
+   *   clear error when the dep wasn't configured, so the failure
+   *   surfaces as a normal request error instead of an opaque network
+   *   crash inside the inner SDK.
+   *
+   * - Any other provider — the legacy `Profile.useProxy` flag opts
+   *   into {@link PlatformAdapter.fetchProxy}; otherwise the SDK uses
+   *   the global `fetch`.
    */
   private pickFetch(profile: {
+    providerType?: string;
     useProxy?: boolean;
-  }):
-    | import("../../../shared/provider-credentials").ProviderFetch
-    | undefined {
+  }): import("../../../shared/provider-credentials").ProviderFetch | undefined {
+    if (profile.providerType === "external") {
+      if (!this.deps.externalFetch) {
+        throw new Error(
+          'PlatformAdapter.externalFetch is required for profiles with providerType: "external"'
+        );
+      }
+      return this.deps.externalFetch;
+    }
     return profile.useProxy ? this.deps.fetchProxy : undefined;
   }
 
@@ -267,7 +281,9 @@ export class AIEngine {
       input.entityId
     );
 
-    const stored = await this.deps.storage.messages.readByThread(input.threadId);
+    const stored = await this.deps.storage.messages.readByThread(
+      input.threadId
+    );
 
     let lastUserIdx = -1;
     for (let i = stored.length - 1; i >= 0; i--) {
@@ -336,7 +352,9 @@ export class AIEngine {
    * tool dispatch and for any `beforeToolCall` / `afterToolResult`
    * middleware.
    */
-  async *approveToolCall(input: ApproveToolCallInput): AsyncGenerator<ChatEvent> {
+  async *approveToolCall(
+    input: ApproveToolCallInput
+  ): AsyncGenerator<ChatEvent> {
     if (input.allowAlways) {
       const toolCall = readToolCall(input.message, input.idx);
       if (toolCall) {
@@ -475,10 +493,9 @@ export class AIEngine {
   sendCustom(
     input: SendCustomInput
   ): AsyncGenerator<SendMessageResult> | Promise<ThreadMessageLike> {
+    const pick = this.pickFetch.bind(this);
     return input.isStream
-      ? runCustomStream(this.assignments, input, this.deps.fetchProxy)
-      : runCustomOnce(this.assignments, input, this.deps.fetchProxy);
+      ? runCustomStream(this.assignments, input, pick)
+      : runCustomOnce(this.assignments, input, pick);
   }
 }
-
-

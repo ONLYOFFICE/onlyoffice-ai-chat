@@ -25,7 +25,7 @@ src/
 ├── utils.ts                # Public helper utilities
 │
 ├── core/                   # Pure business logic — no React, no browser-only APIs
-│   ├── providers/          # AbstractBaseProvider + registry + 16 built-in providers
+│   ├── providers/          # AbstractBaseProvider + registry + 17 built-in providers
 │   ├── services/           # Engine classes (orchestration layer, named *Engine)
 │   ├── storage/            # StorageAdapter contract + eleven domain sub-storages
 │   ├── actions/            # One-shot actions (chat, summarization, translation, OCR, …)
@@ -74,7 +74,7 @@ src/
 
 ## `core/providers/` — AI provider system
 
-16 built-in providers extend `AbstractBaseProvider<TOOL, MESSAGE, CLIENT>`:
+17 built-in providers extend `AbstractBaseProvider<TOOL, MESSAGE, CLIENT>`:
 `anthropic`, `openai`, `genai`, `mistral`, `ollama`, `lm-studio`,
 `together`, `openrouter`, `deepseek`, `xai`, `openaicompatible`,
 `groq`, `zhipu`, `gpt4all`, `stabilityai`, `onlyoffice`.

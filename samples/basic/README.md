@@ -4,7 +4,7 @@ A standalone Vite + React application demonstrating how to embed the `@onlyoffic
 
 ## Features
 
-- **Full-featured AI chat** with 16 built-in providers (OpenAI, Anthropic, Google Gemini, Mistral, Ollama, DeepSeek, Groq, OpenRouter, Together, xAI, LM Studio, GPT4All, Zhipu, Stability AI, and OpenAI-compatible endpoints)
+- **Full-featured AI chat** with 17 built-in providers (OpenAI, Anthropic, Google Gemini, Mistral, Ollama, DeepSeek, Groq, OpenRouter, Together, xAI, LM Studio, GPT4All, Zhipu, Stability AI, and OpenAI-compatible endpoints)
 - **Profile management** — create, edit, and delete AI provider profiles with API keys and model selection
 - **Chat history** — threaded conversations with search across all messages
 - **Saved prompts** — reusable prompt templates organized in folders

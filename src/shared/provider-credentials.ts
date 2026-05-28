@@ -20,4 +20,10 @@ export type ProviderCredentials = {
    * `fetch`.
    */
   fetch?: ProviderFetch;
+  /**
+   * Inner provider whose response parser the `"external"` provider
+   * should delegate to. Forwarded from `Profile.basedOn`; ignored by
+   * every other provider.
+   */
+  basedOn?: import("./builtin-provider-type").BuiltinProviderType;
 };

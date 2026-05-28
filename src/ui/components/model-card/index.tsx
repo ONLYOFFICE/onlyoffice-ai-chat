@@ -39,7 +39,13 @@ const ModelCard = ({
     setContainerElement(node);
   }, []);
 
-  if (isEditing) {
+  // External profiles are host-managed: their transport lives in
+  // PlatformAdapter.externalFetch, so editing connection fields in the
+  // widget would be misleading and removing them would orphan a
+  // host-side configuration. Hide both actions.
+  const isReadOnly = profile.providerType === "external";
+
+  if (isEditing && !isReadOnly) {
     return (
       <>
         <EditModelCard
@@ -91,42 +97,48 @@ const ModelCard = ({
           </p>
         </div>
       </div>
-      <div className="flex items-center justify-end" ref={containerRef}>
-        <DropdownMenu
-          onOpenChange={setIsOpen}
-          trigger={<IconButton iconName="more" size={20} isActive={isOpen} />}
-          items={[
-            {
-              icon: (
-                <IconButton
-                  iconName="btn-edit"
-                  size={20}
-                  disableHover
-                  isStroke
-                />
-              ),
-              text: t("Edit"),
-              onClick: onStartEdit,
-            },
-            {
-              text: "",
-              onClick: () => {
-                // ignore
+      {!isReadOnly && (
+        <div className="flex items-center justify-end" ref={containerRef}>
+          <DropdownMenu
+            onOpenChange={setIsOpen}
+            trigger={
+              <IconButton iconName="more" size={20} isActive={isOpen} />
+            }
+            items={[
+              {
+                icon: (
+                  <IconButton
+                    iconName="btn-edit"
+                    size={20}
+                    disableHover
+                    isStroke
+                  />
+                ),
+                text: t("Edit"),
+                onClick: onStartEdit,
               },
-              isSeparator: true,
-            },
-            {
-              icon: <IconButton iconName="btn-remove" size={20} disableHover />,
-              text: t("Delete"),
-              onClick: () => setIsDeleteOpen(true),
-            },
-          ]}
-          side={isRTL ? "left" : "right"}
-          align={isRTL ? "end" : "start"}
-          sideOffset={0}
-          containerRef={containerElement}
-        />
-      </div>
+              {
+                text: "",
+                onClick: () => {
+                  // ignore
+                },
+                isSeparator: true,
+              },
+              {
+                icon: (
+                  <IconButton iconName="btn-remove" size={20} disableHover />
+                ),
+                text: t("Delete"),
+                onClick: () => setIsDeleteOpen(true),
+              },
+            ]}
+            side={isRTL ? "left" : "right"}
+            align={isRTL ? "end" : "start"}
+            sideOffset={0}
+            containerRef={containerElement}
+          />
+        </div>
+      )}
       {isDeleteOpen && (
         <DeleteProfileDialog
           profile={profile}
