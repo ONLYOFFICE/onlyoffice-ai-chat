@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.44
+
+- Revert the icon-rendering rework from 0.4.43 — it regressed icon display in some hosts. Back to the 0.4.42 behaviour (SVG icons inlined as `data:` URLs and rendered through `react-svg`). The original CSP issue from 0.4.40 stays open and will be addressed differently.
+
 ## 0.4.43
 
 - Fix the CSP fallout from 0.4.41 without re-introducing the asset-deploy regression. SVG icons stay inlined as `data:` URLs in the bundle (so the JS bundle remains self-contained — hosts that didn't copy `dist/assets/` were silently losing icons after 0.4.41). The `<Icon>` component now detects data URLs and decodes the SVG markup in-place via `dangerouslySetInnerHTML`, then applies the same color/stroke logic via a ref instead of going through `react-svg`'s `fetch()`. `react-svg` stays as a fallback for hosts that override `getImageSrc` to return a network URL. The `?no-inline` query + custom `assetFileNames` from 0.4.41 are reverted.
