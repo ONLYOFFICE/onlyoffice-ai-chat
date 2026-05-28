@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.45
+
+- `"external"` provider is hidden from the Add-profile provider dropdown. External profiles are host-managed (the transport lives in `PlatformAdapter.externalFetch` and `basedOn` has no UI) — hosts create them programmatically via `addProfile({ providerType: "external", basedOn: "openai", ... })`.
+
 ## 0.4.44
 
 - Revert the icon-rendering rework from 0.4.43 — it regressed icon display in some hosts. Back to the 0.4.42 behaviour (SVG icons inlined as `data:` URLs and rendered through `react-svg`). The original CSP issue from 0.4.40 stays open and will be addressed differently.

@@ -75,7 +75,12 @@ export const ModelConfigForm = ({
     .filter(
       (p): p is { type: string; name: string; baseUrl: string } => p !== null
     )
-    .filter((p) => !hiddenSet.has(p.type as ProviderType));
+    .filter((p) => !hiddenSet.has(p.type as ProviderType))
+    // External profiles are host-managed (the transport lives in
+    // PlatformAdapter.externalFetch and `basedOn` has no UI). Hide the
+    // entry from the manual add-profile dropdown — hosts create these
+    // profiles programmatically via `addProfile()`.
+    .filter((p) => p.type !== "external");
   const isFieldsDisabled = !values.provider;
 
   const providerItems = [
