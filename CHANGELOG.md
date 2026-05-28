@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.41
+
+- SVG assets are no longer inlined as `data:` URLs in the bundle. Vite's lib mode ignores `assetsInlineLimit` and force-inlines every asset; the `<Icon>` component renders SVGs through `react-svg`, which `fetch()`es the src — and strict host CSPs (`connect-src *` style) reject the `data:` scheme. SVGs now emit as hashed files under `dist/assets/<name>-<hash>.svg` via a `?no-inline` query in `src/shared/images.ts`. CSS keeps its stable `dist/styles/index.css` path; other assets fall into `dist/assets/[name]-[hash][extname]`.
+
 ## 0.4.40
 
 - "Analyzing" indicator in the chat surface is now deferred by 400ms after the stream starts. Fast responses that arrive within that window never show the indicator (no more flash); the hide edge stays immediate.

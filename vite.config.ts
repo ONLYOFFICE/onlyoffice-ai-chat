@@ -66,7 +66,18 @@ export default defineConfig({
     rollupOptions: {
       external: [externalPattern, "react/jsx-runtime"],
       output: {
-        assetFileNames: "styles/index.[ext]",
+        // CSS keeps its stable name (hosts that pre-link it expect
+        // `styles/index.css`). Everything else — SVGs / fonts / etc.
+        // that lib-mode used to inline — falls back to a hashed name
+        // under `assets/`. We had to opt SVGs out of inlining via
+        // `?no-inline` because react-svg fetches the src, and `data:`
+        // URLs are blocked by strict host CSPs (`connect-src` rarely
+        // includes the `data:` scheme).
+        assetFileNames: (info) => {
+          const name = info.names?.[0] ?? "";
+          if (name.endsWith(".css")) return "styles/index.[ext]";
+          return "assets/[name]-[hash][extname]";
+        },
         globals: {
           react: "React",
           "react-dom": "ReactDOM",

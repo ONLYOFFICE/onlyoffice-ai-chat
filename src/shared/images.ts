@@ -57,10 +57,17 @@ const darkImageMap = import.meta.glob<string>("../assets/dark/*.png", {
   import: "default",
 }) as ImageMap;
 
+// `?no-inline` opts out of Vite's lib-mode force-inline of every asset
+// (see vite/src/node/plugins/asset.ts — when `build.lib` is set, the
+// `assetsInlineLimit` option is ignored and everything turns into a
+// `data:` URL). SVGs must stay as file URLs because <Icon> renders
+// them through react-svg, which `fetch()`es the src — strict host
+// CSPs typically permit network schemes in `connect-src` but not
+// `data:`, so an inlined SVG gets blocked.
 const svgImageMap = import.meta.glob<string>("../assets/*.svg", {
   eager: true,
   import: "default",
-  query: "?url",
+  query: "?url&no-inline",
 }) as ImageMap;
 
 const formatsPngMap = import.meta.glob<string>("../assets/formats/*.png", {
@@ -71,7 +78,7 @@ const formatsPngMap = import.meta.glob<string>("../assets/formats/*.png", {
 const formatsSvgMap = import.meta.glob<string>("../assets/formats/*.svg", {
   eager: true,
   import: "default",
-  query: "?url",
+  query: "?url&no-inline",
 }) as ImageMap;
 
 const providersImageMap = import.meta.glob<string>(
