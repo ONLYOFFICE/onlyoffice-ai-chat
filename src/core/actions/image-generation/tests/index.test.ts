@@ -31,9 +31,7 @@ describe("generateImage", () => {
     providerFor.mockReturnValue({ imageGeneration });
     const out = await generateImage({
       profile,
-      messages: [
-        { role: "user", content: "draw a cat" } as ThreadMessageLike,
-      ],
+      messages: [{ role: "user", content: "draw a cat" } as ThreadMessageLike],
     });
     expect(imageGeneration).toHaveBeenCalledWith({
       model: "m",
@@ -110,7 +108,9 @@ describe("generateImage", () => {
       messages: [{ role: "user", content: "user-prompt" } as ThreadMessageLike],
       prompt: { mode: "append", text: "extra" },
     });
-    expect(imageGeneration.mock.calls[0][0].prompt).toBe("user-prompt\n\nextra");
+    expect(imageGeneration.mock.calls[0][0].prompt).toBe(
+      "user-prompt\n\nextra"
+    );
   });
 
   it("falls back to sendMessageSync when provider has no imageGeneration", async () => {

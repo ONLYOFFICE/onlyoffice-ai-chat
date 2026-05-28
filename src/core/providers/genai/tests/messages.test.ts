@@ -22,9 +22,7 @@ describe("genai/messages/convertMessages", () => {
     const out = convertMessages([
       {
         role: "user",
-        content: [
-          { type: "image", image: "data:image/png;base64,AAA" },
-        ],
+        content: [{ type: "image", image: "data:image/png;base64,AAA" }],
       } as ThreadMessageLike,
     ]);
     expect(out[0].parts?.[0]).toEqual({
@@ -141,6 +139,8 @@ describe("genai/messages/convertMessages", () => {
         ],
       } as ThreadMessageLike,
     ]);
-    expect((out[0].parts?.[0] as { thoughtSignature?: string })?.thoughtSignature).toBe("sig");
+    expect(
+      (out[0].parts?.[0] as { thoughtSignature?: string })?.thoughtSignature
+    ).toBe("sig");
   });
 });

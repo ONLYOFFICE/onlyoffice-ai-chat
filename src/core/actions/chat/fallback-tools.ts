@@ -27,7 +27,9 @@ export const buildToolsBlock = (tools: TMCPItem[]): string => {
   lines.push(`${OPEN}{"name":"<tool_name>","arguments":{...}}${CLOSE}`);
   lines.push("");
   lines.push("Rules:");
-  lines.push("- Output the block at most ONCE per turn, with nothing after it.");
+  lines.push(
+    "- Output the block at most ONCE per turn, with nothing after it."
+  );
   lines.push("- If you don't need a tool, answer normally without the block.");
   lines.push(
     "- After the system replies with <TOOL_RESULT>, continue your reasoning."
@@ -38,16 +40,13 @@ export const buildToolsBlock = (tools: TMCPItem[]): string => {
     lines.push("");
     lines.push(`  Name: ${tool.name}`);
     lines.push(`  Description: ${tool.description}`);
-    lines.push(
-      `  Input schema: ${JSON.stringify(tool.inputSchema, null, 2)}`
-    );
+    lines.push(`  Input schema: ${JSON.stringify(tool.inputSchema, null, 2)}`);
   }
   return lines.join("\n");
 };
 
 const stringifyToolCall = (toolName: string, argsObj: unknown): string => {
-  const safeArgs =
-    argsObj && typeof argsObj === "object" ? argsObj : {};
+  const safeArgs = argsObj && typeof argsObj === "object" ? argsObj : {};
   return `${OPEN}${JSON.stringify({ name: toolName, arguments: safeArgs })}${CLOSE}`;
 };
 
@@ -137,10 +136,7 @@ const extractText = (message: ThreadMessageLike): string => {
   return acc;
 };
 
-const textOnlyResult = (
-  text: string,
-  isEnd: boolean
-): SendMessageResult => {
+const textOnlyResult = (text: string, isEnd: boolean): SendMessageResult => {
   const message: ThreadMessageLike = {
     role: "assistant",
     content: [{ type: "text", text }],
@@ -204,8 +200,7 @@ export const wrapStream = async function* (
 
     if (state === "buffering") {
       const idx = rawText.indexOf(OPEN);
-      const closeAt =
-        idx >= 0 ? rawText.indexOf(CLOSE, idx + OPEN.length) : -1;
+      const closeAt = idx >= 0 ? rawText.indexOf(CLOSE, idx + OPEN.length) : -1;
       const textBefore = idx >= 0 ? rawText.slice(0, idx) : rawText;
 
       if (idx < 0) {
@@ -240,7 +235,9 @@ export const wrapStream = async function* (
       }
 
       const obj =
-        parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+        parsed && typeof parsed === "object"
+          ? (parsed as Record<string, unknown>)
+          : null;
       const name = obj && typeof obj.name === "string" ? obj.name : "";
       const argsRaw = obj ? obj.arguments : undefined;
       const argsObj =
@@ -315,6 +312,5 @@ export const chatViaTextProtocol = (
  * Predicate used by every action to decide whether the profile is
  * configured to use the text-protocol fallback for tool calls.
  */
-export const isFallbackProfile = (
-  profile: ActionArgs["profile"]
-): boolean => profile.canUseTool === false;
+export const isFallbackProfile = (profile: ActionArgs["profile"]): boolean =>
+  profile.canUseTool === false;

@@ -14,16 +14,14 @@ describe("onlyoffice/models", () => {
 
   describe("listModels", () => {
     it("fetches from the ONLYOFFICE REST endpoint and maps ids", async () => {
-      const fetchMock = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue({
-          json: () =>
-            Promise.resolve({
-              response: [
-                { modelId: "gpt-4", providerId: -1, providerTitle: "OO" },
-              ],
-            }),
-        } as unknown as Response);
+      const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+        json: () =>
+          Promise.resolve({
+            response: [
+              { modelId: "gpt-4", providerId: -1, providerTitle: "OO" },
+            ],
+          }),
+      } as unknown as Response);
 
       const out = await listModels(creds);
       expect(out).toEqual([
@@ -52,11 +50,9 @@ describe("onlyoffice/models", () => {
     });
 
     it("omits Authorization when no apiKey", async () => {
-      const fetchMock = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue({
-          json: () => Promise.resolve({ response: [] }),
-        } as unknown as Response);
+      const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+        json: () => Promise.resolve({ response: [] }),
+      } as unknown as Response);
       await listModels({ baseUrl: creds.baseUrl });
       expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({});
     });

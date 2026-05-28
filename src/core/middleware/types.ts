@@ -6,9 +6,7 @@ import type { Profile, TAttachmentRef } from "../types";
  * attachment payloads (file text content, image base64). Returns
  * `null` when the id is unknown / has been deleted.
  */
-export type ResolveAttachmentFn = (
-  id: string
-) => Promise<{
+export type ResolveAttachmentFn = (id: string) => Promise<{
   title: string;
   kind: "file" | "image";
   content?: string;
@@ -280,27 +278,27 @@ export type ErrorResult =
 export interface ChatMiddleware {
   /** Intercept before sending user message. Return "block" to prevent sending. */
   beforeSend?: (
-    context: BeforeSendContext,
+    context: BeforeSendContext
   ) => BeforeSendResult | Promise<BeforeSendResult>;
 
   /** Intercept each stream chunk from the model. */
   onStreamChunk?: (
-    context: StreamChunkContext,
+    context: StreamChunkContext
   ) => StreamChunkResult | Promise<StreamChunkResult>;
 
   /** Intercept before executing a tool call. */
   beforeToolCall?: (
-    context: BeforeToolCallContext,
+    context: BeforeToolCallContext
   ) => BeforeToolCallResult | Promise<BeforeToolCallResult>;
 
   /** Intercept tool call result before sending back to model. */
   afterToolResult?: (
-    context: AfterToolResultContext,
+    context: AfterToolResultContext
   ) => AfterToolResultResult | Promise<AfterToolResultResult>;
 
   /** Intercept message before adding to store (final transformation). */
   beforeDisplay?: (
-    context: BeforeDisplayContext,
+    context: BeforeDisplayContext
   ) => BeforeDisplayResult | Promise<BeforeDisplayResult>;
 
   /** Intercept errors — retry, fallback, logging. */

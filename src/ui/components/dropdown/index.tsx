@@ -78,32 +78,32 @@ const DropdownMenuComponent = ({
         {trigger}
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal container={portalContainer ?? undefined}>
-      <DropdownMenu.Content
-        ref={dropdownRef}
-        side={effectiveSide}
-        align={effectiveAlign}
-        sideOffset={sideOffset ?? 6}
-        alignOffset={alignOffset}
-        collisionPadding={8}
-        data-side={effectiveSide}
-        data-align={effectiveAlign}
-        data-orientation="vertical"
-        className={cn(
-          "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[8px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[8px] max-h-56 overflow-y-auto flex flex-col gap-[4px]",
-          matchTriggerWidth
-            ? "min-w-[150px] w-[var(--radix-dropdown-menu-trigger-width)]"
-            : "w-fit",
-          contentClassName
-        )}
-        style={{ zIndex: 400, ...(maxWidth ? { maxWidth } : null) }}
-      >
-        {items.map((item, index) => (
-          <DropDownItem
-            key={item.id || item.text || `item-${index}`}
-            {...item}
-          />
-        ))}
-      </DropdownMenu.Content>
+        <DropdownMenu.Content
+          ref={dropdownRef}
+          side={effectiveSide}
+          align={effectiveAlign}
+          sideOffset={sideOffset ?? 6}
+          alignOffset={alignOffset}
+          collisionPadding={8}
+          data-side={effectiveSide}
+          data-align={effectiveAlign}
+          data-orientation="vertical"
+          className={cn(
+            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[8px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[8px] max-h-56 overflow-y-auto flex flex-col gap-[4px]",
+            matchTriggerWidth
+              ? "min-w-[150px] w-[var(--radix-dropdown-menu-trigger-width)]"
+              : "w-fit",
+            contentClassName
+          )}
+          style={{ zIndex: 400, ...(maxWidth ? { maxWidth } : null) }}
+        >
+          {items.map((item, index) => (
+            <DropDownItem
+              key={item.id || item.text || `item-${index}`}
+              {...item}
+            />
+          ))}
+        </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
   );

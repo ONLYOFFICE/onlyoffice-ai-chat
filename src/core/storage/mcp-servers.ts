@@ -30,10 +30,7 @@ export interface McpServersStorage {
    * Look up a single server configuration by name in the requested scope.
    * Returns `null` when the server does not exist in that scope.
    */
-  readByName(
-    name: string,
-    entityId?: string
-  ): Promise<McpServerConfig | null>;
+  readByName(name: string, entityId?: string): Promise<McpServerConfig | null>;
 
   /** Retrieve every registered server in the requested scope. */
   readAll(entityId?: string): Promise<Record<string, McpServerConfig>>;

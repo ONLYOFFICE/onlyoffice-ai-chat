@@ -81,7 +81,9 @@ describe("createMessageStore", () => {
       store.getState().addMessage(makeMsg("assistant", "complete"));
       expect(store.getState().messages).toHaveLength(1);
       expect(
-        (store.getState().messages[0].content as unknown as { text: string }[])[0].text
+        (
+          store.getState().messages[0].content as unknown as { text: string }[]
+        )[0].text
       ).toBe("complete");
     });
 
@@ -103,7 +105,9 @@ describe("createMessageStore", () => {
       store.getState().updateLastMessage(makeMsg("assistant", "b-updated"));
       expect(store.getState().messages).toHaveLength(2);
       expect(
-        (store.getState().messages[1].content as unknown as { text: string }[])[0].text
+        (
+          store.getState().messages[1].content as unknown as { text: string }[]
+        )[0].text
       ).toBe("b-updated");
     });
   });
@@ -120,7 +124,9 @@ describe("createMessageStore", () => {
 
       expect(store.getState().messages).toHaveLength(1);
       expect(
-        (store.getState().messages[0].content as unknown as { text: string }[])[0].text
+        (
+          store.getState().messages[0].content as unknown as { text: string }[]
+        )[0].text
       ).toBe("a");
     });
 
@@ -164,7 +170,9 @@ describe("createMessageStore", () => {
       const slowMsgs = [makeMsg("user", "old")];
       const readMessages = vi.fn().mockImplementation((threadId: string) => {
         if (threadId === "thread-1") {
-          return new Promise((resolve) => setTimeout(() => resolve(slowMsgs), 50));
+          return new Promise((resolve) =>
+            setTimeout(() => resolve(slowMsgs), 50)
+          );
         }
         return Promise.resolve([]);
       });

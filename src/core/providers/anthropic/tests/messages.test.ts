@@ -5,9 +5,9 @@ import { convertMessages } from "../messages";
 describe("anthropic/messages/convertMessages", () => {
   describe("user role", () => {
     it("passes a plain-string content through", () => {
-      expect(
-        convertMessages([{ role: "user", content: "hello" }])
-      ).toEqual([{ role: "user", content: "hello" }]);
+      expect(convertMessages([{ role: "user", content: "hello" }])).toEqual([
+        { role: "user", content: "hello" },
+      ]);
     });
 
     it("maps text parts onto text content blocks", () => {
@@ -23,12 +23,15 @@ describe("anthropic/messages/convertMessages", () => {
       const out = convertMessages([
         {
           role: "user",
-          content: [
-            { type: "image", image: "data:image/png;base64,AAA" },
-          ],
+          content: [{ type: "image", image: "data:image/png;base64,AAA" }],
         } as ThreadMessageLike,
       ]);
-      const block = (out[0].content as Array<{ type: string; source?: { media_type: string } }>)[0];
+      const block = (
+        out[0].content as Array<{
+          type: string;
+          source?: { media_type: string };
+        }>
+      )[0];
       expect(block.type).toBe("image");
       expect(block.source?.media_type).toBe("image/png");
     });
@@ -37,12 +40,12 @@ describe("anthropic/messages/convertMessages", () => {
       const out = convertMessages([
         {
           role: "user",
-          content: [
-            { type: "image", image: "data:image/weird;base64,AAA" },
-          ],
+          content: [{ type: "image", image: "data:image/weird;base64,AAA" }],
         } as ThreadMessageLike,
       ]);
-      const block = (out[0].content as Array<{ source: { media_type: string } }>)[0];
+      const block = (
+        out[0].content as Array<{ source: { media_type: string } }>
+      )[0];
       expect(block.source.media_type).toBe("image/jpeg");
     });
 
@@ -59,7 +62,9 @@ describe("anthropic/messages/convertMessages", () => {
           ],
         } as ThreadMessageLike,
       ]);
-      const block = (out[0].content as Array<{ type: string; context?: string }>)[0];
+      const block = (
+        out[0].content as Array<{ type: string; context?: string }>
+      )[0];
       expect(block.type).toBe("document");
       expect(block.context).toBe("/tmp/a.txt");
     });
@@ -140,7 +145,9 @@ describe("anthropic/messages/convertMessages", () => {
       expect(out).toHaveLength(2);
       expect(out[0].role).toBe("assistant");
       expect(out[1].role).toBe("user");
-      const toolResult = (out[1].content as Array<{ type: string; tool_use_id: string }>)[0];
+      const toolResult = (
+        out[1].content as Array<{ type: string; tool_use_id: string }>
+      )[0];
       expect(toolResult.type).toBe("tool_result");
       expect(toolResult.tool_use_id).toBe("t1");
     });

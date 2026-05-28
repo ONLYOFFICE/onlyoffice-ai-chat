@@ -115,9 +115,9 @@ describe("openai/stream/finalizeReasoning", () => {
       content: [{ type: "reasoning", text: "t", parentId: "r-1" }],
     };
     const out = finalizeReasoning(seed);
-    expect((out.content as unknown as Array<{ parentId: string }>)[0].parentId).toBe(
-      "r-1"
-    );
+    expect(
+      (out.content as unknown as Array<{ parentId: string }>)[0].parentId
+    ).toBe("r-1");
   });
 
   it("appends an empty text part with addEmptyText when last part is reasoning", () => {
@@ -126,7 +126,10 @@ describe("openai/stream/finalizeReasoning", () => {
       content: [{ type: "reasoning", text: "t" }],
     };
     const out = finalizeReasoning(seed, true);
-    const parts = out.content as unknown as Array<{ type: string; text?: string }>;
+    const parts = out.content as unknown as Array<{
+      type: string;
+      text?: string;
+    }>;
     expect(parts).toHaveLength(2);
     expect(parts[1]).toEqual({ type: "text", text: "" });
   });
@@ -189,7 +192,10 @@ describe("openai/stream/handleToolCall", () => {
       emptyMsg(),
       createToolCallChunk("t1", "search", '{"q":"x"}').choices[0]
     );
-    const parts = out.content as unknown as Array<{ type: string; toolCallId: string }>;
+    const parts = out.content as unknown as Array<{
+      type: string;
+      toolCallId: string;
+    }>;
     expect(parts[0].type).toBe("tool-call");
     expect(parts[0].toolCallId).toBe("t1");
   });
@@ -200,12 +206,12 @@ describe("openai/stream/handleToolCall", () => {
       msg,
       createToolCallChunk("t1", "search", '{"q":').choices[0]
     );
-    msg = handleToolCall(
-      msg,
-      createToolCallChunk("", "", '"x"}').choices[0]
-    );
+    msg = handleToolCall(msg, createToolCallChunk("", "", '"x"}').choices[0]);
     const part = (
-      msg.content as unknown as Array<{ argsText: string; args: Record<string, unknown> }>
+      msg.content as unknown as Array<{
+        argsText: string;
+        args: Record<string, unknown>;
+      }>
     )[0];
     expect(part.argsText).toBe('{"q":"x"}');
     expect(part.args).toEqual({ q: "x" });
@@ -216,7 +222,9 @@ describe("openai/stream/handleToolCall", () => {
       emptyMsg(),
       createToolCallChunk("t1", "search", '{"q":').choices[0]
     );
-    const part = (out.content as unknown as Array<{ args: Record<string, unknown> }>)[0];
+    const part = (
+      out.content as unknown as Array<{ args: Record<string, unknown> }>
+    )[0];
     expect(part.args).toEqual({});
   });
 
@@ -248,9 +256,7 @@ async function* toStream(chunks: ChatCompletionChunk[]) {
 describe("openai/stream/processStream", () => {
   it("yields snapshots then a terminal isEnd on finish", async () => {
     const out = await collect(
-      processStream(
-        toStream([createTextDeltaChunk("hi"), createFinishChunk()])
-      )
+      processStream(toStream([createTextDeltaChunk("hi"), createFinishChunk()]))
     );
     const last = out[out.length - 1] as unknown as {
       isEnd: true;

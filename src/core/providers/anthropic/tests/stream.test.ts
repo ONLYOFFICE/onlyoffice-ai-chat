@@ -73,7 +73,9 @@ describe("anthropic/stream/handleContentBlockStart", () => {
       }),
       base
     );
-    const part = (out.content as unknown as Array<{ type: string; toolCallId: string }>)[0];
+    const part = (
+      out.content as unknown as Array<{ type: string; toolCallId: string }>
+    )[0];
     expect(part.type).toBe("tool-call");
     expect(part.toolCallId).toBe("t1");
   });
@@ -154,7 +156,12 @@ describe("anthropic/stream/handleContentBlockDelta", () => {
       }),
       seed
     );
-    const part = (out.content as unknown as Array<{ argsText: string; args: Record<string, unknown> }>)[0];
+    const part = (
+      out.content as unknown as Array<{
+        argsText: string;
+        args: Record<string, unknown>;
+      }>
+    )[0];
     expect(part.argsText).toBe('{"q":"x"}');
     expect(part.args).toEqual({ q: "x" });
   });
@@ -179,7 +186,9 @@ describe("anthropic/stream/handleContentBlockDelta", () => {
       }),
       seed
     );
-    const part = (out.content as unknown as Array<{ args: Record<string, unknown> }>)[0];
+    const part = (
+      out.content as unknown as Array<{ args: Record<string, unknown> }>
+    )[0];
     expect(part.args).toEqual({});
   });
 

@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AbstractBaseProvider } from "../../../providers";
-import {
-  registerProvider,
-  unregisterProvider,
-} from "../../../providers";
+import { registerProvider, unregisterProvider } from "../../../providers";
 import { probeResponsesSupport } from "../probe-responses";
 
 // ---------------------------------------------------------------------------
@@ -138,9 +135,7 @@ describe("probeResponsesSupport", () => {
     checkResponsesApiMock.mockImplementationOnce(
       (_id, signal: AbortSignal) =>
         new Promise<boolean>((_, reject) => {
-          signal.addEventListener("abort", () =>
-            reject(new Error("aborted"))
-          );
+          signal.addEventListener("abort", () => reject(new Error("aborted")));
         })
     );
 

@@ -43,10 +43,7 @@ export function buildFileRefBlock(att: {
  * Build a persisted image-attachment block from a draft attachment.
  * Use this from the UI instead of inlining `image: base64`.
  */
-export function buildImageRefBlock(att: {
-  id: string;
-  title: string;
-}) {
+export function buildImageRefBlock(att: { id: string; title: string }) {
   const meta: RefMeta = {
     ref: att.id,
     title: att.title,

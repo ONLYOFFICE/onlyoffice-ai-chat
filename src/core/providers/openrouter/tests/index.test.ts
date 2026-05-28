@@ -57,9 +57,7 @@ describe("OpenRouterProvider", () => {
           choices: [
             {
               message: {
-                images: [
-                  { image_url: { url: "data:image/png;base64,AAA" } },
-                ],
+                images: [{ image_url: { url: "data:image/png;base64,AAA" } }],
               },
             },
           ],
@@ -118,9 +116,7 @@ describe("OpenRouterProvider", () => {
     });
 
     it("rethrows non-abort errors", async () => {
-      const provider = makeProvider(() =>
-        Promise.reject(new Error("boom"))
-      );
+      const provider = makeProvider(() => Promise.reject(new Error("boom")));
       await expect(
         provider.imageGeneration({ model: "x", prompt: "p" })
       ).rejects.toThrow("boom");

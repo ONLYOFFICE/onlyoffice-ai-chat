@@ -13,10 +13,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function makeStorage(seed: {
-  config?: WebSearchConfig | null;
-  entityConfigs?: Record<string, WebSearchConfig | null>;
-} = {}) {
+function makeStorage(
+  seed: {
+    config?: WebSearchConfig | null;
+    entityConfigs?: Record<string, WebSearchConfig | null>;
+  } = {}
+) {
   let stored: WebSearchConfig | null = seed.config ?? null;
   const entityStored: Record<string, WebSearchConfig | null> = {
     ...(seed.entityConfigs ?? {}),

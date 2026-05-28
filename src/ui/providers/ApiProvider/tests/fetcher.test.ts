@@ -89,13 +89,7 @@ describe("callRoute", () => {
         baseUrl: "",
         routes: baseRoutes,
       };
-      const result = callRoute(
-        config,
-        "ai",
-        "send",
-        [] as never,
-        engines
-      );
+      const result = callRoute(config, "ai", "send", [] as never, engines);
       expect(result).toBe("ok");
     });
   });
@@ -115,12 +109,7 @@ describe("callRoute", () => {
         ...config,
         headers: { Authorization: "Bearer t" },
       };
-      const res = await callRoute(
-        cfg,
-        "ai",
-        "send",
-        [{ q: "hi" }] as never
-      );
+      const res = await callRoute(cfg, "ai", "send", [{ q: "hi" }] as never);
       expect(res).toEqual({ ok: true });
       expect(fetchMock).toHaveBeenCalledTimes(1);
       const [url, init] = fetchMock.mock.calls[0];
@@ -137,28 +126,20 @@ describe("callRoute", () => {
       fetchMock.mockResolvedValue({
         json: () => Promise.resolve(null),
       });
-      await callRoute(
-        config,
-        "threads",
-        "appendUserMessage",
-        ["t1", { role: "user" }, "p1"] as never
-      );
+      await callRoute(config, "threads", "appendUserMessage", [
+        "t1",
+        { role: "user" },
+        "p1",
+      ] as never);
       const [, init] = fetchMock.mock.calls[0];
-      expect(init.body).toBe(
-        JSON.stringify(["t1", { role: "user" }, "p1"])
-      );
+      expect(init.body).toBe(JSON.stringify(["t1", { role: "user" }, "p1"]));
     });
 
     it("omits body for GET routes (no body, no Content-Type)", async () => {
       fetchMock.mockResolvedValue({
         json: () => Promise.resolve([]),
       });
-      await callRoute(
-        config,
-        "threads",
-        "list",
-        [] as never
-      );
+      await callRoute(config, "threads", "list", [] as never);
       const [url, init] = fetchMock.mock.calls[0];
       expect(url).toBe("https://api.example.com/v1/threads/list");
       expect(init.method).toBe("GET");
@@ -250,9 +231,7 @@ describe("callRoute", () => {
       } as unknown as Response;
     }
 
-    async function collect(
-      iter: AsyncIterable<unknown>
-    ): Promise<unknown[]> {
+    async function collect(iter: AsyncIterable<unknown>): Promise<unknown[]> {
       const out: unknown[] = [];
       for await (const ev of iter) out.push(ev);
       return out;
@@ -266,12 +245,9 @@ describe("callRoute", () => {
           '{"type":"message-end","messageId":"m1"}\n',
         ])
       );
-      const stream = callRoute(
-        config,
-        "ai",
-        "sendWithStream",
-        [{ userMessage: { role: "user" } }] as never
-      ) as unknown as AsyncIterable<unknown>;
+      const stream = callRoute(config, "ai", "sendWithStream", [
+        { userMessage: { role: "user" } },
+      ] as never) as unknown as AsyncIterable<unknown>;
       const events = await collect(stream);
       expect(events).toEqual([
         { type: "message-start", messageId: "m1" },
@@ -293,12 +269,9 @@ describe("callRoute", () => {
           '"messageId":"m1"}\n',
         ])
       );
-      const stream = callRoute(
-        config,
-        "ai",
-        "regenerateStream",
-        [{ threadId: "t1" }] as never
-      ) as unknown as AsyncIterable<unknown>;
+      const stream = callRoute(config, "ai", "regenerateStream", [
+        { threadId: "t1" },
+      ] as never) as unknown as AsyncIterable<unknown>;
       const events = await collect(stream);
       expect(events).toEqual([
         { type: "message-start", messageId: "m1" },
@@ -313,12 +286,9 @@ describe("callRoute", () => {
           '{"type":"message-end","messageId":"m1"}',
         ])
       );
-      const stream = callRoute(
-        config,
-        "ai",
-        "sendWithStream",
-        [{}] as never
-      ) as unknown as AsyncIterable<unknown>;
+      const stream = callRoute(config, "ai", "sendWithStream", [
+        {},
+      ] as never) as unknown as AsyncIterable<unknown>;
       const events = await collect(stream);
       expect(events).toEqual([
         { type: "message-start", messageId: "m1" },
@@ -328,12 +298,9 @@ describe("callRoute", () => {
 
     it("completes without yielding on an empty stream", async () => {
       fetchMock.mockResolvedValue(ndjsonResponse([]));
-      const stream = callRoute(
-        config,
-        "ai",
-        "approveToolCall",
-        [{}] as never
-      ) as unknown as AsyncIterable<unknown>;
+      const stream = callRoute(config, "ai", "approveToolCall", [
+        {},
+      ] as never) as unknown as AsyncIterable<unknown>;
       const events = await collect(stream);
       expect(events).toEqual([]);
     });
@@ -346,12 +313,9 @@ describe("callRoute", () => {
           '{"type":"message-end","messageId":"m1"}\n',
         ])
       );
-      const stream = callRoute(
-        config,
-        "ai",
-        "denyToolCall",
-        [{}] as never
-      ) as unknown as AsyncIterable<unknown>;
+      const stream = callRoute(config, "ai", "denyToolCall", [
+        {},
+      ] as never) as unknown as AsyncIterable<unknown>;
       const events = await collect(stream);
       expect(events).toHaveLength(2);
     });
@@ -364,12 +328,9 @@ describe("callRoute", () => {
         body: null,
         text: () => Promise.resolve("boom"),
       } as unknown as Response);
-      const stream = callRoute(
-        config,
-        "ai",
-        "sendWithStream",
-        [{}] as never
-      ) as unknown as AsyncIterable<unknown>;
+      const stream = callRoute(config, "ai", "sendWithStream", [
+        {},
+      ] as never) as unknown as AsyncIterable<unknown>;
       await expect(collect(stream)).rejects.toThrow(/500/);
     });
 
@@ -378,12 +339,7 @@ describe("callRoute", () => {
         ok: true,
         json: () => Promise.resolve({ ok: true }),
       });
-      const res = await callRoute(
-        config,
-        "ai",
-        "send",
-        [{ q: 1 }] as never
-      );
+      const res = await callRoute(config, "ai", "send", [{ q: 1 }] as never);
       expect(res).toEqual({ ok: true });
     });
   });

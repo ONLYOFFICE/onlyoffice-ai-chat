@@ -5,10 +5,7 @@ export {
   WEB_SEARCH_TYPE,
 } from "./source";
 export { DEFAULT_WEB_SEARCH_ROUTES } from "./types";
-export {
-  testWebSearchConnection,
-  validateConfigShape,
-} from "./validation";
+export { testWebSearchConnection, validateConfigShape } from "./validation";
 export type {
   WebSearchConfig,
   WebSearchEngineDeps,

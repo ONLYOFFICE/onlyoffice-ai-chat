@@ -11,20 +11,27 @@ const records = new Map<string, Attachment>();
 const deleteCalls: string[] = [];
 
 const makeStubEngine = () => ({
-  saveFile: vi.fn(async (input: { path: string; content: string; type: number; title?: string }) => {
-    const id = `att-${++nextId}`;
-    const rec: Attachment = {
-      id,
-      kind: "file",
-      title: input.title ?? input.path,
-      content: input.content,
-      path: input.path,
-      type: input.type,
-      createdAt: Date.now(),
-    };
-    records.set(id, rec);
-    return rec;
-  }),
+  saveFile: vi.fn(
+    async (input: {
+      path: string;
+      content: string;
+      type: number;
+      title?: string;
+    }) => {
+      const id = `att-${++nextId}`;
+      const rec: Attachment = {
+        id,
+        kind: "file",
+        title: input.title ?? input.path,
+        content: input.content,
+        path: input.path,
+        type: input.type,
+        createdAt: Date.now(),
+      };
+      records.set(id, rec);
+      return rec;
+    }
+  ),
   saveFilesMany: vi.fn(
     async (
       inputs: { path: string; content: string; type: number; title?: string }[]
@@ -44,18 +51,20 @@ const makeStubEngine = () => ({
         return rec;
       })
   ),
-  saveImage: vi.fn(async (input: { name: string; base64: string; title?: string }) => {
-    const id = `att-${++nextId}`;
-    const rec: Attachment = {
-      id,
-      kind: "image",
-      title: input.title ?? input.name,
-      base64: input.base64,
-      createdAt: Date.now(),
-    };
-    records.set(id, rec);
-    return rec;
-  }),
+  saveImage: vi.fn(
+    async (input: { name: string; base64: string; title?: string }) => {
+      const id = `att-${++nextId}`;
+      const rec: Attachment = {
+        id,
+        kind: "image",
+        title: input.title ?? input.name,
+        base64: input.base64,
+        createdAt: Date.now(),
+      };
+      records.set(id, rec);
+      return rec;
+    }
+  ),
   saveImagesMany: vi.fn(
     async (inputs: { name: string; base64: string; title?: string }[]) =>
       inputs.map((input) => {
@@ -72,7 +81,9 @@ const makeStubEngine = () => ({
       })
   ),
   get: vi.fn(async (id: string) => records.get(id) ?? null),
-  getMany: vi.fn(async (ids: string[]) => ids.map((i) => records.get(i) ?? null)),
+  getMany: vi.fn(async (ids: string[]) =>
+    ids.map((i) => records.get(i) ?? null)
+  ),
   delete: vi.fn(async (id: string) => {
     deleteCalls.push(id);
     records.delete(id);
@@ -97,7 +108,10 @@ const createStore = () => {
   const attachments = makeStubEngine() as unknown as Parameters<
     typeof createAttachmentsStore
   >[0]["attachments"];
-  return { store: createAttachmentsStore({ attachments }), engine: attachments };
+  return {
+    store: createAttachmentsStore({ attachments }),
+    engine: attachments,
+  };
 };
 
 describe("createAttachmentsStore", () => {
@@ -131,7 +145,6 @@ describe("createAttachmentsStore", () => {
     it("enforces max 5 files (does not persist past limit)", async () => {
       const { store } = createStore();
       for (let i = 0; i < 6; i++) {
-
         await store
           .getState()
           .addAttachmentFile({ path: `file-${i}`, content: "", type: 1 });
@@ -245,7 +258,6 @@ describe("createAttachmentsStore", () => {
     it("enforces max 5 images", async () => {
       const { store } = createStore();
       for (let i = 0; i < 6; i++) {
-         
         await store
           .getState()
           .addAttachmentImage({ name: `img-${i}`, base64: "x" });

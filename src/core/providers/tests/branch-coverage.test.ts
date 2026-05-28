@@ -16,9 +16,7 @@ import {
   inferCapabilities as zhipuInferCapabilities,
   listModels as zhipuListModels,
 } from "../zhipu/models";
-import {
-  inferCapabilities as openrouterInferCapabilities,
-} from "../openrouter/models";
+import { inferCapabilities as openrouterInferCapabilities } from "../openrouter/models";
 
 const { modelsListMock } = vi.hoisted(() => ({ modelsListMock: vi.fn() }));
 

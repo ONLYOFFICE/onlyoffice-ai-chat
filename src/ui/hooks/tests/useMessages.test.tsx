@@ -2,15 +2,12 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-const {
-  readToolCallMock,
-  patchToolCallArgsMock,
-  patchToolCallResultMock,
-} = vi.hoisted(() => ({
-  readToolCallMock: vi.fn(),
-  patchToolCallArgsMock: vi.fn((m) => m),
-  patchToolCallResultMock: vi.fn((m) => m),
-}));
+const { readToolCallMock, patchToolCallArgsMock, patchToolCallResultMock } =
+  vi.hoisted(() => ({
+    readToolCallMock: vi.fn(),
+    patchToolCallArgsMock: vi.fn((m) => m),
+    patchToolCallResultMock: vi.fn((m) => m),
+  }));
 
 vi.mock("../../../core/services/ai/tool-call", () => ({
   readToolCall: readToolCallMock,
@@ -96,17 +93,23 @@ vi.mock("../../store/context", () => ({
   useStores: () => ({
     useMessageStore: Object.assign(
       ((selector?: (s: typeof stores.messageState) => unknown) =>
-        selector ? selector(stores.messageState) : stores.messageState) as never,
+        selector
+          ? selector(stores.messageState)
+          : stores.messageState) as never,
       { getState: () => stores.messageState }
     ),
     useThreadsStore: Object.assign(
       ((selector?: (s: typeof stores.threadsState) => unknown) =>
-        selector ? selector(stores.threadsState) : stores.threadsState) as never,
+        selector
+          ? selector(stores.threadsState)
+          : stores.threadsState) as never,
       { getState: () => stores.threadsState }
     ),
     useServersStore: Object.assign(
       ((selector?: (s: typeof stores.serversState) => unknown) =>
-        selector ? selector(stores.serversState) : stores.serversState) as never,
+        selector
+          ? selector(stores.serversState)
+          : stores.serversState) as never,
       { getState: () => stores.serversState }
     ),
     useAttachmentsStore: Object.assign(
@@ -118,12 +121,14 @@ vi.mock("../../store/context", () => ({
         setState: (
           patch:
             | Partial<typeof stores.attachmentsState>
-            | ((s: typeof stores.attachmentsState) => Partial<
-                typeof stores.attachmentsState
-              >)
+            | ((
+                s: typeof stores.attachmentsState
+              ) => Partial<typeof stores.attachmentsState>)
         ) => {
           const next =
-            typeof patch === "function" ? patch(stores.attachmentsState) : patch;
+            typeof patch === "function"
+              ? patch(stores.attachmentsState)
+              : patch;
           Object.assign(stores.attachmentsState, next);
         },
         getState: () => stores.attachmentsState,
@@ -261,9 +266,11 @@ describe("useMessages.onNew", () => {
         content: [{ type: "text", text: "raw" }],
       } as never);
     });
-    const sent = (apiAi.sendWithStream.mock.calls[0][0] as {
-      userMessage: { content: { type: string; text?: string }[] };
-    }).userMessage;
+    const sent = (
+      apiAi.sendWithStream.mock.calls[0][0] as {
+        userMessage: { content: { type: string; text?: string }[] };
+      }
+    ).userMessage;
     expect(sent.content.find((c) => c.type === "text")?.text).toBe("filtered");
   });
 
@@ -765,7 +772,9 @@ describe("useMessages stream branches", () => {
   it("auto-allowed tool-call aborts when afterToolResult middleware returns skip", async () => {
     stores.profilesState.chatProfile = profile;
     middlewareRunner.isEmpty = false;
-    middlewareRunner.runBeforeToolCall.mockResolvedValue({ action: "continue" });
+    middlewareRunner.runBeforeToolCall.mockResolvedValue({
+      action: "continue",
+    });
     middlewareRunner.runAfterToolResult.mockResolvedValue({ action: "skip" });
     readToolCallMock.mockReturnValue({
       type: "tool-call",

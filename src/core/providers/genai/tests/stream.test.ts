@@ -47,9 +47,9 @@ describe("genai/stream/response factories", () => {
     expect(out.status.error).toEqual({ code: "unknown", message: "x" });
   });
   it("createStopResponse marks cancelled", () => {
-    expect((createStopResponse() as { status: { reason: string } }).status.reason).toBe(
-      "cancelled"
-    );
+    expect(
+      (createStopResponse() as { status: { reason: string } }).status.reason
+    ).toBe("cancelled");
   });
 });
 
@@ -100,9 +100,9 @@ describe("genai/stream/handleText", () => {
       content: [{ type: "reasoning", text: "r" }],
     };
     const out = handleText(seed, "t");
-    expect((out.content as unknown as Array<{ type: string }>).map((p) => p.type)).toEqual(
-      ["reasoning", "text"]
-    );
+    expect(
+      (out.content as unknown as Array<{ type: string }>).map((p) => p.type)
+    ).toEqual(["reasoning", "text"]);
   });
 
   it("is a no-op for empty text / string content", () => {
@@ -119,7 +119,9 @@ describe("genai/stream/handleFunctionCall", () => {
       name: "search",
       args: { q: "x" },
     });
-    const part = (out.content as unknown as Array<{ type: string; toolName: string }>)[0];
+    const part = (
+      out.content as unknown as Array<{ type: string; toolName: string }>
+    )[0];
     expect(part.type).toBe("tool-call");
     expect(part.toolName).toBe("search");
   });
@@ -130,7 +132,11 @@ describe("genai/stream/handleFunctionCall", () => {
       args: {},
       thoughtSignature: "sig",
     });
-    const part = (out.content as unknown as Array<{ metadata?: { thoughtSignature?: string } }>)[0];
+    const part = (
+      out.content as unknown as Array<{
+        metadata?: { thoughtSignature?: string };
+      }>
+    )[0];
     expect(part.metadata?.thoughtSignature).toBe("sig");
   });
 
@@ -147,12 +153,16 @@ describe("genai/stream/processChunk", () => {
       emptyMsg(),
       chunk({ text: "t", thought: true } as never)
     );
-    expect((out.content as unknown as Array<{ type: string }>)[0]?.type).toBe("reasoning");
+    expect((out.content as unknown as Array<{ type: string }>)[0]?.type).toBe(
+      "reasoning"
+    );
   });
 
   it("routes plain text through handleText", () => {
     const out = processChunk(emptyMsg(), chunk({ text: "t" } as never));
-    expect((out.content as unknown as Array<{ type: string }>)[0]?.type).toBe("text");
+    expect((out.content as unknown as Array<{ type: string }>)[0]?.type).toBe(
+      "text"
+    );
   });
 
   it("routes functionCall through handleFunctionCall", () => {
@@ -162,7 +172,9 @@ describe("genai/stream/processChunk", () => {
         functionCall: { name: "search", args: {} },
       } as never)
     );
-    expect((out.content as unknown as Array<{ type: string }>)[0]?.type).toBe("tool-call");
+    expect((out.content as unknown as Array<{ type: string }>)[0]?.type).toBe(
+      "tool-call"
+    );
   });
 
   it("is a no-op on a chunk with no candidates", () => {
@@ -177,10 +189,7 @@ describe("genai/stream/processStream", () => {
   it("yields snapshots and a terminal isEnd on stream end", async () => {
     const out = await drain(
       processStream(
-        iter([
-          chunk({ text: "hi" } as never),
-          chunk({ text: "!" } as never),
-        ])
+        iter([chunk({ text: "hi" } as never), chunk({ text: "!" } as never)])
       )
     );
     const last = out[out.length - 1] as {
@@ -188,7 +197,9 @@ describe("genai/stream/processStream", () => {
       responseMessage: ThreadMessageLike;
     };
     expect(last.isEnd).toBe(true);
-    expect(last.responseMessage.content).toEqual([{ type: "text", text: "hi!" }]);
+    expect(last.responseMessage.content).toEqual([
+      { type: "text", text: "hi!" },
+    ]);
   });
 
   it("yields cancelled when signal fires between chunks", async () => {

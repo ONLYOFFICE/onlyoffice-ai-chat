@@ -37,9 +37,7 @@ export const checkCredentials = async (
     return true;
   } catch (error) {
     const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to connect to LM Studio";
+      error instanceof Error ? error.message : "Failed to connect to LM Studio";
     return ProviderErrors.invalidUrl(message);
   }
 };

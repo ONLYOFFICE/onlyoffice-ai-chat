@@ -21,7 +21,9 @@ vi.mock("../../../tools/context", () => ({
 }));
 
 const mockServersStoreState = {
-  servers: { "host-editor": [{ name: "t1", description: "", inputSchema: {} }] },
+  servers: {
+    "host-editor": [{ name: "t1", description: "", inputSchema: {} }],
+  },
 };
 
 vi.mock("../../../store/context", () => ({

@@ -212,10 +212,7 @@ describe("createToolsApi", () => {
     expectCall(3, "tools", "removeCustomServer", ["s", undefined]);
     expectCall(4, "tools", "getCustomServer", ["s", undefined]);
     expectCall(5, "tools", "listCustomServers", [undefined]);
-    expectCall(6, "tools", "replaceAllCustomServers", [
-      { s: cfg },
-      undefined,
-    ]);
+    expectCall(6, "tools", "replaceAllCustomServers", [{ s: cfg }, undefined]);
     expectCall(7, "tools", "setDisabled", ["custom", ["t1"], undefined]);
     expectCall(8, "tools", "getDisabled", [undefined]);
     expectCall(9, "tools", "isToolDisabled", ["custom", "t1", undefined]);

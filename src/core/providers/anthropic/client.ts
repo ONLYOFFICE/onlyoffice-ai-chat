@@ -12,9 +12,7 @@ import type { ProviderCredentials } from "../../../shared/provider-credentials";
  * @param creds - Base URL (required) and optional API key.
  * @returns A ready-to-use `Anthropic` client.
  */
-export const createAnthropicClient = (
-  creds: ProviderCredentials
-): Anthropic =>
+export const createAnthropicClient = (creds: ProviderCredentials): Anthropic =>
   new Anthropic({
     apiKey: creds.apiKey,
     baseURL: creds.baseUrl,

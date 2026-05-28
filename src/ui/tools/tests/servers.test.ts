@@ -6,7 +6,12 @@ import type { TMCPItem } from "../../../types";
 const mockPlatform = {
   file: null,
   process: null,
-  env: { theme: "light", systemTheme: "light", locale: "en", devicePixelRatio: 1 },
+  env: {
+    theme: "light",
+    systemTheme: "light",
+    locale: "en",
+    devicePixelRatio: 1,
+  },
   hostTools: null,
   clouds: null,
 } as unknown as PlatformAdapter;

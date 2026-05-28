@@ -45,9 +45,9 @@ describe("mistral/stream/response factories", () => {
   });
   it("createErrorResponse writes error into text part", () => {
     const msg = createErrorResponse(new Error("boom"));
-    expect((msg.content as unknown as Array<{ text: string }>)[0]?.text).toContain(
-      "boom"
-    );
+    expect(
+      (msg.content as unknown as Array<{ text: string }>)[0]?.text
+    ).toContain("boom");
   });
   it("createStopResponse marks cancelled", () => {
     expect(
@@ -70,10 +70,7 @@ describe("mistral/stream/handleTextContent", () => {
       role: "assistant",
       content: [{ type: "text", text: "a" }],
     };
-    const out = handleTextContent(
-      { content: "b" } as unknown as never,
-      seed
-    );
+    const out = handleTextContent({ content: "b" } as unknown as never, seed);
     expect(out.content).toEqual([{ type: "text", text: "ab" }]);
   });
 
@@ -86,9 +83,9 @@ describe("mistral/stream/handleTextContent", () => {
 
   it("is a no-op when content is a string", () => {
     const seed: ThreadMessageLike = { role: "assistant", content: "s" };
-    expect(
-      handleTextContent({ content: "x" } as unknown as never, seed)
-    ).toBe(seed);
+    expect(handleTextContent({ content: "x" } as unknown as never, seed)).toBe(
+      seed
+    );
   });
 });
 
@@ -102,16 +99,21 @@ describe("mistral/stream/handleToolCall", () => {
       } as unknown as never,
       emptyMsg()
     );
-    const part = (out.content as unknown as Array<{ toolName: string; args: Record<string, unknown> }>)[0];
+    const part = (
+      out.content as unknown as Array<{
+        toolName: string;
+        args: Record<string, unknown>;
+      }>
+    )[0];
     expect(part.toolName).toBe("search");
     expect(part.args).toEqual({ q: "x" });
   });
 
   it("is a no-op when there are no toolCalls", () => {
     const seed = emptyMsg();
-    expect(
-      handleToolCall({ toolCalls: [] } as unknown as never, seed)
-    ).toBe(seed);
+    expect(handleToolCall({ toolCalls: [] } as unknown as never, seed)).toBe(
+      seed
+    );
   });
 
   it("is a no-op when content is a string", () => {
@@ -119,9 +121,7 @@ describe("mistral/stream/handleToolCall", () => {
     expect(
       handleToolCall(
         {
-          toolCalls: [
-            { id: "t", function: { name: "n", arguments: "{}" } },
-          ],
+          toolCalls: [{ id: "t", function: { name: "n", arguments: "{}" } }],
         } as unknown as never,
         seed
       )
@@ -137,7 +137,9 @@ describe("mistral/stream/getChoiceFromEvent", () => {
 
   it("returns undefined when there are no choices", () => {
     expect(
-      getChoiceFromEvent({ data: { choices: [] } } as unknown as CompletionEvent)
+      getChoiceFromEvent({
+        data: { choices: [] },
+      } as unknown as CompletionEvent)
     ).toBeUndefined();
   });
 });
@@ -145,19 +147,16 @@ describe("mistral/stream/getChoiceFromEvent", () => {
 describe("mistral/stream/processStream", () => {
   it("yields snapshots and isEnd on finishReason", async () => {
     const out = await drain(
-      processStream(
-        iter([
-          makeEvent({ content: "hi" }),
-          makeEvent({}, "stop"),
-        ])
-      )
+      processStream(iter([makeEvent({ content: "hi" }), makeEvent({}, "stop")]))
     );
     const last = out[out.length - 1] as {
       isEnd: true;
       responseMessage: ThreadMessageLike;
     };
     expect(last.isEnd).toBe(true);
-    expect(last.responseMessage.content).toEqual([{ type: "text", text: "hi" }]);
+    expect(last.responseMessage.content).toEqual([
+      { type: "text", text: "hi" },
+    ]);
   });
 
   it("yields cancelled when signal fires", async () => {

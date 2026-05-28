@@ -403,7 +403,8 @@ describe("ConfigDialog - platform local server validation", () => {
 
   it("shows error for local servers when platform process is not available", async () => {
     // Re-mock platform to return process.isAvailable = false
-    const platformMock = await import("../../../providers/PlatformProvider/context");
+    const platformMock =
+      await import("../../../providers/PlatformProvider/context");
     vi.spyOn(platformMock, "usePlatform").mockReturnValue({
       process: { isAvailable: () => false },
     } as ReturnType<typeof platformMock.usePlatform>);

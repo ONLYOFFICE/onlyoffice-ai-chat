@@ -23,9 +23,7 @@ class TestProvider extends AbstractBaseProvider {
     return "https://test.com";
   }
 
-  static async checkProvider(
-    _creds: ProviderCredentials
-  ): Promise<boolean> {
+  static async checkProvider(_creds: ProviderCredentials): Promise<boolean> {
     return true;
   }
 

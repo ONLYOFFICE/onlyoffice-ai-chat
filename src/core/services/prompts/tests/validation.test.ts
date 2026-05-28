@@ -33,34 +33,31 @@ describe("validateFolderName", () => {
   });
 
   it("rejects duplicates (case-insensitive)", () => {
-    expect(
-      validateFolderName([folder("a", "Inbox")], "INBOX")?.message
-    ).toBe("Folder name already exists");
+    expect(validateFolderName([folder("a", "Inbox")], "INBOX")?.message).toBe(
+      "Folder name already exists"
+    );
   });
 
   it("excludes a folder id during rename", () => {
-    expect(
-      validateFolderName([folder("a", "Inbox")], "INBOX", "a")
-    ).toBeNull();
+    expect(validateFolderName([folder("a", "Inbox")], "INBOX", "a")).toBeNull();
   });
 
   it("returns null when name is unique and non-empty", () => {
-    expect(
-      validateFolderName([folder("a", "Inbox")], "Other")
-    ).toBeNull();
+    expect(validateFolderName([folder("a", "Inbox")], "Other")).toBeNull();
   });
 });
 
 describe("validatePromptName", () => {
   it("rejects empty / whitespace names", () => {
     expect(validatePromptName([], "", null)?.message).toBe("Name is required");
-    expect(validatePromptName([], "  ", null)?.message).toBe("Name is required");
+    expect(validatePromptName([], "  ", null)?.message).toBe(
+      "Name is required"
+    );
   });
 
   it("treats folderId null and undefined as the same root scope", () => {
     expect(
-      validatePromptName([prompt("a", "Foo", null)], "FOO", undefined)
-        ?.message
+      validatePromptName([prompt("a", "Foo", null)], "FOO", undefined)?.message
     ).toBe("Prompt name already exists in this folder");
   });
 
@@ -72,12 +69,7 @@ describe("validatePromptName", () => {
 
   it("excludes a prompt id during rename", () => {
     expect(
-      validatePromptName(
-        [prompt("a", "Foo", "f1")],
-        "Foo",
-        "f1",
-        "a"
-      )
+      validatePromptName([prompt("a", "Foo", "f1")], "Foo", "f1", "a")
     ).toBeNull();
   });
 });

@@ -110,12 +110,15 @@ describe("createServersStore", () => {
       ["a"],
       undefined
     );
-    expect(deps.callbacksManager.emit).toHaveBeenCalledWith("onServersUpdated", {
-      kind: "tool-toggled",
-      toolType: "mcp",
-      toolName: "a",
-      enabled: false,
-    });
+    expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
+      "onServersUpdated",
+      {
+        kind: "tool-toggled",
+        toolType: "mcp",
+        toolName: "a",
+        enabled: false,
+      }
+    );
   });
 
   it("changeToolStatus re-enables tool", async () => {
@@ -165,10 +168,10 @@ describe("createServersStore", () => {
 
       expect(deps.api.tools.setDisabled).toHaveBeenCalledTimes(1);
       expect(deps.api.tools.setDisabled).toHaveBeenCalledWith(
-      "mcp",
-      ["a"],
-      undefined
-    );
+        "mcp",
+        ["a"],
+        undefined
+      );
       // Refactor target: do NOT rebuild the whole tool tree on toggle.
       expect(deps.api.tools.getDisabled).not.toHaveBeenCalled();
       expect(deps.api.webSearch.isConfigured).not.toHaveBeenCalled();

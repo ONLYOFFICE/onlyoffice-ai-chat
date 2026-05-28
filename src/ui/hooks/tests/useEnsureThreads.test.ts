@@ -12,8 +12,9 @@ vi.mock("react", () => ({
 const mockInitThreads = vi.fn();
 
 const mockStores = {
-  useThreadsStore: (selector: (s: { initThreads: typeof mockInitThreads }) =>
-    unknown) => selector({ initThreads: mockInitThreads }),
+  useThreadsStore: (
+    selector: (s: { initThreads: typeof mockInitThreads }) => unknown
+  ) => selector({ initThreads: mockInitThreads }),
 };
 
 vi.mock("../../store/context", () => ({

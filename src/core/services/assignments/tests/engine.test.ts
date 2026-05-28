@@ -17,17 +17,19 @@ function makeProfile(overrides: Partial<Profile> = {}): Profile {
   };
 }
 
-function makeStorage(seed: {
-  profiles?: Profile[];
-  assignments?: Partial<Record<ActionType, string>>;
-  /**
-   * Per-entity overrides. When `readByType` is called with an `entityId`
-   * matching a key here, returns the inner action-type → profileId map
-   * instead of the global one. Mirrors the typical host implementation
-   * where each entity persists its own chat profile.
-   */
-  entityAssignments?: Record<string, Partial<Record<ActionType, string>>>;
-} = {}) {
+function makeStorage(
+  seed: {
+    profiles?: Profile[];
+    assignments?: Partial<Record<ActionType, string>>;
+    /**
+     * Per-entity overrides. When `readByType` is called with an `entityId`
+     * matching a key here, returns the inner action-type → profileId map
+     * instead of the global one. Mirrors the typical host implementation
+     * where each entity persists its own chat profile.
+     */
+    entityAssignments?: Record<string, Partial<Record<ActionType, string>>>;
+  } = {}
+) {
   let profiles = [...(seed.profiles ?? [])];
   let assignments: Partial<Record<ActionType, string>> = {
     ...(seed.assignments ?? {}),
@@ -60,11 +62,9 @@ function makeStorage(seed: {
       deleteMany: vi.fn(async (ts: ActionType[]) => {
         for (const t of ts) delete assignments[t];
       }),
-      upsertMany: vi.fn(
-        async (m: Partial<Record<ActionType, string>>) => {
-          assignments = { ...assignments, ...m };
-        }
-      ),
+      upsertMany: vi.fn(async (m: Partial<Record<ActionType, string>>) => {
+        assignments = { ...assignments, ...m };
+      }),
     },
   } as unknown as StorageAdapter;
 
@@ -306,7 +306,10 @@ describe("AssignmentsEngine.unassign", () => {
 describe("AssignmentsEngine.bulkAssign", () => {
   it("writes nothing when any entry fails", async () => {
     const ok = makeProfile({ id: "ok" });
-    const noVision = makeProfile({ id: "nv", capabilities: CapabilitiesUI.Chat });
+    const noVision = makeProfile({
+      id: "nv",
+      capabilities: CapabilitiesUI.Chat,
+    });
     const { storage, snapshot } = makeStorage({ profiles: [ok, noVision] });
     const engine = new AssignmentsEngine({ storage });
     const result = await engine.bulkAssign({

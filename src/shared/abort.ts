@@ -7,10 +7,7 @@
  * @param signal - The `AbortSignal` that was passed in, if any.
  * @returns `true` when the error indicates the caller aborted.
  */
-export const isAbortError = (
-  error: unknown,
-  signal?: AbortSignal
-): boolean => {
+export const isAbortError = (error: unknown, signal?: AbortSignal): boolean => {
   if (signal?.aborted) return true;
   if (error instanceof Error && error.name === "AbortError") return true;
   return false;

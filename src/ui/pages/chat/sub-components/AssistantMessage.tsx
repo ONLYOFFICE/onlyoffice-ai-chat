@@ -6,14 +6,24 @@ import {
 } from "@assistant-ui/react";
 import type { ChatErrorPayload } from "../../../../core/services";
 import { motion } from "framer-motion";
-import { isValidElement, memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  isValidElement,
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { Icon } from "../../../components/icon";
 import { MarkdownContent } from "../../../components/markdown";
 import { ToolFallback } from "../../../components/tool-fallback";
-import { convertMessagesToMd, getMessageTitleFromMd } from "../../../../shared/utils";
+import {
+  convertMessagesToMd,
+  getMessageTitleFromMd,
+} from "../../../../shared/utils";
 import { getMessageText } from "../../../../utils";
 import logger from "../../../../shared/logger";
 import { useStores } from "../../../store/context";
@@ -105,7 +115,9 @@ const MessageError = () => {
       ? payload.code
       : "unknown";
   const fallback =
-    payload && typeof payload === "object" && typeof payload.message === "string"
+    payload &&
+    typeof payload === "object" &&
+    typeof payload.message === "string"
       ? payload.message
       : typeof payload === "string"
         ? payload

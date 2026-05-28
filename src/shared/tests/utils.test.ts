@@ -195,7 +195,10 @@ describe("getMessageText", () => {
     const message: ThreadMessageLike = {
       role: "assistant",
       // @ts-expect-error — testing runtime safety
-      content: [{ type: "text", text: 123 }, { type: "text", text: "ok" }],
+      content: [
+        { type: "text", text: 123 },
+        { type: "text", text: "ok" },
+      ],
     };
     expect(getMessageText(message)).toBe("ok");
   });

@@ -100,9 +100,7 @@ export class MiddlewareRunner {
    * @param ctx - The stream chunk context.
    * @returns The final result — either a (possibly modified) chunk or a skip directive.
    */
-  async runOnStreamChunk(
-    ctx: StreamChunkContext,
-  ): Promise<StreamChunkResult> {
+  async runOnStreamChunk(ctx: StreamChunkContext): Promise<StreamChunkResult> {
     let currentCtx = { ...ctx };
     for (const mw of this.middlewares) {
       if (!mw.onStreamChunk) continue;
@@ -125,7 +123,7 @@ export class MiddlewareRunner {
    * @returns The final result with potentially modified arguments, or a terminal action.
    */
   async runBeforeToolCall(
-    ctx: BeforeToolCallContext,
+    ctx: BeforeToolCallContext
   ): Promise<BeforeToolCallResult> {
     let currentCtx = { ...ctx };
     for (const mw of this.middlewares) {
@@ -151,7 +149,7 @@ export class MiddlewareRunner {
    * @returns The final result — either a (possibly modified) tool result or a skip directive.
    */
   async runAfterToolResult(
-    ctx: AfterToolResultContext,
+    ctx: AfterToolResultContext
   ): Promise<AfterToolResultResult> {
     let currentCtx = { ...ctx };
     for (const mw of this.middlewares) {
@@ -176,7 +174,7 @@ export class MiddlewareRunner {
    * @returns The final result — either a (possibly modified) message or a skip directive.
    */
   async runBeforeDisplay(
-    ctx: BeforeDisplayContext,
+    ctx: BeforeDisplayContext
   ): Promise<BeforeDisplayResult> {
     let currentCtx = { ...ctx };
     for (const mw of this.middlewares) {

@@ -48,9 +48,7 @@ describe("openai/responses-messages/convertMessagesToResponses", () => {
       const out = convertMessagesToResponses([
         {
           role: "user",
-          content: [
-            { type: "image", image: "data:image/png;base64,AAA" },
-          ],
+          content: [{ type: "image", image: "data:image/png;base64,AAA" }],
         } as ThreadMessageLike,
       ]);
       const part = (out[0] as { content: Array<unknown> }).content[0];

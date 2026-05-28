@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CapabilitiesUI } from "../../../../shared/capabilities-ui";
 import { mistralInfo } from "../info";
-import { inferCapabilities, listModels, resolveReasoningModel } from "../models";
+import {
+  inferCapabilities,
+  listModels,
+  resolveReasoningModel,
+} from "../models";
 
 const { modelsListMock } = vi.hoisted(() => ({ modelsListMock: vi.fn() }));
 
@@ -62,10 +66,7 @@ describe("mistral/models/listModels", () => {
 
   it("maps the SDK response onto Model[]", async () => {
     modelsListMock.mockResolvedValueOnce({
-      data: [
-        { id: "mistral-small-latest" },
-        { id: "pixtral-large-latest" },
-      ],
+      data: [{ id: "mistral-small-latest" }, { id: "pixtral-large-latest" }],
     });
     const out = await listModels({
       baseUrl: "https://api.mistral.ai",

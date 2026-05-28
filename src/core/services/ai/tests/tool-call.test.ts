@@ -23,9 +23,7 @@ vi.mock("../stream", () => ({
   processStream: processStreamMock,
 }));
 
-const toolCallPart = (
-  overrides: Partial<ToolCallPart> = {}
-): ToolCallPart =>
+const toolCallPart = (overrides: Partial<ToolCallPart> = {}): ToolCallPart =>
   ({
     type: "tool-call",
     toolCallId: "c1",
@@ -87,7 +85,10 @@ describe("tool-call helpers", () => {
       const m = message([original, { type: "text", text: "hi" }]);
       const out = replaceContentPart(m, 0, next);
       expect((out.content as unknown[])[0]).toBe(next);
-      expect((out.content as unknown[])[1]).toEqual({ type: "text", text: "hi" });
+      expect((out.content as unknown[])[1]).toEqual({
+        type: "text",
+        text: "hi",
+      });
     });
 
     it("leaves string content untouched", () => {
@@ -150,9 +151,11 @@ describe("tool-call helpers", () => {
       });
 
       const update = vi.fn().mockResolvedValue(undefined);
-      const readByThread = vi.fn().mockResolvedValue([
-        { role: "user", content: [{ type: "text", text: "hi" }] },
-      ]);
+      const readByThread = vi
+        .fn()
+        .mockResolvedValue([
+          { role: "user", content: [{ type: "text", text: "hi" }] },
+        ]);
       const ctx = {
         storage: { messages: { update, readByThread } },
       } as never;

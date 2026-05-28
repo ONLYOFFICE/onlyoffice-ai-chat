@@ -12,7 +12,10 @@ const hostToolGroups: unknown[] = [];
 vi.mock("../../store/context", () => ({
   useStores: () => ({
     useServersStore: (
-      selector?: (s: { initServers: typeof initServers; getTools: typeof getTools }) => unknown
+      selector?: (s: {
+        initServers: typeof initServers;
+        getTools: typeof getTools;
+      }) => unknown
     ) => {
       const state = { initServers, getTools };
       return typeof selector === "function" ? selector(state) : state;
@@ -78,7 +81,9 @@ describe("useServers", () => {
   it("subscribes to tools-changed and re-fetches on event", () => {
     renderHook(() => useServers({ isReady: false }));
     expect(on).toHaveBeenCalledWith("tools-changed", expect.any(Function));
-    const handler = on.mock.calls.find((c) => c[0] === "tools-changed")![1] as () => void;
+    const handler = on.mock.calls.find(
+      (c) => c[0] === "tools-changed"
+    )![1] as () => void;
     getTools.mockClear();
     handler();
     expect(getTools).toHaveBeenCalled();

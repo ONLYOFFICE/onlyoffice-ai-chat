@@ -32,10 +32,7 @@ describe("xai/models/listModels", () => {
       data: [{ id: "grok-reasoning-beta" }, { id: "grok-beta" }],
     });
     const out = await listModels({ baseUrl: "https://x", apiKey: "sk" });
-    expect(out.map((m) => m.id)).toEqual([
-      "grok-beta",
-      "grok-reasoning-beta",
-    ]);
+    expect(out.map((m) => m.id)).toEqual(["grok-beta", "grok-reasoning-beta"]);
     expect(out[1].reasoning).toBe(true);
   });
 });

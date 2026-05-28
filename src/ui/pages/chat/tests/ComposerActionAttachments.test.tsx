@@ -791,9 +791,7 @@ describe("ComposerActionAttachment", () => {
         getFileType: mockGetFileType,
         getRecentFiles: mockGetRecentFiles,
       };
-      mockComposerActions = [
-        { id: "act-1", text: "Custom", onClick: vi.fn() },
-      ];
+      mockComposerActions = [{ id: "act-1", text: "Custom", onClick: vi.fn() }];
       await act(async () => {
         render(<ComposerActionAttachment />);
       });

@@ -25,9 +25,8 @@ describe("validateTransportConfig", () => {
         ?.message
     ).toBe("Server config must be an object");
     expect(
-      validateTransportConfig(
-        "string" as unknown as Record<string, unknown>
-      )?.message
+      validateTransportConfig("string" as unknown as Record<string, unknown>)
+        ?.message
     ).toBe("Server config must be an object");
   });
 
@@ -38,9 +37,9 @@ describe("validateTransportConfig", () => {
   });
 
   it("rejects configs with neither url nor command", () => {
-    expect(
-      validateTransportConfig({})?.message
-    ).toMatch(/'url' \(HTTP\) or 'command' \(STDIO\)/);
+    expect(validateTransportConfig({})?.message).toMatch(
+      /'url' \(HTTP\) or 'command' \(STDIO\)/
+    );
   });
 
   it("accepts a minimal HTTP config", () => {
@@ -116,8 +115,8 @@ describe("validateTransportConfig", () => {
   });
 
   it("rejects empty url", () => {
-    expect(
-      validateTransportConfig({ url: "" })?.message
-    ).toMatch(/'url' \(HTTP\) or 'command' \(STDIO\)/);
+    expect(validateTransportConfig({ url: "" })?.message).toMatch(
+      /'url' \(HTTP\) or 'command' \(STDIO\)/
+    );
   });
 });

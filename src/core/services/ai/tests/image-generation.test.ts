@@ -17,10 +17,7 @@ vi.mock("../../../../shared/logger", () => ({
   default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
-function makeStorage(opts: {
-  profileId?: string | null;
-  profile?: unknown;
-}) {
+function makeStorage(opts: { profileId?: string | null; profile?: unknown }) {
   return {
     assignments: { readByType: vi.fn().mockResolvedValue(opts.profileId) },
     profiles: { readById: vi.fn().mockResolvedValue(opts.profile) },
@@ -34,9 +31,9 @@ describe("image-generation source", () => {
 
   describe("getImageGenerationTools", () => {
     it("returns empty when no profile assigned", async () => {
-      expect(await getImageGenerationTools(makeStorage({ profileId: null }))).toEqual(
-        []
-      );
+      expect(
+        await getImageGenerationTools(makeStorage({ profileId: null }))
+      ).toEqual([]);
     });
 
     it("returns the generate_image tool when assigned", async () => {
@@ -61,9 +58,7 @@ describe("image-generation source", () => {
     it("returns missing prompt error when prompt is empty/non-string", async () => {
       const storage = makeStorage({ profileId: "p1" });
       expect(
-        JSON.parse(
-          await callImageGenerationTool(storage, "generate_image", {})
-        )
+        JSON.parse(await callImageGenerationTool(storage, "generate_image", {}))
       ).toEqual({ error: "Missing prompt." });
       expect(
         JSON.parse(

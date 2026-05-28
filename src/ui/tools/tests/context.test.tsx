@@ -42,7 +42,11 @@ describe("tools context", () => {
       { id: "g", name: "G", tools: [] },
     ] as HostToolGroup[];
     render(
-      <ToolsProvider hostToolGroups={groups} servers={servers} eventBus={eventBus}>
+      <ToolsProvider
+        hostToolGroups={groups}
+        servers={servers}
+        eventBus={eventBus}
+      >
         <span>x</span>
       </ToolsProvider>
     );

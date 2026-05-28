@@ -89,9 +89,7 @@ describe("openrouter/models/checkCredentials", () => {
   });
 
   it("maps fetch rejection to connectionFailed", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(
-      new Error("boom")
-    );
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("boom"));
     const out = await checkCredentials({
       baseUrl: "https://x",
       apiKey: "sk",
@@ -119,11 +117,9 @@ describe("openrouter/models/listModels", () => {
   });
 
   it("omits Authorization when no apiKey", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue({
-        json: () => Promise.resolve({ data: [] }),
-      } as unknown as Response);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      json: () => Promise.resolve({ data: [] }),
+    } as unknown as Response);
     await listModels({ baseUrl: "https://x" });
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({});
   });

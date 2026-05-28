@@ -28,7 +28,8 @@ vi.mock("../../../providers/ApiProvider", () => ({
         providerType: string;
         baseUrl: string;
         apiKey: string;
-      }) => mockGetProviderModels({ baseUrl: input.baseUrl, apiKey: input.apiKey }),
+      }) =>
+        mockGetProviderModels({ baseUrl: input.baseUrl, apiKey: input.apiKey }),
     },
   }),
 }));

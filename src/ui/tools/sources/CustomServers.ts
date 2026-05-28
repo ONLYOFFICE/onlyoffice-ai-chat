@@ -188,7 +188,8 @@ class CustomServers {
         logger.warn("[mcp] onProcess stdout JSON.parse failed", {
           type,
           length: message?.length ?? 0,
-          preview: typeof message === "string" ? message.slice(0, 200) : message,
+          preview:
+            typeof message === "string" ? message.slice(0, 200) : message,
           error: err instanceof Error ? err.message : String(err),
         });
       }
@@ -352,11 +353,14 @@ class CustomServers {
 
     const process = this.platform.process?.createProcess(commandLine, env);
     if (!process) {
-      logger.error("[mcp] startStdioServer aborted — createProcess returned null/undefined", {
-        type,
-        commandLine,
-        processAdapter: !!this.platform.process,
-      });
+      logger.error(
+        "[mcp] startStdioServer aborted — createProcess returned null/undefined",
+        {
+          type,
+          commandLine,
+          processAdapter: !!this.platform.process,
+        }
+      );
       return;
     }
 

@@ -344,9 +344,10 @@ describe("mistral utils", () => {
 
         const result = convertMessagesToModelFormat(messages);
 
-        expect((result[0] as { toolCalls: { function: { arguments: string } }[] }).toolCalls[0].function.arguments).toBe(
-          '{"key":"value"}'
-        );
+        expect(
+          (result[0] as { toolCalls: { function: { arguments: string } }[] })
+            .toolCalls[0].function.arguments
+        ).toBe('{"key":"value"}');
       });
 
       it("should handle tool call with empty args", () => {
@@ -367,7 +368,10 @@ describe("mistral utils", () => {
 
         const result = convertMessagesToModelFormat(messages);
 
-        expect((result[0] as { toolCalls: { function: { arguments: string } }[] }).toolCalls[0].function.arguments).toBe("");
+        expect(
+          (result[0] as { toolCalls: { function: { arguments: string } }[] })
+            .toolCalls[0].function.arguments
+        ).toBe("");
       });
     });
 
@@ -408,7 +412,9 @@ describe("mistral utils", () => {
         const result = convertMessagesToModelFormat(messages);
 
         expect(result).toHaveLength(2);
-        expect((result[1] as { toolCalls: unknown[] }).toolCalls).toHaveLength(1);
+        expect((result[1] as { toolCalls: unknown[] }).toolCalls).toHaveLength(
+          1
+        );
       });
     });
   });

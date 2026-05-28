@@ -121,9 +121,9 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
         selfInitiatedRef.current = false;
         return;
       }
-      const data = (await api.webSearch.getActiveConfig(entityId)) as
-        | WebSearchData
-        | null;
+      const data = (await api.webSearch.getActiveConfig(
+        entityId
+      )) as WebSearchData | null;
       if (cancelled) return;
       lastPersistedRef.current = data;
       if (data) {

@@ -1,9 +1,5 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
-import type {
-  Profile,
-  ProviderType,
-  TAttachmentRef,
-} from "../../../types";
+import type { Profile, ProviderType, TAttachmentRef } from "../../../types";
 
 // ---------------------------------------------------------------------------
 // Message events

@@ -10,10 +10,12 @@ function nextUuid(): `${string}-${string}-${string}-${string}-${string}` {
   return `00000000-0000-0000-0000-${String(uuidCount).padStart(12, "0")}` as `${string}-${string}-${string}-${string}-${string}`;
 }
 
-function makeStorage(seed: {
-  prompts?: Prompt[];
-  folders?: PromptFolder[];
-} = {}) {
+function makeStorage(
+  seed: {
+    prompts?: Prompt[];
+    folders?: PromptFolder[];
+  } = {}
+) {
   let prompts: Prompt[] = [...(seed.prompts ?? [])];
   let folders: PromptFolder[] = [...(seed.folders ?? [])];
 
@@ -49,8 +51,8 @@ function makeStorage(seed: {
           return persisted;
         }
       ),
-      readById: vi.fn(async (id: string) =>
-        prompts.find((p) => p.id === id) ?? null
+      readById: vi.fn(
+        async (id: string) => prompts.find((p) => p.id === id) ?? null
       ),
       readAll: vi.fn(async () => [...prompts]),
       readByFolderId: vi.fn(async (folderId: string | null) =>
@@ -69,7 +71,7 @@ function makeStorage(seed: {
             folderId:
               updates.folderId === null
                 ? undefined
-                : updates.folderId ?? prompts[i].folderId,
+                : (updates.folderId ?? prompts[i].folderId),
             updatedAt: Date.now(),
           };
         }
@@ -112,8 +114,8 @@ function makeStorage(seed: {
           return persisted;
         }
       ),
-      readById: vi.fn(async (id: string) =>
-        folders.find((f) => f.id === id) ?? null
+      readById: vi.fn(
+        async (id: string) => folders.find((f) => f.id === id) ?? null
       ),
       readAll: vi.fn(async () => [...folders]),
       update: vi.fn(async (id: string, name: string) => {
@@ -268,9 +270,9 @@ describe("PromptsEngine.update", () => {
       seedStorage.setPrompts([]);
     });
     const engine = new PromptsEngine({ storage });
-    await expect(
-      engine.update("p1", { name: "Whatever" })
-    ).rejects.toThrow(/disappeared/);
+    await expect(engine.update("p1", { name: "Whatever" })).rejects.toThrow(
+      /disappeared/
+    );
   });
 });
 
@@ -296,9 +298,7 @@ describe("PromptsEngine.move", () => {
 describe("PromptsEngine.delete + list", () => {
   it("deletes by id", async () => {
     const { storage } = makeStorage({
-      prompts: [
-        { id: "p1", name: "X", text: "", createdAt: 1, updatedAt: 1 },
-      ],
+      prompts: [{ id: "p1", name: "X", text: "", createdAt: 1, updatedAt: 1 }],
     });
     const engine = new PromptsEngine({ storage });
     await engine.delete("p1");
@@ -307,9 +307,7 @@ describe("PromptsEngine.delete + list", () => {
 
   it("list() with no arg returns all", async () => {
     const { storage } = makeStorage({
-      prompts: [
-        { id: "a", name: "A", text: "", createdAt: 1, updatedAt: 1 },
-      ],
+      prompts: [{ id: "a", name: "A", text: "", createdAt: 1, updatedAt: 1 }],
     });
     const engine = new PromptsEngine({ storage });
     expect(await engine.list()).toHaveLength(1);
@@ -399,9 +397,7 @@ describe("PromptsEngine folder CRUD", () => {
 describe("PromptsEngine import / export", () => {
   it("exports both folders and prompts", async () => {
     const { storage } = makeStorage({
-      prompts: [
-        { id: "p1", name: "X", text: "T", createdAt: 1, updatedAt: 1 },
-      ],
+      prompts: [{ id: "p1", name: "X", text: "T", createdAt: 1, updatedAt: 1 }],
       folders: [{ id: "f1", name: "F", createdAt: 1, updatedAt: 1 }],
     });
     const engine = new PromptsEngine({ storage });
@@ -450,9 +446,7 @@ describe("PromptsEngine import / export", () => {
       prompts: [
         { id: "p-old", name: "Old", text: "", createdAt: 1, updatedAt: 1 },
       ],
-      folders: [
-        { id: "f-old", name: "OldF", createdAt: 1, updatedAt: 1 },
-      ],
+      folders: [{ id: "f-old", name: "OldF", createdAt: 1, updatedAt: 1 }],
     });
     const engine = new PromptsEngine({ storage });
     const result = await engine.importBundle({

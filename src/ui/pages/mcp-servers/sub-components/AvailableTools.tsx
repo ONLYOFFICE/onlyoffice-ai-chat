@@ -77,18 +77,22 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
           withHeader ? "pt-[4px]" : "pt-[8px]"
         )}
       >
-        {serversInstance.getHostToolGroupIds().map((groupId) =>
-          (servers[groupId] ?? []).length > 0 ? (
-            <AvailableToolsItem
-              key={groupId}
-              name={groupId}
-              displayName={serversInstance.getHostToolGroupDisplayName(groupId)}
-              mcpItems={servers[groupId] ?? []}
-              isLoading={false}
-              disableEnable={disableEnable}
-            />
-          ) : null
-        )}
+        {serversInstance
+          .getHostToolGroupIds()
+          .map((groupId) =>
+            (servers[groupId] ?? []).length > 0 ? (
+              <AvailableToolsItem
+                key={groupId}
+                name={groupId}
+                displayName={serversInstance.getHostToolGroupDisplayName(
+                  groupId
+                )}
+                mcpItems={servers[groupId] ?? []}
+                isLoading={false}
+                disableEnable={disableEnable}
+              />
+            ) : null
+          )}
         {Object.keys(customServers).map((type) => (
           <AvailableToolsItem
             key={type}

@@ -43,10 +43,7 @@ export interface AssignmentsStorage {
    * @param entityId - Optional opaque scope token.
    * @returns The assigned profile ID, or `null` if no assignment exists.
    */
-  readByType(
-    actionType: ActionType,
-    entityId?: string
-  ): Promise<string | null>;
+  readByType(actionType: ActionType, entityId?: string): Promise<string | null>;
 
   /**
    * Retrieve every assignment as a map. Missing entries are omitted.

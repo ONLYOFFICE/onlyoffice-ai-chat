@@ -26,7 +26,9 @@ describe("mistral/messages/convertMessages", () => {
           ],
         } as ThreadMessageLike,
       ]);
-      const contents = (out[0] as { content: Array<{ type: string; text: string }> }).content;
+      const contents = (
+        out[0] as { content: Array<{ type: string; text: string }> }
+      ).content;
       expect(contents).toHaveLength(3);
       expect(contents[0].text).toBe("a");
       expect(contents[1].text).toContain("x.png");
@@ -111,8 +113,11 @@ describe("mistral/messages/convertMessages", () => {
           ],
         } as ThreadMessageLike,
       ]);
-      const call = (out[0] as { toolCalls?: Array<{ id: string; function: { name: string } }> })
-        .toolCalls?.[0];
+      const call = (
+        out[0] as {
+          toolCalls?: Array<{ id: string; function: { name: string } }>;
+        }
+      ).toolCalls?.[0];
       expect(call?.id).toBe("p");
       expect(call?.function?.name).toBe("search");
     });

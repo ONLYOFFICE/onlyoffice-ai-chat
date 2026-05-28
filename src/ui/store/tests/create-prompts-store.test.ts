@@ -4,7 +4,13 @@ import { createPromptsStore } from "../create-prompts-store";
 import type { Prompt, PromptFolder } from "../../../types";
 
 const prompt = (id: string, overrides: Partial<Prompt> = {}): Prompt =>
-  ({ id, name: `n${id}`, text: `t${id}`, folderId: null, ...overrides }) as Prompt;
+  ({
+    id,
+    name: `n${id}`,
+    text: `t${id}`,
+    folderId: null,
+    ...overrides,
+  }) as Prompt;
 
 const folder = (id: string, name = `f${id}`): PromptFolder =>
   ({ id, name }) as PromptFolder;
@@ -92,7 +98,9 @@ describe("createPromptsStore", () => {
 
   it("addFolder prepends and returns id", async () => {
     const api = makeApi({
-      createFolder: vi.fn().mockResolvedValue({ success: true, folder: folder("a") }),
+      createFolder: vi
+        .fn()
+        .mockResolvedValue({ success: true, folder: folder("a") }),
     });
     const s = createPromptsStore({ api });
     const id = await s.getState().addFolder("a");
@@ -112,7 +120,9 @@ describe("createPromptsStore", () => {
 
   it("renameFolder updates matching folder", async () => {
     const api = makeApi({
-      createFolder: vi.fn().mockResolvedValue({ success: true, folder: folder("a") }),
+      createFolder: vi
+        .fn()
+        .mockResolvedValue({ success: true, folder: folder("a") }),
       renameFolder: vi.fn().mockResolvedValue({
         success: true,
         folder: folder("a", "renamed"),
@@ -126,7 +136,9 @@ describe("createPromptsStore", () => {
 
   it("renameFolder skips on failure", async () => {
     const api = makeApi({
-      createFolder: vi.fn().mockResolvedValue({ success: true, folder: folder("a") }),
+      createFolder: vi
+        .fn()
+        .mockResolvedValue({ success: true, folder: folder("a") }),
       renameFolder: vi.fn().mockResolvedValue({ success: false }),
     });
     const s = createPromptsStore({ api });

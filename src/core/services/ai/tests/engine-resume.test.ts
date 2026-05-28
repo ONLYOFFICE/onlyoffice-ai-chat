@@ -103,7 +103,9 @@ function makeStorage() {
   };
 }
 
-async function* arrayToStream(items: { isEnd: boolean; responseMessage: ThreadMessageLike }[]) {
+async function* arrayToStream(
+  items: { isEnd: boolean; responseMessage: ThreadMessageLike }[]
+) {
   for (const it of items) yield it;
 }
 

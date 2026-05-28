@@ -9,7 +9,12 @@ const platform = {
   process: null,
   hostTools: null,
   clouds: null,
-  env: { theme: "light", systemTheme: "light", locale: "en", devicePixelRatio: 1 },
+  env: {
+    theme: "light",
+    systemTheme: "light",
+    locale: "en",
+    devicePixelRatio: 1,
+  },
 } as PlatformAdapter;
 
 describe("platform context", () => {

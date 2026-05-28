@@ -64,7 +64,9 @@ const convertUserContent = (
  * intentionally dropped — OpenAI's Responses API does not require prior
  * reasoning summaries to be replayed, and including them adds noise.
  */
-const splitAssistantMessage = (message: ThreadMessageLike): ResponseInputItem[] => {
+const splitAssistantMessage = (
+  message: ThreadMessageLike
+): ResponseInputItem[] => {
   const items: ResponseInputItem[] = [];
 
   if (typeof message.content === "string") {

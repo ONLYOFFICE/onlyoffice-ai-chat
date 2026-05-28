@@ -42,9 +42,7 @@ export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
               typeof activeCard === "object" &&
               activeCard?.editingProfileId === profile.id
             }
-            onStartEdit={() =>
-              setActiveCard({ editingProfileId: profile.id })
-            }
+            onStartEdit={() => setActiveCard({ editingProfileId: profile.id })}
             onStopEdit={() => setActiveCard(null)}
             isEditModelCardHorizontal={isAddModelCardHorizontal}
           />

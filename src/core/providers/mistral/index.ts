@@ -31,9 +31,7 @@ class MistralProvider extends AbstractBaseProvider {
     this.client = createMistralClient(creds);
   }
 
-  async *sendMessage(
-    args: SendMessageArgs
-  ): AsyncGenerator<SendMessageResult> {
+  async *sendMessage(args: SendMessageArgs): AsyncGenerator<SendMessageResult> {
     const { messages, model, systemPrompt, tools, withReasoning, signal } =
       args;
 
@@ -109,9 +107,7 @@ class MistralProvider extends AbstractBaseProvider {
     }
   }
 
-  static async getProviderModels(
-    creds: ProviderCredentials
-  ): Promise<Model[]> {
+  static async getProviderModels(creds: ProviderCredentials): Promise<Model[]> {
     return listModels(creds);
   }
 }

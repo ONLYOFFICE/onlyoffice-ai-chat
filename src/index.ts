@@ -337,7 +337,11 @@ export {
 // I18n
 // ---------------------------------------------------------------------------
 
-export { I18nProvider, useI18n, bundledLocaleKeys } from "./ui/providers/LocalesProvider";
+export {
+  I18nProvider,
+  useI18n,
+  bundledLocaleKeys,
+} from "./ui/providers/LocalesProvider";
 export type {
   I18nProviderProps,
   I18nContextValue,
@@ -349,7 +353,12 @@ export type {
 // Theme
 // ---------------------------------------------------------------------------
 
-export { ThemeProvider, useTheme, BUILT_IN_THEMES, DARK_THEMES } from "./ui/providers/ThemeProvider";
+export {
+  ThemeProvider,
+  useTheme,
+  BUILT_IN_THEMES,
+  DARK_THEMES,
+} from "./ui/providers/ThemeProvider";
 export type {
   ThemeProviderProps,
   ThemeContextValue,
@@ -361,7 +370,10 @@ export type {
 // Components — Pluggable UI Component Overrides
 // ---------------------------------------------------------------------------
 
-export { ComponentsProvider, useComponents } from "./ui/providers/ComponentsProvider";
+export {
+  ComponentsProvider,
+  useComponents,
+} from "./ui/providers/ComponentsProvider";
 export type {
   ButtonProps,
   CheckboxProps,

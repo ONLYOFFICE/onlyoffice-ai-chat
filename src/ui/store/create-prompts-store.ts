@@ -55,9 +55,7 @@ export function createPromptsStore(deps: {
       const result = await api.prompts.update(id, updates);
       if (result.success) {
         set({
-          prompts: get().prompts.map((p) =>
-            p.id === id ? result.prompt : p
-          ),
+          prompts: get().prompts.map((p) => (p.id === id ? result.prompt : p)),
         });
       }
     },
@@ -78,9 +76,7 @@ export function createPromptsStore(deps: {
       const result = await api.prompts.renameFolder(id, name);
       if (result.success) {
         set({
-          folders: get().folders.map((f) =>
-            f.id === id ? result.folder : f
-          ),
+          folders: get().folders.map((f) => (f.id === id ? result.folder : f)),
         });
       }
     },

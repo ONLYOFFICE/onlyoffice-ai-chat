@@ -2,10 +2,7 @@ import type { SendMessageResult } from "../../../shared/send-message-args";
 import { providerFor } from "../provider";
 import { resolveSystemPrompt } from "../system-prompt";
 import type { ActionArgs } from "../types";
-import {
-  isFallbackProfile,
-  streamWithTextProtocol,
-} from "./fallback-tools";
+import { isFallbackProfile, streamWithTextProtocol } from "./fallback-tools";
 import { systemPrompt } from "./prompt";
 
 /**

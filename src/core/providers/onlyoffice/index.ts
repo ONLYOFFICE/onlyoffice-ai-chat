@@ -6,11 +6,7 @@ import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args
 import { convertMessages } from "../openai/messages";
 import { OpenAIProvider } from "../openai";
 import { onlyOfficeInfo } from "./info";
-import {
-  checkCredentials,
-  listModels,
-  ONLYOFFICE_PROVIDER_ID,
-} from "./models";
+import { checkCredentials, listModels, ONLYOFFICE_PROVIDER_ID } from "./models";
 import { openSSEStream, type SSEStreamParams } from "./stream";
 
 /**

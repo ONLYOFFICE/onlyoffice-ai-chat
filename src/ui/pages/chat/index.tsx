@@ -183,7 +183,9 @@ const Thread = () => {
   });
 
   if (!profilesInitialized) {
-    return <div className="aui-root h-full bg-[var(--layout-background-color)]" />;
+    return (
+      <div className="aui-root h-full bg-[var(--layout-background-color)]" />
+    );
   }
 
   if (!hasProfiles) {

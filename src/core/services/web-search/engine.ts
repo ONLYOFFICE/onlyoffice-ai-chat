@@ -1,9 +1,6 @@
 import type { TErrorData } from "../../../shared/error-data";
 import type { WebSearchConfig } from "../../storage";
-import type {
-  WebSearchEngineDeps,
-  WebSearchMutationResult,
-} from "./types";
+import type { WebSearchEngineDeps, WebSearchMutationResult } from "./types";
 import { testWebSearchConnection } from "./validation";
 
 /**
@@ -32,9 +29,7 @@ export class WebSearchEngine {
    * Read the active configuration in scope, or `null` if not configured.
    * `entityId` is opaque and forwarded to storage as-is.
    */
-  async getActiveConfig(
-    entityId?: string
-  ): Promise<WebSearchConfig | null> {
+  async getActiveConfig(entityId?: string): Promise<WebSearchConfig | null> {
     return this.deps.storage.webSearch.read(entityId);
   }
 
@@ -47,9 +42,7 @@ export class WebSearchEngine {
    * Validate `config` against the live backend without persisting.
    * Stateless w.r.t. storage — no `entityId` argument.
    */
-  async testConnection(
-    config: WebSearchConfig
-  ): Promise<true | TErrorData> {
+  async testConnection(config: WebSearchConfig): Promise<true | TErrorData> {
     return testWebSearchConnection(config);
   }
 

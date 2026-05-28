@@ -234,7 +234,10 @@ export const UserMessage = memo(() => {
           <div className="col-span-full col-start-1 row-start-1 mb-[8px] overflow-x-auto">
             <div className="flex flex-row gap-[8px] w-max justify-end ms-auto">
               {images.map((img, i) => (
-                <ImagePreview key={img.refId ?? `${img.inline}-${i}`} item={img} />
+                <ImagePreview
+                  key={img.refId ?? `${img.inline}-${i}`}
+                  item={img}
+                />
               ))}
               {files.map((file) => (
                 <FileItem key={file.path} file={file} withoutClose />

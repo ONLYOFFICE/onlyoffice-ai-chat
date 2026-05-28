@@ -24,9 +24,7 @@ export interface ProfilesStorage {
    * @returns The persisted profiles with server-assigned fields populated,
    *   in the same order as the input.
    */
-  createMany(
-    profiles: Omit<Profile, "id" | "createdAt">[]
-  ): Promise<Profile[]>;
+  createMany(profiles: Omit<Profile, "id" | "createdAt">[]): Promise<Profile[]>;
 
   /**
    * Find a profile by ID.

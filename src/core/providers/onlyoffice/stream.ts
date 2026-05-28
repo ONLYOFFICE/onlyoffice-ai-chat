@@ -44,16 +44,19 @@ export const openSSEStream = async (
   if (params.tools.length > 0) body.tools = params.tools;
   if (params.withReasoning) body.reasoning_effort = "medium";
 
-  const res = await (creds.fetch ?? fetch)(`${creds.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
-      ...(creds.apiKey ? { Authorization: `Bearer ${creds.apiKey}` } : {}),
-    },
-    body: JSON.stringify(body),
-    signal: params.signal,
-  });
+  const res = await (creds.fetch ?? fetch)(
+    `${creds.baseUrl}/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+        ...(creds.apiKey ? { Authorization: `Bearer ${creds.apiKey}` } : {}),
+      },
+      body: JSON.stringify(body),
+      signal: params.signal,
+    }
+  );
 
   const contentType = res.headers.get("content-type") || "";
   const isSSE = contentType.includes("text/event-stream");

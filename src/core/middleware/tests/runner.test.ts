@@ -88,9 +88,9 @@ describe("runOnStreamChunk", () => {
       onStreamChunk: vi.fn().mockResolvedValue({ action: "skip" }),
     };
     const m2: ChatMiddleware = { onStreamChunk: vi.fn() };
-    const out = await new MiddlewareRunner([m1, m2]).runOnStreamChunk(
-      { chunk: { type: "start" } } as never
-    );
+    const out = await new MiddlewareRunner([m1, m2]).runOnStreamChunk({
+      chunk: { type: "start" },
+    } as never);
     expect(out).toEqual({ action: "skip" });
     expect(m2.onStreamChunk).not.toHaveBeenCalled();
   });
@@ -119,9 +119,9 @@ describe("runBeforeToolCall", () => {
       beforeToolCall: vi.fn().mockResolvedValue({ action: "deny" }),
     };
     const m2: ChatMiddleware = { beforeToolCall: vi.fn() };
-    const out = await new MiddlewareRunner([m1, m2]).runBeforeToolCall(
-      { toolArgs: {} } as never
-    );
+    const out = await new MiddlewareRunner([m1, m2]).runBeforeToolCall({
+      toolArgs: {},
+    } as never);
     expect(out).toEqual({ action: "deny" });
     expect(m2.beforeToolCall).not.toHaveBeenCalled();
 
@@ -129,9 +129,9 @@ describe("runBeforeToolCall", () => {
       beforeToolCall: vi.fn().mockResolvedValue({ action: "approve" }),
     };
     expect(
-      await new MiddlewareRunner([m3]).runBeforeToolCall(
-        { toolArgs: {} } as never
-      )
+      await new MiddlewareRunner([m3]).runBeforeToolCall({
+        toolArgs: {},
+      } as never)
     ).toEqual({ action: "approve" });
   });
 });
@@ -143,9 +143,9 @@ describe("runAfterToolResult", () => {
         .fn()
         .mockResolvedValue({ action: "continue", result: "redacted" }),
     };
-    const out = await new MiddlewareRunner([m1]).runAfterToolResult(
-      { result: "secret" } as never
-    );
+    const out = await new MiddlewareRunner([m1]).runAfterToolResult({
+      result: "secret",
+    } as never);
     expect(out).toEqual({ action: "continue", result: "redacted" });
   });
 
@@ -155,9 +155,9 @@ describe("runAfterToolResult", () => {
         .fn()
         .mockResolvedValue({ action: "continue", result: undefined }),
     };
-    const out = await new MiddlewareRunner([m1]).runAfterToolResult(
-      { result: "kept" } as never
-    );
+    const out = await new MiddlewareRunner([m1]).runAfterToolResult({
+      result: "kept",
+    } as never);
     expect(out).toEqual({ action: "continue", result: "kept" });
   });
 
@@ -166,9 +166,9 @@ describe("runAfterToolResult", () => {
       afterToolResult: vi.fn().mockResolvedValue({ action: "skip" }),
     };
     const m2: ChatMiddleware = { afterToolResult: vi.fn() };
-    const out = await new MiddlewareRunner([m1, m2]).runAfterToolResult(
-      { result: "x" } as never
-    );
+    const out = await new MiddlewareRunner([m1, m2]).runAfterToolResult({
+      result: "x",
+    } as never);
     expect(out).toEqual({ action: "skip" });
     expect(m2.afterToolResult).not.toHaveBeenCalled();
   });
@@ -181,9 +181,9 @@ describe("runBeforeDisplay", () => {
         .fn()
         .mockResolvedValue({ action: "continue", message: { role: "user" } }),
     };
-    const out = await new MiddlewareRunner([m1]).runBeforeDisplay(
-      { message: { role: "assistant" } } as never
-    );
+    const out = await new MiddlewareRunner([m1]).runBeforeDisplay({
+      message: { role: "assistant" },
+    } as never);
     expect(out).toEqual({
       action: "continue",
       message: { role: "user" },
@@ -194,9 +194,9 @@ describe("runBeforeDisplay", () => {
     const m1: ChatMiddleware = {
       beforeDisplay: vi.fn().mockResolvedValue({ action: "skip" }),
     };
-    const out = await new MiddlewareRunner([m1]).runBeforeDisplay(
-      { message: {} } as never
-    );
+    const out = await new MiddlewareRunner([m1]).runBeforeDisplay({
+      message: {},
+    } as never);
     expect(out).toEqual({ action: "skip" });
   });
 });
@@ -210,9 +210,9 @@ describe("runOnError", () => {
       onError: vi.fn().mockResolvedValue({ action: "retry" }),
     };
     const m3: ChatMiddleware = { onError: vi.fn() };
-    const out = await new MiddlewareRunner([m1, m2, m3]).runOnError(
-      { error: new Error("e") } as never
-    );
+    const out = await new MiddlewareRunner([m1, m2, m3]).runOnError({
+      error: new Error("e"),
+    } as never);
     expect(out).toEqual({ action: "retry" });
     expect(m3.onError).not.toHaveBeenCalled();
   });
@@ -222,9 +222,9 @@ describe("runOnError", () => {
       onError: vi.fn().mockResolvedValue({ action: "default" }),
     };
     expect(
-      await new MiddlewareRunner([m1, {}]).runOnError(
-        { error: new Error("e") } as never
-      )
+      await new MiddlewareRunner([m1, {}]).runOnError({
+        error: new Error("e"),
+      } as never)
     ).toEqual({ action: "default" });
   });
 });

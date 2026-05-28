@@ -35,7 +35,9 @@ vi.mock("../sources/image-generation", () => ({
 
 vi.mock("../tool-call", () => ({
   readToolCall: (m: { content?: unknown[] }, idx: number) => {
-    const part = (m.content as unknown[])?.[idx] as { type?: string } | undefined;
+    const part = (m.content as unknown[])?.[idx] as
+      | { type?: string }
+      | undefined;
     if (!part || part.type !== "tool-call") return null;
     return part as never;
   },
@@ -92,9 +94,7 @@ describe("buildToolContext", () => {
     getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
     getImageGenerationToolsMock.mockResolvedValue([tool("generate_image")]);
     const adapter: ToolsAdapter = {
-      getTools: vi
-        .fn()
-        .mockResolvedValue({ custom: [tool("ad_tool")] }),
+      getTools: vi.fn().mockResolvedValue({ custom: [tool("ad_tool")] }),
       callTool: vi.fn(),
     };
     const userTools = [tool("user_tool"), tool("ad_tool", "user-override")];
@@ -105,9 +105,9 @@ describe("buildToolContext", () => {
     expect(names).toContain("web_search");
     expect(names).toContain("generate_image");
     expect(names).toContain("ad_tool");
-    expect(
-      ctx.mergedTools.find((t) => t.name === "ad_tool")?.description
-    ).toBe("user-override");
+    expect(ctx.mergedTools.find((t) => t.name === "ad_tool")?.description).toBe(
+      "user-override"
+    );
     expect(ctx.userToolNames.has("user_tool")).toBe(true);
     expect(ctx.adapterToolNames.has("web_search")).toBe(true);
   });
@@ -234,7 +234,9 @@ describe("executeAdapterTool", () => {
         idx: 0,
         message: {
           role: "assistant",
-          content: [{ type: "tool-call", toolName: "generate_image", args: {} }],
+          content: [
+            { type: "tool-call", toolName: "generate_image", args: {} },
+          ],
         } as never,
       } as never,
       { profile: {} as never, profileId: "p", tools: [] }
@@ -269,11 +271,7 @@ describe("executeAdapterTool", () => {
     for await (const _ of gen) {
       void _;
     }
-    expect(adapter.callTool).toHaveBeenCalledWith(
-      "custom_tool",
-      {},
-      undefined
-    );
+    expect(adapter.callTool).toHaveBeenCalledWith("custom_tool", {}, undefined);
   });
 
   it("forwards entityId to adapter.callTool", async () => {

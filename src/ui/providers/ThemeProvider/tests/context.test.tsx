@@ -183,9 +183,7 @@ describe("ThemeProvider", () => {
         <span>child</span>
       </ThemeProvider>
     );
-    expect(container.querySelector("style")?.textContent).toContain(
-      ".theme-x"
-    );
+    expect(container.querySelector("style")?.textContent).toContain(".theme-x");
     expect(container.querySelector("style")?.textContent).toContain("--bg");
     expect(container.querySelector("style")?.textContent).not.toContain(
       ".theme-empty"

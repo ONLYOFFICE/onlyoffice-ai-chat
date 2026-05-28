@@ -40,13 +40,25 @@ import { SyntaxHighlighter } from "../shiki-highlighter";
 describe("SyntaxHighlighter", () => {
   it("renders ShikiHighlighter when useShikiHighlighter returns truthy", () => {
     mockUseShikiHighlighterReturn = "<highlighted />";
-    render(<SyntaxHighlighter code="const x = 1;" language="typescript" components={{} as never} />);
+    render(
+      <SyntaxHighlighter
+        code="const x = 1;"
+        language="typescript"
+        components={{} as never}
+      />
+    );
     expect(screen.getByTestId("shiki-highlighter")).toBeInTheDocument();
   });
 
   it("passes language prop to ShikiHighlighter", () => {
     mockUseShikiHighlighterReturn = "<highlighted />";
-    render(<SyntaxHighlighter code="print('hi')" language="python" components={{} as never} />);
+    render(
+      <SyntaxHighlighter
+        code="print('hi')"
+        language="python"
+        components={{} as never}
+      />
+    );
     expect(screen.getByTestId("shiki-highlighter")).toHaveAttribute(
       "data-language",
       "python"
@@ -55,7 +67,13 @@ describe("SyntaxHighlighter", () => {
 
   it("trims code whitespace", () => {
     mockUseShikiHighlighterReturn = "<highlighted />";
-    render(<SyntaxHighlighter code="  const x = 1;  " language="javascript" components={{} as never} />);
+    render(
+      <SyntaxHighlighter
+        code="  const x = 1;  "
+        language="javascript"
+        components={{} as never}
+      />
+    );
     expect(screen.getByTestId("shiki-highlighter")).toHaveTextContent(
       "const x = 1;"
     );
@@ -64,7 +82,12 @@ describe("SyntaxHighlighter", () => {
   it("applies custom className", () => {
     mockUseShikiHighlighterReturn = "<highlighted />";
     render(
-      <SyntaxHighlighter code="x" language="js" className="my-custom-class" components={{} as never} />
+      <SyntaxHighlighter
+        code="x"
+        language="js"
+        className="my-custom-class"
+        components={{} as never}
+      />
     );
     const el = screen.getByTestId("shiki-highlighter");
     expect(el.className).toContain("my-custom-class");
@@ -74,7 +97,11 @@ describe("SyntaxHighlighter", () => {
   it("renders fallback pre when useShikiHighlighter returns falsy", () => {
     mockUseShikiHighlighterReturn = null;
     const { container } = render(
-      <SyntaxHighlighter code="  fallback code  " language="text" components={{} as never} />
+      <SyntaxHighlighter
+        code="  fallback code  "
+        language="text"
+        components={{} as never}
+      />
     );
     const pre = container.querySelector("pre");
     expect(pre).toBeTruthy();
@@ -85,7 +112,12 @@ describe("SyntaxHighlighter", () => {
   it("applies className to fallback pre", () => {
     mockUseShikiHighlighterReturn = null;
     const { container } = render(
-      <SyntaxHighlighter code="x" language="text" className="fallback-class" components={{} as never} />
+      <SyntaxHighlighter
+        code="x"
+        language="text"
+        className="fallback-class"
+        components={{} as never}
+      />
     );
     const pre = container.querySelector("pre");
     expect(pre!.className).toContain("fallback-class");

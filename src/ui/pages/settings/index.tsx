@@ -65,10 +65,7 @@ const Settings = ({
               value: "mcp-servers",
               label: t("MCPServers"),
               content: (
-                <McpServersPage
-                  hideHeader={hideHeader}
-                  noPadding={noPadding}
-                />
+                <McpServersPage hideHeader={hideHeader} noPadding={noPadding} />
               ),
               disabled: !profiles.length,
             },

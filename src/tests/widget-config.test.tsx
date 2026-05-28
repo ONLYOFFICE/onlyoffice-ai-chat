@@ -1,10 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { render, renderHook } from "@testing-library/react";
-import {
-  WidgetConfigProvider,
-  useWidgetConfig,
-} from "../widget-config";
+import { WidgetConfigProvider, useWidgetConfig } from "../widget-config";
 
 describe("WidgetConfigProvider", () => {
   it("returns empty config when no provider is wrapping the tree", () => {

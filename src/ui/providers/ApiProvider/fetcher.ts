@@ -73,10 +73,7 @@ async function* readNdjson(res: Response): AsyncIterable<unknown> {
  * defer the `await` until the consumer pulls the first event. Non-2xx
  * responses surface as an error thrown from the first iteration.
  */
-function streamRoute(
-  url: string,
-  init: RequestInit
-): AsyncIterable<unknown> {
+function streamRoute(url: string, init: RequestInit): AsyncIterable<unknown> {
   const responsePromise = fetch(url, init);
   return {
     async *[Symbol.asyncIterator]() {
@@ -134,10 +131,7 @@ export function callRoute<
         const value = args[i];
         if (value === undefined || value === null) return;
         if (typeof value === "string" && value === "") return;
-        qs.set(
-          name,
-          typeof value === "string" ? value : JSON.stringify(value)
-        );
+        qs.set(name, typeof value === "string" ? value : JSON.stringify(value));
       });
       const q = qs.toString();
       if (q) url += `?${q}`;
@@ -146,9 +140,7 @@ export function callRoute<
   }
 
   if (isStreamingRoute(service, method)) {
-    return streamRoute(url, init) as unknown as ReturnType<
-      EngineMethod<S, K>
-    >;
+    return streamRoute(url, init) as unknown as ReturnType<EngineMethod<S, K>>;
   }
 
   return fetch(url, init).then((res) => res.json()) as ReturnType<

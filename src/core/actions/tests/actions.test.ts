@@ -175,36 +175,12 @@ describe("custom action", () => {
 });
 
 describe.each([
-  [
-    "summarize",
-    summarize,
-    summarizationSystemPrompt,
-  ],
-  [
-    "translate",
-    translate,
-    translationSystemPrompt,
-  ],
-  [
-    "analyzeText",
-    analyzeText,
-    textAnalyzeSystemPrompt,
-  ],
-  [
-    "generateImage",
-    generateImage,
-    imageSystemPrompt,
-  ],
-  [
-    "recognizeText",
-    recognizeText,
-    ocrSystemPrompt,
-  ],
-  [
-    "describeImage",
-    describeImage,
-    visionSystemPrompt,
-  ],
+  ["summarize", summarize, summarizationSystemPrompt],
+  ["translate", translate, translationSystemPrompt],
+  ["analyzeText", analyzeText, textAnalyzeSystemPrompt],
+  ["generateImage", generateImage, imageSystemPrompt],
+  ["recognizeText", recognizeText, ocrSystemPrompt],
+  ["describeImage", describeImage, visionSystemPrompt],
 ])("sync action %s", (name, action, prompt) => {
   it(`${name} delegates to provider.sendMessageSync with the baked-in prompt`, async () => {
     sendMessageSyncMock.mockResolvedValueOnce("OK");

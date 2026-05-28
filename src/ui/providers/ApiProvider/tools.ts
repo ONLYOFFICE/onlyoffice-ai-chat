@@ -38,21 +38,9 @@ export function createToolsApi(
         engines
       ),
     getCustomServer: (name, entityId) =>
-      callRoute(
-        config,
-        "tools",
-        "getCustomServer",
-        [name, entityId],
-        engines
-      ),
+      callRoute(config, "tools", "getCustomServer", [name, entityId], engines),
     listCustomServers: (entityId) =>
-      callRoute(
-        config,
-        "tools",
-        "listCustomServers",
-        [entityId],
-        engines
-      ),
+      callRoute(config, "tools", "listCustomServers", [entityId], engines),
     replaceAllCustomServers: (map, entityId) =>
       callRoute(
         config,

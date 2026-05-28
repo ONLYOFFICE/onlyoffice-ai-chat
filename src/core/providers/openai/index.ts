@@ -63,9 +63,7 @@ class OpenAIProvider extends AbstractBaseProvider {
     this.client = createOpenAIClient(creds);
   }
 
-  async *sendMessage(
-    args: SendMessageArgs
-  ): AsyncGenerator<SendMessageResult> {
+  async *sendMessage(args: SendMessageArgs): AsyncGenerator<SendMessageResult> {
     if (args.useResponsesApi) {
       yield* this.sendMessageResponses(args);
       return;
@@ -260,9 +258,7 @@ class OpenAIProvider extends AbstractBaseProvider {
     }
   }
 
-  static async getProviderModels(
-    creds: ProviderCredentials
-  ): Promise<Model[]> {
+  static async getProviderModels(creds: ProviderCredentials): Promise<Model[]> {
     return listModels(creds);
   }
 }

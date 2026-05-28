@@ -3,13 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mistralInfo } from "../info";
 import { MistralProvider } from "../index";
 
-const { chatStreamMock, chatCompleteMock, modelsListMock } = vi.hoisted(
-  () => ({
-    chatStreamMock: vi.fn(),
-    chatCompleteMock: vi.fn(),
-    modelsListMock: vi.fn(),
-  })
-);
+const { chatStreamMock, chatCompleteMock, modelsListMock } = vi.hoisted(() => ({
+  chatStreamMock: vi.fn(),
+  chatCompleteMock: vi.fn(),
+  modelsListMock: vi.fn(),
+}));
 
 vi.mock("@mistralai/mistralai", () => ({
   Mistral: class MockMistral {
@@ -30,9 +28,7 @@ async function drain<T>(gen: AsyncGenerator<T>): Promise<T[]> {
 
 const event = (delta: Record<string, unknown>, finishReason?: string) => ({
   data: {
-    choices: [
-      { index: 0, delta, finishReason: finishReason ?? null },
-    ],
+    choices: [{ index: 0, delta, finishReason: finishReason ?? null }],
   },
 });
 
@@ -73,7 +69,9 @@ describe("MistralProvider", () => {
         responseMessage: ThreadMessageLike;
       };
       expect(last.isEnd).toBe(true);
-      expect(last.responseMessage.content).toEqual([{ type: "text", text: "hi" }]);
+      expect(last.responseMessage.content).toEqual([
+        { type: "text", text: "hi" },
+      ]);
     });
 
     it("resolves the reasoning model alias when withReasoning is set", async () => {

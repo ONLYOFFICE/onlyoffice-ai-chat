@@ -1,18 +1,8 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Profile, Thread } from "../../../types";
 import { AbstractBaseProvider } from "../../../providers";
-import {
-  registerProvider,
-  unregisterProvider,
-} from "../../../providers";
+import { registerProvider, unregisterProvider } from "../../../providers";
 import type { StorageAdapter } from "../../../storage";
 import { ThreadsEngine } from "../engine";
 
@@ -50,10 +40,12 @@ const profile: Profile = {
   modelId: "m",
 };
 
-function makeStorage(seed: {
-  threads?: Thread[];
-  messagesByThread?: Record<string, ThreadMessageLike[]>;
-} = {}) {
+function makeStorage(
+  seed: {
+    threads?: Thread[];
+    messagesByThread?: Record<string, ThreadMessageLike[]>;
+  } = {}
+) {
   let threads: Thread[] = [...(seed.threads ?? [])];
   const messages = new Map<string, ThreadMessageLike[]>();
   for (const [tid, list] of Object.entries(seed.messagesByThread ?? {})) {
@@ -124,13 +116,11 @@ function makeStorage(seed: {
           return stored;
         }
       ),
-      readByThread: vi.fn(
-        async (tid: string, limit?: number, start = 0) => {
-          const list = messages.get(tid) ?? [];
-          const sliced = list.slice(start, limit ? start + limit : undefined);
-          return sliced;
-        }
-      ),
+      readByThread: vi.fn(async (tid: string, limit?: number, start = 0) => {
+        const list = messages.get(tid) ?? [];
+        const sliced = list.slice(start, limit ? start + limit : undefined);
+        return sliced;
+      }),
       deleteByThread: vi.fn(async (tid: string) => {
         messages.delete(tid);
       }),
@@ -149,7 +139,9 @@ function makeStorage(seed: {
 beforeEach(() => {
   registerProvider(STUB, TitleStubProvider);
   sendMessageSyncMock.mockReset();
-  vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-0000-0000-000000000001");
+  vi.spyOn(crypto, "randomUUID").mockReturnValue(
+    "00000000-0000-0000-0000-000000000001"
+  );
   vi.spyOn(Date, "now").mockReturnValue(1000);
 });
 
@@ -172,7 +164,12 @@ describe("ThreadsEngine.create", () => {
     expect(thread.title).toBe("T");
     expect(thread.profileId).toBe("p1");
     expect(snapshot().threads).toEqual([
-      { threadId: thread.threadId, title: "T", profileId: "p1", lastEditDate: 1000 },
+      {
+        threadId: thread.threadId,
+        title: "T",
+        profileId: "p1",
+        lastEditDate: 1000,
+      },
     ]);
   });
 });

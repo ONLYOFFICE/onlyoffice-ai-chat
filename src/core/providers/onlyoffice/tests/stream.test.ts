@@ -50,9 +50,7 @@ describe("onlyoffice/stream/openSSEStream", () => {
 
     const out: unknown[] = [];
     for await (const c of iterable) out.push(c);
-    expect(out).toEqual([
-      { choices: [{ delta: { content: "hi" } }] },
-    ]);
+    expect(out).toEqual([{ choices: [{ delta: { content: "hi" } }] }]);
   });
 
   it("skips malformed JSON frames and continues", async () => {
@@ -76,9 +74,7 @@ describe("onlyoffice/stream/openSSEStream", () => {
 
   it("throws when the SSE payload has an error field", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      mockSseResponse([
-        'data: {"error":{"message":"oops"}}\n',
-      ])
+      mockSseResponse(['data: {"error":{"message":"oops"}}\n'])
     );
 
     const iterable = await openSSEStream(creds, {
@@ -99,7 +95,8 @@ describe("onlyoffice/stream/openSSEStream", () => {
       body: null,
       headers: { get: () => "application/json" },
       status: 400,
-      text: () => Promise.resolve(JSON.stringify({ error: { message: "bad" } })),
+      text: () =>
+        Promise.resolve(JSON.stringify({ error: { message: "bad" } })),
     } as unknown as Response);
 
     await expect(
@@ -151,7 +148,10 @@ describe("onlyoffice/stream/openSSEStream", () => {
       { messages: [], model: "gpt", tools: [] }
     );
     for await (const _ of iterable) void _;
-    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<
+      string,
+      string
+    >;
     expect(headers.Authorization).toBeUndefined();
   });
 });

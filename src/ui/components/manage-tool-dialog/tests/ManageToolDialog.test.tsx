@@ -24,7 +24,9 @@ const mockManageToolData = {
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: (selector?: (s: { manageToolData: unknown }) => unknown) => {
+    useServersStore: (
+      selector?: (s: { manageToolData: unknown }) => unknown
+    ) => {
       const state = { manageToolData: mockManageToolData };
       return typeof selector === "function" ? selector(state) : state;
     },

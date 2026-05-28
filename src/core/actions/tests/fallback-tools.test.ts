@@ -192,7 +192,9 @@ describe("isFallbackProfile", () => {
 describe("wrapStream", () => {
   it("passes through plain text and emits final on isEnd", async () => {
     const out = await collect(
-      wrapStream(fakeStream(text("hel"), text("hello world"), textEnd("hello world")))
+      wrapStream(
+        fakeStream(text("hel"), text("hello world"), textEnd("hello world"))
+      )
     );
     expect(lastTextOf(out)).toBe("hello world");
     expect("isEnd" in out[out.length - 1]).toBe(true);
@@ -232,16 +234,16 @@ describe("wrapStream", () => {
       'thinking <TOOL_CALL>{"name":"echo","arguments":{"x":1}}</TOOL_CALL>',
     ];
     const stream = fakeStream(
-      ...chunks.map((c, i) =>
-        i === chunks.length - 1 ? textEnd(c) : text(c)
-      )
+      ...chunks.map((c, i) => (i === chunks.length - 1 ? textEnd(c) : text(c)))
     );
     const out = await collect(wrapStream(stream));
 
     // No intermediate yield should expose "<TOOL".
     const intermediates = out.slice(0, -1);
     for (const yielded of intermediates) {
-      const parts = partsOf("isEnd" in yielded ? yielded.responseMessage : yielded);
+      const parts = partsOf(
+        "isEnd" in yielded ? yielded.responseMessage : yielded
+      );
       const t = parts.find((p) => p.type === "text")?.text ?? "";
       expect(t).not.toContain("<TOOL");
     }

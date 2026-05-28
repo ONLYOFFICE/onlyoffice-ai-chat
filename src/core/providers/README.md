@@ -2,7 +2,7 @@
 
 Stateless thin clients that translate our internal call shape
 (`SendMessageArgs`, `SendMessageSyncArgs`, `ImageGenerationArgs`)
-into a concrete provider SDK call. 16 built-in providers ship out
+into a concrete provider SDK call. 17 built-in providers ship out
 of the box, plus a runtime registry for adding your own.
 
 | Layer                                    | File                          | Purpose |

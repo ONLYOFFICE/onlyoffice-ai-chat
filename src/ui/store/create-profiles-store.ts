@@ -114,10 +114,7 @@ export function createProfilesStore(deps: {
   };
 
   const makeTaskSetter =
-    (
-      stateField: keyof typeof FIELD_TO_ACTION,
-      task: ModelAssignmentTask
-    ) =>
+    (stateField: keyof typeof FIELD_TO_ACTION, task: ModelAssignmentTask) =>
     async (profile: Profile | null) => {
       const actionType = FIELD_TO_ACTION[stateField];
       if (profile) {
@@ -270,7 +267,9 @@ export function createProfilesStore(deps: {
         set((state) => ({
           profiles,
           sessionChatProfile:
-            state.sessionChatProfile?.id === id ? null : state.sessionChatProfile,
+            state.sessionChatProfile?.id === id
+              ? null
+              : state.sessionChatProfile,
           ...assignmentsState,
         }));
       },

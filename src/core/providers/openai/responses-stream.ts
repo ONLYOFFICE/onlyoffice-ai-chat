@@ -167,7 +167,11 @@ export async function* processResponsesStream(
         } catch {
           // keep partial parse
         }
-        next[idx] = { ...existing, argsText: event.arguments, args: parsedArgs };
+        next[idx] = {
+          ...existing,
+          argsText: event.arguments,
+          args: parsedArgs,
+        };
         responseMessage = { ...responseMessage, content: next };
         break;
       }
@@ -197,8 +201,7 @@ export async function* processResponsesStream(
       }
 
       case "response.failed": {
-        const failure =
-          event.response.error?.message ?? "Response failed";
+        const failure = event.response.error?.message ?? "Response failed";
         yield {
           isEnd: true,
           responseMessage: createErrorResponse(new Error(failure)),

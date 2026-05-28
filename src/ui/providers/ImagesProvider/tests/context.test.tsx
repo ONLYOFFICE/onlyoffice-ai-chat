@@ -33,9 +33,7 @@ describe("ImagesProvider", () => {
   it("uses string override for getImageSrc", () => {
     const { result } = renderHook(() => useImages(), {
       wrapper: ({ children }) => (
-        <ImagesProvider
-          overrides={{ logo: "/cdn/logo.png" } as never}
-        >
+        <ImagesProvider overrides={{ logo: "/cdn/logo.png" } as never}>
           {children}
         </ImagesProvider>
       ),

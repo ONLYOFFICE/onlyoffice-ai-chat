@@ -20,7 +20,9 @@ describe("actions/index re-exports", () => {
       "generateTitle",
     ] as const;
     for (const name of expected) {
-      expect(typeof (actions as Record<string, unknown>)[name]).toBe("function");
+      expect(typeof (actions as Record<string, unknown>)[name]).toBe(
+        "function"
+      );
     }
   });
 });

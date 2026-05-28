@@ -109,7 +109,10 @@ vi.mock("../ui/store/context", () => ({
       setScale: vi.fn(),
       initFromPlatform: vi.fn(),
     }),
-    useCloudsStore: () => ({ fetchClouds: mockFetchClouds, cloudProviders: [] }),
+    useCloudsStore: () => ({
+      fetchClouds: mockFetchClouds,
+      cloudProviders: [],
+    }),
     selectCurrentChatProfile: vi.fn(),
     callbacksManager: { emit: vi.fn() },
   }),

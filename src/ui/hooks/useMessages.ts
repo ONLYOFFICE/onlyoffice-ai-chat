@@ -79,9 +79,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const setAbortController = useMessageStore((s) => s.setAbortController);
   const addMessage = useMessageStore((s) => s.addMessage);
   const updateLastMessage = useMessageStore((s) => s.updateLastMessage);
-  const truncateMessagesAfter = useMessageStore(
-    (s) => s.truncateMessagesAfter
-  );
+  const truncateMessagesAfter = useMessageStore((s) => s.truncateMessagesAfter);
   const fetchPrevMessages = useMessageStore((s) => s.fetchPrevMessages);
   const claimThreadId = useMessageStore((s) => s.claimThreadId);
   const threadId = useThreadsStore((s) => s.threadId);
@@ -185,8 +183,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         }
       };
 
-      let assistantPlaceholderAdded =
-        options?.hasAssistantPlaceholder ?? false;
+      let assistantPlaceholderAdded = options?.hasAssistantPlaceholder ?? false;
       let lastDisplayedMessage: ThreadMessageLike | null = null;
       let resolvedThreadId = initialThreadId;
       const resolvedProfileId: string | undefined = currentProfile?.id;

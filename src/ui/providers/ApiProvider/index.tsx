@@ -33,10 +33,7 @@ import type {
 } from "../../../core/services";
 import { createAIApi, type AIApi } from "./ai";
 import { createAssignmentsApi, type AssignmentsApi } from "./assignments";
-import {
-  createAttachmentsApi,
-  type AttachmentsApi,
-} from "./attachments";
+import { createAttachmentsApi, type AttachmentsApi } from "./attachments";
 import { createPreferencesApi, type PreferencesApi } from "./preferences";
 import { createProfilesApi, type ProfilesApi } from "./profiles";
 import { createPromptsApi, type PromptsApi } from "./prompts";

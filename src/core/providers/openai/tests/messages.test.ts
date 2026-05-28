@@ -43,9 +43,7 @@ describe("openai/messages/convertMessages", () => {
       const out = convertMessages([
         {
           role: "user",
-          content: [
-            { type: "image", image: "data:image/png;base64,AAA" },
-          ],
+          content: [{ type: "image", image: "data:image/png;base64,AAA" }],
         } as ThreadMessageLike,
       ]);
       expect(out[0].content).toEqual([

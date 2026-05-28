@@ -298,11 +298,7 @@ describe("DialogContent", () => {
     mockUseWidgetConfig.mockReturnValueOnce({ isDialogFullscreen: true });
     render(
       <Dialog open>
-        <DialogContent
-          header="Override"
-          onClose={vi.fn()}
-          isFullscreen={false}
-        >
+        <DialogContent header="Override" onClose={vi.fn()} isFullscreen={false}>
           <p>body</p>
         </DialogContent>
       </Dialog>

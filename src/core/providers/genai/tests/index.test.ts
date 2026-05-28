@@ -3,15 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { genaiInfo } from "../info";
 import { GenAIProvider } from "../index";
 
-const {
-  generateContentStreamMock,
-  generateContentMock,
-  modelsListMock,
-} = vi.hoisted(() => ({
-  generateContentStreamMock: vi.fn(),
-  generateContentMock: vi.fn(),
-  modelsListMock: vi.fn(),
-}));
+const { generateContentStreamMock, generateContentMock, modelsListMock } =
+  vi.hoisted(() => ({
+    generateContentStreamMock: vi.fn(),
+    generateContentMock: vi.fn(),
+    modelsListMock: vi.fn(),
+  }));
 
 vi.mock("@google/genai", () => ({
   GoogleGenAI: class MockGenAI {

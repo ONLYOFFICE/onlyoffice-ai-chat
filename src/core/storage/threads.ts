@@ -20,11 +20,7 @@ export interface ThreadsStorage {
    *   the same `entityId` return this thread. When omitted, the thread
    *   belongs to the unscoped (passthrough) area.
    */
-  create(
-    title: string,
-    profileId?: string,
-    entityId?: string
-  ): Promise<Thread>;
+  create(title: string, profileId?: string, entityId?: string): Promise<Thread>;
 
   /**
    * Find a thread by its ID.

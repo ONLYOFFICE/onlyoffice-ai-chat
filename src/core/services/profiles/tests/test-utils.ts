@@ -2,10 +2,7 @@ import { vi } from "vitest";
 import type { Model } from "../../../../shared/model";
 import type { Profile } from "../../../types";
 import { AbstractBaseProvider } from "../../../providers";
-import {
-  registerProvider,
-  unregisterProvider,
-} from "../../../providers";
+import { registerProvider, unregisterProvider } from "../../../providers";
 import type { StorageAdapter } from "../../../storage";
 
 export const checkProviderMock = vi.fn();
@@ -54,9 +51,7 @@ export function makeStorage(seed: { profiles?: Profile[] } = {}) {
   const storage = {
     profiles: {
       create: vi.fn(
-        async (
-          input: Omit<Profile, "id" | "createdAt">
-        ): Promise<Profile> => {
+        async (input: Omit<Profile, "id" | "createdAt">): Promise<Profile> => {
           const p: Profile = {
             ...input,
             id: crypto.randomUUID(),

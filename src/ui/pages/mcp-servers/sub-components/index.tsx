@@ -70,9 +70,7 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
             <ToolsCounter />
           </div>
         ) : null}
-        {hasTools && (
-          <AvailableTools withHeader={variant === "tab"} />
-        )}
+        {hasTools && <AvailableTools withHeader={variant === "tab"} />}
       </div>
       {<ConfigDialog open={isOpen} onClose={() => setIsOpen(false)} />}
     </>

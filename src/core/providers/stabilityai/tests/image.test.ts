@@ -57,14 +57,12 @@ describe("stabilityai/image/generateImage", () => {
   });
 
   it("falls back to the default model when an unknown id is requested", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        json: () => Promise.resolve({ image: "B" }),
-      } as unknown as Response);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: () => Promise.resolve({ image: "B" }),
+    } as unknown as Response);
 
     await generateImage(creds, { model: "unknown-model", prompt: "x" });
     // The fallback model id ends up affecting the URL path — just assert
@@ -73,14 +71,12 @@ describe("stabilityai/image/generateImage", () => {
   });
 
   it("uses an empty model id as 'core'", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        json: () => Promise.resolve({ image: "B" }),
-      } as unknown as Response);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: () => Promise.resolve({ image: "B" }),
+    } as unknown as Response);
 
     await generateImage(creds, { model: "", prompt: "x" });
     expect(fetchMock).toHaveBeenCalled();

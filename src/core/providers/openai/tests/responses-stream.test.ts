@@ -1,6 +1,4 @@
-import type {
-  ResponseStreamEvent,
-} from "openai/resources/responses/responses";
+import type { ResponseStreamEvent } from "openai/resources/responses/responses";
 import { describe, expect, it } from "vitest";
 import type { SendMessageResult } from "../../../../shared/send-message-args";
 import { processResponsesStream } from "../responses-stream";
@@ -24,10 +22,7 @@ const textDelta = (delta: string, itemId = "msg-1"): ResponseStreamEvent =>
     sequence_number: ++seq,
   }) as ResponseStreamEvent;
 
-const reasoningDelta = (
-  delta: string,
-  itemId = "rs-1"
-): ResponseStreamEvent =>
+const reasoningDelta = (delta: string, itemId = "rs-1"): ResponseStreamEvent =>
   ({
     type: "response.reasoning_summary_text.delta",
     delta,

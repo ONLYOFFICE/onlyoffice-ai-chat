@@ -4,10 +4,7 @@ import { ActionType } from "../../../../shared/action-type";
 import type { SendMessageResult } from "../../../../shared/send-message-args";
 import type { Profile } from "../../../types";
 import { AbstractBaseProvider } from "../../../providers";
-import {
-  registerProvider,
-  unregisterProvider,
-} from "../../../providers";
+import { registerProvider, unregisterProvider } from "../../../providers";
 import type { StorageAdapter } from "../../../storage";
 import { AssignmentsEngine } from "../../assignments";
 import { ThreadsEngine } from "../../threads";
@@ -114,7 +111,15 @@ function makeStorage() {
       }),
     },
   } as unknown as StorageAdapter;
-  return { storage, get messages() { return messages; }, get threads() { return threads; } };
+  return {
+    storage,
+    get messages() {
+      return messages;
+    },
+    get threads() {
+      return threads;
+    },
+  };
 }
 
 beforeEach(() => {
@@ -153,10 +158,16 @@ describe("AIEngine.sendWithStream", () => {
       yielded.push(item);
     }
     expect(yielded).toHaveLength(4);
-    expect(yielded[0]).toMatchObject({ type: "thread-title", title: "New chat" });
+    expect(yielded[0]).toMatchObject({
+      type: "thread-title",
+      title: "New chat",
+    });
     expect(yielded[1].type).toBe("user-message-stored");
     expect(yielded[2].type).toBe("message-end");
-    expect(yielded[3]).toMatchObject({ type: "thread-title", title: "My Title" });
+    expect(yielded[3]).toMatchObject({
+      type: "thread-title",
+      title: "My Title",
+    });
     expect(threads).toHaveLength(1);
     expect(messages).toEqual(
       expect.arrayContaining([
@@ -197,11 +208,7 @@ describe("AIEngine.sendWithStream entity scope", () => {
       ActionType.Chat,
       "e1"
     );
-    expect(storage.threads.create).toHaveBeenCalledWith(
-      "New chat",
-      "p1",
-      "e1"
-    );
+    expect(storage.threads.create).toHaveBeenCalledWith("New chat", "p1", "e1");
   });
 
   it("omits entityId when not provided (passthrough mode)", async () => {
@@ -246,9 +253,9 @@ describe("AIEngine.regenerateStream", () => {
 
     const { storage } = makeStorage();
     // Seed storage.messages.readByThread with the existing user + old assistant
-    (storage.messages.readByThread as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-      [userPersisted, oldAssistant]
-    );
+    (
+      storage.messages.readByThread as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce([userPersisted, oldAssistant]);
 
     const engine = new AIEngine({ storage });
     const yielded = [];
@@ -269,9 +276,9 @@ describe("AIEngine.regenerateStream", () => {
 
   it("returns early when there is no user message in the thread", async () => {
     const { storage } = makeStorage();
-    (storage.messages.readByThread as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-      []
-    );
+    (
+      storage.messages.readByThread as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce([]);
 
     const engine = new AIEngine({ storage });
     const yielded = [];
@@ -308,18 +315,23 @@ describe("AIEngine.regenerateStream", () => {
     sendMessageMock.mockReturnValueOnce(arrayToStream([]));
 
     const { storage } = makeStorage();
-    (storage.messages.readByThread as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-      [userPersisted, toolCallAsst, toolResult, finalAsst]
-    );
+    (
+      storage.messages.readByThread as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce([
+      userPersisted,
+      toolCallAsst,
+      toolResult,
+      finalAsst,
+    ]);
 
     const engine = new AIEngine({ storage });
     for await (const _ of engine.regenerateStream({ threadId: "t1" })) {
       // drain
     }
 
-    const deletedIds = (storage.messages.delete as ReturnType<typeof vi.fn>).mock.calls.map(
-      (c: unknown[]) => c[0]
-    );
+    const deletedIds = (
+      storage.messages.delete as ReturnType<typeof vi.fn>
+    ).mock.calls.map((c: unknown[]) => c[0]);
     expect(deletedIds).toEqual(["asst-tool", "tool-result", "asst-final"]);
   });
 
@@ -331,9 +343,9 @@ describe("AIEngine.regenerateStream", () => {
     };
     sendMessageMock.mockReturnValueOnce(arrayToStream([]));
     const { storage } = makeStorage();
-    (storage.messages.readByThread as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
-      [userPersisted]
-    );
+    (
+      storage.messages.readByThread as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce([userPersisted]);
 
     const engine = new AIEngine({ storage });
     for await (const _ of engine.regenerateStream({

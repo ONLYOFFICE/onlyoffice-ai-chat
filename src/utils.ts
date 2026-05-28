@@ -61,7 +61,11 @@ export const getMessageText = (message: ThreadMessageLike): string => {
       return;
     }
     if (!part || typeof part !== "object" || !("type" in part)) return;
-    if (part.type === "text" && "text" in part && typeof part.text === "string") {
+    if (
+      part.type === "text" &&
+      "text" in part &&
+      typeof part.text === "string"
+    ) {
       parts.push(part.text);
     }
   });

@@ -72,7 +72,9 @@ function setupStores(overrides?: {
     useAttachmentsStore: (
       selector?: (s: typeof attachmentsState) => unknown
     ) =>
-      typeof selector === "function" ? selector(attachmentsState) : attachmentsState,
+      typeof selector === "function"
+        ? selector(attachmentsState)
+        : attachmentsState,
     useProfilesStore: (selector?: unknown) => {
       if (typeof selector === "function") {
         return overrides?.currentProfile ?? null;

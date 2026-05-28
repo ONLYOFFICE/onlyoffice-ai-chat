@@ -143,9 +143,7 @@ export function createServersStore(deps: {
       // Avoids re-running `buildToolsList` (host getTools + getDisabled +
       // webSearch.isConfigured) on every checkbox click.
       const flip = (items: TMCPItem[]) =>
-        items.map((tool) =>
-          tool.name === name ? { ...tool, enabled } : tool
-        );
+        items.map((tool) => (tool.name === name ? { ...tool, enabled } : tool));
       const nextServers =
         state.servers[type] !== undefined
           ? { ...state.servers, [type]: flip(state.servers[type]) }

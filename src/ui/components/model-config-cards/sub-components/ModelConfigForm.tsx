@@ -72,8 +72,8 @@ export const ModelConfigForm = ({
         baseUrl: klass.getBaseUrl(),
       };
     })
-    .filter((p): p is { type: string; name: string; baseUrl: string } =>
-      p !== null
+    .filter(
+      (p): p is { type: string; name: string; baseUrl: string } => p !== null
     )
     .filter((p) => !hiddenSet.has(p.type as ProviderType));
   const isFieldsDisabled = !values.provider;

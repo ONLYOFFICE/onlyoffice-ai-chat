@@ -19,7 +19,9 @@ beforeEach(() => {
   getProviderModelsMock.mockReset();
   checkResponsesApiMock.mockReset();
   checkResponsesApiMock.mockResolvedValue(false);
-  vi.spyOn(crypto, "randomUUID").mockReturnValue("00000000-0000-0000-0000-000000000001");
+  vi.spyOn(crypto, "randomUUID").mockReturnValue(
+    "00000000-0000-0000-0000-000000000001"
+  );
   vi.spyOn(Date, "now").mockReturnValue(123456);
 });
 

@@ -59,15 +59,15 @@ describe("inferCapabilities", () => {
     });
 
     it("classifies claude-3-5-haiku as Chat only", () => {
-      expect(
-        inferCapabilities("anthropic", "claude-3-5-haiku-20241022")
-      ).toBe(CapabilitiesUI.Chat);
+      expect(inferCapabilities("anthropic", "claude-3-5-haiku-20241022")).toBe(
+        CapabilitiesUI.Chat
+      );
     });
 
     it("returns Chat | Vision for newer claude models", () => {
-      expect(
-        inferCapabilities("anthropic", "claude-sonnet-4-20250514")
-      ).toBe(CapabilitiesUI.Chat | CapabilitiesUI.Vision);
+      expect(inferCapabilities("anthropic", "claude-sonnet-4-20250514")).toBe(
+        CapabilitiesUI.Chat | CapabilitiesUI.Vision
+      );
     });
   });
 

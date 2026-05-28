@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  testWebSearchConnection,
-  validateConfigShape,
-} from "../validation";
+import { testWebSearchConnection, validateConfigShape } from "../validation";
 
 const fetchMock = vi.fn();
 
@@ -17,12 +14,12 @@ afterEach(() => {
 
 describe("validateConfigShape", () => {
   it("requires provider", () => {
-    expect(
-      validateConfigShape({ provider: "" })?.message
-    ).toBe("Provider is required");
-    expect(
-      validateConfigShape({ provider: "   " })?.message
-    ).toBe("Provider is required");
+    expect(validateConfigShape({ provider: "" })?.message).toBe(
+      "Provider is required"
+    );
+    expect(validateConfigShape({ provider: "   " })?.message).toBe(
+      "Provider is required"
+    );
   });
 
   it("requires baseUrl when isCloudProvider", () => {
@@ -33,9 +30,9 @@ describe("validateConfigShape", () => {
   });
 
   it("requires baseUrl for ONLYOFFICE", () => {
-    expect(
-      validateConfigShape({ provider: "ONLYOFFICE" })?.message
-    ).toBe("Base URL is required for cloud provider");
+    expect(validateConfigShape({ provider: "ONLYOFFICE" })?.message).toBe(
+      "Base URL is required for cloud provider"
+    );
   });
 
   it("rejects unparseable baseUrl for cloud providers", () => {
@@ -64,9 +61,9 @@ describe("validateConfigShape", () => {
 describe("testWebSearchConnection - Exa", () => {
   it("returns true on 200", async () => {
     fetchMock.mockResolvedValueOnce(new Response("{}", { status: 200 }));
-    expect(
-      await testWebSearchConnection({ provider: "Exa", key: "k" })
-    ).toBe(true);
+    expect(await testWebSearchConnection({ provider: "Exa", key: "k" })).toBe(
+      true
+    );
   });
 
   it("maps 401 to invalidKey", async () => {

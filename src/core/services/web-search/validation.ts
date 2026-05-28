@@ -19,7 +19,10 @@ export function validateConfigShape(
   // present and parseable.
   if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
     if (!config.baseUrl) {
-      return { field: "url", message: "Base URL is required for cloud provider" };
+      return {
+        field: "url",
+        message: "Base URL is required for cloud provider",
+      };
     }
     try {
       new URL(config.baseUrl);
@@ -52,10 +55,7 @@ export async function testWebSearchConnection(
 
   try {
     if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
-      const url = new URL(
-        "/api/2.0/ai/web-search/v1/search",
-        config.baseUrl
-      );
+      const url = new URL("/api/2.0/ai/web-search/v1/search", config.baseUrl);
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
@@ -94,10 +94,7 @@ export async function testWebSearchConnection(
  * lets the predicate distinguish "key missing" from "key wrong" when
  * the backend doesn't tell us which.
  */
-function mapResponse(
-  response: Response,
-  hasKey: boolean
-): true | TErrorData {
+function mapResponse(response: Response, hasKey: boolean): true | TErrorData {
   if (response.ok) return true;
   if (response.status === 401) return ProviderErrors.invalidKey();
   if (response.status === 404) return ProviderErrors.invalidUrl();

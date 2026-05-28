@@ -12,7 +12,8 @@ export function validateServerName(name: string): TErrorData | null {
   if (name.includes("_")) {
     return {
       field: "name",
-      message: "Server name cannot contain '_' — reserved for tool-token format",
+      message:
+        "Server name cannot contain '_' — reserved for tool-token format",
     };
   }
   return null;
@@ -43,7 +44,8 @@ export function validateTransportConfig(
   if (!hasUrl && !hasCommand) {
     return {
       field: "url",
-      message: "Server config requires either 'url' (HTTP) or 'command' (STDIO)",
+      message:
+        "Server config requires either 'url' (HTTP) or 'command' (STDIO)",
     };
   }
 

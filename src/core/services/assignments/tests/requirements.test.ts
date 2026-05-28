@@ -43,11 +43,14 @@ describe("ACTION_REQUIREMENTS", () => {
 describe("meetsRequirements", () => {
   it("Default is satisfied by anything (including missing capabilities)", () => {
     expect(meetsRequirements({}, ActionType.Default)).toBe(true);
+    expect(meetsRequirements({ capabilities: 0 }, ActionType.Default)).toBe(
+      true
+    );
     expect(
-      meetsRequirements({ capabilities: 0 }, ActionType.Default)
-    ).toBe(true);
-    expect(
-      meetsRequirements({ capabilities: CapabilitiesUI.Chat }, ActionType.Default)
+      meetsRequirements(
+        { capabilities: CapabilitiesUI.Chat },
+        ActionType.Default
+      )
     ).toBe(true);
   });
 
@@ -58,10 +61,7 @@ describe("meetsRequirements", () => {
 
   it("matches when capability bit is set", () => {
     expect(
-      meetsRequirements(
-        { capabilities: CapabilitiesUI.Chat },
-        ActionType.Chat
-      )
+      meetsRequirements({ capabilities: CapabilitiesUI.Chat }, ActionType.Chat)
     ).toBe(true);
     expect(
       meetsRequirements(
@@ -91,9 +91,7 @@ describe("meetsRequirements", () => {
       meetsRequirements(
         {
           capabilities:
-            CapabilitiesUI.Chat |
-            CapabilitiesUI.Vision |
-            CapabilitiesUI.Tools,
+            CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools,
         },
         ActionType.Chat
       )

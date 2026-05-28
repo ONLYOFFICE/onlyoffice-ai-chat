@@ -92,12 +92,7 @@ export class PromptsEngine {
 
     if (updates.name !== undefined) {
       const all = await this.deps.storage.prompts.readAll();
-      const nameError = validatePromptName(
-        all,
-        updates.name,
-        nextFolderId,
-        id
-      );
+      const nameError = validatePromptName(all, updates.name, nextFolderId, id);
       if (nameError) return { success: false, error: nameError };
     }
 
@@ -152,10 +147,7 @@ export class PromptsEngine {
   }
 
   /** Rename a folder. Validates the new name against existing folders. */
-  async renameFolder(
-    id: string,
-    name: string
-  ): Promise<FolderMutationResult> {
+  async renameFolder(id: string, name: string): Promise<FolderMutationResult> {
     const existing = await this.deps.storage.promptFolders.readAll();
     if (!existing.some((f) => f.id === id)) {
       return {
@@ -277,9 +269,7 @@ export class PromptsEngine {
       existingPrompts.map((p) => this.deps.storage.prompts.delete(p.id))
     );
     await Promise.all(
-      existingFolders.map((f) =>
-        this.deps.storage.promptFolders.delete(f.id)
-      )
+      existingFolders.map((f) => this.deps.storage.promptFolders.delete(f.id))
     );
 
     // Insert folders, build oldId → newId map so prompt.folderId
@@ -359,8 +349,9 @@ export class PromptsEngine {
       )
     );
 
-    const newPromptInputs: Array<Omit<Prompt, "id" | "createdAt" | "updatedAt">> =
-      [];
+    const newPromptInputs: Array<
+      Omit<Prompt, "id" | "createdAt" | "updatedAt">
+    > = [];
     const updates: Array<{
       id: string;
       patch: { name?: string; text?: string; folderId?: string | null };

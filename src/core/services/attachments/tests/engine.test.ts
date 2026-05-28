@@ -103,10 +103,10 @@ describe("AttachmentsEngine.linkToMessage", () => {
 
     expect(storage.updateManyByIds).toHaveBeenCalledTimes(1);
     expect(storage.update).not.toHaveBeenCalled();
-    expect(storage.updateManyByIds).toHaveBeenCalledWith(
-      ["a1", "a2", "a3"],
-      { messageId: "m-1", threadId: "t-1" }
-    );
+    expect(storage.updateManyByIds).toHaveBeenCalledWith(["a1", "a2", "a3"], {
+      messageId: "m-1",
+      threadId: "t-1",
+    });
   });
 
   it("is a no-op without touching storage when ids[] is empty", async () => {

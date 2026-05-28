@@ -19,9 +19,7 @@ vi.mock("@google/genai", () => ({
 
 describe("genai/models/inferCapabilities", () => {
   it("marks embedContent models as Embeddings", () => {
-    expect(inferCapabilities(["embedContent"])).toBe(
-      CapabilitiesUI.Embeddings
-    );
+    expect(inferCapabilities(["embedContent"])).toBe(CapabilitiesUI.Embeddings);
   });
 
   it("defaults to Chat + Vision + Tools", () => {

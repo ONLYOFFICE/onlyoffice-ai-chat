@@ -22,17 +22,23 @@ const LazyMarkdownText = lazy(async () => {
 });
 
 const LazyMarkdownContent = lazy(async () => {
-  const [{ default: ReactMarkdown }, { default: remarkGfm }, defaultComponents] =
-    await Promise.all([
-      import("react-markdown"),
-      import("remark-gfm"),
-      import("./Markdown.utils").then((m) => m.default),
-      import("@assistant-ui/react-markdown/styles/dot.css"),
-    ]);
+  const [
+    { default: ReactMarkdown },
+    { default: remarkGfm },
+    defaultComponents,
+  ] = await Promise.all([
+    import("react-markdown"),
+    import("remark-gfm"),
+    import("./Markdown.utils").then((m) => m.default),
+    import("@assistant-ui/react-markdown/styles/dot.css"),
+  ]);
   return {
     default: ({ children }: { children: string }) => (
       <div className="aui-md">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={defaultComponents}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={defaultComponents}
+        >
           {children}
         </ReactMarkdown>
       </div>

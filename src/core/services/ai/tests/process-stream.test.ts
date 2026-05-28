@@ -6,10 +6,12 @@ import type { StorageAdapter } from "../../../storage";
 
 function makeStorage(opts?: { allowList?: string[] }) {
   let nextId = 0;
-  const create = vi.fn(async (_threadId: string, message: ThreadMessageLike) => ({
-    ...message,
-    id: `m${++nextId}`,
-  }));
+  const create = vi.fn(
+    async (_threadId: string, message: ThreadMessageLike) => ({
+      ...message,
+      id: `m${++nextId}`,
+    })
+  );
   const update = vi.fn().mockResolvedValue(undefined);
   const readAllowAlways = vi.fn().mockResolvedValue(opts?.allowList ?? []);
   return {
@@ -133,17 +135,16 @@ describe("processStream", () => {
     expect(create).not.toHaveBeenCalled();
     // First delta updates `existing`; terminal updates again
     expect(update).toHaveBeenCalledTimes(2);
-    expect(events.map((e) => e.type)).toEqual([
-      "message-delta",
-      "message-end",
-    ]);
+    expect(events.map((e) => e.type)).toEqual(["message-delta", "message-end"]);
   });
 
   it("merges resumeBaseMessage content into deltas and final message", async () => {
     const { storage } = makeStorage();
     const base: ThreadMessageLike = {
       role: "assistant",
-      content: [{ type: "tool-call", toolCallId: "c", toolName: "x", args: {} }],
+      content: [
+        { type: "tool-call", toolCallId: "c", toolName: "x", args: {} },
+      ],
     } as ThreadMessageLike;
     const stream = feed([
       { role: "assistant", content: [{ type: "text", text: "after" }] },

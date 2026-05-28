@@ -76,23 +76,21 @@ describe("OnlyOfficeProvider", () => {
 
   describe("sendMessage via getStream override", () => {
     it("routes through openSSEStream (raw fetch)", async () => {
-      const fetchMock = vi
-        .spyOn(globalThis, "fetch")
-        .mockResolvedValue({
-          ok: true,
-          body: new ReadableStream({
-            start(c) {
-              c.enqueue(new TextEncoder().encode("data: [DONE]\n"));
-              c.close();
-            },
-          }),
-          headers: {
-            get: (k: string) =>
-              k === "content-type" ? "text/event-stream" : null,
+      const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+        ok: true,
+        body: new ReadableStream({
+          start(c) {
+            c.enqueue(new TextEncoder().encode("data: [DONE]\n"));
+            c.close();
           },
-          status: 200,
-          text: () => Promise.resolve(""),
-        } as unknown as Response);
+        }),
+        headers: {
+          get: (k: string) =>
+            k === "content-type" ? "text/event-stream" : null,
+        },
+        status: 200,
+        text: () => Promise.resolve(""),
+      } as unknown as Response);
 
       const p = new OnlyOfficeProvider({
         baseUrl: "https://portal.example.com/",

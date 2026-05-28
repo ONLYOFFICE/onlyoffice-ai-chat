@@ -54,9 +54,7 @@ function setupStores(overrides?: {
   const selectCurrentChatProfile = (s: typeof profilesState) =>
     s.sessionChatProfile ?? s.chatProfile ?? s.defaultProfile;
   mockUseStores.mockReturnValue({
-    useProfilesStore: (
-      selector?: (s: typeof profilesState) => unknown
-    ) => {
+    useProfilesStore: (selector?: (s: typeof profilesState) => unknown) => {
       if (typeof selector === "function") return selector(profilesState);
       return profilesState;
     },

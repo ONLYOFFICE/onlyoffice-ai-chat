@@ -3,11 +3,13 @@ import type { StorageAdapter } from "../../../storage";
 import { PreferencesEngine } from "../engine";
 import { DEFAULT_PREFERENCES } from "../types";
 
-function makeStorage(seed: {
-  deepMode?: boolean | null;
-  /** Per-entity override map. */
-  entityDeepMode?: Record<string, boolean | null>;
-} = {}) {
+function makeStorage(
+  seed: {
+    deepMode?: boolean | null;
+    /** Per-entity override map. */
+    entityDeepMode?: Record<string, boolean | null>;
+  } = {}
+) {
   let stored: boolean | null = seed.deepMode ?? null;
   const entityStored: Record<string, boolean | null> = {
     ...(seed.entityDeepMode ?? {}),
@@ -111,10 +113,7 @@ describe("PreferencesEngine entity scope", () => {
     const { storage } = makeStorage();
     const engine = new PreferencesEngine({ storage });
     await engine.setDeepMode(true, "e1");
-    expect(storage.preferences.upsertDeepMode).toHaveBeenCalledWith(
-      true,
-      "e1"
-    );
+    expect(storage.preferences.upsertDeepMode).toHaveBeenCalledWith(true, "e1");
   });
 
   it("forwards entityId to deleteDeepMode", async () => {
