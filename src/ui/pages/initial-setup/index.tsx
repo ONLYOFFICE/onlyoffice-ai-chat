@@ -4,6 +4,7 @@ import { useComponents } from "../../providers/ComponentsProvider";
 import { ModelCard } from "../../components/model-card";
 import { AddModelCard } from "../../components/model-config-cards";
 import { useStores } from "../../store/context";
+import { useWidgetConfig } from "../../../widget-config";
 
 type ActiveCard = null | "add" | { editingProfileId: string };
 
@@ -12,6 +13,9 @@ const InitialSetup = () => {
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const profiles = useProfilesStore((s) => s.profiles);
+  // Defaults to horizontal so the screen feels open on first launch;
+  // hosts can opt out via WidgetConfig.isAddModelCardHorizontal = false.
+  const { isAddModelCardHorizontal = true } = useWidgetConfig();
   // Only one Add or Edit card may be open at a time across the whole list.
   const [activeCard, setActiveCard] = useState<ActiveCard>(null);
   const isAddCardOpen = activeCard === "add";
@@ -27,7 +31,10 @@ const InitialSetup = () => {
         </p>
 
         {isAddCardOpen ? (
-          <AddModelCard onClose={() => setActiveCard(null)} isHorizontal />
+          <AddModelCard
+            onClose={() => setActiveCard(null)}
+            isHorizontal={isAddModelCardHorizontal}
+          />
         ) : (
           <Button
             className="self-start mb-[16px]"

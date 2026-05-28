@@ -39,11 +39,13 @@ const Composer = () => {
     <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[8px] px-[var(--thread-padding-x)] pb-[16px]">
       <ComposerPrimitive.Root className="composer-root relative flex w-full flex-col gap-[16px] rounded-[16px] border px-[24px] py-[16px] box-border">
         {!shouldHidePicker ? (
-          <div className="flex items-center gap-[4px]">
-            <span className="text-[14px] leading-[20px] text-[var(--text-tertiary)] select-none">
+          <div className="flex items-center gap-[4px] min-w-0">
+            <span className="shrink-0 text-[14px] leading-[20px] text-[var(--text-tertiary)] select-none">
               {t("Ask")}
             </span>
-            <SelectModel />
+            <div className="min-w-0 flex-1">
+              <SelectModel />
+            </div>
           </div>
         ) : null}
 

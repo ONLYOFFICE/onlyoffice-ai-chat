@@ -103,6 +103,14 @@ export interface AIChatWidgetProps {
   hiddenWebSearchProviders?: WebSearchProviderId[];
   hideProfilePicker?: boolean;
   hideSettingsButton?: boolean;
+  /**
+   * Render the "Add model" form in a two-row (horizontal) layout
+   * instead of the default single-column stack. Affects both the
+   * Settings → AI Models page and the InitialSetup screen that the
+   * chat surface falls back to when no profiles are configured. Use
+   * this in wider hosts where the extra horizontal space is available.
+   */
+  isAddModelCardHorizontal?: boolean;
   onSettingsClick?: () => void;
   isSettingsActive?: boolean;
   isDialogFullscreen?: boolean;
@@ -164,6 +172,7 @@ export const AIChatWidget = React.forwardRef<
       hiddenWebSearchProviders,
       hideProfilePicker,
       hideSettingsButton,
+      isAddModelCardHorizontal,
       onSettingsClick,
       isSettingsActive,
       isDialogFullscreen,
@@ -179,6 +188,7 @@ export const AIChatWidget = React.forwardRef<
       () => ({
         hideProfilePicker,
         hideSettingsButton,
+        isAddModelCardHorizontal,
         onSettingsClick,
         isSettingsActive,
         isDialogFullscreen,
@@ -190,6 +200,7 @@ export const AIChatWidget = React.forwardRef<
       [
         hideProfilePicker,
         hideSettingsButton,
+        isAddModelCardHorizontal,
         onSettingsClick,
         isSettingsActive,
         isDialogFullscreen,

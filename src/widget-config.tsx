@@ -91,6 +91,14 @@ export interface WidgetConfig {
     | null
     | Promise<Partial<ModelFormValues> | null | void>;
   /**
+   * Render the "Add model" form in a two-row (horizontal) layout
+   * instead of the default single-column stack. Honored both by the
+   * Settings → AI Models page and the InitialSetup screen the chat
+   * surface falls back to when no profiles are configured. Use this
+   * in wider hosts where the extra horizontal space is available.
+   */
+  isAddModelCardHorizontal?: boolean;
+  /**
    * Handler for the "Download template" link shown in the add-profile
    * card's info tooltip. Used by hosts that ship a downloadable JSON /
    * config template for custom providers. The widget calls

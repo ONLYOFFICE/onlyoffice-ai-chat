@@ -1,6 +1,7 @@
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useStores } from "../../store/context";
+import { useWidgetConfig } from "../../../widget-config";
 import useEnsureProfiles from "../../hooks/useEnsureProfiles";
 import AiModelsPage from "../ai-models";
 import ModelAssignmentPage from "../model-assignment";
@@ -10,6 +11,11 @@ import WebSearchPage from "../web-search";
 interface SettingsProps {
   hideHeader?: boolean;
   noPadding?: boolean;
+  /**
+   * Overrides {@link WidgetConfig.isAddModelCardHorizontal} for hosts
+   * that render `<Settings />` directly (outside `<AIChatWidget />`).
+   * When omitted, the context value is used.
+   */
   isAddModelCardHorizontal?: boolean;
   isWebSearchHorizontal?: boolean;
 }
@@ -17,12 +23,15 @@ interface SettingsProps {
 const Settings = ({
   hideHeader,
   noPadding,
-  isAddModelCardHorizontal,
+  isAddModelCardHorizontal: isAddModelCardHorizontalProp,
   isWebSearchHorizontal,
 }: SettingsProps) => {
   const { Tabs } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
+  const widgetConfig = useWidgetConfig();
+  const isAddModelCardHorizontal =
+    isAddModelCardHorizontalProp ?? widgetConfig.isAddModelCardHorizontal;
   useEnsureProfiles();
 
   const profiles = useProfilesStore((s) => s.profiles);
@@ -30,7 +39,7 @@ const Settings = ({
   return (
     <div className="aui-root flex justify-center h-full bg-[var(--layout-background-color)]">
       <div
-        className={`flex flex-col gap-[16px] box-border max-w-[640px] w-[640px] overflow-hidden${noPadding ? "" : " mx-[32px] mt-[32px]"}`}
+        className={`flex flex-col gap-[16px] box-border w-full max-w-[640px] min-w-0 overflow-hidden${noPadding ? "" : " mx-[32px] mt-[32px]"}`}
       >
         {!hideHeader && (
           <h1 className="select-none font-bold text-[20px] leading-[28px] text-[var(--settings-header-color)]">

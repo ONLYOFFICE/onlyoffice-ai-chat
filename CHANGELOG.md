@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.42
+
+- `AIChatWidget` / `WidgetConfig` gain `isAddModelCardHorizontal?: boolean`. Routes the two-row "Add model" form layout to both the Settings → AI Models page and the InitialSetup screen the chat surface falls back to when no profiles are configured. `<Settings />`'s existing prop of the same name remains as a per-instance override. InitialSetup defaults to horizontal (unchanged behaviour); Settings defaults to vertical.
+- Composer profile picker now truncates long names instead of overflowing. The "Ask" label gets `shrink-0`, the `ComboBox` slot is wrapped in `min-w-0 flex-1` so the existing inner `truncate` actually triggers.
+- Settings page no longer ships with a hard-coded 640px width. `w-[640px]` → `w-full max-w-[640px] min-w-0`, so the page caps at 640px on wide hosts but shrinks to fit narrow side panels — previously the whole AI Models card (background, fields, error text) clipped off the right edge in narrow hosts.
+
 ## 0.4.41
 
 - SVG assets are no longer inlined as `data:` URLs in the bundle. Vite's lib mode ignores `assetsInlineLimit` and force-inlines every asset; the `<Icon>` component renders SVGs through `react-svg`, which `fetch()`es the src — and strict host CSPs (`connect-src *` style) reject the `data:` scheme. SVGs now emit as hashed files under `dist/assets/<name>-<hash>.svg` via a `?no-inline` query in `src/shared/images.ts`. CSS keeps its stable `dist/styles/index.css` path; other assets fall into `dist/assets/[name]-[hash][extname]`.
