@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.40
+
+- "Analyzing" indicator in the chat surface is now deferred by 400ms after the stream starts. Fast responses that arrive within that window never show the indicator (no more flash); the hide edge stays immediate.
+
 ## 0.4.39
 
 - New `WidgetConfig.onDownloadTemplate?: () => void` callback. Wired to the "Download template" link in the add-profile card's info tooltip; without it the link stays inert. Hosts use it to serve a downloadable JSON template for their custom providers.

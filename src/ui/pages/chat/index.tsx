@@ -8,7 +8,7 @@ import {
 } from "@assistant-ui/react";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { motion } from "framer-motion";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useStores } from "../../store/context";
@@ -55,11 +55,24 @@ const ThreadInner = () => {
     );
   })();
 
-  const showAnalyzing =
+  const analyzingReady =
     !isRequestRunning &&
     isStreamRunning &&
     !isToolPending &&
     !hasUnresolvedToolCall;
+
+  // Defer the "Analyzing" indicator by 400ms so it doesn't flash for
+  // very fast responses. When the condition flips off, hide
+  // immediately — only the show edge is debounced.
+  const [showAnalyzing, setShowAnalyzing] = useState(false);
+  useEffect(() => {
+    if (!analyzingReady) {
+      setShowAnalyzing(false);
+      return;
+    }
+    const id = setTimeout(() => setShowAnalyzing(true), 400);
+    return () => clearTimeout(id);
+  }, [analyzingReady]);
 
   return (
     <div
