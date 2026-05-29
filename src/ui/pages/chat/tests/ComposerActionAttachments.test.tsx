@@ -44,6 +44,7 @@ vi.mock("../../../store/context", () => ({
         changeToolStatus: mockChangeToolStatus,
         webSearchEnabled: mockWebSearchEnabled,
         getWebSearchEnabled: mockGetWebSearchEnabled,
+        disabledTools: {} as Record<string, string[]>,
       };
       return typeof selector === "function" ? selector(state) : state;
     },
@@ -472,23 +473,25 @@ describe("ComposerActionAttachment", () => {
       expect(wsItem?.toggleDisabled).toBe(false);
     });
 
-    it("web search onToggleChange calls changeToolStatus and emits event", () => {
+    it("web search onToggleChange calls changeToolStatus and emits event", async () => {
       mockGetWebSearchEnabled = () => true;
-      mockWebSearchEnabled = false;
-      mockServers = {
-        "web-search": [{ name: "web-search-tool", enabled: false }],
-      };
+      mockWebSearchEnabled = true;
       render(<ComposerActionAttachment />);
       const items = mockDropdownItems as {
         text: string;
-        onToggleChange?: () => void;
+        onToggleChange?: () => Promise<void> | void;
       }[];
       const wsItem = items.find((i) => i.text === "WebSearch")!;
-      wsItem.onToggleChange!();
+      await wsItem.onToggleChange!();
       expect(mockChangeToolStatus).toHaveBeenCalledWith(
         "web-search",
-        "web-search-tool",
-        true
+        "web_search",
+        false
+      );
+      expect(mockChangeToolStatus).toHaveBeenCalledWith(
+        "web-search",
+        "web_crawling",
+        false
       );
       expect(mockEmit).toHaveBeenCalledWith("tools-changed");
     });

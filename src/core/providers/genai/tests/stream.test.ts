@@ -41,7 +41,7 @@ describe("genai/stream/response factories", () => {
   });
   it("createErrorResponse normalizes the Error into a ChatErrorPayload", () => {
     const err = new Error("x");
-    const out = createErrorResponse(err) as {
+    const out = createErrorResponse(err) as unknown as {
       status: { reason: string; error: { code: string; message: string } };
     };
     expect(out.status.error).toEqual({ code: "unknown", message: "x" });

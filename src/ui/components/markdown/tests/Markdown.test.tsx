@@ -56,33 +56,38 @@ vi.mock("../../../../shared/utils", () => ({
 import { MarkdownText, MarkdownContent } from "../index";
 
 describe("MarkdownText", () => {
-  it("renders without crashing", () => {
+  it("renders without crashing", async () => {
     render(<MarkdownText />);
-    expect(screen.getByTestId("markdown-text-primitive")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("markdown-text-primitive")
+    ).toBeInTheDocument();
   });
 
-  it("passes aui-md className", () => {
+  it("passes aui-md className", async () => {
     render(<MarkdownText />);
-    expect(screen.getByTestId("markdown-text-primitive")).toHaveClass("aui-md");
+    expect(await screen.findByTestId("markdown-text-primitive")).toHaveClass(
+      "aui-md"
+    );
   });
 });
 
 describe("MarkdownContent", () => {
-  it("renders without crashing", () => {
+  it("renders without crashing", async () => {
     render(<MarkdownContent>Hello world</MarkdownContent>);
-    expect(screen.getByTestId("react-markdown")).toBeInTheDocument();
+    expect(await screen.findByTestId("react-markdown")).toBeInTheDocument();
   });
 
-  it("passes children to ReactMarkdown", () => {
+  it("passes children to ReactMarkdown", async () => {
     render(<MarkdownContent>Some **markdown** text</MarkdownContent>);
-    expect(screen.getByTestId("react-markdown")).toHaveTextContent(
+    expect(await screen.findByTestId("react-markdown")).toHaveTextContent(
       "Some **markdown** text"
     );
   });
 
-  it("wraps content in div with aui-md class", () => {
-    const { container } = render(<MarkdownContent>Test</MarkdownContent>);
-    const wrapper = container.firstChild as HTMLElement;
+  it("wraps content in div with aui-md class", async () => {
+    render(<MarkdownContent>Test</MarkdownContent>);
+    const reactMarkdown = await screen.findByTestId("react-markdown");
+    const wrapper = reactMarkdown.parentElement as HTMLElement;
     expect(wrapper.className).toContain("aui-md");
   });
 });

@@ -78,7 +78,8 @@ describe("createWidgetRef", () => {
         >
     ) as unknown as Parameters<typeof createWidgetRef>[1];
     const eventBus = { emit: vi.fn() } as unknown as ChatEventBus;
-    const composerBridgeRef = { current: { setText: vi.fn() } };
+    const composerBridgeRef: { current: { setText: ((text: string) => void) | null } } =
+      { current: { setText: vi.fn() } };
     const ref = createWidgetRef(
       stores,
       select,

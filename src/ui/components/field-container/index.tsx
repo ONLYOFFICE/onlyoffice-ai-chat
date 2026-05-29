@@ -43,7 +43,7 @@ const FieldContainer = ({
   headerClassName,
 }: FieldContainerProps) => {
   return (
-    <div className={cn(className, "flex flex-col w-full gap-[2px]")}>
+    <div className={cn(className, "flex flex-col w-full min-w-0 gap-[2px]")}>
       {isHorizontal && action && (
         <div className="flex justify-end w-full">{action}</div>
       )}
@@ -93,7 +93,7 @@ const FieldContainer = ({
       {(reserveErrorSpace || error) && (
         <div
           className={cn(
-            "overflow-hidden",
+            "w-full min-w-0 overflow-hidden",
             reserveErrorSpace && "h-[20px]",
             isHorizontal && "pl-[168px]"
           )}

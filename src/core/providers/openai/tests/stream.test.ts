@@ -31,7 +31,7 @@ describe("openai/stream/response factories", () => {
 
   it("createErrorResponse normalizes the Error into a ChatErrorPayload", () => {
     const err = new Error("boom");
-    const out = createErrorResponse(err) as {
+    const out = createErrorResponse(err) as unknown as {
       status: { reason: string; error: { code: string; message: string } };
     };
     expect(out.status.reason).toBe("error");
@@ -44,7 +44,7 @@ describe("openai/stream/response factories", () => {
 
   it("createErrorResponse maps OpenAI 401 to code 'auth'", () => {
     const err = Object.assign(new Error("Incorrect API key"), { status: 401 });
-    const out = createErrorResponse(err) as {
+    const out = createErrorResponse(err) as unknown as {
       status: { error: { code: string } };
     };
     expect(out.status.error.code).toBe("auth");

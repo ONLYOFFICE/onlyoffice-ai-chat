@@ -194,8 +194,8 @@ describe("getMessageText", () => {
   it("skips text parts with non-string text field", () => {
     const message: ThreadMessageLike = {
       role: "assistant",
-      // @ts-expect-error — testing runtime safety
       content: [
+        // @ts-expect-error — testing runtime safety
         { type: "text", text: 123 },
         { type: "text", text: "ok" },
       ],
