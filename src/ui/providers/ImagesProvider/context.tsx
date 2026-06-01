@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import {
+  getBundledIcon as getBundledIconInternal,
   getImageSrc as getImageSrcInternal,
   getProviderImageSrc as getProviderImageSrcInternal,
 } from "../../../shared/images";
@@ -58,6 +59,8 @@ export const ImagesProvider = ({
         }
         return null;
       },
+
+      getBundledIcon: getBundledIconInternal,
 
       getProviderImageSrc: (providerType, theme = "light", scale = 1) => {
         const override = overrides[providerType];

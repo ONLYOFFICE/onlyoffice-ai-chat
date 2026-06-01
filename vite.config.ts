@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import dts from "vite-plugin-dts";
+import svgr from "vite-plugin-svgr";
 import { resolve } from "path";
 import { createRequire } from "module";
 
@@ -51,6 +52,11 @@ const entries = {
 
 export default defineConfig({
   plugins: [
+    // SVGR transforms `*.svg?react` imports into React components at build
+    // time. Keeps the JS bundle self-contained (no separate asset files to
+    // deploy) while avoiding the `data:` URL + react-svg fetch path that
+    // strict host CSPs (`connect-src *` style) reject.
+    svgr({ include: "**/*.svg?react" }),
     react(),
     tailwindcss(),
     dts({

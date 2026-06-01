@@ -5,6 +5,9 @@ import { render, screen } from "@testing-library/react";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let capturedBeforeInjection: ((svg: any) => void) | null = null;
 
+let mockBundledIcon: React.ComponentType<React.SVGProps<SVGSVGElement>> | null =
+  null;
+
 vi.mock("../../../providers/ImagesProvider", () => ({
   useImages: () => ({
     getImageSrc: vi.fn((name: string) => {
@@ -13,6 +16,7 @@ vi.mock("../../../providers/ImagesProvider", () => ({
       return { src: "/img/icon.svg", isSvg: true };
     }),
     getIconComponent: vi.fn(() => null),
+    getBundledIcon: vi.fn(() => mockBundledIcon),
     getProviderImageSrc: vi.fn(() => ""),
   }),
 }));
@@ -69,6 +73,7 @@ const createMockSvg = () => {
 describe("Icon", () => {
   beforeEach(() => {
     capturedBeforeInjection = null;
+    mockBundledIcon = null;
   });
 
   it("renders SVG via ReactSVG", () => {
@@ -222,5 +227,61 @@ describe("Icon", () => {
     render(<Icon name="test" size={24} />);
     const el = screen.getByTestId("react-svg");
     expect(el.className).toContain("flex items-center justify-center");
+  });
+
+  describe("bundled SVG component path", () => {
+    it("renders bundled SVG component inline (no react-svg fetch)", () => {
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      render(<Icon name="chevron" size={12} />);
+      const svg = screen.getByTestId("bundled-svg");
+      expect(svg.getAttribute("width")).toBe("12");
+      expect(svg.getAttribute("height")).toBe("12");
+      expect(screen.queryByTestId("react-svg")).toBeNull();
+    });
+
+    it("applies fill color to bundled SVG paths", () => {
+      mockBundledIcon = (props) => (
+        <svg {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      const { container } = render(
+        <Icon name="chevron" size={12} color="rgb(1, 2, 3)" />
+      );
+      const path = container.querySelector("path")!;
+      expect(path.getAttribute("fill")).toBe("rgb(1, 2, 3)");
+    });
+
+    it("applies stroke when isStroke is set on bundled SVG", () => {
+      mockBundledIcon = (props) => (
+        <svg {...props}>
+          <path d="M0 0" />
+          <circle cx="0" cy="0" r="1" />
+        </svg>
+      );
+      const { container } = render(<Icon name="chevron" size={12} isStroke />);
+      expect(container.querySelector("path")!.getAttribute("stroke")).toBe(
+        "var(--icon-button-color)"
+      );
+      expect(container.querySelector("circle")!.getAttribute("stroke")).toBe(
+        "var(--icon-button-color)"
+      );
+    });
+
+    it("noColor skips color application on bundled SVG", () => {
+      mockBundledIcon = (props) => (
+        <svg {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      const { container } = render(<Icon name="chevron" size={12} noColor />);
+      const path = container.querySelector("path")!;
+      expect(path.getAttribute("fill")).toBeNull();
+      expect(path.getAttribute("stroke")).toBeNull();
+    });
   });
 });

@@ -3,14 +3,20 @@ import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, renderHook } from "@testing-library/react";
 
-const { getImageSrcInternal, getProviderImageSrcInternal } = vi.hoisted(() => ({
+const {
+  getImageSrcInternal,
+  getProviderImageSrcInternal,
+  getBundledIconInternal,
+} = vi.hoisted(() => ({
   getImageSrcInternal: vi.fn(() => ({ src: "default.svg", isSvg: true })),
   getProviderImageSrcInternal: vi.fn(() => "default-provider.png"),
+  getBundledIconInternal: vi.fn(() => null),
 }));
 
 vi.mock("../../../../shared/images", () => ({
   getImageSrc: getImageSrcInternal,
   getProviderImageSrc: getProviderImageSrcInternal,
+  getBundledIcon: getBundledIconInternal,
 }));
 
 import { ImagesProvider, useImages } from "../context";

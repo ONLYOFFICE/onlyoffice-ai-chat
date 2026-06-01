@@ -1,7 +1,12 @@
+import type { ComponentType, SVGProps } from "react";
+
 const VECTOR_IMAGE_SCALE = 2.5;
-const IMAGE_NAME_REGEX = /\/([^/@]+?)(?:@([\d.]+)x)?\.(png|svg)(?:\?url)?$/;
+const IMAGE_NAME_REGEX = /\/([^/@]+?)(?:@([\d.]+)x)?\.(png|svg)(?:\?\w+)?$/;
 
 type ImageMap = Record<string, string>;
+
+export type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
+type SvgComponentMap = Record<string, SvgComponent>;
 
 type ImageCollectionEntry = {
   scale: number;
@@ -57,22 +62,29 @@ const darkImageMap = import.meta.glob<string>("../assets/dark/*.png", {
   import: "default",
 }) as ImageMap;
 
-const svgImageMap = import.meta.glob<string>("../assets/*.svg", {
+// SVGs are compiled to React components by `vite-plugin-svgr` (the `?react`
+// query). Rendering them as components keeps the bundle self-contained
+// (no separate asset files, no data: URLs) and avoids the react-svg
+// fetch() path that strict host CSPs reject.
+const svgComponentMap = import.meta.glob<SvgComponent>("../assets/*.svg", {
   eager: true,
   import: "default",
-  query: "?url",
-}) as ImageMap;
+  query: "?react",
+}) as SvgComponentMap;
 
 const formatsPngMap = import.meta.glob<string>("../assets/formats/*.png", {
   eager: true,
   import: "default",
 }) as ImageMap;
 
-const formatsSvgMap = import.meta.glob<string>("../assets/formats/*.svg", {
-  eager: true,
-  import: "default",
-  query: "?url",
-}) as ImageMap;
+const formatsSvgComponentMap = import.meta.glob<SvgComponent>(
+  "../assets/formats/*.svg",
+  {
+    eager: true,
+    import: "default",
+    query: "?react",
+  }
+) as SvgComponentMap;
 
 const providersImageMap = import.meta.glob<string>(
   "../assets/providers/*.png",
@@ -84,18 +96,34 @@ const providersImageMap = import.meta.glob<string>(
 
 export const lightImages = buildCollections({
   ...lightImageMap,
-  ...svgImageMap,
   ...formatsPngMap,
-  ...formatsSvgMap,
   ...providersImageMap,
 });
 export const darkImages = buildCollections({
   ...darkImageMap,
-  ...svgImageMap,
   ...formatsPngMap,
-  ...formatsSvgMap,
   ...providersImageMap,
 });
+
+const bundledIcons: Record<string, SvgComponent> = {};
+for (const [path, component] of Object.entries({
+  ...svgComponentMap,
+  ...formatsSvgComponentMap,
+})) {
+  const meta = parseImageMeta(path);
+  if (!meta) continue;
+  bundledIcons[meta.name] = component;
+}
+
+/**
+ * Resolve a bundled SVG icon by name. Returns the React component produced
+ * by `vite-plugin-svgr`, or `null` when no bundled SVG matches. Theme and
+ * scale are accepted for parity with {@link getImageSrc} but currently
+ * ignored — bundled SVGs are theme-agnostic and scale as vectors.
+ */
+export const getBundledIcon = (name: string): SvgComponent | null => {
+  return bundledIcons[name] ?? null;
+};
 
 type ThemeType = "light" | "dark";
 

@@ -37,6 +37,17 @@ export interface ImagesContextValue {
     name: string
   ) => React.ComponentType<{ size?: number; className?: string }> | null;
 
+  /**
+   * Resolve a bundled SVG icon as a React component (compiled by SVGR at
+   * build time). `<Icon>` falls back to this when neither host override
+   * nor `getImageSrc` produces a result. Hosts normally don't call this
+   * directly — bundle-shadowing goes through {@link getIconComponent}.
+   * Returns `null` when no bundled SVG matches the name.
+   */
+  getBundledIcon: (
+    name: string
+  ) => React.ComponentType<React.SVGProps<SVGSVGElement>> | null;
+
   /** Resolve a provider logo URL by provider type. */
   getProviderImageSrc: (
     providerType: string,

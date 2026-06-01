@@ -1,6 +1,6 @@
 {
   "name": "@onlyoffice/ai-chat",
-  "version": "0.4.45",
+  "version": "0.4.46",
   "description": "Headless AI chat widget with 16 providers, MCP tools, and pluggable adapters",
   "type": "module",
   "license": "MIT",
@@ -144,31 +144,81 @@
     "zustand": "^5.0.7"
   },
   "peerDependenciesMeta": {
-    "@anthropic-ai/sdk": { "optional": true },
-    "@assistant-ui/react-markdown": { "optional": true },
-    "@codemirror/lang-json": { "optional": true },
-    "@codemirror/state": { "optional": true },
-    "@codemirror/view": { "optional": true },
-    "@google/genai": { "optional": true },
-    "@mistralai/mistralai": { "optional": true },
-    "@radix-ui/react-dialog": { "optional": true },
-    "@radix-ui/react-dropdown-menu": { "optional": true },
-    "@radix-ui/react-slot": { "optional": true },
-    "@radix-ui/react-switch": { "optional": true },
-    "@radix-ui/react-tabs": { "optional": true },
-    "@radix-ui/react-tooltip": { "optional": true },
-    "class-variance-authority": { "optional": true },
-    "clsx": { "optional": true },
-    "codemirror": { "optional": true },
-    "framer-motion": { "optional": true },
-    "i18next": { "optional": true },
-    "openai": { "optional": true },
-    "react-i18next": { "optional": true },
-    "react-shiki": { "optional": true },
-    "react-svg": { "optional": true },
-    "remark-gfm": { "optional": true },
-    "tailwind-merge": { "optional": true },
-    "zustand": { "optional": true }
+    "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "@assistant-ui/react-markdown": {
+      "optional": true
+    },
+    "@codemirror/lang-json": {
+      "optional": true
+    },
+    "@codemirror/state": {
+      "optional": true
+    },
+    "@codemirror/view": {
+      "optional": true
+    },
+    "@google/genai": {
+      "optional": true
+    },
+    "@mistralai/mistralai": {
+      "optional": true
+    },
+    "@radix-ui/react-dialog": {
+      "optional": true
+    },
+    "@radix-ui/react-dropdown-menu": {
+      "optional": true
+    },
+    "@radix-ui/react-slot": {
+      "optional": true
+    },
+    "@radix-ui/react-switch": {
+      "optional": true
+    },
+    "@radix-ui/react-tabs": {
+      "optional": true
+    },
+    "@radix-ui/react-tooltip": {
+      "optional": true
+    },
+    "class-variance-authority": {
+      "optional": true
+    },
+    "clsx": {
+      "optional": true
+    },
+    "codemirror": {
+      "optional": true
+    },
+    "framer-motion": {
+      "optional": true
+    },
+    "i18next": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    },
+    "react-i18next": {
+      "optional": true
+    },
+    "react-shiki": {
+      "optional": true
+    },
+    "react-svg": {
+      "optional": true
+    },
+    "remark-gfm": {
+      "optional": true
+    },
+    "tailwind-merge": {
+      "optional": true
+    },
+    "zustand": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.60.0",
@@ -223,6 +273,7 @@
     "typescript-eslint": "^8.0.0",
     "vite": "^7.1.2",
     "vite-plugin-dts": "^4.0.0",
+    "vite-plugin-svgr": "^5.2.0",
     "vitest": "^4.0.14",
     "zustand": "^5.0.7"
   }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.46
+
+- Fix the CSP-blocked icon rendering under strict `connect-src` hosts (the issue from 0.4.40 that 0.4.41/0.4.43 attempted unsuccessfully). Bundled SVG icons are now compiled to React components at build time via `vite-plugin-svgr` and rendered inline — no `data:` URLs, no `react-svg` fetch, no separate asset files to deploy. `<ImagesContextValue>` gains `getBundledIcon(name)`; `<Icon>` resolves icons in order: host component override → bundled SVG component → host URL override (still via `react-svg`) → bundled PNG via `<img>`.
+- Add-profile and edit-profile cards: error space is now reserved for every field so the card no longer jumps when an error appears/disappears in vertical layout. Error text truncates instead of expanding the parent (`min-w-0` on `FieldContainer`).
+
 ## 0.4.45
 
 - `"external"` provider is hidden from the Add-profile provider dropdown. External profiles are host-managed (the transport lives in `PlatformAdapter.externalFetch` and `basedOn` has no UI) — hosts create them programmatically via `addProfile({ providerType: "external", basedOn: "openai", ... })`.
