@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
 import type {
@@ -44,12 +44,13 @@ export const EditModelCard = ({
   onDelete,
   isHorizontal,
 }: EditModelCardProps) => {
-  const { Button } = useComponents();
+  const { Button, Loader } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore, useCloudsStore } = useStores();
   const { editProfile } = useProfilesStore();
   const { externalOnlyofficeConfig } = useCloudsStore();
   const initialValues = profileToFormValues(profile, externalOnlyofficeConfig);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     values,
@@ -97,6 +98,7 @@ export const EditModelCard = ({
     }
 
     setIsLoading(true);
+    setIsSubmitting(true);
     setErrors({});
 
     const selectedModel = models.find((m) => m.id === values.model);
@@ -113,6 +115,7 @@ export const EditModelCard = ({
     });
 
     setIsLoading(false);
+    setIsSubmitting(false);
 
     if (result === true) {
       onClose();
@@ -152,7 +155,8 @@ export const EditModelCard = ({
           <Button variant="default" onClick={onClose}>
             {t("Cancel")}
           </Button>
-          <Button disabled={!isFormValid} onClick={handleSave}>
+          <Button disabled={!isFormValid || isSubmitting} onClick={handleSave}>
+            {isSubmitting && <Loader size={16} className="mr-[6px]" />}
             {t("SaveChanges")}
           </Button>
         </div>

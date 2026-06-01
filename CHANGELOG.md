@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.47
+
+- Add-profile and edit-profile cards: the primary action button ("Add model" / "Save changes") now shows a loading spinner and stays disabled while the create/update request is in flight. Tracked via a dedicated `isSubmitting` state so the spinner appears only on submit, not during model-list fetching.
+
 ## 0.4.46
 
 - Fix the CSP-blocked icon rendering under strict `connect-src` hosts (the issue from 0.4.40 that 0.4.41/0.4.43 attempted unsuccessfully). Bundled SVG icons are now compiled to React components at build time via `vite-plugin-svgr` and rendered inline — no `data:` URLs, no `react-svg` fetch, no separate asset files to deploy. `<ImagesContextValue>` gains `getBundledIcon(name)`; `<Icon>` resolves icons in order: host component override → bundled SVG component → host URL override (still via `react-svg`) → bundled PNG via `<img>`.

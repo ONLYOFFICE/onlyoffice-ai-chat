@@ -31,12 +31,13 @@ export const AddModelCard = ({
   onSuccess,
   isHorizontal,
 }: AddModelCardProps) => {
-  const { Button, IconButton, Link, TooltipContent } = useComponents();
+  const { Button, IconButton, Link, TooltipContent, Loader } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const { addProfile } = useProfilesStore();
   const { onProfileImportClick, onDownloadTemplate } = useWidgetConfig();
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     values,
@@ -75,6 +76,7 @@ export const AddModelCard = ({
 
   const handleAdd = async () => {
     setIsLoading(true);
+    setIsSubmitting(true);
     setErrors({});
 
     const selectedModel = models.find((m) => m.id === values.model);
@@ -90,6 +92,7 @@ export const AddModelCard = ({
     });
 
     setIsLoading(false);
+    setIsSubmitting(false);
 
     if (result === true) {
       setValues(INITIAL_VALUES);
@@ -155,7 +158,8 @@ export const AddModelCard = ({
             {t("Cancel")}
           </Button>
         )}
-        <Button disabled={!isFormValid} onClick={handleAdd}>
+        <Button disabled={!isFormValid || isSubmitting} onClick={handleAdd}>
+          {isSubmitting && <Loader size={16} className="mr-[6px]" />}
           {t("AddModel")}
         </Button>
       </div>
