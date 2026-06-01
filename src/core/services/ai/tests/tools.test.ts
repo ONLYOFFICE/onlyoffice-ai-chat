@@ -112,6 +112,34 @@ describe("buildToolContext", () => {
     expect(ctx.adapterToolNames.has("web_search")).toBe(true);
   });
 
+  it("marks tools from systemServerTypes groups as systemToolNames", async () => {
+    getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
+    getImageGenerationToolsMock.mockResolvedValue([]);
+    const adapter: ToolsAdapter = {
+      getTools: vi.fn().mockResolvedValue({
+        sysA: [tool("sys_one")],
+        hostB: [tool("host_one")],
+      }),
+      callTool: vi.fn(),
+    };
+
+    const ctx = await buildToolContext(
+      makeStorage(),
+      adapter,
+      [],
+      undefined,
+      undefined,
+      ["sysA"]
+    );
+
+    expect(ctx.systemToolNames.has("sys_one")).toBe(true);
+    // Other adapter groups and built-ins are NOT system tools.
+    expect(ctx.systemToolNames.has("host_one")).toBe(false);
+    expect(ctx.systemToolNames.has("web_search")).toBe(false);
+    // System tools are still adapter tools.
+    expect(ctx.adapterToolNames.has("sys_one")).toBe(true);
+  });
+
   it("filters out tools disabled in storage.toolPrefs", async () => {
     getWebSearchToolsMock.mockResolvedValue([
       tool("web_search"),

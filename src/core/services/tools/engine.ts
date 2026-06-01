@@ -1,3 +1,4 @@
+import type { TMCPItem } from "../../../shared/mcp-item";
 import type { McpServerConfig } from "../../storage";
 import type {
   ToolsBulkResult,
@@ -89,6 +90,20 @@ export class ToolsEngine {
     entityId?: string
   ): Promise<Record<string, McpServerConfig>> {
     return this.deps.storage.mcpServers.readAll(entityId);
+  }
+
+  /**
+   * Enumerate the host-configured system MCP servers' tools, grouped by
+   * server type. Resolved server-side from the injected
+   * {@link ToolsEngineDeps.systemToolsSource} (already connected and
+   * listed) — the client renders permission cards from this in a single
+   * fetch, with no browser-side MCP connections. Returns `{}` when no
+   * system source is wired.
+   */
+  async listSystemTools(
+    entityId?: string
+  ): Promise<Record<string, TMCPItem[]>> {
+    return (await this.deps.systemToolsSource?.getTools(entityId)) ?? {};
   }
 
   async replaceAllCustomServers(

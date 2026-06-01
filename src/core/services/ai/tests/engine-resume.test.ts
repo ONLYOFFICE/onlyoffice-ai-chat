@@ -205,6 +205,98 @@ describe("AIEngine.approveToolCall", () => {
     }
     expect(storage.toolPrefs.upsertAllowAlways).not.toHaveBeenCalled();
   });
+
+  it("executes a system tool server-side on approve, ignoring the client result", async () => {
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([
+        {
+          isEnd: true,
+          responseMessage: {
+            role: "assistant",
+            content: [{ type: "text", text: "done" }],
+          },
+        },
+      ])
+    );
+    const sysToolCallMessage: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        {
+          type: "tool-call",
+          toolCallId: "c1",
+          toolName: "sys_search",
+          args: { q: 1 },
+        },
+      ],
+    } as ThreadMessageLike;
+
+    const callTool = vi.fn().mockResolvedValue(JSON.stringify({ ok: true }));
+    const toolsAdapter = {
+      getTools: vi.fn().mockResolvedValue({
+        sysSrv: [{ name: "sys_search", description: "", inputSchema: {} }],
+      }),
+      callTool,
+    };
+
+    const { storage } = makeStorage();
+    await storage.messages.create("t1", sysToolCallMessage);
+    const engine = new AIEngine({
+      storage,
+      toolsAdapter,
+      systemServerTypes: ["sysSrv"],
+    });
+
+    const events = [];
+    for await (const e of engine.approveToolCall({
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: sysToolCallMessage,
+      result: "IGNORED-client-result",
+    })) {
+      events.push(e);
+    }
+
+    // Engine executed the tool server-side rather than trusting the client.
+    expect(callTool).toHaveBeenCalledWith("sys_search", { q: 1 }, undefined);
+    expect(events.map((e) => e.type)).toContain("message-end");
+  });
+
+  it("uses the client result for non-system tools (no server-side exec)", async () => {
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([
+        {
+          isEnd: true,
+          responseMessage: {
+            role: "assistant",
+            content: [{ type: "text", text: "done" }],
+          },
+        },
+      ])
+    );
+    const callTool = vi.fn();
+    const toolsAdapter = {
+      getTools: vi.fn().mockResolvedValue({}),
+      callTool,
+    };
+    const { storage } = makeStorage();
+    await storage.messages.create("t1", toolCallMessage);
+    const engine = new AIEngine({
+      storage,
+      toolsAdapter,
+      systemServerTypes: ["sysSrv"],
+    });
+    for await (const _ of engine.approveToolCall({
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: toolCallMessage,
+      result: "client-result",
+    })) {
+      void _;
+    }
+    expect(callTool).not.toHaveBeenCalled();
+  });
 });
 
 describe("AIEngine.denyToolCall", () => {

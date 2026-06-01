@@ -42,6 +42,13 @@ const engine = new ToolsEngine({ storage });
 ```ts
 type ToolsEngineDeps = {
   storage: StorageAdapter;
+  /**
+   * Optional server-side system tool source — the same instance wired
+   * into `AIEngine` as part of its `toolsAdapter`. Exposed to clients
+   * through `listSystemTools` so the permission UI can render cards
+   * without the browser connecting to the MCP servers itself.
+   */
+  systemToolsSource?: Pick<ToolsAdapter, "getTools">;
 };
 ```
 
@@ -75,6 +82,7 @@ which is what callers without a `WidgetConfig.entityId` get.
 | [`updateCustomServer`](#updatecustomserver)                | `ToolsMutationResult`                  | `mcpServers.update`                | ✅ transport |
 | [`removeCustomServer`](#removecustomserver)                | `void`                                 | `mcpServers.delete` (no-op if missing) | ❌         |
 | [`getCustomServer`](#getcustomserver) / [`listCustomServers`](#listcustomservers) | `McpServerConfig \| null` / `Record<…>` | ❌                                  | ❌         |
+| [`listSystemTools`](#listsystemtools)                      | `Record<string, TMCPItem[]>`           | ❌ (delegates to `systemToolsSource`) | ❌         |
 | [`replaceAllCustomServers`](#replaceallcustomservers)      | `ToolsBulkResult`                      | `mcpServers.replaceAll`            | ✅ every entry |
 | [`setDisabled`](#setdisabled) / [`getDisabled`](#getdisabled) / [`isToolDisabled`](#istooldisabled) | `void` / `Record<…>` / `boolean` | `toolPrefs.upsertDisabled` | ❌         |
 | [`setAllowAlways`](#setallowalways) / [`getAllowAlways`](#getallowalways) / [`isAllowAlways`](#isallowalways) | `void` / `string[]` / `boolean` | `toolPrefs.upsertAllowAlways` | ❌         |
@@ -190,6 +198,32 @@ calls `storage.mcpServers.replaceAll(map)` for a single
 backend round-trip.
 
 Used for import / restore flows.
+
+---
+
+## System tools
+
+Host-configured "system" MCP servers are **not** persisted in
+`storage.mcpServers` — they're wired on the server via a
+[`SystemToolsSource`](../../../src/core/services/tools/system-tools-source.ts)
+(a `ToolsAdapter`) and injected into `AIEngine`. They never appear
+in `listCustomServers` (so they stay out of the JSON config editor)
+and can't be deleted from the UI. See
+[headless usage → system tools](../../headless-usage.md#system-server-side-mcp-tools).
+
+### `listSystemTools`
+
+```ts
+async listSystemTools(
+  entityId?: string
+): Promise<Record<string, TMCPItem[]>>;
+```
+
+Returns the system servers' tools grouped by server type, resolved
+from the injected `systemToolsSource` (already connected and
+enumerated server-side). Returns `{}` when no source is wired. The
+widget calls this once to render permission cards — no browser-side
+MCP connection. Route: `tools/list-system-tools`.
 
 ---
 

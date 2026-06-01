@@ -42,6 +42,14 @@ type AIEngineDeps = {
    * See {@link ToolsAdapter}.
    */
   toolsAdapter?: ToolsAdapter;
+
+  /**
+   * Server-type keys whose adapter tools must be approved in the UI
+   * before the engine executes them server-side — vs. the silent
+   * auto-exec of every other adapter tool. Use for `SystemToolsSource`:
+   * `() => systemToolsSource.getServerTypes()`.
+   */
+  systemServerTypes?: string[] | (() => string[]);
 };
 ```
 
@@ -147,14 +155,21 @@ consumer side, around this generator.
      `storage.toolPrefs.readAllowAlways()`.
 6. **Wrap in [`runChatStream`](../../../src/core/services/ai/engine.ts).**
    For every `tool-call-pending`:
-   - If the tool came from `toolsAdapter` / built-in source →
-     execute server-side via [`executeAdapterTool`](../../../src/core/services/ai/tools.ts),
+   - If the tool came from `toolsAdapter` / built-in source **and is
+     not a system tool** → execute server-side via
+     [`executeAdapterTool`](../../../src/core/services/ai/tools.ts),
      persist the result, resume the chat with the augmented
      history, and recursively re-enter `runChatStream` so further
      adapter tool calls keep auto-executing.
-   - Otherwise — pass the event through to the consumer; control
-     returns to await an `approveToolCall` / `denyToolCall`
-     follow-up call.
+   - If the tool is a **system tool** (its server type is in
+     `deps.systemServerTypes`) and not always-allowed → pass the
+     event through flagged `serverExecuted: true`. The consumer shows
+     the approval dialog and resumes via `approveToolCall` **with no
+     result** — the engine executes it server-side on approve. (When
+     always-allowed, it auto-executes like any adapter tool.)
+   - Otherwise (user tools from `actionArgs.tools`) — pass the event
+     through to the consumer; control returns to await an
+     `approveToolCall` / `denyToolCall` follow-up call.
 7. **Final title yield** (new threads only): once the inner
    stream exits, await `titlePromise`, persist via
    `storage.threads.update`, and emit a second `thread-title` with

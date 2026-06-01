@@ -22,6 +22,7 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
 
   const { useServersStore } = useStores();
   const servers = useServersStore((s) => s.servers);
+  const systemTools = useServersStore((s) => s.systemTools);
   const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
 
   const enabledCount = React.useMemo(
@@ -52,8 +53,10 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
     (id) => (servers[id] ?? []).length > 0
   );
   const hasCustomServers = Object.keys(customServers).length > 0;
+  const systemTypes = Object.keys(systemTools ?? {});
+  const hasSystemTools = systemTypes.length > 0;
 
-  if (!hasHostTools && !hasCustomServers) return null;
+  if (!hasHostTools && !hasCustomServers && !hasSystemTools) return null;
 
   return (
     <div className="w-full max-h-[560px] border-[length:var(--servers-available-tools-border-width)] border-[var(--servers-available-tools-border-color)] rounded-[var(--servers-available-tools-border-radius)] flex flex-col">
@@ -99,6 +102,16 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
             name={type}
             mcpItems={servers[type] ?? []}
             isLoading={!servers[type]?.length}
+            disableEnable={disableEnable}
+          />
+        ))}
+        {/* System servers: enumerated server-side, rendered identically. */}
+        {systemTypes.map((type) => (
+          <AvailableToolsItem
+            key={type}
+            name={type}
+            mcpItems={servers[type] ?? []}
+            isLoading={false}
             disableEnable={disableEnable}
           />
         ))}

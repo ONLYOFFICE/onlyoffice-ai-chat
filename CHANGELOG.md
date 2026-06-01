@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.48
+
+- Server-side "system" MCP tools. Hosts wire trusted MCP servers (HTTP) on the server; their tools are enumerated and executed in-engine, so credentials never reach the browser. New exports: `SystemToolsSource`, `composeToolsAdapters`, `AIEngineDeps.systemServerTypes`, `ToolsEngineDeps.systemToolsSource`, `ToolsEngine.listSystemTools` (route `tools/list-system-tools`).
+- Unlike other adapter tools, system tools pause for UI approval, then execute server-side on approve (`tool-call-pending` carries `serverExecuted`). They render as permission cards (one fetch, no browser MCP connection), enable/disable via the normal flow, never touch `storage.mcpServers` — so they stay out of the config editor and can't be deleted.
+
+```ts
+const systemTools = new SystemToolsSource({
+  servers: { weather: { url: "https://mcp...", headers: { Authorization: "Bearer …" } } },
+});
+new AIEngine({ storage, toolsAdapter: composeToolsAdapters(systemTools, hostAdapter), systemServerTypes: () => systemTools.getServerTypes() });
+new ToolsEngine({ storage, systemToolsSource: systemTools });
+```
+
+> `listSystemTools` is a new `DEFAULT_TOOLS_ROUTES` entry — route layers that bind every entry to a controller must add a handler.
+
 ## 0.4.47
 
 - Add-profile and edit-profile cards: the primary action button ("Add model" / "Save changes") now shows a loading spinner and stays disabled while the create/update request is in flight. Tracked via a dedicated `isSubmitting` state so the spinner appears only on submit, not during model-list fetching.

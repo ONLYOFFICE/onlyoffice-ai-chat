@@ -62,6 +62,17 @@ export type AIEngineDeps = {
   toolsAdapter?: ToolsAdapter;
 
   /**
+   * Server-type keys (the `getTools` grouping keys) that belong to a
+   * server-side "system" tool source. Their tools are adapter-served
+   * (executed in-engine) but, unlike other adapter tools, they pause on
+   * `tool-call-pending` for UI approval instead of running silently —
+   * the engine still executes them server-side once approved. Tools in
+   * the persisted "always-allow" list skip the prompt. Pass a function
+   * to resolve lazily (e.g. `() => systemSource.getServerTypes()`).
+   */
+  systemServerTypes?: string[] | (() => string[]);
+
+  /**
    * Custom fetch used in place of the global one whenever the resolved
    * profile has `useProxy: true`. The engine wires this into every
    * provider request (chat / title / regenerate / resume) for that
@@ -307,6 +318,13 @@ export type ChatEvent =
        * the consumer should execute it without prompting the user.
        */
       autoAllow: boolean;
+      /**
+       * Set when the tool is served by a server-side system source: the
+       * consumer must NOT execute it locally — only show the approval UI
+       * (unless `autoAllow`) and resume via `approveToolCall` (no
+       * `result` needed) / `denyToolCall`. The engine runs it in-engine.
+       */
+      serverExecuted?: boolean;
     }
   | {
       type: "thread-title";

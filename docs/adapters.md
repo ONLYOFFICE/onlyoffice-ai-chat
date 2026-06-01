@@ -314,6 +314,14 @@ message. On user deny, the engine resumes with the literal
 string `"User deny tool call"` itself — there is no adapter
 hook for that path.
 
+> **System tools** are the exception. The built-in
+> [`SystemToolsSource`](../src/core/services/tools/system-tools-source.ts)
+> connects to host-configured MCP servers (HTTP) server-side; its
+> tools **do** surface for UI approval, yet still execute in-engine.
+> Combine adapters with `composeToolsAdapters(...)` and mark the
+> system server types via `AIEngineDeps.systemServerTypes`. See
+> [headless usage](./headless-usage.md#system-server-side-mcp-tools).
+
 ### Stub example
 
 ```ts

@@ -171,6 +171,59 @@ writes), pass them through `actionArgs.tools` — those surface as
 `tool-call-pending` events for you to handle, and resume via
 `ai.approveToolCall({ ..., result })` / `ai.denyToolCall(...)`.
 
+### System (server-side) MCP tools
+
+`SystemToolsSource` is a built-in `ToolsAdapter` that connects to
+host-configured MCP servers (HTTP transport) entirely server-side:
+it enumerates and executes their tools in-engine, so credentials in
+`headers` never reach the browser. Unlike other adapter tools, system
+tools **pause for UI approval** before running (unless always-allowed)
+— the engine still executes them on the server once approved.
+
+```ts
+import {
+  AIEngine,
+  ToolsEngine,
+  SystemToolsSource,
+  composeToolsAdapters,
+} from "@onlyoffice/ai-chat";
+
+// One shared instance — wired into both engines.
+const systemTools = new SystemToolsSource({
+  servers: {
+    weather: {
+      url: "https://mcp.example.com/weather",
+      headers: { Authorization: "Bearer <secret>" },
+    },
+  },
+  // fetch: customFetch, // optional — defaults to global fetch
+});
+
+const ai = new AIEngine({
+  storage,
+  // Merge with your own adapter (host tools, etc.); each source keeps
+  // its own server-type keys.
+  toolsAdapter: composeToolsAdapters(systemTools, myHostAdapter),
+  // Marks these server types as "approve in the UI, execute on server".
+  systemServerTypes: () => systemTools.getServerTypes(),
+});
+
+// Expose the already-enumerated list to the widget in a single fetch
+// so it can render permission cards. Reuses the same source instance.
+const tools = new ToolsEngine({ storage, systemToolsSource: systemTools });
+```
+
+The widget fetches the list via `ToolsEngine.listSystemTools` (route
+`tools/list-system-tools`) — system servers never touch
+`storage.mcpServers`, so they stay out of the JSON config editor and
+can't be deleted from the UI. Per-tool enable/disable works through
+the normal `setDisabled` flow.
+
+> Transport is HTTP-only. `listSystemTools` is a new entry in
+> `DEFAULT_TOOLS_ROUTES`: if your route layer binds every entry to a
+> controller handler, add a `listSystemTools` handler or startup will
+> fail on the missing route.
+
 ## Middleware
 
 Construct a `MiddlewareRunner` and pass it to whichever surface

@@ -353,6 +353,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         const toolCall = readToolCall(event.message, event.idx);
         if (!toolCall) return;
 
+        // System tools run on the server: the consumer only approves /
+        // denies, never executes locally (no MCP connection in the browser).
+        const isServerExecuted = Boolean(event.serverExecuted);
+
         let toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
 
         if (!middlewareRunner.isEmpty) {
@@ -364,7 +368,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             messageUID: event.messageId,
           });
           if (mw.action === "approve") {
-            await dispatchAndApprove(event, toolCall.toolName, toolArgs);
+            if (isServerExecuted)
+              await approveServerExecuted(event, event.message);
+            else await dispatchAndApprove(event, toolCall.toolName, toolArgs);
             return;
           }
           if (mw.action === "deny") {
@@ -389,13 +395,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           }
         }
 
-        if (event.autoAllow) {
-          await dispatchAndApprove(event, toolCall.toolName, toolArgs);
-          return;
-        }
-
-        // Surface the dialog to the user. Approve / deny will arrive
-        // via `approveToolCall` / `denyToolCall` below.
         const dialogMessage =
           toolArgs !== toolCall.args
             ? patchToolCallArgs(
@@ -404,11 +403,47 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
                 toolArgs as ReadonlyJSONObject
               )
             : event.message;
+
+        if (event.autoAllow) {
+          if (isServerExecuted)
+            await approveServerExecuted(event, dialogMessage);
+          else await dispatchAndApprove(event, toolCall.toolName, toolArgs);
+          return;
+        }
+
+        // Surface the dialog to the user. Approve / deny will arrive
+        // via `approveToolCall` / `denyToolCall` below.
         setManageToolData({
           threadId: event.threadId,
           message: dialogMessage,
           idx: event.idx,
           messageId: event.messageId,
+          ...(isServerExecuted ? { serverExecuted: true } : {}),
+        });
+      }
+
+      // Approve a server-executed (system) tool: no local dispatch — just
+      // resume; the engine runs the tool in-process and streams the result.
+      async function approveServerExecuted(
+        event: Extract<ChatEvent, { type: "tool-call-pending" }>,
+        message: ThreadMessageLike
+      ) {
+        setIsToolPending(false);
+        const next = api.ai.approveToolCall({
+          threadId: event.threadId,
+          messageId: event.messageId,
+          idx: event.idx,
+          message,
+          result: undefined,
+          entityId,
+          actionArgs: {
+            isReasoning: extendedThinking,
+            tools: tools.length > 0 ? tools : undefined,
+            prompt: systemPrompt,
+          },
+        });
+        await processStream(next, event.threadId, {
+          hasAssistantPlaceholder: true,
         });
       }
 
@@ -651,6 +686,29 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
       const toolCall = readToolCall(data.message, data.idx);
       if (!toolCall) return;
+
+      // System tools: resume without local execution — the engine runs it.
+      if (data.serverExecuted) {
+        setIsToolPending(false);
+        const stream = api.ai.approveToolCall({
+          threadId: data.threadId,
+          messageId: data.messageId,
+          idx: data.idx,
+          message: data.message,
+          result: undefined,
+          allowAlways,
+          entityId,
+          actionArgs: {
+            isReasoning: extendedThinking,
+            tools: tools.length > 0 ? tools : undefined,
+            prompt: systemPrompt,
+          },
+        });
+        await processStream(stream, data.threadId, {
+          hasAssistantPlaceholder: true,
+        });
+        return;
+      }
 
       const serverType = servers.getServerType(toolCall.toolName);
       const bareName = toolCall.toolName.replace(`${serverType}_`, "");

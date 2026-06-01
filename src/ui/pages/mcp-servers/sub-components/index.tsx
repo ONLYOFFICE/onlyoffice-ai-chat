@@ -19,6 +19,7 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
   const { servers: serversInstance } = useToolsContext();
   const { useServersStore } = useStores();
   const servers = useServersStore((s) => s.servers);
+  const systemTools = useServersStore((s) => s.systemTools);
   const [customServers, setCustomServers] = React.useState({});
 
   React.useEffect(() => {
@@ -33,7 +34,8 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
     serversInstance
       .getHostToolGroupIds()
       .some((id) => (servers[id] ?? []).length > 0) ||
-    Object.keys(customServers).length > 0;
+    Object.keys(customServers).length > 0 ||
+    Object.keys(systemTools ?? {}).length > 0;
 
   return (
     <>

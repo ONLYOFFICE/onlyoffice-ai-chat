@@ -47,8 +47,15 @@ export type {
   ThreadsEngineMethod,
 } from "./threads";
 
-export { DEFAULT_TOOLS_ROUTES, ToolsEngine } from "./tools";
+export {
+  composeToolsAdapters,
+  DEFAULT_TOOLS_ROUTES,
+  SystemToolsSource,
+  ToolsEngine,
+} from "./tools";
 export type {
+  FetchLike,
+  McpHttpServerConfig,
   McpTransportConfig,
   ToolsBulkResult,
   ToolsEngineDeps,

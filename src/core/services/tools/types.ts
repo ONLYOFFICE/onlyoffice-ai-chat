@@ -1,6 +1,7 @@
 import type { TErrorData } from "../../../shared/error-data";
 import type { McpServerConfig } from "../../storage";
 import type { StorageAdapter } from "../../storage";
+import type { ToolsAdapter } from "../../tools-adapter";
 import type { RouteSpec } from "../types";
 import type { ToolsEngine } from "./engine";
 
@@ -30,6 +31,11 @@ export const DEFAULT_TOOLS_ROUTES: Record<ToolsEngineMethod, RouteSpec> = {
   listCustomServers: {
     method: "GET",
     path: "tools/list-custom-servers",
+    params: ["entityId"],
+  },
+  listSystemTools: {
+    method: "GET",
+    path: "tools/list-system-tools",
     params: ["entityId"],
   },
   replaceAllCustomServers: {
@@ -63,6 +69,17 @@ export const DEFAULT_TOOLS_ROUTES: Record<ToolsEngineMethod, RouteSpec> = {
 /** Dependencies injected into a {@link ToolsEngine} instance. */
 export type ToolsEngineDeps = {
   storage: StorageAdapter;
+
+  /**
+   * Optional server-side system tool source (the same instance wired
+   * into `AIEngineDeps.toolsAdapter`). Exposes the host-configured
+   * "system" MCP servers' tools to the client via
+   * {@link ToolsEngine.listSystemTools} — one fetch, already enumerated
+   * server-side — for rendering the permission cards. Never touches
+   * `storage.mcpServers`, so these stay out of the config editor and
+   * can't be deleted.
+   */
+  systemToolsSource?: Pick<ToolsAdapter, "getTools">;
 };
 
 /**

@@ -15,12 +15,26 @@ import type { TMCPItem } from "../../types";
 export interface ServersStoreState {
   servers: Record<string, TMCPItem[]>;
   tools: TMCPItem[];
+  /**
+   * Server-side "system" MCP tools, grouped by server type. Fetched in a
+   * single call from `api.tools.listSystemTools` (the server already
+   * connected and enumerated them) and rendered as permission cards
+   * alongside custom servers. Not persisted in the MCP config, so they
+   * never appear in the config editor and can't be deleted.
+   */
+  systemTools: Record<string, TMCPItem[]>;
   disabledTools: Record<string, string[]>;
   manageToolData?: {
     threadId: string;
     message: ThreadMessageLike;
     idx: number;
     messageId: string;
+    /**
+     * Set for server-executed system tools: the consumer must NOT run the
+     * tool locally — approving just resumes the stream and the engine
+     * executes it server-side.
+     */
+    serverExecuted?: boolean;
   };
   webSearchEnabled: boolean;
   initServers: () => Promise<void>;
@@ -51,9 +65,25 @@ export function createServersStore(deps: {
   const { ctx, api, callbacksManager, entityId } = deps;
 
   const buildToolsList = async () => {
-    const grouped = await ctx.servers.getTools();
-    const disabled = await api.tools.getDisabled(entityId);
-    const webSearchEnabled = await api.webSearch.isConfigured(entityId);
+    const [grouped, systemTools, disabled, webSearchEnabled] =
+      await Promise.all([
+        ctx.servers.getTools(),
+        // Single fetch — the server already connected + listed these.
+        // Tolerate hosts that haven't wired the route yet.
+        api.tools
+          .listSystemTools(entityId)
+          .catch(() => ({}) as Record<string, TMCPItem[]>),
+        api.tools.getDisabled(entityId),
+        api.webSearch.isConfigured(entityId),
+      ]);
+
+    // System tools join the same grouping so they get the disabled-flag
+    // annotation and render as cards. Their server types are distinct
+    // from custom/host keys.
+    const groupedAll: Record<string, TMCPItem[]> = {
+      ...grouped,
+      ...systemTools,
+    };
     console.info("[mcp] buildToolsList grouped", {
       groupedKeys: Object.keys(grouped),
       counts: Object.fromEntries(
@@ -69,7 +99,7 @@ export function createServersStore(deps: {
     // provider list.
     const annotated: Record<string, TMCPItem[]> = {};
     const flat: TMCPItem[] = [];
-    for (const [type, items] of Object.entries(grouped)) {
+    for (const [type, items] of Object.entries(groupedAll)) {
       const disabledForType = disabled[type] ?? [];
       annotated[type] = items.map((tool) => ({
         ...tool,
@@ -90,6 +120,7 @@ export function createServersStore(deps: {
     return {
       tools: flat,
       servers: annotated,
+      systemTools,
       disabledTools: disabled,
       webSearchEnabled,
     };
@@ -98,6 +129,7 @@ export function createServersStore(deps: {
   return create<ServersStoreState>((set, get) => ({
     servers: {},
     tools: [],
+    systemTools: {},
     disabledTools: {},
     manageToolData: undefined,
     webSearchEnabled: false,

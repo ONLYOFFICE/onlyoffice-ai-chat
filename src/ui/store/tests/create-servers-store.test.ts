@@ -30,6 +30,7 @@ function makeDeps(overrides?: {
       getDisabled: vi.fn().mockResolvedValue(disabled),
       setDisabled: vi.fn().mockResolvedValue(undefined),
       listCustomServers: vi.fn().mockResolvedValue({ a: { command: "x" } }),
+      listSystemTools: vi.fn().mockResolvedValue({}),
       replaceAllCustomServers: vi.fn().mockResolvedValue(undefined),
       removeCustomServer: vi.fn().mockResolvedValue(undefined),
     },

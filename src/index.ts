@@ -112,9 +112,11 @@ export {
   PreferencesEngine,
   ProfilesEngine,
   PromptsEngine,
+  SystemToolsSource,
   ThreadsEngine,
   ToolsEngine,
   WebSearchEngine,
+  composeToolsAdapters,
   toChatError,
 } from "./core/services";
 export type {
@@ -135,6 +137,8 @@ export type {
   ImportError,
   ImportMode,
   ImportResult,
+  FetchLike,
+  McpHttpServerConfig,
   McpTransportConfig,
   OpenOrCreateInput,
   OpenOrCreateResult,

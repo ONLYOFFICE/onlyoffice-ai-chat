@@ -378,3 +378,21 @@ describe("ToolsEngine entity scope", () => {
     expect(snapshot().servers).toEqual({ keep: { url: "http://keep" } });
   });
 });
+
+describe("ToolsEngine.listSystemTools", () => {
+  it("delegates to the injected system source", async () => {
+    const { storage } = makeStorage();
+    const tools = { sysA: [{ name: "a", description: "", inputSchema: {} }] };
+    const engine = new ToolsEngine({
+      storage,
+      systemToolsSource: { getTools: vi.fn().mockResolvedValue(tools) },
+    });
+    expect(await engine.listSystemTools()).toEqual(tools);
+  });
+
+  it("returns {} when no system source is wired", async () => {
+    const { storage } = makeStorage();
+    const engine = new ToolsEngine({ storage });
+    expect(await engine.listSystemTools()).toEqual({});
+  });
+});

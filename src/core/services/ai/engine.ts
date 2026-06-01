@@ -83,6 +83,12 @@ export class AIEngine {
     this.attachments = new AttachmentsEngine({ storage: deps.storage });
   }
 
+  /** Resolve the configured system-source server types (lazy or static). */
+  private getSystemServerTypes(): string[] {
+    const value = this.deps.systemServerTypes;
+    return typeof value === "function" ? value() : (value ?? []);
+  }
+
   /**
    * Resolve the custom fetch (if any) to wire into the provider
    * request for the given profile. Two independent code paths:
@@ -222,7 +228,8 @@ export class AIEngine {
       input.entityId,
       {
         attachmentId: collectRefIds([...priorMessages, input.userMessage]),
-      }
+      },
+      this.getSystemServerTypes()
     );
 
     const proxiedFetch = this.pickFetch(profile);
@@ -306,7 +313,8 @@ export class AIEngine {
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
       input.entityId,
-      { attachmentId: collectRefIds(priorMessages) }
+      { attachmentId: collectRefIds(priorMessages) },
+      this.getSystemServerTypes()
     );
 
     const proxiedFetch = this.pickFetch(profile);
@@ -370,6 +378,55 @@ export class AIEngine {
       }
     }
 
+    // System (server-executed) tools: the consumer ran nothing — execute
+    // the tool in-engine and resume, ignoring any client-supplied result.
+    // Skipped entirely when no system source is configured (no overhead).
+    const systemServerTypes = this.getSystemServerTypes();
+    if (systemServerTypes.length > 0) {
+      const toolCall = readToolCall(input.message, input.idx);
+      if (toolCall) {
+        const { profile, profileId } = await this.resolveChatProfile(
+          input.profileId,
+          input.entityId
+        );
+        const toolCtx = await buildToolContext(
+          this.deps.storage,
+          this.deps.toolsAdapter,
+          input.actionArgs?.tools ?? [],
+          input.entityId,
+          undefined,
+          systemServerTypes
+        );
+        if (toolCtx.systemToolNames.has(toolCall.toolName)) {
+          const proxiedFetch = this.pickFetch(profile);
+          const runCtx: AdapterRunContext = {
+            profile,
+            profileId,
+            tools: toolCtx.mergedTools,
+            isReasoning: input.actionArgs?.isReasoning,
+            signal: input.actionArgs?.signal,
+            entityId: input.entityId,
+            fetch: proxiedFetch,
+          };
+          const resumed = executeAdapterTool(
+            this.deps.storage,
+            this.deps.toolsAdapter,
+            {
+              type: "tool-call-pending",
+              message: input.message,
+              idx: input.idx,
+              messageId: input.messageId,
+              threadId: input.threadId,
+              autoAllow: false,
+            },
+            runCtx
+          );
+          yield* this.runChatStream(resumed, toolCtx, runCtx);
+          return;
+        }
+      }
+    }
+
     yield* this.resumeAndContinue(input, input.result);
   }
 
@@ -401,7 +458,9 @@ export class AIEngine {
       this.deps.storage,
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
-      input.entityId
+      input.entityId,
+      undefined,
+      this.getSystemServerTypes()
     );
     const proxiedFetch = this.pickFetch(profile);
     const runCtx: AdapterRunContext = {
@@ -459,14 +518,29 @@ export class AIEngine {
         );
 
         if (source === "adapter" && toolCall) {
-          const resumed = executeAdapterTool(
-            this.deps.storage,
-            this.deps.toolsAdapter,
-            event,
-            runCtx
-          );
-          yield* this.runChatStream(resumed, toolCtx, runCtx);
-          return;
+          // System tools execute server-side but must be approved in the
+          // UI first (unless already always-allowed). Everything else
+          // adapter-served (web-search, image-gen, host adapter) runs
+          // silently in-engine as before.
+          const needsApproval =
+            toolCtx.systemToolNames.has(toolCall.toolName) && !event.autoAllow;
+
+          if (!needsApproval) {
+            const resumed = executeAdapterTool(
+              this.deps.storage,
+              this.deps.toolsAdapter,
+              event,
+              runCtx
+            );
+            yield* this.runChatStream(resumed, toolCtx, runCtx);
+            return;
+          }
+
+          // Surface the pending call to the consumer flagged as
+          // server-executed: it shows the approval dialog and resumes via
+          // approveToolCall (no result) — the engine runs the tool.
+          yield { ...event, serverExecuted: true };
+          continue;
         }
       }
       yield event;

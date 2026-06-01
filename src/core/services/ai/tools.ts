@@ -41,6 +41,12 @@ export type ToolContext = {
   userToolNames: Set<string>;
   /** Lookup set used by {@link resolveToolSource}. */
   adapterToolNames: Set<string>;
+  /**
+   * Subset of {@link adapterToolNames} contributed by server-side system
+   * sources. These pause for UI approval (unless always-allowed) yet
+   * still execute in-engine — see `AIEngineDeps.systemServerTypes`.
+   */
+  systemToolNames: Set<string>;
 };
 
 /**
@@ -61,7 +67,8 @@ export async function buildToolContext(
   adapter: ToolsAdapter | undefined,
   userTools: TMCPItem[],
   entityId?: string,
-  config?: { attachmentId: string[] }
+  config?: { attachmentId: string[] },
+  systemServerTypes: string[] = []
 ): Promise<ToolContext> {
   const [adapterCustom, webSearchTools, imageGenerationTools, disabled] =
     await Promise.all([
@@ -80,12 +87,19 @@ export async function buildToolContext(
   const adapterTools = flattenAndFilter(grouped, disabled);
   const mergedTools = mergeToolsByName(adapterTools, userTools);
 
+  const systemToolNames = new Set<string>();
+  for (const type of systemServerTypes) {
+    for (const tool of adapterCustom[type] ?? [])
+      systemToolNames.add(tool.name);
+  }
+
   return {
     userTools,
     adapterTools,
     mergedTools,
     userToolNames: new Set(userTools.map((t) => t.name)),
     adapterToolNames: new Set(adapterTools.map((t) => t.name)),
+    systemToolNames,
   };
 }
 
