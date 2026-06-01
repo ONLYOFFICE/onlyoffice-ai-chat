@@ -84,19 +84,20 @@ export function createServersStore(deps: {
       ...grouped,
       ...systemTools,
     };
-    console.info("[mcp] buildToolsList grouped", {
-      groupedKeys: Object.keys(grouped),
-      counts: Object.fromEntries(
-        Object.entries(grouped).map(([k, v]) => [k, v.length])
-      ),
-      disabled,
-    });
 
     // Annotate each tool with its `enabled` flag derived from the
     // persisted disabled list — used by the permissions UI to render
     // toggles. `flat` carries every tool (disabled-filter is applied by
     // the engine in `buildToolContext`) so the chat receives the full
     // provider list.
+    //
+    // System tools are the exception: the engine injects and executes them
+    // server-side via its adapter. They must NOT go into `flat` (which is
+    // sent to the engine as `actionArgs.tools`) — that would re-classify
+    // them as client-executed user tools, so the engine wouldn't flag them
+    // `serverExecuted` and the browser would try (and fail) to run them
+    // locally. They still appear in `servers` for the permission cards.
+    const systemTypes = new Set(Object.keys(systemTools));
     const annotated: Record<string, TMCPItem[]> = {};
     const flat: TMCPItem[] = [];
     for (const [type, items] of Object.entries(groupedAll)) {
@@ -108,14 +109,8 @@ export function createServersStore(deps: {
             ? tool.enabled
             : !disabledForType.includes(tool.name),
       }));
-      flat.push(...annotated[type]);
+      if (!systemTypes.has(type)) flat.push(...annotated[type]);
     }
-
-    console.info("[mcp] buildToolsList result", {
-      flatCount: flat.length,
-      flatNames: flat.map((t) => t.name),
-      annotatedKeys: Object.keys(annotated),
-    });
 
     return {
       tools: flat,
@@ -143,9 +138,6 @@ export function createServersStore(deps: {
       // anything. Re-reading from storage covers the cross-instance and
       // cold-start cases uniformly.
       const mcpServers = (await api.tools.listCustomServers(entityId)) ?? {};
-      console.info("[mcp] initServers reloaded config", {
-        keys: Object.keys(mcpServers),
-      });
       ctx.servers.setCustomServers({ mcpServers });
       ctx.servers.startCustomServers();
     },

@@ -8,10 +8,12 @@ function makeDeps(overrides?: {
   grouped?: Record<string, { name: string; enabled?: boolean }[]>;
   disabled?: Record<string, string[]>;
   webSearchEnabled?: boolean;
+  systemTools?: Record<string, { name: string; enabled?: boolean }[]>;
 }) {
   const grouped = overrides?.grouped ?? {};
   const disabled = overrides?.disabled ?? {};
   const webSearchEnabled = overrides?.webSearchEnabled ?? false;
+  const systemTools = overrides?.systemTools ?? {};
 
   const servers = {
     getTools: vi.fn().mockResolvedValue(grouped),
@@ -30,7 +32,7 @@ function makeDeps(overrides?: {
       getDisabled: vi.fn().mockResolvedValue(disabled),
       setDisabled: vi.fn().mockResolvedValue(undefined),
       listCustomServers: vi.fn().mockResolvedValue({ a: { command: "x" } }),
-      listSystemTools: vi.fn().mockResolvedValue({}),
+      listSystemTools: vi.fn().mockResolvedValue(systemTools),
       replaceAllCustomServers: vi.fn().mockResolvedValue(undefined),
       removeCustomServer: vi.fn().mockResolvedValue(undefined),
     },
@@ -79,6 +81,22 @@ describe("createServersStore", () => {
     expect(s.getState().tools.map((t) => t.name)).toEqual(["a", "b"]);
     expect(s.getState().disabledTools).toEqual({ mcp: ["b"] });
     expect(s.getState().webSearchEnabled).toBe(true);
+  });
+
+  it("getTools keeps system tools in servers/systemTools but out of the model payload (tools)", async () => {
+    const deps = makeDeps({
+      grouped: { mcp: [{ name: "client_tool" }] },
+      systemTools: { docspace: [{ name: "getmy_folder" }] },
+    });
+    const s = createServersStore(deps);
+    await s.getState().getTools();
+    const st = s.getState();
+    // Cards see the system server...
+    expect(st.servers.docspace.map((t) => t.name)).toEqual(["getmy_folder"]);
+    expect(st.systemTools.docspace.map((t) => t.name)).toEqual(["getmy_folder"]);
+    // ...but `tools` (sent to the engine as actionArgs.tools) must NOT — the
+    // engine injects/executes system tools server-side.
+    expect(st.tools.map((t) => t.name)).toEqual(["client_tool"]);
   });
 
   it("getTools preserves explicit enabled flag", async () => {

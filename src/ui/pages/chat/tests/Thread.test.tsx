@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -25,6 +25,10 @@ const attachmentsState = {
   addAttachmentFile: vi.fn(),
   addAttachmentImage: vi.fn(),
 };
+const serversState = {
+  manageToolData: undefined as unknown,
+  setManageToolData: vi.fn(),
+};
 
 const makeStore = <T,>(state: T) => {
   const hook = (selector?: (s: T) => unknown) =>
@@ -38,12 +42,28 @@ vi.mock("../../../store/context", () => ({
     useProfilesStore: makeStore(profilesState),
     useRouter: makeStore(routerState),
     useAttachmentsStore: makeStore(attachmentsState),
+    useServersStore: makeStore(serversState),
   }),
 }));
 
 vi.mock("../../../hooks", () => ({
-  useMessages: () => ({ onNew: vi.fn() }),
+  useMessages: () => ({
+    onNew: vi.fn(),
+    regenerate: vi.fn(),
+    approveToolCall: vi.fn(),
+    denyToolCall: vi.fn(),
+  }),
   useThread: vi.fn(),
+}));
+
+vi.mock("../../../components/manage-tool-dialog", () => ({
+  ManageToolDialog: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="manage-tool-dialog">
+      <button data-testid="manage-tool-close" onClick={onClose}>
+        close
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("../../../hooks/useEnsureProfiles", () => ({
@@ -141,5 +161,26 @@ describe("ChatPage (Thread)", () => {
   it("does not show loader when not streaming", () => {
     render(<Thread />);
     expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
+  });
+
+  it("does not show the tool-approval dialog when manageToolData is unset", () => {
+    serversState.manageToolData = undefined;
+    render(<Thread />);
+    expect(screen.queryByTestId("manage-tool-dialog")).not.toBeInTheDocument();
+  });
+
+  it("shows the tool-approval dialog when manageToolData is set", () => {
+    serversState.manageToolData = { toolName: "get_my_folder" };
+    render(<Thread />);
+    expect(screen.getByTestId("manage-tool-dialog")).toBeInTheDocument();
+    serversState.manageToolData = undefined;
+  });
+
+  it("clears manageToolData when the dialog closes", () => {
+    serversState.manageToolData = { toolName: "get_my_folder" };
+    render(<Thread />);
+    fireEvent.click(screen.getByTestId("manage-tool-close"));
+    expect(serversState.setManageToolData).toHaveBeenCalledWith(undefined);
+    serversState.manageToolData = undefined;
   });
 });

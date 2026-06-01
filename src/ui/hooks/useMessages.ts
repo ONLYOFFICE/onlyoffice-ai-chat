@@ -654,13 +654,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     // commit and ships whatever the store currently has.
     await useServersStore.getState().getTools();
     const freshTools = useServersStore.getState().tools;
-    console.info("[mcp] onNew sending message", {
-      toolsCount: freshTools.length,
-      toolsNames: freshTools.map((t) => t.name),
-      toolsEnabled: freshTools
-        .filter((t) => t.enabled !== false)
-        .map((t) => t.name),
-    });
 
     const stream = api.ai.sendWithStream({
       threadId: inputThreadId,

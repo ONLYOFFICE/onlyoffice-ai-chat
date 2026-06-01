@@ -28,8 +28,11 @@ describe("SystemToolsSource", () => {
     const tools = [{ name: "do_it", description: "", inputSchema: {} }];
     const fetchImpl = vi
       .fn()
+      // getTools(): initialize + tools/list
       .mockResolvedValueOnce(json({ result: {} }))
       .mockResolvedValueOnce(json({ result: { tools } }))
+      // rpc callTool(): initialize + tools/call
+      .mockResolvedValueOnce(json({ result: {} }))
       .mockResolvedValueOnce(json({ result: { done: true } }));
 
     const src = new SystemToolsSource({

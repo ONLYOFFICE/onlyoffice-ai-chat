@@ -17,6 +17,7 @@ import useEnsureProfiles from "../../hooks/useEnsureProfiles";
 import useEnsureThreads from "../../hooks/useEnsureThreads";
 import useEnsurePrompts from "../../hooks/useEnsurePrompts";
 import useEnsureTools from "../../hooks/useEnsureTools";
+import { ManageToolDialog } from "../../components/manage-tool-dialog";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
 import { Composer } from "./sub-components/Composer";
 import { UserMessage } from "./sub-components/UserMessage";
@@ -138,7 +139,8 @@ const ThreadInner = () => {
 };
 
 const Thread = () => {
-  const { useMessageStore, useProfilesStore, useRouter } = useStores();
+  const { useMessageStore, useProfilesStore, useRouter, useServersStore } =
+    useStores();
   useEnsureProfiles();
   useEnsureThreads();
   useEnsurePrompts();
@@ -149,7 +151,11 @@ const Thread = () => {
   const hasProfiles = useProfilesStore((s) => s.profiles.length > 0);
   const currentPage = useRouter((s) => s.currentPage);
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
-  const { onNew, regenerate } = useMessages({ isReady: true });
+  const manageToolData = useServersStore((s) => s.manageToolData);
+  const setManageToolData = useServersStore((s) => s.setManageToolData);
+  const { onNew, regenerate, approveToolCall, denyToolCall } = useMessages({
+    isReady: true,
+  });
 
   // Keep `router.currentPage` in sync with what the Thread actually
   // renders. When profiles are missing, this component shows the
@@ -208,6 +214,16 @@ const Thread = () => {
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <ThreadInner />
+      {/* Tool-approval dialog lives with the chat surface so every
+          consumer of ChatPage (not just AIChatWidget) shows it — e.g.
+          server-side system tools that pause for approval. */}
+      {manageToolData ? (
+        <ManageToolDialog
+          onAllow={approveToolCall}
+          onDeny={denyToolCall}
+          onClose={() => setManageToolData(undefined)}
+        />
+      ) : null}
     </AssistantRuntimeProvider>
   );
 };

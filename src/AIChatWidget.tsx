@@ -29,7 +29,6 @@ import type { PlatformAdapter } from "./ui/providers/PlatformProvider/types";
 import logger from "./shared/logger";
 import type { SettingsAdapter } from "./shared/settings-adapter";
 import { Layout } from "./ui/components/layout";
-import { ManageToolDialog } from "./ui/components/manage-tool-dialog";
 import { EventsProvider } from "./ui/providers/EventsProvider";
 import Settings from "./ui/pages/settings";
 import Thread from "./ui/pages/chat";
@@ -391,12 +390,10 @@ const AppInner = ({
   widgetRef?: React.ForwardedRef<AIChatWidgetRef>;
 }) => {
   const [isReady, setIsReady] = useState(false);
-  const [isManageToolOpen, setIsManageToolOpen] = useState(false);
 
   const stores = useStores();
   const {
     useProfilesStore,
-    useServersStore,
     useRouter,
     useCloudsStore,
     selectCurrentChatProfile,
@@ -404,7 +401,6 @@ const AppInner = ({
   } = stores;
 
   const { currentPage } = useRouter();
-  const { manageToolData, setManageToolData } = useServersStore();
   const { fetchClouds } = useCloudsStore();
   const { servers, eventBus } = useToolsContext();
   const { entityId } = useWidgetConfig();
@@ -483,10 +479,6 @@ const AppInner = ({
   );
 
   useEffect(() => {
-    if (manageToolData) setIsManageToolOpen(true);
-  }, [manageToolData]);
-
-  useEffect(() => {
     fetchClouds();
   }, [fetchClouds]);
 
@@ -509,16 +501,6 @@ const AppInner = ({
     <ComposerBridgeProvider bridgeRef={composerBridgeRef}>
       <Layout>
         {currentPage === "settings" ? <Settings /> : <Thread />}
-        {isManageToolOpen ? (
-          <ManageToolDialog
-            onAllow={approveToolCall}
-            onDeny={denyToolCall}
-            onClose={() => {
-              setIsManageToolOpen(false);
-              setManageToolData(undefined);
-            }}
-          />
-        ) : null}
       </Layout>
     </ComposerBridgeProvider>
   );

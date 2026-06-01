@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.53
+
+- Fix: the tool-approval dialog never appeared for consumers that mount `ChatPage` directly instead of the full `AIChatWidget` — the dialog was wired only inside `AIChatWidget`. With server-side system tools (the first tools to require approval), the request hung in a pending state with no prompt. `ManageToolDialog` now lives inside `ChatPage` itself (wired to its own `useMessages`), so every consumer gets it; the duplicate mount was removed from `AIChatWidget`. The imperative `approveToolCall` / `denyToolCall` ref API is unchanged.
+
+## 0.4.50
+
+- Fix: system tools were leaking into `actionArgs.tools`, so the engine classified them as client-executed user tools — the approval dialog never opened and the browser hung trying to run a server-only tool. System tools now render as permission cards (`servers` / `systemTools`) but are kept out of the model payload; the engine injects and executes them server-side and surfaces them for approval as intended.
+
+## 0.4.49
+
+- System MCP tools now support stateful (session) Streamable HTTP servers (e.g. `docspace-mcp`). The core HTTP client sends `Accept: application/json, text/event-stream` on every request, captures `Mcp-Session-Id` from `initialize`, fires the `notifications/initialized` handshake, and echoes the session id on `tools/list` / `tools/call`. Stateless servers (no session id in the response) keep working unchanged. Protocol version bumped to `2025-06-18`. Public `listTools` / `callTool` signatures are unchanged.
+
 ## 0.4.48
 
 - Server-side "system" MCP tools. Hosts wire trusted MCP servers (HTTP) on the server; their tools are enumerated and executed in-engine, so credentials never reach the browser. New exports: `SystemToolsSource`, `composeToolsAdapters`, `AIEngineDeps.systemServerTypes`, `ToolsEngineDeps.systemToolsSource`, `ToolsEngine.listSystemTools` (route `tools/list-system-tools`).

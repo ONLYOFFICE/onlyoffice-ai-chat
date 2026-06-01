@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 // ---------------------------------------------------------------------------
 // Mocks — keep paths aligned with the real src layout under src/{ui,core,shared}
@@ -326,23 +326,8 @@ describe("AIChatWidget", () => {
     });
   });
 
-  it("shows ManageToolDialog when manageToolData is set", async () => {
-    mockManageToolData = { toolName: "test" };
-    render(<AIChatWidget {...defaultProps} />);
-    await vi.waitFor(() => {
-      expect(screen.getByTestId("manage-tool-dialog")).toBeInTheDocument();
-    });
-  });
-
-  it("closes ManageToolDialog when onClose is fired", async () => {
-    mockManageToolData = { toolName: "test" };
-    render(<AIChatWidget {...defaultProps} />);
-    await vi.waitFor(() => {
-      expect(screen.getByTestId("manage-tool-dialog")).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByTestId("manage-tool-close"));
-    expect(mockSetManageToolData).toHaveBeenCalledWith(undefined);
-  });
+  // The tool-approval dialog now lives in ChatPage (`<Thread />`), not the
+  // widget shell — see Thread.test.tsx for its coverage.
 
   it("handles migration failure gracefully", async () => {
     const onMigrate = vi.fn().mockRejectedValue(new Error("migration error"));
