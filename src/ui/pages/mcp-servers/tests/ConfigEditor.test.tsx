@@ -4,8 +4,9 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 
 const mockSaveConfig = vi.fn();
 // getConfig is async and resolves to the mcpServers map (not the wrapping
-// `{ mcpServers }` object — that wrapping happens inside the dialog).
+// `{ mcpServers }` object — that wrapping happens inside the editor).
 const mockGetConfig = vi.fn<() => Promise<Record<string, unknown>>>();
+const mockSetMcpConfigDirty = vi.fn();
 const mockOnClose = vi.fn();
 
 vi.mock("react-i18next", () => ({
@@ -24,54 +25,11 @@ vi.mock("../../../store/context", () => ({
       const state = {
         saveConfig: mockSaveConfig,
         getConfig: mockGetConfig,
+        setMcpConfigDirty: mockSetMcpConfigDirty,
       };
       return typeof selector === "function" ? selector(state) : state;
     },
   }),
-}));
-
-vi.mock("../../../components/dialog", () => ({
-  Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
-    open ? <div data-testid="dialog">{children}</div> : null,
-  DialogContent: ({
-    children,
-    header,
-    onClose,
-  }: {
-    children: React.ReactNode;
-    header: string;
-    onClose: () => void;
-  }) => (
-    <div data-testid="dialog-content" id="dialog-content">
-      <h2>{header}</h2>
-      <button data-testid="close-btn" onClick={onClose}>
-        close
-      </button>
-      {children}
-    </div>
-  ),
-  DialogOverlay: ({
-    children,
-    ...props
-  }: {
-    children?: React.ReactNode;
-    className?: string;
-  }) => (
-    <div data-testid="dialog-overlay" {...props}>
-      {children}
-    </div>
-  ),
-  DialogFooter: ({
-    children,
-    ...props
-  }: {
-    children?: React.ReactNode;
-    className?: string;
-  }) => (
-    <div data-testid="dialog-footer" {...props}>
-      {children}
-    </div>
-  ),
 }));
 
 vi.mock("../../../components/button", () => ({
@@ -90,6 +48,20 @@ vi.mock("../../../components/button", () => ({
       data-testid={`btn-${children}`}
     >
       {children}
+    </button>
+  ),
+}));
+
+vi.mock("../../../components/icon-button", () => ({
+  IconButton: ({
+    iconName,
+    onClick,
+  }: {
+    iconName: string;
+    onClick?: () => void;
+  }) => (
+    <button data-testid={`icon-btn-${iconName}`} onClick={onClick}>
+      {iconName}
     </button>
   ),
 }));
@@ -130,11 +102,11 @@ vi.mock("codemirror", () => {
   };
 });
 
-vi.mock("../sub-components/ConfigDialog.css", () => ({}));
+vi.mock("../sub-components/ConfigEditor.css", () => ({}));
 
-import ConfigDialog from "../sub-components/ConfigDialog";
+import ConfigEditor from "../sub-components/ConfigEditor";
 
-describe("ConfigDialog", () => {
+describe("ConfigEditor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
@@ -147,42 +119,42 @@ describe("ConfigDialog", () => {
   });
 
   it("does not render when open is false", () => {
-    render(<ConfigDialog open={false} onClose={mockOnClose} />);
-    expect(screen.queryByTestId("dialog")).not.toBeInTheDocument();
+    render(<ConfigEditor open={false} onClose={mockOnClose} />);
+    expect(screen.queryByTestId("config-editor")).not.toBeInTheDocument();
   });
 
-  it("renders dialog when open is true", () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
-    expect(screen.getByTestId("dialog")).toBeInTheDocument();
+  it("renders inline panel when open is true", () => {
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
+    expect(screen.getByTestId("config-editor")).toBeInTheDocument();
   });
 
   it("renders header text", () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
     expect(screen.getByText("EditConfiguration")).toBeInTheDocument();
   });
 
   it("renders JSON configuration label and lang indicator", () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
     expect(screen.getByText("EnterYourJSONConfiguration")).toBeInTheDocument();
     expect(screen.getByText("json")).toBeInTheDocument();
   });
 
   it("renders save and cancel buttons", () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
     expect(screen.getByText("Save")).toBeInTheDocument();
     expect(screen.getByText("Cancel")).toBeInTheDocument();
   });
 
   it("calls onClose when cancel button is clicked", () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
     fireEvent.click(screen.getByText("Cancel"));
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it("calls onClose via dialog close button", () => {
+  it("calls onClose via the header close button", () => {
     mockOnClose.mockClear();
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
-    fireEvent.click(screen.getByTestId("close-btn"));
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
+    fireEvent.click(screen.getByTestId("icon-btn-btn-close"));
     expect(mockOnClose).toHaveBeenCalled();
   });
 
@@ -190,7 +162,7 @@ describe("ConfigDialog", () => {
     mockGetConfig.mockResolvedValue({ test: { url: "http://test" } });
     mockEditorDestroy.mockClear();
     const { unmount } = render(
-      <ConfigDialog open={true} onClose={mockOnClose} />
+      <ConfigEditor open={true} onClose={mockOnClose} />
     );
 
     await act(async () => {
@@ -203,7 +175,7 @@ describe("ConfigDialog", () => {
   });
 
   it("save button calls saveConfig and onClose with valid JSON", async () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(50);
@@ -217,7 +189,7 @@ describe("ConfigDialog", () => {
   });
 
   it("save button is disabled when JSON is invalid", async () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(50);
@@ -238,7 +210,7 @@ describe("ConfigDialog", () => {
   });
 
   it("shows error message for invalid JSON format", async () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(50);
@@ -257,7 +229,7 @@ describe("ConfigDialog", () => {
   });
 
   it("shows error when valid JSON but no mcpServers key", async () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(50);
@@ -276,7 +248,7 @@ describe("ConfigDialog", () => {
   });
 
   it("validates and accepts valid JSON with mcpServers", async () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(50);
@@ -300,17 +272,53 @@ describe("ConfigDialog", () => {
     expect(saveBtn).not.toBeDisabled();
   });
 
-  it("handles Enter key on dialog-content to submit", async () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+  it("flags the config dirty when the document diverges from the loaded value", async () => {
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(50);
     });
 
-    // Simulate focusing the dialog content
-    const dialogContent = screen.getByTestId("dialog-content");
+    // Initial load resets the dirty flag.
+    expect(mockSetMcpConfigDirty).toHaveBeenLastCalledWith(false);
+
+    if (editorUpdateListener) {
+      act(() => {
+        editorUpdateListener!({
+          docChanged: true,
+          state: {
+            doc: {
+              toString: () =>
+                '{"mcpServers": {"x": {"url": "http://x"}}}',
+            },
+          },
+        });
+      });
+    }
+
+    expect(mockSetMcpConfigDirty).toHaveBeenLastCalledWith(true);
+  });
+
+  it("clears the dirty flag when the editor is closed", () => {
+    const { rerender } = render(
+      <ConfigEditor open={true} onClose={mockOnClose} />
+    );
+    mockSetMcpConfigDirty.mockClear();
+    rerender(<ConfigEditor open={false} onClose={mockOnClose} />);
+    expect(mockSetMcpConfigDirty).toHaveBeenCalledWith(false);
+  });
+
+  it("handles Enter key on the panel to submit", async () => {
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+
+    // Simulate focusing the inline editor panel
+    const panel = screen.getByTestId("config-editor");
     Object.defineProperty(document, "activeElement", {
-      value: dialogContent,
+      value: panel,
       configurable: true,
     });
 
@@ -325,7 +333,7 @@ describe("ConfigDialog", () => {
   });
 
   it("does not submit on Enter when save is invalid", async () => {
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(50);
@@ -341,9 +349,9 @@ describe("ConfigDialog", () => {
       });
     }
 
-    const dialogContent = screen.getByTestId("dialog-content");
+    const panel = screen.getByTestId("config-editor");
     Object.defineProperty(document, "activeElement", {
-      value: dialogContent,
+      value: panel,
       configurable: true,
     });
 
@@ -361,7 +369,7 @@ describe("ConfigDialog", () => {
 
   it("destroys editor view on unmount", async () => {
     const { unmount } = render(
-      <ConfigDialog open={true} onClose={mockOnClose} />
+      <ConfigEditor open={true} onClose={mockOnClose} />
     );
 
     await act(async () => {
@@ -376,7 +384,7 @@ describe("ConfigDialog", () => {
   it("creates editor after initialization timeout", async () => {
     mockEditorDestroy.mockClear();
     const { unmount } = render(
-      <ConfigDialog open={true} onClose={mockOnClose} />
+      <ConfigEditor open={true} onClose={mockOnClose} />
     );
 
     // First timeout (50ms) triggers initializeEditor
@@ -390,7 +398,7 @@ describe("ConfigDialog", () => {
   });
 });
 
-describe("ConfigDialog - platform local server validation", () => {
+describe("ConfigEditor - platform local server validation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
@@ -409,7 +417,7 @@ describe("ConfigDialog - platform local server validation", () => {
       process: { isAvailable: () => false },
     } as ReturnType<typeof platformMock.usePlatform>);
 
-    render(<ConfigDialog open={true} onClose={mockOnClose} />);
+    render(<ConfigEditor open={true} onClose={mockOnClose} />);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(50);

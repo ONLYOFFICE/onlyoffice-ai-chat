@@ -5,7 +5,7 @@ import { useComponents } from "../../../providers/ComponentsProvider";
 import { useToolsContext } from "../../../tools/context";
 import { useStores } from "../../../store/context";
 import AvailableTools from "./AvailableTools";
-import ConfigDialog from "./ConfigDialog";
+import ConfigEditor from "./ConfigEditor";
 import ToolsCounter from "./ToolsCounter";
 
 type ServersProps = {
@@ -38,27 +38,34 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
     Object.keys(systemTools ?? {}).length > 0;
 
   return (
-    <>
-      <div className="flex flex-col pb-[32px] w-full">
-        <p
-          className={cn(
-            "font-normal leading-[20px] text-[var(--servers-description-color)] mb-[16px]",
-            isRTL ? "text-end" : ""
-          )}
-        >
-          {t("MCPServersDescription")}
-        </p>
-        <div
-          className={cn(
-            "flex",
-            isRTL ? "justify-end" : "justify-start",
-            variant === "page" ? "mb-[28px]" : "mb-[16px]"
-          )}
-        >
-          <Button className="w-fit" onClick={() => setIsOpen(true)}>
-            {t("EditConfiguration")}
-          </Button>
-        </div>
+    <div className="flex flex-col pb-[32px] w-full">
+      <p
+        className={cn(
+          "font-normal leading-[20px] text-[var(--servers-description-color)] mb-[16px]",
+          isRTL ? "text-end" : ""
+        )}
+      >
+        {t("MCPServersDescription")}
+      </p>
+      <div
+        className={cn(
+          "flex",
+          isRTL ? "justify-end" : "justify-start",
+          variant === "page" ? "mb-[28px]" : "mb-[16px]"
+        )}
+      >
+        <Button className="w-fit" onClick={() => setIsOpen(true)}>
+          {t("EditConfiguration")}
+        </Button>
+      </div>
+      {/* Modal content, now shown inline within the page. */}
+      <ConfigEditor open={isOpen} onClose={() => setIsOpen(false)} />
+      {/* While the editor is open, the permissions block is dimmed and
+          made non-interactive. */}
+      <div
+        className={cn(isOpen && "opacity-40 pointer-events-none")}
+        aria-hidden={isOpen}
+      >
         {hasTools && variant === "page" ? (
           <div
             className={cn(
@@ -74,8 +81,7 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
         ) : null}
         {hasTools && <AvailableTools withHeader={variant === "tab"} />}
       </div>
-      {<ConfigDialog open={isOpen} onClose={() => setIsOpen(false)} />}
-    </>
+    </div>
   );
 };
 

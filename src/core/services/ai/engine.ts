@@ -89,6 +89,12 @@ export class AIEngine {
     return typeof value === "function" ? value() : (value ?? []);
   }
 
+  /** Resolve the global `forceProxy` switch (lazy or static). */
+  private isProxyForced(): boolean {
+    const value = this.deps.forceProxy;
+    return typeof value === "function" ? value() : (value ?? false);
+  }
+
   /**
    * Resolve the custom fetch (if any) to wire into the provider
    * request for the given profile. Two independent code paths:
@@ -100,9 +106,10 @@ export class AIEngine {
    *   surfaces as a normal request error instead of an opaque network
    *   crash inside the inner SDK.
    *
-   * - Any other provider — the legacy `Profile.useProxy` flag opts
-   *   into {@link PlatformAdapter.fetchProxy}; otherwise the SDK uses
-   *   the global `fetch`.
+   * - Any other provider — the per-profile `Profile.useProxy` flag, OR
+   *   the global {@link AIEngineDeps.forceProxy} switch, opts into
+   *   {@link PlatformAdapter.fetchProxy}; otherwise the SDK uses the
+   *   global `fetch`.
    */
   private pickFetch(profile: {
     providerType?: string;
@@ -116,7 +123,9 @@ export class AIEngine {
       }
       return this.deps.externalFetch;
     }
-    return profile.useProxy ? this.deps.fetchProxy : undefined;
+    return profile.useProxy || this.isProxyForced()
+      ? this.deps.fetchProxy
+      : undefined;
   }
 
   /**

@@ -180,7 +180,7 @@ const Thread = () => {
   const onReload = useCallback(
     async (parentId: string | null) => {
       if (parentId === null) return;
-      await regenerate(Number(parentId));
+      await regenerate(parentId);
     },
     [regenerate]
   );

@@ -120,6 +120,7 @@ export const AddModelCard = ({
               iconName="btn-menu-about"
               size={24}
               disableHover
+              isStroke
               onClick={() => setIsTooltipOpen((val) => !val)}
             />
           </TooltipTrigger>

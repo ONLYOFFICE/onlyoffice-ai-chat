@@ -57,6 +57,7 @@ const Navigation = () => {
             isStroke
             isActive={settingsActive}
             onClick={handleSettingsClick}
+            className="rotate-90"
             data-testid="settings-button"
           />
         </TooltipIconButton>

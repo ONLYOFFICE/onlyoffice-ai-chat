@@ -836,7 +836,7 @@ describe("useMessages.regenerate", () => {
   it("no-ops when no current profile", async () => {
     const { result } = renderHook(() => useMessages({ isReady: true }));
     await act(async () => {
-      await result.current.regenerate(0);
+      await result.current.regenerate("u1");
     });
     expect(apiAi.regenerateStream).not.toHaveBeenCalled();
     expect(stores.messageState.truncateMessagesAfter).not.toHaveBeenCalled();
@@ -847,7 +847,7 @@ describe("useMessages.regenerate", () => {
     stores.threadsState.threadId = "";
     const { result } = renderHook(() => useMessages({ isReady: true }));
     await act(async () => {
-      await result.current.regenerate(0);
+      await result.current.regenerate("u1");
     });
     expect(apiAi.regenerateStream).not.toHaveBeenCalled();
   });
@@ -857,42 +857,56 @@ describe("useMessages.regenerate", () => {
     stores.threadsState.threadId = "t1";
     stores.messageState.isStreamRunning = true;
     stores.messageState.messages = [
-      { role: "user", content: [{ type: "text", text: "hi" }] },
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
     ];
     const { result } = renderHook(() => useMessages({ isReady: true }));
     await act(async () => {
-      await result.current.regenerate(0);
+      await result.current.regenerate("u1");
     });
     expect(apiAi.regenerateStream).not.toHaveBeenCalled();
   });
 
-  it("no-ops when parent at index is not a user message", async () => {
+  it("no-ops when parent id is not a user message", async () => {
     stores.profilesState.chatProfile = profile;
     stores.threadsState.threadId = "t1";
     stores.messageState.messages = [
-      { role: "user", content: [{ type: "text", text: "hi" }] },
-      { role: "assistant", content: [{ type: "text", text: "ok" }] },
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
+      { id: "a1", role: "assistant", content: [{ type: "text", text: "ok" }] },
     ];
     const { result } = renderHook(() => useMessages({ isReady: true }));
     await act(async () => {
-      // index 1 points to the assistant reply, not a user message
-      await result.current.regenerate(1);
+      // "a1" points to the assistant reply, not a user message
+      await result.current.regenerate("a1");
     });
     expect(apiAi.regenerateStream).not.toHaveBeenCalled();
+  });
+
+  it("no-ops when parent id is not found", async () => {
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.messageState.messages = [
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
+    ];
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate("does-not-exist");
+    });
+    expect(apiAi.regenerateStream).not.toHaveBeenCalled();
+    expect(stores.messageState.truncateMessagesAfter).not.toHaveBeenCalled();
   });
 
   it("truncates after parent and calls api.ai.regenerateStream", async () => {
     stores.profilesState.chatProfile = profile;
     stores.threadsState.threadId = "t1";
     stores.messageState.messages = [
-      { role: "user", content: [{ type: "text", text: "hi" }] },
-      { role: "assistant", content: [{ type: "text", text: "old" }] },
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
+      { id: "a1", role: "assistant", content: [{ type: "text", text: "old" }] },
     ];
     apiAi.regenerateStream.mockReturnValue(arr([]));
 
     const { result } = renderHook(() => useMessages({ isReady: true }));
     await act(async () => {
-      await result.current.regenerate(0);
+      await result.current.regenerate("u1");
     });
 
     expect(stores.messageState.truncateMessagesAfter).toHaveBeenCalledWith(0);
@@ -909,13 +923,13 @@ describe("useMessages.regenerate", () => {
     stores.profilesState.extendedThinking = true;
     stores.serversState.tools = [{ name: "foo" }];
     stores.messageState.messages = [
-      { role: "user", content: [{ type: "text", text: "hi" }] },
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
     ];
     apiAi.regenerateStream.mockReturnValue(arr([]));
 
     const { result } = renderHook(() => useMessages({ isReady: true }));
     await act(async () => {
-      await result.current.regenerate(0);
+      await result.current.regenerate("u1");
     });
 
     const arg = apiAi.regenerateStream.mock.calls[0][0];

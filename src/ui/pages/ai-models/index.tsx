@@ -19,7 +19,7 @@ const AiModelsPage = ({
 
   return (
     <div className="aui-root flex h-full w-full bg-[var(--layout-background-color)]">
-      <div className="w-full max-w-[560px]">
+      <div className="w-full max-w-[560px] min-w-0">
         <>
           {!hideHeader && (
             <h1 className="select-none font-bold text-[20px] leading-[28px] text-[var(--settings-header-color)] mb-[8px]">

@@ -52,7 +52,11 @@ import { ToolsProvider, useToolsContext } from "./ui/tools/context";
 import Servers from "./ui/tools/servers";
 import type { ToolsAdapter } from "./core/tools-adapter";
 import type { HostToolGroup } from "./ui/tools/types";
-import { useWidgetConfig, WidgetConfigProvider } from "./widget-config";
+import {
+  useWidgetConfig,
+  WidgetConfigProvider,
+  type WidgetConfig,
+} from "./widget-config";
 import useEnsureProfiles from "./ui/hooks/useEnsureProfiles";
 import type { ProviderFetch } from "./shared/provider-credentials";
 import type { SystemPromptOverride } from "./core/actions";
@@ -129,6 +133,14 @@ export interface AIChatWidgetProps {
    * resume rounds). Other action types are unaffected.
    */
   systemPrompt?: SystemPromptOverride;
+  /**
+   * Route every (non-`"external"`) provider request through the host's
+   * `PlatformAdapter.fetchProxy`, ignoring each profile's `useProxy` flag.
+   * Use this for server-side deployments that must funnel all upstream
+   * traffic through the document-server proxy. No effect when the platform
+   * doesn't supply `fetchProxy`.
+   */
+  forceProxy?: boolean;
   /** Optional remote API routing — defaults to in-process engines. */
   apiConfig?: Partial<Pick<ServerAPIConfig, "origin" | "baseUrl" | "headers">>;
   /**
@@ -142,6 +154,28 @@ export interface AIChatWidgetProps {
    * rendered above the built-in Web Search / Extended Thinking block.
    */
   composerActions?: ComposerAction[];
+  /**
+   * Handler for the "Import" link in the add-profile card. The host owns
+   * the import flow; an optional `Partial<ModelFormValues>` return pre-fills
+   * the add-profile form. See {@link WidgetConfig.onProfileImportClick}.
+   */
+  onProfileImportClick?: WidgetConfig["onProfileImportClick"];
+  /**
+   * Handler for the "Download template" link in the add-profile card's info
+   * tooltip. See {@link WidgetConfig.onDownloadTemplate}.
+   */
+  onDownloadTemplate?: WidgetConfig["onDownloadTemplate"];
+  /**
+   * Custom confirmation for deleting a profile. When provided, the built-in
+   * confirmation dialog is skipped and the host owns the confirmation UI.
+   * See {@link WidgetConfig.onDeleteProfile}.
+   */
+  onDeleteProfile?: WidgetConfig["onDeleteProfile"];
+  /**
+   * Confirmation gate fired when leaving the MCP servers tab with unsaved
+   * config edits. See {@link WidgetConfig.onDiscardMcpChanges}.
+   */
+  onDiscardMcpChanges?: WidgetConfig["onDiscardMcpChanges"];
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -177,9 +211,14 @@ export const AIChatWidget = React.forwardRef<
       isDialogFullscreen,
       entityId,
       systemPrompt,
+      forceProxy,
       apiConfig,
       assistantActions,
       composerActions,
+      onProfileImportClick,
+      onDownloadTemplate,
+      onDeleteProfile,
+      onDiscardMcpChanges,
     },
     ref
   ) => {
@@ -195,6 +234,10 @@ export const AIChatWidget = React.forwardRef<
         systemPrompt,
         assistantActions,
         composerActions,
+        onProfileImportClick,
+        onDownloadTemplate,
+        onDeleteProfile,
+        onDiscardMcpChanges,
       }),
       [
         hideProfilePicker,
@@ -207,6 +250,10 @@ export const AIChatWidget = React.forwardRef<
         systemPrompt,
         assistantActions,
         composerActions,
+        onProfileImportClick,
+        onDownloadTemplate,
+        onDeleteProfile,
+        onDiscardMcpChanges,
       ]
     );
 
@@ -259,6 +306,7 @@ export const AIChatWidget = React.forwardRef<
         toolsAdapter,
         ...(proxyFetch ? { fetchProxy: proxyFetch } : {}),
         ...(externalFetch ? { externalFetch } : {}),
+        ...(forceProxy ? { forceProxy: true } : {}),
       });
 
       const ctx: AppContext = {
@@ -312,6 +360,7 @@ export const AIChatWidget = React.forwardRef<
       apiConfig,
       toolsAdapter,
       entityId,
+      forceProxy,
     ]);
 
     return (

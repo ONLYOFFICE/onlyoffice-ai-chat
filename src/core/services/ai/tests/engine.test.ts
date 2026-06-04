@@ -6,6 +6,7 @@ import type { Profile } from "../../../types";
 import { AbstractBaseProvider } from "../../../providers";
 import { registerProvider, unregisterProvider } from "../../../providers";
 import type { StorageAdapter } from "../../../storage";
+import type { ProviderCredentials } from "../../../../shared/provider-credentials";
 import { AssignmentsEngine } from "../../assignments";
 import { ThreadsEngine } from "../../threads";
 import { AIEngine } from "../engine";
@@ -13,7 +14,14 @@ import { AIEngine } from "../engine";
 const sendMessageMock = vi.fn();
 const sendMessageSyncMock = vi.fn();
 
+/** Credentials the most recently constructed StubProvider received. */
+let capturedCreds: ProviderCredentials | undefined;
+
 class StubProvider extends AbstractBaseProvider {
+  constructor(creds: ProviderCredentials) {
+    super(creds);
+    capturedCreds = creds;
+  }
   async *sendMessage(args: unknown): AsyncGenerator<SendMessageResult> {
     yield* sendMessageMock(args);
   }
@@ -126,6 +134,7 @@ beforeEach(() => {
   registerProvider(STUB, StubProvider);
   sendMessageMock.mockReset();
   sendMessageSyncMock.mockReset();
+  capturedCreds = undefined;
   vi.spyOn(crypto, "randomUUID").mockReturnValue(
     "00000000-0000-0000-0000-000000000001"
   );
@@ -189,6 +198,45 @@ describe("AIEngine.sendWithStream", () => {
     }
     // verify the provided sub-engines actually got used by checking storage.threads.create was hit
     expect(storage.threads.create).toHaveBeenCalled();
+  });
+});
+
+describe("AIEngine proxy selection", () => {
+  const drain = async (engine: AIEngine) => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    for await (const _ of engine.sendWithStream({ userMessage })) {
+      // drain
+    }
+  };
+
+  it("does not proxy when neither useProxy nor forceProxy is set", async () => {
+    const { storage } = makeStorage();
+    const fetchProxy = vi.fn();
+    const engine = new AIEngine({ storage, fetchProxy });
+    await drain(engine);
+    expect(capturedCreds?.fetch).toBeUndefined();
+  });
+
+  it("forceProxy routes every request through fetchProxy regardless of useProxy", async () => {
+    const { storage } = makeStorage();
+    const fetchProxy = vi.fn();
+    // The default profile has no `useProxy` flag set.
+    const engine = new AIEngine({ storage, fetchProxy, forceProxy: true });
+    await drain(engine);
+    expect(capturedCreds?.fetch).toBe(fetchProxy);
+  });
+
+  it("forceProxy accepts a lazy resolver", async () => {
+    const { storage } = makeStorage();
+    const fetchProxy = vi.fn();
+    const engine = new AIEngine({
+      storage,
+      fetchProxy,
+      forceProxy: () => true,
+    });
+    await drain(engine);
+    expect(capturedCreds?.fetch).toBe(fetchProxy);
   });
 });
 

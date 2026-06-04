@@ -34,22 +34,15 @@ const AvailableToolsItem = ({
 
   const { useServersStore } = useStores();
   const changeToolStatus = useServersStore((s) => s.changeToolStatus);
+  const changeAllToolStatus = useServersStore((s) => s.changeAllToolStatus);
 
   const onEnableAllTools = useCallback(() => {
-    mcpItems
-      .filter((tool) => !tool.enabled)
-      .forEach((tool) => {
-        changeToolStatus(name, tool.name, true);
-      });
-  }, [mcpItems, name, changeToolStatus]);
+    changeAllToolStatus(name, true);
+  }, [name, changeAllToolStatus]);
 
   const onDisableAllTools = useCallback(() => {
-    mcpItems
-      .filter((tool) => tool.enabled)
-      .forEach((tool) => {
-        changeToolStatus(name, tool.name, false);
-      });
-  }, [mcpItems, name, changeToolStatus]);
+    changeAllToolStatus(name, false);
+  }, [name, changeAllToolStatus]);
 
   React.useEffect(() => {
     if (isLoading) setOpened(false);

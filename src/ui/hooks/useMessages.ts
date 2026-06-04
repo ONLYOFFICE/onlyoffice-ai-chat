@@ -814,7 +814,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   ]);
 
   const regenerate = useCallback(
-    async (parentIndex: number) => {
+    async (parentId: string) => {
       if (!currentProfile) return;
       if (!threadId) return;
 
@@ -822,7 +822,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       if (state.isStreamRunning) return;
 
       const msgs = state.messages;
-      const parent = msgs[parentIndex];
+      // `parentId` is the message id (a uuid) of the user turn to
+      // regenerate from — not an array index. Resolve it to a position
+      // so `truncateMessagesAfter` can drop the trailing assistant reply.
+      const parentIndex = msgs.findIndex((m) => m.id === parentId);
+      const parent = parentIndex >= 0 ? msgs[parentIndex] : undefined;
       if (!parent || parent.role !== "user") return;
 
       truncateMessagesAfter(parentIndex);

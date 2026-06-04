@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+const mockSetMcpConfigDirty = vi.fn();
+// Toggled per-test to simulate unsaved MCP edits.
+let mcpConfigDirty = true;
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -14,6 +19,13 @@ vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useProfilesStore: (selector?: (s: unknown) => unknown) => {
       const state = { profiles: [{ id: "p1" }] };
+      return selector ? selector(state) : state;
+    },
+    useServersStore: (selector?: (s: unknown) => unknown) => {
+      const state = {
+        mcpConfigDirty,
+        setMcpConfigDirty: mockSetMcpConfigDirty,
+      };
       return selector ? selector(state) : state;
     },
   }),
@@ -43,6 +55,7 @@ vi.mock("../../../hooks/useEnsureTools", () => ({
 }));
 
 import Settings from "../index";
+import { WidgetConfigProvider } from "../../../../widget-config";
 
 describe("SettingsPage", () => {
   it("renders settings header", () => {
@@ -63,5 +76,68 @@ describe("SettingsPage", () => {
   it("shows AI Models content by default", () => {
     render(<Settings />);
     expect(screen.getByTestId("models")).toBeInTheDocument();
+  });
+
+  describe("leaving the MCP tab with unsaved changes", () => {
+    it("stays on the MCP tab when discard is declined", async () => {
+      mcpConfigDirty = true;
+      const user = userEvent.setup();
+      const onDiscardMcpChanges = vi.fn().mockResolvedValue(false);
+      render(
+        <WidgetConfigProvider config={{ onDiscardMcpChanges }}>
+          <Settings />
+        </WidgetConfigProvider>
+      );
+
+      await user.click(screen.getByRole("tab", { name: "MCPServers" }));
+      await waitFor(() =>
+        expect(screen.getByTestId("servers")).toBeInTheDocument()
+      );
+
+      await user.click(screen.getByRole("tab", { name: "WebSearch" }));
+
+      await waitFor(() => expect(onDiscardMcpChanges).toHaveBeenCalled());
+      // Still on MCP — navigation was cancelled.
+      expect(screen.getByTestId("servers")).toBeInTheDocument();
+      expect(screen.queryByTestId("web-search")).not.toBeInTheDocument();
+    });
+
+    it("leaves the MCP tab when discard is confirmed", async () => {
+      mcpConfigDirty = true;
+      const user = userEvent.setup();
+      const onDiscardMcpChanges = vi.fn().mockResolvedValue(true);
+      render(
+        <WidgetConfigProvider config={{ onDiscardMcpChanges }}>
+          <Settings />
+        </WidgetConfigProvider>
+      );
+
+      await user.click(screen.getByRole("tab", { name: "MCPServers" }));
+      await user.click(screen.getByRole("tab", { name: "WebSearch" }));
+
+      await waitFor(() => expect(onDiscardMcpChanges).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(screen.getByTestId("web-search")).toBeInTheDocument()
+      );
+    });
+
+    it("does not prompt when the config is not dirty", async () => {
+      mcpConfigDirty = false;
+      const user = userEvent.setup();
+      const onDiscardMcpChanges = vi.fn().mockResolvedValue(false);
+      render(
+        <WidgetConfigProvider config={{ onDiscardMcpChanges }}>
+          <Settings />
+        </WidgetConfigProvider>
+      );
+
+      await user.click(screen.getByRole("tab", { name: "MCPServers" }));
+      await user.click(screen.getByRole("tab", { name: "WebSearch" }));
+
+      await waitFor(() =>
+        expect(screen.getByTestId("web-search")).toBeInTheDocument()
+      );
+      expect(onDiscardMcpChanges).not.toHaveBeenCalled();
+    });
   });
 });

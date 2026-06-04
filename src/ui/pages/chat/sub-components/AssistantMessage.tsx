@@ -245,10 +245,15 @@ const AssistantActionBar = () => {
 
     // Read the messages snapshot lazily so the action bar doesn't
     // re-subscribe to the whole `messages` array on every streaming token.
-    const parentMessage =
-      useMessageStore.getState().messages[Number(message.parentId)];
+    // `message.parentId` is the user turn's message id (a uuid), not an
+    // array index — resolve it by id. Fall back to saving just this reply
+    // if the parent can't be found.
+    const messages = useMessageStore.getState().messages;
+    const parentMessage = messages.find((m) => m.id === message.parentId);
 
-    const mdValue = convertMessagesToMd([parentMessage, message]);
+    const mdValue = convertMessagesToMd(
+      parentMessage ? [parentMessage, message] : [message]
+    );
 
     const title = getMessageTitleFromMd(mdValue);
 

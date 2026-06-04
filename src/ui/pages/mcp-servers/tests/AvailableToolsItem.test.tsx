@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 const mockChangeToolStatus = vi.fn();
+const mockChangeAllToolStatus = vi.fn();
 const mockGetCustomServersStoped = vi.fn().mockReturnValue([]);
 
 vi.mock("react-i18next", () => ({
@@ -26,6 +27,7 @@ vi.mock("../../../store/context", () => ({
     useServersStore: (selector?: (s: unknown) => unknown) => {
       const state = {
         changeToolStatus: mockChangeToolStatus,
+        changeAllToolStatus: mockChangeAllToolStatus,
       };
       return typeof selector === "function" ? selector(state) : state;
     },
@@ -86,6 +88,7 @@ describe("AvailableToolsItem", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockChangeToolStatus.mockClear();
+    mockChangeAllToolStatus.mockClear();
     mockGetCustomServersStoped.mockReturnValue([]);
   });
 
@@ -189,7 +192,7 @@ describe("AvailableToolsItem", () => {
     );
   });
 
-  it("enable all tools calls changeToolStatus for disabled tools", () => {
+  it("enable all tools calls changeAllToolStatus once with enabled=true", () => {
     render(
       <AvailableToolsItem
         name="my-server"
@@ -199,15 +202,12 @@ describe("AvailableToolsItem", () => {
       />
     );
     fireEvent.click(screen.getByText("EnableAllTools"));
-    expect(mockChangeToolStatus).toHaveBeenCalledWith(
-      "my-server",
-      "tool-b",
-      true
-    );
-    expect(mockChangeToolStatus).toHaveBeenCalledTimes(1);
+    expect(mockChangeAllToolStatus).toHaveBeenCalledWith("my-server", true);
+    expect(mockChangeAllToolStatus).toHaveBeenCalledTimes(1);
+    expect(mockChangeToolStatus).not.toHaveBeenCalled();
   });
 
-  it("disable all tools calls changeToolStatus for enabled tools", () => {
+  it("disable all tools calls changeAllToolStatus once with enabled=false", () => {
     render(
       <AvailableToolsItem
         name="my-server"
@@ -217,12 +217,9 @@ describe("AvailableToolsItem", () => {
       />
     );
     fireEvent.click(screen.getByText("DisableAllTools"));
-    expect(mockChangeToolStatus).toHaveBeenCalledWith(
-      "my-server",
-      "tool-a",
-      false
-    );
-    expect(mockChangeToolStatus).toHaveBeenCalledTimes(1);
+    expect(mockChangeAllToolStatus).toHaveBeenCalledWith("my-server", false);
+    expect(mockChangeAllToolStatus).toHaveBeenCalledTimes(1);
+    expect(mockChangeToolStatus).not.toHaveBeenCalled();
   });
 
   it("shows error icon when server is stopped", () => {

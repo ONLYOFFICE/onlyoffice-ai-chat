@@ -3,6 +3,7 @@ import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
 import type { ModelFormValues } from "./ui/components/model-config-cards/sub-components/ModelConfigForm";
+import type { Profile } from "./types";
 
 export interface WidgetConfig {
   /**
@@ -107,6 +108,33 @@ export interface WidgetConfig {
    * link remains inert.
    */
   onDownloadTemplate?: () => void;
+  /**
+   * Custom confirmation for deleting a profile (AI model). When provided,
+   * the widget's built-in confirmation dialog is NOT shown — the host owns
+   * the confirmation UI (e.g. its own modal) and resolves the result:
+   * - `true` — the widget proceeds with the deletion
+   * - `false` / `undefined` / no return (or a rejected promise) — cancelled,
+   *   nothing is deleted
+   *
+   * The widget always performs the actual deletion itself on confirm; the
+   * host only owns the confirmation step. When omitted, the built-in
+   * confirmation dialog is used.
+   */
+  onDeleteProfile?: (
+    profile: Profile
+  ) => boolean | void | Promise<boolean | void>;
+  /**
+   * Confirmation gate fired when the user navigates away from the MCP
+   * servers tab while the inline config editor holds unsaved edits. The
+   * host shows its own warning UI and resolves the result:
+   * - `true` — discard the edits and proceed with the navigation
+   * - `false` / `undefined` / no return (or a rejected promise) — stay on
+   *   the MCP tab, keeping the edits
+   *
+   * When omitted, navigation proceeds without prompting (edits are
+   * dropped, as before).
+   */
+  onDiscardMcpChanges?: () => boolean | void | Promise<boolean | void>;
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});

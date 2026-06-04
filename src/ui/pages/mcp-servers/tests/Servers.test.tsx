@@ -57,10 +57,10 @@ vi.mock("../sub-components/AvailableTools", () => ({
   ),
 }));
 
-vi.mock("../sub-components/ConfigDialog", () => ({
+vi.mock("../sub-components/ConfigEditor", () => ({
   default: ({ open, onClose }: { open: boolean; onClose: () => void }) => (
     <div
-      data-testid="config-dialog"
+      data-testid="config-editor"
       data-open={String(open)}
       onClick={onClose}
     />
@@ -107,30 +107,42 @@ describe("Servers", () => {
     expect(screen.queryByText("Permissions")).not.toBeInTheDocument();
   });
 
-  it("opens config dialog when edit button is clicked", () => {
+  it("opens the inline config editor when edit button is clicked", () => {
     render(<Servers />);
-    const dialog = screen.getByTestId("config-dialog");
-    expect(dialog).toHaveAttribute("data-open", "false");
+    const editor = screen.getByTestId("config-editor");
+    expect(editor).toHaveAttribute("data-open", "false");
 
     fireEvent.click(screen.getByText("EditConfiguration"));
-    expect(screen.getByTestId("config-dialog")).toHaveAttribute(
+    expect(screen.getByTestId("config-editor")).toHaveAttribute(
       "data-open",
       "true"
     );
   });
 
-  it("closes config dialog when onClose is called", () => {
+  it("closes the inline config editor when onClose is called", () => {
     render(<Servers />);
     fireEvent.click(screen.getByText("EditConfiguration"));
-    expect(screen.getByTestId("config-dialog")).toHaveAttribute(
+    expect(screen.getByTestId("config-editor")).toHaveAttribute(
       "data-open",
       "true"
     );
 
-    fireEvent.click(screen.getByTestId("config-dialog"));
-    expect(screen.getByTestId("config-dialog")).toHaveAttribute(
+    fireEvent.click(screen.getByTestId("config-editor"));
+    expect(screen.getByTestId("config-editor")).toHaveAttribute(
       "data-open",
       "false"
     );
+  });
+
+  it("dims and disables the permissions block while the editor is open", () => {
+    render(<Servers variant="page" />);
+    const wrapper = screen.getByTestId("available-tools").parentElement!;
+    expect(wrapper.className).not.toContain("opacity-40");
+    expect(wrapper.className).not.toContain("pointer-events-none");
+
+    fireEvent.click(screen.getByText("EditConfiguration"));
+
+    expect(wrapper.className).toContain("opacity-40");
+    expect(wrapper.className).toContain("pointer-events-none");
   });
 });

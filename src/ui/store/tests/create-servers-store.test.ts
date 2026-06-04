@@ -66,7 +66,7 @@ describe("createServersStore", () => {
     expect(deps.servers.startCustomServers).toHaveBeenCalled();
   });
 
-  it("getTools annotates tools with enabled flag from disabled list", async () => {
+  it("getTools annotates servers with enabled flag and filters disabled out of the model payload", async () => {
     const deps = makeDeps({
       grouped: { mcp: [{ name: "a" }, { name: "b" }] },
       disabled: { mcp: ["b"] },
@@ -74,11 +74,14 @@ describe("createServersStore", () => {
     });
     const s = createServersStore(deps);
     await s.getState().getTools();
+    // Cards show every tool with its flag...
     expect(s.getState().servers.mcp).toEqual([
       { name: "a", enabled: true },
       { name: "b", enabled: false },
     ]);
-    expect(s.getState().tools.map((t) => t.name)).toEqual(["a", "b"]);
+    // ...but `tools` (sent to the engine as actionArgs.tools) excludes the
+    // disabled "b" — the engine does not re-filter user tools.
+    expect(s.getState().tools.map((t) => t.name)).toEqual(["a"]);
     expect(s.getState().disabledTools).toEqual({ mcp: ["b"] });
     expect(s.getState().webSearchEnabled).toBe(true);
   });
@@ -202,8 +205,8 @@ describe("createServersStore", () => {
         { name: "a", enabled: false },
         { name: "b", enabled: true },
       ]);
-      expect(st.tools.find((t) => t.name === "a")?.enabled).toBe(false);
-      expect(st.tools.find((t) => t.name === "b")?.enabled).toBe(true);
+      // The disabled tool is dropped from the model payload; "b" stays.
+      expect(st.tools.map((t) => t.name)).toEqual(["b"]);
     });
 
     it("re-enables a tool by removing it from disabledTools and flipping its flag", async () => {
@@ -233,6 +236,71 @@ describe("createServersStore", () => {
       const st = s.getState();
       expect(st.disabledTools).toEqual({ mcp: [] });
       expect(st.servers.mcp.find((t) => t.name === "a")?.enabled).toBe(true);
+      // Re-enabling adds it back into the model payload (it was filtered
+      // out at build time while disabled).
+      expect(st.tools.map((t) => t.name)).toEqual(["a", "b"]);
+    });
+
+    it("changeAllToolStatus disables every tool of a type in one persist", async () => {
+      const deps = makeDeps({
+        grouped: {
+          mcp: [
+            { name: "a", enabled: true },
+            { name: "b", enabled: true },
+          ],
+        },
+        disabled: {},
+      });
+      const s = createServersStore(deps);
+      await s.getState().getTools();
+      vi.clearAllMocks();
+
+      await s.getState().changeAllToolStatus("mcp", false);
+
+      // Single persist with the full name list — not one call per tool.
+      expect(deps.api.tools.setDisabled).toHaveBeenCalledTimes(1);
+      expect(deps.api.tools.setDisabled).toHaveBeenCalledWith(
+        "mcp",
+        ["a", "b"],
+        undefined
+      );
+
+      const st = s.getState();
+      expect(st.disabledTools).toEqual({ mcp: ["a", "b"] });
+      expect(st.servers.mcp).toEqual([
+        { name: "a", enabled: false },
+        { name: "b", enabled: false },
+      ]);
+      // All disabled → nothing in the model payload.
+      expect(st.tools).toEqual([]);
+    });
+
+    it("changeAllToolStatus enables every tool of a type in one persist", async () => {
+      const deps = makeDeps({
+        grouped: {
+          mcp: [
+            { name: "a", enabled: false },
+            { name: "b", enabled: false },
+          ],
+        },
+        disabled: { mcp: ["a", "b"] },
+      });
+      const s = createServersStore(deps);
+      await s.getState().getTools();
+      vi.clearAllMocks();
+
+      await s.getState().changeAllToolStatus("mcp", true);
+
+      expect(deps.api.tools.setDisabled).toHaveBeenCalledTimes(1);
+      expect(deps.api.tools.setDisabled).toHaveBeenCalledWith(
+        "mcp",
+        [],
+        undefined
+      );
+
+      const st = s.getState();
+      expect(st.disabledTools).toEqual({ mcp: [] });
+      expect(st.tools.map((t) => t.name)).toEqual(["a", "b"]);
     });
 
     it("emits tool-toggled callback after optimistic update", async () => {

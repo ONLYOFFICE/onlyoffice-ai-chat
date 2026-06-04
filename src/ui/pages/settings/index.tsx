@@ -1,7 +1,9 @@
+import { useCallback, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useStores } from "../../store/context";
 import { useWidgetConfig } from "../../../widget-config";
+import logger from "../../../shared/logger";
 import useEnsureProfiles from "../../hooks/useEnsureProfiles";
 import AiModelsPage from "../ai-models";
 import ModelAssignmentPage from "../model-assignment";
@@ -28,13 +30,37 @@ const Settings = ({
 }: SettingsProps) => {
   const { Tabs } = useComponents();
   const { t } = useI18n();
-  const { useProfilesStore } = useStores();
+  const { useProfilesStore, useServersStore } = useStores();
   const widgetConfig = useWidgetConfig();
+  const { onDiscardMcpChanges } = widgetConfig;
   const isAddModelCardHorizontal =
     isAddModelCardHorizontalProp ?? widgetConfig.isAddModelCardHorizontal;
   useEnsureProfiles();
 
   const profiles = useProfilesStore((s) => s.profiles);
+  const mcpConfigDirty = useServersStore((s) => s.mcpConfigDirty);
+  const setMcpConfigDirty = useServersStore((s) => s.setMcpConfigDirty);
+
+  const [activeTab, setActiveTab] = useState("ai-settings");
+
+  const handleTabChange = useCallback(
+    async (next: string) => {
+      const leavingMcp = activeTab === "mcp-servers" && next !== "mcp-servers";
+      // Offer the host a chance to confirm discarding unsaved MCP edits.
+      if (leavingMcp && mcpConfigDirty && onDiscardMcpChanges) {
+        try {
+          const discard = await onDiscardMcpChanges();
+          if (!discard) return; // host cancelled — stay on the MCP tab
+        } catch (err) {
+          logger.error("onDiscardMcpChanges handler failed:", err);
+          return; // keep the edits on error rather than dropping them
+        }
+        setMcpConfigDirty(false);
+      }
+      setActiveTab(next);
+    },
+    [activeTab, mcpConfigDirty, onDiscardMcpChanges, setMcpConfigDirty]
+  );
 
   return (
     <div className="aui-root flex justify-center h-full bg-[var(--layout-background-color)]">
@@ -47,6 +73,8 @@ const Settings = ({
           </h1>
         )}
         <Tabs
+          value={activeTab}
+          onValueChange={handleTabChange}
           items={[
             {
               value: "ai-settings",

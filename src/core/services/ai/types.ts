@@ -81,6 +81,17 @@ export type AIEngineDeps = {
   fetchProxy?: import("../../../shared/provider-credentials").ProviderFetch;
 
   /**
+   * Global override that routes EVERY non-`"external"` provider request
+   * through {@link fetchProxy}, regardless of each profile's
+   * {@link Profile.useProxy} flag. Intended for server-side deployments
+   * that must funnel all upstream traffic through the document-server
+   * proxy. Has no effect when {@link fetchProxy} is not supplied; the
+   * `"external"` provider still uses {@link externalFetch}. Pass a
+   * function to resolve lazily at request time.
+   */
+  forceProxy?: boolean | (() => boolean);
+
+  /**
    * Transport hook for the `"external"` provider. Required for any
    * profile with `providerType: "external"`; the engine wires it into
    * every provider request for such profiles, independent of

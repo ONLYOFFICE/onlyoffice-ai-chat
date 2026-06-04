@@ -1,6 +1,32 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from "@testing-library/react";
+
+const mocks = vi.hoisted(() => ({
+  deleteProfile: vi.fn(async () => {}),
+  widgetConfig: {
+    onDeleteProfile: undefined as
+      | undefined
+      | ((p: unknown) => boolean | void | Promise<boolean | void>),
+  },
+}));
+
+vi.mock("../../../store/context", () => ({
+  useStores: () => ({
+    useProfilesStore: (selector: (s: { deleteProfile: unknown }) => unknown) =>
+      selector({ deleteProfile: mocks.deleteProfile }),
+  }),
+}));
+
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => mocks.widgetConfig,
+}));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -145,6 +171,11 @@ const Harness = ({ profile: p }: { profile: Profile }) => {
 };
 
 describe("ModelCard", () => {
+  beforeEach(() => {
+    mocks.deleteProfile.mockClear();
+    mocks.widgetConfig.onDeleteProfile = undefined;
+  });
+
   it("renders profile name", () => {
     render(<Harness profile={profile} />);
     const names = screen.getAllByText("My GPT-4");
@@ -246,5 +277,71 @@ describe("ModelCard", () => {
     render(<Harness profile={profile} />);
     expect(screen.getByTestId("dropdown-item-Edit")).toBeInTheDocument();
     expect(screen.getByTestId("dropdown-item-Delete")).toBeInTheDocument();
+  });
+
+  it("uses onDeleteProfile (no built-in dialog) and deletes on confirm", async () => {
+    mocks.widgetConfig.onDeleteProfile = vi.fn(async () => true);
+    render(<Harness profile={profile} />);
+
+    act(() => {
+      fireEvent.click(screen.getByTestId("dropdown-item-Delete"));
+    });
+
+    expect(mocks.widgetConfig.onDeleteProfile).toHaveBeenCalledWith(profile);
+    // The built-in confirmation dialog must NOT appear.
+    expect(screen.queryByTestId("delete-dialog")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(mocks.deleteProfile).toHaveBeenCalledWith("p1")
+    );
+  });
+
+  it("does not delete when onDeleteProfile resolves falsy (cancel)", async () => {
+    mocks.widgetConfig.onDeleteProfile = vi.fn(async () => false);
+    render(<Harness profile={profile} />);
+
+    act(() => {
+      fireEvent.click(screen.getByTestId("dropdown-item-Delete"));
+    });
+
+    await waitFor(() =>
+      expect(mocks.widgetConfig.onDeleteProfile).toHaveBeenCalled()
+    );
+    expect(screen.queryByTestId("delete-dialog")).not.toBeInTheDocument();
+    expect(mocks.deleteProfile).not.toHaveBeenCalled();
+  });
+
+  it("does not delete when onDeleteProfile rejects", async () => {
+    mocks.widgetConfig.onDeleteProfile = vi.fn(async () => {
+      throw new Error("boom");
+    });
+    render(<Harness profile={profile} />);
+
+    act(() => {
+      fireEvent.click(screen.getByTestId("dropdown-item-Delete"));
+    });
+
+    await waitFor(() =>
+      expect(mocks.widgetConfig.onDeleteProfile).toHaveBeenCalled()
+    );
+    expect(mocks.deleteProfile).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("delete-dialog")).not.toBeInTheDocument();
+  });
+
+  it("routes the edit-card delete through onDeleteProfile when provided", async () => {
+    mocks.widgetConfig.onDeleteProfile = vi.fn(async () => true);
+    render(<Harness profile={profile} />);
+
+    act(() => {
+      fireEvent.click(screen.getByTestId("dropdown-item-Edit"));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId("edit-card-delete"));
+    });
+
+    expect(mocks.widgetConfig.onDeleteProfile).toHaveBeenCalledWith(profile);
+    expect(screen.queryByTestId("delete-dialog")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(mocks.deleteProfile).toHaveBeenCalledWith("p1")
+    );
   });
 });

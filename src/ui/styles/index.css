@@ -18,10 +18,26 @@
     "Noto Sans";
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--background-scroll-thumb)
+    var(--background-normal-element);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
 *::-webkit-scrollbar-track {
   background-color: var(--background-normal-element) !important;
 }
 
 *::-webkit-scrollbar-thumb {
   background-color: var(--background-scroll-thumb) !important;
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--highlight-scroll-thumb-hover) !important;
 }

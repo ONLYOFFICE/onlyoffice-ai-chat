@@ -37,6 +37,14 @@ export interface ServersStoreState {
     serverExecuted?: boolean;
   };
   webSearchEnabled: boolean;
+  /**
+   * `true` while the inline MCP config editor holds unsaved edits (the
+   * document diverges from the last-loaded/saved config). Consumed by the
+   * settings tab navigation to offer a discard confirmation before leaving
+   * the MCP tab. Reset on save, close, or unmount of the editor.
+   */
+  mcpConfigDirty: boolean;
+  setMcpConfigDirty: (dirty: boolean) => void;
   initServers: () => Promise<void>;
   getTools: () => Promise<void>;
   reload: () => Promise<void>;
@@ -45,6 +53,13 @@ export interface ServersStoreState {
     name: string,
     enabled: boolean
   ) => Promise<void>;
+  /**
+   * Enable or disable every tool of a server type in one shot. A single
+   * persist + state update — unlike calling {@link changeToolStatus} per
+   * tool, which races (each call reads the same pre-update `disabledTools`
+   * before its `await`, so only the last write survives).
+   */
+  changeAllToolStatus: (type: string, enabled: boolean) => Promise<void>;
   callTools: (name: string, args: Record<string, unknown>) => Promise<unknown>;
   setManageToolData: (data: ServersStoreState["manageToolData"]) => void;
   saveConfig: (config: {
@@ -87,14 +102,20 @@ export function createServersStore(deps: {
 
     // Annotate each tool with its `enabled` flag derived from the
     // persisted disabled list — used by the permissions UI to render
-    // toggles. `flat` carries every tool (disabled-filter is applied by
-    // the engine in `buildToolContext`) so the chat receives the full
-    // provider list.
+    // toggles.
+    //
+    // `flat` becomes `actionArgs.tools` (the client-executed "user" tools
+    // the model is offered). The engine does NOT filter these by the
+    // disabled map — it only knows the bare names, not the server grouping,
+    // so `buildToolContext` passes `userTools` through as-is and expects the
+    // caller to have pre-filtered. We therefore drop disabled tools from
+    // `flat` here; skipping this is what let disabled MCP/host tools keep
+    // working in chat.
     //
     // System tools are the exception: the engine injects and executes them
-    // server-side via its adapter. They must NOT go into `flat` (which is
-    // sent to the engine as `actionArgs.tools`) — that would re-classify
-    // them as client-executed user tools, so the engine wouldn't flag them
+    // server-side via its adapter (and filters them by the same disabled
+    // map there). They must NOT go into `flat` — that would re-classify them
+    // as client-executed user tools, so the engine wouldn't flag them
     // `serverExecuted` and the browser would try (and fail) to run them
     // locally. They still appear in `servers` for the permission cards.
     const systemTypes = new Set(Object.keys(systemTools));
@@ -109,7 +130,9 @@ export function createServersStore(deps: {
             ? tool.enabled
             : !disabledForType.includes(tool.name),
       }));
-      if (!systemTypes.has(type)) flat.push(...annotated[type]);
+      if (!systemTypes.has(type)) {
+        flat.push(...annotated[type].filter((tool) => tool.enabled !== false));
+      }
     }
 
     return {
@@ -128,6 +151,9 @@ export function createServersStore(deps: {
     disabledTools: {},
     manageToolData: undefined,
     webSearchEnabled: false,
+    mcpConfigDirty: false,
+
+    setMcpConfigDirty: (dirty) => set({ mcpConfigDirty: dirty }),
 
     initServers: async () => {
       // Reload the persisted MCP config from storage before starting —
@@ -172,9 +198,16 @@ export function createServersStore(deps: {
         state.servers[type] !== undefined
           ? { ...state.servers, [type]: flip(state.servers[type]) }
           : state.servers;
-      const nextTools = state.tools.map((tool) =>
-        tool.name === name ? { ...tool, enabled } : tool
-      );
+      // Rebuild the flat `tools` payload as enabled-only (excluding system
+      // tools, which never belong in `flat`). A plain in-place flip would
+      // leave a just-disabled tool in the list — and re-enabling one that
+      // was filtered out at build time could never add it back.
+      const systemTypes = new Set(Object.keys(state.systemTools));
+      const nextTools = Object.entries(nextServers)
+        .filter(([t]) => !systemTypes.has(t))
+        .flatMap(([, items]) =>
+          items.filter((tool) => tool.enabled !== false)
+        );
 
       set({
         servers: nextServers,
@@ -186,6 +219,41 @@ export function createServersStore(deps: {
         kind: "tool-toggled",
         toolType: type,
         toolName: name,
+        enabled,
+      });
+    },
+
+    changeAllToolStatus: async (type, enabled) => {
+      const state = get();
+      const items = state.servers[type] ?? [];
+      if (items.length === 0) return;
+
+      // The persisted disabled list for this type is empty when enabling
+      // all, or every tool name when disabling all.
+      const next = enabled ? [] : items.map((tool) => tool.name);
+      await api.tools.setDisabled(type, next, entityId);
+
+      const systemTypes = new Set(Object.keys(state.systemTools));
+      const nextServers = {
+        ...state.servers,
+        [type]: items.map((tool) => ({ ...tool, enabled })),
+      };
+      const nextTools = Object.entries(nextServers)
+        .filter(([t]) => !systemTypes.has(t))
+        .flatMap(([, list]) =>
+          list.filter((tool) => tool.enabled !== false)
+        );
+
+      set({
+        servers: nextServers,
+        tools: nextTools,
+        disabledTools: { ...state.disabledTools, [type]: next },
+      });
+
+      // No `toolName` — a bulk toggle covers the whole server type.
+      callbacksManager.emit("onServersUpdated", {
+        kind: "tool-toggled",
+        toolType: type,
         enabled,
       });
     },

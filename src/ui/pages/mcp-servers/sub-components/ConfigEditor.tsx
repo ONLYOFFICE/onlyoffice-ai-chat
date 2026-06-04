@@ -7,25 +7,34 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useStores } from "../../../store/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
-import { Dialog } from "../../../components/dialog";
 
-import "./ConfigDialog.css";
+import "./ConfigEditor.css";
 
-type ConfigDialogProps = {
+type ConfigEditorProps = {
+  /** When `true`, the editor panel renders inline on the page. */
   open: boolean;
   onClose: () => void;
 };
 
-const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
-  const { Button, DialogContent } = useComponents();
-  const { t } = useI18n();
+/**
+ * Inline MCP-config editor. Renders the former config-dialog content
+ * directly inside the MCP servers page (no modal overlay): a header with a
+ * close button, the JSON editor, and the Cancel / Save footer.
+ */
+const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
+  const { Button, IconButton } = useComponents();
+  const { t, isRTL } = useI18n();
   const platform = usePlatform();
   const { useServersStore } = useStores();
   const saveConfig = useServersStore((s) => s.saveConfig);
   const getConfig = useServersStore((s) => s.getConfig);
+  const setMcpConfigDirty = useServersStore((s) => s.setMcpConfigDirty);
 
   const editorRef = React.useRef<HTMLDivElement>(null);
   const viewRef = React.useRef<EditorView | null>(null);
+  // The document as last loaded / saved — compared against the live value
+  // to flag unsaved edits (the tab-leave discard guard).
+  const initialDocRef = React.useRef("");
   const [value, setValue] = React.useState("");
   const [error, setError] = React.useState("");
   const [isValidJson, setIsValidJson] = React.useState(true);
@@ -76,8 +85,10 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
         const mcpServers = (await getConfig()) ?? {};
         const initialDoc = JSON.stringify({ mcpServers }, null, 2);
 
+        initialDocRef.current = initialDoc;
         setValue(initialDoc);
         validateJson(initialDoc);
+        setMcpConfigDirty(false);
 
         const state = EditorState.create({
           doc: initialDoc,
@@ -89,6 +100,7 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
                 const newValue = update.state.doc.toString();
                 setValue(newValue);
                 validateJson(newValue);
+                setMcpConfigDirty(newValue !== initialDocRef.current);
               }
             }),
             EditorView.theme({
@@ -136,7 +148,14 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
         viewRef.current = null;
       }
     };
-  }, [open, validateJson, getConfig]);
+  }, [open, validateJson, getConfig, setMcpConfigDirty]);
+
+  // Clear the dirty flag whenever the editor is closed (Cancel / Save) or
+  // unmounted — there are no unsaved edits once it's gone.
+  React.useEffect(() => {
+    if (!open) setMcpConfigDirty(false);
+    return () => setMcpConfigDirty(false);
+  }, [open, setMcpConfigDirty]);
 
   const onSubmitAction = React.useCallback(() => {
     if (!isValidJson) return;
@@ -150,7 +169,7 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         e.key === "Enter" &&
-        document.activeElement?.id === "dialog-content"
+        document.activeElement?.id === "config-editor"
       ) {
         e.preventDefault();
         onSubmitAction();
@@ -164,14 +183,23 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
     };
   }, [open, onSubmitAction]);
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open}>
-      <DialogContent
-        header={t("EditConfiguration")}
-        onClose={onClose}
-        className="w-[564px] min-h-[400px]"
-      >
-        <div className="flex flex-col gap-[8px] min-h-[280px] pt-[8px] pb-[16px]">
+    <div
+      id="config-editor"
+      data-testid="config-editor"
+      dir={isRTL ? "rtl" : "ltr"}
+      className="flex flex-col w-full mb-[28px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)]"
+    >
+      <div className="flex items-center justify-between h-[56px] ps-[16px] pe-[8px]">
+        <p className="font-bold text-[16px] leading-[24px] text-[var(--settings-header-color)]">
+          {t("EditConfiguration")}
+        </p>
+        <IconButton iconName="btn-close" size={24} onClick={onClose} />
+      </div>
+      <div className="px-[16px]">
+        <div className="flex flex-col gap-[8px] min-h-[280px] pb-[16px]">
           <div className="flex flex-col gap-[8px] min-h-[256px] p-[12px] bg-[var(--servers-edit-config-json-background-color)] rounded-[12px]">
             <div className="flex flex-row justify-between">
               <p className="font-bold text-[14px] leading-[20px] text-[var(--servers-edit-config-json-header-color)]">
@@ -192,7 +220,7 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
             ) : null}
           </div>
         </div>
-        <div className="flex flex-row items-center justify-end gap-[16px] h-[64px] border-t border-[var(--servers-edit-config-buttons-border-color)] mx-[-32px] px-[32px]">
+        <div className="flex flex-row items-center justify-end gap-[16px] h-[64px] border-t border-[var(--servers-edit-config-buttons-border-color)] mx-[-16px] px-[16px]">
           <Button onClick={onClose} variant="default">
             {t("Cancel")}
           </Button>
@@ -200,9 +228,9 @@ const ConfigDialog = ({ open, onClose }: ConfigDialogProps) => {
             {t("Save")}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };
 
-export default ConfigDialog;
+export default ConfigEditor;

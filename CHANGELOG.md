@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.54
+
+### Added
+
+- `AIChatWidget.onDeleteProfile?(profile) => boolean | Promise<boolean>` (also on `WidgetConfig`). When set, the built-in delete-confirmation dialog is skipped — the host shows its own UI and returns `true` to delete / falsy to cancel.
+- `AIChatWidget.onDiscardMcpChanges?() => boolean | Promise<boolean>` (also on `WidgetConfig`). Fired when leaving the MCP tab with unsaved config edits; host returns `true` to discard and proceed, falsy to stay.
+- `AIChatWidget.forceProxy` (and `AIEngineDeps.forceProxy: boolean | (() => boolean)`). Routes every non-`"external"` provider request through `PlatformAdapter.fetchProxy`, ignoring each profile's `useProxy`. No effect without `fetchProxy`.
+- `onProfileImportClick` / `onDownloadTemplate` can now be passed directly as `AIChatWidget` props (previously only via `WidgetConfig`).
+
+### Changed
+
+- MCP servers page: "Edit configuration" shows the editor inline instead of in a modal. While open, the permissions list is dimmed (opacity 0.4) and non-interactive.
+- Add-profile card: dropped the reserved error space from 0.4.46 that widened the gaps between fields; error text renders only when present.
+- Custom scrollbar for fixed-height lists (dropdowns, model lists): thin, rounded thumb, themed hover via `--highlight-scroll-thumb-hover` (was the default OS scrollbar).
+
+### Fixed
+
+- "Enable/Disable all tools" only toggled one tool — the per-tool calls raced. Added a single `changeAllToolStatus(type, enabled)` store action.
+- Disabled tools stayed callable in chat — the client tool payload (`actionArgs.tools`) wasn't filtered by the disabled map (the engine forwards user tools as-is). Now filtered in the servers store.
+- Message **Save** / **Regenerate** did nothing for uuid message ids — both did `Number(message.parentId)` → `NaN`. Now resolve the parent by id.
+- Info icon (`btn-menu-about`) rendered as a solid black circle — the stroke-only SVG needed `isStroke`.
+- Chat-header settings icon showed horizontally; rotated 90° to vertical.
+- A long field error (e.g. on the add-model form) widened the whole panel instead of truncating — the settings page wrapper, a flex child, had `min-width: auto` and got pinned to the form's min-content. Added `min-w-0` to the wrapper so it respects the container width.
+
 ## 0.4.53
 
 - Fix: the tool-approval dialog never appeared for consumers that mount `ChatPage` directly instead of the full `AIChatWidget` — the dialog was wired only inside `AIChatWidget`. With server-side system tools (the first tools to require approval), the request hung in a pending state with no prompt. `ManageToolDialog` now lives inside `ChatPage` itself (wired to its own `useMessages`), so every consumer gets it; the duplicate mount was removed from `AIChatWidget`. The imperative `approveToolCall` / `denyToolCall` ref API is unchanged.
