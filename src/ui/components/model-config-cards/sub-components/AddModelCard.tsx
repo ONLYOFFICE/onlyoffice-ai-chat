@@ -107,12 +107,11 @@ export const AddModelCard = ({
   const footer = (
     <div className="flex flex-row justify-between items-center">
       <div className="flex flex-row items-center gap-[4px]">
-        <Link
-          href="#"
-          onClick={onProfileImportClick ? handleImportClick : undefined}
-        >
-          {t("Import")}
-        </Link>
+        {onProfileImportClick && (
+          <Link href="#" onClick={handleImportClick}>
+            {t("Import")}
+          </Link>
+        )}
         <Tooltip open={isTooltipOpen}>
           <TooltipTrigger asChild>
             <IconButton

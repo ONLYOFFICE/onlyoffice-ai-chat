@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.55
+
+### Changed
+
+- Add-profile card: the **Import** link is now hidden unless the host provides `onProfileImportClick` (previously always rendered, just inert without the callback).
+
 ## 0.4.54
 
 ### Added
