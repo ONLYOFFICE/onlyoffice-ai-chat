@@ -108,49 +108,51 @@ export const AddModelCard = ({
     <div className="flex flex-row justify-between items-center">
       <div className="flex flex-row items-center gap-[4px]">
         {onProfileImportClick && (
-          <Link href="#" onClick={handleImportClick}>
-            {t("Import")}
-          </Link>
-        )}
-        <Tooltip open={isTooltipOpen}>
-          <TooltipTrigger asChild>
-            <IconButton
-              className="cursor-pointer"
-              iconName="btn-menu-about"
-              size={24}
-              disableHover
-              isStroke
-              onClick={() => setIsTooltipOpen((val) => !val)}
-            />
-          </TooltipTrigger>
-          <TooltipContent
-            className="p-[12px]"
-            side="bottom"
-            isAbout
-            align="start"
-          >
-            <div className="flex flex-col gap-[6px] max-w-[221px]">
-              <p className="text-[12px] leading-[16px] select-none">
-                {t("EnterModelConfigTooltip")}
-              </p>
-              <Link
-                variant="primary"
-                href="#"
-                className="text-[12px] leading-[16px]"
-                onClick={
-                  onDownloadTemplate
-                    ? (e) => {
-                        e.preventDefault();
-                        onDownloadTemplate();
-                      }
-                    : undefined
-                }
+          <>
+            <Link href="#" onClick={handleImportClick}>
+              {t("Import")}
+            </Link>
+            <Tooltip open={isTooltipOpen}>
+              <TooltipTrigger asChild>
+                <IconButton
+                  className="cursor-pointer"
+                  iconName="btn-menu-about"
+                  size={24}
+                  disableHover
+                  isStroke
+                  onClick={() => setIsTooltipOpen((val) => !val)}
+                />
+              </TooltipTrigger>
+              <TooltipContent
+                className="p-[12px]"
+                side="bottom"
+                isAbout
+                align="start"
               >
-                {t("DownloadTemplate")}
-              </Link>
-            </div>
-          </TooltipContent>
-        </Tooltip>
+                <div className="flex flex-col gap-[6px] max-w-[221px]">
+                  <p className="text-[12px] leading-[16px] select-none">
+                    {t("EnterModelConfigTooltip")}
+                  </p>
+                  <Link
+                    variant="primary"
+                    href="#"
+                    className="text-[12px] leading-[16px]"
+                    onClick={
+                      onDownloadTemplate
+                        ? (e) => {
+                            e.preventDefault();
+                            onDownloadTemplate();
+                          }
+                        : undefined
+                    }
+                  >
+                    {t("DownloadTemplate")}
+                  </Link>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </>
+        )}
       </div>
       <div className="flex flex-row gap-[12px]">
         {variant === "card" && (

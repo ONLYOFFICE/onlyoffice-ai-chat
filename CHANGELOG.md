@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.56
+
+### Changed
+
+- Add-profile card: the info icon and its "Download template" tooltip are now hidden together with the **Import** link when `onProfileImportClick` is not set (previously the icon stayed visible).
+
 ## 0.4.55
 
 ### Changed
