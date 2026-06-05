@@ -7,24 +7,19 @@ import { readToolCall } from "./tool-call";
 import type { ChatEvent } from "./types";
 
 /**
- * Persist the assistant's response message when a stream reaches its
- * terminal event. No-op for non-terminal events and for messages that
- * ended in `status.reason === "error"`. Cancelled messages still get
- * saved — they carry the partial text the user has already seen.
+ * Whether a stored message carries content worth sending to the provider.
+ *
+ * Persisted terminal turns can be empty shells: an error or cancellation
+ * that arrived before any delta is saved as `content: ""` plus a status,
+ * so the UI can render "Error" / "Stopped" after a reload. Such a turn
+ * must be kept out of the *request* history — most providers reject an
+ * empty assistant turn (e.g. Anthropic 400). Callers filter prior
+ * messages through this helper before handing them to the provider.
  */
-export async function persistTerminal(
-  storage: StorageAdapter,
-  threadId: string,
-  result: SendMessageResult
-): Promise<void> {
-  if (!("isEnd" in result)) return;
-  if (isErrored(result.responseMessage)) return;
-  await storage.messages.create(threadId, result.responseMessage);
-}
-
-function isErrored(message: ThreadMessageLike): boolean {
-  const reason = (message as { status?: { reason?: string } }).status?.reason;
-  return reason === "error";
+export function hasSendableContent(message: ThreadMessageLike): boolean {
+  const content = message.content;
+  if (typeof content === "string") return content.trim().length > 0;
+  return Array.isArray(content) && content.length > 0;
 }
 
 /**
@@ -126,6 +121,11 @@ export async function* processStream(
   const { storage, threadId } = ctx;
   let messageId = ctx.resumeMessageId ?? "";
   let inited = !!ctx.isResume;
+  // Last streamed snapshot — the accumulated assistant content the user
+  // has already seen. Reused when a terminal `incomplete` event arrives so
+  // a mid-stream error / cancellation keeps its partial text instead of
+  // being overwritten by the provider's empty error/stop shell.
+  let lastSnapshot: ThreadMessageLike | undefined = ctx.resumeBaseMessage;
   const base = ctx.resumeBaseMessage;
   const merge = (m: ThreadMessageLike) => (base ? mergeResume(base, m) : m);
   // Stamp the storage-assigned id onto the in-flight message so the UI
@@ -139,16 +139,26 @@ export async function* processStream(
       const final = merge(result.responseMessage);
 
       if (final.status?.type === "incomplete") {
-        // Errors are intentionally not persisted (transient by design).
-        // But the runtime still needs a stable id on the payload so
-        // assistant-ui doesn't fall back to an index-based id and
-        // mis-link the message. Reuse the storage id from prior deltas
-        // when available; otherwise mint a transient one for this
-        // in-memory render only.
-        const id = messageId || crypto.randomUUID();
+        // Persist the terminal state (error / cancelled) so it survives a
+        // reload. The provider's error/stop response carries an empty
+        // body, so we keep the last streamed snapshot's content (the
+        // partial text already shown) and attach only the status. With no
+        // prior delta there is nothing to preserve — save the empty shell
+        // plus status; `hasSendableContent` keeps it out of future
+        // request history.
+        const persisted = {
+          ...(lastSnapshot ?? final),
+          status: final.status,
+        } as ThreadMessageLike;
+        if (!messageId) {
+          const stored = await storage.messages.create(threadId, persisted);
+          messageId = stored.id ?? "";
+        } else {
+          await storage.messages.update(messageId, persisted);
+        }
         yield {
           type: "message-incomplete",
-          message: { ...final, id } as ThreadMessageLike,
+          message: withId(persisted),
         };
         return;
       }
@@ -193,6 +203,7 @@ export async function* processStream(
     }
 
     const merged = merge(result);
+    lastSnapshot = merged;
     if (!inited) {
       const stored = await storage.messages.create(threadId, merged);
       messageId = stored.id ?? "";

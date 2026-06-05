@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.57
+
+### Changed
+
+- Failed / cancelled assistant turns are now persisted to storage (with `status: { type: "incomplete", reason: "error" | "cancelled", error }`) instead of being transient UI-only state. Any text streamed before the error is preserved; on reload the message renders as "Error" / "Stopped".
+- Empty persisted turns (an error/cancel before any delta) are kept out of the provider request history (`hasSendableContent` filter) so the next request isn't rejected for an empty assistant turn.
+
 ## 0.4.56
 
 ### Changed

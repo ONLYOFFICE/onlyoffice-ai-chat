@@ -19,7 +19,8 @@ vi.mock("../../../actions/chat", () => ({
   chat: chatMock,
 }));
 
-vi.mock("../stream", () => ({
+vi.mock("../stream", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../stream")>()),
   processStream: processStreamMock,
 }));
 

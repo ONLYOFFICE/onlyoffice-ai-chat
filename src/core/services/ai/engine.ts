@@ -15,7 +15,7 @@ import type { ResolvedAssignment } from "../assignments/types";
 import { ThreadsEngine } from "../threads";
 import { drainToFinal, runSync } from "./actions";
 import { runCustomOnce, runCustomStream } from "./custom";
-import { processStream } from "./stream";
+import { hasSendableContent, processStream } from "./stream";
 import { readToolCall, resumeChat } from "./tool-call";
 import {
   type AdapterRunContext,
@@ -161,7 +161,9 @@ export class AIEngine {
     let storedUserMessage: ThreadMessageLike | null = null;
 
     if (!isNewThread) {
-      priorMessages = await this.deps.storage.messages.readByThread(threadId);
+      priorMessages = (
+        await this.deps.storage.messages.readByThread(threadId)
+      ).filter(hasSendableContent);
       storedUserMessage = await this.threads.appendUserMessage(
         threadId,
         input.userMessage,
@@ -315,7 +317,9 @@ export class AIEngine {
       if (m.id) await this.deps.storage.messages.delete(m.id);
     }
 
-    const priorMessages = stored.slice(0, lastUserIdx + 1);
+    const priorMessages = stored
+      .slice(0, lastUserIdx + 1)
+      .filter(hasSendableContent);
 
     const toolCtx = await buildToolContext(
       this.deps.storage,

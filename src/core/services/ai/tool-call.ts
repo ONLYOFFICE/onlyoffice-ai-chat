@@ -5,7 +5,7 @@ import { chat } from "../../actions/chat";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { Profile } from "../../types";
-import { processStream } from "./stream";
+import { hasSendableContent, processStream } from "./stream";
 import type { ChatEvent } from "./types";
 
 /**
@@ -140,7 +140,9 @@ export async function* resumeChat(
   });
   await ctx.storage.messages.update(input.messageId, updatedMessage);
 
-  const history = await ctx.storage.messages.readByThread(input.threadId);
+  const history = (
+    await ctx.storage.messages.readByThread(input.threadId)
+  ).filter(hasSendableContent);
 
   const actionArgs: ActionArgs = {
     profile: input.profile,

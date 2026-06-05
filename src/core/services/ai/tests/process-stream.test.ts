@@ -54,7 +54,7 @@ describe("processStream", () => {
     expect(update).toHaveBeenCalledTimes(2);
   });
 
-  it("emits message-incomplete and stops on incomplete final", async () => {
+  it("persists the error and emits message-incomplete on incomplete final", async () => {
     const { storage, create } = makeStorage();
     const incomplete = {
       role: "assistant",
@@ -67,10 +67,50 @@ describe("processStream", () => {
       events.push(e);
     }
     expect(events.map((e) => e.type)).toEqual(["message-incomplete"]);
-    // Errors are not persisted, but the payload still carries a stable
-    // id so the UI runtime can track it.
-    expect(create).not.toHaveBeenCalled();
-    expect((events[0] as { message: { id?: string } }).message.id).toBeTruthy();
+    // With no prior delta the empty shell + status is persisted, and the
+    // payload carries the storage-assigned id so the UI can track it.
+    expect(create).toHaveBeenCalledWith(
+      "t",
+      expect.objectContaining({
+        status: { type: "incomplete", reason: "error", error: "boom" },
+      })
+    );
+    expect((events[0] as { message: { id?: string } }).message.id).toBe("m1");
+  });
+
+  it("preserves partial stream content when an error ends the stream", async () => {
+    const { storage, update } = makeStorage();
+    const stream = feed([
+      { role: "assistant", content: [{ type: "text", text: "par" }] },
+      { role: "assistant", content: [{ type: "text", text: "partial" }] },
+      {
+        isEnd: true,
+        responseMessage: {
+          role: "assistant",
+          content: "",
+          status: { type: "incomplete", reason: "error", error: "boom" },
+        } as ThreadMessageLike,
+      },
+    ]);
+    const events = [];
+    for await (const e of processStream(stream, { storage, threadId: "t" })) {
+      events.push(e);
+    }
+    // Terminal update keeps the accumulated partial text and attaches the
+    // error status (no overwrite with the provider's empty shell).
+    expect(update).toHaveBeenLastCalledWith(
+      "m1",
+      expect.objectContaining({
+        content: [{ type: "text", text: "partial" }],
+        status: { type: "incomplete", reason: "error", error: "boom" },
+      })
+    );
+    const last = events[events.length - 1] as {
+      type: string;
+      message: ThreadMessageLike;
+    };
+    expect(last.type).toBe("message-incomplete");
+    expect(last.message.content).toEqual([{ type: "text", text: "partial" }]);
   });
 
   it("emits tool-call-pending and persists when assistant has unresolved tool-call", async () => {

@@ -11,8 +11,19 @@ const mockAddProfile = vi.fn().mockResolvedValue(true);
 
 let mockIsFormValid = true;
 
+const mockProfileImportClick = vi.fn();
+const mockDownloadTemplate = vi.fn();
+let mockWidgetConfig: Record<string, unknown> = {
+  onProfileImportClick: mockProfileImportClick,
+  onDownloadTemplate: mockDownloadTemplate,
+};
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
+}));
+
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => mockWidgetConfig,
 }));
 
 vi.mock("../../../store/context", () => ({
@@ -122,6 +133,10 @@ describe("AddModelCard", () => {
     vi.clearAllMocks();
     mockIsFormValid = true;
     mockAddProfile.mockResolvedValue(true);
+    mockWidgetConfig = {
+      onProfileImportClick: mockProfileImportClick,
+      onDownloadTemplate: mockDownloadTemplate,
+    };
   });
 
   it("renders in card variant with ModelCardShell", () => {
@@ -171,6 +186,15 @@ describe("AddModelCard", () => {
   it("renders tooltip info button", () => {
     render(<AddModelCard />);
     expect(screen.getByTestId("icon-btn-btn-menu-about")).toBeInTheDocument();
+  });
+
+  it("hides Import link and info button when onProfileImportClick is absent", () => {
+    mockWidgetConfig = {};
+    render(<AddModelCard />);
+    expect(screen.queryByText("Import")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("icon-btn-btn-menu-about")
+    ).not.toBeInTheDocument();
   });
 
   it("calls addProfile on Add Model button click", async () => {
