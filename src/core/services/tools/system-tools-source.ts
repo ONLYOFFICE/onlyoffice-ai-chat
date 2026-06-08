@@ -19,14 +19,11 @@ import {
  * `headers` never reach the browser. Compose this with a host's own
  * adapter via {@link composeToolsAdapters}.
  *
- * Tool lists are fetched lazily on first {@link getTools} and cached;
- * call {@link refresh} to re-enumerate (e.g. after a config change).
+ * Tool lists are enumerated on every {@link getTools} call.
  */
 export class SystemToolsSource implements ToolsAdapter {
   private readonly servers: Record<string, McpHttpServerConfig>;
   private readonly fetchImpl: FetchLike;
-  private cache: Record<string, TMCPItem[]> | null = null;
-  private inflight: Promise<Record<string, TMCPItem[]>> | null = null;
 
   constructor(opts: {
     servers: Record<string, McpHttpServerConfig>;
@@ -38,15 +35,7 @@ export class SystemToolsSource implements ToolsAdapter {
   }
 
   async getTools(): Promise<Record<string, TMCPItem[]>> {
-    if (this.cache) return this.cache;
-    if (!this.inflight) {
-      this.inflight = this.listAll().then((result) => {
-        this.cache = result;
-        this.inflight = null;
-        return result;
-      });
-    }
-    return this.inflight;
+    return this.listAll();
   }
 
   async callTool(
@@ -77,12 +66,6 @@ export class SystemToolsSource implements ToolsAdapter {
   /** Configured system server names — used to protect them on compose. */
   getServerTypes(): string[] {
     return Object.keys(this.servers);
-  }
-
-  /** Drop the cached tool lists so the next {@link getTools} re-enumerates. */
-  refresh(): void {
-    this.cache = null;
-    this.inflight = null;
   }
 
   private async listAll(): Promise<Record<string, TMCPItem[]>> {

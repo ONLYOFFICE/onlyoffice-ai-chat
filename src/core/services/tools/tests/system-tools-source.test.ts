@@ -4,7 +4,7 @@ import { SystemToolsSource } from "../system-tools-source";
 const json = (obj: unknown) => new Response(JSON.stringify(obj));
 
 describe("SystemToolsSource", () => {
-  it("getTools groups by server type and caches", async () => {
+  it("getTools groups by server type", async () => {
     const tools = [{ name: "sys_a", description: "", inputSchema: {} }];
     const fetchImpl = vi
       .fn()
@@ -18,10 +18,22 @@ describe("SystemToolsSource", () => {
 
     const first = await src.getTools();
     expect(first).toEqual({ sysA: tools });
-
-    const second = await src.getTools();
-    expect(second).toBe(first); // cached — no extra calls
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("getTools re-enumerates on every call", async () => {
+    const tools = [{ name: "sys_a", description: "", inputSchema: {} }];
+    const fetchImpl = vi.fn().mockResolvedValue(json({ result: { tools } }));
+
+    const src = new SystemToolsSource({
+      servers: { sysA: { url: "http://x" } },
+      fetch: fetchImpl,
+    });
+
+    await src.getTools();
+    const callsAfterFirst = fetchImpl.mock.calls.length;
+    await src.getTools();
+    expect(fetchImpl.mock.calls.length).toBeGreaterThan(callsAfterFirst);
   });
 
   it("callTool routes to the owning server", async () => {
@@ -64,21 +76,5 @@ describe("SystemToolsSource", () => {
       servers: { a: { url: "u" }, b: { url: "v" } },
     });
     expect(src.getServerTypes().sort()).toEqual(["a", "b"]);
-  });
-
-  it("refresh forces a re-enumeration", async () => {
-    const tools = [{ name: "t", description: "", inputSchema: {} }];
-    const fetchImpl = vi.fn().mockResolvedValue(json({ result: { tools } }));
-
-    const src = new SystemToolsSource({
-      servers: { srv: { url: "http://x" } },
-      fetch: fetchImpl,
-    });
-
-    await src.getTools();
-    const callsAfterFirst = fetchImpl.mock.calls.length;
-    src.refresh();
-    await src.getTools();
-    expect(fetchImpl.mock.calls.length).toBeGreaterThan(callsAfterFirst);
   });
 });
