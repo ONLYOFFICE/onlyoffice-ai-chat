@@ -1,17 +1,7 @@
 import { useEffect, useState } from "react";
 import { usePlatform } from "../../providers/PlatformProvider/context";
 import { useI18n } from "../../providers/LocalesProvider";
-import {
-  cn,
-  isDjVu,
-  isDocument,
-  isPdf,
-  isPdfForm,
-  isPresentation,
-  isSpreadsheet,
-  isVisio,
-  isXps,
-} from "../../../shared/utils";
+import { cn, getFileIconName } from "../../../shared/utils";
 import { useStores } from "../../store/context";
 import { selectImageBase64 } from "../../store/create-attachments-store";
 import type { TAttachmentFile, TAttachmentRef } from "../../../types";
@@ -27,18 +17,6 @@ import { IconButton } from "../icon-button";
 type FileItemProps = {
   file: TAttachmentRef | TAttachmentFile;
   withoutClose?: boolean;
-};
-
-const getFileIconName = (type: number): string => {
-  if (isPdfForm(type)) return "pdf-form";
-  if (isPdf(type)) return "pdf";
-  if (isDjVu(type)) return "djvu";
-  if (isXps(type)) return "xps";
-  if (isSpreadsheet(type)) return "spreadsheets";
-  if (isDocument(type)) return "documents";
-  if (isPresentation(type)) return "presentations";
-  if (isVisio(type)) return "visio";
-  return "unknown-format";
 };
 
 const isRef = (

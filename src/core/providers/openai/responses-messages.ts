@@ -33,7 +33,12 @@ const convertUserContent = (
     }
 
     if (part.type === "file") {
-      const meta = JSON.parse(part.mimeType);
+      let meta: { path?: string } = {};
+      try {
+        meta = JSON.parse(part.mimeType);
+      } catch {
+        meta = { path: part.mimeType };
+      }
       return {
         type: "input_text",
         text: JSON.stringify({

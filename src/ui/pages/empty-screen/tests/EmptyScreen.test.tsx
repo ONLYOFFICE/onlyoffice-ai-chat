@@ -6,9 +6,10 @@ const mockGoToChat = vi.fn();
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useRouter: () => ({
-      goToChat: mockGoToChat,
-    }),
+    useRouter: (selector?: (s: Record<string, unknown>) => unknown) => {
+      const state = { goToChat: mockGoToChat };
+      return selector ? selector(state) : state;
+    },
   }),
 }));
 

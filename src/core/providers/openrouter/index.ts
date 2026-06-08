@@ -46,7 +46,9 @@ class OpenRouterProvider extends OpenAIProvider {
   override async imageGeneration(args: ImageGenerationArgs): Promise<string> {
     const { model, prompt, signal } = args;
     logger.info("[OpenRouter.imageGeneration] called", { model, prompt });
+    const t0 = performance.now();
     try {
+      logger.info("[OpenRouter.imageGeneration] sending request…");
       const response = await this.client.chat.completions.create(
         {
           model,
@@ -57,21 +59,42 @@ class OpenRouterProvider extends OpenAIProvider {
         >[0],
         { signal }
       );
+      logger.info(
+        `[OpenRouter.imageGeneration] response received in ${(performance.now() - t0).toFixed(0)} ms`
+      );
 
       type ChatImage = { image_url?: { url?: string } };
-      const message = (
-        response as unknown as {
-          choices?: Array<{ message?: { images?: ChatImage[] } }>;
-        }
-      ).choices?.[0]?.message;
+      const raw = response as unknown as {
+        choices?: Array<{ message?: { images?: ChatImage[]; content?: unknown } }>;
+      };
+      logger.info("[OpenRouter.imageGeneration] raw response", {
+        choicesCount: raw.choices?.length,
+        firstMessageKeys: raw.choices?.[0]?.message
+          ? Object.keys(raw.choices[0].message)
+          : [],
+        imagesCount: raw.choices?.[0]?.message?.images?.length,
+        firstImageKeys: raw.choices?.[0]?.message?.images?.[0]
+          ? Object.keys(raw.choices[0].message.images[0])
+          : [],
+        urlPrefix: raw.choices?.[0]?.message?.images?.[0]?.image_url?.url?.slice(0, 80),
+      });
+
+      const message = raw.choices?.[0]?.message;
       const url = message?.images?.[0]?.image_url?.url ?? "";
       const comma = url.indexOf(",");
-      return url.startsWith("data:") && comma !== -1
-        ? url.slice(comma + 1)
-        : url;
+      const result =
+        url.startsWith("data:") && comma !== -1 ? url.slice(comma + 1) : url;
+      logger.info("[OpenRouter.imageGeneration] parsed", {
+        urlLength: url.length,
+        resultLength: result.length,
+      });
+      return result;
     } catch (error) {
+      logger.error(
+        `[OpenRouter.imageGeneration] error after ${(performance.now() - t0).toFixed(0)} ms`,
+        error
+      );
       if (isAbortError(error, signal)) return "";
-      logger.error("OpenRouter imageGeneration error:", error);
       throw error;
     }
   }

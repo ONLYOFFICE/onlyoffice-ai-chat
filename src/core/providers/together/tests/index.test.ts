@@ -12,6 +12,7 @@ describe("TogetherProvider", () => {
 
   it("delegates getProviderModels", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve([{ id: "m", type: "chat" }]),
     } as unknown as Response);
     const out = await TogetherProvider.getProviderModels({

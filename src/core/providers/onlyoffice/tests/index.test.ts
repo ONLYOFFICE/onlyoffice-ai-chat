@@ -114,6 +114,7 @@ describe("OnlyOfficeProvider", () => {
   describe("static getProviderModels", () => {
     it("delegates to listModels (REST endpoint)", async () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValue({
+        ok: true,
         json: () =>
           Promise.resolve({
             response: [{ modelId: "gpt-4", providerId: -1, providerTitle: "" }],
@@ -130,6 +131,7 @@ describe("OnlyOfficeProvider", () => {
   describe("static checkProvider", () => {
     it("returns true when listModels succeeds", async () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({ response: [] }),
       } as unknown as Response);
       await expect(

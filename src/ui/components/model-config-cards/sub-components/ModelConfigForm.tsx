@@ -83,8 +83,11 @@ export const ModelConfigForm = ({
   const [isSetupTooltipOpen, setIsSetupTooltipOpen] = useState(false);
   const { t } = useI18n();
   const { useCloudsStore } = useStores();
-  const { cloudProviders, externalOnlyofficeConfig, hiddenProviders } =
-    useCloudsStore();
+  const cloudProviders = useCloudsStore((s) => s.cloudProviders);
+  const externalOnlyofficeConfig = useCloudsStore(
+    (s) => s.externalOnlyofficeConfig
+  );
+  const hiddenProviders = useCloudsStore((s) => s.hiddenProviders);
   const hiddenSet = new Set<ProviderType>(hiddenProviders ?? []);
   const providersInfo = getSupportedProviderTypes()
     .map((type) => {

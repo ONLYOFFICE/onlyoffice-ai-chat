@@ -32,8 +32,12 @@ const mockPromptsState = {
 };
 
 const mockStores = {
-  useThreadsStore: vi.fn(() => mockThreadsState),
-  usePromptsStore: vi.fn(() => mockPromptsState),
+  useThreadsStore: vi.fn((selector?: (s: typeof mockThreadsState) => unknown) =>
+    selector ? selector(mockThreadsState) : mockThreadsState
+  ),
+  usePromptsStore: vi.fn((selector?: (s: typeof mockPromptsState) => unknown) =>
+    selector ? selector(mockPromptsState) : mockPromptsState
+  ),
 };
 
 vi.mock("../../store/context", () => ({

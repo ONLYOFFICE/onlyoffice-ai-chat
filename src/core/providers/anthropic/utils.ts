@@ -48,15 +48,6 @@ const convertImageToBlock = (imageDataUrl: string): ContentBlockParam => {
   };
 };
 
-// export const convertImageAttachmentsToContent = (
-//   attachments: readonly CompleteAttachment[]
-// ): ContentBlockParam[] =>
-//   attachments.flatMap(({ content }) =>
-//     content
-//       .filter((part) => part.type === "image")
-//       .map((part) => convertImageToBlock(part.image))
-//   );
-
 // ============================================================================
 // Tools Conversion
 // ============================================================================
@@ -119,10 +110,6 @@ const convertUserMessage = (message: ThreadMessageLike): MessageParam[] => {
     typeof message.content === "string"
       ? message.content
       : message.content.map(convertUserContentPart);
-
-  // if (message.attachments?.length && Array.isArray(content)) {
-  //   content.push(...convertImageAttachmentsToContent(message.attachments));
-  // }
 
   return [{ role: "user", content }];
 };

@@ -128,17 +128,39 @@ vi.mock("../../../components/tooltip-icon-button", () => ({
   ),
 }));
 
-vi.mock("../../../../shared/utils", () => ({
-  cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
-  isDjVu: (t: number) => t === 20,
-  isDocument: (t: number) => t === 7,
-  isPdf: (t: number) => t === 12,
-  isPdfForm: (t: number) => t === 25,
-  isPresentation: (t: number) => t === 9,
-  isSpreadsheet: (t: number) => t === 8,
-  isVisio: (t: number) => t === 22,
-  isXps: (t: number) => t === 21,
-}));
+vi.mock("../../../../shared/utils", () => {
+  const isDjVu = (t: number) => t === 20;
+  const isDocument = (t: number) => t === 7;
+  const isPdf = (t: number) => t === 12;
+  const isPdfForm = (t: number) => t === 25;
+  const isPresentation = (t: number) => t === 9;
+  const isSpreadsheet = (t: number) => t === 8;
+  const isVisio = (t: number) => t === 22;
+  const isXps = (t: number) => t === 21;
+  const getFileIconName = (type: number): string => {
+    if (isPdfForm(type)) return "pdf-form";
+    if (isPdf(type)) return "pdf";
+    if (isDjVu(type)) return "djvu";
+    if (isXps(type)) return "xps";
+    if (isSpreadsheet(type)) return "spreadsheets";
+    if (isDocument(type)) return "documents";
+    if (isPresentation(type)) return "presentations";
+    if (isVisio(type)) return "visio";
+    return "unknown-format";
+  };
+  return {
+    cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
+    isDjVu,
+    isDocument,
+    isPdf,
+    isPdfForm,
+    isPresentation,
+    isSpreadsheet,
+    isVisio,
+    isXps,
+    getFileIconName,
+  };
+});
 
 import { ComposerActionAttachment } from "../sub-components/ComposerActionAttachments";
 

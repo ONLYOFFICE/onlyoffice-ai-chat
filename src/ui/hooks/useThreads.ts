@@ -19,8 +19,8 @@ type UseThreadProps = {
  */
 const useThread = ({ isReady }: UseThreadProps) => {
   const { useThreadsStore, usePromptsStore } = useStores();
-  const { initThreads } = useThreadsStore();
-  const { initPrompts } = usePromptsStore();
+  const initThreads = useThreadsStore((s) => s.initThreads);
+  const initPrompts = usePromptsStore((s) => s.initPrompts);
   const { entityId } = useWidgetConfig();
 
   useEffect(() => {

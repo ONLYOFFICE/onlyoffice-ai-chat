@@ -41,6 +41,7 @@ describe("together/models/listModels", () => {
 
   it("maps REST response to Model[]", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
       json: () =>
         Promise.resolve([
           { id: "m1", type: "chat" },

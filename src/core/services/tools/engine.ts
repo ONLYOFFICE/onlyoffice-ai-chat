@@ -170,23 +170,22 @@ export class ToolsEngine {
   // ---------------------------------------------------------------------------
 
   async setAllowAlways(
-    serverType: string,
+    _serverType: string,
     toolName: string,
     value: boolean,
     entityId?: string
   ): Promise<void> {
-    const token = `${serverType}_${toolName}`;
     const current = await this.deps.storage.toolPrefs.readAllowAlways(entityId);
-    const has = current.includes(token);
+    const has = current.includes(toolName);
 
     if (value && !has) {
       await this.deps.storage.toolPrefs.upsertAllowAlways(
-        [...current, token],
+        [...current, toolName],
         entityId
       );
     } else if (!value && has) {
       await this.deps.storage.toolPrefs.upsertAllowAlways(
-        current.filter((t) => t !== token),
+        current.filter((t) => t !== toolName),
         entityId
       );
     }
@@ -197,11 +196,11 @@ export class ToolsEngine {
   }
 
   async isAllowAlways(
-    serverType: string,
+    _serverType: string,
     toolName: string,
     entityId?: string
   ): Promise<boolean> {
     const list = await this.deps.storage.toolPrefs.readAllowAlways(entityId);
-    return list.includes(`${serverType}_${toolName}`);
+    return list.includes(toolName);
   }
 }

@@ -15,6 +15,7 @@ describe("onlyoffice/models", () => {
   describe("listModels", () => {
     it("fetches from the ONLYOFFICE REST endpoint and maps ids", async () => {
       const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+        ok: true,
         json: () =>
           Promise.resolve({
             response: [
@@ -42,6 +43,7 @@ describe("onlyoffice/models", () => {
 
     it("falls back to json when `response` key is absent", async () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve([{ modelId: "m" }]),
       } as unknown as Response);
 

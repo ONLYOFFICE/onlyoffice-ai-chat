@@ -109,3 +109,15 @@ export const isPdfForm = (type: number) => {
 export const isVisio = (type: number) => {
   return !!(type & 0x4000);
 };
+
+export const getFileIconName = (type: number): string => {
+  if (isPdfForm(type)) return "pdf-form";
+  if (isPdf(type)) return "pdf";
+  if (isDjVu(type)) return "djvu";
+  if (isXps(type)) return "xps";
+  if (isSpreadsheet(type)) return "spreadsheets";
+  if (isDocument(type)) return "documents";
+  if (isPresentation(type)) return "presentations";
+  if (isVisio(type)) return "visio";
+  return "unknown-format";
+};

@@ -3,7 +3,7 @@ import { useStores } from "../../store/context";
 
 const EmptyScreen = () => {
   const { useRouter } = useStores();
-  const { goToChat } = useRouter();
+  const goToChat = useRouter((s) => s.goToChat);
 
   return (
     <div className="aui-root flex h-full bg-[var(--layout-background-color)]">

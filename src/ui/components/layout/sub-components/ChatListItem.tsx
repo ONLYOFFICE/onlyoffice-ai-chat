@@ -39,7 +39,6 @@ const ChatListItemComponent = ({
 
   const [newTitle, setNewTitle] = React.useState(thread.title);
 
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const { t } = useI18n();
@@ -97,7 +96,6 @@ const ChatListItemComponent = ({
 
   return (
     <div
-      ref={containerRef}
       key={thread.threadId}
       className={`cursor-pointer rounded-[4px] h-[36px] min-h-[36px] flex items-center justify-between ${
         isRenameInputVisible
@@ -179,10 +177,7 @@ const ChatListItemComponent = ({
                   onClick: onClearHistoryClick,
                 },
               ]}
-              side="right"
-              align="start"
               sideOffset={0}
-              containerRef={containerRef.current}
             />
           ) : null}
         </>

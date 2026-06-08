@@ -143,7 +143,8 @@ export function callRoute<
     return streamRoute(url, init) as unknown as ReturnType<EngineMethod<S, K>>;
   }
 
-  return fetch(url, init).then((res) => res.json()) as ReturnType<
-    EngineMethod<S, K>
-  >;
+  return fetch(url, init).then((res) => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    return res.json();
+  }) as ReturnType<EngineMethod<S, K>>;
 }

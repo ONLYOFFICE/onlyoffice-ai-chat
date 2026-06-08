@@ -290,4 +290,9 @@ export async function* processStream(
 
     yield responseMessage;
   }
+
+  // Stream closed without a `message_stop` event (network interruption,
+  // CDN timeout, etc.). Emit a terminal event so the caller finalizes
+  // the message in storage instead of leaving it in a "forever streaming" state.
+  yield { isEnd: true, responseMessage };
 }

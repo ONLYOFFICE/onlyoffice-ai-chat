@@ -253,26 +253,26 @@ describe("ToolsEngine allow-always", () => {
     const { storage, snapshot } = makeStorage();
     const engine = new ToolsEngine({ storage });
     await engine.setAllowAlways("mcp", "tool1", true);
-    expect(snapshot().allow).toEqual(["mcp_tool1"]);
+    expect(snapshot().allow).toEqual(["tool1"]);
   });
 
   it("setAllowAlways(true) is a no-op when already present", async () => {
     const { storage, snapshot } = makeStorage({
-      allow: ["mcp_tool1"],
+      allow: ["tool1"],
     });
     const engine = new ToolsEngine({ storage });
     await engine.setAllowAlways("mcp", "tool1", true);
-    expect(snapshot().allow).toEqual(["mcp_tool1"]);
+    expect(snapshot().allow).toEqual(["tool1"]);
     expect(storage.toolPrefs.upsertAllowAlways).not.toHaveBeenCalled();
   });
 
   it("setAllowAlways(false) removes a token when present", async () => {
     const { storage, snapshot } = makeStorage({
-      allow: ["mcp_tool1", "mcp_tool2"],
+      allow: ["tool1", "tool2"],
     });
     const engine = new ToolsEngine({ storage });
     await engine.setAllowAlways("mcp", "tool1", false);
-    expect(snapshot().allow).toEqual(["mcp_tool2"]);
+    expect(snapshot().allow).toEqual(["tool2"]);
   });
 
   it("setAllowAlways(false) is a no-op when absent", async () => {
@@ -284,9 +284,9 @@ describe("ToolsEngine allow-always", () => {
   });
 
   it("getAllowAlways + isAllowAlways", async () => {
-    const { storage } = makeStorage({ allow: ["a_b"] });
+    const { storage } = makeStorage({ allow: ["b"] });
     const engine = new ToolsEngine({ storage });
-    expect(await engine.getAllowAlways()).toEqual(["a_b"]);
+    expect(await engine.getAllowAlways()).toEqual(["b"]);
     expect(await engine.isAllowAlways("a", "b")).toBe(true);
     expect(await engine.isAllowAlways("a", "c")).toBe(false);
   });
@@ -347,7 +347,7 @@ describe("ToolsEngine entity scope", () => {
     const engine = new ToolsEngine({ storage });
     await engine.setAllowAlways("mcp", "tool1", true, "e1");
     expect(snapshot().allow).toEqual([]);
-    expect(entitySnapshot("e1")?.allow).toEqual(["mcp_tool1"]);
+    expect(entitySnapshot("e1")?.allow).toEqual(["tool1"]);
     expect(await engine.isAllowAlways("mcp", "tool1", "e1")).toBe(true);
     expect(await engine.isAllowAlways("mcp", "tool1")).toBe(false);
   });

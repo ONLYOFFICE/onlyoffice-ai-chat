@@ -28,9 +28,10 @@ vi.mock("../../../../widget-config", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useProfilesStore: () => ({
-      addProfile: mockAddProfile,
-    }),
+    useProfilesStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+      const state = { addProfile: mockAddProfile };
+      return selector ? selector(state) : state;
+    },
   }),
 }));
 

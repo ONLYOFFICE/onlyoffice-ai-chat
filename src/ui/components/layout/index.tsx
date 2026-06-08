@@ -7,9 +7,9 @@ import { Navigation } from "./sub-components/Header";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { useRouter, useCloudsStore } = useStores();
-  const { currentPage } = useRouter();
+  const currentPage = useRouter((s) => s.currentPage);
   const platform = usePlatform();
-  const { fetchClouds } = useCloudsStore();
+  const fetchClouds = useCloudsStore((s) => s.fetchClouds);
   const { isRTL } = useI18n();
 
   React.useLayoutEffect(() => {

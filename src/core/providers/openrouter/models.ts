@@ -8,35 +8,49 @@ import { openrouterInfo } from "./info";
 /** Shape of one entry in OpenRouter's `/models` response. */
 type OpenRouterModel = {
   id: string;
-  architecture?: { modality?: string };
+  architecture?: {
+    modality?: string;
+    input_modalities?: string[];
+    output_modalities?: string[];
+  };
   context_length?: number;
 };
 
 /**
- * Derive a capability bitmask from OpenRouter's modality string.
+ * Derive a capability bitmask from OpenRouter's modality fields.
  *
- * OpenRouter encodes I/O modalities as strings like
- * `"text+image->text"` (inputs on the left, outputs on the right,
- * `+`-joined). We parse those to decide whether a model can chat, see
- * images, hear audio, or produce images.
+ * Prefers the explicit `input_modalities` / `output_modalities` arrays
+ * (available since OpenRouter's extended model schema) and falls back
+ * to parsing the legacy `modality` string (`"text+image->text"`) when
+ * the arrays are absent.
  *
- * | contains                 | capabilities adds |
- * |--------------------------|-------------------|
- * | `embedding` (in or out)  | Embeddings (exclusive) |
- * | text out + text/image/audio in | Chat         |
- * | image in                 | Vision            |
- * | audio in                 | Audio             |
- * | image out + image in     | Image             |
+ * | modality                 | capabilities adds              |
+ * |--------------------------|--------------------------------|
+ * | `embedding` (in or out)  | Embeddings (exclusive)         |
+ * | text out + any text/image/audio/video in | Chat         |
+ * | image or video in        | Vision                         |
+ * | audio in                 | Audio                          |
+ * | image out + image in     | Image                          |
  *
  * If nothing matches, defaults to `Chat` so the model is still usable.
  */
 export const inferCapabilities = (model: OpenRouterModel): number => {
-  const modality = model.architecture?.modality ?? "";
-  if (!modality) return CapabilitiesUI.Chat;
+  const arch = model.architecture;
+  if (!arch) return CapabilitiesUI.Chat;
 
-  const [input, output] = modality.split("->");
-  const modIn = input?.split("+") ?? [];
-  const modOut = output?.split("+") ?? [];
+  let modIn: string[];
+  let modOut: string[];
+
+  if (arch.input_modalities || arch.output_modalities) {
+    modIn = arch.input_modalities ?? [];
+    modOut = arch.output_modalities ?? [];
+  } else {
+    const modality = arch.modality ?? "";
+    if (!modality) return CapabilitiesUI.Chat;
+    const [input, output] = modality.split("->");
+    modIn = input?.split("+") ?? [];
+    modOut = output?.split("+") ?? [];
+  }
 
   if (modIn.includes("embedding") || modOut.includes("embedding")) {
     return CapabilitiesUI.Embeddings;
@@ -47,14 +61,19 @@ export const inferCapabilities = (model: OpenRouterModel): number => {
     if (
       modIn.includes("text") ||
       modIn.includes("image") ||
+      modIn.includes("video") ||
       modIn.includes("audio")
     ) {
       caps |= CapabilitiesUI.Chat;
     }
-    if (modIn.includes("image")) caps |= CapabilitiesUI.Vision;
+    if (modIn.includes("image") || modIn.includes("video"))
+      caps |= CapabilitiesUI.Vision;
     if (modIn.includes("audio")) caps |= CapabilitiesUI.Audio;
   }
-  if (modOut.includes("image") && modIn.includes("image")) {
+  // Any model that can produce images gets the Image flag regardless of
+  // what it accepts as input — this covers both text-to-image (text in,
+  // image out) and image-editing (image in, image out) models.
+  if (modOut.includes("image")) {
     caps |= CapabilitiesUI.Image;
   }
   return caps || CapabilitiesUI.Chat;
@@ -100,6 +119,7 @@ export const listModels = async (
   const response = await (creds.fetch ?? fetch)(`${url}/models`, {
     headers: creds.apiKey ? { Authorization: `Bearer ${creds.apiKey}` } : {},
   });
+  if (!response.ok) return [];
   const json = await response.json();
   const models: OpenRouterModel[] = json.data ?? [];
 

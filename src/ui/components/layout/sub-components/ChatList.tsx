@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
 import { IconButton } from "../../icon-button";
@@ -16,7 +16,6 @@ const ChatList = () => {
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
 
   const [searchValue, setSearchValue] = React.useState("");
-  const [showingThreads, setShowingThreads] = React.useState(threads);
 
   const { t } = useI18n();
 
@@ -28,12 +27,13 @@ const ChatList = () => {
     []
   );
 
-  React.useEffect(() => {
-    const filteredThreads = threads.filter((thread) => {
-      return thread.title?.toLowerCase().includes(searchValue.toLowerCase());
-    });
-    setShowingThreads(filteredThreads);
-  }, [threads, searchValue]);
+  const showingThreads = useMemo(
+    () =>
+      threads.filter((thread) =>
+        thread.title?.toLowerCase().includes(searchValue.toLowerCase())
+      ),
+    [threads, searchValue]
+  );
 
   const isEmptyList = threads.length === 0;
 

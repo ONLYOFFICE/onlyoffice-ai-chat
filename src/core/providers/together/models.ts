@@ -45,6 +45,7 @@ export const listModels = async (
   const response = await (creds.fetch ?? fetch)(`${creds.baseUrl}/models`, {
     headers: { Authorization: `Bearer ${creds.apiKey}` },
   });
+  if (!response.ok) return [];
   const models: TogetherModel[] = await response.json();
 
   return models.map((m) => ({

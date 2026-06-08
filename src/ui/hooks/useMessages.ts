@@ -763,6 +763,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     [
       api,
       callbacksManager,
+      currentProfile?.id,
       entityId,
       extendedThinking,
       middlewareRunner,
@@ -860,7 +861,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setAbortController,
       systemPrompt,
       threadId,
-      tools,
       truncateMessagesAfter,
       useMessageStore,
       useServersStore,

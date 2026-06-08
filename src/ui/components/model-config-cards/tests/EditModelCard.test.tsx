@@ -23,12 +23,14 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useProfilesStore: () => ({
-      editProfile: mockEditProfile,
-    }),
-    useCloudsStore: () => ({
-      externalOnlyofficeConfig: undefined,
-    }),
+    useProfilesStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+      const state = { editProfile: mockEditProfile };
+      return selector ? selector(state) : state;
+    },
+    useCloudsStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+      const state = { externalOnlyofficeConfig: undefined };
+      return selector ? selector(state) : state;
+    },
   }),
 }));
 

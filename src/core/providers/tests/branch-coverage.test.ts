@@ -120,13 +120,13 @@ describe("zhipu inferCapabilities", () => {
 });
 
 describe("openrouter inferCapabilities — extra branches", () => {
-  it("falls back to Chat when output is image but input is not", () => {
+  it("returns Image when output modality is image", () => {
     expect(
       openrouterInferCapabilities({
         id: "x",
         architecture: { modality: "text->image" },
       })
-    ).toBe(CapabilitiesUI.Chat);
+    ).toBe(CapabilitiesUI.Image);
   });
 
   it("returns Embeddings when input is embedding", () => {

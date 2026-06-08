@@ -34,7 +34,7 @@ export const AddModelCard = ({
   const { Button, IconButton, Link, TooltipContent, Loader } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
-  const { addProfile } = useProfilesStore();
+  const addProfile = useProfilesStore((s) => s.addProfile);
   const { onProfileImportClick, onDownloadTemplate } = useWidgetConfig();
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

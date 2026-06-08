@@ -44,10 +44,14 @@ const mockCallbacksManager = { emit: vi.fn() };
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useCloudsStore: () => ({
-      cloudProviders: mockCloudProviders,
-      externalOnlyofficeConfig: mockStoreState.externalOnlyofficeConfig,
-    }),
+    useCloudsStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+      const state = {
+        cloudProviders: mockCloudProviders,
+        externalOnlyofficeConfig: mockStoreState.externalOnlyofficeConfig,
+        hiddenWebSearchProviders: undefined,
+      };
+      return selector ? selector(state) : state;
+    },
     api: mockApi,
     callbacksManager: mockCallbacksManager,
   }),

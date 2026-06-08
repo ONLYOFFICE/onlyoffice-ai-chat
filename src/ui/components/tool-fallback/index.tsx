@@ -19,19 +19,15 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   const [isResultCopied, setIsResultCopied] = useState(false);
 
   useEffect(() => {
-    if (isArgsCopied) {
-      setTimeout(() => {
-        setIsArgsCopied(false);
-      }, 2000);
-    }
+    if (!isArgsCopied) return;
+    const id = setTimeout(() => setIsArgsCopied(false), 2000);
+    return () => clearTimeout(id);
   }, [isArgsCopied]);
 
   useEffect(() => {
-    if (isResultCopied) {
-      setTimeout(() => {
-        setIsResultCopied(false);
-      }, 2000);
-    }
+    if (!isResultCopied) return;
+    const id = setTimeout(() => setIsResultCopied(false), 2000);
+    return () => clearTimeout(id);
   }, [isResultCopied]);
 
   const type = serversInstance.getServerType(toolName);

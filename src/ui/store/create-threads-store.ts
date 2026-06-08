@@ -121,7 +121,6 @@ export function createThreadsStore(deps: {
     },
 
     onSwitchToNewThread: () => {
-      console.trace("[ai-chat] onSwitchToNewThread CALLED");
       const previousThreadId = get().threadId;
       applyThreadContextFromThread(undefined);
       set({ threadId: "" });
@@ -140,7 +139,6 @@ export function createThreadsStore(deps: {
     },
 
     onSwitchToThread: (id) => {
-      console.log("[ai-chat] onSwitchToThread", id);
       const previousThreadId = get().threadId;
       const thread = get().threads.find((t) => t.threadId === id);
       applyThreadContextFromThread(thread);

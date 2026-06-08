@@ -47,8 +47,10 @@ export const EditModelCard = ({
   const { Button, Loader } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore, useCloudsStore } = useStores();
-  const { editProfile } = useProfilesStore();
-  const { externalOnlyofficeConfig } = useCloudsStore();
+  const editProfile = useProfilesStore((s) => s.editProfile);
+  const externalOnlyofficeConfig = useCloudsStore(
+    (s) => s.externalOnlyofficeConfig
+  );
   const initialValues = profileToFormValues(profile, externalOnlyofficeConfig);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

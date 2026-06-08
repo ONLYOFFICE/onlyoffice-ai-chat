@@ -14,7 +14,7 @@ type UseProfilesProps = {
  */
 const useProfiles = ({ isReady }: UseProfilesProps) => {
   const { useProfilesStore } = useStores();
-  const { init } = useProfilesStore();
+  const init = useProfilesStore((s) => s.init);
 
   useEffect(() => {
     if (!isReady) return;

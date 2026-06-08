@@ -30,8 +30,6 @@ const AvailableToolsItem = ({
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [isStoped, setIsStoped] = React.useState(false);
 
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
   const { useServersStore } = useStores();
   const changeToolStatus = useServersStore((s) => s.changeToolStatus);
   const changeAllToolStatus = useServersStore((s) => s.changeAllToolStatus);
@@ -117,7 +115,7 @@ const AvailableToolsItem = ({
             />
           ) : null}
         </div>
-        <div ref={containerRef}>
+        <div>
           {isLoadingAction ? (
             <Loader />
           ) : (
@@ -135,7 +133,6 @@ const AvailableToolsItem = ({
               side={isRTL ? "left" : "right"}
               align={isRTL ? "end" : "start"}
               sideOffset={0}
-              containerRef={containerRef.current}
             />
           )}
         </div>

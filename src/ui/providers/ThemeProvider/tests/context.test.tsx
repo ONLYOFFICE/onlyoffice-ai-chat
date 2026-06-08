@@ -36,7 +36,8 @@ vi.mock("../../PlatformProvider/context", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useThemeStore: () => themeStoreState,
+    useThemeStore: (selector?: (s: typeof themeStoreState) => unknown) =>
+      selector ? selector(themeStoreState) : themeStoreState,
   }),
 }));
 

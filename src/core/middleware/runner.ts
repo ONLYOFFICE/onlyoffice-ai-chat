@@ -1,3 +1,4 @@
+import logger from "../../shared/logger";
 import type {
   AfterToolResultContext,
   AfterToolResultResult,
@@ -72,15 +73,19 @@ export class MiddlewareRunner {
     let currentCtx = { ...ctx };
     for (const mw of this.middlewares) {
       if (!mw.beforeSend) continue;
-      const result = await mw.beforeSend(currentCtx);
-      if (result.action === "block") return result;
-      if (result.action === "continue") {
-        currentCtx = {
-          ...currentCtx,
-          ...(result.text !== undefined ? { text: result.text } : {}),
-          ...(result.files !== undefined ? { files: result.files } : {}),
-          ...(result.images !== undefined ? { images: result.images } : {}),
-        };
+      try {
+        const result = await mw.beforeSend(currentCtx);
+        if (result.action === "block") return result;
+        if (result.action === "continue") {
+          currentCtx = {
+            ...currentCtx,
+            ...(result.text !== undefined ? { text: result.text } : {}),
+            ...(result.files !== undefined ? { files: result.files } : {}),
+            ...(result.images !== undefined ? { images: result.images } : {}),
+          };
+        }
+      } catch (err) {
+        logger.error("Middleware beforeSend failed, skipping:", err);
       }
     }
     return {
@@ -104,10 +109,14 @@ export class MiddlewareRunner {
     let currentCtx = { ...ctx };
     for (const mw of this.middlewares) {
       if (!mw.onStreamChunk) continue;
-      const result = await mw.onStreamChunk(currentCtx);
-      if (result.action === "skip") return result;
-      if (result.action === "continue" && result.chunk) {
-        currentCtx = { ...currentCtx, chunk: result.chunk };
+      try {
+        const result = await mw.onStreamChunk(currentCtx);
+        if (result.action === "skip") return result;
+        if (result.action === "continue" && result.chunk) {
+          currentCtx = { ...currentCtx, chunk: result.chunk };
+        }
+      } catch (err) {
+        logger.error("Middleware onStreamChunk failed, skipping:", err);
       }
     }
     return { action: "continue", chunk: currentCtx.chunk };
@@ -128,11 +137,15 @@ export class MiddlewareRunner {
     let currentCtx = { ...ctx };
     for (const mw of this.middlewares) {
       if (!mw.beforeToolCall) continue;
-      const result = await mw.beforeToolCall(currentCtx);
-      if (result.action === "deny" || result.action === "approve")
-        return result;
-      if (result.action === "continue" && result.args) {
-        currentCtx = { ...currentCtx, toolArgs: result.args };
+      try {
+        const result = await mw.beforeToolCall(currentCtx);
+        if (result.action === "deny" || result.action === "approve")
+          return result;
+        if (result.action === "continue" && result.args) {
+          currentCtx = { ...currentCtx, toolArgs: result.args };
+        }
+      } catch (err) {
+        logger.error("Middleware beforeToolCall failed, skipping:", err);
       }
     }
     return { action: "continue", args: currentCtx.toolArgs };
@@ -154,10 +167,14 @@ export class MiddlewareRunner {
     let currentCtx = { ...ctx };
     for (const mw of this.middlewares) {
       if (!mw.afterToolResult) continue;
-      const result = await mw.afterToolResult(currentCtx);
-      if (result.action === "skip") return result;
-      if (result.action === "continue" && result.result !== undefined) {
-        currentCtx = { ...currentCtx, result: result.result };
+      try {
+        const result = await mw.afterToolResult(currentCtx);
+        if (result.action === "skip") return result;
+        if (result.action === "continue" && result.result !== undefined) {
+          currentCtx = { ...currentCtx, result: result.result };
+        }
+      } catch (err) {
+        logger.error("Middleware afterToolResult failed, skipping:", err);
       }
     }
     return { action: "continue", result: currentCtx.result };
@@ -179,10 +196,14 @@ export class MiddlewareRunner {
     let currentCtx = { ...ctx };
     for (const mw of this.middlewares) {
       if (!mw.beforeDisplay) continue;
-      const result = await mw.beforeDisplay(currentCtx);
-      if (result.action === "skip") return result;
-      if (result.action === "continue" && result.message) {
-        currentCtx = { ...currentCtx, message: result.message };
+      try {
+        const result = await mw.beforeDisplay(currentCtx);
+        if (result.action === "skip") return result;
+        if (result.action === "continue" && result.message) {
+          currentCtx = { ...currentCtx, message: result.message };
+        }
+      } catch (err) {
+        logger.error("Middleware beforeDisplay failed, skipping:", err);
       }
     }
     return { action: "continue", message: currentCtx.message };
@@ -202,8 +223,12 @@ export class MiddlewareRunner {
   async runOnError(ctx: ErrorContext): Promise<ErrorResult> {
     for (const mw of this.middlewares) {
       if (!mw.onError) continue;
-      const result = await mw.onError(ctx);
-      if (result.action !== "default") return result;
+      try {
+        const result = await mw.onError(ctx);
+        if (result.action !== "default") return result;
+      } catch (err) {
+        logger.error("Middleware onError failed, skipping:", err);
+      }
     }
     return { action: "default" };
   }

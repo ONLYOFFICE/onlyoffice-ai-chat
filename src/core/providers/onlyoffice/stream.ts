@@ -1,4 +1,5 @@
 import type OpenAI from "openai";
+import logger from "../../../shared/logger";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
 
 /**
@@ -104,7 +105,8 @@ const buildAsyncIterable = (body: ReadableStream<Uint8Array>) => {
 
           try {
             ({ value, done } = await reader.read());
-          } catch {
+          } catch (err) {
+            logger.error("ONLYOFFICE stream read error:", err);
             break;
           }
 

@@ -38,6 +38,7 @@ export const listModels = async (
     { headers }
   );
 
+  if (!response.ok) return [];
   const json = await response.json();
   const models: OnlyOfficeModel[] = json.response ?? json;
 

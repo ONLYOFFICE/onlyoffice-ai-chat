@@ -64,12 +64,15 @@ function setupStores(overrides: {
   currentProfile?: { id: string; name: string } | null;
 }) {
   mockUseStores.mockReturnValue({
-    useMessageStore: () => ({
-      isStreamRunning: overrides.isStreamRunning ?? false,
-    }),
+    useMessageStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+      const state = {
+        isStreamRunning: overrides.isStreamRunning ?? false,
+      };
+      return selector ? selector(state) : state;
+    },
     useProfilesStore: (selector?: unknown) => {
       if (typeof selector === "function") {
-        return overrides.currentProfile ?? null;
+        return (selector as (s: unknown) => unknown)({});
       }
       return {};
     },

@@ -54,13 +54,7 @@ const ModelCard = ({
     }
   }, [onDeleteProfile, deleteProfile, profile]);
 
-  const [containerElement, setContainerElement] =
-    React.useState<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = React.useState(false);
-
-  const containerRef = React.useCallback((node: HTMLDivElement | null) => {
-    setContainerElement(node);
-  }, []);
 
   // External profiles are host-managed: their transport lives in
   // PlatformAdapter.externalFetch, so editing connection fields in the
@@ -121,7 +115,7 @@ const ModelCard = ({
         </div>
       </div>
       {!isReadOnly && (
-        <div className="flex items-center justify-end" ref={containerRef}>
+        <div className="flex items-center justify-end">
           <DropdownMenu
             onOpenChange={setIsOpen}
             trigger={
@@ -155,10 +149,7 @@ const ModelCard = ({
                 onClick: requestDelete,
               },
             ]}
-            side={isRTL ? "left" : "right"}
-            align={isRTL ? "end" : "start"}
             sideOffset={0}
-            containerRef={containerElement}
           />
         </div>
       )}

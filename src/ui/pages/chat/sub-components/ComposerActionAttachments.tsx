@@ -4,16 +4,7 @@ import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
 import { useToolsContext } from "../../../tools/context";
-import {
-  isDjVu,
-  isDocument,
-  isPdf,
-  isPdfForm,
-  isPresentation,
-  isSpreadsheet,
-  isVisio,
-  isXps,
-} from "../../../../shared/utils";
+import { getFileIconName, isSpreadsheet } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 
@@ -23,18 +14,6 @@ import { useWidgetConfig } from "../../../../widget-config";
 // `disabledTools["web-search"]` directly.
 const WEB_SEARCH_TYPE = "web-search";
 const WEB_SEARCH_TOOL_NAMES = ["web_search", "web_crawling"];
-
-const getFileIconName = (type: number): string => {
-  if (isPdfForm(type)) return "pdf-form";
-  if (isPdf(type)) return "pdf";
-  if (isDjVu(type)) return "djvu";
-  if (isXps(type)) return "xps";
-  if (isSpreadsheet(type)) return "spreadsheets";
-  if (isDocument(type)) return "documents";
-  if (isPresentation(type)) return "presentations";
-  if (isVisio(type)) return "visio";
-  return "unknown-format";
-};
 
 const ComposerActionAttachment = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();

@@ -153,7 +153,9 @@ async function webCrawling(
       const response = await fetch(url.href, {
         method: "POST",
         headers,
-        body: JSON.stringify({ url: (args.urls as string[])[0] }),
+        body: JSON.stringify({
+          url: Array.isArray(args.urls) ? (args.urls as string[])[0] ?? "" : "",
+        }),
       });
       return await formatResponse(response);
     } catch (e) {

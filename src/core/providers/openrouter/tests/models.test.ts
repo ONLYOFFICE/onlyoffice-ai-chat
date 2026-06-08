@@ -38,6 +38,26 @@ describe("openrouter/models/inferCapabilities", () => {
       })
     ).toBe(CapabilitiesUI.Image);
   });
+  it("sets Image for text-to-image models (image out only)", () => {
+    expect(
+      inferCapabilities({
+        id: "x",
+        architecture: { modality: "text->image" },
+      })
+    ).toBe(CapabilitiesUI.Image);
+  });
+  it("uses input_modalities/output_modalities arrays over modality string", () => {
+    expect(
+      inferCapabilities({
+        id: "x",
+        architecture: {
+          modality: "text->text",
+          input_modalities: ["text", "image"],
+          output_modalities: ["text"],
+        },
+      })
+    ).toBe(CapabilitiesUI.Chat | CapabilitiesUI.Vision);
+  });
 });
 
 describe("openrouter/models/checkCredentials", () => {
@@ -103,6 +123,7 @@ describe("openrouter/models/listModels", () => {
 
   it("maps `data` entries to Model[]", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
       json: () =>
         Promise.resolve({
           data: [{ id: "foo/bar" }, { id: "baz/qux" }],
@@ -118,6 +139,7 @@ describe("openrouter/models/listModels", () => {
 
   it("omits Authorization when no apiKey", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve({ data: [] }),
     } as unknown as Response);
     await listModels({ baseUrl: "https://x" });

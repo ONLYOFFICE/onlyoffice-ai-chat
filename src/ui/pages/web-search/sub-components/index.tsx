@@ -38,8 +38,13 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const { eventBus } = useToolsContext();
   const { useCloudsStore, api, callbacksManager } = useStores();
   const { entityId } = useWidgetConfig();
-  const { cloudProviders, externalOnlyofficeConfig, hiddenWebSearchProviders } =
-    useCloudsStore();
+  const cloudProviders = useCloudsStore((s) => s.cloudProviders);
+  const externalOnlyofficeConfig = useCloudsStore(
+    (s) => s.externalOnlyofficeConfig
+  );
+  const hiddenWebSearchProviders = useCloudsStore(
+    (s) => s.hiddenWebSearchProviders
+  );
   const hiddenWebSearchSet = React.useMemo(
     () => new Set<string>(hiddenWebSearchProviders ?? []),
     [hiddenWebSearchProviders]

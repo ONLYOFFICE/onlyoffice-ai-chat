@@ -69,8 +69,7 @@ const ComboBox = ({
       trigger={
         <div
           data-testid={dataTestId}
-          // eslint-disable-next-line no-console
-          onClick={() => console.log("[ComboBox] trigger clicked", { disabled, itemsCount: items.length })}
+          onClick={undefined}
           className={cn(
             "h-[36px] rounded-[var(--input-border-radius)] ps-[12px] box-border",
             "cursor-pointer flex items-center justify-between",

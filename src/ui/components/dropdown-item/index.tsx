@@ -1,5 +1,5 @@
 import { Item } from "@radix-ui/react-dropdown-menu";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { cn } from "../../../shared/utils";
 import { useTheme } from "../../providers/ThemeProvider/context";
@@ -47,6 +47,16 @@ const DropDownItem = ({
 
   const itemRef = useRef<HTMLDivElement | null>(null);
   const submenuRef = useRef<HTMLDivElement | null>(null);
+  const mouseMoveRef = useRef<((e: MouseEvent) => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (mouseMoveRef.current) {
+        window.removeEventListener("mousemove", mouseMoveRef.current);
+        mouseMoveRef.current = null;
+      }
+    };
+  }, []);
 
   if (isSeparator)
     return (
@@ -116,6 +126,7 @@ const DropDownItem = ({
     if (!isInsideItem && !isInsideSubmenu && !isInsideNestedDropdown) {
       setIsSubMenuOpen(false);
       window.removeEventListener("mousemove", handleMouseMove);
+      mouseMoveRef.current = null;
     }
   };
 
@@ -152,6 +163,7 @@ const DropDownItem = ({
     setSubmenuSide(side);
     setSubmenuAlign(align);
     setIsSubMenuOpen(true);
+    mouseMoveRef.current = handleMouseMove;
     window.addEventListener("mousemove", handleMouseMove);
   };
 

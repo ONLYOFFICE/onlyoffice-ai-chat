@@ -24,6 +24,7 @@ describe("OpenRouterProvider", () => {
 
   it("delegates getProviderModels", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve({ data: [{ id: "x/y" }] }),
     } as unknown as Response);
     const out = await OpenRouterProvider.getProviderModels({

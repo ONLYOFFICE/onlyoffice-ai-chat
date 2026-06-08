@@ -27,7 +27,9 @@ const mockProfilesState = {
 };
 
 const mockStores = {
-  useProfilesStore: vi.fn(() => mockProfilesState),
+  useProfilesStore: vi.fn((selector?: (s: typeof mockProfilesState) => unknown) =>
+    selector ? selector(mockProfilesState) : mockProfilesState
+  ),
 };
 
 vi.mock("../../store/context", () => ({

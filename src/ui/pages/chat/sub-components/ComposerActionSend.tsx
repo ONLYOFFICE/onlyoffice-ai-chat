@@ -9,7 +9,7 @@ const ComposerActionSend = () => {
   const { IconButton } = useComponents();
   const { useMessageStore, useProfilesStore, selectCurrentChatProfile } =
     useStores();
-  const { isStreamRunning } = useMessageStore();
+  const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
 
   return isStreamRunning ? (

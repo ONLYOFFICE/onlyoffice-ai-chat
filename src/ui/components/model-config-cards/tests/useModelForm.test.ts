@@ -8,11 +8,15 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
-vi.mock("../../../store/context", () => ({
-  useStores: () => ({
-    useCloudsStore: () => ({ externalOnlyofficeConfig: undefined }),
-  }),
-}));
+vi.mock("../../../store/context", () => {
+  const cloudsState = { externalOnlyofficeConfig: undefined };
+  return {
+    useStores: () => ({
+      useCloudsStore: (selector?: (s: typeof cloudsState) => unknown) =>
+        selector ? selector(cloudsState) : cloudsState,
+    }),
+  };
+});
 
 vi.mock("../../../../core/providers", () => ({
   getProvider: () => ({

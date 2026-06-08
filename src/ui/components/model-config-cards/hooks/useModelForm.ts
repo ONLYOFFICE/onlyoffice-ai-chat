@@ -32,7 +32,9 @@ export const useModelForm = (initialValues: ModelFormValues) => {
   const { t } = useI18n();
   const api = useApi();
   const { useCloudsStore } = useStores();
-  const { externalOnlyofficeConfig } = useCloudsStore();
+  const externalOnlyofficeConfig = useCloudsStore(
+    (s) => s.externalOnlyofficeConfig
+  );
   const [values, setValues] = useState<ModelFormValues>(initialValues);
   const [models, setModels] = useState<Model[]>([]);
   const [isLoading, setIsLoading] = useState(false);

@@ -21,12 +21,13 @@ const Composer = () => {
 
   useEffect(() => {
     if (!composerBridge) return;
-    composerBridge.current.setText = (text: string) => {
+    const bridge = composerBridge.current;
+    bridge.setText = (text: string) => {
       composerRuntime.setText(text);
     };
     return () => {
-      if (composerBridge.current.setText) {
-        composerBridge.current.setText = null;
+      if (bridge.setText) {
+        bridge.setText = null;
       }
     };
   }, [composerBridge, composerRuntime]);

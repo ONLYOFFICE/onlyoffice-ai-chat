@@ -79,8 +79,11 @@ export const ThemeProvider = ({
 }: ThemeProviderProps) => {
   const platform = usePlatform();
   const { useThemeStore } = useStores();
-  const { themeId, themeType, scale, setThemeId, initFromPlatform } =
-    useThemeStore();
+  const themeId = useThemeStore((s) => s.themeId);
+  const themeType = useThemeStore((s) => s.themeType);
+  const scale = useThemeStore((s) => s.scale);
+  const setThemeId = useThemeStore((s) => s.setThemeId);
+  const initFromPlatform = useThemeStore((s) => s.initFromPlatform);
 
   // --- Initialize from platform on first render ---
   initFromPlatform();

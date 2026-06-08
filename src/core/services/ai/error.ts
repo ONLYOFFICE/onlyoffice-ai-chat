@@ -83,7 +83,7 @@ function classifyErrorCode(err: Error): string {
  * through returns an equivalent payload.
  */
 export function toChatError(err: unknown): ChatErrorPayload {
-  if (err == null) {
+  if (err === null || err === undefined) {
     return { code: "unknown", message: "Unknown error" };
   }
 
@@ -100,7 +100,7 @@ export function toChatError(err: unknown): ChatErrorPayload {
     const message = err.message || code;
     const payload: ChatErrorPayload = { code, message };
     const cause = (err as { cause?: unknown }).cause;
-    if (cause != null && cause !== err) {
+    if (cause !== null && cause !== undefined && cause !== err) {
       payload.cause = toChatError(cause);
     }
     return payload;
@@ -113,7 +113,7 @@ export function toChatError(err: unknown): ChatErrorPayload {
       code: obj.code,
       message: obj.message,
     };
-    if (obj.cause != null) {
+    if (obj.cause !== null && obj.cause !== undefined) {
       payload.cause = toChatError(obj.cause);
     }
     return payload;

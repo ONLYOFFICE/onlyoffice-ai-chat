@@ -80,9 +80,14 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
   React.useEffect(() => {
     if (!open) return;
 
+    let cancelled = false;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+
     const initializeEditor = async () => {
+      if (cancelled) return;
       if (editorRef.current && !viewRef.current) {
         const mcpServers = (await getConfig()) ?? {};
+        if (cancelled) return;
         const initialDoc = JSON.stringify({ mcpServers }, null, 2);
 
         initialDocRef.current = initialDoc;
@@ -135,14 +140,16 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
           state,
           parent: editorRef.current,
         });
-      } else {
-        setTimeout(initializeEditor, 100);
+      } else if (!cancelled) {
+        timerId = setTimeout(initializeEditor, 100);
       }
     };
 
-    setTimeout(initializeEditor, 50);
+    timerId = setTimeout(initializeEditor, 50);
 
     return () => {
+      cancelled = true;
+      clearTimeout(timerId);
       if (viewRef.current) {
         viewRef.current.destroy();
         viewRef.current = null;

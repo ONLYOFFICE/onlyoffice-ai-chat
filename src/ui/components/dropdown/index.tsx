@@ -30,23 +30,11 @@ const DropdownMenuComponent = ({
 
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
-      // eslint-disable-next-line no-console
-      console.log("[DropdownMenu] onOpenChange fired", { isOpen, hasTrigger: !!triggerRef.current, sideProp: side });
-
       if (isOpen && triggerRef.current) {
         const rect = triggerRef.current.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
         const decided = spaceBelow >= spaceAbove ? "bottom" : "top";
-        // eslint-disable-next-line no-console
-        console.log("[DropdownMenu] position calc", {
-          rect: { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right },
-          windowInnerHeight: window.innerHeight,
-          spaceBelow,
-          spaceAbove,
-          decided,
-          sidePropOverride: side ?? null,
-        });
         if (!side) {
           autoSideRef.current = decided;
         }
@@ -60,9 +48,6 @@ const DropdownMenuComponent = ({
               ? "start"
               : "end";
         }
-      } else if (isOpen) {
-        // eslint-disable-next-line no-console
-        console.warn("[DropdownMenu] opened but triggerRef.current is null — side stays", autoSideRef.current);
       }
 
       onOpenChange?.(isOpen);
@@ -72,9 +57,6 @@ const DropdownMenuComponent = ({
 
   const effectiveSide = (side ?? autoSideRef.current) as "top" | "bottom";
   const effectiveAlign = (align ?? autoAlignRef.current) as "start" | "end";
-
-  // eslint-disable-next-line no-console
-  console.log("[DropdownMenu] render", { effectiveSide, effectiveAlign, sideProp: side, alignProp: align, autoSideRef: autoSideRef.current });
 
   return (
     <DropdownMenu.Root

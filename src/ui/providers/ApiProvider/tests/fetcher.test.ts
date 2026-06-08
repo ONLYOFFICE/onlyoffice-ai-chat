@@ -103,6 +103,7 @@ describe("callRoute", () => {
 
     it("issues POST with single-arg JSON body and merged headers", async () => {
       fetchMock.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({ ok: true }),
       });
       const cfg: ServerAPIConfig = {
@@ -124,6 +125,7 @@ describe("callRoute", () => {
 
     it("serializes multi-arg payloads as an array", async () => {
       fetchMock.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve(null),
       });
       await callRoute(config, "threads", "appendUserMessage", [
@@ -137,6 +139,7 @@ describe("callRoute", () => {
 
     it("omits body for GET routes (no body, no Content-Type)", async () => {
       fetchMock.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve([]),
       });
       await callRoute(config, "threads", "list", [] as never);
@@ -149,6 +152,7 @@ describe("callRoute", () => {
 
     it("forwards headers on GET requests when configured", async () => {
       fetchMock.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve([]),
       });
       const cfg: ServerAPIConfig = {
@@ -163,6 +167,7 @@ describe("callRoute", () => {
 
     it("does not set body or headers on POST with empty args", async () => {
       fetchMock.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve(null),
       });
       // Override webSearch.isConfigured to POST so we exercise the
@@ -187,6 +192,7 @@ describe("callRoute", () => {
     it("falls back to remote even when engines provided if origin+baseUrl set", async () => {
       const engines = makeEngines();
       fetchMock.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve("remote"),
       });
       const res = await callRoute(
@@ -336,7 +342,7 @@ describe("callRoute", () => {
 
     it("non-streaming methods on the same service still parse as JSON", async () => {
       fetchMock.mockResolvedValue({
-        ok: true,
+        ok: true as const,
         json: () => Promise.resolve({ ok: true }),
       });
       const res = await callRoute(config, "ai", "send", [{ q: 1 }] as never);

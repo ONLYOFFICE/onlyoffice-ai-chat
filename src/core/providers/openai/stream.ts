@@ -166,7 +166,9 @@ export const handleText = (
     content.push({ type: "text", text: delta });
   } else if (lastPart.type === "text") {
     content[content.length - 1] = { ...lastPart, text: lastPart.text + delta };
-  } else if (lastPart.type === "reasoning") {
+  } else {
+    // After reasoning, tool-call, or any other non-text part, start a
+    // new text part so the delta is not silently dropped.
     content.push({ type: "text", text: delta });
   }
 

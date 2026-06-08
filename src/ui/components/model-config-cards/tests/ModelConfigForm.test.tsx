@@ -10,32 +10,41 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
-vi.mock("../../../store/context", () => ({
-  useStores: () => ({
-    provider: {
-      getProvidersInfo: () => [
-        { type: "openai", name: "OpenAI", baseUrl: "https://api.openai.com" },
-        {
-          type: "anthropic",
-          name: "Anthropic",
-          baseUrl: "https://api.anthropic.com",
-        },
-      ],
-      getProviderInfo: (type: string) => ({
-        name: type === "openai" ? "OpenAI" : "Anthropic",
-      }),
-    },
-    useCloudsStore: () => ({
-      cloudProviders: [
-        {
-          label: "Cloud One",
-          url: "https://cloud.example.com",
-          apiKey: "ck-123",
-        },
-      ],
+vi.mock("../../../store/context", () => {
+  const cloudsState = {
+    cloudProviders: [
+      {
+        label: "Cloud One",
+        url: "https://cloud.example.com",
+        apiKey: "ck-123",
+      },
+    ],
+  };
+  return {
+    useStores: () => ({
+      provider: {
+        getProvidersInfo: () => [
+          {
+            type: "openai",
+            name: "OpenAI",
+            baseUrl: "https://api.openai.com",
+          },
+          {
+            type: "anthropic",
+            name: "Anthropic",
+            baseUrl: "https://api.anthropic.com",
+          },
+        ],
+        getProviderInfo: (type: string) => ({
+          name: type === "openai" ? "OpenAI" : "Anthropic",
+        }),
+      },
+      useCloudsStore: (
+        selector?: (s: typeof cloudsState) => unknown
+      ) => (selector ? selector(cloudsState) : cloudsState),
     }),
-  }),
-}));
+  };
+});
 
 vi.mock("../../combo-box", () => ({
   ComboBox: ({

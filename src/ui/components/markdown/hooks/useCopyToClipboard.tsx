@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePlatform } from "../../../providers/PlatformProvider";
 
 const useCopyToClipboard = ({
@@ -8,19 +8,31 @@ const useCopyToClipboard = ({
 } = {}) => {
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const { copyToClipboard: platformCopy } = usePlatform();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const copyToClipboard = (value: string) => {
-    if (!value) return;
+  useEffect(() => {
+    return () => clearTimeout(timerRef.current);
+  }, []);
 
-    const writer = platformCopy
-      ? () => Promise.resolve(platformCopy(value))
-      : () => navigator.clipboard.writeText(value);
+  const copyToClipboard = useCallback(
+    (value: string) => {
+      if (!value) return;
 
-    writer().then(() => {
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), copiedDuration);
-    });
-  };
+      const writer = platformCopy
+        ? () => Promise.resolve(platformCopy(value))
+        : () => navigator.clipboard.writeText(value);
+
+      writer().then(() => {
+        setIsCopied(true);
+        clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(
+          () => setIsCopied(false),
+          copiedDuration
+        );
+      });
+    },
+    [platformCopy, copiedDuration]
+  );
 
   return { isCopied, copyToClipboard };
 };
