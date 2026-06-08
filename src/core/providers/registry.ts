@@ -30,12 +30,12 @@ export type BaseProvider = ProviderConstructor;
 
 const builtinProviders: Record<ProviderType, ProviderConstructor> = {
   onlyoffice: OnlyOfficeProvider,
+  openrouter: OpenRouterProvider,
   anthropic: AnthropicProvider,
   ollama: OllamaProvider,
   openai: OpenAIProvider,
   openaicompatible: OpenAICompatibleProvider,
   together: TogetherProvider,
-  openrouter: OpenRouterProvider,
   genai: GenAIProvider,
   deepseek: DeepSeekProvider,
   xai: XAIProvider,
