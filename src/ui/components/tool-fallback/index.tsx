@@ -35,7 +35,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   }, [isResultCopied]);
 
   const type = serversInstance.getServerType(toolName);
-  const name = toolName.replace(`${type}_`, "");
+  const name = type ? toolName.replace(`${type}_`, "") : toolName;
 
   const isLoading = result === undefined;
 

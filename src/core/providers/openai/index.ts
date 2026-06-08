@@ -214,6 +214,12 @@ class OpenAIProvider extends AbstractBaseProvider {
       ? (candidate as OpenAIImageSize)
       : "1024x1024";
 
+    // `gpt-image-*` models always return base64 and reject the
+    // `response_format` parameter ("400 Unknown parameter: 'response_format'").
+    // `dall-e-*` models default to returning a URL, so they still need
+    // `response_format: "b64_json"` to get inline base64.
+    const isGptImage = model.includes("gpt-image");
+
     try {
       const response = await this.client.images.generate(
         {
@@ -221,7 +227,7 @@ class OpenAIProvider extends AbstractBaseProvider {
           prompt,
           n: 1,
           size,
-          response_format: "b64_json",
+          ...(isGptImage ? {} : { response_format: "b64_json" }),
         },
         { signal }
       );

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.60
+
+### Fixed
+
+- `generate_image` result was not displayed: `ToolFallback` stripped the first `_` from the tool name when `getServerType` returned `""` (engine-side built-in tools are not registered in the UI `Servers` instance), turning `"generate_image"` into `"generateimage"` and failing the `isImageGeneration` check. Fixed by preserving the original name when no server type is found.
+
+## 0.4.59
+
+### Fixed
+
+- OpenAI image generation failed with `400 Unknown parameter: 'response_format'` on `gpt-image-*` models — the provider always sent `response_format: "b64_json"`. It's now sent only for `dall-e-*` models; `gpt-image-*` returns base64 without it.
+
+## 0.4.58
+
+### Changed
+
+- Added debug logging around the image-generation tool: `callImageGenerationTool` logs the tool call + args, and `OpenRouter.imageGeneration` logs the model + prompt when the provider request fires. Temporary instrumentation for diagnosing a hang.
+
 ## 0.4.57
 
 ### Changed

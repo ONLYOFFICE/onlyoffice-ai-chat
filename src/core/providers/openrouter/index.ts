@@ -45,6 +45,7 @@ class OpenRouterProvider extends OpenAIProvider {
    */
   override async imageGeneration(args: ImageGenerationArgs): Promise<string> {
     const { model, prompt, signal } = args;
+    logger.info("[OpenRouter.imageGeneration] called", { model, prompt });
     try {
       const response = await this.client.chat.completions.create(
         {

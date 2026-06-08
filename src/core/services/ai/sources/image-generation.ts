@@ -60,6 +60,8 @@ export async function callImageGenerationTool(
   bareName: string,
   args: Record<string, unknown>
 ): Promise<string> {
+  logger.info("[generate_image] tool called", { bareName, args });
+
   if (bareName !== "generate_image") {
     return JSON.stringify({ error: `Unknown tool: ${bareName}` });
   }
