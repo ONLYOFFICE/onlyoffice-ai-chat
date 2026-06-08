@@ -245,6 +245,9 @@ export const useModelForm = (initialValues: ModelFormValues) => {
         valuesRef.current.baseUrl,
         {
           isCloudProvider: values.isCloudProvider,
+          // Keep the currently selected model if the new key's list still
+          // includes it; otherwise fall back to the first available model.
+          keepModelIfExists: true,
         }
       );
       if (
