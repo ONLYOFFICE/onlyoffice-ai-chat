@@ -12,6 +12,8 @@ export type ComboBoxProps = {
   withoutBg?: boolean;
   disabled?: boolean;
   items: DropDownItemProps[];
+  searchable?: boolean;
+  searchPlaceholder?: string;
   "data-testid"?: string;
 };
 
@@ -23,19 +25,52 @@ const ComboBox = ({
   withoutBg,
   disabled,
   items,
+  searchable,
+  searchPlaceholder,
   "data-testid": dataTestId,
 }: ComboBoxProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const handleOpenChange = (next: boolean) => {
+    if (!next) setSearchQuery("");
+    setIsOpen(next);
+  };
+
+  const visibleItems =
+    searchable && searchQuery
+      ? items.filter((item) =>
+          item.text.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : items;
+
+  const searchHeader = searchable ? (
+    <div className="px-[8px] pb-[4px]">
+      <input
+        autoFocus
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={(e) => e.stopPropagation()}
+        placeholder={searchPlaceholder}
+        className={cn(
+          "w-full h-[32px] px-[8px] rounded-[4px]",
+          "text-[14px] leading-[16px] text-[var(--input-color)]",
+          "bg-[var(--input-background-color)] border border-[var(--input-border-color)]",
+          "placeholder:text-[var(--input-placeholder-color)]",
+          "focus:outline-none focus:border-[var(--input-active-border-color)]"
+        )}
+      />
+    </div>
+  ) : undefined;
 
   return (
     <DropdownMenu
-      onOpenChange={(value: boolean) => setIsOpen(value)}
+      onOpenChange={handleOpenChange}
       trigger={
         <div
-          ref={containerRef}
           data-testid={dataTestId}
+          // eslint-disable-next-line no-console
+          onClick={() => console.log("[ComboBox] trigger clicked", { disabled, itemsCount: items.length })}
           className={cn(
             "h-[36px] rounded-[var(--input-border-radius)] ps-[12px] box-border",
             "cursor-pointer flex items-center justify-between",
@@ -78,11 +113,9 @@ const ComboBox = ({
           </div>
         </div>
       }
-      align="start"
-      side="bottom"
-      containerRef={containerRef.current}
       matchTriggerWidth={true}
-      items={items}
+      headerContent={searchHeader}
+      items={visibleItems}
     />
   );
 };

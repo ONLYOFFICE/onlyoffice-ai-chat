@@ -9,6 +9,30 @@ import {
 import type { Model, ProviderType } from "../../../../types";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../tooltip";
+import { CapabilitiesUI } from "../../../../capabilities";
+import { Icon } from "../../icon";
+
+const MODEL_CAPABILITY_ICONS: Array<{ flag: number; name: string }> = [
+  { flag: CapabilitiesUI.Image, name: "image-generation" },
+  { flag: CapabilitiesUI.Vision, name: "vision-ai" },
+  { flag: CapabilitiesUI.Tools, name: "tools" },
+];
+
+const ModelCapabilityIcons = ({ model }: { model: Model }) => {
+  const caps = model.capabilities ?? 0;
+  const icons = MODEL_CAPABILITY_ICONS.filter(
+    ({ flag }) => (caps & flag) !== 0
+  ).map(({ name }) => name);
+  if (model.reasoning) icons.push("btn-extended-thinking");
+  if (!icons.length) return null;
+  return (
+    <div className="flex items-center gap-[2px] shrink-0 opacity-60">
+      {icons.map((name) => (
+        <Icon key={name} name={name} size={14} />
+      ))}
+    </div>
+  );
+};
 
 export interface ModelFormValues {
   provider: string;
@@ -129,6 +153,7 @@ export const ModelConfigForm = ({
       text: m.name,
       id: m.id,
       onClick: () => onChange("model", m.id),
+      trailingIcon: <ModelCapabilityIcons model={m} />,
     }));
 
   const isExternalOnlyoffice =
@@ -291,6 +316,8 @@ export const ModelConfigForm = ({
           disabled={
             !values.provider || models.length === 0 || showOnlyofficeAISetupHint
           }
+          searchable={models.length > 50}
+          searchPlaceholder={t("Search")}
           items={modelItems}
         />
       </FieldContainer>

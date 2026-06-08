@@ -4,6 +4,7 @@ import type { DropDownItemProps } from "../dropdown-item/DropDownItem.types";
 export type DropdownMenuProps = {
   trigger: React.ReactNode;
   items: DropDownItemProps[];
+  headerContent?: React.ReactNode;
   side?: "bottom" | "top" | "left" | "right";
   align?: "start" | "center" | "end";
   sideOffset?: number;
@@ -12,7 +13,6 @@ export type DropdownMenuProps = {
   maxWidth?: number | string;
   matchTriggerWidth?: boolean;
   open?: boolean;
-  containerRef?: HTMLDivElement | null;
   dropdownRef?: React.RefObject<HTMLDivElement | null>;
   onOpenChange?: (open: boolean) => void;
 };

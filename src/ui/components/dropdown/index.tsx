@@ -1,5 +1,5 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { cn } from "../../../shared/utils";
 import { useTheme } from "../../providers/ThemeProvider/context";
@@ -19,51 +19,62 @@ const DropdownMenuComponent = ({
   open,
   dropdownRef,
   onOpenChange,
+  headerContent,
 }: DropdownMenuProps) => {
   const { isRTL } = useI18n();
   const { portalContainer } = useTheme();
 
   const triggerRef = useRef<HTMLElement | null>(null);
-  const [computedSide, setComputedSide] = useState<typeof side>(side);
-  const [computedAlign, setComputedAlign] = useState<typeof align>(align);
+  const autoSideRef = useRef<"top" | "bottom">("bottom");
+  const autoAlignRef = useRef<"start" | "end">("start");
 
-  const handleOpenChange = (next: boolean) => {
-    if (next && triggerRef.current && (!side || !align)) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      // Measure against the viewport: portalContainer is a dedicated empty
-      // node used only for scoping preflight, so its rect is 0×0 and unusable.
-      const viewportWidth =
-        window.innerWidth || document.documentElement.clientWidth;
-      const viewportHeight =
-        window.innerHeight || document.documentElement.clientHeight;
+  const handleOpenChange = useCallback(
+    (isOpen: boolean) => {
+      // eslint-disable-next-line no-console
+      console.log("[DropdownMenu] onOpenChange fired", { isOpen, hasTrigger: !!triggerRef.current, sideProp: side });
 
-      if (!side) {
-        const spaceBelow = viewportHeight - rect.bottom;
+      if (isOpen && triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
-        setComputedSide(spaceBelow >= spaceAbove ? "bottom" : "top");
-      }
-
-      if (!align) {
-        const spaceForStart = viewportWidth - rect.left;
-        const spaceForEnd = rect.right;
-        const pickStartInLTR = spaceForStart >= spaceForEnd;
-        setComputedAlign(
-          isRTL
+        const decided = spaceBelow >= spaceAbove ? "bottom" : "top";
+        // eslint-disable-next-line no-console
+        console.log("[DropdownMenu] position calc", {
+          rect: { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right },
+          windowInnerHeight: window.innerHeight,
+          spaceBelow,
+          spaceAbove,
+          decided,
+          sidePropOverride: side ?? null,
+        });
+        if (!side) {
+          autoSideRef.current = decided;
+        }
+        if (!align) {
+          const pickStartInLTR = window.innerWidth - rect.left >= rect.right;
+          autoAlignRef.current = isRTL
             ? pickStartInLTR
               ? "end"
               : "start"
             : pickStartInLTR
               ? "start"
-              : "end"
-        );
+              : "end";
+        }
+      } else if (isOpen) {
+        // eslint-disable-next-line no-console
+        console.warn("[DropdownMenu] opened but triggerRef.current is null — side stays", autoSideRef.current);
       }
-    }
 
-    onOpenChange?.(next);
-  };
+      onOpenChange?.(isOpen);
+    },
+    [side, align, isRTL, onOpenChange]
+  );
 
-  const effectiveSide = side ?? computedSide ?? "bottom";
-  const effectiveAlign = align ?? computedAlign ?? "start";
+  const effectiveSide = (side ?? autoSideRef.current) as "top" | "bottom";
+  const effectiveAlign = (align ?? autoAlignRef.current) as "start" | "end";
+
+  // eslint-disable-next-line no-console
+  console.log("[DropdownMenu] render", { effectiveSide, effectiveAlign, sideProp: side, alignProp: align, autoSideRef: autoSideRef.current });
 
   return (
     <DropdownMenu.Root
@@ -84,6 +95,7 @@ const DropdownMenuComponent = ({
           align={effectiveAlign}
           sideOffset={sideOffset ?? 6}
           alignOffset={alignOffset}
+          avoidCollisions={false}
           collisionPadding={8}
           data-side={effectiveSide}
           data-align={effectiveAlign}
@@ -97,6 +109,7 @@ const DropdownMenuComponent = ({
           )}
           style={{ zIndex: 400, ...(maxWidth ? { maxWidth } : null) }}
         >
+          {headerContent}
           {items.map((item, index) => (
             <DropDownItem
               key={item.id || item.text || `item-${index}`}
