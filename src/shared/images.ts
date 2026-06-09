@@ -86,8 +86,21 @@ const formatsSvgComponentMap = import.meta.glob<SvgComponent>(
   }
 ) as SvgComponentMap;
 
-const providersImageMap = import.meta.glob<string>(
-  "../assets/providers/*.png",
+// Provider logos are theme-specific: each lives under `providers/light` or
+// `providers/dark` and is named `<icon>_<theme>.png` (e.g. `anthropic_light`).
+// Unlike the general icon set, these are looked up via `getProviderImageSrc`
+// through an explicit provider→icon map, so they stay out of the general
+// `light/darkImages` collections.
+const providersLightMap = import.meta.glob<string>(
+  "../assets/providers/light/*.png",
+  {
+    eager: true,
+    import: "default",
+  }
+) as ImageMap;
+
+const providersDarkMap = import.meta.glob<string>(
+  "../assets/providers/dark/*.png",
   {
     eager: true,
     import: "default",
@@ -97,13 +110,26 @@ const providersImageMap = import.meta.glob<string>(
 export const lightImages = buildCollections({
   ...lightImageMap,
   ...formatsPngMap,
-  ...providersImageMap,
 });
 export const darkImages = buildCollections({
   ...darkImageMap,
   ...formatsPngMap,
-  ...providersImageMap,
 });
+
+// Flat `<icon>_<theme>` → src maps. Provider PNGs ship at a single scale,
+// so a plain lookup is enough — no scale collection needed.
+const buildProviderMap = (images: ImageMap): ImageMap => {
+  const map: ImageMap = {};
+  for (const [path, src] of Object.entries(images)) {
+    const meta = parseImageMeta(path);
+    if (!meta) continue;
+    map[meta.name] = src;
+  }
+  return map;
+};
+
+const lightProviderImages = buildProviderMap(providersLightMap);
+const darkProviderImages = buildProviderMap(providersDarkMap);
 
 const bundledIcons: Record<string, SvgComponent> = {};
 for (const [path, component] of Object.entries({
@@ -156,16 +182,32 @@ export const getImageSrc = (
 
 import type { ProviderType } from "../types";
 
-const FALLBACK_PROVIDER = "openai";
+// Maps a provider type to its icon base name (theme suffix added at lookup).
+// Providers without a dedicated logo fall through to `custom_provider`.
+const PROVIDER_ICON_NAMES: Record<string, string> = {
+  anthropic: "anthropic",
+  openai: "openai",
+  openaicompatible: "openai",
+  together: "togetherai",
+  openrouter: "open_router",
+  genai: "google_ai",
+  deepseek: "deepseek",
+  xai: "xai",
+  "lm-studio": "lm_studio",
+  mistral: "mistral",
+  ollama: "ollama",
+  external: "custom_provider",
+};
+
+const FALLBACK_PROVIDER_ICON = "custom_provider";
 
 export const getProviderImageSrc = (
   providerType: ProviderType,
-  theme: ThemeType = "light",
-  scale: number = 1
+  theme: ThemeType = "light"
 ): string => {
-  // Try exact provider name first, then fallback
-  const exact = getImageSrc(providerType, theme, scale);
-  if (exact) return exact.src;
-
-  return getImageSrc(FALLBACK_PROVIDER, theme, scale)?.src || "";
+  const base = PROVIDER_ICON_NAMES[providerType] ?? FALLBACK_PROVIDER_ICON;
+  const map = theme === "dark" ? darkProviderImages : lightProviderImages;
+  return (
+    map[`${base}_${theme}`] ?? map[`${FALLBACK_PROVIDER_ICON}_${theme}`] ?? ""
+  );
 };

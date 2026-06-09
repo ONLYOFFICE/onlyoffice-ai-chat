@@ -103,12 +103,22 @@ describe("images", () => {
       expect(src.length).toBeGreaterThan(0);
     });
 
-    it("falls back to openai for unknown provider type", () => {
+    it("falls back to custom provider for unknown provider type", () => {
       const unknown = getProviderImageSrc(
         "totally-unknown-provider" as unknown as import("../../types").ProviderType
       );
+      const custom = getProviderImageSrc(
+        "external" as unknown as import("../../types").ProviderType
+      );
+      expect(unknown).toBe(custom);
+    });
+
+    it("maps openaicompatible to the openai icon", () => {
+      const compat = getProviderImageSrc(
+        "openaicompatible" as unknown as import("../../types").ProviderType
+      );
       const openai = getProviderImageSrc("openai");
-      expect(unknown).toBe(openai);
+      expect(compat).toBe(openai);
     });
 
     it("accepts theme parameter", () => {
@@ -116,11 +126,6 @@ describe("images", () => {
       const darkSrc = getProviderImageSrc("openai", "dark");
       expect(typeof lightSrc).toBe("string");
       expect(typeof darkSrc).toBe("string");
-    });
-
-    it("accepts scale parameter", () => {
-      const src = getProviderImageSrc("openai", "light", 2);
-      expect(typeof src).toBe("string");
     });
 
     it("returns string for anthropic provider", () => {

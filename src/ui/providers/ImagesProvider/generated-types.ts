@@ -2,7 +2,6 @@
 // Run `npm run generate:icons` to regenerate from src/assets/.
 
 export type IconName =
-  | "anthropic"
   | "arrow.bottom"
   | "arrow.bottom.big"
   | "arrow.right"
@@ -40,7 +39,6 @@ export type IconName =
   | "more"
   | "ocr"
   | "onlyoffice"
-  | "openai"
   | "pdf"
   | "pdf-form"
   | "presentations"

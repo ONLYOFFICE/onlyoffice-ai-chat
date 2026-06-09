@@ -68,7 +68,7 @@ export const ImagesProvider = ({
           if (typeof override === "string") return override;
           if (isThemeFunction(override)) return override(theme, scale);
         }
-        return getProviderImageSrcInternal(providerType, theme, scale);
+        return getProviderImageSrcInternal(providerType, theme);
       },
     };
   }, [overrides]);
