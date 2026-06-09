@@ -126,6 +126,7 @@ const ComposerActionAttachment = () => {
       <IconButton
         iconName="btn-zoomup"
         size={24}
+        isStroke
         className="cursor-pointer rounded-[4px] outline-none"
         isActive={isOpen}
         data-testid="attachment-button"
