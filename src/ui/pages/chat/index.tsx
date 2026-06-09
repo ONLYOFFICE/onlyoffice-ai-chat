@@ -77,7 +77,7 @@ const ThreadInner = () => {
 
   return (
     <div
-      className="aui-root relative flex h-full flex-col"
+      className="aui-root relative flex h-full flex-col select-none"
       onDragEnter={handlers.onDragEnter}
       onDragOver={handlers.onDragOver}
       onDragLeave={handlers.onDragLeave}

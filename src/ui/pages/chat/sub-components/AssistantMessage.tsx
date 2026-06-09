@@ -314,7 +314,7 @@ export const AssistantMessage = memo(() => {
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
       >
-        <div className="leading-[20px] text-[14px] col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7 text-[var(--chat-message-color)]">
+        <div className="leading-[20px] text-[14px] col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7 text-[var(--chat-message-color)] select-text">
           <MessagePrimitive.Content
             components={{
               tools: { Fallback: ToolFallback },
