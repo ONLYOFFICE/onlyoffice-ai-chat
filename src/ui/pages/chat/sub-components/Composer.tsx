@@ -1,5 +1,6 @@
 import { ComposerPrimitive, useComposerRuntime } from "@assistant-ui/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { FileItem } from "../../../components/file-item";
 import { useStores } from "../../../store/context";
@@ -18,6 +19,23 @@ const Composer = () => {
   const { t } = useI18n();
   const composerRuntime = useComposerRuntime();
   const composerBridge = useComposerBridge();
+  const rootRef = useRef<HTMLFormElement>(null);
+
+  // Make the whole composer area act as one big click target: a click on the
+  // padding or any non-interactive gap focuses the textarea. Clicks that land
+  // on a real control (buttons, the model selector, the input itself) are left
+  // alone so they keep their own behavior.
+  const focusInputOnClick = (e: ReactMouseEvent<HTMLFormElement>) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        "button, a, input, textarea, select, [role='button'], [role='combobox'], [contenteditable='true']"
+      )
+    ) {
+      return;
+    }
+    rootRef.current?.querySelector("textarea")?.focus();
+  };
 
   useEffect(() => {
     if (!composerBridge) return;
@@ -38,7 +56,11 @@ const Composer = () => {
 
   return (
     <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[8px] px-[var(--thread-padding-x)] pb-[16px]">
-      <ComposerPrimitive.Root className="composer-root relative flex w-full flex-col gap-[16px] rounded-[16px] border px-[24px] py-[16px] box-border">
+      <ComposerPrimitive.Root
+        ref={rootRef}
+        onClick={focusInputOnClick}
+        className="composer-root relative flex w-full cursor-text flex-col gap-[16px] rounded-[16px] border px-[24px] py-[16px] box-border"
+      >
         {!shouldHidePicker ? (
           <div className="flex items-center gap-[4px] min-w-0">
             <span className="shrink-0 text-[14px] leading-[20px] text-[var(--text-tertiary)] select-none">
