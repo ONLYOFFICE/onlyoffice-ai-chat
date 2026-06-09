@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.74
+
+### Changed
+
+- OpenRouter is now listed first in the provider order, right after ONLYOFFICE.
+- Add-profile card: re-entering an API key now keeps the currently selected model if the new key's list still contains it; otherwise it falls back to the first available model.
+
+### Removed
+
+- Dropped the tool-list cache from `SystemToolsSource` — `getTools` now re-enumerates on every call.
+
 ## 0.4.60
 
 ### Fixed
