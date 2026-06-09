@@ -21,7 +21,6 @@ import { ManageToolDialog } from "../../components/manage-tool-dialog";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
 import { Composer } from "./sub-components/Composer";
 import { UserMessage } from "./sub-components/UserMessage";
-import { ThreadWelcome } from "./sub-components/Welcome";
 import { useChatDropAttachments } from "./useChatDropAttachments";
 
 import InitialSetup from "../initial-setup";
@@ -91,12 +90,8 @@ const ThreadInner = () => {
         }}
       >
         <ThreadPrimitive.If empty>
-          <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col overflow-y-auto justify-center items-center">
-            <div className="flex flex-col gap-[24px] w-full">
-              <ThreadWelcome />
-              <Composer />
-            </div>
-          </ThreadPrimitive.Viewport>
+          <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col overflow-y-auto" />
+          <Composer />
         </ThreadPrimitive.If>
 
         <ThreadPrimitive.If empty={false}>

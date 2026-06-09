@@ -132,7 +132,16 @@ const ModelCard = ({
                   />
                 ),
                 text: t("Edit"),
-                onClick: onStartEdit,
+                // Selecting "Edit" swaps this card into <EditModelCard>,
+                // which unmounts the dropdown. Doing that synchronously yanks
+                // the Radix menu out mid-close: the trigger stays highlighted
+                // (onOpenChange never lands) and the modal scroll-lock cleanup
+                // is skipped, mispositioning the menu on the next open. Close
+                // the menu first, then enter edit mode on the next tick.
+                onClick: () => {
+                  setIsOpen(false);
+                  setTimeout(onStartEdit, 0);
+                },
               },
               {
                 text: "",

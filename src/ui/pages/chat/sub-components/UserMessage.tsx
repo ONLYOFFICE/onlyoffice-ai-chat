@@ -164,7 +164,7 @@ const UserActionBar = () => {
               },
             },
             {
-              text: t("SaveAIPromptToTable"),
+              text: t("SaveAIPromptToFolder"),
               onClick: () => {
                 // TODO
               },

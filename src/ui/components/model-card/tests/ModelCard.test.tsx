@@ -207,7 +207,7 @@ describe("ModelCard", () => {
     expect(screen.getByText("cloud.example.com")).toBeInTheDocument();
   });
 
-  it("shows EditModelCard when Edit is clicked", () => {
+  it("shows EditModelCard when Edit is clicked", async () => {
     render(<Harness profile={profile} />);
     expect(screen.queryByTestId("edit-card")).not.toBeInTheDocument();
 
@@ -215,16 +215,17 @@ describe("ModelCard", () => {
       fireEvent.click(screen.getByTestId("dropdown-item-Edit"));
     });
 
-    expect(screen.getByTestId("edit-card")).toBeInTheDocument();
+    // Entering edit mode is deferred a tick so the dropdown can close cleanly.
+    expect(await screen.findByTestId("edit-card")).toBeInTheDocument();
   });
 
-  it("returns to ModelCard view when EditModelCard close is clicked", () => {
+  it("returns to ModelCard view when EditModelCard close is clicked", async () => {
     render(<Harness profile={profile} />);
 
     act(() => {
       fireEvent.click(screen.getByTestId("dropdown-item-Edit"));
     });
-    expect(screen.getByTestId("edit-card")).toBeInTheDocument();
+    expect(await screen.findByTestId("edit-card")).toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByTestId("edit-card-close"));
@@ -257,14 +258,14 @@ describe("ModelCard", () => {
     expect(screen.queryByTestId("delete-dialog")).not.toBeInTheDocument();
   });
 
-  it("shows DeleteProfileDialog from within EditModelCard when onDelete is called", () => {
+  it("shows DeleteProfileDialog from within EditModelCard when onDelete is called", async () => {
     render(<Harness profile={profile} />);
 
     // Enter edit mode
     act(() => {
       fireEvent.click(screen.getByTestId("dropdown-item-Edit"));
     });
-    expect(screen.getByTestId("edit-card")).toBeInTheDocument();
+    expect(await screen.findByTestId("edit-card")).toBeInTheDocument();
 
     // Click delete inside edit card
     act(() => {
@@ -334,6 +335,7 @@ describe("ModelCard", () => {
     act(() => {
       fireEvent.click(screen.getByTestId("dropdown-item-Edit"));
     });
+    await screen.findByTestId("edit-card");
     act(() => {
       fireEvent.click(screen.getByTestId("edit-card-delete"));
     });

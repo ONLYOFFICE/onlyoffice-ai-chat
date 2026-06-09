@@ -393,7 +393,7 @@ describe("UserMessage", () => {
   });
 
   describe("UserActionBar dropdown items", () => {
-    it("has SaveAIPrompt and SaveAIPromptToTable items", () => {
+    it("has SaveAIPrompt and SaveAIPromptToFolder items", () => {
       render(<UserMessage />);
       expect(mockDropdownItems).toHaveLength(2);
       const items = mockDropdownItems as {
@@ -402,7 +402,7 @@ describe("UserMessage", () => {
         subMenu?: unknown[];
       }[];
       expect(items[0].text).toBe("SaveAIPrompt");
-      expect(items[1].text).toBe("SaveAIPromptToTable");
+      expect(items[1].text).toBe("SaveAIPromptToFolder");
     });
 
     it("SaveAIPrompt calls addPrompt with message text", () => {
@@ -436,7 +436,7 @@ describe("UserMessage", () => {
       });
     });
 
-    it("SaveAIPromptToTable has subMenu with NewFolder option", () => {
+    it("SaveAIPromptToFolder has subMenu with NewFolder option", () => {
       render(<UserMessage />);
       const items = mockDropdownItems as {
         text: string;
@@ -447,7 +447,7 @@ describe("UserMessage", () => {
       expect(subMenu[0].text).toBe("NewFolder");
     });
 
-    it("SaveAIPromptToTable includes folders in subMenu when folders exist", () => {
+    it("SaveAIPromptToFolder includes folders in subMenu when folders exist", () => {
       mockFolders = [
         { id: "f1", name: "Folder A" },
         { id: "f2", name: "Folder B" },

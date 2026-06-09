@@ -114,7 +114,7 @@ export type TranslationKey =
   | "ReviewEachAction"
   | "Save"
   | "SaveAIPrompt"
-  | "SaveAIPromptToTable"
+  | "SaveAIPromptToFolder"
   | "SaveChanges"
   | "SavedPrompts"
   | "Search"

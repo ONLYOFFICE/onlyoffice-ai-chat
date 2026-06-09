@@ -16,7 +16,7 @@ const ComposerActionSend = () => {
     <ComposerPrimitive.Cancel asChild>
       <IconButton
         iconName="stop"
-        size={24}
+        size={20}
         className={BUTTON_STYLES}
         width={12}
         height={12}
@@ -28,7 +28,7 @@ const ComposerActionSend = () => {
       <ComposerPrimitive.Send asChild disabled={!currentProfile}>
         <IconButton
           iconName="arrow.top"
-          size={24}
+          size={20}
           width={12}
           height={14}
           color="var(--chat-composer-action-send-color)"

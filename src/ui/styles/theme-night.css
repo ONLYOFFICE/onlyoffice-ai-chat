@@ -3,8 +3,8 @@
   --background-normal: #404040;
   --background-normal-element: #4b4b4b;
   --background-normal-element-light: #4b4b4b;
-  --background-accent-button: #3483db;
-  --background-primary-button: #dddddd;
+  --background-accent-button: #6E9FEC;
+  --background-primary-button: #6E9FEC;
   --background-scrim: #00000099;
   --background-scroll-thumb: #555555;
 
@@ -166,6 +166,7 @@
 
   /* link */
   --link-color: var(--text-tertiary);
+  --link-secondary-color: #CBCBCB;
   --link-primary-color: var(--background-accent-button);
 
   /* model-config-card */

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -54,6 +54,11 @@ vi.mock("../../loader", () => ({
       Loading
     </div>
   ),
+}));
+
+const copySpy = vi.fn();
+vi.mock("../../markdown/hooks/useCopyToClipboard", () => ({
+  default: () => ({ isCopied: false, copyToClipboard: copySpy }),
 }));
 
 import { ToolFallback } from "../index";
@@ -447,38 +452,26 @@ describe("ToolFallback", () => {
     ).toBeInTheDocument();
   });
 
-  it("clicking args copy icon changes to checked icon", () => {
-    vi.useFakeTimers();
+  it("clicking args copy icon copies the args text to the clipboard", () => {
+    copySpy.mockClear();
     render(<ToolFallback {...defaultProps} result="done" />);
     fireEvent.click(
       screen.getByText("my_tool").closest("[class*='cursor-pointer']")!
     );
     const copySpans = document.querySelectorAll("span.cursor-pointer");
-    const argsCopySpan = copySpans[0];
-    fireEvent.click(argsCopySpan);
-    expect(screen.getByTestId("icon-checked")).toBeInTheDocument();
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-    expect(screen.queryByTestId("icon-checked")).not.toBeInTheDocument();
-    vi.useRealTimers();
+    fireEvent.click(copySpans[0]);
+    expect(copySpy).toHaveBeenCalledWith('{"query":"hello"}');
   });
 
-  it("clicking result copy icon changes to checked icon", () => {
-    vi.useFakeTimers();
+  it("clicking result copy icon copies the result to the clipboard", () => {
+    copySpy.mockClear();
     render(<ToolFallback {...defaultProps} result="done" />);
     fireEvent.click(
       screen.getByText("my_tool").closest("[class*='cursor-pointer']")!
     );
     const copySpans = document.querySelectorAll("span.cursor-pointer");
-    const resultCopySpan = copySpans[1];
-    fireEvent.click(resultCopySpan);
-    expect(screen.getByTestId("icon-checked")).toBeInTheDocument();
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-    expect(screen.queryByTestId("icon-checked")).not.toBeInTheDocument();
-    vi.useRealTimers();
+    fireEvent.click(copySpans[1]);
+    expect(copySpy).toHaveBeenCalledWith("done");
   });
 
   it("does not expand when web_search is still loading", () => {

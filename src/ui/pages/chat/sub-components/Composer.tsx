@@ -55,15 +55,15 @@ const Composer = () => {
   const shouldHidePicker = hideProfilePicker || entityId !== undefined;
 
   return (
-    <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[8px] px-[var(--thread-padding-x)] pb-[16px]">
+    <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[8px] px-[12px] pb-[4px]">
       <ComposerPrimitive.Root
         ref={rootRef}
         onClick={focusInputOnClick}
-        className="composer-root relative flex w-full cursor-text flex-col gap-[16px] rounded-[16px] border px-[24px] py-[16px] box-border"
+        className="composer-root relative flex w-full cursor-text flex-col gap-[6px] rounded-[16px] border px-[8px] py-[6px] box-border"
       >
         {!shouldHidePicker ? (
-          <div className="flex items-center gap-[4px] min-w-0">
-            <span className="shrink-0 text-[14px] leading-[20px] text-[var(--text-tertiary)] select-none">
+          <div className="flex items-center gap-[4px] min-w-0 px-[4px]">
+            <span className="shrink-0 text-[12px] leading-[22px] text-[var(--text-tertiary)] select-none">
               {t("Ask")}
             </span>
             <div className="min-w-0 flex-1">
@@ -84,8 +84,8 @@ const Composer = () => {
         ) : null}
 
         <ComposerPrimitive.Input
-          placeholder={t("AskAI")}
-          className="composer-input max-h-[calc(50vh)] min-h-[16px] w-full resize-none outline-none select-text"
+          placeholder=""
+          className="composer-input max-h-[calc(50vh)] min-h-[20px] w-full resize-none outline-none select-text px-[4px]"
           rows={1}
           autoFocus
           aria-label="Message input"

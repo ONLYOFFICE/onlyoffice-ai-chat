@@ -31,7 +31,7 @@ export const AddModelCard = ({
   onSuccess,
   isHorizontal,
 }: AddModelCardProps) => {
-  const { Button, IconButton, Link, TooltipContent, Loader } = useComponents();
+  const { Button, IconButton, Link, TooltipContent } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const addProfile = useProfilesStore((s) => s.addProfile);
@@ -109,7 +109,11 @@ export const AddModelCard = ({
       <div className="flex flex-row items-center gap-[4px]">
         {onProfileImportClick && (
           <>
-            <Link href="#" onClick={handleImportClick}>
+            <Link
+              href="#"
+              onClick={handleImportClick}
+              className="!text-[var(--link-secondary-color)] no-underline"
+            >
               {t("Import")}
             </Link>
             <Tooltip open={isTooltipOpen}>
@@ -160,8 +164,11 @@ export const AddModelCard = ({
             {t("Cancel")}
           </Button>
         )}
-        <Button disabled={!isFormValid || isSubmitting} onClick={handleAdd}>
-          {isSubmitting && <Loader size={16} className="mr-[6px]" />}
+        <Button
+          disabled={!isFormValid}
+          isLoading={isSubmitting}
+          onClick={handleAdd}
+        >
           {t("AddModel")}
         </Button>
       </div>

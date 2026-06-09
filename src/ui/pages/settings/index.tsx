@@ -63,7 +63,7 @@ const Settings = ({
   );
 
   return (
-    <div className="aui-root flex justify-center h-full bg-[var(--layout-background-color)]">
+    <div className="aui-root select-text flex justify-center h-full bg-[var(--layout-background-color)]">
       <div
         className={`flex flex-col gap-[16px] box-border w-full max-w-[640px] min-w-0 overflow-hidden${noPadding ? "" : " mx-[32px] mt-[32px]"}`}
       >

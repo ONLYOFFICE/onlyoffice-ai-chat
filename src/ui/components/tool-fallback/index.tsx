@@ -1,10 +1,11 @@
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useToolsContext } from "../../tools/context";
 import { Icon } from "../icon";
 import { IconButton } from "../icon-button";
 import { Loader } from "../loader";
+import useCopyToClipboard from "../markdown/hooks/useCopyToClipboard";
 
 const TOOL_CALL_COLOR = "var(--chat-message-tool-call-name-color)";
 export const ToolFallback: ToolCallMessagePartComponent = ({
@@ -15,20 +16,10 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   const { t, isRTL } = useI18n();
   const { servers: serversInstance } = useToolsContext();
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const [isArgsCopied, setIsArgsCopied] = useState(false);
-  const [isResultCopied, setIsResultCopied] = useState(false);
-
-  useEffect(() => {
-    if (!isArgsCopied) return;
-    const id = setTimeout(() => setIsArgsCopied(false), 2000);
-    return () => clearTimeout(id);
-  }, [isArgsCopied]);
-
-  useEffect(() => {
-    if (!isResultCopied) return;
-    const id = setTimeout(() => setIsResultCopied(false), 2000);
-    return () => clearTimeout(id);
-  }, [isResultCopied]);
+  const { isCopied: isArgsCopied, copyToClipboard: copyArgs } =
+    useCopyToClipboard({ copiedDuration: 2000 });
+  const { isCopied: isResultCopied, copyToClipboard: copyResult } =
+    useCopyToClipboard({ copiedDuration: 2000 });
 
   const type = serversInstance.getServerType(toolName);
   const name = type ? toolName.replace(`${type}_`, "") : toolName;
@@ -152,7 +143,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
               <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] text-[14px] font-bold leading-[20px]">
                 {t("ToolCallArguments")}
                 <span
-                  onClick={() => setIsArgsCopied(true)}
+                  onClick={() => copyArgs(argsTextFinal ? argsTextFinal : "{}")}
                   className="cursor-pointer"
                 >
                   <Icon
@@ -247,7 +238,13 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                   <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] text-[14px] font-bold leading-[20px]">
                     {t("ToolCallResult")}
                     <span
-                      onClick={() => setIsResultCopied(true)}
+                      onClick={() =>
+                        copyResult(
+                          typeof result === "string"
+                            ? result
+                            : JSON.stringify(result, null, 2)
+                        )
+                      }
                       className="cursor-pointer"
                     >
                       <Icon

@@ -18,7 +18,6 @@ const creds: ProviderCredentials = {
 };
 
 const builtinTypes: ProviderType[] = [
-  "onlyoffice",
   "anthropic",
   "ollama",
   "openai",

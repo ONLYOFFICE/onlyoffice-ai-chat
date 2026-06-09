@@ -109,7 +109,7 @@
   "ExtendedThinking": "Extended Thinking",
   "ExtendedThinkingDescription": "This model uses advanced reasoning, which may increase costs.",
   "SaveAIPrompt": "Save AI Prompt",
-  "SaveAIPromptToTable": "Save AI prompt to table",
+  "SaveAIPromptToFolder": "Save AI prompt to folder",
   "NewFolder": "New folder",
   "NewAIPromptFolder": "New AI Prompt folder",
   "SavedPrompts": "Saved prompts",

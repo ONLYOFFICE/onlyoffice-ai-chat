@@ -74,10 +74,12 @@ const ComboBox = ({
             "h-[36px] rounded-[var(--input-border-radius)] ps-[12px] box-border",
             "cursor-pointer flex items-center justify-between",
             "text-[var(--input-color)] text-[14px] leading-[16px]",
-            isOpen
-              ? "border bg-[var(--input-background-color)] border-[var(--input-active-border-color)]"
-              : withoutBg
-                ? "hover:bg-[var(--input-hover-background-color)) hover:border-[var(--input-hover-border-color)]"
+            withoutBg
+              ? isOpen
+                ? "bg-[var(--input-background-color)]"
+                : "hover:bg-[var(--input-hover-background-color)]"
+              : isOpen
+                ? "border bg-[var(--input-background-color)] border-[var(--input-active-border-color)]"
                 : "border bg-[var(--input-background-color)] border-[var(--input-border-color)] hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]",
             className,
             disabled || items.length === 0
@@ -98,7 +100,7 @@ const ComboBox = ({
           >
             {value || placeholder}
           </span>
-          <div className="flex items-center h-full w-[25px] shrink-0">
+          <div className="flex items-center h-[20px] w-[16px] shrink-0 py-[2px]">
             <Icon
               name="arrow.bottom.big"
               color="var(--input-color)"

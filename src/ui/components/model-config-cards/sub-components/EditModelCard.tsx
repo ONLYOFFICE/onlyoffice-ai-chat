@@ -44,7 +44,7 @@ export const EditModelCard = ({
   onDelete,
   isHorizontal,
 }: EditModelCardProps) => {
-  const { Button, Loader } = useComponents();
+  const { Button } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore, useCloudsStore } = useStores();
   const editProfile = useProfilesStore((s) => s.editProfile);
@@ -157,8 +157,11 @@ export const EditModelCard = ({
           <Button variant="default" onClick={onClose}>
             {t("Cancel")}
           </Button>
-          <Button disabled={!isFormValid || isSubmitting} onClick={handleSave}>
-            {isSubmitting && <Loader size={16} className="mr-[6px]" />}
+          <Button
+            disabled={!isFormValid}
+            isLoading={isSubmitting}
+            onClick={handleSave}
+          >
             {t("SaveChanges")}
           </Button>
         </div>

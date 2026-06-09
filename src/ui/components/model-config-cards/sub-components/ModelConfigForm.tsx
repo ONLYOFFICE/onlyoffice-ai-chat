@@ -264,7 +264,11 @@ export const ModelConfigForm = ({
           isHorizontal={isHorizontal}
           action={
             getApiKeyLink(values.provider) ? (
-              <Link href={getApiKeyLink(values.provider)} target="_blank">
+              <Link
+                href={getApiKeyLink(values.provider)}
+                target="_blank"
+                className="!text-[var(--link-secondary-color)]"
+              >
                 {t("GetAPIKey")}
               </Link>
             ) : (
@@ -294,7 +298,7 @@ export const ModelConfigForm = ({
         >
           <Input
             name="url"
-            placeholder={t("SelectModelFirst")}
+            placeholder={t("EnterURL")}
             className="w-full"
             disabled={isFieldsDisabled}
             onChange={(e) => onChange("baseUrl", e.target.value)}

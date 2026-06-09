@@ -125,7 +125,7 @@ const ComposerActionAttachment = () => {
     <TooltipIconButton tooltip={t("Attachments")} visible={!isOpen}>
       <IconButton
         iconName="btn-zoomup"
-        size={24}
+        size={20}
         isStroke
         className="cursor-pointer rounded-[4px] outline-none"
         isActive={isOpen}

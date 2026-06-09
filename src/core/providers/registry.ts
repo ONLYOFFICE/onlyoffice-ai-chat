@@ -11,7 +11,6 @@ import { GroqProvider } from "./groq";
 import { LMStudioProvider } from "./lm-studio";
 import { MistralProvider } from "./mistral";
 import { OllamaProvider } from "./ollama";
-import { OnlyOfficeProvider } from "./onlyoffice";
 import { OpenAIProvider } from "./openai";
 import { OpenAICompatibleProvider } from "./openaicompatible";
 import { OpenRouterProvider } from "./openrouter";
@@ -28,8 +27,10 @@ import { ZhipuProvider } from "./zhipu";
  */
 export type BaseProvider = ProviderConstructor;
 
-const builtinProviders: Record<ProviderType, ProviderConstructor> = {
-  onlyoffice: OnlyOfficeProvider,
+// `Partial` because not every known provider type is registered as a
+// built-in (e.g. `onlyoffice` ships as a class but is intentionally left
+// unregistered). `getProvider` already returns `undefined` for misses.
+const builtinProviders: Partial<Record<ProviderType, ProviderConstructor>> = {
   openrouter: OpenRouterProvider,
   anthropic: AnthropicProvider,
   ollama: OllamaProvider,

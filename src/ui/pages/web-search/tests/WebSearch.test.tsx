@@ -208,56 +208,9 @@ describe("WebSearch", () => {
     expect(link).toHaveTextContent("GetAPIKey");
   });
 
-  it("shows base URL field when ONLYOFFICE provider is selected", () => {
-    render(<WebSearch />);
-    // Click on the ONLYOFFICE combo item
-    fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
-
-    expect(screen.getByTestId("field-BaseURL")).toBeInTheDocument();
-  });
-
-  it("defaults to ONLYOFFICE and hides credential fields when onlyofficeConfig is preset", () => {
-    mockStoreState.externalOnlyofficeConfig = {
-      baseUrl: "https://eu-test-oauth.onlyoffice.io",
-      apiKey: "preset-key",
-    };
-
-    render(<WebSearch />);
-
-    // Already selected on initial render — no click required.
-    expect(screen.getByTestId("combo-value")).toHaveTextContent(
-      "ONLYOFFICE AI"
-    );
-    expect(screen.queryByTestId("field-BaseURL")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("field-APIKey")).not.toBeInTheDocument();
-  });
-
-  it("defaults to Exa when no onlyofficeConfig is provided", () => {
+  it("defaults to Exa", () => {
     render(<WebSearch />);
     expect(screen.getByTestId("combo-value")).toHaveTextContent("Exa");
-  });
-
-  it("validates URL on base URL blur - invalid URL", () => {
-    render(<WebSearch />);
-    // Select ONLYOFFICE (no baseUrl)
-    fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
-
-    const urlInput = screen.getByTestId("input-EnterURL");
-    fireEvent.change(urlInput, { target: { value: "not-a-url" } });
-    fireEvent.blur(urlInput);
-
-    expect(screen.getByTestId("field-error")).toHaveTextContent("InvalidUrl");
-  });
-
-  it("validates URL on base URL blur - valid URL", () => {
-    render(<WebSearch />);
-    fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
-
-    const urlInput = screen.getByTestId("input-EnterURL");
-    fireEvent.change(urlInput, { target: { value: "https://example.com" } });
-    fireEvent.blur(urlInput);
-
-    expect(screen.queryByTestId("field-error")).not.toBeInTheDocument();
   });
 
   it("saves data on API key blur with valid API key", () => {
@@ -280,41 +233,6 @@ describe("WebSearch", () => {
     render(<WebSearch />);
     const apiInput = screen.getByTestId("input-EnterKey");
     fireEvent.change(apiInput, { target: { value: "" } });
-    fireEvent.blur(apiInput);
-
-    expect(mockApi.webSearch.clear).toHaveBeenCalled();
-  });
-
-  it("saves data with base URL for provider without predefined baseUrl", () => {
-    render(<WebSearch />);
-    fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
-
-    const urlInput = screen.getByTestId("input-EnterURL");
-    fireEvent.change(urlInput, { target: { value: "https://custom.api.com" } });
-
-    const apiInput = screen.getByTestId("input-EnterKey");
-    fireEvent.change(apiInput, { target: { value: "key-123" } });
-    fireEvent.blur(apiInput);
-
-    expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith(
-      {
-        provider: "ONLYOFFICE",
-        key: "key-123",
-        baseUrl: "https://custom.api.com",
-      },
-      undefined
-    );
-  });
-
-  it("sets null when base URL is invalid and provider has no default", () => {
-    render(<WebSearch />);
-    fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
-
-    const urlInput = screen.getByTestId("input-EnterURL");
-    fireEvent.change(urlInput, { target: { value: "invalid" } });
-
-    const apiInput = screen.getByTestId("input-EnterKey");
-    fireEvent.change(apiInput, { target: { value: "key-123" } });
     fireEvent.blur(apiInput);
 
     expect(mockApi.webSearch.clear).toHaveBeenCalled();
@@ -354,40 +272,12 @@ describe("WebSearch", () => {
     expect(screen.queryByTestId("input-EnterKey")).toBeNull();
   });
 
-  it("clears base URL error on provider switch", () => {
-    render(<WebSearch />);
-    // Select ONLYOFFICE, enter invalid URL
-    fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
-
-    const urlInput = screen.getByTestId("input-EnterURL");
-    fireEvent.change(urlInput, { target: { value: "bad" } });
-    fireEvent.blur(urlInput);
-    expect(screen.getByTestId("field-error")).toBeInTheDocument();
-
-    // Switch to Exa - error should be gone
-    fireEvent.click(screen.getByTestId("combo-item-Exa"));
-    expect(screen.queryByTestId("field-error")).not.toBeInTheDocument();
-  });
-
-  it("clears base URL error when typing in the field", () => {
-    render(<WebSearch />);
-    fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
-
-    const urlInput = screen.getByTestId("input-EnterURL");
-    fireEvent.change(urlInput, { target: { value: "bad" } });
-    fireEvent.blur(urlInput);
-    expect(screen.getByTestId("field-error")).toBeInTheDocument();
-
-    fireEvent.change(urlInput, { target: { value: "https://new" } });
-    expect(screen.queryByTestId("field-error")).not.toBeInTheDocument();
-  });
-
   it("does not write on non-cloud provider selection", () => {
     // Selecting a non-cloud provider no longer clears stored credentials —
     // `setWebSearchData` is only invoked after the user blurs the API-key
     // or base-URL input, so partially-filled forms don't clobber storage.
     render(<WebSearch />);
-    fireEvent.click(screen.getByTestId("combo-item-ONLYOFFICE"));
+    fireEvent.click(screen.getByTestId("combo-item-Exa"));
 
     expect(mockApi.webSearch.setActiveConfig).not.toHaveBeenCalled();
     expect(mockApi.webSearch.clear).not.toHaveBeenCalled();
