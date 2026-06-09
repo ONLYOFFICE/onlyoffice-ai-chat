@@ -109,6 +109,7 @@ const ModelAssignment = () => {
           isHorizontal
           reserveErrorSpace={false}
           className="mb-[24px]"
+          icon="code"
         >
           <ComboBox
             className="w-full"
