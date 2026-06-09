@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.75
+
+### Added
+
+- Theme-aware provider logos: each provider resolves to its own `light`/`dark` icon via a provider→icon map. `openaicompatible` reuses the OpenAI logo; unmapped types fall back to a generic custom-provider icon.
+- Dark-theme icons for every model-assignment task, and the **Code** task now shows the `code` icon.
+
+### Changed
+
+- Clicking anywhere in the composer (padding included) now focuses the input; clicks on its controls keep their own behavior.
+- Chat text selection is now limited to message content and the composer input — the surrounding UI is no longer selectable.
+
+### Fixed
+
+- Composer attachment **+** button now follows the theme color (`stroke`) instead of a hard-coded fill.
+
 ## 0.4.74
 
 ### Changed
