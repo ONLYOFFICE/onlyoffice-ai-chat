@@ -106,10 +106,15 @@ export const useModelForm = (initialValues: ModelFormValues) => {
       } catch (e) {
         if (requestId !== fetchModelsRequestIdRef.current) return;
         setIsLoading(false);
-        const message = e instanceof Error ? e.message : String(e);
-        setErrors((prev) => ({ ...prev, key: message }));
         setModels([]);
         setValues((prev) => ({ ...prev, model: "" }));
+        // Only surface the API-key error once the user has actually entered a
+        // key. Switching provider triggers a model fetch with an empty key,
+        // and a pristine field shouldn't flash an auth error before any input.
+        if (apiKey) {
+          const message = e instanceof Error ? e.message : String(e);
+          setErrors((prev) => ({ ...prev, key: message }));
+        }
         return;
       }
       if (requestId !== fetchModelsRequestIdRef.current) return;
