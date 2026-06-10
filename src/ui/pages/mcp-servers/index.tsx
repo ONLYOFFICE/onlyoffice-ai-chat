@@ -20,7 +20,7 @@ const McpServersPage = ({ hideHeader, noPadding }: McpServersPageProps) => {
             {t("MCPServers")}
           </h1>
         )}
-        <Servers variant="page" />
+        <Servers />
       </div>
     </div>
   );

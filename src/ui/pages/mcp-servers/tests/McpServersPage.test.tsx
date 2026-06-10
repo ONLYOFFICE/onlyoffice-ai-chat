@@ -7,9 +7,7 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("../sub-components", () => ({
-  Servers: ({ variant }: { variant?: string }) => (
-    <div data-testid="servers" data-variant={variant} />
-  ),
+  Servers: () => <div data-testid="servers" />,
 }));
 
 vi.mock("../../../hooks/useEnsureTools", () => ({
@@ -24,9 +22,8 @@ describe("McpServersPage", () => {
     expect(screen.getByText("MCPServers")).toBeInTheDocument();
   });
 
-  it("renders Servers with variant=page", () => {
+  it("renders Servers", () => {
     render(<McpServersPage />);
-    const servers = screen.getByTestId("servers");
-    expect(servers).toHaveAttribute("data-variant", "page");
+    expect(screen.getByTestId("servers")).toBeInTheDocument();
   });
 });

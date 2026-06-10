@@ -196,7 +196,7 @@ export const ModelConfigForm = ({
       <FieldContainer
         header={t("Provider")}
         isHorizontal={isHorizontal}
-        className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}
+        className={isHorizontal ? "mb-[10px]" : ""}
         error={providerError}
         action={
           onlyofficeAISettingsHref ? (
@@ -259,7 +259,7 @@ export const ModelConfigForm = ({
 
       {!hideCredentials && (
         <FieldContainer
-          className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}
+          className={isHorizontal ? "mb-[10px]" : ""}
           header={t("APIKey")}
           isHorizontal={isHorizontal}
           action={
@@ -291,7 +291,7 @@ export const ModelConfigForm = ({
 
       {!hideCredentials && (
         <FieldContainer
-          className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}
+          className={isHorizontal ? "mb-[10px]" : ""}
           header={t("BaseURL")}
           isHorizontal={isHorizontal}
           error={errors?.url}
@@ -308,7 +308,7 @@ export const ModelConfigForm = ({
       )}
 
       <FieldContainer
-        className={isHorizontal ? "mb-[10px]" : "mb-[16px]"}
+        className={isHorizontal ? "mb-[10px]" : ""}
         header={t("Model")}
         isHorizontal={isHorizontal}
       >
@@ -330,7 +330,7 @@ export const ModelConfigForm = ({
       </FieldContainer>
 
       <FieldContainer
-        className={isHorizontal ? undefined : "mb-[16px]"}
+        className={isHorizontal ? undefined : "mb-[8px]"}
         header={t("ProfileName")}
         isHorizontal={isHorizontal}
         error={errors?.name}

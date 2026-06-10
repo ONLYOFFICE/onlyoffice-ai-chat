@@ -67,7 +67,7 @@ const ModelAssignment = () => {
 
   return (
     <div className="w-full">
-      <p className="font-normal leading-[16px] text-[var(--settings-description-color)] mb-[32px]">
+      <p className="font-normal leading-[16px] text-[var(--settings-description-color)] mb-[24px]">
         {t("ModelAssignmentDescription")}
       </p>
       <div className="flex flex-col">
@@ -75,18 +75,18 @@ const ModelAssignment = () => {
           header={t("DefaultModel")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[40px]"
+          className="mb-[20px]"
           headerClassName="font-bold"
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             placeholder={t("SelectProvider")}
             value={defaultProfile?.name ?? ""}
             items={defaultItems}
           />
         </FieldContainer>
 
-        <p className="select-none font-bold leading-[16px] text-[var(--settings-header-color)] mb-[12px]">
+        <p className="select-none font-bold leading-[18px] text-[var(--settings-header-color)] mb-[8px]">
           {t("OverrideForTasks")}
         </p>
 
@@ -94,11 +94,11 @@ const ModelAssignment = () => {
           header={t("AIChat")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[24px]"
+          className="mb-[12px]"
           icon="ask-ai"
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             value={chatProfile?.name ?? t("DefaultModel")}
             items={taskItems(setChatProfile, CapabilitiesUI.Chat)}
           />
@@ -108,11 +108,11 @@ const ModelAssignment = () => {
           header={t("Code")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[24px]"
+          className="mb-[12px]"
           icon="code"
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             value={codeProfile?.name ?? t("DefaultModel")}
             items={taskItems(setCodeProfile, CapabilitiesUI.Chat)}
           />
@@ -122,11 +122,11 @@ const ModelAssignment = () => {
           header={t("Summarization")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[24px]"
+          className="mb-[12px]"
           icon="summarization"
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             value={summarizationProfile?.name ?? t("DefaultModel")}
             items={taskItems(setSummarizationProfile, CapabilitiesUI.Chat)}
           />
@@ -136,11 +136,11 @@ const ModelAssignment = () => {
           header={t("Translation")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[24px]"
+          className="mb-[12px]"
           icon="translation"
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             value={translationProfile?.name ?? t("DefaultModel")}
             items={taskItems(setTranslationProfile, CapabilitiesUI.Chat)}
           />
@@ -150,11 +150,11 @@ const ModelAssignment = () => {
           header={t("TextAnalysis")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[24px]"
+          className="mb-[12px]"
           icon="text-analysis-ai"
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             value={textAnalysisProfile?.name ?? t("DefaultModel")}
             items={taskItems(setTextAnalysisProfile, CapabilitiesUI.Chat)}
           />
@@ -164,11 +164,11 @@ const ModelAssignment = () => {
           header={t("ImageGeneration")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[24px]"
+          className="mb-[12px]"
           icon="image-generation"
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             value={imageGenerationProfile?.name ?? t("DefaultModel")}
             items={taskItems(setImageGenerationProfile, CapabilitiesUI.Image)}
           />
@@ -178,11 +178,11 @@ const ModelAssignment = () => {
           header={t("OCR")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[24px]"
+          className="mb-[12px]"
           icon="ocr"
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             value={ocrProfile?.name ?? t("DefaultModel")}
             items={taskItems(setOcrProfile, CapabilitiesUI.Vision)}
           />
@@ -192,11 +192,11 @@ const ModelAssignment = () => {
           header={t("Vision")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[24px]"
+          className="mb-[12px]"
           icon="vision-ai"
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             value={visionProfile?.name ?? t("DefaultModel")}
             items={taskItems(setVisionProfile, CapabilitiesUI.Vision)}
           />

@@ -12,9 +12,15 @@ import ToolsCounter from "./ToolsCounter";
 
 type AvailableToolsProps = {
   withHeader?: boolean;
+  /** When `false`, the outer border is omitted (e.g. when nested in a
+   * container that already provides one). */
+  bordered?: boolean;
 };
 
-const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
+const AvailableTools = ({
+  withHeader = true,
+  bordered = true,
+}: AvailableToolsProps) => {
   const { t, isRTL } = useI18n();
   const { servers: serversInstance } = useToolsContext();
 
@@ -59,7 +65,13 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
   if (!hasHostTools && !hasCustomServers && !hasSystemTools) return null;
 
   return (
-    <div className="w-full max-h-[560px] border-[length:var(--servers-available-tools-border-width)] border-[var(--servers-available-tools-border-color)] rounded-[var(--servers-available-tools-border-radius)] flex flex-col">
+    <div
+      className={cn(
+        "w-full flex flex-col",
+        bordered &&
+          "border-[length:var(--servers-available-tools-border-width)] border-[var(--servers-available-tools-border-color)] rounded-[var(--servers-available-tools-border-radius)]"
+      )}
+    >
       {withHeader ? (
         <div
           className={cn(
@@ -76,7 +88,7 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
       <div
         dir={isRTL ? "rtl" : "ltr"}
         className={cn(
-          "flex flex-col gap-[8px] pb-[8px] px-[8px] overflow-y-auto",
+          "flex flex-col gap-[8px] pb-[8px] px-[8px]",
           withHeader ? "pt-[4px]" : "pt-[8px]"
         )}
       >

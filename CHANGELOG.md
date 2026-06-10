@@ -1,6 +1,25 @@
 # Changelog
 
-## 0.4.102
+## 0.4.110
+
+### Added
+
+- `onCreatePromptFolder` widget config callback: when provided, the built-in "New prompt folder" dialog is skipped and the host owns the name-input UI, resolving the folder name (the widget still performs the creation).
+
+### Changed
+
+- `Input` height is now 24px everywhere (set on the component; removed per-call `h-[36px]` overrides).
+
+## 0.4.109
+
+### Changed
+
+- Toggle button: taller track (18px) with a 1px border, vertically centered thumb that now travels fully to the edge; white theme on/off colors set to `#306ad9` / `#7f7f7f`.
+- MCP permissions list no longer scrolls internally — scrolling is handled by the page.
+- MCP permissions block is now a bordered panel (matching the config editor) holding the Permissions header and the tools list; removed the unused `Servers` `variant` prop.
+- MCP config-editor language label now uses `--text-secondary` (was `--text-tertiary`), matching the header color.
+
+## 0.4.104
 
 ### Changed
 

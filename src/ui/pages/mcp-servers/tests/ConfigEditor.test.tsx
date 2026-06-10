@@ -151,13 +151,6 @@ describe("ConfigEditor", () => {
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it("calls onClose via the header close button", () => {
-    mockOnClose.mockClear();
-    render(<ConfigEditor open={true} onClose={mockOnClose} />);
-    fireEvent.click(screen.getByTestId("icon-btn-btn-close"));
-    expect(mockOnClose).toHaveBeenCalled();
-  });
-
   it("initializes editor with config data after timeout", async () => {
     mockGetConfig.mockResolvedValue({ test: { url: "http://test" } });
     mockEditorDestroy.mockClear();

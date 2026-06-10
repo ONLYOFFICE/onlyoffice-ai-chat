@@ -199,7 +199,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     <div
       className={cn(
         "flex flex-col w-full",
-        isPage ? "gap-[24px]" : "gap-[16px]"
+        isPage ? "gap-[8px]" : "gap-[16px]"
       )}
     >
       <p
@@ -216,7 +216,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
           isHorizontal={fieldIsHorizontal}
         >
           <ComboBox
-            className="w-full"
+            className="w-full h-[24px]"
             value={provider?.label ?? t("SelectEngine")}
             items={comboItems}
           />
@@ -228,7 +228,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
             error={baseUrlError}
           >
             <Input
-              className="w-full"
+              className="w-full h-[24px]"
               placeholder={t("EnterURL")}
               value={baseUrl}
               onChange={(e) => {
@@ -252,7 +252,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
             }
           >
             <Input
-              className="w-full"
+              className="w-full h-[24px]"
               type="password"
               placeholder={t("EnterKey")}
               value={apiKey}

@@ -172,6 +172,12 @@ export interface AIChatWidgetProps {
    */
   onDeleteProfile?: WidgetConfig["onDeleteProfile"];
   /**
+   * Custom UI for creating a new prompt folder. When provided, the built-in
+   * "New prompt folder" dialog is skipped and the host owns the input UI.
+   * See {@link WidgetConfig.onCreatePromptFolder}.
+   */
+  onCreatePromptFolder?: WidgetConfig["onCreatePromptFolder"];
+  /**
    * Confirmation gate fired when leaving the MCP servers tab with unsaved
    * config edits. See {@link WidgetConfig.onDiscardMcpChanges}.
    */
@@ -218,6 +224,7 @@ export const AIChatWidget = React.forwardRef<
       onProfileImportClick,
       onDownloadTemplate,
       onDeleteProfile,
+      onCreatePromptFolder,
       onDiscardMcpChanges,
     },
     ref
@@ -237,6 +244,7 @@ export const AIChatWidget = React.forwardRef<
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
+        onCreatePromptFolder,
         onDiscardMcpChanges,
       }),
       [
@@ -253,6 +261,7 @@ export const AIChatWidget = React.forwardRef<
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
+        onCreatePromptFolder,
         onDiscardMcpChanges,
       ]
     );

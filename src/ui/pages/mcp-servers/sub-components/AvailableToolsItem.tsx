@@ -79,7 +79,7 @@ const AvailableToolsItem = ({
     <div dir={isRTL ? "rtl" : "ltr"} className="flex flex-col">
       <div
         className={cn(
-          "h-[36px] px-[8px] rounded-[var(--servers-available-tools-item-border-radius)] flex items-center justify-between",
+          "h-[32px] px-[8px] rounded-[var(--servers-available-tools-item-border-radius)] flex items-center justify-between",
           isLoadingAction ? "" : "cursor-pointer",
           "bg-[var(--servers-available-tools-item-background-color)]",
           "active:bg-[var(--servers-available-tools-item-active-background-color)]",
@@ -144,7 +144,7 @@ const AvailableToolsItem = ({
               <div
                 key={tool.name}
                 className={cn(
-                  "rounded-[var(--servers-available-tools-item-border-radius)] cursor-pointer flex flex-col hover:bg-[var(--servers-available-tools-item-hover-background-color)] ps-[28px] pe-[8px] h-[32px]"
+                  "rounded-[var(--servers-available-tools-item-border-radius)] cursor-pointer flex flex-col hover:bg-[var(--servers-available-tools-item-hover-background-color)] ps-[28px] pe-[8px] h-[26px]"
                 )}
                 onClick={() => {
                   changeToolStatus(name, tool.name, !tool.enabled);

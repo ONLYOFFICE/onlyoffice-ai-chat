@@ -11,7 +11,7 @@ const ToggleButton = ({
 }: ToggleButtonProps) => {
   // Base styles
   const baseStyles =
-    "relative inline-flex align-center shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out";
+    "relative inline-flex items-center shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out";
   const focusStyles = "focus:outline-none";
   const disabledStyles = "disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -22,13 +22,13 @@ const ToggleButton = ({
     "data-[state=checked]:hover:enabled:bg-[var(--toggle-button-background-hover-color)]";
 
   // Size styles
-  const sizeStyles = "w-[30px] h-[16px]";
+  const sizeStyles = "w-[30px] h-[18px]";
 
   // Thumb styles
   const thumbBaseStyles =
     "pointer-events-none inline-block rounded-full bg-[var(--toggle-button-circle-color)] ring-0 transition-transform duration-200 ease-in-out";
   const thumbSizeStyles =
-    "w-[12px] h-[12px] translate-x-[0px] data-[state=checked]:translate-x-[14px]";
+    "w-[12px] h-[12px] translate-x-[0px] data-[state=checked]:translate-x-[16px]";
 
   return (
     <div className="flex items-center gap-2">

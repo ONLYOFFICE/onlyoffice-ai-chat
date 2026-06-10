@@ -84,27 +84,16 @@ describe("Servers", () => {
     expect(screen.getByText("EditConfiguration")).toBeInTheDocument();
   });
 
-  it("renders available tools with withHeader=true by default (tab variant)", () => {
+  it("renders available tools without their own header (header lives in the Permissions panel)", () => {
     render(<Servers />);
-    const tools = screen.getByTestId("available-tools");
-    expect(tools).toHaveAttribute("data-with-header", "true");
-  });
-
-  it("renders available tools with withHeader=false for page variant", () => {
-    render(<Servers variant="page" />);
     const tools = screen.getByTestId("available-tools");
     expect(tools).toHaveAttribute("data-with-header", "false");
   });
 
-  it("renders permissions header and ToolsCounter for page variant", () => {
-    render(<Servers variant="page" />);
+  it("renders the Permissions header and ToolsCounter inside the panel", () => {
+    render(<Servers />);
     expect(screen.getByText("Permissions")).toBeInTheDocument();
     expect(screen.getByTestId("tools-counter")).toBeInTheDocument();
-  });
-
-  it("does not render permissions header for tab variant", () => {
-    render(<Servers />);
-    expect(screen.queryByText("Permissions")).not.toBeInTheDocument();
   });
 
   it("opens the inline config editor when edit button is clicked", () => {
@@ -135,7 +124,7 @@ describe("Servers", () => {
   });
 
   it("dims and disables the permissions block while the editor is open", () => {
-    render(<Servers variant="page" />);
+    render(<Servers />);
     const wrapper = screen.getByTestId("available-tools").parentElement!;
     expect(wrapper.className).not.toContain("opacity-40");
     expect(wrapper.className).not.toContain("pointer-events-none");

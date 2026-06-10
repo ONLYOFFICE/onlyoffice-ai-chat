@@ -16,6 +16,8 @@ import { useStores } from "../../../store/context";
 import { selectImageBase64 } from "../../../store/create-attachments-store";
 import type { TAttachmentFile } from "../../../../types";
 import { PROMPT_DIALOG_CLASS } from "./ComposerActionPrompts";
+import { useWidgetConfig } from "../../../../widget-config";
+import logger from "../../../../shared/logger";
 
 type NewFolderDialogProps = {
   messageText: string;
@@ -59,7 +61,7 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
             <Input
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
-              className="w-full h-[36px]"
+              className="w-full"
               autoFocus
             />
           </div>
@@ -97,11 +99,40 @@ const UserActionBar = () => {
   const message = useMessage();
   const { usePromptsStore } = useStores();
   const { copyToClipboard: platformCopy } = usePlatform();
+  const { onCreatePromptFolder } = useWidgetConfig();
   const addPrompt = usePromptsStore((s) => s.addPrompt);
+  const addFolder = usePromptsStore((s) => s.addFolder);
   const folders = usePromptsStore((s) => s.folders);
   const [isOpen, setIsOpen] = useState(false);
   const [isNewFolderDialogVisible, setIsNewFolderDialogVisible] =
     useState(false);
+
+  // When the host supplies `onCreatePromptFolder`, it owns the name-input UI
+  // (its own modal) and resolves the folder name; the widget creates the
+  // folder and saves the prompt once the host returns a non-empty name.
+  // Otherwise fall back to the built-in dialog.
+  const requestNewFolder = useCallback(async () => {
+    if (!onCreatePromptFolder) {
+      setIsNewFolderDialogVisible(true);
+      return;
+    }
+    try {
+      const text = getMessageText();
+      const name = await onCreatePromptFolder(t("NewFolder"));
+      const trimmed = name?.trim();
+      if (!trimmed) return;
+      const folderId = await addFolder(trimmed);
+      await addPrompt({
+        name: text.slice(0, 15),
+        text,
+        folderId: folderId ?? null,
+      });
+    } catch (err) {
+      logger.error("onCreatePromptFolder handler failed:", err);
+    }
+    // getMessageText reads from `message`, captured fresh each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onCreatePromptFolder, addFolder, addPrompt, t]);
 
   const getMessageText = () =>
     message.content
@@ -189,7 +220,7 @@ const UserActionBar = () => {
                   trailingIcon: "btn-zoomup",
                   trailingIconSize: 16,
                   onClick: () => {
-                    setIsNewFolderDialogVisible(true);
+                    void requestNewFolder();
                   },
                 },
               ],

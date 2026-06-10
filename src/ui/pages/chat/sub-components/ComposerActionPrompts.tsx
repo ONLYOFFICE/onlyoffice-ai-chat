@@ -60,7 +60,7 @@ const EditPromptDialog = ({
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-[36px]"
+                className="w-full"
                 autoFocus
               />
             </FieldContainer>
@@ -146,7 +146,7 @@ const RenameFolderDialog = ({
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full h-[36px]"
+              className="w-full"
               autoFocus
             />
           </div>

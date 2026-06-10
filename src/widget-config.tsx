@@ -124,6 +124,23 @@ export interface WidgetConfig {
     profile: Profile
   ) => boolean | void | Promise<boolean | void>;
   /**
+   * Custom UI for creating a new prompt folder. When provided, the widget's
+   * built-in "New prompt folder" dialog is NOT shown — the host owns the
+   * input UI (e.g. its own modal) and resolves the folder name:
+   * - a non-empty string — the widget creates the folder (and saves the
+   *   prompt into it)
+   * - `""` / `undefined` / no return (or a rejected promise) — cancelled,
+   *   nothing is created
+   *
+   * The widget always performs the actual creation itself; the host only
+   * owns the name-input step. When omitted, the built-in dialog is used.
+   *
+   * @param defaultName suggested folder name (the localized "New folder")
+   */
+  onCreatePromptFolder?: (
+    defaultName: string
+  ) => string | void | Promise<string | void>;
+  /**
    * Confirmation gate fired when the user navigates away from the MCP
    * servers tab while the inline config editor holds unsaved edits. The
    * host shows its own warning UI and resolves the result:

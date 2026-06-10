@@ -132,7 +132,7 @@ export const EditModelCard = ({
         {t("EditAIModel")}
       </h3>
 
-      <div className="flex flex-row items-center gap-[12px] mb-[16px]">
+      <div className="flex flex-row items-center gap-[12px] mb-[8px]">
         <ProviderLogo providerType={values.provider as ProviderType} />
         <p className="text-[var(--text-normal)] truncate">
           {values.profileName}

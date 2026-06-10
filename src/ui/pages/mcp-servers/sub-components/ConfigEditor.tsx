@@ -22,7 +22,7 @@ type ConfigEditorProps = {
  * close button, the JSON editor, and the Cancel / Save footer.
  */
 const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
-  const { Button, IconButton } = useComponents();
+  const { Button } = useComponents();
   const { t, isRTL } = useI18n();
   const platform = usePlatform();
   const { useServersStore } = useStores();
@@ -174,10 +174,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.key === "Enter" &&
-        document.activeElement?.id === "config-editor"
-      ) {
+      if (e.key === "Enter" && document.activeElement?.id === "config-editor") {
         e.preventDefault();
         onSubmitAction();
       }
@@ -197,19 +194,19 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
       id="config-editor"
       data-testid="config-editor"
       dir={isRTL ? "rtl" : "ltr"}
-      className="flex flex-col w-full mb-[28px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)]"
+      className="flex flex-col w-full py-[8px] mb-[8px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)]"
     >
-      <div className="flex items-center justify-between h-[56px] ps-[16px] pe-[8px]">
-        <p className="font-bold text-[16px] leading-[24px] text-[var(--settings-header-color)]">
+      <div className="flex items-center justify-between ps-[16px] pe-[8px] mb-[8px]">
+        <p className="font-bold text-[12px] leading-[18px] text-[var(--settings-header-color)]">
           {t("EditConfiguration")}
         </p>
-        <IconButton iconName="btn-close" size={24} onClick={onClose} />
+        {/* <IconButton iconName="btn-close" size={24} onClick={onClose} /> */}
       </div>
       <div className="px-[16px]">
-        <div className="flex flex-col gap-[8px] min-h-[280px] pb-[16px]">
-          <div className="flex flex-col gap-[8px] min-h-[256px] p-[12px] bg-[var(--servers-edit-config-json-background-color)] rounded-[12px]">
+        <div className="flex flex-col gap-[8px] pb-[8px]">
+          <div className="flex flex-col gap-[8px] min-h-[256px] p-[8px] bg-[var(--servers-edit-config-json-background-color)] rounded-[4px]">
             <div className="flex flex-row justify-between">
-              <p className="font-bold text-[var(--servers-edit-config-json-header-color)]">
+              <p className=" text-[var(--servers-edit-config-json-header-color)]">
                 {t("EnterYourJSONConfiguration")}
               </p>
               <p className="font-normal text-[var(--servers-edit-config-json-lang-color)]">
@@ -227,7 +224,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
             ) : null}
           </div>
         </div>
-        <div className="flex flex-row items-center justify-end gap-[16px] h-[64px] border-t border-[var(--servers-edit-config-buttons-border-color)] mx-[-16px] px-[16px]">
+        <div className="flex flex-row items-center justify-end gap-[8px] h-[24px]  mx-[-16px] px-[16px]">
           <Button onClick={onClose} variant="default">
             {t("Cancel")}
           </Button>
