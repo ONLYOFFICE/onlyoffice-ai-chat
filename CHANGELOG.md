@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.121
+
+### Changed
+
+- Bundled theme CSS now ships only the white and night themes (dark / gray / classic-light / contrast-dark imports disabled in `themes.css`).
+
 ## 0.4.120
 
 ### Changed
