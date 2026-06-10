@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.4.112
+## 0.4.117
+
+### Changed
+
+- MCP tool action menus now always open bottom-left (was side-anchored / RTL-dependent).
+
+## 0.4.116
 
 ### Added
 

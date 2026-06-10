@@ -130,8 +130,8 @@ const AvailableToolsItem = ({
                 />
               }
               items={dropdownItems}
-              side={isRTL ? "left" : "right"}
-              align={isRTL ? "end" : "start"}
+              side="bottom"
+              align="start"
               sideOffset={0}
             />
           )}

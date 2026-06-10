@@ -177,7 +177,7 @@ const DropDownItem = ({
     <Item
       className={cn(
         "dropdown-menu-item",
-        "flex items-center justify-between gap-[32px] min-w-0 w-full max-w-full min-h-[32px] h-[32px] px-[12px] select-none cursor-pointer",
+        "flex items-center justify-between gap-[32px] min-w-0 w-full max-w-full min-h-[28px] h-[28px] px-[12px] select-none cursor-pointer",
         "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 border-0",
         "hover:bg-[var(--drop-down-menu-item-hover-color)] hover:text-[var(--drop-down-menu-item-hover-color)]",
         "data-[disabled]:opacity-50 data-[disabled]:pointer-events-none",

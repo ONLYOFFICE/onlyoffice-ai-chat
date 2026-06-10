@@ -46,6 +46,7 @@ export interface ThemeTokens {
   "--chat-list-border-right"?: string;
   "--chat-list-color"?: string;
   "--chat-list-empty-color"?: string;
+  "--chat-list-group-header-color"?: string;
   "--chat-list-item-active-background-color"?: string;
   "--chat-list-item-color"?: string;
   "--chat-list-item-hover-background-color"?: string;
