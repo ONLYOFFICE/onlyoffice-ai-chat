@@ -209,10 +209,10 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
         <div className="flex flex-col gap-[8px] min-h-[280px] pb-[16px]">
           <div className="flex flex-col gap-[8px] min-h-[256px] p-[12px] bg-[var(--servers-edit-config-json-background-color)] rounded-[12px]">
             <div className="flex flex-row justify-between">
-              <p className="font-bold text-[14px] leading-[20px] text-[var(--servers-edit-config-json-header-color)]">
+              <p className="font-bold text-[var(--servers-edit-config-json-header-color)]">
                 {t("EnterYourJSONConfiguration")}
               </p>
-              <p className="font-normal text-[14px] leading-[20px] text-[var(--servers-edit-config-json-lang-color)]">
+              <p className="font-normal text-[var(--servers-edit-config-json-lang-color)]">
                 json
               </p>
             </div>
@@ -221,7 +221,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
               className="border border-[var(--servers-edit-config-json-editor-border-color)] bg-[var(--servers-edit-config-json-editor-background-color)] rounded-[4px] overflow-hidden h-full max-h-full"
             />
             {error ? (
-              <p className="text-[var(--text-negative)] font-normal text-[14px] leading-[20px] whitespace-pre-line">
+              <p className="text-[var(--text-negative)] font-normal whitespace-pre-line">
                 {error}
               </p>
             ) : null}

@@ -151,7 +151,7 @@ const AvailableToolsItem = ({
                 }}
               >
                 <div className="flex items-center justify-between w-full h-full">
-                  <p className="text-[var(--servers-available-tools-item-name-color)] leading-[20px]">
+                  <p className="text-[var(--servers-available-tools-item-name-color)]">
                     {tool.displayName ?? tool.name}
                   </p>
                   <ToggleButton

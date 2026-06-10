@@ -107,7 +107,7 @@ const ThreadInner = () => {
               <div className="flex items-center justify-center">
                 <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
                   <Loader />
-                  <p className="text-[14px] leading-[20px] font-normal text-[var(--chat-message-analyze-color)]">
+                  <p className="font-normal text-[var(--chat-message-analyze-color)]">
                     {t("Analyzing")}
                   </p>
                 </div>

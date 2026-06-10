@@ -54,7 +54,7 @@ const SelectModel = () => {
       value={currentProfile?.name ?? ""}
       items={items}
       withoutBg
-      className="h-[22px] text-[12px] leading-[22px] ps-0 pe-0 hover:bg-transparent"
+      className="h-[22px] ps-0 pe-0 hover:bg-transparent"
       data-testid="model-selector"
     />
   );

@@ -13,7 +13,7 @@ const Link = ({
   return (
     <a
       className={cn(
-        "underline cursor-pointer leading-[20px]",
+        "underline cursor-pointer",
         variant === "primary"
           ? "text-[var(--link-primary-color)]"
           : "text-[var(--link-color)]",

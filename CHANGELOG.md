@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.102
+
+### Changed
+
+- Base typography: every widget surface (`.aui-root`, including the portal container) now defaults to 12px / 16px line-height; components override per-element.
+- Dropped hard-coded `text-[11–15px]`, `text-xs`/`text-sm`, and `leading-[20px]`/`leading-[22px]` across the UI so they inherit the base.
+- Chat history title is now 13px / 16px; ModelCard provider name is 10px / 14px.
+- Default `Button` size is now 24px tall with 8px horizontal padding and bold text.
+- Composer disclaimer text is now 10px.
+
 ## 0.4.99
 
 ### Changed

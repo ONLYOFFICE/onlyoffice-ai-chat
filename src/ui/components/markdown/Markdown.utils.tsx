@@ -49,7 +49,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h5: ({ className, ...props }) => (
     <h5
       className={cn(
-        "my-4 text-[16px] leading-[22px] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "my-4 text-[16px] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -58,7 +58,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h6: ({ className, ...props }) => (
     <h6
       className={cn(
-        "my-4 text-[14px] leading-[20px] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "my-4 font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -67,7 +67,7 @@ const defaultComponents = memoizeMarkdownComponents({
   p: ({ className, ...props }) => (
     <p
       className={cn(
-        "mb-5 mt-5 text-[14px] font-normal leading-[20px] first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "mb-5 mt-5 font-normal first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -129,7 +129,7 @@ const defaultComponents = memoizeMarkdownComponents({
   th: ({ className, ...props }) => (
     <th
       className={cn(
-        "px-4 py-2 border-b border-[var(--chat-message-divider-color)] text-left text-[var(--chat-message-th-color)] text-[14px] leading-[20px] font-bold [&[align=center]]:text-center [&[align=right]]:text-right",
+        "px-4 py-2 border-b border-[var(--chat-message-divider-color)] text-left text-[var(--chat-message-th-color)] font-bold [&[align=center]]:text-center [&[align=right]]:text-right",
         className
       )}
       {...props}
@@ -138,7 +138,7 @@ const defaultComponents = memoizeMarkdownComponents({
   td: ({ className, ...props }) => (
     <td
       className={cn(
-        "border-b border-[var(--chat-message-divider-color)] text-[var(--chat-message-td-color)] text-[14px] leading-[20px] px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right",
+        "border-b border-[var(--chat-message-divider-color)] text-[var(--chat-message-td-color)] px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right",
         className
       )}
       {...props}
@@ -155,7 +155,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   sup: ({ className, ...props }) => (
     <sup
-      className={cn("[&>a]:text-xs [&>a]:no-underline", className)}
+      className={cn("[&>a]:[&>a]:no-underline", className)}
       {...props}
     />
   ),

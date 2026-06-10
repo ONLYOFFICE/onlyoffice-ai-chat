@@ -134,13 +134,13 @@ export const AddModelCard = ({
                 align="start"
               >
                 <div className="flex flex-col gap-[6px] max-w-[221px]">
-                  <p className="text-[12px] leading-[16px] select-none">
+                  <p className="leading-[16px] select-none">
                     {t("EnterModelConfigTooltip")}
                   </p>
                   <Link
                     variant="primary"
                     href="#"
-                    className="text-[12px] leading-[16px]"
+                    className="leading-[16px]"
                     onClick={
                       onDownloadTemplate
                         ? (e) => {
@@ -198,7 +198,7 @@ export const AddModelCard = ({
 
   return (
     <ModelCardShell>
-      <h3 className="select-none text-[15px] font-bold leading-[20px] text-[var(--text-normal)] mb-[32px]">
+      <h3 className="select-none font-bold text-[var(--text-normal)] mb-[8px]">
         {t("ConnectNewAIModel")}
       </h3>
 

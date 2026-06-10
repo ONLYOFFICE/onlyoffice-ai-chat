@@ -8,6 +8,16 @@
   font-size: 14px;
 }
 
+/* Base typography for every widget surface. Applies to all page containers
+   and to the Radix portal container (dialogs / dropdowns / tooltips), so
+   components rendered separately in headless mode inherit it too. Components
+   override per-element through their own `text-*` / `leading-*` utilities.
+   `:where()` keeps specificity at 0 so host stylesheets always win. */
+:where(.aui-root) {
+  font-size: 12px;
+  line-height: 16px;
+}
+
 .font-rtl {
   font-family:
     system-ui,

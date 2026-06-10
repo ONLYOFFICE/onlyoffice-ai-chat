@@ -76,7 +76,7 @@ const EditPromptDialog = ({
                   "focus:bg-[var(--input-active-background-color)] focus:border focus:border-[var(--input-active-border-color)]",
                   "outline-none",
                   "placeholder:text-[var(--input-placeholder-color)] text-[var(--input-color)]",
-                  "px-[12px] py-[8px] text-[14px] leading-[20px] font-normal"
+                  "px-[12px] py-[8px] font-normal"
                 )}
                 spellCheck={false}
               />
@@ -201,7 +201,7 @@ const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
             }
           }}
         >
-          <p className="select-none h-[40px] flex items-center text-[12px] leading-[16px] text-[var(--text-normal)]">
+          <p className="select-none h-[40px] flex items-center leading-[16px] text-[var(--text-normal)]">
             {t("WantDeleteFolder")}
           </p>
           <div

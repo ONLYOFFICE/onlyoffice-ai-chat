@@ -63,7 +63,7 @@ const Composer = () => {
       >
         {!shouldHidePicker ? (
           <div className="flex items-center gap-[4px] min-w-0 px-[4px]">
-            <span className="shrink-0 text-[12px] leading-[22px] text-[var(--text-tertiary)] select-none">
+            <span className="shrink-0 text-[var(--text-tertiary)] select-none">
               {t("Ask")}
             </span>
             <div className="min-w-0 flex-1">
@@ -94,7 +94,7 @@ const Composer = () => {
         />
         <ComposerAction />
       </ComposerPrimitive.Root>
-      <p className="text-center font-normal text-[12px] leading-[16px] text-[var(--text-tertiary)]">
+      <p className="text-center font-normal text-[10px] leading-[16px] text-[var(--text-tertiary)]">
         {t("CheckInfo")}
       </p>
     </div>

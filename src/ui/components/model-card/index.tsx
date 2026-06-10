@@ -98,7 +98,7 @@ const ModelCard = ({
         <div className="flex flex-col overflow-hidden">
           <Tooltip>
             <TooltipTrigger asChild>
-              <p className="font-normal text-[14px] leading-[20px] text-[var(--model-card-color)] truncate">
+              <p className="font-normal text-[var(--model-card-color)] truncate">
                 {profile?.name}
               </p>
             </TooltipTrigger>
@@ -106,7 +106,7 @@ const ModelCard = ({
           </Tooltip>
           <p
             className={cn(
-              "text-[12px] leading-[14px] text-[var(--model-card-description-color)] truncate",
+              "text-[10px] leading-[14px] text-[var(--model-card-description-color)] truncate",
               isRTL ? "text-end" : ""
             )}
           >
@@ -118,9 +118,7 @@ const ModelCard = ({
         <div className="flex items-center justify-end">
           <DropdownMenu
             onOpenChange={setIsOpen}
-            trigger={
-              <IconButton iconName="more" size={20} isActive={isOpen} />
-            }
+            trigger={<IconButton iconName="more" size={20} isActive={isOpen} />}
             items={[
               {
                 icon: (

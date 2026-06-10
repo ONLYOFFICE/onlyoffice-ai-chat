@@ -67,7 +67,7 @@ const AvailableTools = ({ withHeader = true }: AvailableToolsProps) => {
             isRTL ? "flex-row-reverse" : ""
           )}
         >
-          <p className="font-bold leading-[20px] text-[var(--servers-available-tools-header-color)]">
+          <p className="font-bold text-[var(--servers-available-tools-header-color)]">
             {t("Permissions")}
           </p>
           <ToolsCounter />

@@ -62,7 +62,7 @@ const ManageToolDialog = ({
     <Dialog open={true}>
       <DialogContent header={t("Confirmation")} onClose={onDeny} isHuge>
         <div className="flex flex-col justify-between h-full mb-[16px] text-[var(--tool-fallback-color)]">
-          <p className="mt-[8px] font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]">
+          <p className="mt-[8px] font-[14px] font-normal text-[var(--tool-fallback-color)]">
             {t("AIWouldLikeUseThisTool")}
           </p>
           <ToolFallback
@@ -80,12 +80,12 @@ const ManageToolDialog = ({
               // ignore
             }}
           />
-          <p className="font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]">
+          <p className="font-[14px] font-normal text-[var(--tool-fallback-color)]">
             {t("ReviewEachAction")}
           </p>
           <p
             onClick={() => setIsAllowAlways((val) => !val)}
-            className="cursor-pointer flex items-center gap-[8px] mt-[24px] font-[14px] leading-[20px] font-normal text-[var(--tool-fallback-color)]"
+            className="cursor-pointer flex items-center gap-[8px] mt-[24px] font-[14px] font-normal text-[var(--tool-fallback-color)]"
           >
             <Checkbox checked={isAllowAlways} id="allow-always-checkbox" />
             {t("AlwaysAllow")}

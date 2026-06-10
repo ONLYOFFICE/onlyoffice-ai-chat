@@ -26,7 +26,7 @@ const AiModelsPage = ({
               {t("AIModels")}
             </h1>
           )}
-          <p className="select-none font-normal text-[12px] leading-[16px] text-[var(--settings-description-color)] mb-[8px]">
+          <p className="select-none font-normal leading-[16px] text-[var(--settings-description-color)] mb-[8px]">
             {t("AIModelsDescription")}
           </p>
         </>

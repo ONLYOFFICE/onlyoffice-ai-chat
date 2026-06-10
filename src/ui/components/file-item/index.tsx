@@ -127,7 +127,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
       ) : (
         <div className="flex flex-row items-center h-[24px] gap-[4px]">
           <Icon name={iconName} size={24} noColor />
-          <p className="text-[var(--file-items-color)] font-normal text-[14px] leading-[20px] whitespace-nowrap overflow-hidden text-ellipsis">
+          <p className="text-[var(--file-items-color)] font-normal whitespace-nowrap overflow-hidden text-ellipsis">
             {nameWithoutExtension}
             <span className="text-[var(--file-items-ext-color)]">
               .{extension}

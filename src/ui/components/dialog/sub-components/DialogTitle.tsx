@@ -20,7 +20,7 @@ const DialogTitle = ({
         "font-bold text-[var(--modal-dialog-header-color)] select-none",
         className,
         withWarningIcon
-          ? "text-[14px] leading-[20px]"
+          ? ""
           : "text-[18px] leading-[24px]"
       )}
       {...props}

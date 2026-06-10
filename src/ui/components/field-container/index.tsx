@@ -17,7 +17,7 @@ export type FieldContainerProps = {
 const ErrorBlock = ({ error }: { error: string }) => (
   <Tooltip>
     <TooltipTrigger asChild>
-      <p className="text-[var(--field-container-error-color)] leading-[20px] truncate">
+      <p className="text-[var(--field-container-error-color)] truncate">
         {error}
       </p>
     </TooltipTrigger>
@@ -61,7 +61,7 @@ const FieldContainer = ({
               {icon && <Icon name={icon} size={20} />}
               <p
                 className={cn(
-                  "select-none text-[14px] leading-[20px] text-[var(--field-container-header-color)]",
+                  "select-none text-[var(--field-container-header-color)]",
                   headerClassName
                 )}
               >
@@ -75,7 +75,7 @@ const FieldContainer = ({
             {icon && <Icon name={icon} size={20} />}
             <p
               className={cn(
-                "select-none text-[14px] leading-[20px] text-[var(--field-container-header-color)]",
+                "select-none text-[var(--field-container-header-color)]",
                 headerClassName
               )}
             >

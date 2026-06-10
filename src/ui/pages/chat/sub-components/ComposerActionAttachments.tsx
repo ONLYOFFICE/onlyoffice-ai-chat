@@ -219,7 +219,7 @@ const ComposerActionAttachment = () => {
     onToggleChange: toggleExtendedThinking,
     withAbout: true,
     aboutContent: (
-      <p className="p-[16px] text-[11px] leading-[16px] text-[var(--text-secondary)]">
+      <p className="p-[16px] leading-[16px] text-[var(--text-secondary)]">
         {t("ExtendedThinkingDescription")}
       </p>
     ),

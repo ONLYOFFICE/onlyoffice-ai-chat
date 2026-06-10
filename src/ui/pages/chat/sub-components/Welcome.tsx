@@ -15,7 +15,7 @@ const ThreadWelcome = () => {
             {t("WelcomeTitle")}
           </p>
           <p
-            className="text-[20px] leading-[20px]"
+            className="text-[20px]"
             style={{ color: "var(--chat-welcome-description-color)" }}
           >
             {t("WelcomeDescription")}

@@ -195,7 +195,7 @@ const DropDownItem = ({
         )}
         <span
           className={cn(
-            "truncate font-normal text-[14px] leading-[20px] text-[var(--drop-down-menu-item-color)]",
+            "truncate font-normal text-[var(--drop-down-menu-item-color)]",
             withSpace ? "ms-[28px]" : "",
             trailingIcon ? "flex-1" : ""
           )}

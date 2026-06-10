@@ -192,7 +192,7 @@ export const ModelConfigForm = ({
       : undefined;
 
   return (
-    <div className="flex flex-col mb-[26px]">
+    <div className="flex flex-col gap-[8px]">
       <FieldContainer
         header={t("Provider")}
         isHorizontal={isHorizontal}
@@ -224,10 +224,10 @@ export const ModelConfigForm = ({
                 isAbout
               >
                 <div className="flex flex-col gap-[8px] max-w-[280px]">
-                  <p className="text-[14px] leading-[20px] font-bold text-[var(--text-normal)] select-none">
+                  <p className="font-bold text-[var(--text-normal)] select-none">
                     {t("FinishAISetup")}
                   </p>
-                  <p className="text-[14px] leading-[20px] text-[var(--text-normal)] select-none">
+                  <p className="text-[var(--text-normal)] select-none">
                     {t("FinishAISetupDescription")}
                   </p>
                   <Button

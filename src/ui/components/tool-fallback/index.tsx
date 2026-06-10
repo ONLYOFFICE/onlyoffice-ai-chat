@@ -98,11 +98,11 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           <Loader size={16} />
         )}
         {isLoading && !isWebSearch && !isWebCrawling ? (
-          <p className="text-[var(--chat-message-tool-call-header-color)] text-[14px] font-normal leading-[16px]">
+          <p className="text-[var(--chat-message-tool-call-header-color)] font-normal leading-[16px]">
             {t("ToolExecuted")}
           </p>
         ) : null}
-        <span className="flex items-center gap-[8px] rounded-[4px] ps-[4px] pe-[8px] text-[14px] leading-[20px] font-normal text-[var(--chat-message-tool-call-name-color)] bg-[var(--chat-message-tool-call-name-background-color)] min-w-0 w-fit">
+        <span className="flex items-center gap-[8px] rounded-[4px] ps-[4px] pe-[8px] font-normal text-[var(--chat-message-tool-call-name-color)] bg-[var(--chat-message-tool-call-name-background-color)] min-w-0 w-fit">
           {isWebSearch ? (
             <Icon name="btn-web-search" size={24} color={TOOL_CALL_COLOR} />
           ) : !isWebCrawling ? (
@@ -140,7 +140,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
         <div className="flex flex-col gap-[24px] mt-[8px] p-[12px] bg-[var(--chat-message-tool-call-body-background-color)] rounded-[12px]">
           {isWebSearch ? null : (
             <div className="">
-              <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] text-[14px] font-bold leading-[20px]">
+              <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] font-bold">
                 {t("ToolCallArguments")}
                 <span
                   onClick={() => copyArgs(argsTextFinal ? argsTextFinal : "{}")}
@@ -200,7 +200,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                                     size={24}
                                     disableHover
                                   />
-                                  <h4 className="text-[14px] font-normal text-[var(--chat-message-tool-call-pre-color)] truncate">
+                                  <h4 className="font-normal text-[var(--chat-message-tool-call-pre-color)] truncate">
                                     {item.title}
                                   </h4>
                                 </div>
@@ -235,7 +235,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                 </div>
               ) : (
                 <>
-                  <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] text-[14px] font-bold leading-[20px]">
+                  <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] font-bold">
                     {t("ToolCallResult")}
                     <span
                       onClick={() =>

@@ -59,7 +59,7 @@ const ThinkingMarkdownText = memo(
               )}
               <div className="flex items-center bg-[var(--background-normal-element)] rounded-[4px] gap-[8px] ps-[4px] pe-[8px]">
                 <Icon name="btn-extended-thinking" size={24} />
-                <span className="text-[14px] font-normal leading-[20px] text-[var(--chat-message-color)] ">
+                <span className="font-normal text-[var(--chat-message-color)] ">
                   {t("Thinking")}
                 </span>
               </div>
@@ -131,10 +131,10 @@ const MessageError = () => {
       role="alert"
       className="border border-[var(--chat-message-error-border-color)] rounded-[4px] p-[6px]"
     >
-      <div className="text-[var(--chat-message-error-color)] text-[14px] leading-[20px] font-normal">
+      <div className="text-[var(--chat-message-error-color)] font-normal">
         {text}
       </div>
-      <div className="text-[var(--chat-message-error-color)] text-[11px] leading-[16px] font-normal opacity-60 mt-[2px]">
+      <div className="text-[var(--chat-message-error-color)] leading-[16px] font-normal opacity-60 mt-[2px]">
         {code}
       </div>
     </div>
@@ -314,7 +314,7 @@ export const AssistantMessage = memo(() => {
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
       >
-        <div className="leading-[20px] text-[14px] col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7 text-[var(--chat-message-color)] select-text">
+        <div className="col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7 text-[var(--chat-message-color)] select-text">
           <MessagePrimitive.Content
             components={{
               tools: { Fallback: ToolFallback },
