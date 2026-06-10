@@ -109,6 +109,13 @@ export interface WidgetConfig {
    */
   onDownloadTemplate?: () => void;
   /**
+   * Handler for opening a host-owned "Custom Providers" screen. When
+   * provided, a "Custom Providers" button is shown next to "Add Model"
+   * on the AI Models settings page; clicking it invokes this callback.
+   * When omitted, the button is not rendered.
+   */
+  onOpenCustomProvider?: () => void;
+  /**
    * Custom confirmation for deleting a profile (AI model). When provided,
    * the widget's built-in confirmation dialog is NOT shown — the host owns
    * the confirmation UI (e.g. its own modal) and resolves the result:

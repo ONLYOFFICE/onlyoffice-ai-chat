@@ -47,6 +47,7 @@ export type TranslationKey =
   | "ConnectNewAIModel"
   | "Connection"
   | "CopyToClipboard"
+  | "CustomProviders"
   | "CustomServersDescription"
   | "DefaultModel"
   | "Delete"

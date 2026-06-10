@@ -4,6 +4,7 @@ import { useComponents } from "../../../providers/ComponentsProvider";
 import { ModelCard } from "../../../components/model-card";
 import { AddModelCard } from "../../../components/model-config-cards";
 import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
 
 interface ModelsProps {
   isAddModelCardHorizontal?: boolean;
@@ -14,6 +15,7 @@ type ActiveCard = null | "add" | { editingProfileId: string };
 export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
   const { Button } = useComponents();
   const { t } = useI18n();
+  const { onOpenCustomProvider } = useWidgetConfig();
   const { useProfilesStore } = useStores();
   const profiles = useProfilesStore((s) => s.profiles);
   // Only one Add or Edit card may be open at a time across the whole list.
@@ -28,9 +30,14 @@ export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
           isHorizontal={isAddModelCardHorizontal}
         />
       ) : (
-        <Button className="self-start" onClick={() => setActiveCard("add")}>
-          {t("AddModel")}
-        </Button>
+        <div className="flex gap-[8px] self-start">
+          <Button onClick={() => setActiveCard("add")}>{t("AddModel")}</Button>
+          {onOpenCustomProvider && (
+            <Button variant="default" onClick={onOpenCustomProvider}>
+              {t("CustomProviders")}
+            </Button>
+          )}
+        </div>
       )}
 
       <div className="flex flex-col gap-[8px]">

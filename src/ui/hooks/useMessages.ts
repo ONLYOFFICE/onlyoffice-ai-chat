@@ -387,7 +387,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
                 prompt: systemPrompt,
               },
             });
-            await processStream(next, resolvedThreadId);
+            await processStream(next, resolvedThreadId, {
+              hasAssistantPlaceholder: true,
+            });
             return;
           }
           if (mw.action === "continue" && mw.args) {
@@ -800,7 +802,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         prompt: systemPrompt,
       },
     });
-    await processStream(stream, data.threadId);
+    await processStream(stream, data.threadId, {
+      hasAssistantPlaceholder: true,
+    });
   }, [
     api,
     currentProfile,

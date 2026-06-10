@@ -178,6 +178,12 @@ export interface AIChatWidgetProps {
    */
   onCreatePromptFolder?: WidgetConfig["onCreatePromptFolder"];
   /**
+   * Handler for opening a host-owned "Custom Providers" screen. When
+   * provided, a "Custom Providers" button is shown next to "Add Model".
+   * See {@link WidgetConfig.onOpenCustomProvider}.
+   */
+  onOpenCustomProvider?: WidgetConfig["onOpenCustomProvider"];
+  /**
    * Confirmation gate fired when leaving the MCP servers tab with unsaved
    * config edits. See {@link WidgetConfig.onDiscardMcpChanges}.
    */
@@ -225,6 +231,7 @@ export const AIChatWidget = React.forwardRef<
       onDownloadTemplate,
       onDeleteProfile,
       onCreatePromptFolder,
+      onOpenCustomProvider,
       onDiscardMcpChanges,
     },
     ref
@@ -245,6 +252,7 @@ export const AIChatWidget = React.forwardRef<
         onDownloadTemplate,
         onDeleteProfile,
         onCreatePromptFolder,
+        onOpenCustomProvider,
         onDiscardMcpChanges,
       }),
       [
@@ -262,6 +270,7 @@ export const AIChatWidget = React.forwardRef<
         onDownloadTemplate,
         onDeleteProfile,
         onCreatePromptFolder,
+        onOpenCustomProvider,
         onDiscardMcpChanges,
       ]
     );

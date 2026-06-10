@@ -424,6 +424,38 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
     expect(apiAi.denyToolCall).toHaveBeenCalled();
   });
 
+  it("denyToolCall updates the existing assistant message instead of re-adding it", async () => {
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    // The resume stream re-emits the SAME assistant message id. With
+    // `hasAssistantPlaceholder: true` the runtime must update it in place,
+    // never add a duplicate (which crashes assistant-ui's MessageRepository).
+    apiAi.denyToolCall.mockReturnValue(
+      arr([
+        {
+          type: "message-start",
+          message: { role: "assistant", content: "ok" },
+          messageId: "m1",
+        },
+        {
+          type: "message-end",
+          message: { role: "assistant", content: "ok" },
+          messageId: "m1",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.denyToolCall();
+    });
+    expect(stores.messageState.updateLastMessage).toHaveBeenCalled();
+    expect(stores.messageState.addMessage).not.toHaveBeenCalled();
+  });
+
   it("approveToolCall aborts when middleware afterToolResult returns skip", async () => {
     stores.serversState.manageToolData = {
       threadId: "t1",

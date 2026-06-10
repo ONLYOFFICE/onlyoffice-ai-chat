@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.111
+
+### Added
+
+- `onOpenCustomProvider` widget config callback: when provided, a "Custom Providers" button (default variant) is shown next to "Add Model" on the AI Models page.
+
+### Fixed
+
+- Denying a tool call no longer crashes the chat with a duplicate-message-id error — the resume stream now updates the existing assistant message instead of re-adding it.
+
 ## 0.4.110
 
 ### Added
