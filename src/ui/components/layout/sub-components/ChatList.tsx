@@ -4,6 +4,7 @@ import { useStores } from "../../../store/context";
 import { IconButton } from "../../icon-button";
 import { Input } from "../../input";
 import { ChatListItem } from "./ChatListItem";
+import { groupThreadsByDate } from "./ChatList.utils";
 
 const ChatList = () => {
   const { useThreadsStore, useRouter } = useStores();
@@ -17,7 +18,7 @@ const ChatList = () => {
 
   const [searchValue, setSearchValue] = React.useState("");
 
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const onChangeSearchValue = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,6 +34,22 @@ const ChatList = () => {
         thread.title?.toLowerCase().includes(searchValue.toLowerCase())
       ),
     [threads, searchValue]
+  );
+
+  // Bucket the (already date-sorted) threads into Today / Yesterday /
+  // Previous 7 Days / Previous 30 Days / by month. Recomputed when the
+  // visible list or language changes; `Date.now()` is read here so groups
+  // reflect the current day each time the list re-renders.
+  const groups = useMemo(
+    () =>
+      groupThreadsByDate(showingThreads, Date.now(), locale, {
+        today: t("Today"),
+        yesterday: t("Yesterday"),
+        previous7: t("Previous7Days"),
+        previous30: t("Previous30Days"),
+        older: t("Older"),
+      }),
+    [showingThreads, locale, t]
   );
 
   const isEmptyList = threads.length === 0;
@@ -77,21 +94,25 @@ const ChatList = () => {
         ) : (
           <div className="flex flex-col mt-[16px]">
             {showingThreads.length ? (
-              showingThreads.map((thread) => {
-                const isActive = thread.threadId === threadId;
-                return (
-                  <ChatListItem
-                    key={thread.threadId}
-                    thread={thread}
-                    isActive={isActive}
-                    onSwitchToThread={onSwitchToThreadAction}
-                    setCurrentPage={setCurrentPage}
-                    onRenameThread={onRenameThread}
-                    onDownloadThread={onDownloadThread}
-                    onClearThreadHistory={onClearThreadHistory}
-                  />
-                );
-              })
+              groups.map((group) => (
+                <div key={group.key} className="flex flex-col">
+                  <p className="select-none font-normal text-[11px] leading-[20px] text-[var(--chat-list-group-header-color)] mt-[16px] mb-[8px] first:mt-0">
+                    {group.label}
+                  </p>
+                  {group.threads.map((thread) => (
+                    <ChatListItem
+                      key={thread.threadId}
+                      thread={thread}
+                      isActive={thread.threadId === threadId}
+                      onSwitchToThread={onSwitchToThreadAction}
+                      setCurrentPage={setCurrentPage}
+                      onRenameThread={onRenameThread}
+                      onDownloadThread={onDownloadThread}
+                      onClearThreadHistory={onClearThreadHistory}
+                    />
+                  ))}
+                </div>
+              ))
             ) : (
               <p className="text-[var(--chat-list-empty-color)] font-normal w-full">
                 {t("NoChatYet")}

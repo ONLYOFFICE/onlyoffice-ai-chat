@@ -109,28 +109,17 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
               }
             }),
             EditorView.theme({
-              "&": {
-                height: "200px",
-                maxHeight: "200px",
-              },
               ".cm-content": {
                 padding: "10px",
               },
               ".cm-focused": {
                 outline: "none",
               },
-              ".cm-editor": {
-                height: "200px",
-                maxHeight: "200px",
-              },
               ".cm-scroller": {
                 fontFamily: "monospace",
-                height: "200px",
-                maxHeight: "200px",
-              },
-              ".cm-gutters": {
-                height: "200px",
-                maxHeight: "200px",
+                // No fixed height: the editor grows with its content and the
+                // page handles scrolling (no inner scrollbar).
+                overflow: "visible",
               },
             }),
           ],
@@ -215,7 +204,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
             </div>
             <div
               ref={editorRef}
-              className="border border-[var(--servers-edit-config-json-editor-border-color)] bg-[var(--servers-edit-config-json-editor-background-color)] rounded-[4px] overflow-hidden h-full max-h-full"
+              className="border border-[var(--servers-edit-config-json-editor-border-color)] bg-[var(--servers-edit-config-json-editor-background-color)] rounded-[4px]"
             />
             {error ? (
               <p className="text-[var(--text-negative)] font-normal whitespace-pre-line">

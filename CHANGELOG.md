@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.112
+
+### Added
+
+- Chat history list is now grouped by date (Today / Yesterday / Previous 7 Days / Previous 30 Days / by month) — purely client-side from `lastEditDate`.
+
+### Fixed
+
+- Clicking the help (about) icon in a composer dropdown no longer toggles Extended Thinking — the toggle guard now recognizes clicks on the inner SVG icon.
+
+### Changed
+
+- Edit Configuration (MCP) no longer scrolls internally — the page handles scrolling, matching the permissions panel.
+
 ## 0.4.111
 
 ### Added

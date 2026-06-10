@@ -76,8 +76,12 @@ const DropDownItem = ({
     e.stopPropagation();
     e.preventDefault();
 
+    // Use `Element` (not `HTMLElement`): clicking the about/help button hits
+    // its inner `<svg>` icon, which is an `SVGElement` — `instanceof
+    // HTMLElement` would be false and the guard would be skipped, toggling
+    // the row. `Element` covers both and still exposes `.closest`.
     if (
-      e.target instanceof HTMLElement &&
+      e.target instanceof Element &&
       (e.target.closest("[data-slot='tooltip-trigger']") ||
         e.target.closest("[data-slot='tooltip-content']"))
     )

@@ -98,10 +98,13 @@ export type TranslationKey =
   | "NoChatYet"
   | "NoModelsAvailable"
   | "OCR"
+  | "Older"
   | "OnlyofficeAISettings"
   | "Open"
   | "OverrideForTasks"
   | "Permissions"
+  | "Previous30Days"
+  | "Previous7Days"
   | "ProfileName"
   | "PromptName"
   | "PromptText"
@@ -127,6 +130,7 @@ export type TranslationKey =
   | "Summarization"
   | "TextAnalysis"
   | "Thinking"
+  | "Today"
   | "ToolCallArguments"
   | "ToolCallResult"
   | "ToolExecuted"
@@ -146,6 +150,7 @@ export type TranslationKey =
   | "WebSearchEngine"
   | "WelcomeDescription"
   | "WelcomeTitle"
-  | "Yes";
+  | "Yes"
+  | "Yesterday";
 
 export type Translations = Record<TranslationKey, string>;

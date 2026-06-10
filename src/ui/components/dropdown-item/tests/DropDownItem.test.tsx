@@ -395,6 +395,33 @@ describe("DropDownItem", () => {
     expect(onToggleChange).not.toHaveBeenCalled();
   });
 
+  it("toggle click ignores tooltip-trigger targets even when the click hits an inner SVG icon", () => {
+    const onToggleChange = vi.fn();
+    renderInDropdownContext(
+      <DropDownItem
+        text="Tooltip Toggle"
+        onClick={vi.fn()}
+        withToggle
+        toggleChecked={false}
+        onToggleChange={onToggleChange}
+      />
+    );
+    const item = screen
+      .getByText("Tooltip Toggle")
+      .closest("[role='menuitem']");
+    const triggerWrapper = document.createElement("div");
+    triggerWrapper.setAttribute("data-slot", "tooltip-trigger");
+    // The about/help button renders an <svg> icon — clicking it makes
+    // `e.target` an SVGElement (not an HTMLElement). The guard must still
+    // recognize it as being inside the tooltip trigger and skip the toggle.
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    triggerWrapper.appendChild(svg);
+    item!.appendChild(triggerWrapper);
+
+    fireEvent.click(svg);
+    expect(onToggleChange).not.toHaveBeenCalled();
+  });
+
   it("handles mouseEnter to open submenu", () => {
     renderInDropdownContext(
       <DropDownItem

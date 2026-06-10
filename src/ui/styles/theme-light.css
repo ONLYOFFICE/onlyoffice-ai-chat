@@ -56,6 +56,7 @@
   --chat-list-color: var(--text-normal);
   --chat-list-border-right: var(--border-divider);
   --chat-list-empty-color: var(--text-tertiary);
+  --chat-list-group-header-color: var(--text-tertiary);
 
   /* chat list item */
   --chat-list-item-color: var(--text-normal);
