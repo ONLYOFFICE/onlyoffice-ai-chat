@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.119
+
+### Changed
+
+- MCP config editor: long lines now scroll horizontally inside the editor (vertical still grows with the page).
+
 ## 0.4.118
 
 ### Changed

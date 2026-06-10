@@ -117,9 +117,13 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
               },
               ".cm-scroller": {
                 fontFamily: "monospace",
-                // No fixed height: the editor grows with its content and the
-                // page handles scrolling (no inner scrollbar).
-                overflow: "visible",
+                // No fixed height: the editor grows vertically with its
+                // content (the page scrolls), but long lines scroll
+                // horizontally inside the editor. `overflow-y` must be
+                // non-`visible` for `overflow-x: auto` to take effect;
+                // `hidden` never clips here since there is no height cap.
+                overflowX: "auto",
+                overflowY: "hidden",
               },
             }),
           ],
