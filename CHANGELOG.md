@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.120
+
+### Changed
+
+- Model config form fields (provider/model combo boxes, API key / URL / name inputs) are now 24px tall.
+
 ## 0.4.119
 
 ### Changed
