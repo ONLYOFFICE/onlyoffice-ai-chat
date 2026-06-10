@@ -7,7 +7,6 @@ import type {
   TOnlyOfficeConfig,
 } from "../../../../types";
 import { useComponents } from "../../../providers/ComponentsProvider";
-import { Icon } from "../../icon";
 import { ProviderLogo } from "../../provider-logo";
 import { useModelForm } from "../hooks/useModelForm";
 import { ModelCardShell } from "./ModelCardShell";
@@ -150,7 +149,6 @@ export const EditModelCard = ({
 
       <div className="flex flex-row justify-between items-center">
         <Button variant="default" onClick={onDelete}>
-          <Icon name="btn-remove" size={24} />
           {t("Delete")}
         </Button>
         <div className="flex flex-row gap-[12px]">

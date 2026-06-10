@@ -130,7 +130,7 @@ const AvailableToolsItem = ({
                 />
               }
               items={dropdownItems}
-              side="bottom"
+              side="left"
               align="start"
               sideOffset={0}
             />

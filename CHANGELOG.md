@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.118
+
+### Changed
+
+- Non-primary (default) buttons now use normal font-weight; only primary buttons stay bold.
+- Removed the trash icon from the Delete button in the edit-model card.
+
 ## 0.4.117
 
 ### Changed
