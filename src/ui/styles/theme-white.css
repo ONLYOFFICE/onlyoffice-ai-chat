@@ -199,7 +199,7 @@
 
   /* settings */
   --settings-header-color: var(--text-normal);
-  --settings-description-color: var(--text-tertiary);
+  --settings-description-color: var(--text-secondary);
 
   /* ai provider item */
   --ai-provider-item-color: var(--text-normal);
@@ -218,7 +218,7 @@
   --model-card-logo-border-radius: 6px;
 
   /* settings servers */
-  --servers-description-color: var(--text-tertiary);
+  --servers-description-color: var(--text-secondary);
   --servers-edit-config-json-background-color: var(
     --background-normal-element-light
   );

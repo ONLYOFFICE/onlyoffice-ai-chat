@@ -41,7 +41,7 @@ const Servers = ({ variant = "tab" }: ServersProps) => {
     <div className="flex flex-col pb-[32px] w-full">
       <p
         className={cn(
-          "font-normal leading-[20px] text-[var(--servers-description-color)] mb-[16px]",
+          "font-normal text-[12px] leading-[16px] text-[var(--settings-description-color)] mb-[16px]",
           isRTL ? "text-end" : ""
         )}
       >

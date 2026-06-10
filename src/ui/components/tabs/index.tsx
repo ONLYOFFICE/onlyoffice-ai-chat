@@ -46,7 +46,7 @@ const Tabs = ({
         <TabsPrimitive.Content
           key={item.value}
           value={item.value}
-          className="mt-[24px] flex-1 min-h-0 overflow-y-auto"
+          className="mt-[8px] flex-1 min-h-0 overflow-y-auto"
         >
           {item.content}
         </TabsPrimitive.Content>

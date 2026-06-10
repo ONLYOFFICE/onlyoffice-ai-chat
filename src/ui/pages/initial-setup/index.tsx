@@ -23,7 +23,7 @@ const InitialSetup = () => {
           isHorizontal={isAddModelCardHorizontal}
         />
 
-        <div className="flex flex-col gap-[16px]">
+        <div className="flex flex-col gap-[8px]">
           {profiles.map((profile) => (
             <ModelCard
               key={profile.id}

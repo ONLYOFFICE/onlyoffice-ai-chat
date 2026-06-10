@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.99
+
+### Changed
+
+- Unified settings-page descriptions to a single style (12px / 16px line-height) and one color token (`--settings-description-color`); both description tokens now resolve to `--text-secondary` across all themes.
+
 ## 0.4.75
 
 ### Added

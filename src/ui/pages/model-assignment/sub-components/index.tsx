@@ -67,7 +67,7 @@ const ModelAssignment = () => {
 
   return (
     <div className="w-full">
-      <p className="font-normal leading-[20px] text-[var(--settings-description-color)] mb-[32px]">
+      <p className="font-normal text-[12px] leading-[16px] text-[var(--settings-description-color)] mb-[32px]">
         {t("ModelAssignmentDescription")}
       </p>
       <div className="flex flex-col">

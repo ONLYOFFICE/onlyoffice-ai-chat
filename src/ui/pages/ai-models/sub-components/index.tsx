@@ -21,7 +21,7 @@ export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
   const isAddCardOpen = activeCard === "add";
 
   return (
-    <div className="flex flex-col gap-[16px] select-none">
+    <div className="flex flex-col gap-[8px] select-none">
       {isAddCardOpen ? (
         <AddModelCard
           onClose={() => setActiveCard(null)}
@@ -33,7 +33,7 @@ export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
         </Button>
       )}
 
-      <div className="flex flex-col gap-[16px]">
+      <div className="flex flex-col gap-[8px]">
         {profiles.map((profile) => (
           <ModelCard
             key={profile.id}

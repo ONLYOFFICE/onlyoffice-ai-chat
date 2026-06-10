@@ -204,13 +204,13 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     >
       <p
         className={cn(
-          "font-normal text-[14px] leading-[20px] text-[var(--servers-description-color)]",
+          "font-normal text-[12px] leading-[16px] text-[var(--settings-description-color)]",
           isRTL ? "text-end" : ""
         )}
       >
         {t("WebSearchDescription")}
       </p>
-      <div className="flex flex-col gap-[16px]">
+      <div className="flex flex-col gap-[8px]">
         <FieldContainer
           header={t("WebSearchEngine")}
           isHorizontal={fieldIsHorizontal}
