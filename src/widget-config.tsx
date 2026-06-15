@@ -28,10 +28,17 @@ export interface WidgetConfig {
   hideSettingsButton?: boolean;
   /**
    * Hide the "Always allow" checkbox in the tool-call confirmation dialog.
-   * When set, the host can only approve/deny a single call at a time and
+   * When hidden, the host can only approve/deny a single call at a time and
    * cannot opt into persisting the allow decision for the tool.
+   *
+   * - `true` — hide for every tool.
+   * - `string[]` — hide only for the listed tool names. Matched against the
+   *   full tool name (e.g. `"type_search"`) first, then the bare name with
+   *   the `<serverType>_` prefix stripped (e.g. `"search"`), so either form
+   *   works.
+   * - `false` / omitted — always show the checkbox.
    */
-  hideToolAllowAlways?: boolean;
+  hideToolAllowAlways?: boolean | string[];
   /**
    * Fully takes over the click on the header settings button. When provided,
    * the default behavior (`router.setCurrentPage("settings" | "chat")`) is

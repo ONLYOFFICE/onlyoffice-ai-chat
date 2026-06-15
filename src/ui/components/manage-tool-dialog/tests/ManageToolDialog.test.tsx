@@ -95,6 +95,13 @@ vi.mock("../../checkbox", () => ({
   ),
 }));
 
+const { widgetConfig } = vi.hoisted(() => ({
+  widgetConfig: {} as Record<string, unknown>,
+}));
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => widgetConfig,
+}));
+
 import { ManageToolDialog } from "../index";
 
 describe("ManageToolDialog", () => {
@@ -118,6 +125,31 @@ describe("ManageToolDialog", () => {
       ],
     };
     mockManageToolData.idx = 0;
+    for (const key of Object.keys(widgetConfig)) delete widgetConfig[key];
+  });
+
+  it("hides AlwaysAllow checkbox when hideToolAllowAlways is true", () => {
+    widgetConfig.hideToolAllowAlways = true;
+    render(
+      <ManageToolDialog onAllow={onAllow} onDeny={onDeny} onClose={onClose} />
+    );
+    expect(screen.queryByText("AlwaysAllow")).not.toBeInTheDocument();
+  });
+
+  it("hides AlwaysAllow checkbox when the tool name is listed", () => {
+    widgetConfig.hideToolAllowAlways = ["my_tool"];
+    render(
+      <ManageToolDialog onAllow={onAllow} onDeny={onDeny} onClose={onClose} />
+    );
+    expect(screen.queryByText("AlwaysAllow")).not.toBeInTheDocument();
+  });
+
+  it("shows AlwaysAllow checkbox when the tool name is not listed", () => {
+    widgetConfig.hideToolAllowAlways = ["other_tool"];
+    render(
+      <ManageToolDialog onAllow={onAllow} onDeny={onDeny} onClose={onClose} />
+    );
+    expect(screen.getByText("AlwaysAllow")).toBeInTheDocument();
   });
 
   it("renders dialog with confirmation header", () => {

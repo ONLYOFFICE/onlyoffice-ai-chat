@@ -106,7 +106,7 @@ export interface AIChatWidgetProps {
   hiddenWebSearchProviders?: WebSearchProviderId[];
   hideProfilePicker?: boolean;
   hideSettingsButton?: boolean;
-  hideToolAllowAlways?: boolean;
+  hideToolAllowAlways?: WidgetConfig["hideToolAllowAlways"];
   /**
    * Render the "Add model" form in a two-row (horizontal) layout
    * instead of the default single-column stack. Affects both the

@@ -46,6 +46,23 @@ const ManageToolDialog = ({
 
   const toolCall = manageToolData?.message?.content[manageToolData.idx];
 
+  // Resolve whether the "Always allow" checkbox is hidden for this tool.
+  // `true` hides it for every tool; a string[] hides it only when the tool
+  // matches — by full name (`type_search`) or bare name (`search`).
+  const toolName =
+    toolCall &&
+    typeof toolCall === "object" &&
+    "type" in toolCall &&
+    toolCall.type === "tool-call"
+      ? toolCall.toolName
+      : undefined;
+  const hideAllowAlways = Array.isArray(hideToolAllowAlways)
+    ? toolName !== undefined &&
+      hideToolAllowAlways.some(
+        (name) => name === toolName || name === toolName.replace(/^[^_]+_/, "")
+      )
+    : Boolean(hideToolAllowAlways);
+
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter") {
@@ -98,7 +115,7 @@ const ManageToolDialog = ({
           <p className="font-[14px] font-normal text-[var(--tool-fallback-color)]">
             {t("ReviewEachAction")}
           </p>
-          {hideToolAllowAlways ? null : (
+          {hideAllowAlways ? null : (
             <p
               onClick={() =>
                 !isApprovingTool && setIsAllowAlways((val) => !val)

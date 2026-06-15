@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.123
+
+### Changed
+
+- `hideToolAllowAlways` now also accepts a `string[]` — hides the "Always allow" checkbox only for the listed tools (matched by full name `type_search` or bare name `search`). `true` still hides it for every tool.
+
+```tsx
+<AIChatWidget hideToolAllowAlways={["search", "fs_write"]} />
+```
+
 ## 0.4.122
 
 ### Added
