@@ -150,13 +150,15 @@ describe("ManageToolDialog", () => {
     expect(screen.getByText("Deny")).toBeInTheDocument();
   });
 
-  it("calls onAllow and onClose when Allow is clicked", () => {
+  it("calls onAllow when Allow is clicked (closing is owned by the approve flow)", () => {
     render(
       <ManageToolDialog onAllow={onAllow} onDeny={onDeny} onClose={onClose} />
     );
     fireEvent.click(screen.getByText("Allow"));
     expect(onAllow).toHaveBeenCalledWith(false);
-    expect(onClose).toHaveBeenCalledOnce();
+    // The approve flow dismisses the dialog (immediately or after the result
+    // callback settles), so the dialog itself no longer calls onClose.
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("calls onDeny and onClose when Deny is clicked", () => {
@@ -199,7 +201,7 @@ describe("ManageToolDialog", () => {
     );
     fireEvent.keyDown(window, { key: "Enter" });
     expect(onAllow).toHaveBeenCalledWith(false);
-    expect(onClose).toHaveBeenCalledOnce();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("returns null when toolCall is not a tool-call type", () => {

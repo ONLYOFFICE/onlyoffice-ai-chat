@@ -36,6 +36,16 @@ export interface ServersStoreState {
      */
     serverExecuted?: boolean;
   };
+  /**
+   * `true` from the moment the user clicks "Allow" in the tool-confirmation
+   * dialog until the tool result has been resolved (for server-executed
+   * tools: the result emerges from the core stream). Drives the dialog's
+   * pending state — it stays open and shows a loader instead of closing
+   * instantly, so the host's `onToolCallApproveResult` callback can run
+   * before the dialog dismisses.
+   */
+  isApprovingTool: boolean;
+  setIsApprovingTool: (value: boolean) => void;
   webSearchEnabled: boolean;
   /**
    * `true` while the inline MCP config editor holds unsaved edits (the
@@ -150,6 +160,7 @@ export function createServersStore(deps: {
     systemTools: {},
     disabledTools: {},
     manageToolData: undefined,
+    isApprovingTool: false,
     webSearchEnabled: false,
     mcpConfigDirty: false,
 
@@ -264,6 +275,7 @@ export function createServersStore(deps: {
     },
 
     setManageToolData: (data) => set({ manageToolData: data }),
+    setIsApprovingTool: (value) => set({ isApprovingTool: value }),
 
     getConfig: async () => api.tools.listCustomServers(entityId),
 

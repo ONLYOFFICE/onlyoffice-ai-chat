@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.122
+
+### Added
+
+- `hideToolAllowAlways` config flag — hides the "Always allow" checkbox in the tool-confirmation dialog.
+- `onToolCallApproveResult` callback — after the user clicks **Allow**, the dialog stays open in a pending state until the tool result resolves from the core stream, passes it to the callback, then closes and resumes the stream.
+
+```tsx
+<AIChatWidget
+  hideToolAllowAlways
+  onToolCallApproveResult={async (result) => {
+    /* inspect / persist the tool result before the stream continues */
+  }}
+/>
+```
+
 ## 0.4.121
 
 ### Changed

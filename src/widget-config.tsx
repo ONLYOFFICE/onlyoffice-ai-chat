@@ -27,6 +27,12 @@ export interface WidgetConfig {
    */
   hideSettingsButton?: boolean;
   /**
+   * Hide the "Always allow" checkbox in the tool-call confirmation dialog.
+   * When set, the host can only approve/deny a single call at a time and
+   * cannot opt into persisting the allow decision for the tool.
+   */
+  hideToolAllowAlways?: boolean;
+  /**
    * Fully takes over the click on the header settings button. When provided,
    * the default behavior (`router.setCurrentPage("settings" | "chat")`) is
    * NOT invoked — the host is responsible for any navigation, modal, etc.
@@ -159,6 +165,17 @@ export interface WidgetConfig {
    * dropped, as before).
    */
   onDiscardMcpChanges?: () => boolean | void | Promise<boolean | void>;
+  /**
+   * Invoked after the user approves a tool call, once its result has been
+   * resolved from the core stream — but BEFORE the confirmation dialog
+   * closes and the stream continues. The dialog stays open in a pending
+   * (loading) state from the "Allow" click until this callback settles, so
+   * the host can inspect/persist the result synchronously or await async
+   * work. The result is passed through unchanged; returning a value does
+   * not alter it. Once the callback settles, the dialog closes and the
+   * stream resumes.
+   */
+  onToolCallApproveResult?: (result: unknown) => void | Promise<void>;
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});

@@ -38,6 +38,7 @@ const stores = {
   },
   serversState: {
     setManageToolData: vi.fn(),
+    setIsApprovingTool: vi.fn(),
     tools: [] as unknown[],
     manageToolData: undefined as unknown,
     getTools: vi.fn().mockResolvedValue(undefined),
@@ -149,6 +150,13 @@ vi.mock("../../tools/context", () => ({
   useToolsContext: () => ({ servers }),
 }));
 
+const { widgetConfig } = vi.hoisted(() => ({
+  widgetConfig: {} as Record<string, unknown>,
+}));
+vi.mock("../../../widget-config", () => ({
+  useWidgetConfig: () => widgetConfig,
+}));
+
 import useMessages from "../useMessages";
 
 const profile = { id: "p1", name: "P", providerType: "x" } as never;
@@ -161,6 +169,7 @@ beforeEach(() => {
   stores.threadsState.threads = [];
   stores.serversState.tools = [];
   stores.serversState.manageToolData = undefined;
+  for (const key of Object.keys(widgetConfig)) delete widgetConfig[key];
   stores.attachmentsState.attachmentFiles = [];
   stores.attachmentsState.attachmentImages = [];
   stores.profilesState.sessionChatProfile = null;
@@ -376,6 +385,46 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
       await result.current.approveToolCall(false);
     });
     expect(servers.callTools).not.toHaveBeenCalled();
+  });
+
+  it("onToolCallApproveResult: keeps the dialog open, fires the callback with the result, then closes before resuming", async () => {
+    const order: string[] = [];
+    const onResult = vi.fn(async (result: unknown) => {
+      order.push(`callback:${String(result)}`);
+    });
+    widgetConfig.onToolCallApproveResult = onResult;
+    (stores.serversState.setIsApprovingTool as ReturnType<typeof vi.fn>) =
+      vi.fn(() => order.push("approving"));
+    (stores.serversState.setManageToolData as ReturnType<typeof vi.fn>) = vi.fn(
+      (data) => order.push(data === undefined ? "close" : "open")
+    );
+
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: { q: 1 },
+    });
+    apiAi.approveToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.approveToolCall(false);
+    });
+
+    // The dialog is NOT dismissed up front; the callback receives the tool
+    // result and only afterwards is the dialog closed and the stream resumed.
+    expect(onResult).toHaveBeenCalledWith("tool-result");
+    expect(order.indexOf("callback:tool-result")).toBeLessThan(
+      order.indexOf("close")
+    );
+    // Pending state was entered (dialog stayed open) before the close.
+    expect(order.indexOf("approving")).toBeLessThan(order.indexOf("close"));
+    expect(apiAi.approveToolCall).toHaveBeenCalled();
   });
 
   it("approveToolCall dispatches and resumes", async () => {

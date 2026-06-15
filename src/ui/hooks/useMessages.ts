@@ -88,6 +88,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     (s) => s.insertNewMessageToThread
   );
   const setManageToolData = useServersStore((s) => s.setManageToolData);
+  const setIsApprovingTool = useServersStore((s) => s.setIsApprovingTool);
   const tools = useServersStore((s) => s.tools);
   const attachmentFiles = useAttachmentsStore((s) => s.attachmentFiles);
   const clearAttachmentFiles = useAttachmentsStore(
@@ -100,7 +101,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const extendedThinking = useProfilesStore((s) => s.extendedThinking);
   const { servers } = useToolsContext();
-  const { entityId, systemPrompt } = useWidgetConfig();
+  const { entityId, systemPrompt, onToolCallApproveResult } = useWidgetConfig();
 
   const threadIdRef = useRef(threadId);
 
@@ -150,8 +151,39 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     async (
       stream: AsyncGenerator<ChatEvent>,
       initialThreadId: string,
-      options?: { hasAssistantPlaceholder?: boolean }
+      options?: {
+        hasAssistantPlaceholder?: boolean;
+        /**
+         * Watch a server-executed tool call (identified by its index in the
+         * paused assistant message) for the result the engine streams back.
+         * `cb` fires once, the first time that tool-call part carries a
+         * defined `result`, and the stream loop awaits it before consuming
+         * further events — letting the tool-confirmation dialog stay open
+         * until the host's approve callback settles, then resume.
+         */
+        watchToolResult?: {
+          idx: number;
+          cb: (result: unknown) => void | Promise<void>;
+        };
+      }
     ) => {
+      const watch = options?.watchToolResult;
+      let watchFired = false;
+      const maybeFireWatch = async (message: ThreadMessageLike) => {
+        if (!watch || watchFired) return;
+        const content = message.content;
+        if (!Array.isArray(content)) return;
+        const part = content[watch.idx];
+        if (
+          part &&
+          typeof part === "object" &&
+          (part as { type?: string }).type === "tool-call" &&
+          (part as { result?: unknown }).result !== undefined
+        ) {
+          watchFired = true;
+          await watch.cb((part as { result?: unknown }).result);
+        }
+      };
       // `isStreamRunning` covers the whole round; `isRequestRunning` is true
       // only while a chunk is actively flowing. We start with the request
       // flag off so the "Analyzing" indicator surfaces immediately on submit
@@ -282,6 +314,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               chunk = result.chunk;
             }
           }
+
+          // Surface the server-executed tool result to the watcher as soon
+          // as the engine streams it back, before the chunk is rendered.
+          await maybeFireWatch(chunk);
 
           const display = await applyMiddlewareDisplay(chunk, !isTerminal);
           if (!display) continue;
@@ -676,13 +712,35 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const approveToolCall = useCallback(
     async (allowAlways: boolean) => {
       const data = useServersStore.getState().manageToolData;
-      setManageToolData(undefined);
-      if (!data) return;
+
+      // When the host wires `onToolCallApproveResult`, the dialog must NOT
+      // close on click: it stays open in a pending state until the tool
+      // result resolves (from the core stream for server-executed tools, or
+      // from the local dispatch otherwise), the callback settles, and only
+      // then the dialog dismisses while the stream keeps flowing. Without the
+      // callback we preserve the original behavior of closing immediately.
+      const waitForResult = Boolean(onToolCallApproveResult);
+      const closeDialog = () => {
+        setIsApprovingTool(false);
+        setManageToolData(undefined);
+      };
+
+      if (waitForResult) setIsApprovingTool(true);
+      else setManageToolData(undefined);
+
+      if (!data) {
+        closeDialog();
+        return;
+      }
 
       const toolCall = readToolCall(data.message, data.idx);
-      if (!toolCall) return;
+      if (!toolCall) {
+        closeDialog();
+        return;
+      }
 
-      // System tools: resume without local execution — the engine runs it.
+      // System tools: resume without local execution — the engine runs it
+      // and streams the result back, which the watcher hands to the callback.
       if (data.serverExecuted) {
         setIsToolPending(false);
         const stream = api.ai.approveToolCall({
@@ -701,7 +759,24 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         });
         await processStream(stream, data.threadId, {
           hasAssistantPlaceholder: true,
+          ...(waitForResult
+            ? {
+                watchToolResult: {
+                  idx: data.idx,
+                  cb: async (result) => {
+                    try {
+                      await onToolCallApproveResult?.(result);
+                    } finally {
+                      closeDialog();
+                    }
+                  },
+                },
+              }
+            : {}),
         });
+        // Safety net: if the stream ended without ever surfacing the result
+        // (error/abort before the tool ran), make sure the dialog dismisses.
+        if (waitForResult) closeDialog();
         return;
       }
 
@@ -725,6 +800,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         if (mw.action === "skip") {
           setIsStreamRunning(false);
           setIsRequestRunning(false);
+          if (waitForResult) closeDialog();
           return;
         }
         if (mw.action === "continue" && mw.result !== undefined) {
@@ -737,6 +813,16 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         toolName: toolCall.toolName,
         result,
       });
+
+      // Hand the resolved result to the host, then close the dialog — before
+      // resuming the stream so the rest of the answer streams in after.
+      if (waitForResult) {
+        try {
+          await onToolCallApproveResult?.(result);
+        } finally {
+          closeDialog();
+        }
+      }
 
       const patched = patchToolCallResult(data.message, data.idx, result);
       updateLastMessage(patched);
@@ -769,8 +855,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       entityId,
       extendedThinking,
       middlewareRunner,
+      onToolCallApproveResult,
       processStream,
       servers,
+      setIsApprovingTool,
       setIsRequestRunning,
       setIsStreamRunning,
       setIsToolPending,

@@ -106,6 +106,7 @@ export interface AIChatWidgetProps {
   hiddenWebSearchProviders?: WebSearchProviderId[];
   hideProfilePicker?: boolean;
   hideSettingsButton?: boolean;
+  hideToolAllowAlways?: boolean;
   /**
    * Render the "Add model" form in a two-row (horizontal) layout
    * instead of the default single-column stack. Affects both the
@@ -188,6 +189,12 @@ export interface AIChatWidgetProps {
    * config edits. See {@link WidgetConfig.onDiscardMcpChanges}.
    */
   onDiscardMcpChanges?: WidgetConfig["onDiscardMcpChanges"];
+  /**
+   * Fired with the approved tool's result before the confirmation dialog
+   * closes and the stream continues. See
+   * {@link WidgetConfig.onToolCallApproveResult}.
+   */
+  onToolCallApproveResult?: WidgetConfig["onToolCallApproveResult"];
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -217,6 +224,7 @@ export const AIChatWidget = React.forwardRef<
       hiddenWebSearchProviders,
       hideProfilePicker,
       hideSettingsButton,
+      hideToolAllowAlways,
       isAddModelCardHorizontal,
       onSettingsClick,
       isSettingsActive,
@@ -233,6 +241,7 @@ export const AIChatWidget = React.forwardRef<
       onCreatePromptFolder,
       onOpenCustomProvider,
       onDiscardMcpChanges,
+      onToolCallApproveResult,
     },
     ref
   ) => {
@@ -240,6 +249,7 @@ export const AIChatWidget = React.forwardRef<
       () => ({
         hideProfilePicker,
         hideSettingsButton,
+        hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
         isSettingsActive,
@@ -254,10 +264,12 @@ export const AIChatWidget = React.forwardRef<
         onCreatePromptFolder,
         onOpenCustomProvider,
         onDiscardMcpChanges,
+        onToolCallApproveResult,
       }),
       [
         hideProfilePicker,
         hideSettingsButton,
+        hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
         isSettingsActive,
@@ -272,6 +284,7 @@ export const AIChatWidget = React.forwardRef<
         onCreatePromptFolder,
         onOpenCustomProvider,
         onDiscardMcpChanges,
+        onToolCallApproveResult,
       ]
     );
 
