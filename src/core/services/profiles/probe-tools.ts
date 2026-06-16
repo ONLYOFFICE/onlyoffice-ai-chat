@@ -46,9 +46,15 @@ const hasProbeToolCall = (result: SendMessageResult): boolean => {
  * when the model emits a `tool-call` content part for `probe_echo`,
  * otherwise `false`. Never throws — network/timeout/provider errors all
  * collapse to `false`.
+ *
+ * `useResponsesApi` selects the transport: reasoning models (gpt-5+) reject
+ * `tools` + `reasoning_effort` on `/v1/chat/completions` and only accept
+ * tool calls through the Responses API, so the probe must mirror the same
+ * transport the real chat would use to avoid a false negative.
  */
 export async function probeToolCapability(
   profile: Pick<Profile, "providerType" | "modelId" | "baseUrl" | "key">,
+  useResponsesApi = false,
   externalSignal?: AbortSignal
 ): Promise<boolean> {
   const controller = new AbortController();
@@ -65,6 +71,7 @@ export async function probeToolCapability(
       model: profile.modelId,
       systemPrompt: "",
       tools: [probeTool],
+      useResponsesApi,
       signal: controller.signal,
     });
 

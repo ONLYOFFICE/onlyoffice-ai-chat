@@ -1,5 +1,9 @@
 import { vi } from "vitest";
 import type { Model } from "../../../../shared/model";
+import type {
+  SendMessageArgs,
+  SendMessageResult,
+} from "../../../../shared/send-message-args";
 import type { Profile } from "../../../types";
 import { AbstractBaseProvider } from "../../../providers";
 import { registerProvider, unregisterProvider } from "../../../providers";
@@ -7,21 +11,35 @@ import type { StorageAdapter } from "../../../storage";
 
 export const checkProviderMock = vi.fn();
 export const getProviderModelsMock = vi.fn();
-export const checkResponsesApiMock = vi.fn().mockResolvedValue(false);
+
+/**
+ * Drives the tool-capability probe. Receives the `sendMessage` args and
+ * returns `true` to make the stub emit a `probe_echo` tool-call (i.e. the
+ * model "supports tools" on that transport). The probe fires twice — once
+ * with `useResponsesApi: true`, once `false` — so a test can simulate a
+ * model that only calls tools through the Responses API by keying off the
+ * flag. Defaults to `false` (no tool support on either transport).
+ */
+export const sendMessageProbeMock = vi.fn(
+  (_args: SendMessageArgs): boolean => false
+);
 
 export class StubProfileProvider extends AbstractBaseProvider {
-  // eslint-disable-next-line require-yield
-  async *sendMessage(): AsyncGenerator<never> {
-    throw new Error("not used");
+  async *sendMessage(
+    args: SendMessageArgs
+  ): AsyncGenerator<SendMessageResult> {
+    if (sendMessageProbeMock(args)) {
+      yield {
+        isEnd: true,
+        responseMessage: {
+          role: "assistant",
+          content: [{ type: "tool-call", toolName: "probe_echo" }],
+        },
+      };
+    }
   }
   async sendMessageSync(): Promise<string> {
     return "";
-  }
-  async checkResponsesApi(
-    modelId: string,
-    signal?: AbortSignal
-  ): Promise<boolean> {
-    return checkResponsesApiMock(modelId, signal);
   }
   static getName(): string {
     return "Profile Stub";

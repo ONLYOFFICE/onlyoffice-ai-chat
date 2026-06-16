@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.124
+
+### Fixed
+
+- Tool-capability probe now mirrors the chat transport: it tries the Responses API and Chat Completions in parallel, so reasoning models (e.g. `gpt-5.5-pro`) that only call tools via `/v1/responses` are no longer mis-detected as `canUseTool: false`. `canUseTool` and `useResponsesApi` are now resolved together by a single `probeCapabilities` step and can no longer disagree.
+- Text-protocol tool fallback now forwards the `useResponsesApi` flag to the provider.
+
 ## 0.4.123
 
 ### Changed

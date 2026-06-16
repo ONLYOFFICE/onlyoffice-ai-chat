@@ -3,13 +3,13 @@ import { ActionType } from "../../../../shared/action-type";
 import { ProfilesEngine } from "../engine";
 import {
   checkProviderMock,
-  checkResponsesApiMock,
   dummyModel,
   getProviderModelsMock,
   makeProfile,
   makeStorage,
   PROFILE_STUB_TYPE,
   registerStubProvider,
+  sendMessageProbeMock,
   unregisterStubProvider,
 } from "./test-utils";
 
@@ -17,8 +17,8 @@ beforeEach(() => {
   registerStubProvider();
   checkProviderMock.mockReset();
   getProviderModelsMock.mockReset();
-  checkResponsesApiMock.mockReset();
-  checkResponsesApiMock.mockResolvedValue(false);
+  sendMessageProbeMock.mockReset();
+  sendMessageProbeMock.mockReturnValue(false);
   vi.spyOn(crypto, "randomUUID").mockReturnValue(
     "00000000-0000-0000-0000-000000000001"
   );
@@ -174,9 +174,10 @@ describe("ProfilesEngine.listModels", () => {
 });
 
 describe("ProfilesEngine probes (canUseTool + useResponsesApi)", () => {
-  it("runs both probes on create and persists their results", async () => {
+  it("persists canUseTool + useResponsesApi from the probe on create", async () => {
     checkProviderMock.mockResolvedValueOnce(true);
-    checkResponsesApiMock.mockResolvedValueOnce(true);
+    // Model only calls tools through the Responses API — the gpt-5.5 case.
+    sendMessageProbeMock.mockImplementation((args) => args.useResponsesApi === true);
     const { storage, snapshot } = makeStorage();
     const engine = new ProfilesEngine({ storage });
 
@@ -189,16 +190,49 @@ describe("ProfilesEngine probes (canUseTool + useResponsesApi)", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(checkResponsesApiMock).toHaveBeenCalledWith(
-      "gpt-5.5",
-      expect.any(AbortSignal)
-    );
     const saved = snapshot().profiles[0];
+    expect(saved.canUseTool).toBe(true);
     expect(saved.useResponsesApi).toBe(true);
-    // canUseTool is false here because the stub's sendMessage always
-    // throws — the probe collapses to false. The point is the field
-    // gets persisted alongside useResponsesApi.
+  });
+
+  it("sets canUseTool true / useResponsesApi false when tools work on chat completions", async () => {
+    checkProviderMock.mockResolvedValueOnce(true);
+    sendMessageProbeMock.mockImplementation((args) => args.useResponsesApi !== true);
+    const { storage, snapshot } = makeStorage();
+    const engine = new ProfilesEngine({ storage });
+
+    const result = await engine.create({
+      name: "p",
+      providerType: PROFILE_STUB_TYPE,
+      baseUrl: "https://x",
+      key: "k",
+      modelId: "m",
+    });
+
+    expect(result.success).toBe(true);
+    const saved = snapshot().profiles[0];
+    expect(saved.canUseTool).toBe(true);
+    expect(saved.useResponsesApi).toBe(false);
+  });
+
+  it("sets both false when the model calls no tools on either transport", async () => {
+    checkProviderMock.mockResolvedValueOnce(true);
+    sendMessageProbeMock.mockReturnValue(false);
+    const { storage, snapshot } = makeStorage();
+    const engine = new ProfilesEngine({ storage });
+
+    const result = await engine.create({
+      name: "p",
+      providerType: PROFILE_STUB_TYPE,
+      baseUrl: "https://x",
+      key: "k",
+      modelId: "m",
+    });
+
+    expect(result.success).toBe(true);
+    const saved = snapshot().profiles[0];
     expect(saved.canUseTool).toBe(false);
+    expect(saved.useResponsesApi).toBe(false);
   });
 
   it("reuses cached useResponsesApi on update when model/provider/baseUrl unchanged", async () => {
@@ -223,17 +257,18 @@ describe("ProfilesEngine probes (canUseTool + useResponsesApi)", () => {
       })
     );
     expect(result.success).toBe(true);
-    expect(checkResponsesApiMock).not.toHaveBeenCalled();
+    expect(sendMessageProbeMock).not.toHaveBeenCalled();
     if (!result.success) throw new Error("unreachable");
     expect(result.profile.useResponsesApi).toBe(true);
   });
 
-  it("re-probes useResponsesApi when modelId changes", async () => {
+  it("re-probes canUseTool + useResponsesApi when modelId changes", async () => {
     checkProviderMock.mockResolvedValueOnce(true);
-    checkResponsesApiMock.mockResolvedValueOnce(true);
+    sendMessageProbeMock.mockImplementation((args) => args.useResponsesApi === true);
     const seed = makeProfile({
       id: "p1",
       modelId: "m1",
+      canUseTool: false,
       useResponsesApi: false,
     });
     const { storage } = makeStorage({ profiles: [seed] });
@@ -243,11 +278,9 @@ describe("ProfilesEngine probes (canUseTool + useResponsesApi)", () => {
       makeProfile({ id: "p1", modelId: "gpt-5.5" })
     );
     expect(result.success).toBe(true);
-    expect(checkResponsesApiMock).toHaveBeenCalledWith(
-      "gpt-5.5",
-      expect.any(AbortSignal)
-    );
+    expect(sendMessageProbeMock).toHaveBeenCalled();
     if (!result.success) throw new Error("unreachable");
+    expect(result.profile.canUseTool).toBe(true);
     expect(result.profile.useResponsesApi).toBe(true);
   });
 });

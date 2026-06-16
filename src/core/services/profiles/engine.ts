@@ -4,8 +4,7 @@ import type { Model } from "../../../shared/model";
 import type { Profile, ProviderType } from "../../types";
 import { AssignmentsEngine } from "../assignments";
 import { credsOf, loadProfile, providerFor } from "./lookup";
-import { probeResponsesSupport } from "./probe-responses";
-import { probeToolCapability } from "./probe-tools";
+import { probeCapabilities } from "./probe-capabilities";
 import type {
   CreateProfileInput,
   ProfileMutationResult,
@@ -43,10 +42,7 @@ export class ProfilesEngine {
     const error = await validateProfile(existing, input);
     if (error) return { success: false, error };
 
-    const [canUseTool, useResponsesApi] = await Promise.all([
-      probeToolCapability(input),
-      probeResponsesSupport(input),
-    ]);
+    const { canUseTool, useResponsesApi } = await probeCapabilities(input);
     const profile = await storage.profiles.create({
       ...input,
       canUseTool,
@@ -82,15 +78,12 @@ export class ProfilesEngine {
       prev.modelId !== profile.modelId ||
       prev.providerType !== profile.providerType ||
       prev.baseUrl !== profile.baseUrl;
-    const [canUseTool, useResponsesApi] = probeTriggers
-      ? await Promise.all([
-          probeToolCapability(profile),
-          probeResponsesSupport(profile),
-        ])
-      : [
-          profile.canUseTool ?? prev.canUseTool,
-          profile.useResponsesApi ?? prev.useResponsesApi,
-        ];
+    const { canUseTool, useResponsesApi } = probeTriggers
+      ? await probeCapabilities(profile)
+      : {
+          canUseTool: profile.canUseTool ?? prev.canUseTool,
+          useResponsesApi: profile.useResponsesApi ?? prev.useResponsesApi,
+        };
 
     const next: Profile = { ...profile, canUseTool, useResponsesApi };
     await storage.profiles.update(next);

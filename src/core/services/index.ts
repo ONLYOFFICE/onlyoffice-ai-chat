@@ -6,7 +6,12 @@ export type {
   AttachmentsEngineMethod,
 } from "./attachments";
 
-export { AIEngine, DEFAULT_AI_ROUTES, toChatError } from "./ai";
+export {
+  AIEngine,
+  DEFAULT_AI_ROUTES,
+  toChatError,
+  toOpenAIChatCompletionStream,
+} from "./ai";
 export type {
   AIEngineDeps,
   AIEngineMethod,
@@ -14,11 +19,17 @@ export type {
   ChatErrorPayload,
   ChatEvent,
   DenyToolCallInput,
+  OpenAIChatCompletionChunk,
+  OpenAIChoiceDelta,
+  OpenAIChunkChoice,
+  OpenAIFinishReason,
+  OpenAIToolCallDelta,
   RegenerateStreamInput,
   SendCustomInput,
   SendInput,
   SendResult,
   SendStreamInput,
+  ToOpenAIStreamOptions,
   ToolCallData,
 } from "./ai";
 

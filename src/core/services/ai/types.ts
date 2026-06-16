@@ -24,6 +24,10 @@ export const DEFAULT_AI_ROUTES: Record<AIEngineMethod, RouteSpec> = {
   send: { method: "POST", path: "ai/send" },
   sendCustom: { method: "POST", path: "ai/send-custom" },
   sendWithStream: { method: "POST", path: "ai/send-with-stream" },
+  sendWithStreamOpenAI: {
+    method: "POST",
+    path: "ai/send-with-stream-openai",
+  },
   regenerateStream: { method: "POST", path: "ai/regenerate-stream" },
   approveToolCall: { method: "POST", path: "ai/approve-tool-call" },
   denyToolCall: { method: "POST", path: "ai/deny-tool-call" },

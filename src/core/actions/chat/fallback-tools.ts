@@ -297,6 +297,7 @@ export const streamWithTextProtocol = (
     model: args.profile.modelId,
     systemPrompt: composedSystem,
     withReasoning: args.isReasoning,
+    useResponsesApi: args.profile.useResponsesApi === true,
     signal: args.signal,
   });
 

@@ -15,6 +15,10 @@ import type { ResolvedAssignment } from "../assignments/types";
 import { ThreadsEngine } from "../threads";
 import { drainToFinal, runSync } from "./actions";
 import { runCustomOnce, runCustomStream } from "./custom";
+import {
+  type OpenAIChatCompletionChunk,
+  toOpenAIChatCompletionStream,
+} from "./openai-format";
 import { hasSendableContent, processStream } from "./stream";
 import { readToolCall, resumeChat } from "./tool-call";
 import {
@@ -282,6 +286,28 @@ export class AIEngine {
       await this.deps.storage.threads.update(threadId, title);
       yield { type: "thread-title", threadId, title, profileId };
     }
+  }
+
+  /**
+   * Same chat round as {@link sendWithStream}, re-encoded as an
+   * OpenAI Chat Completions stream (`chat.completion.chunk` objects).
+   * Lets a host expose an OpenAI-compatible `POST /v1/chat/completions`
+   * (`stream: true`) endpoint backed by the in-app pipeline: storage,
+   * title generation, tool-call pauses, and middleware-free events are
+   * identical — only the wire shape differs. Tool calls terminate the
+   * stream with `finish_reason: "tool_calls"`, mirroring OpenAI's own
+   * tool-calling protocol. See {@link toOpenAIChatCompletionStream}.
+   */
+  async *sendWithStreamOpenAI(
+    input: SendStreamInput
+  ): AsyncGenerator<OpenAIChatCompletionChunk> {
+    const { profile } = await this.resolveChatProfile(
+      input.profileId,
+      input.entityId
+    );
+    yield* toOpenAIChatCompletionStream(this.sendWithStream(input), {
+      model: profile.modelId,
+    });
   }
 
   /**

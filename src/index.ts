@@ -118,6 +118,7 @@ export {
   WebSearchEngine,
   composeToolsAdapters,
   toChatError,
+  toOpenAIChatCompletionStream,
 } from "./core/services";
 export type {
   AIEngineDeps,
@@ -140,6 +141,11 @@ export type {
   FetchLike,
   McpHttpServerConfig,
   McpTransportConfig,
+  OpenAIChatCompletionChunk,
+  OpenAIChoiceDelta,
+  OpenAIChunkChoice,
+  OpenAIFinishReason,
+  OpenAIToolCallDelta,
   OpenOrCreateInput,
   OpenOrCreateResult,
   PreferenceDefaults,
@@ -158,6 +164,7 @@ export type {
   SendInput,
   SendResult,
   SendStreamInput,
+  ToOpenAIStreamOptions,
   ThreadsEngineDeps,
   ThreadsEngineMethod,
   ToolCallData,

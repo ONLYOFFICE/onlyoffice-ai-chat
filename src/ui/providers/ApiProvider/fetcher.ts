@@ -22,6 +22,7 @@ type EngineMethod<
 const STREAMING_METHODS: Partial<Record<ServiceKey, ReadonlySet<string>>> = {
   ai: new Set([
     "sendWithStream",
+    "sendWithStreamOpenAI",
     "regenerateStream",
     "approveToolCall",
     "denyToolCall",
