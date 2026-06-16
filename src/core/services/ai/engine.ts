@@ -16,7 +16,7 @@ import { ThreadsEngine } from "../threads";
 import { drainToFinal, runSync } from "./actions";
 import { runCustomOnce, runCustomStream } from "./custom";
 import {
-  type OpenAIChatCompletionChunk,
+  type OpenAIStreamChunk,
   toOpenAIChatCompletionStream,
 } from "./openai-format";
 import { hasSendableContent, processStream } from "./stream";
@@ -300,7 +300,7 @@ export class AIEngine {
    */
   async *sendWithStreamOpenAI(
     input: SendStreamInput
-  ): AsyncGenerator<OpenAIChatCompletionChunk> {
+  ): AsyncGenerator<OpenAIStreamChunk> {
     const { profile } = await this.resolveChatProfile(
       input.profileId,
       input.entityId

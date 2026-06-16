@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.127
+
+### Fixed
+
+- `toOpenAIChatCompletionStream` / `sendWithStreamOpenAI` now emit a native OpenAI error envelope (`{ error: { message, type, code, param } }`) when the provider fails mid-stream, instead of a `finish_reason: "stop"` chunk that read as success. New exported types `OpenAIStreamError` and `OpenAIStreamChunk`.
+
 ## 0.4.126
 
 ### Fixed

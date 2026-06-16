@@ -8,6 +8,8 @@ export type {
   OpenAIChoiceDelta,
   OpenAIChunkChoice,
   OpenAIFinishReason,
+  OpenAIStreamChunk,
+  OpenAIStreamError,
   OpenAIToolCallDelta,
   ToOpenAIStreamOptions,
 } from "./openai-format";

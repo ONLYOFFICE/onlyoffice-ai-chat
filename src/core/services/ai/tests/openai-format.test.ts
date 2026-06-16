@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { toOpenAIChatCompletionStream } from "../openai-format";
+import {
+  type OpenAIChatCompletionChunk,
+  type OpenAIStreamChunk,
+  type OpenAIStreamError,
+  toOpenAIChatCompletionStream,
+} from "../openai-format";
 import type { ChatEvent } from "../types";
 
 async function* feed(events: ChatEvent[]) {
   for (const e of events) yield e;
 }
 
-async function collect(events: ChatEvent[]) {
-  const out = [];
+async function collect(events: ChatEvent[]): Promise<OpenAIStreamChunk[]> {
+  const out: OpenAIStreamChunk[] = [];
   for await (const chunk of toOpenAIChatCompletionStream(feed(events), {
     model: "gpt-test",
     created: 1700000000,
@@ -17,9 +22,16 @@ async function collect(events: ChatEvent[]) {
   return out;
 }
 
+/** Narrow to chat-completion chunks for the success-path assertions. */
+async function collectChunks(
+  events: ChatEvent[]
+): Promise<OpenAIChatCompletionChunk[]> {
+  return (await collect(events)) as OpenAIChatCompletionChunk[];
+}
+
 describe("toOpenAIChatCompletionStream", () => {
   it("emits role + incremental text deltas and a terminal stop chunk", async () => {
-    const chunks = await collect([
+    const chunks = await collectChunks([
       {
         type: "user-message-stored",
         message: { role: "user", content: "hi" },
@@ -66,7 +78,7 @@ describe("toOpenAIChatCompletionStream", () => {
   });
 
   it("encodes a pending tool call as delta.tool_calls + finish_reason tool_calls", async () => {
-    const chunks = await collect([
+    const chunks = await collectChunks([
       {
         type: "tool-call-pending",
         messageId: "m2",
@@ -101,7 +113,7 @@ describe("toOpenAIChatCompletionStream", () => {
   });
 
   it("maps an incomplete length status to finish_reason length", async () => {
-    const chunks = await collect([
+    const chunks = await collectChunks([
       {
         type: "message-incomplete",
         message: {
@@ -113,5 +125,49 @@ describe("toOpenAIChatCompletionStream", () => {
     ]);
     expect(chunks).toHaveLength(1);
     expect(chunks[0].choices[0].finish_reason).toBe("length");
+  });
+
+  it("emits an OpenAI error envelope when the provider errored", async () => {
+    const chunks = await collect([
+      {
+        type: "message-incomplete",
+        message: {
+          role: "assistant",
+          content: "",
+          status: {
+            type: "incomplete",
+            reason: "error",
+            error: { code: "rate_limit", message: "Slow down" },
+          },
+        },
+      } as ChatEvent,
+    ]);
+
+    expect(chunks).toHaveLength(1);
+    const err = chunks[0] as OpenAIStreamError;
+    expect("choices" in err).toBe(false);
+    expect(err.error).toEqual({
+      message: "Slow down",
+      type: "rate_limit_error",
+      code: "rate_limit",
+      param: null,
+    });
+  });
+
+  it("falls back to server_error for an unknown error code", async () => {
+    const chunks = await collect([
+      {
+        type: "message-incomplete",
+        message: {
+          role: "assistant",
+          content: "",
+          status: { type: "incomplete", reason: "error" },
+        },
+      } as ChatEvent,
+    ]);
+
+    const err = chunks[0] as OpenAIStreamError;
+    expect(err.error.type).toBe("server_error");
+    expect(err.error.message).toBe("The request failed");
   });
 });

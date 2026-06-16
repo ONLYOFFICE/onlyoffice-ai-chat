@@ -145,6 +145,8 @@ export type {
   OpenAIChoiceDelta,
   OpenAIChunkChoice,
   OpenAIFinishReason,
+  OpenAIStreamChunk,
+  OpenAIStreamError,
   OpenAIToolCallDelta,
   OpenOrCreateInput,
   OpenOrCreateResult,

@@ -1,4 +1,5 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
+import type { ChatErrorPayload } from "./error";
 import { readToolCall } from "./tool-call";
 import type { ChatEvent } from "./types";
 
@@ -44,6 +45,57 @@ export interface OpenAIChatCompletionChunk {
   created: number;
   model: string;
   choices: OpenAIChunkChoice[];
+}
+
+/**
+ * OpenAI streaming error envelope. When the upstream request fails
+ * mid-stream the OpenAI API emits a single `data:` line carrying an
+ * `error` object (no `choices`), then closes the stream — the official
+ * SDK turns this into a thrown `APIError`. Mirrors that shape so a host
+ * exposing an OpenAI-compatible endpoint stays wire-compatible.
+ */
+export interface OpenAIStreamError {
+  error: {
+    message: string;
+    type: string;
+    code: string | null;
+    param: string | null;
+  };
+}
+
+/** A chunk or the terminal error envelope emitted on a failed stream. */
+export type OpenAIStreamChunk = OpenAIChatCompletionChunk | OpenAIStreamError;
+
+/**
+ * Map a core {@link ChatErrorPayload.code} to the closest OpenAI error
+ * `type`. Unknown / provider-specific codes fall back to
+ * `"server_error"` so clients still treat it as a failure.
+ */
+function toOpenAIErrorType(code: string | undefined): string {
+  switch (code) {
+    case "auth":
+      return "authentication_error";
+    case "rate_limit":
+      return "rate_limit_error";
+    case "bad_request":
+    case "model_not_found":
+    case "not_found":
+      return "invalid_request_error";
+    default:
+      return "server_error";
+  }
+}
+
+/** Build the OpenAI error envelope from a core error payload. */
+function toOpenAIError(error: ChatErrorPayload | undefined): OpenAIStreamError {
+  return {
+    error: {
+      message: error?.message ?? "The request failed",
+      type: toOpenAIErrorType(error?.code),
+      code: error?.code ?? null,
+      param: null,
+    },
+  };
 }
 
 export type ToOpenAIStreamOptions = {
@@ -97,8 +149,10 @@ function textDelta(prev: string, full: string): string {
  *   `finish_reason: "stop"`.
  * - `tool-call-pending` → flush pending text, emit the tool call as
  *   `delta.tool_calls`, then terminate with `finish_reason: "tool_calls"`.
- * - `message-incomplete` → terminal chunk; `finish_reason: "length"` when the
- *   provider hit the token cap, otherwise `"stop"`.
+ * - `message-incomplete` → on a provider error, the terminal
+ *   {@link OpenAIStreamError} envelope; otherwise a terminal chunk with
+ *   `finish_reason: "length"` when the provider hit the token cap, else
+ *   `"stop"` (e.g. a user cancellation).
  *
  * `user-message-stored` and `thread-title` carry no completion payload and
  * are skipped. The terminal `[DONE]` sentinel is an SSE-transport concern and
@@ -107,7 +161,7 @@ function textDelta(prev: string, full: string): string {
 export async function* toOpenAIChatCompletionStream(
   events: AsyncGenerator<ChatEvent>,
   opts: ToOpenAIStreamOptions
-): AsyncGenerator<OpenAIChatCompletionChunk> {
+): AsyncGenerator<OpenAIStreamChunk> {
   const created = opts.created ?? Math.floor(Date.now() / 1000);
   let id = opts.id;
   let roleSent = false;
@@ -137,12 +191,16 @@ export async function* toOpenAIChatCompletionStream(
     }
 
     if (event.type === "message-incomplete") {
-      const reason =
-        (event.message.status as { reason?: string } | undefined)?.reason ===
-        "length"
-          ? "length"
-          : "stop";
-      yield chunk({}, reason);
+      const status = event.message.status as
+        | { reason?: string; error?: ChatErrorPayload }
+        | undefined;
+      // A provider error surfaces as the OpenAI error envelope, not a
+      // `finish_reason: "stop"` chunk that would read as success.
+      if (status?.reason === "error") {
+        yield toOpenAIError(status.error);
+        return;
+      }
+      yield chunk({}, status?.reason === "length" ? "length" : "stop");
       return;
     }
 
