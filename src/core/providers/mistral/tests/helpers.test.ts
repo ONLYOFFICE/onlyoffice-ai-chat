@@ -73,72 +73,46 @@ describe("mistral helpers", () => {
   // ==========================================================================
 
   describe("createErrorResponse", () => {
-    it("should create error response from Error instance", () => {
-      const error = new Error("Something went wrong");
-      const result = createErrorResponse(error);
+    const statusOf = (msg: ThreadMessageLike) =>
+      (msg as { status?: { type?: string; reason?: string } }).status;
 
-      expect(result).toEqual({
-        role: "assistant",
-        content: [
-          {
-            type: "text",
-            text: "Error: Something went wrong",
-          },
-        ],
-      });
+    it("carries the error on an incomplete status, not as body text", () => {
+      const result = createErrorResponse(new Error("Something went wrong"));
+
+      expect(result.role).toBe("assistant");
+      expect(result.content).toBe("");
+      expect(statusOf(result)?.type).toBe("incomplete");
+      expect(statusOf(result)?.reason).toBe("error");
+      expect(JSON.stringify(statusOf(result))).toContain("Something went wrong");
     });
 
-    it("should create error response from string", () => {
+    it("handles a string error", () => {
       const result = createErrorResponse("String error");
-
-      expect(result).toEqual({
-        role: "assistant",
-        content: [
-          {
-            type: "text",
-            text: "Error: String error",
-          },
-        ],
-      });
+      expect(statusOf(result)?.reason).toBe("error");
+      expect(JSON.stringify(statusOf(result))).toContain("String error");
     });
 
-    it("should create error response from object", () => {
-      const result = createErrorResponse({
-        code: 500,
-        message: "Server error",
-      });
-
-      expect(result.content).toHaveLength(1);
-      expect(
-        (result.content as unknown as Array<{ text: string }>)[0].text
-      ).toContain("Error:");
+    it("handles a non-Error object", () => {
+      const result = createErrorResponse({ code: 500, message: "Server error" });
+      expect(statusOf(result)?.type).toBe("incomplete");
+      expect(statusOf(result)?.reason).toBe("error");
     });
 
-    it("should create error response from null", () => {
-      const result = createErrorResponse(null);
-
-      expect(result).toEqual({
-        role: "assistant",
-        content: [
-          {
-            type: "text",
-            text: "Error: null",
-          },
-        ],
-      });
+    it("handles null and undefined", () => {
+      expect(statusOf(createErrorResponse(null))?.reason).toBe("error");
+      expect(statusOf(createErrorResponse(undefined))?.reason).toBe("error");
     });
 
-    it("should create error response from undefined", () => {
+    it("produces the standard incomplete-error shape", () => {
       const result = createErrorResponse(undefined);
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         role: "assistant",
-        content: [
-          {
-            type: "text",
-            text: "Error: undefined",
-          },
-        ],
+        content: "",
+        status: {
+          type: "incomplete",
+          reason: "error",
+        },
       });
     });
   });

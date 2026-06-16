@@ -1,6 +1,7 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { Mistral } from "@mistralai/mistralai";
 import cloneDeep from "lodash.clonedeep";
+import { toChatError } from "../../services/ai/error";
 import type { ToolCallPart } from "./types";
 
 export const createClient = (apiKey?: string, baseUrl?: string): Mistral => {
@@ -15,15 +16,16 @@ export const createEmptyResponse = (): ThreadMessageLike => ({
   content: [],
 });
 
-export const createErrorResponse = (error: unknown): ThreadMessageLike => ({
-  role: "assistant",
-  content: [
-    {
-      type: "text",
-      text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+export const createErrorResponse = (error: unknown): ThreadMessageLike =>
+  ({
+    role: "assistant",
+    content: "",
+    status: {
+      type: "incomplete",
+      reason: "error",
+      error: toChatError(error),
     },
-  ],
-});
+  }) as ThreadMessageLike;
 
 export const createResponseShell = (
   afterToolCall?: boolean,

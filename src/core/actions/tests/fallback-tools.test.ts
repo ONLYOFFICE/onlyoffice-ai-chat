@@ -200,6 +200,26 @@ describe("wrapStream", () => {
     expect("isEnd" in out[out.length - 1]).toBe(true);
   });
 
+  it("forwards a terminal error status untouched", async () => {
+    const errorEnd: SendMessageResult = {
+      isEnd: true,
+      responseMessage: {
+        role: "assistant",
+        content: "",
+        status: { type: "incomplete", reason: "error", error: { m: "boom" } },
+      } as ThreadMessageLike,
+    };
+    const out = await collect(wrapStream(fakeStream(errorEnd)));
+    const last = out[out.length - 1];
+    expect("isEnd" in last).toBe(true);
+    const msg = "isEnd" in last ? last.responseMessage : last;
+    expect(msg.status).toEqual({
+      type: "incomplete",
+      reason: "error",
+      error: { m: "boom" },
+    });
+  });
+
   it("withholds the partial OPEN tag prefix during streaming", async () => {
     // hold tail = OPEN.length - 1 = 10. Feed a long prefix so the leading
     // text falls outside the held window while the partial tag stays in it.

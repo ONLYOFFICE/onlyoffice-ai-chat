@@ -183,6 +183,16 @@ export const wrapStream = async function* (
   for await (const result of upstream) {
     const isEnd = "isEnd" in result;
     const message = isEnd ? result.responseMessage : result;
+
+    // Terminal error / cancellation from the provider carries its state on
+    // `status` and an empty body. Re-wrapping it as plain text would strip
+    // the status and the chat would render it as a successful turn — forward
+    // it untouched so `message-incomplete` (and the UI error) still fires.
+    if (isEnd && message.status?.type === "incomplete") {
+      yield result;
+      return;
+    }
+
     const rawText = extractText(message);
 
     if (state === "scanning") {

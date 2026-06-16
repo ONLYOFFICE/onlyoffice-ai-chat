@@ -4,6 +4,7 @@ import type {
   DeltaMessage,
 } from "@mistralai/mistralai/models/components";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import { toChatError } from "../../services/ai/error";
 
 // ---------------------------------------------------------------------------
 // Response factories
@@ -15,16 +16,21 @@ export const createEmptyResponse = (): ThreadMessageLike => ({
   content: [],
 });
 
-/** Terminal response when the SDK threw mid-stream. */
-export const createErrorResponse = (error: unknown): ThreadMessageLike => ({
-  role: "assistant",
-  content: [
-    {
-      type: "text",
-      text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+/**
+ * Terminal response when the SDK threw mid-stream. Carries the error on
+ * `status` (not as body text) so the engine surfaces `message-incomplete`
+ * and the UI fires its error path — mirrors every other provider.
+ */
+export const createErrorResponse = (error: unknown): ThreadMessageLike =>
+  ({
+    role: "assistant",
+    content: "",
+    status: {
+      type: "incomplete",
+      reason: "error",
+      error: toChatError(error),
     },
-  ],
-});
+  }) as ThreadMessageLike;
 
 /** Terminal response when the caller aborted the stream. */
 export const createStopResponse = (): ThreadMessageLike =>

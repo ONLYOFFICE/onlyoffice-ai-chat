@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.125
+
+### Fixed
+
+- Provider API errors now reliably surface in the chat as errors. The text-protocol tool fallback (`canUseTool: false` profiles) was rebuilding the terminal message and dropping its `status`, turning an error into a normal turn — it now forwards the incomplete/error status untouched.
+- Mistral provider built its error response as plain `Error: ...` body text without a status, so failures rendered as a successful assistant reply. It now uses the standard `incomplete` / `error` status like every other provider.
+
 ## 0.4.124
 
 ### Fixed

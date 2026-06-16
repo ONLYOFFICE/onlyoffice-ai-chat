@@ -146,9 +146,13 @@ describe("MistralProvider", () => {
         })
       );
       const last = frames[frames.length - 1] as unknown as {
-        responseMessage: { content: Array<{ text: string }> };
+        responseMessage: {
+          status?: { type?: string; reason?: string };
+        };
       };
-      expect(last.responseMessage.content[0].text).toContain("fail");
+      expect(last.responseMessage.status?.type).toBe("incomplete");
+      expect(last.responseMessage.status?.reason).toBe("error");
+      expect(JSON.stringify(last.responseMessage.status)).toContain("fail");
     });
   });
 

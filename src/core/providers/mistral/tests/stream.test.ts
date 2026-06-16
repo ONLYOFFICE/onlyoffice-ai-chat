@@ -43,11 +43,13 @@ describe("mistral/stream/response factories", () => {
   it("createEmptyResponse seeds fresh shell", () => {
     expect(createEmptyResponse()).toEqual({ role: "assistant", content: [] });
   });
-  it("createErrorResponse writes error into text part", () => {
+  it("createErrorResponse carries the error on an incomplete status", () => {
     const msg = createErrorResponse(new Error("boom"));
-    expect(
-      (msg.content as unknown as Array<{ text: string }>)[0]?.text
-    ).toContain("boom");
+    const status = (msg as { status?: { type?: string; reason?: string } })
+      .status;
+    expect(status?.type).toBe("incomplete");
+    expect(status?.reason).toBe("error");
+    expect(JSON.stringify(status)).toContain("boom");
   });
   it("createStopResponse marks cancelled", () => {
     expect(
