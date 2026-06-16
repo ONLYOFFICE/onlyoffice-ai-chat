@@ -17,6 +17,7 @@ export const recognizeText = async (
   const text = await providerFor(args).sendMessageSync({
     messages,
     model: args.profile.modelId,
+    useResponsesApi: args.profile.useResponsesApi === true,
     systemPrompt: resolveSystemPrompt(systemPrompt, args.prompt),
     signal: args.signal,
   });

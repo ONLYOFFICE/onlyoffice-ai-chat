@@ -20,6 +20,7 @@ export const generateTitle = async (args: ActionArgs): Promise<string> => {
   const title = await providerFor(args).sendMessageSync({
     messages,
     model: args.profile.modelId,
+    useResponsesApi: args.profile.useResponsesApi === true,
     systemPrompt: resolveSystemPrompt(systemPrompt, args.prompt),
     signal: args.signal,
   });

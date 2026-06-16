@@ -24,6 +24,7 @@ export const custom = (args: CustomArgs): AsyncGenerator<SendMessageResult> => {
   return providerFor(args).sendMessage({
     messages: args.messages,
     model: args.profile.modelId,
+    useResponsesApi: args.profile.useResponsesApi === true,
     systemPrompt: args.systemPrompt,
     tools: args.tools,
     withReasoning: args.isReasoning,
@@ -41,6 +42,7 @@ export const customSync = async (
   const text = await providerFor(args).sendMessageSync({
     messages,
     model: args.profile.modelId,
+    useResponsesApi: args.profile.useResponsesApi === true,
     systemPrompt: args.systemPrompt,
     signal: args.signal,
   });

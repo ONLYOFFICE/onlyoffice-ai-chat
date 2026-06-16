@@ -71,6 +71,7 @@ export const generateImage = async (
     messages,
     model: args.profile.modelId,
     systemPrompt: resolveSystemPrompt(systemPrompt, args.prompt),
+    useResponsesApi: args.profile.useResponsesApi === true,
     signal: args.signal,
   });
   return { role: "assistant", content: [{ type: "text", text }] };

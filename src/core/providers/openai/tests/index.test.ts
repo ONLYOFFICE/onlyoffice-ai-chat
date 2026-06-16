@@ -340,6 +340,37 @@ describe("OpenAIProvider", () => {
         })
       ).toBe("");
     });
+
+    it("routes through responses.create when useResponsesApi is true", async () => {
+      responsesCreateMock.mockResolvedValueOnce({ output_text: "titled" });
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      const text = await p.sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "gpt-5.5",
+        systemPrompt: "s",
+        useResponsesApi: true,
+      });
+      expect(text).toBe("titled");
+      expect(responsesCreateMock).toHaveBeenCalledTimes(1);
+      expect(chatCreateMock).not.toHaveBeenCalled();
+      const payload = responsesCreateMock.mock.calls[0]?.[0];
+      expect(payload?.stream).toBe(false);
+      expect(payload?.instructions).toBe("s");
+    });
+
+    it("stays on chat.completions when useResponsesApi is undefined", async () => {
+      chatCreateMock.mockResolvedValueOnce({
+        choices: [{ message: { content: "answer" } }],
+      });
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await p.sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "gpt-4o",
+        systemPrompt: "s",
+      });
+      expect(chatCreateMock).toHaveBeenCalledTimes(1);
+      expect(responsesCreateMock).not.toHaveBeenCalled();
+    });
   });
 
   describe("imageGeneration", () => {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.126
+
+### Fixed
+
+- One-shot calls (chat title generation, summarization, translation, OCR, vision, text analysis, image-gen text fallback, custom) now honour `profile.useResponsesApi` — `sendMessageSync` routes through the OpenAI Responses API instead of always using Chat Completions, so reasoning models (gpt-5+) work for these actions too.
+- The custom streaming action now forwards `useResponsesApi` as well.
+
 ## 0.4.125
 
 ### Fixed

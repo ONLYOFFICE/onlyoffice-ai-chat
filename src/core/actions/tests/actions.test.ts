@@ -151,6 +151,7 @@ describe("custom action", () => {
       systemPrompt: "MY PROMPT",
       tools: undefined,
       withReasoning: false,
+      useResponsesApi: false,
       signal: undefined,
     });
   });
@@ -169,6 +170,7 @@ describe("custom action", () => {
       messages: baseArgs.messages,
       model: profile.modelId,
       systemPrompt: "MY PROMPT",
+      useResponsesApi: false,
       signal: undefined,
     });
   });
@@ -193,6 +195,7 @@ describe.each([
       messages: baseArgs.messages,
       model: profile.modelId,
       systemPrompt: prompt,
+      useResponsesApi: false,
       signal: undefined,
     });
   });
@@ -216,6 +219,7 @@ describe("generateTitle action", () => {
       messages: baseArgs.messages,
       model: profile.modelId,
       systemPrompt: titleSystemPrompt,
+      useResponsesApi: false,
       signal: undefined,
     });
   });

@@ -192,7 +192,21 @@ class OpenAIProvider extends AbstractBaseProvider {
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
-    const { messages, model, systemPrompt, signal } = args;
+    const { messages, model, systemPrompt, useResponsesApi, signal } = args;
+
+    if (useResponsesApi) {
+      const response = await this.client.responses.create(
+        {
+          model,
+          instructions: systemPrompt,
+          input: convertMessagesToResponses(messages, this.downgradeSystem),
+          stream: false,
+        },
+        { signal }
+      );
+      return response.output_text ?? "";
+    }
+
     const response = await this.client.chat.completions.create(
       {
         model,
