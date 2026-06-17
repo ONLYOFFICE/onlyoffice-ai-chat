@@ -23,6 +23,7 @@ export type ActionArgs = {
     | "basedOn"
     | "baseUrl"
     | "key"
+    | "headers"
     | "modelId"
     | "canUseTool"
     | "useResponsesApi"

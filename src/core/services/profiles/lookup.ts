@@ -23,7 +23,11 @@ export function providerFor(type: string): ProviderConstructor {
 
 /** Map the subset of profile fields used for provider calls. */
 export function credsOf(
-  input: Pick<Profile, "baseUrl" | "key">
+  input: Pick<Profile, "baseUrl" | "key"> & Partial<Pick<Profile, "headers">>
 ): ProviderCredentials {
-  return { baseUrl: input.baseUrl, apiKey: input.key };
+  return {
+    baseUrl: input.baseUrl,
+    apiKey: input.key,
+    ...(input.headers ? { headers: input.headers } : {}),
+  };
 }

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.130
+
+### Added
+
+- `Profile.headers` — custom HTTP headers sent with every request to the provider (gateway token, tenant id, custom `Authorization`, …). Merged into the OpenAI SDK client's default headers; an explicit `Authorization` wins over the api-key bearer.
+
+```ts
+const profile: Profile = {
+  // …
+  baseUrl: "https://gateway.example.com/v1",
+  key: "",
+  headers: { "X-Tenant": "acme", Authorization: "Bearer gw-token" },
+};
+```
+
+### Changed
+
+- OpenAI-family providers no longer send an `Authorization` header at all when no key (and no custom `Authorization`) is configured, so keyless OpenAI-compatible endpoints never receive a placeholder bearer.
+
 ## 0.4.129
 
 ### Changed

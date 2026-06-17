@@ -26,4 +26,12 @@ export type ProviderCredentials = {
    * every other provider.
    */
   basedOn?: import("./builtin-provider-type").BuiltinProviderType;
+  /**
+   * Extra HTTP headers attached to every request the provider's SDK
+   * client makes. Forwarded from `Profile.headers`. A header set here
+   * overrides what the SDK would derive on its own (e.g. an explicit
+   * `Authorization` wins over the api-key bearer). Currently honoured by
+   * the OpenAI-family providers.
+   */
+  headers?: Record<string, string>;
 };

@@ -358,6 +358,15 @@ export type Profile = {
   /** API key or token. Optional for local providers. */
   key?: string;
 
+  /**
+   * Extra HTTP headers sent with every request to this provider (e.g. a
+   * gateway token, a tenant id, a custom `Authorization`). Merged into the
+   * SDK client's default headers; an explicit `Authorization` here wins
+   * over the one derived from {@link key}. Honoured by the OpenAI-family
+   * providers.
+   */
+  headers?: Record<string, string>;
+
   /** Selected model ID within this provider. */
   modelId: string;
 
