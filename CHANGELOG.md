@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.128
+
+### Changed
+
+- `onToolCallApproveResult` now receives the tool-call context as a second argument: `{ toolName, toolArgs, callId?, threadId? }` (new exported type `ToolCallApproveContext`). The first `result` argument is unchanged.
+
+```tsx
+<AIChatWidget
+  onToolCallApproveResult={async (result, { toolName, toolArgs, callId, threadId }) => {
+    /* result is tied to a specific tool call */
+  }}
+/>
+```
+
 ## 0.4.127
 
 ### Fixed

@@ -418,7 +418,12 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
 
     // The dialog is NOT dismissed up front; the callback receives the tool
     // result and only afterwards is the dialog closed and the stream resumed.
-    expect(onResult).toHaveBeenCalledWith("tool-result");
+    expect(onResult).toHaveBeenCalledWith("tool-result", {
+      toolName: "search",
+      toolArgs: { q: 1 },
+      callId: undefined,
+      threadId: "t1",
+    });
     expect(order.indexOf("callback:tool-result")).toBeLessThan(
       order.indexOf("close")
     );

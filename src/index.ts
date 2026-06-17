@@ -41,6 +41,7 @@ export { AIChatWidget, type AIChatWidgetProps } from "./AIChatWidget";
 export {
   WidgetConfigProvider,
   useWidgetConfig,
+  type ToolCallApproveContext,
   type WidgetConfig,
   type WidgetConfigProviderProps,
 } from "./widget-config";

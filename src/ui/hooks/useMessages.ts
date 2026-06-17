@@ -765,7 +765,15 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
                   idx: data.idx,
                   cb: async (result) => {
                     try {
-                      await onToolCallApproveResult?.(result);
+                      await onToolCallApproveResult?.(result, {
+                        toolName: toolCall.toolName,
+                        toolArgs: (toolCall.args ?? {}) as Record<
+                          string,
+                          unknown
+                        >,
+                        callId: toolCall.toolCallId,
+                        threadId: data.threadId,
+                      });
                     } finally {
                       closeDialog();
                     }
@@ -818,7 +826,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       // resuming the stream so the rest of the answer streams in after.
       if (waitForResult) {
         try {
-          await onToolCallApproveResult?.(result);
+          await onToolCallApproveResult?.(result, {
+            toolName: toolCall.toolName,
+            toolArgs,
+            callId: toolCall.toolCallId,
+            threadId: data.threadId,
+          });
         } finally {
           closeDialog();
         }

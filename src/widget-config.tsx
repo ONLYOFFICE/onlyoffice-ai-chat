@@ -181,8 +181,23 @@ export interface WidgetConfig {
    * work. The result is passed through unchanged; returning a value does
    * not alter it. Once the callback settles, the dialog closes and the
    * stream resumes.
+   *
+   * The second argument carries the tool-call context the result belongs
+   * to: the (fully-qualified) `toolName`, the `toolArgs` the model called
+   * it with, the provider `callId` (when present), and the `threadId`.
    */
-  onToolCallApproveResult?: (result: unknown) => void | Promise<void>;
+  onToolCallApproveResult?: (
+    result: unknown,
+    ctx: ToolCallApproveContext
+  ) => void | Promise<void>;
+}
+
+/** Context for the tool call whose result is passed to {@link WidgetConfig.onToolCallApproveResult}. */
+export interface ToolCallApproveContext {
+  toolName: string;
+  toolArgs: Record<string, unknown>;
+  callId?: string;
+  threadId?: string;
 }
 
 const WidgetConfigContext = createContext<WidgetConfig>({});
