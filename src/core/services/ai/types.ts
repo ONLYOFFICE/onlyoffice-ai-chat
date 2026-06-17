@@ -329,8 +329,13 @@ export type ChatEvent =
       messageId: string;
       threadId: string;
       /**
-       * Whether the tool is in the persisted "always-allow" list —
-       * the consumer should execute it without prompting the user.
+       * The consumer should execute the tool without prompting the user.
+       * True when the tool is in the persisted "always-allow" list, or the
+       * tool itself opts in via `TMCPItem.requireApproval === false` (host
+       * tools default to this). For a client-side tool with a server-side
+       * engine, this lets the engine return the pending call already
+       * flagged auto-allow so the client runs it and streams the result
+       * back without a dialog round-trip.
        */
       autoAllow: boolean;
       /**

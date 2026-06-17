@@ -177,7 +177,14 @@ export async function* processStream(
           const allowList = await storage.toolPrefs.readAllowAlways(
             ctx.entityId
           );
-          const autoAllow = !!toolName && allowList.includes(toolName);
+          // A tool auto-allows when the user pinned it to the persisted
+          // "always-allow" list OR the tool itself opts in via
+          // `requireApproval === false` (host tools default to this). A tool
+          // that never sets the flag (MCP / custom servers) keeps prompting.
+          const tool = ctx.tools?.find((t) => t.name === toolName);
+          const autoAllow =
+            !!toolName &&
+            (allowList.includes(toolName) || tool?.requireApproval === false);
 
           yield {
             type: "tool-call-pending",

@@ -1,5 +1,19 @@
 import type { TMCPItem } from "../../../types";
-import type { HostToolGroup } from "../types";
+import type { HostTool, HostToolGroup } from "../types";
+
+/**
+ * Convert a {@link HostTool} to the wire {@link TMCPItem}, qualifying the
+ * name with its group id and carrying `requireApproval` through so the
+ * engine can honour it when computing auto-allow. Defaults to `false`
+ * (auto-allow) per the {@link HostTool.requireApproval} contract.
+ */
+const toItem = (groupId: string, tool: HostTool): TMCPItem => ({
+  name: `${groupId}_${tool.name}`,
+  displayName: tool.displayName ?? tool.name,
+  description: tool.description,
+  inputSchema: tool.inputSchema,
+  requireApproval: tool.requireApproval ?? false,
+});
 
 /**
  * Replaces DesktopEditorTool.
@@ -26,12 +40,7 @@ export class HostToolSource {
     const result: Record<string, TMCPItem[]> = {};
 
     for (const group of this.groups) {
-      result[group.id] = group.tools.map((tool) => ({
-        name: `${group.id}_${tool.name}`,
-        displayName: tool.displayName ?? tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-      }));
+      result[group.id] = group.tools.map((tool) => toItem(group.id, tool));
     }
 
     return result;
@@ -40,12 +49,7 @@ export class HostToolSource {
   /** Get flat list of all tools (for backward compat with old getTools()) */
   getAllTools(): TMCPItem[] {
     return this.groups.flatMap((group) =>
-      group.tools.map((tool) => ({
-        name: `${group.id}_${tool.name}`,
-        displayName: tool.displayName ?? tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-      }))
+      group.tools.map((tool) => toItem(group.id, tool))
     );
   }
 
@@ -88,16 +92,6 @@ export class HostToolSource {
     }
 
     return "{}";
-  }
-
-  /** Check if a tool in a given group should auto-allow (no approval dialog) */
-  isAutoAllow(groupId: string, toolName: string): boolean {
-    const group = this.groups.find((g) => g.id === groupId);
-    if (!group) return false;
-
-    const tool = group.tools.find((t) => t.name === toolName);
-    if (!tool) return false;
-    return !tool.requireApproval;
   }
 
   /** Get all group IDs */

@@ -23,4 +23,16 @@ export type TMCPItem = {
 
   /** Whether this tool is currently enabled. Disabled tools are hidden from the AI model. */
   enabled?: boolean;
+
+  /**
+   * Whether the consumer must show an approval dialog before this tool
+   * runs. The engine reads it when deciding the `autoAllow` flag on a
+   * `tool-call-pending` event: `requireApproval === false` auto-allows the
+   * call (no dialog), `true` always prompts. `undefined` leaves the
+   * decision to the persisted "always-allow" list alone — so MCP /
+   * custom-server tools (which never set it) keep prompting as before,
+   * while host tools opt into auto-allow by default. Wire-serializable, so
+   * it survives a remote (server-side) engine.
+   */
+  requireApproval?: boolean;
 };

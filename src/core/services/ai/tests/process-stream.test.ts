@@ -153,6 +153,80 @@ describe("processStream", () => {
     expect((event as { autoAllow: boolean }).autoAllow).toBe(true);
   });
 
+  it("auto-allows tool-call when the tool opts in via requireApproval: false", async () => {
+    const { storage } = makeStorage();
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        { type: "tool-call", toolCallId: "c1", toolName: "host_edit", args: {} },
+      ],
+    } as ThreadMessageLike;
+    const stream = feed([{ isEnd: true, responseMessage: message }]);
+    let event;
+    for await (const e of processStream(stream, {
+      storage,
+      threadId: "t",
+      tools: [
+        {
+          name: "host_edit",
+          description: "",
+          inputSchema: {},
+          requireApproval: false,
+        },
+      ],
+    })) {
+      event = e;
+    }
+    expect((event as { autoAllow: boolean }).autoAllow).toBe(true);
+  });
+
+  it("keeps prompting when the tool sets requireApproval: true", async () => {
+    const { storage } = makeStorage();
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        { type: "tool-call", toolCallId: "c1", toolName: "host_edit", args: {} },
+      ],
+    } as ThreadMessageLike;
+    const stream = feed([{ isEnd: true, responseMessage: message }]);
+    let event;
+    for await (const e of processStream(stream, {
+      storage,
+      threadId: "t",
+      tools: [
+        {
+          name: "host_edit",
+          description: "",
+          inputSchema: {},
+          requireApproval: true,
+        },
+      ],
+    })) {
+      event = e;
+    }
+    expect((event as { autoAllow: boolean }).autoAllow).toBe(false);
+  });
+
+  it("keeps prompting for a tool that never sets requireApproval (MCP)", async () => {
+    const { storage } = makeStorage();
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        { type: "tool-call", toolCallId: "c1", toolName: "mcp_query", args: {} },
+      ],
+    } as ThreadMessageLike;
+    const stream = feed([{ isEnd: true, responseMessage: message }]);
+    let event;
+    for await (const e of processStream(stream, {
+      storage,
+      threadId: "t",
+      tools: [{ name: "mcp_query", description: "", inputSchema: {} }],
+    })) {
+      event = e;
+    }
+    expect((event as { autoAllow: boolean }).autoAllow).toBe(false);
+  });
+
   it("uses isResume + resumeMessageId to update existing message", async () => {
     const { storage, create, update } = makeStorage();
     const final: ThreadMessageLike = {

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.129
+
+### Changed
+
+- `HostTool.requireApproval` is now wired into the real approval flow (it was previously dead). The engine reads it via `TMCPItem.requireApproval` when computing `autoAllow`, so it works even with a remote (server-side) engine: client-side host tools come back flagged auto-allow and run without a dialog round-trip.
+  - **Behavior change:** host tools now auto-allow by default (per the documented `requireApproval` default of `false`) — a dialog is shown only when `requireApproval: true`. MCP / custom-server tools are unaffected and keep prompting.
+- Removed the dead `HostToolSource.isAutoAllow()` method.
+
 ## 0.4.128
 
 ### Changed

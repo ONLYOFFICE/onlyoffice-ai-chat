@@ -108,6 +108,7 @@ describe("HostToolSource", () => {
           type: "object",
           properties: { path: { type: "string" } },
         },
+        requireApproval: false,
       });
       expect(tool).not.toHaveProperty("handler");
     });
@@ -168,32 +169,33 @@ describe("HostToolSource", () => {
   });
 
   // ==========================================================================
-  // isAutoAllow
+  // requireApproval passthrough
   // ==========================================================================
 
-  describe("isAutoAllow", () => {
-    it("should return true for tools without requireApproval (default)", () => {
+  describe("requireApproval passthrough", () => {
+    it("defaults requireApproval to false for tools that omit it", () => {
       source.setGroups(makeGroups());
-
-      expect(source.isAutoAllow("desktop-editor", "read_file")).toBe(true);
+      const tool = source
+        .getAllTools()
+        .find((t) => t.name === "desktop-editor_read_file");
+      expect(tool?.requireApproval).toBe(false);
     });
 
-    it("should return false for tools with requireApproval: true", () => {
+    it("carries requireApproval: true through to the TMCPItem", () => {
       source.setGroups(makeGroups());
-
-      expect(source.isAutoAllow("crm", "find_contact")).toBe(false);
+      const tool = source
+        .getAllTools()
+        .find((t) => t.name === "crm_find_contact");
+      expect(tool?.requireApproval).toBe(true);
     });
 
-    it("should return false for unknown group", () => {
+    it("preserves the flag in getToolsByGroup as well", () => {
       source.setGroups(makeGroups());
-
-      expect(source.isAutoAllow("unknown", "read_file")).toBe(false);
-    });
-
-    it("should return false for unknown tool in valid group", () => {
-      source.setGroups(makeGroups());
-
-      expect(source.isAutoAllow("desktop-editor", "nonexistent")).toBe(false);
+      const grouped = source.getToolsByGroup();
+      expect(
+        grouped["crm"].find((t) => t.name === "crm_find_contact")
+          ?.requireApproval
+      ).toBe(true);
     });
   });
 

@@ -29,6 +29,16 @@ export type TMCPItem = {
 
   /** Whether this tool is currently enabled. Disabled tools are hidden from the AI model. */
   enabled?: boolean;
+
+  /**
+   * Whether the consumer must show an approval dialog before this tool
+   * runs. Drives the `autoAllow` flag on a `tool-call-pending` event:
+   * `false` auto-allows (no dialog), `true` always prompts, `undefined`
+   * defers to the persisted "always-allow" list. Host tools set it (see
+   * {@link import("./ui/tools/types").HostTool.requireApproval}); MCP /
+   * custom-server tools leave it unset and keep prompting.
+   */
+  requireApproval?: boolean;
 };
 
 /**
