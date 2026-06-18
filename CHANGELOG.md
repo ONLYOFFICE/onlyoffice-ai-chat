@@ -2,6 +2,10 @@
 
 ## 0.4.136
 
+### Added
+
+- `onCreatePrompt` / `onEditPrompt` widget config callbacks let the host own prompt creation and editing in its own window, mirroring `onCreatePromptFolder`. When set, the built-in "Save prompt" auto-name path and the "Edit prompt" dialog are replaced — the host resolves a `{ name, text }` `PromptDraft` and the widget performs the actual `addPrompt`/`editPrompt`. When omitted, the built-in behavior is unchanged.
+
 ### Changed
 
 - `PlatformFileOperations` methods are now all optional, and each file-related UI element is gated on its specific capability instead of the whole `file` object. A host can expose only what it supports — e.g. pass `file: { saveAsFile }` to keep chat save/export while hiding the local-file and recent-files pickers. "Add local image" no longer depends on `file` (it uses the HTML input + drag-and-drop). The message "Save" button now renders only when `saveAsFile` is present (also fixes a previously dead button), and `openFile` / thread export are called optionally.

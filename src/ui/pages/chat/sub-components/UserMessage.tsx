@@ -99,7 +99,7 @@ const UserActionBar = () => {
   const message = useMessage();
   const { usePromptsStore } = useStores();
   const { copyToClipboard: platformCopy } = usePlatform();
-  const { onCreatePromptFolder } = useWidgetConfig();
+  const { onCreatePromptFolder, onCreatePrompt } = useWidgetConfig();
   const addPrompt = usePromptsStore((s) => s.addPrompt);
   const addFolder = usePromptsStore((s) => s.addFolder);
   const folders = usePromptsStore((s) => s.folders);
@@ -133,6 +133,32 @@ const UserActionBar = () => {
     // getMessageText reads from `message`, captured fresh each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onCreatePromptFolder, addFolder, addPrompt, t]);
+
+  // When the host supplies `onCreatePrompt`, it owns the name/text input UI
+  // (its own window) and resolves the prompt fields; the widget creates it
+  // once the host returns a non-empty name. Otherwise the prompt is saved
+  // directly with a name derived from the message text.
+  const requestCreatePrompt = useCallback(
+    async (folderId: string | null) => {
+      const text = getMessageText();
+      const draft = { name: text.slice(0, 15), text };
+      if (!onCreatePrompt) {
+        await addPrompt({ ...draft, folderId });
+        return;
+      }
+      try {
+        const result = await onCreatePrompt({ ...draft, folderId });
+        const name = result?.name?.trim();
+        if (!name) return;
+        await addPrompt({ name, text: result?.text ?? "", folderId });
+      } catch (err) {
+        logger.error("onCreatePrompt handler failed:", err);
+      }
+    },
+    // getMessageText reads from `message`, captured fresh each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onCreatePrompt, addPrompt]
+  );
 
   const getMessageText = () =>
     message.content
@@ -190,8 +216,7 @@ const UserActionBar = () => {
             {
               text: t("SaveAIPrompt"),
               onClick: () => {
-                const text = getMessageText();
-                void addPrompt({ name: text.slice(0, 15), text });
+                void requestCreatePrompt(null);
               },
             },
             {
@@ -204,12 +229,7 @@ const UserActionBar = () => {
                 ...folders.map((folder) => ({
                   text: folder.name,
                   onClick: () => {
-                    const text = getMessageText();
-                    void addPrompt({
-                      name: text.slice(0, 15),
-                      text,
-                      folderId: folder.id,
-                    });
+                    void requestCreatePrompt(folder.id);
                   },
                 })),
                 ...(folders.length > 0

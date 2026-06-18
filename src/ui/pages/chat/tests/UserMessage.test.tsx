@@ -415,6 +415,7 @@ describe("UserMessage", () => {
       expect(mockAddPrompt).toHaveBeenCalledWith({
         name: "Hello world",
         text: "Hello world",
+        folderId: null,
       });
     });
 
@@ -433,6 +434,7 @@ describe("UserMessage", () => {
       expect(mockAddPrompt).toHaveBeenCalledWith({
         name: "Line 1\nLine 2".slice(0, 15),
         text: "Line 1\nLine 2",
+        folderId: null,
       });
     });
 

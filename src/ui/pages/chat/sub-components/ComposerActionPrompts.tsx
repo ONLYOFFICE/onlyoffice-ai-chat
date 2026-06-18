@@ -6,6 +6,8 @@ import type { DropDownItemProps } from "../../../components/dropdown-item/DropDo
 import { Dialog } from "../../../components/dialog";
 import { cn } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
+import logger from "../../../../shared/logger";
 
 export const PROMPT_DIALOG_CLASS =
   "!w-[480px] [&>div:last-child]:!px-[24px] [&>div:nth-child(2)]:!h-[52px] [&>div:nth-child(2)]:!ps-[24px] [&>div:nth-child(2)]:!pe-[8px] [&>div:nth-child(2)]:!py-[12px]";
@@ -225,6 +227,7 @@ const ComposerActionPrompts = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
   const { usePromptsStore } = useStores();
+  const { onEditPrompt } = useWidgetConfig();
   const prompts = usePromptsStore((s) => s.prompts);
   const folders = usePromptsStore((s) => s.folders);
   const editPrompt = usePromptsStore((s) => s.editPrompt);
@@ -258,6 +261,41 @@ const ComposerActionPrompts = () => {
     [composerRuntime]
   );
 
+  // When the host supplies `onEditPrompt`, it owns the input UI (its own
+  // window) and resolves the updated fields; the widget saves once the host
+  // returns a non-empty name. Otherwise fall back to the built-in dialog.
+  const requestEditPrompt = useCallback(
+    async (prompt: {
+      id: string;
+      name: string;
+      text: string;
+      folderId?: string;
+    }) => {
+      if (!onEditPrompt) {
+        setEditingPrompt({
+          id: prompt.id,
+          name: prompt.name,
+          text: prompt.text,
+        });
+        return;
+      }
+      try {
+        const result = await onEditPrompt({
+          id: prompt.id,
+          name: prompt.name,
+          text: prompt.text,
+          folderId: prompt.folderId ?? null,
+        });
+        const name = result?.name?.trim();
+        if (!name) return;
+        await editPrompt(prompt.id, { name, text: result?.text ?? "" });
+      } catch (err) {
+        logger.error("onEditPrompt handler failed:", err);
+      }
+    },
+    [onEditPrompt, editPrompt]
+  );
+
   const buildPromptContextMenu = useCallback(
     (prompt: {
       id: string;
@@ -286,11 +324,7 @@ const ComposerActionPrompts = () => {
         {
           text: t("EditAIPrompt"),
           onClick: () => {
-            setEditingPrompt({
-              id: prompt.id,
-              name: prompt.name,
-              text: prompt.text,
-            });
+            void requestEditPrompt(prompt);
           },
         },
         ...(moveToFolderItems.length > 0
@@ -313,7 +347,7 @@ const ComposerActionPrompts = () => {
         },
       ];
     },
-    [t, folders, editPrompt, removePrompt]
+    [t, folders, editPrompt, removePrompt, requestEditPrompt]
   );
 
   const items = useMemo(() => {

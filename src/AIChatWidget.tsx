@@ -179,6 +179,18 @@ export interface AIChatWidgetProps {
    */
   onCreatePromptFolder?: WidgetConfig["onCreatePromptFolder"];
   /**
+   * Custom UI for creating a prompt. When provided, the built-in
+   * "Save prompt" auto-name path is replaced and the host owns the input UI.
+   * See {@link WidgetConfig.onCreatePrompt}.
+   */
+  onCreatePrompt?: WidgetConfig["onCreatePrompt"];
+  /**
+   * Custom UI for editing a prompt. When provided, the built-in
+   * "Edit prompt" dialog is skipped and the host owns the input UI.
+   * See {@link WidgetConfig.onEditPrompt}.
+   */
+  onEditPrompt?: WidgetConfig["onEditPrompt"];
+  /**
    * Handler for opening a host-owned "Custom Providers" screen. When
    * provided, a "Custom Providers" button is shown next to "Add Model".
    * See {@link WidgetConfig.onOpenCustomProvider}.
@@ -239,6 +251,8 @@ export const AIChatWidget = React.forwardRef<
       onDownloadTemplate,
       onDeleteProfile,
       onCreatePromptFolder,
+      onCreatePrompt,
+      onEditPrompt,
       onOpenCustomProvider,
       onDiscardMcpChanges,
       onToolCallApproveResult,
@@ -262,6 +276,8 @@ export const AIChatWidget = React.forwardRef<
         onDownloadTemplate,
         onDeleteProfile,
         onCreatePromptFolder,
+        onCreatePrompt,
+        onEditPrompt,
         onOpenCustomProvider,
         onDiscardMcpChanges,
         onToolCallApproveResult,
@@ -282,6 +298,8 @@ export const AIChatWidget = React.forwardRef<
         onDownloadTemplate,
         onDeleteProfile,
         onCreatePromptFolder,
+        onCreatePrompt,
+        onEditPrompt,
         onOpenCustomProvider,
         onDiscardMcpChanges,
         onToolCallApproveResult,

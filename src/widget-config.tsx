@@ -161,6 +161,44 @@ export interface WidgetConfig {
     defaultName: string
   ) => string | void | Promise<string | void>;
   /**
+   * Custom UI for creating a prompt. When provided, the widget's built-in
+   * "Save prompt" path (which auto-names from the message) is replaced — the
+   * host owns the name/text input UI (e.g. its own window) and resolves the
+   * prompt fields:
+   * - a {@link PromptDraft} with a non-empty `name` — the widget creates the
+   *   prompt (in the same folder it was triggered from)
+   * - `undefined` / no return / empty `name` (or a rejected promise) —
+   *   cancelled, nothing is created
+   *
+   * The widget always performs the actual creation itself; the host only
+   * owns the input step. When omitted, the prompt is saved directly with a
+   * name derived from the message text.
+   *
+   * @param draft suggested fields — `name` (message text, truncated), the
+   *   full `text`, and the target `folderId` (`null` for the root list)
+   */
+  onCreatePrompt?: (
+    draft: PromptDraft & { folderId: string | null }
+  ) => PromptDraft | void | Promise<PromptDraft | void>;
+  /**
+   * Custom UI for editing a prompt. When provided, the widget's built-in
+   * "Edit prompt" dialog is NOT shown — the host owns the input UI (e.g. its
+   * own window) and resolves the updated fields:
+   * - a {@link PromptDraft} with a non-empty `name` — the widget saves the
+   *   update
+   * - `undefined` / no return / empty `name` (or a rejected promise) —
+   *   cancelled, nothing is changed
+   *
+   * The widget always performs the actual update itself; the host only owns
+   * the input step. When omitted, the built-in dialog is used.
+   *
+   * @param prompt the current prompt being edited (`id`, `name`, `text`, and
+   *   its `folderId`, `null` when in the root list)
+   */
+  onEditPrompt?: (
+    prompt: PromptDraft & { id: string; folderId: string | null }
+  ) => PromptDraft | void | Promise<PromptDraft | void>;
+  /**
    * Confirmation gate fired when the user navigates away from the MCP
    * servers tab while the inline config editor holds unsaved edits. The
    * host shows its own warning UI and resolves the result:
@@ -190,6 +228,12 @@ export interface WidgetConfig {
     result: unknown,
     ctx: ToolCallApproveContext
   ) => void | Promise<void>;
+}
+
+/** Prompt fields exchanged with the host's create/edit windows. */
+export interface PromptDraft {
+  name: string;
+  text: string;
 }
 
 /** Context for the tool call whose result is passed to {@link WidgetConfig.onToolCallApproveResult}. */

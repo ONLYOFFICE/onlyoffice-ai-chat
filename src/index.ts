@@ -42,6 +42,7 @@ export {
   WidgetConfigProvider,
   useWidgetConfig,
   type ToolCallApproveContext,
+  type PromptDraft,
   type WidgetConfig,
   type WidgetConfigProviderProps,
 } from "./widget-config";
