@@ -71,7 +71,7 @@ describe("createAssignmentsApi", () => {
     api.unassign("Chat" as never);
     api.bulkAssign([{ a: 1 }] as never);
     api.getAssignment("Chat" as never);
-    api.getAllAssignments();
+    api.getAllAssignments("e1");
     api.cascadeProfileDelete("p1");
     expectCall(1, "assignments", "resolveForAction", ["Chat", undefined]);
     expectCall(2, "assignments", "tryResolveForAction", ["Chat", undefined]);
@@ -79,7 +79,7 @@ describe("createAssignmentsApi", () => {
     expectCall(4, "assignments", "unassign", ["Chat"]);
     expectCall(5, "assignments", "bulkAssign", [[{ a: 1 }]]);
     expectCall(6, "assignments", "getAssignment", ["Chat"]);
-    expectCall(7, "assignments", "getAllAssignments", []);
+    expectCall(7, "assignments", "getAllAssignments", ["e1"]);
     expectCall(8, "assignments", "cascadeProfileDelete", ["p1"]);
   });
 });

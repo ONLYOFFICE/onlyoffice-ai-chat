@@ -77,6 +77,16 @@ describe("createProfilesStore", () => {
     expect(s.getState().defaultProfile?.id).toBe("1");
   });
 
+  it("init forwards entityId to getAllAssignments", async () => {
+    const deps = makeDeps([profile("1")]);
+    const getAll = vi.fn().mockResolvedValue({ Chat: "1" });
+    deps.api.assignments.getAllAssignments = getAll;
+    const s = createProfilesStore({ ...deps, entityId: "agent-7" });
+    await s.getState().init();
+    expect(getAll).toHaveBeenCalledWith("agent-7");
+    expect(s.getState().chatProfile?.id).toBe("1");
+  });
+
   it("init fans out profiles/deepMode/assignments in parallel", async () => {
     const deps = makeDeps([profile("1")]);
     // Capture call timing: each mock records when it was invoked relative

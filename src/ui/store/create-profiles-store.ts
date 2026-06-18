@@ -109,7 +109,7 @@ export function createProfilesStore(deps: {
   const loadAssignmentsState = async (
     profiles: Profile[]
   ): Promise<Partial<ProfilesStoreState>> => {
-    const assignments = await api.assignments.getAllAssignments();
+    const assignments = await api.assignments.getAllAssignments(entityId);
     return buildAssignmentsState(profiles, assignments);
   };
 
@@ -159,7 +159,7 @@ export function createProfilesStore(deps: {
         const [rawProfiles, deepMode, assignments] = await Promise.all([
           api.profiles.list(),
           api.preferences.getDeepMode(entityId),
-          api.assignments.getAllAssignments(),
+          api.assignments.getAllAssignments(entityId),
         ]);
         const profiles = backfillCapabilities(rawProfiles);
         const assignmentsState = buildAssignmentsState(profiles, assignments);
@@ -178,7 +178,7 @@ export function createProfilesStore(deps: {
 
       reloadCurrentChat: async () => {
         const profiles = get().profiles;
-        const assignments = await api.assignments.getAllAssignments();
+        const assignments = await api.assignments.getAllAssignments(entityId);
         const byId = new Map(profiles.map((p) => [p.id, p]));
         const chatId = assignments[ActionType.Chat];
         const defaultId = assignments[ActionType.Default];

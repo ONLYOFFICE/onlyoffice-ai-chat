@@ -44,6 +44,7 @@ export const DEFAULT_ASSIGNMENTS_ROUTES: Record<
   getAllAssignments: {
     method: "GET",
     path: "assignments/get-all-assignments",
+    params: ["entityId"],
   },
   cascadeProfileDelete: {
     method: "DELETE",

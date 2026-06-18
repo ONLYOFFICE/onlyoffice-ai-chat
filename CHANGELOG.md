@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.131
+
+### Fixed
+
+- Profile assignments are now read entity-scoped: `AssignmentsEngine.getAllAssignments(entityId?)` (and `AssignmentsStorage.readAll(entityId?)`) forward the scope token, and the profiles store passes `entityId` when loading assignments. The server-API client sends `?entityId=` (added `params: ["entityId"]` to the `getAllAssignments` route). With an `entityId` set, the chat/default profiles resolve from the agent's assignment, so `currentProfile` is populated and the composer input stays enabled even when the model picker is hidden.
+
 ## 0.4.130
 
 ### Added

@@ -162,9 +162,18 @@ export class AssignmentsEngine {
     return this.deps.storage.assignments.readByType(actionType);
   }
 
-  /** Read the full assignment map. Direct passthrough to storage. */
-  async getAllAssignments(): Promise<Partial<Record<ActionType, string>>> {
-    return this.deps.storage.assignments.readAll();
+  /**
+   * Read the full assignment map. Direct passthrough to storage.
+   *
+   * `entityId` is an opaque scope token forwarded untouched — when set,
+   * an entity-aware adapter returns that entity's (agent's) assignments
+   * so the chat/default slots resolve from the agent binding. Adapters
+   * that don't scope assignments ignore it.
+   */
+  async getAllAssignments(
+    entityId?: string
+  ): Promise<Partial<Record<ActionType, string>>> {
+    return this.deps.storage.assignments.readAll(entityId);
   }
 
   /**

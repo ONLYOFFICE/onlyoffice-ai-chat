@@ -46,8 +46,14 @@ export function createAssignmentsApi(
       callRoute(config, "assignments", "bulkAssign", [entries], engines),
     getAssignment: (actionType) =>
       callRoute(config, "assignments", "getAssignment", [actionType], engines),
-    getAllAssignments: () =>
-      callRoute(config, "assignments", "getAllAssignments", [], engines),
+    getAllAssignments: (entityId) =>
+      callRoute(
+        config,
+        "assignments",
+        "getAllAssignments",
+        [entityId],
+        engines
+      ),
     cascadeProfileDelete: (profileId) =>
       callRoute(
         config,

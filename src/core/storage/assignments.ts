@@ -47,8 +47,14 @@ export interface AssignmentsStorage {
 
   /**
    * Retrieve every assignment as a map. Missing entries are omitted.
+   *
+   * `entityId` is an opaque scope token forwarded untouched — when
+   * provided, an entity-aware adapter returns that entity's (e.g. agent's)
+   * assignments. Adapters that don't scope assignments ignore it.
+   *
+   * @param entityId - Optional opaque scope token.
    */
-  readAll(): Promise<Partial<Record<ActionType, string>>>;
+  readAll(entityId?: string): Promise<Partial<Record<ActionType, string>>>;
 
   /**
    * Replace the profile bound to an existing action-type assignment.
