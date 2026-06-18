@@ -201,11 +201,9 @@ const ComposerActionAttachment = () => {
     onToggleChange: async () => {
       if (!webSearchEnabled) return;
       const next = !webSearchActive;
-      await Promise.all(
-        WEB_SEARCH_TOOL_NAMES.map((name) =>
-          changeToolStatus(WEB_SEARCH_TYPE, name, next)
-        )
-      );
+      // Flip both web-search tools in one atomic write — a per-tool
+      // Promise.all races and leaves one tool enabled.
+      await changeToolStatus(WEB_SEARCH_TYPE, WEB_SEARCH_TOOL_NAMES, next);
       eventBus.emit("tools-changed");
     },
   });

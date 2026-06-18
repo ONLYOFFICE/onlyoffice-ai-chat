@@ -66,11 +66,9 @@ const ServersSettings = () => {
           const next = !webSearchActive;
           // Flip every web-search tool at once so the composer toggle
           // matches the user's mental model of "web search on / off".
-          await Promise.all(
-            WEB_SEARCH_TOOL_NAMES.map((name) =>
-              changeToolStatus(WEB_SEARCH_TYPE, name, next)
-            )
-          );
+          // One atomic write — a per-tool Promise.all races and leaves one
+          // tool enabled.
+          await changeToolStatus(WEB_SEARCH_TYPE, WEB_SEARCH_TOOL_NAMES, next);
           eventBus.emit("tools-changed");
         },
       },

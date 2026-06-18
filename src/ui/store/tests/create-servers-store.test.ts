@@ -158,6 +158,34 @@ describe("createServersStore", () => {
     );
   });
 
+  it("changeToolStatus disables multiple tools atomically (array)", async () => {
+    const deps = makeDeps({
+      grouped: { "web-search": [] },
+      disabled: {},
+    });
+    const s = createServersStore(deps);
+    await s
+      .getState()
+      .changeToolStatus("web-search", ["web_search", "web_crawling"], false);
+    // Single persist with BOTH names — no per-tool race that drops one.
+    expect(deps.api.tools.setDisabled).toHaveBeenCalledTimes(1);
+    expect(deps.api.tools.setDisabled).toHaveBeenCalledWith(
+      "web-search",
+      ["web_search", "web_crawling"],
+      undefined
+    );
+    expect(s.getState().disabledTools["web-search"]).toEqual([
+      "web_search",
+      "web_crawling",
+    ]);
+    // Multi-tool flip omits `toolName`.
+    expect(deps.callbacksManager.emit).toHaveBeenCalledWith("onServersUpdated", {
+      kind: "tool-toggled",
+      toolType: "web-search",
+      enabled: false,
+    });
+  });
+
   it("changeToolStatus dedupes when disabling already-disabled tool", async () => {
     const deps = makeDeps();
     const s = createServersStore(deps);

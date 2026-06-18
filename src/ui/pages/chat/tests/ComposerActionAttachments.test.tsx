@@ -509,12 +509,7 @@ describe("ComposerActionAttachment", () => {
       await wsItem.onToggleChange!();
       expect(mockChangeToolStatus).toHaveBeenCalledWith(
         "web-search",
-        "web_search",
-        false
-      );
-      expect(mockChangeToolStatus).toHaveBeenCalledWith(
-        "web-search",
-        "web_crawling",
+        ["web_search", "web_crawling"],
         false
       );
       expect(mockEmit).toHaveBeenCalledWith("tools-changed");

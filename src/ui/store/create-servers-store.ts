@@ -58,9 +58,17 @@ export interface ServersStoreState {
   initServers: () => Promise<void>;
   getTools: () => Promise<void>;
   reload: () => Promise<void>;
+  /**
+   * Enable or disable one tool — or several of the same server type in one
+   * atomic persist + state update by passing an array of names. Passing an
+   * array is required when toggling tools together (e.g. the web-search
+   * pair): calling this once per tool races, since each call reads the same
+   * pre-update `disabledTools` before its `await` and only the last write
+   * survives.
+   */
   changeToolStatus: (
     type: string,
-    name: string,
+    name: string | string[],
     enabled: boolean
   ) => Promise<void>;
   /**
@@ -193,18 +201,21 @@ export function createServersStore(deps: {
     },
 
     changeToolStatus: async (type, name, enabled) => {
+      const names = Array.isArray(name) ? name : [name];
       const state = get();
       const current = state.disabledTools[type] ?? [];
       const next = enabled
-        ? current.filter((n) => n !== name)
-        : Array.from(new Set([...current, name]));
+        ? current.filter((n) => !names.includes(n))
+        : Array.from(new Set([...current, ...names]));
       await api.tools.setDisabled(type, next, entityId);
 
-      // Optimistic local flip: just toggle `enabled` on the matching tool.
+      // Optimistic local flip: just toggle `enabled` on the matching tools.
       // Avoids re-running `buildToolsList` (host getTools + getDisabled +
       // webSearch.isConfigured) on every checkbox click.
       const flip = (items: TMCPItem[]) =>
-        items.map((tool) => (tool.name === name ? { ...tool, enabled } : tool));
+        items.map((tool) =>
+          names.includes(tool.name) ? { ...tool, enabled } : tool
+        );
       const nextServers =
         state.servers[type] !== undefined
           ? { ...state.servers, [type]: flip(state.servers[type]) }
@@ -229,7 +240,9 @@ export function createServersStore(deps: {
       callbacksManager.emit("onServersUpdated", {
         kind: "tool-toggled",
         toolType: type,
-        toolName: name,
+        // Omit `toolName` for a multi-tool flip — the event carries a single
+        // name only when exactly one tool changed.
+        ...(names.length === 1 ? { toolName: names[0] } : {}),
         enabled,
       });
     },

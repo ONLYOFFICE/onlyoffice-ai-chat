@@ -188,12 +188,7 @@ describe("ServersSettings", () => {
       await wsItem.onToggleChange!();
       expect(mockChangeToolStatus).toHaveBeenCalledWith(
         "web-search",
-        "web_search",
-        true
-      );
-      expect(mockChangeToolStatus).toHaveBeenCalledWith(
-        "web-search",
-        "web_crawling",
+        ["web_search", "web_crawling"],
         true
       );
       expect(mockEmit).toHaveBeenCalledWith("tools-changed");
@@ -213,12 +208,7 @@ describe("ServersSettings", () => {
       await wsItem.onToggleChange!();
       expect(mockChangeToolStatus).toHaveBeenCalledWith(
         "web-search",
-        "web_search",
-        false
-      );
-      expect(mockChangeToolStatus).toHaveBeenCalledWith(
-        "web-search",
-        "web_crawling",
+        ["web_search", "web_crawling"],
         false
       );
     });
