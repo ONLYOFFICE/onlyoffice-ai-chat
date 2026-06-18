@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.133
+
+### Changed
+
+- OpenAI-compatible provider now supports image generation: it inherits `imageGeneration` from the OpenAI provider (calls `/v1/images/generations`) instead of disabling it. Lets `generate_image` work for openai-compatible profiles. Note: endpoints without an images endpoint will now surface a network error from the provider instead of `"Image generation provider is not configured."`.
+
 ## 0.4.132
 
 ### Changed
