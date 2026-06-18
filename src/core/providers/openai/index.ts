@@ -118,6 +118,10 @@ class OpenAIProvider extends AbstractBaseProvider {
           instructions: systemPrompt,
           input,
           tools: responsesTools.length > 0 ? responsesTools : undefined,
+          // Force one tool call per turn. Only valid when tools are present.
+          ...(responsesTools.length > 0
+            ? { parallel_tool_calls: false }
+            : {}),
           reasoning: ((): { effort: string } | undefined => {
             const effort = resolveReasoningEffort(model, withReasoning);
             return effort ? { effort } : undefined;
@@ -155,6 +159,8 @@ class OpenAIProvider extends AbstractBaseProvider {
         messages: params.messages,
         model: params.model,
         tools: params.tools.length > 0 ? params.tools : undefined,
+        // Force one tool call per turn. Only valid when tools are present.
+        ...(params.tools.length > 0 ? { parallel_tool_calls: false } : {}),
         stream: true,
         reasoning_effort: resolveReasoningEffort(
           params.model,

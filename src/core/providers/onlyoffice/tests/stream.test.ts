@@ -135,8 +135,23 @@ describe("onlyoffice/stream/openSSEStream", () => {
 
     const body = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
     expect(body.tools).toHaveLength(1);
+    expect(body.parallel_tool_calls).toBe(false);
     expect(body.reasoning_effort).toBe("medium");
     expect(body.stream).toBe(true);
+  });
+
+  it("omits parallel_tool_calls when no tools are provided", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(mockSseResponse(["data: [DONE]\n"]));
+    const iterable = await openSSEStream(creds, {
+      messages: [],
+      model: "gpt",
+      tools: [],
+    });
+    for await (const _ of iterable) void _;
+    const body = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
+    expect(body.parallel_tool_calls).toBeUndefined();
   });
 
   it("omits the Authorization header when no apiKey", async () => {

@@ -43,7 +43,11 @@ export const openSSEStream = async (
     stream: true,
   };
 
-  if (params.tools.length > 0) body.tools = params.tools;
+  if (params.tools.length > 0) {
+    body.tools = params.tools;
+    // Force one tool call per turn. Only valid when tools are present.
+    body.parallel_tool_calls = false;
+  }
   const reasoningEffort = resolveReasoningEffort(
     params.model,
     params.withReasoning

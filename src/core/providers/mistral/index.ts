@@ -48,6 +48,8 @@ class MistralProvider extends AbstractBaseProvider {
           ...convertMessages(messages),
         ] as Messages[],
         tools: convertedTools.length > 0 ? convertedTools : undefined,
+        // Force one tool call per turn. Only valid when tools are present.
+        ...(convertedTools.length > 0 ? { parallelToolCalls: false } : {}),
       });
 
       yield* processStream(stream, signal);

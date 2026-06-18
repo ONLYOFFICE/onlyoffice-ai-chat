@@ -109,6 +109,7 @@ describe("MistralProvider", () => {
         })
       );
       expect(chatStreamMock.mock.calls[0]?.[0]?.tools?.length).toBe(1);
+      expect(chatStreamMock.mock.calls[0]?.[0]?.parallelToolCalls).toBe(false);
     });
 
     it("yields cancelled on abort", async () => {

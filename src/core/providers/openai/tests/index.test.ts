@@ -192,6 +192,35 @@ describe("OpenAIProvider", () => {
       );
       expect(chatCreateMock.mock.calls[0]?.[0]?.tools?.length).toBe(1);
     });
+
+    it("disables parallel tool calls when tools are provided", async () => {
+      chatCreateMock.mockResolvedValueOnce(
+        createMockStream([createFinishChunk()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-4o",
+          systemPrompt: "",
+          tools: [{ name: "t", description: "d", inputSchema: {} }],
+        })
+      );
+      expect(chatCreateMock.mock.calls[0]?.[0]?.parallel_tool_calls).toBe(false);
+    });
+
+    it("omits parallel_tool_calls when no tools are provided", async () => {
+      chatCreateMock.mockResolvedValueOnce(
+        createMockStream([createFinishChunk()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({ messages: [], model: "gpt-4o", systemPrompt: "" })
+      );
+      expect(
+        chatCreateMock.mock.calls[0]?.[0]?.parallel_tool_calls
+      ).toBeUndefined();
+    });
   });
 
   describe("sendMessage — Responses API path", () => {
@@ -298,6 +327,9 @@ describe("OpenAIProvider", () => {
       expect(tools).toHaveLength(1);
       expect(tools[0]).toMatchObject({ type: "function", name: "t" });
       expect(tools[0]).not.toHaveProperty("function");
+      expect(responsesCreateMock.mock.calls[0]?.[0]?.parallel_tool_calls).toBe(
+        false
+      );
     });
 
     it("yields cancelled response when signal aborts the Responses call", async () => {
