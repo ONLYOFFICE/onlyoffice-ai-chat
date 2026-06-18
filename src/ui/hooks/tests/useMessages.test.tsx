@@ -342,6 +342,8 @@ describe("useMessages.onNew", () => {
   });
 
   it("auto-allowed tool dispatches and resumes via approveToolCall", async () => {
+    // Stream is running while the tool executes; the resume is gated on it.
+    stores.messageState.isStreamRunning = true;
     stores.profilesState.chatProfile = profile;
     readToolCallMock.mockReturnValue({
       type: "tool-call",
@@ -388,6 +390,7 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
   });
 
   it("onToolCallApproveResult: keeps the dialog open, fires the callback with the result, then closes before resuming", async () => {
+    stores.messageState.isStreamRunning = true;
     const order: string[] = [];
     const onResult = vi.fn(async (result: unknown) => {
       order.push(`callback:${String(result)}`);
@@ -433,6 +436,7 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
   });
 
   it("approveToolCall dispatches and resumes", async () => {
+    stores.messageState.isStreamRunning = true;
     stores.serversState.manageToolData = {
       threadId: "t1",
       messageId: "m1",
@@ -453,6 +457,31 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
     expect(apiAi.approveToolCall).toHaveBeenCalledWith(
       expect.objectContaining({ allowAlways: true })
     );
+  });
+
+  it("approveToolCall does NOT resume when the stream was stopped", async () => {
+    // User pressed stop while the client-side tool ran: stopMessage set
+    // isStreamRunning=false. The tool still resolves, but the chat must not
+    // resume (no model continuation).
+    stores.messageState.isStreamRunning = false;
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: { q: 1 },
+    });
+    apiAi.approveToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.approveToolCall(true);
+    });
+    expect(servers.callTools).toHaveBeenCalled();
+    expect(apiAi.approveToolCall).not.toHaveBeenCalled();
   });
 
   it("denyToolCall noops when no manageToolData", async () => {
@@ -534,6 +563,7 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
   });
 
   it("approveToolCall replaces result when middleware returns continue", async () => {
+    stores.messageState.isStreamRunning = true;
     stores.serversState.manageToolData = {
       threadId: "t1",
       messageId: "m1",

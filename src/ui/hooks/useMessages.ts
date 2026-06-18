@@ -467,6 +467,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         message: ThreadMessageLike
       ) {
         setIsToolPending(false);
+        if (!useMessageStore.getState().isStreamRunning) return;
         const next = api.ai.approveToolCall({
           threadId: event.threadId,
           messageId: event.messageId,
@@ -478,6 +479,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             isReasoning: extendedThinking,
             tools: tools.length > 0 ? tools : undefined,
             prompt: systemPrompt,
+            signal: useMessageStore.getState()._abortController?.signal,
           },
         });
         await processStream(next, event.threadId, {
@@ -534,6 +536,13 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         // chunk.
         setTimeout(() => setIsToolPending(false), 300);
 
+        // If the user pressed stop while the client-side tool was running,
+        // don't resume — the original stream was already torn down. Unlike
+        // engine-side tools (which execute inside the signalled request and
+        // short-circuit on abort), this resume is a separate stream, so it
+        // must be gated explicitly.
+        if (!useMessageStore.getState().isStreamRunning) return;
+
         const next = api.ai.approveToolCall({
           threadId: event.threadId,
           messageId: event.messageId,
@@ -545,6 +554,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             isReasoning: extendedThinking,
             tools: tools.length > 0 ? tools : undefined,
             prompt: systemPrompt,
+            signal: useMessageStore.getState()._abortController?.signal,
           },
         });
         await processStream(next, event.threadId, {
@@ -572,6 +582,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setManageToolData,
       systemPrompt,
       tools,
+      useMessageStore,
     ]
   );
 
@@ -743,6 +754,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       // and streams the result back, which the watcher hands to the callback.
       if (data.serverExecuted) {
         setIsToolPending(false);
+        if (!useMessageStore.getState().isStreamRunning) {
+          closeDialog();
+          return;
+        }
         const stream = api.ai.approveToolCall({
           threadId: data.threadId,
           messageId: data.messageId,
@@ -755,6 +770,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             isReasoning: extendedThinking,
             tools: tools.length > 0 ? tools : undefined,
             prompt: systemPrompt,
+            signal: useMessageStore.getState()._abortController?.signal,
           },
         });
         await processStream(stream, data.threadId, {
@@ -842,6 +858,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
       setTimeout(() => setIsToolPending(false), 300);
 
+      // If the user pressed stop while the client-side tool was running,
+      // don't resume — the original stream was already torn down.
+      if (!useMessageStore.getState().isStreamRunning) return;
+
       const stream = api.ai.approveToolCall({
         threadId: data.threadId,
         messageId: data.messageId,
@@ -855,6 +875,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           isReasoning: extendedThinking,
           tools: tools.length > 0 ? tools : undefined,
           prompt: systemPrompt,
+          signal: useMessageStore.getState()._abortController?.signal,
         },
       });
       await processStream(stream, data.threadId, {
@@ -879,6 +900,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       systemPrompt,
       tools,
       updateLastMessage,
+      useMessageStore,
       useServersStore,
     ]
   );
