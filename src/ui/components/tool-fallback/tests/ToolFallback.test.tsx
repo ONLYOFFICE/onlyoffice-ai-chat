@@ -10,6 +10,12 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
+vi.mock("../../../providers/ApiProvider", () => ({
+  useApi: () => ({
+    attachments: { get: () => Promise.resolve(null) },
+  }),
+}));
+
 vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     servers: {

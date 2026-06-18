@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.132
+
+### Changed
+
+- Tool-generated images (`generate_image`) are now stored in `storage.attachments` and the message keeps only a lightweight `{ data: { ref } }` marker instead of inline base64. The megabyte-scale payload no longer bloats threads and is no longer re-sent to the model on every turn — the model only ever sees the ref. The UI hydrates the image via `api.attachments` (works in both client-core and server-core modes). Legacy threads with inline base64 still render. Persistence is linked to the owning message/thread, so existing cascade deletes reclaim the image.
+
+### Added
+
+- `Attachment.source?: "user" | "tool"` — distinguishes tool-generated images from user uploads, letting the integrator's storage adapter route or apply policies (separate bucket, quotas, TTL) per source. Defaults to `"user"` when unset.
+
 ## 0.4.131
 
 ### Fixed

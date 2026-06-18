@@ -12,6 +12,15 @@ export interface Attachment {
   /** "file" | "image". */
   kind: "file" | "image";
 
+  /**
+   * Origin of the attachment. `"user"` — uploaded by the user in the
+   * composer (the default when unset, for backward compatibility).
+   * `"tool"` — produced by a tool call (e.g. `generate_image`). Lets the
+   * integrator's adapter route or apply policies (separate bucket,
+   * quotas, TTL, CDN) per source.
+   */
+  source?: "user" | "tool";
+
   /** Display label (filename or user-visible title). */
   title: string;
 

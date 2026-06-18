@@ -1,3 +1,4 @@
+import logger from "../../../shared/logger";
 import type { TMCPItem } from "../../../shared/mcp-item";
 import type { StorageAdapter } from "../../storage";
 import type { ToolsAdapter } from "../../tools-adapter";
@@ -202,6 +203,12 @@ export async function* executeAdapterTool(
     ctx.entityId
   );
 
+  const finalResult = await persistGeneratedImage(storage, toolCall.toolName, result, {
+    messageId: event.messageId,
+    threadId: event.threadId,
+    entityId: ctx.entityId,
+  });
+
   yield* resumeChat(
     { storage },
     {
@@ -209,7 +216,7 @@ export async function* executeAdapterTool(
       messageId: event.messageId,
       idx: event.idx,
       message: event.message,
-      result,
+      result: finalResult,
       profile: ctx.profile,
       profileId: ctx.profileId,
       isReasoning: ctx.isReasoning,
@@ -219,6 +226,59 @@ export async function* executeAdapterTool(
       fetch: ctx.fetch,
     }
   );
+}
+
+/**
+ * If `result` is a successful `generate_image` payload carrying inline
+ * base64, persist the image to `storage.attachments` — linked to the
+ * owning message/thread so the existing cascade deletes reclaim it —
+ * and swap the inline body for a lightweight `{ data: { ref } }` marker.
+ *
+ * This keeps the megabyte-scale base64 out of `storage.messages` and out
+ * of every subsequent provider request: the model only ever sees the
+ * tiny marker, while the UI hydrates the ref through `api.attachments`.
+ * Writing happens in the core layer, so in server-core deployments the
+ * image lands in the server's storage exactly where the integrator's
+ * adapter puts it.
+ *
+ * Any failure — a non-image result, an error payload, or a storage
+ * write that throws — falls through with the original result untouched,
+ * so image generation never breaks just because persistence hiccuped.
+ */
+async function persistGeneratedImage(
+  storage: StorageAdapter,
+  toolName: string,
+  result: unknown,
+  scope: { messageId: string; threadId: string; entityId?: string }
+): Promise<unknown> {
+  if (toolName !== "generate_image" || typeof result !== "string") {
+    return result;
+  }
+
+  let base64: string | undefined;
+  try {
+    const parsed = JSON.parse(result) as { data?: { base64?: unknown } };
+    if (typeof parsed?.data?.base64 === "string") base64 = parsed.data.base64;
+  } catch {
+    return result;
+  }
+  if (!base64) return result;
+
+  try {
+    const record = await storage.attachments.create({
+      kind: "image",
+      source: "tool",
+      title: "generate_image",
+      base64,
+      messageId: scope.messageId,
+      threadId: scope.threadId,
+      entityId: scope.entityId,
+    });
+    return JSON.stringify({ data: { ref: record.id } });
+  } catch (e) {
+    logger.error("[generate_image] failed to persist image attachment", e);
+    return result;
+  }
 }
 
 /**

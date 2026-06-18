@@ -1,5 +1,6 @@
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useApi } from "../../providers/ApiProvider";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useToolsContext } from "../../tools/context";
 import { Icon } from "../icon";
@@ -14,6 +15,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   result,
 }) => {
   const { t, isRTL } = useI18n();
+  const api = useApi();
   const { servers: serversInstance } = useToolsContext();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const { isCopied: isArgsCopied, copyToClipboard: copyArgs } =
@@ -70,6 +72,49 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
     typeof parsedResult.data.base64 === "string"
       ? (parsedResult.data.base64 as string)
       : undefined;
+
+  // Newer threads store the generated image in `storage.attachments` and
+  // keep only a lightweight `{ data: { ref } }` marker in the message —
+  // so the megabyte-scale base64 isn't re-sent to the model every turn.
+  // Hydrate it through `api.attachments`, which routes in-process or over
+  // HTTP depending on the deployment mode. Legacy inline `base64` results
+  // still render directly via the branch above.
+  const imageRef: string | undefined =
+    isImageGeneration &&
+    parsedResult &&
+    typeof parsedResult === "object" &&
+    "data" in parsedResult &&
+    parsedResult.data &&
+    typeof parsedResult.data === "object" &&
+    "ref" in parsedResult.data &&
+    typeof parsedResult.data.ref === "string"
+      ? (parsedResult.data.ref as string)
+      : undefined;
+
+  const [refImageBase64, setRefImageBase64] = useState<string | undefined>(
+    undefined
+  );
+
+  useEffect(() => {
+    if (!imageRef) {
+      setRefImageBase64(undefined);
+      return;
+    }
+    let cancelled = false;
+    api.attachments
+      .get(imageRef)
+      .then((record) => {
+        if (!cancelled) setRefImageBase64(record?.base64 ?? undefined);
+      })
+      .catch(() => {
+        if (!cancelled) setRefImageBase64(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, imageRef]);
+
+  const imageData = imageBase64 ?? refImageBase64;
 
   return (
     <div className="my-[16px] flex w-full flex-col gap-3">
@@ -266,9 +311,13 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           )}
         </div>
       ) : null}
-      {isImageGeneration && imageBase64 ? (
+      {isImageGeneration && imageData ? (
         <img
-          src={`data:image/png;base64,${imageBase64}`}
+          src={
+            imageData.startsWith("data:")
+              ? imageData
+              : `data:image/png;base64,${imageData}`
+          }
           alt={t("ToolCallResult")}
           className="block max-w-full rounded-[8px]"
         />

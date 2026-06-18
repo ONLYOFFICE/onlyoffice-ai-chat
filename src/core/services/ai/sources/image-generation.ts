@@ -32,7 +32,7 @@ export async function getImageGenerationTools(
     {
       name: "generate_image",
       description:
-        "Generate an image from a textual description. Use this tool when the user asks to create, draw, render, or illustrate an image. Returns a base64-encoded PNG that is rendered inline in the chat.",
+        "Generate an image from a textual description. Use this tool when the user asks to create, draw, render, or illustrate an image. The generated image is rendered inline in the chat automatically.",
       inputSchema: {
         type: "object",
         properties: {

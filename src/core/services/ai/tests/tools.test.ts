@@ -275,6 +275,95 @@ describe("executeAdapterTool", () => {
     expect(callImageGenerationToolMock).toHaveBeenCalled();
   });
 
+  it("persists generate_image base64 to attachments and resumes with a ref marker", async () => {
+    callImageGenerationToolMock.mockResolvedValue(
+      JSON.stringify({ data: { base64: "AAAA" } })
+    );
+    const create = vi.fn().mockResolvedValue({ id: "att-1" });
+    const storage = {
+      toolPrefs: { readDisabled: vi.fn().mockResolvedValue({}) },
+      attachments: { create },
+    } as never;
+    resumeChatMock.mockImplementation(async function* () {});
+
+    const gen = executeAdapterTool(
+      storage,
+      undefined,
+      {
+        type: "tool-call-pending",
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: {
+          role: "assistant",
+          content: [
+            { type: "tool-call", toolName: "generate_image", args: {} },
+          ],
+        } as never,
+      } as never,
+      { profile: {} as never, profileId: "p", tools: [], entityId: "room-1" }
+    );
+    for await (const _ of gen) {
+      void _;
+    }
+
+    // Base64 is persisted as a tool-sourced image attachment, linked to
+    // the owning message/thread so cascade deletes can reclaim it.
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "image",
+        source: "tool",
+        base64: "AAAA",
+        messageId: "m",
+        threadId: "t",
+        entityId: "room-1",
+      })
+    );
+    // The model only ever sees the lightweight ref marker — never base64.
+    expect(resumeChatMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        result: JSON.stringify({ data: { ref: "att-1" } }),
+      })
+    );
+  });
+
+  it("falls back to the original result when attachment persistence throws", async () => {
+    const original = JSON.stringify({ data: { base64: "AAAA" } });
+    callImageGenerationToolMock.mockResolvedValue(original);
+    const storage = {
+      toolPrefs: { readDisabled: vi.fn().mockResolvedValue({}) },
+      attachments: { create: vi.fn().mockRejectedValue(new Error("boom")) },
+    } as never;
+    resumeChatMock.mockImplementation(async function* () {});
+
+    const gen = executeAdapterTool(
+      storage,
+      undefined,
+      {
+        type: "tool-call-pending",
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: {
+          role: "assistant",
+          content: [
+            { type: "tool-call", toolName: "generate_image", args: {} },
+          ],
+        } as never,
+      } as never,
+      { profile: {} as never, profileId: "p", tools: [] }
+    );
+    for await (const _ of gen) {
+      void _;
+    }
+
+    expect(resumeChatMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ result: original })
+    );
+  });
+
   it("dispatches custom tool via the adapter when provided", async () => {
     const adapter: ToolsAdapter = {
       callTool: vi.fn().mockResolvedValue("adapter-result"),
