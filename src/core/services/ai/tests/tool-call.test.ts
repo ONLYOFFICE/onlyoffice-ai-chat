@@ -192,5 +192,85 @@ describe("tool-call helpers", () => {
         })
       );
     });
+
+    it("persists generate_image base64 to attachments and stores a ref marker", async () => {
+      processStreamMock.mockImplementation(async function* () {});
+      const update = vi.fn().mockResolvedValue(undefined);
+      const readByThread = vi.fn().mockResolvedValue([]);
+      const create = vi.fn().mockResolvedValue({ id: "att-1" });
+      const ctx = {
+        storage: {
+          messages: { update, readByThread },
+          attachments: { create },
+        },
+      } as never;
+
+      const gen = resumeChat(ctx, {
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: message([toolCallPart({ toolName: "generate_image" })]),
+        result: JSON.stringify({ data: { base64: "AAAA" } }),
+        profile: { id: "p" } as never,
+        profileId: "p",
+        entityId: "room-1",
+      });
+      for await (const _ of gen) void _;
+
+      // Base64 persisted as a tool-sourced image, linked for cascade delete.
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: "image",
+          source: "tool",
+          base64: "AAAA",
+          messageId: "m",
+          threadId: "t",
+          entityId: "room-1",
+        })
+      );
+      // The message stores only the ref marker — never the base64.
+      expect(update).toHaveBeenCalledWith(
+        "m",
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            expect.objectContaining({
+              result: JSON.stringify({ data: { ref: "att-1" } }),
+            }),
+          ]),
+        })
+      );
+    });
+
+    it("keeps the original result when attachment persistence throws", async () => {
+      processStreamMock.mockImplementation(async function* () {});
+      const update = vi.fn().mockResolvedValue(undefined);
+      const original = JSON.stringify({ data: { base64: "AAAA" } });
+      const ctx = {
+        storage: {
+          messages: { update, readByThread: vi.fn().mockResolvedValue([]) },
+          attachments: { create: vi.fn().mockRejectedValue(new Error("x")) },
+        },
+      } as never;
+
+      const gen = resumeChat(ctx, {
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: message([toolCallPart({ toolName: "generate_image" })]),
+        result: original,
+        profile: { id: "p" } as never,
+        profileId: "p",
+      });
+      for await (const _ of gen) void _;
+
+      expect(update).toHaveBeenCalledWith(
+        "m",
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            expect.objectContaining({ result: original }),
+          ]),
+        })
+      );
+    });
   });
 });

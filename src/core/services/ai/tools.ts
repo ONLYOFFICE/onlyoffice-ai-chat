@@ -1,4 +1,3 @@
-import logger from "../../../shared/logger";
 import type { TMCPItem } from "../../../shared/mcp-item";
 import type { StorageAdapter } from "../../storage";
 import type { ToolsAdapter } from "../../tools-adapter";
@@ -173,6 +172,13 @@ export type AdapterRunContext = {
    * `useProxy`. Mirrors {@link ActionArgs.fetch}.
    */
   fetch?: import("../../../shared/provider-credentials").ProviderFetch;
+  /**
+   * Proxy fetch for built-in web-search HTTP calls. Set to the host's
+   * `PlatformAdapter.fetchProxy` whenever it is configured — unlike
+   * {@link AdapterRunContext.fetch}, it is not gated by the profile's
+   * `useProxy` flag.
+   */
+  webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch;
 };
 
 /**
@@ -200,15 +206,12 @@ export async function* executeAdapterTool(
     adapter,
     toolCall.toolName,
     args,
-    ctx.entityId
+    ctx.entityId,
+    ctx.webSearchFetch
   );
 
-  const finalResult = await persistGeneratedImage(storage, toolCall.toolName, result, {
-    messageId: event.messageId,
-    threadId: event.threadId,
-    entityId: ctx.entityId,
-  });
-
+  // Note: `generate_image` base64 → attachment-ref swap happens centrally
+  // in `resumeChat`, which every tool-result path funnels through.
   yield* resumeChat(
     { storage },
     {
@@ -216,7 +219,7 @@ export async function* executeAdapterTool(
       messageId: event.messageId,
       idx: event.idx,
       message: event.message,
-      result: finalResult,
+      result,
       profile: ctx.profile,
       profileId: ctx.profileId,
       isReasoning: ctx.isReasoning,
@@ -226,59 +229,6 @@ export async function* executeAdapterTool(
       fetch: ctx.fetch,
     }
   );
-}
-
-/**
- * If `result` is a successful `generate_image` payload carrying inline
- * base64, persist the image to `storage.attachments` — linked to the
- * owning message/thread so the existing cascade deletes reclaim it —
- * and swap the inline body for a lightweight `{ data: { ref } }` marker.
- *
- * This keeps the megabyte-scale base64 out of `storage.messages` and out
- * of every subsequent provider request: the model only ever sees the
- * tiny marker, while the UI hydrates the ref through `api.attachments`.
- * Writing happens in the core layer, so in server-core deployments the
- * image lands in the server's storage exactly where the integrator's
- * adapter puts it.
- *
- * Any failure — a non-image result, an error payload, or a storage
- * write that throws — falls through with the original result untouched,
- * so image generation never breaks just because persistence hiccuped.
- */
-async function persistGeneratedImage(
-  storage: StorageAdapter,
-  toolName: string,
-  result: unknown,
-  scope: { messageId: string; threadId: string; entityId?: string }
-): Promise<unknown> {
-  if (toolName !== "generate_image" || typeof result !== "string") {
-    return result;
-  }
-
-  let base64: string | undefined;
-  try {
-    const parsed = JSON.parse(result) as { data?: { base64?: unknown } };
-    if (typeof parsed?.data?.base64 === "string") base64 = parsed.data.base64;
-  } catch {
-    return result;
-  }
-  if (!base64) return result;
-
-  try {
-    const record = await storage.attachments.create({
-      kind: "image",
-      source: "tool",
-      title: "generate_image",
-      base64,
-      messageId: scope.messageId,
-      threadId: scope.threadId,
-      entityId: scope.entityId,
-    });
-    return JSON.stringify({ data: { ref: record.id } });
-  } catch (e) {
-    logger.error("[generate_image] failed to persist image attachment", e);
-    return result;
-  }
 }
 
 /**
@@ -293,10 +243,11 @@ async function dispatchAdapterTool(
   adapter: ToolsAdapter | undefined,
   toolName: string,
   args: Record<string, unknown>,
-  entityId?: string
+  entityId?: string,
+  webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch
 ): Promise<unknown> {
   if (toolName === "web_search" || toolName === "web_crawling") {
-    return callWebSearchTool(storage, toolName, args, entityId);
+    return callWebSearchTool(storage, toolName, args, entityId, webSearchFetch);
   }
   if (toolName === "generate_image") {
     return callImageGenerationTool(storage, toolName, args);

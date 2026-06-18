@@ -35,7 +35,7 @@ export interface MessageStoreState {
   setIsToolPending: (value: boolean) => void;
   /** Replace the abort controller used by `stopMessage`. */
   setAbortController: (controller: AbortController | undefined) => void;
-  /** Append a message. If the last message has status "incomplete", it is replaced instead. */
+  /** Append a message to the end of the list. Never modifies existing messages. */
   addMessage: (message: ThreadMessageLike) => void;
   /** Replace the last message in the list (used during streaming updates). */
   updateLastMessage: (message: ThreadMessageLike) => void;
@@ -95,15 +95,10 @@ export function createMessageStore(deps: {
     setAbortController: (controller) => set({ _abortController: controller }),
 
     addMessage: (message) => {
-      const { messages } = get();
-      if (
-        messages.length &&
-        messages[messages.length - 1].status?.type === "incomplete"
-      ) {
-        set({ messages: [...messages.slice(0, -1), { ...message }] });
-        return;
-      }
-      set({ messages: [...messages, message] });
+      // Always append — never touch existing messages. An errored
+      // ("incomplete") turn stays in the thread untouched when the next
+      // message arrives, so previous turns can't vanish.
+      set((s) => ({ messages: [...s.messages, message] }));
     },
 
     updateLastMessage: (message) => {

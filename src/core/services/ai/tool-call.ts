@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { ReadonlyJSONObject } from "assistant-stream/utils";
+import logger from "../../../shared/logger";
 import { resolveAttachmentRefs } from "../../actions/attachment-resolution";
 import { chat } from "../../actions/chat";
 import type { ActionArgs } from "../../actions/types";
@@ -100,6 +101,62 @@ export function patchToolCallResult(
 }
 
 /**
+ * If `result` is an image-tool payload carrying inline base64, persist
+ * the image to `storage.attachments` — linked to the owning
+ * message/thread so the existing cascade deletes reclaim it — and swap
+ * the inline body for a lightweight `{ data: { ref } }` marker.
+ *
+ * Detection is by RESULT SHAPE (`{ data: { base64 } }`, the library's
+ * canonical image-result format) rather than by tool name. That keeps it
+ * working for the built-in `generate_image`, for an integrator's own
+ * image tool exposed via `HostToolSource` (whose name is group-prefixed,
+ * e.g. `"<group>_generate_image"`), and for any MCP tool that follows
+ * the same shape — no per-integrator wiring required.
+ *
+ * Keeps the megabyte-scale base64 out of `storage.messages` and out of
+ * every subsequent provider request: the model only ever sees the tiny
+ * marker, while the UI hydrates the ref through `api.attachments`.
+ *
+ * Any non-matching result — web-search payloads, error envelopes, plain
+ * strings, an already-swapped ref marker — or a storage write that
+ * throws falls through with the original result untouched, so tools
+ * never break just because persistence hiccuped.
+ */
+export async function persistGeneratedImage(
+  storage: StorageAdapter,
+  toolName: string,
+  result: unknown,
+  scope: { messageId: string; threadId: string; entityId?: string }
+): Promise<unknown> {
+  if (typeof result !== "string") return result;
+
+  let base64: string | undefined;
+  try {
+    const parsed = JSON.parse(result) as { data?: { base64?: unknown } };
+    if (typeof parsed?.data?.base64 === "string") base64 = parsed.data.base64;
+  } catch {
+    return result;
+  }
+  if (!base64) return result;
+
+  try {
+    const record = await storage.attachments.create({
+      kind: "image",
+      source: "tool",
+      title: toolName || "generated-image",
+      base64,
+      messageId: scope.messageId,
+      threadId: scope.threadId,
+      entityId: scope.entityId,
+    });
+    return JSON.stringify({ data: { ref: record.id } });
+  } catch (e) {
+    logger.error("[image] failed to persist generated image attachment", e);
+    return result;
+  }
+}
+
+/**
  * Persist `result` onto the assistant message and resume the chat
  * stream with the augmented history.
  *
@@ -129,6 +186,23 @@ export async function* resumeChat(
   const toolCall = readToolCall(input.message, input.idx);
   if (!toolCall) return;
 
+  // Tool-generated images: persist the base64 to `storage.attachments`
+  // and swap it for a lightweight `{ data: { ref } }` marker before the
+  // result touches `storage.messages`. This is the single chokepoint for
+  // every tool-result path — engine auto-exec (`executeAdapterTool`),
+  // UI approve, and deny all funnel through here — so the megabyte-scale
+  // base64 never lands in the message and is never re-sent to the model.
+  const result = await persistGeneratedImage(
+    ctx.storage,
+    toolCall.toolName,
+    input.result,
+    {
+      messageId: input.messageId,
+      threadId: input.threadId,
+      entityId: input.entityId,
+    }
+  );
+
   // Persist the tool result onto the assistant message that issued the
   // call. The UI has already displayed it locally — see the post-
   // `tool-call-executed` handling in `useMessages` — so we don't yield a
@@ -136,7 +210,7 @@ export async function* resumeChat(
   // message in the runtime list).
   const updatedMessage = replaceContentPart(input.message, input.idx, {
     ...toolCall,
-    result: input.result,
+    result,
   });
   await ctx.storage.messages.update(input.messageId, updatedMessage);
 

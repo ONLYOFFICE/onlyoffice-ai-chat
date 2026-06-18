@@ -1,4 +1,5 @@
 import type { TErrorData } from "../../../shared/error-data";
+import type { ProviderFetch } from "../../../shared/provider-credentials";
 import { ProviderErrors } from "../../providers/errors";
 import type { WebSearchConfig } from "../../storage";
 
@@ -46,12 +47,18 @@ export function validateConfigShape(
  * - `provider === "Exa"`: POST to `https://api.exa.ai/search` with
  *   `x-api-key`.
  * - Anything else: rejected as unknown provider.
+ *
+ * `fetchImpl` overrides the global `fetch` — wired to the host's
+ * `PlatformAdapter.fetchProxy` when configured, otherwise omitted.
  */
 export async function testWebSearchConnection(
-  config: WebSearchConfig
+  config: WebSearchConfig,
+  fetchImpl?: ProviderFetch
 ): Promise<true | TErrorData> {
   const shapeError = validateConfigShape(config);
   if (shapeError) return shapeError;
+
+  const doFetch = fetchImpl ?? fetch;
 
   try {
     if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
@@ -60,7 +67,7 @@ export async function testWebSearchConnection(
         "Content-Type": "application/json",
       };
       if (config.key) headers.Authorization = `Bearer ${config.key}`;
-      const response = await fetch(url.href, {
+      const response = await doFetch(url.href, {
         method: "POST",
         headers,
         body: JSON.stringify(TEST_QUERY),
@@ -69,7 +76,7 @@ export async function testWebSearchConnection(
     }
 
     if (config.provider === "Exa") {
-      const response = await fetch("https://api.exa.ai/search", {
+      const response = await doFetch("https://api.exa.ai/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

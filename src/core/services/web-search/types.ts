@@ -1,4 +1,5 @@
 import type { TErrorData } from "../../../shared/error-data";
+import type { ProviderFetch } from "../../../shared/provider-credentials";
 import type { StorageAdapter, WebSearchConfig } from "../../storage";
 import type { RouteSpec } from "../types";
 import type { WebSearchEngine } from "./engine";
@@ -40,6 +41,12 @@ export const DEFAULT_WEB_SEARCH_ROUTES: Record<
 /** Dependencies injected into a {@link WebSearchEngine} instance. */
 export type WebSearchEngineDeps = {
   storage: StorageAdapter;
+  /**
+   * Custom fetch for live connection tests — wired to the host's
+   * `PlatformAdapter.fetchProxy` when configured. Used only when set;
+   * otherwise the global `fetch` is used.
+   */
+  fetch?: ProviderFetch;
 };
 
 /**

@@ -43,7 +43,7 @@ export class WebSearchEngine {
    * Stateless w.r.t. storage — no `entityId` argument.
    */
   async testConnection(config: WebSearchConfig): Promise<true | TErrorData> {
-    return testWebSearchConnection(config);
+    return testWebSearchConnection(config, this.deps.fetch);
   }
 
   /**
@@ -54,7 +54,7 @@ export class WebSearchEngine {
     config: WebSearchConfig,
     entityId?: string
   ): Promise<WebSearchMutationResult> {
-    const result = await testWebSearchConnection(config);
+    const result = await testWebSearchConnection(config, this.deps.fetch);
     if (result !== true) return { success: false, error: result };
 
     await this.deps.storage.webSearch.upsert(config, entityId);

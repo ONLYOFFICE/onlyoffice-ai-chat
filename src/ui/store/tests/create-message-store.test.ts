@@ -73,27 +73,21 @@ describe("createMessageStore", () => {
       expect(store.getState().messages).toHaveLength(1);
     });
 
-    it("replaces last message if it has incomplete status", () => {
+    it("always appends, never replacing an incomplete last message", () => {
       const store = createMessageStore({ ctx, api });
       store
         .getState()
-        .addMessage(makeMsg("assistant", "partial", { type: "incomplete" }));
-      store.getState().addMessage(makeMsg("assistant", "complete"));
-      expect(store.getState().messages).toHaveLength(1);
-      expect(
-        (
-          store.getState().messages[0].content as unknown as { text: string }[]
-        )[0].text
-      ).toBe("complete");
-    });
-
-    it("does not replace last message if it has complete status", () => {
-      const store = createMessageStore({ ctx, api });
-      store
-        .getState()
-        .addMessage(makeMsg("assistant", "done", { type: "complete" }));
+        .addMessage(makeMsg("assistant", "errored", { type: "incomplete" }));
+      // Both a same-role retry and a new-role turn must append — the
+      // errored message is never touched.
+      store.getState().addMessage(makeMsg("assistant", "retry"));
       store.getState().addMessage(makeMsg("user", "next"));
-      expect(store.getState().messages).toHaveLength(2);
+      expect(store.getState().messages).toHaveLength(3);
+      expect(store.getState().messages.map((m) => m.role)).toEqual([
+        "assistant",
+        "assistant",
+        "user",
+      ]);
     });
   });
 

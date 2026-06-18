@@ -1,5 +1,6 @@
 import logger from "../../../shared/logger";
 import type { TMCPItem } from "../../../shared/mcp-item";
+import type { ProviderFetch } from "../../../shared/provider-credentials";
 import type { StorageAdapter } from "../../storage";
 
 /** Stable serverType prefix used in `storage.toolPrefs` and runtime routing. */
@@ -61,12 +62,16 @@ export async function getWebSearchTools(
  * Returns a JSON-stringified payload — the same shape the UI's
  * `WebSearch.callTools` returns, so client-side display logic stays
  * unchanged.
+ *
+ * `fetchImpl` overrides the global `fetch` — wired to the host's
+ * `PlatformAdapter.fetchProxy` when configured, otherwise omitted.
  */
 export async function callWebSearchTool(
   storage: StorageAdapter,
   bareName: string,
   args: Record<string, unknown>,
-  entityId?: string
+  entityId?: string,
+  fetchImpl?: ProviderFetch
 ): Promise<string> {
   const config = await storage.webSearch.read(entityId);
   if (!config) {
@@ -74,10 +79,10 @@ export async function callWebSearchTool(
   }
 
   if (bareName === "web_search") {
-    return webSearch(config, args);
+    return webSearch(config, args, fetchImpl);
   }
   if (bareName === "web_crawling") {
-    return webCrawling(config, args);
+    return webCrawling(config, args, fetchImpl);
   }
   return JSON.stringify({ error: `Unknown tool: ${bareName}` });
 }
@@ -91,8 +96,10 @@ type WebSearchConfig = {
 
 async function webSearch(
   config: WebSearchConfig,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  fetchImpl?: ProviderFetch
 ): Promise<string> {
+  const doFetch = fetchImpl ?? fetch;
   if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
     try {
       const baseUrl =
@@ -102,7 +109,7 @@ async function webSearch(
         "Content-Type": "application/json",
       };
       if (config.key) headers.Authorization = `Bearer ${config.key}`;
-      const response = await fetch(url.href, {
+      const response = await doFetch(url.href, {
         method: "POST",
         headers,
         body: JSON.stringify({ query: args.query, numResults: 5 }),
@@ -115,7 +122,7 @@ async function webSearch(
   }
   if (config.provider === "Exa") {
     try {
-      const response = await fetch("https://api.exa.ai/search", {
+      const response = await doFetch("https://api.exa.ai/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -139,8 +146,10 @@ async function webSearch(
 
 async function webCrawling(
   config: WebSearchConfig,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  fetchImpl?: ProviderFetch
 ): Promise<string> {
+  const doFetch = fetchImpl ?? fetch;
   if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
     try {
       const baseUrl =
@@ -150,7 +159,7 @@ async function webCrawling(
         "Content-Type": "application/json",
       };
       if (config.key) headers.Authorization = `Bearer ${config.key}`;
-      const response = await fetch(url.href, {
+      const response = await doFetch(url.href, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -165,7 +174,7 @@ async function webCrawling(
   }
   if (config.provider === "Exa") {
     try {
-      const response = await fetch("https://api.exa.ai/contents", {
+      const response = await doFetch("https://api.exa.ai/contents", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

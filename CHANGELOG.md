@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.135
+
+### Changed
+
+- Built-in web search now routes its HTTP through the host's `PlatformAdapter.fetchProxy` when one is configured (test-connection, `web_search`, `web_crawling`). Falls back to the global `fetch` when no proxy is set. Unlike provider requests, it is not gated by `Profile.useProxy` — the proxy is used whenever present. HTTP MCP tools already used the proxy.
+
+## 0.4.134
+
+### Fixed
+
+- Tool-generated images no longer bloat the context. The base64 → attachment-ref swap was moved into `resumeChat`, the single point every tool-result path funnels through (engine auto-exec, UI approve, deny) — previously the UI approve path bypassed it and re-sent the full base64 to the model every turn. Detection is now by result shape (`{ data: { base64 } }`) instead of an exact `generate_image` name, so host- and MCP-provided image tools (whose names are group-prefixed) get the optimization too, with no integrator wiring.
+- After a stream error, the previous message no longer disappears: `addMessage` now always appends and never replaces an existing (incomplete) message.
+
 ## 0.4.133
 
 ### Changed

@@ -299,7 +299,6 @@ export const AIChatWidget = React.forwardRef<
       const threads = new ThreadsEngine({ storage });
       const tools = new ToolsEngine({ storage });
       const prompts = new PromptsEngine({ storage });
-      const webSearch = new WebSearchEngine({ storage });
       const preferences = new PreferencesEngine({ storage });
       const attachments = new AttachmentsEngine({ storage });
 
@@ -329,6 +328,13 @@ export const AIChatWidget = React.forwardRef<
       const externalFetch: ProviderFetch | undefined = platform.externalFetch
         ? normalizeFetch(platform.externalFetch)
         : undefined;
+
+      // Web search routes its HTTP through the host proxy only when one
+      // is configured; otherwise it falls back to the global `fetch`.
+      const webSearch = new WebSearchEngine({
+        storage,
+        ...(proxyFetch ? { fetch: proxyFetch } : {}),
+      });
 
       const ai = new AIEngine({
         storage,

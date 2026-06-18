@@ -446,6 +446,7 @@ export class AIEngine {
             signal: input.actionArgs?.signal,
             entityId: input.entityId,
             fetch: proxiedFetch,
+            webSearchFetch: this.deps.fetchProxy,
           };
           const resumed = executeAdapterTool(
             this.deps.storage,
@@ -510,6 +511,7 @@ export class AIEngine {
       signal: input.actionArgs?.signal,
       entityId: input.entityId,
       fetch: proxiedFetch,
+      webSearchFetch: this.deps.fetchProxy,
     };
 
     const resumed = resumeChat(
