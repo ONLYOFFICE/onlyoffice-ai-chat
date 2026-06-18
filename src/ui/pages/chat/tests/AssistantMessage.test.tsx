@@ -299,6 +299,33 @@ describe("AssistantMessage", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("renders nothing for a cancelled (stop) turn with no content", () => {
+    mockMessageStatus = { type: "incomplete", reason: "stop" };
+    mockMessageContent = [];
+    render(<AssistantMessage />);
+    expect(screen.queryByTestId("message-root")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("action-bar")).not.toBeInTheDocument();
+  });
+
+  it("still renders a cancelled turn that has partial content", () => {
+    mockMessageStatus = { type: "incomplete", reason: "stop" };
+    mockMessageContent = [{ type: "text", text: "partial" }];
+    render(<AssistantMessage />);
+    expect(screen.getByTestId("message-root")).toBeInTheDocument();
+  });
+
+  it("still renders an error turn even with no content (for its banner)", () => {
+    mockMessageStatus = {
+      type: "incomplete",
+      reason: "error",
+      error: { code: "auth", message: "401" },
+    };
+    mockMessageContent = [];
+    render(<AssistantMessage />);
+    expect(screen.getByTestId("message-root")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
   it("renders typed error banner with localized text for known code", () => {
     mockMessageStatus = {
       type: "incomplete",

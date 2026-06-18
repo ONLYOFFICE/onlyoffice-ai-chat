@@ -307,7 +307,40 @@ const AssistantActionBar = () => {
   );
 };
 
+/**
+ * Whether the message has anything worth rendering — non-empty text /
+ * reasoning, or any non-text part (tool call, image, …).
+ */
+function hasRenderableContent(content: unknown): boolean {
+  if (typeof content === "string") return content.trim().length > 0;
+  if (!Array.isArray(content)) return false;
+  return content.some((part) => {
+    const p = part as { type?: string; text?: string };
+    if (p.type === "text" || p.type === "reasoning") {
+      return typeof p.text === "string" && p.text.trim().length > 0;
+    }
+    return true;
+  });
+}
+
 export const AssistantMessage = memo(() => {
+  const message = useMessage();
+  const status = message.status as
+    | { type?: string; reason?: string }
+    | undefined;
+
+  // A user-cancelled turn (stop pressed before any content streamed) leaves
+  // an empty "incomplete" shell. Don't render it — otherwise an empty bubble
+  // with action buttons lingers. Error turns (reason === "error") still
+  // render so their banner shows even with no partial content.
+  if (
+    status?.type === "incomplete" &&
+    status?.reason !== "error" &&
+    !hasRenderableContent(message.content)
+  ) {
+    return null;
+  }
+
   return (
     <MessagePrimitive.Root asChild>
       <motion.div
