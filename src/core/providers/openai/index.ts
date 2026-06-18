@@ -16,6 +16,7 @@ import { createOpenAIClient } from "./client";
 import { openaiInfo } from "./info";
 import { convertMessages } from "./messages";
 import { listModels } from "./models";
+import { resolveReasoningEffort } from "./reasoning";
 import {
   convertMessagesToResponses,
   convertToolsToResponses,
@@ -117,7 +118,10 @@ class OpenAIProvider extends AbstractBaseProvider {
           instructions: systemPrompt,
           input,
           tools: responsesTools.length > 0 ? responsesTools : undefined,
-          reasoning: withReasoning ? { effort: "medium" } : undefined,
+          reasoning: ((): { effort: string } | undefined => {
+            const effort = resolveReasoningEffort(model, withReasoning);
+            return effort ? { effort } : undefined;
+          })() as OpenAI.Reasoning | undefined,
           stream: true,
         },
         { signal }
@@ -152,7 +156,10 @@ class OpenAIProvider extends AbstractBaseProvider {
         model: params.model,
         tools: params.tools.length > 0 ? params.tools : undefined,
         stream: true,
-        reasoning_effort: params.withReasoning ? "medium" : undefined,
+        reasoning_effort: resolveReasoningEffort(
+          params.model,
+          params.withReasoning
+        ) as OpenAI.Chat.ChatCompletionCreateParams["reasoning_effort"],
       },
       { signal: params.signal }
     );

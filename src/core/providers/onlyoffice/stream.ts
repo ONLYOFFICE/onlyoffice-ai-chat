@@ -1,6 +1,7 @@
 import type OpenAI from "openai";
 import logger from "../../../shared/logger";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import { resolveReasoningEffort } from "../openai/reasoning";
 
 /**
  * Parameters for {@link openSSEStream}. Mirrors the shape consumed by
@@ -43,7 +44,11 @@ export const openSSEStream = async (
   };
 
   if (params.tools.length > 0) body.tools = params.tools;
-  if (params.withReasoning) body.reasoning_effort = "medium";
+  const reasoningEffort = resolveReasoningEffort(
+    params.model,
+    params.withReasoning
+  );
+  if (reasoningEffort) body.reasoning_effort = reasoningEffort;
 
   const res = await (creds.fetch ?? fetch)(
     `${creds.baseUrl}/chat/completions`,

@@ -143,6 +143,40 @@ describe("OpenAIProvider", () => {
       );
     });
 
+    it("sends reasoning_effort=none when off for gpt-5.5 (supports none)", async () => {
+      chatCreateMock.mockResolvedValueOnce(
+        createMockStream([createFinishChunk()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-5.5",
+          systemPrompt: "s",
+          withReasoning: false,
+        })
+      );
+      expect(chatCreateMock.mock.calls[0]?.[0]?.reasoning_effort).toBe("none");
+    });
+
+    it("omits reasoning_effort when off for models without none support", async () => {
+      chatCreateMock.mockResolvedValueOnce(
+        createMockStream([createFinishChunk()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-4o",
+          systemPrompt: "s",
+          withReasoning: false,
+        })
+      );
+      expect(
+        chatCreateMock.mock.calls[0]?.[0]?.reasoning_effort
+      ).toBeUndefined();
+    });
+
     it("attaches tools when any are provided", async () => {
       chatCreateMock.mockResolvedValueOnce(
         createMockStream([createFinishChunk()])
@@ -224,6 +258,25 @@ describe("OpenAIProvider", () => {
       );
       expect(responsesCreateMock.mock.calls[0]?.[0]?.reasoning).toEqual({
         effort: "medium",
+      });
+    });
+
+    it("sends reasoning.effort=none on Responses when off for gpt-5.5", async () => {
+      responsesCreateMock.mockResolvedValueOnce(
+        responsesIter([minimalCompletion()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-5.5",
+          systemPrompt: "",
+          useResponsesApi: true,
+          withReasoning: false,
+        })
+      );
+      expect(responsesCreateMock.mock.calls[0]?.[0]?.reasoning).toEqual({
+        effort: "none",
       });
     });
 
