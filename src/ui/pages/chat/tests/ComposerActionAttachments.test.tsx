@@ -203,18 +203,20 @@ describe("ComposerActionAttachment", () => {
   });
 
   describe("without platform.file", () => {
-    it("renders web search + extended thinking = 2 items (no leading separator)", () => {
+    it("renders AddLocalImage + separator + web search + extended thinking = 4 items", () => {
       render(<ComposerActionAttachment />);
-      expect(mockDropdownItems).toHaveLength(2);
+      // "Add local image" rides on the HTML <input>, not platform.file,
+      // so it is always present (which adds the leading separator too).
+      expect(mockDropdownItems).toHaveLength(4);
       const items = mockDropdownItems as { isSeparator?: boolean }[];
-      expect(items.find((i) => i.isSeparator)).toBeUndefined();
+      expect(items.find((i) => i.isSeparator)).toBeDefined();
     });
 
-    it("does not include AddLocalFile or AddLocalImage items", () => {
+    it("includes AddLocalImage but not AddLocalFile", () => {
       render(<ComposerActionAttachment />);
       const items = mockDropdownItems as { text: string }[];
       expect(items.find((i) => i.text === "AddLocalFile")).toBeUndefined();
-      expect(items.find((i) => i.text === "AddLocalImage")).toBeUndefined();
+      expect(items.find((i) => i.text === "AddLocalImage")).toBeDefined();
     });
   });
 
@@ -756,14 +758,14 @@ describe("ComposerActionAttachment", () => {
   describe("composerActions", () => {
     it("renders nothing extra when composerActions is undefined", () => {
       render(<ComposerActionAttachment />);
-      // baseline: web search + extended thinking
-      expect(mockDropdownItems).toHaveLength(2);
+      // baseline: AddLocalImage + separator + web search + extended thinking
+      expect(mockDropdownItems).toHaveLength(4);
     });
 
     it("renders nothing extra when composerActions is empty", () => {
       mockComposerActions = [];
       render(<ComposerActionAttachment />);
-      expect(mockDropdownItems).toHaveLength(2);
+      expect(mockDropdownItems).toHaveLength(4);
     });
 
     it("renders custom items with id, text, and string icon", () => {

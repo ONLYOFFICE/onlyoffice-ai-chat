@@ -163,7 +163,7 @@ export function createThreadsStore(deps: {
       const messages = await api.threads.readMessages(id);
       const fileName = removeSpecialCharacter(title || "Chat Export");
       const content = convertMessagesToMd(messages);
-      platform.file?.saveAsFile(content, `${fileName}.docx`);
+      platform.file?.saveAsFile?.(content, `${fileName}.docx`);
     },
 
     onRenameThread: async (id, title) => {

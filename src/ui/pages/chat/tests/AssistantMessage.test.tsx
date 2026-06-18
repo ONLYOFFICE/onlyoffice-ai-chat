@@ -373,7 +373,8 @@ describe("AssistantMessage", () => {
     expect(copyTooltip).toBeInTheDocument();
   });
 
-  it("renders save button with tooltip", () => {
+  it("renders save button with tooltip when saveAsFile is available", () => {
+    mockPlatformFile = { saveAsFile: mockSaveAsFile };
     render(<AssistantMessage />);
     const tooltips = screen.getAllByTestId("tooltip-btn");
     const saveTooltip = tooltips.find(
@@ -382,13 +383,20 @@ describe("AssistantMessage", () => {
     expect(saveTooltip).toBeInTheDocument();
   });
 
+  it("hides save button when saveAsFile is not available", () => {
+    mockPlatformFile = null;
+    render(<AssistantMessage />);
+    expect(screen.queryByTestId("icon-btn-btn-save")).not.toBeInTheDocument();
+  });
+
   it("renders copied and not-copied icon states", () => {
     render(<AssistantMessage />);
     expect(screen.getByTestId("icon-btn-checked")).toBeInTheDocument();
     expect(screen.getByTestId("icon-btn-btn-copy")).toBeInTheDocument();
   });
 
-  it("renders save icon button", () => {
+  it("renders save icon button when saveAsFile is available", () => {
+    mockPlatformFile = { saveAsFile: mockSaveAsFile };
     render(<AssistantMessage />);
     expect(screen.getByTestId("icon-btn-btn-save")).toBeInTheDocument();
   });
@@ -405,11 +413,10 @@ describe("AssistantMessage", () => {
   });
 
   describe("onDownload", () => {
-    it("does nothing when platform.file is null", () => {
+    it("does not render the save button when platform.file is null", () => {
       mockPlatformFile = null;
       render(<AssistantMessage />);
-      const saveBtn = screen.getByTestId("icon-btn-btn-save");
-      fireEvent.click(saveBtn);
+      expect(screen.queryByTestId("icon-btn-btn-save")).not.toBeInTheDocument();
       expect(mockSaveAsFile).not.toHaveBeenCalled();
     });
 

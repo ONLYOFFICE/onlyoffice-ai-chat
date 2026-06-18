@@ -46,7 +46,7 @@ const ComposerActionAttachment = () => {
 
   const selectRecentFile = React.useCallback(
     async (path: string, type: number) => {
-      if (!platform.file) return;
+      if (!platform.file?.convertFileToText) return;
       const isSpreadsheetFile = isSpreadsheet(type);
       const content = await platform.file.convertFileToText(
         path,
@@ -58,7 +58,7 @@ const ComposerActionAttachment = () => {
   );
 
   const selectLocalFile = async () => {
-    if (!platform.file) return;
+    if (!platform.file?.pickFiles) return;
     const files = await platform.file.pickFiles();
     if (!files) return;
     const fileApi = platform.file;
@@ -68,12 +68,13 @@ const ComposerActionAttachment = () => {
     // and avoids paying for converts we'd just drop.
     const inputs = await Promise.all(
       files.slice(0, 5).map(async (file) => {
-        const type = fileApi.getFileType(file.path);
+        const type = fileApi.getFileType?.(file.path) ?? 0;
         const isSpreadsheetFile = isSpreadsheet(type);
-        const content = await fileApi.convertFileToText(
-          file.path,
-          isSpreadsheetFile ? 260 : 69
-        );
+        const content =
+          (await fileApi.convertFileToText?.(
+            file.path,
+            isSpreadsheetFile ? 260 : 69
+          )) ?? "";
         return { path: file.path, content: content || "", type };
       })
     );
@@ -83,7 +84,7 @@ const ComposerActionAttachment = () => {
   const [recentFiles, setRecentFiles] = React.useState<DropDownItemProps[]>([]);
 
   React.useEffect(() => {
-    if (!platform.file) return;
+    if (!platform.file?.getRecentFiles) return;
 
     platform.file.getRecentFiles().then((raw) => {
       try {
@@ -136,24 +137,27 @@ const ComposerActionAttachment = () => {
 
   const items: DropDownItemProps[] = [];
 
-  if (platform.file) {
-    items.push(
-      { text: t("AddLocalFile"), onClick: () => selectLocalFile() },
-      {
-        text: t("AddLocalImage"),
-        onClick: () => imageInputRef.current?.click(),
-      }
-    );
+  // Gate each entry on its specific capability instead of the whole
+  // `file` object, so a host can expose e.g. only image upload / export.
+  if (platform.file?.pickFiles) {
+    items.push({ text: t("AddLocalFile"), onClick: () => selectLocalFile() });
+  }
 
-    if (recentFiles.length > 0) {
-      items.push({
-        text: t("RecentFiles"),
-        onClick: () => {
-          // ignore
-        },
-        subMenu: recentFiles,
-      });
-    }
+  // "Add local image" rides on the HTML <input>, not on `platform.file`,
+  // so it is always available.
+  items.push({
+    text: t("AddLocalImage"),
+    onClick: () => imageInputRef.current?.click(),
+  });
+
+  if (platform.file?.getRecentFiles && recentFiles.length > 0) {
+    items.push({
+      text: t("RecentFiles"),
+      onClick: () => {
+        // ignore
+      },
+      subMenu: recentFiles,
+    });
   }
 
   if (composerActions && composerActions.length > 0) {

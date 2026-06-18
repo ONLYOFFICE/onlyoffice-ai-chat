@@ -103,7 +103,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
       onClick={() => {
         if (!withoutClose) return;
         if (!filePath) return;
-        platform.file?.openFile(filePath, title);
+        platform.file?.openFile?.(filePath, title);
       }}
     >
       {isImage ? (

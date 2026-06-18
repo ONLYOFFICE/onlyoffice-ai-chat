@@ -241,7 +241,7 @@ const AssistantActionBar = () => {
   if (message.status?.type === "incomplete" && message.status?.error) return;
 
   const onDownload = async () => {
-    if (!platform.file) return;
+    if (!platform.file?.saveAsFile) return;
 
     // Read the messages snapshot lazily so the action bar doesn't
     // re-subscribe to the whole `messages` array on every streaming token.
@@ -284,16 +284,18 @@ const AssistantActionBar = () => {
           <IconButton iconName="btn-reset" size={24} isStroke />
         </TooltipIconButton>
       </ActionBarPrimitive.Reload>
-      <div>
-        <TooltipIconButton tooltip={t("Save")}>
-          <IconButton
-            iconName="btn-save"
-            size={24}
-            onClick={onDownload}
-            isStroke
-          />
-        </TooltipIconButton>
-      </div>
+      {platform.file?.saveAsFile && (
+        <div>
+          <TooltipIconButton tooltip={t("Save")}>
+            <IconButton
+              iconName="btn-save"
+              size={24}
+              onClick={onDownload}
+              isStroke
+            />
+          </TooltipIconButton>
+        </div>
+      )}
       {assistantActions?.map((action) => (
         <CustomActionButton
           key={action.id}

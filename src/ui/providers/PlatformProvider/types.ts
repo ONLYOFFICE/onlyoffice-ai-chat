@@ -7,28 +7,34 @@ import type { TCloud, TCloudKey, TMCPItem, TProcess } from "../../../types";
  * saving files through the host editor. If the host does not support file
  * operations, pass `null` for `PlatformAdapter.file` — the library will
  * hide all file-related UI automatically.
+ *
+ * Every method is optional and gated independently: the library shows each
+ * UI element only when its specific capability is present. A host can, for
+ * example, expose `saveAsFile` (chat export) while omitting `pickFiles`,
+ * `getRecentFiles`, and `openFile` to hide the local-file / recent-files
+ * pickers without losing save/export.
  */
 export interface PlatformFileOperations {
   /** Show a native file picker dialog and return selected file paths, or null if cancelled */
-  pickFiles(): Promise<{ path: string; name: string }[] | null>;
+  pickFiles?(): Promise<{ path: string; name: string }[] | null>;
 
   /** Show a native image picker dialog and return the image as base64, or null if cancelled */
-  pickImage(): Promise<{ name: string; base64: string } | null>;
+  pickImage?(): Promise<{ name: string; base64: string } | null>;
 
   /** Convert a file at the given path to plain text (e.g. DOCX/PDF → text). Returns content and ONLYOFFICE file type code */
-  convertFileToText(path: string, format: number): Promise<string>;
+  convertFileToText?(path: string, format: number): Promise<string>;
 
   /** Determine the ONLYOFFICE file type code for a file at the given path */
-  getFileType(path: string): number;
+  getFileType?(path: string): number;
 
   /** Get a JSON string of recently opened files from the host editor */
-  getRecentFiles(): Promise<string>;
+  getRecentFiles?(): Promise<string>;
 
   /** Show a "Save As" dialog and save content as a file (e.g. export message as DOCX) */
-  saveAsFile(content: string, defaultName: string): Promise<void>;
+  saveAsFile?(content: string, defaultName: string): Promise<void>;
 
   /** Open a file in the host editor by path */
-  openFile(path: string, name: string): void;
+  openFile?(path: string, name: string): void;
 }
 
 /**
