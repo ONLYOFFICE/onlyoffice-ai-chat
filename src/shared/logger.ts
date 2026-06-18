@@ -13,6 +13,7 @@ const logger = {
   warn: (...args: unknown[]) => c.warn(...args),
   error: (...args: unknown[]) => c.error(...args),
   info: (...args: unknown[]) => c.info(...args),
+  debug: (...args: unknown[]) => c.debug(...args),
 };
 
 export default logger;

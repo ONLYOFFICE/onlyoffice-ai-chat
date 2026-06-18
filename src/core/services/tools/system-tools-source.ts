@@ -1,3 +1,4 @@
+import logger from "../../../shared/logger";
 import type { TMCPItem } from "../../../shared/mcp-item";
 import type { ToolsAdapter } from "../../tools-adapter";
 import {
@@ -77,6 +78,12 @@ export class SystemToolsSource implements ToolsAdapter {
     );
     const out: Record<string, TMCPItem[]> = {};
     for (const [type, tools] of entries) out[type] = tools;
+    logger.debug(
+      "[system-tools] enumerated:",
+      Object.fromEntries(
+        entries.map(([type, tools]) => [type, tools.map((t) => t.name)])
+      )
+    );
     return out;
   }
 }

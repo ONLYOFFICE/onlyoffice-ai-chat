@@ -171,8 +171,15 @@ export async function listTools(
 
     for (const msg of messages) {
       const tools = (msg.result as { tools?: TMCPItem[] } | undefined)?.tools;
-      if (Array.isArray(tools)) return tools;
+      if (Array.isArray(tools)) {
+        logger.debug(
+          `[mcp] listTools ${type}: ${tools.length} tool(s) — ` +
+            `${tools.map((t) => t.name).join(", ") || "(none)"}`
+        );
+        return tools;
+      }
     }
+    logger.debug(`[mcp] listTools ${type}: no tools in response`);
     return [];
   } catch (error) {
     logger.error(`[mcp] listTools failed for system server ${type}:`, error);
