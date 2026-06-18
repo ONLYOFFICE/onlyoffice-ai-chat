@@ -250,6 +250,44 @@ describe("executeAdapterTool", () => {
     expect(events).toEqual([{ type: "message-end" }]);
   });
 
+  it("forwards ctx.webSearchFetch to callWebSearchTool", async () => {
+    callWebSearchToolMock.mockResolvedValue("web-result");
+    resumeChatMock.mockImplementation(async function* () {
+      yield { type: "message-end" };
+    });
+    const proxyFetch = vi.fn();
+    const gen = executeAdapterTool(
+      makeStorage(),
+      undefined,
+      {
+        type: "tool-call-pending",
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: {
+          role: "assistant",
+          content: [
+            { type: "tool-call", toolName: "web_search", args: { q: 1 } },
+          ],
+        } as never,
+      } as never,
+      {
+        profile: {} as never,
+        profileId: "p",
+        tools: [],
+        webSearchFetch: proxyFetch as never,
+      }
+    );
+    for await (const _ of gen) void _;
+    expect(callWebSearchToolMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "web_search",
+      { q: 1 },
+      undefined,
+      proxyFetch
+    );
+  });
+
   it("dispatches generate_image through callImageGenerationTool", async () => {
     callImageGenerationToolMock.mockResolvedValue("image-result");
     resumeChatMock.mockImplementation(async function* () {});

@@ -279,6 +279,7 @@ export class AIEngine {
       signal: input.actionArgs?.signal,
       entityId: input.entityId,
       fetch: proxiedFetch,
+      webSearchFetch: this.deps.fetchProxy,
     });
 
     if (titlePromise) {
@@ -388,6 +389,7 @@ export class AIEngine {
       signal: input.actionArgs?.signal,
       entityId: input.entityId,
       fetch: proxiedFetch,
+      webSearchFetch: this.deps.fetchProxy,
     });
   }
 
