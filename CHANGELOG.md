@@ -1,10 +1,16 @@
 # Changelog
 
+## 0.4.143
+
+### Fixed
+
+- Attaching an empty (0-byte) file no longer crashes the chat. The Anthropic provider rejected the resulting payload-less `data:` URL; it now degrades such blocks to inert text (matching the GenAI provider), and 0-byte files are filtered out at the composer image picker and drag-and-drop entry points.
+
 ## 0.4.142
 
 ### Added
 
-- LaTeX math rendering in chat messages via KaTeX (`remark-math` + `rehype-katex`). Inline `$...$` and block `$$...$$` formulas now render. KaTeX fonts are inlined into the bundled CSS as base64, so no external font assets are required.
+- LaTeX math rendering in chat messages via KaTeX (`remark-math` + `rehype-katex`). Inline `$...$` and block `$$...$$` formulas now render. `katex`, `remark-math`, and `rehype-katex` are optional peer dependencies — install them to enable math; the widget imports `katex/dist/katex.min.css` so the consumer's bundler resolves the KaTeX styles and fonts.
 
 ### Changed
 
