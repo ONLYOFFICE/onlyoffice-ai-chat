@@ -6,7 +6,11 @@ import { chat } from "../../actions/chat";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { Profile } from "../../types";
-import { hasSendableContent, processStream } from "./stream";
+import {
+  hasSendableContent,
+  processStream,
+  stripUnresolvedToolCalls,
+} from "./stream";
 import type { ChatEvent } from "./types";
 
 /**
@@ -214,7 +218,7 @@ export async function* resumeChat(
   });
   await ctx.storage.messages.update(input.messageId, updatedMessage);
 
-  const history = (
+  const history = stripUnresolvedToolCalls(
     await ctx.storage.messages.readByThread(input.threadId)
   ).filter(hasSendableContent);
 

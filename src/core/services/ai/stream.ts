@@ -23,6 +23,37 @@ export function hasSendableContent(message: ThreadMessageLike): boolean {
 }
 
 /**
+ * Drop assistant tool-call parts that never got a result — a turn the
+ * user stopped while the tool was executing leaves a `tool-call` with no
+ * `result` persisted in storage. Sending it as request history produces
+ * an unpaired `function_call` (no `function_call_output`), which OpenAI's
+ * Responses API rejects with "No tool output found for function call".
+ *
+ * Stripping the dangling part keeps any sibling text; an assistant
+ * message left with no content is then removed by {@link hasSendableContent}.
+ * Resolved tool calls (including a cancelled `{ cancelled: true }` result)
+ * are untouched, so legit multi-tool history is preserved. Applied to
+ * request history only — never to what's persisted/displayed.
+ */
+export function stripUnresolvedToolCalls(
+  messages: ThreadMessageLike[]
+): ThreadMessageLike[] {
+  return messages.map((m) => {
+    if (m.role !== "assistant" || !Array.isArray(m.content)) return m;
+    const content = m.content.filter(
+      (c) =>
+        !(
+          c &&
+          typeof c === "object" &&
+          (c as { type?: string }).type === "tool-call" &&
+          (c as { result?: unknown }).result === undefined
+        )
+    );
+    return content.length === m.content.length ? m : { ...m, content };
+  });
+}
+
+/**
  * Find the first incomplete tool-call (no `result`) in an assistant
  * message's content, or `-1` if none exists. Mirrors the legacy
  * `ChatEngine` behaviour — the model can request several tool calls

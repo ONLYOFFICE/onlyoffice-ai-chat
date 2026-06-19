@@ -19,7 +19,11 @@ import {
   type OpenAIStreamChunk,
   toOpenAIChatCompletionStream,
 } from "./openai-format";
-import { hasSendableContent, processStream } from "./stream";
+import {
+  hasSendableContent,
+  processStream,
+  stripUnresolvedToolCalls,
+} from "./stream";
 import { readToolCall, resumeChat } from "./tool-call";
 import {
   type AdapterRunContext,
@@ -165,7 +169,7 @@ export class AIEngine {
     let storedUserMessage: ThreadMessageLike | null = null;
 
     if (!isNewThread) {
-      priorMessages = (
+      priorMessages = stripUnresolvedToolCalls(
         await this.deps.storage.messages.readByThread(threadId)
       ).filter(hasSendableContent);
       storedUserMessage = await this.threads.appendUserMessage(
@@ -344,9 +348,9 @@ export class AIEngine {
       if (m.id) await this.deps.storage.messages.delete(m.id);
     }
 
-    const priorMessages = stored
-      .slice(0, lastUserIdx + 1)
-      .filter(hasSendableContent);
+    const priorMessages = stripUnresolvedToolCalls(
+      stored.slice(0, lastUserIdx + 1)
+    ).filter(hasSendableContent);
 
     const toolCtx = await buildToolContext(
       this.deps.storage,
