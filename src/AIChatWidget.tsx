@@ -156,6 +156,18 @@ export interface AIChatWidgetProps {
    */
   composerActions?: ComposerAction[];
   /**
+   * Clickable prompt suggestions shown above the composer in a new (empty)
+   * chat. Each item is `{ name, prompt }`; clicking inserts its `prompt`
+   * into the composer. Capped at 20. See {@link WidgetConfig.suggestions}.
+   */
+  suggestions?: WidgetConfig["suggestions"];
+  /**
+   * Arbitrary content rendered at the very top of a new (empty) chat,
+   * shown only when suggestions are visible. See
+   * {@link WidgetConfig.suggestionsHeader}.
+   */
+  suggestionsHeader?: WidgetConfig["suggestionsHeader"];
+  /**
    * Handler for the "Import" link in the add-profile card. The host owns
    * the import flow; an optional `Partial<ModelFormValues>` return pre-fills
    * the add-profile form. See {@link WidgetConfig.onProfileImportClick}.
@@ -247,6 +259,8 @@ export const AIChatWidget = React.forwardRef<
       apiConfig,
       assistantActions,
       composerActions,
+      suggestions,
+      suggestionsHeader,
       onProfileImportClick,
       onDownloadTemplate,
       onDeleteProfile,
@@ -272,6 +286,8 @@ export const AIChatWidget = React.forwardRef<
         systemPrompt,
         assistantActions,
         composerActions,
+        suggestions,
+        suggestionsHeader,
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
@@ -294,6 +310,8 @@ export const AIChatWidget = React.forwardRef<
         systemPrompt,
         assistantActions,
         composerActions,
+        suggestions,
+        suggestionsHeader,
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,

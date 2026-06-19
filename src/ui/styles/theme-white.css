@@ -253,6 +253,8 @@
   --chat-welcome-color: var(--text-normal);
   --chat-welcome-description-color: var(--text-secondary);
 
+  --chat-suggestion-border-color: var(--border-divider);
+
   --chat-composer-background-color: var(--background-normal-element-light);
   --chat-composer-border-color: var(--border-divider);
   --chat-composer-hover-border-color: var(--highlight-button-hover);

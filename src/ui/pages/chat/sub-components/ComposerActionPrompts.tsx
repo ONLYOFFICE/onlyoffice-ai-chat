@@ -285,15 +285,22 @@ const ComposerActionPrompts = () => {
           name: prompt.name,
           text: prompt.text,
           folderId: prompt.folderId ?? null,
+          folders: folders.map((f) => ({ id: f.id, name: f.name })),
         });
         const name = result?.name?.trim();
         if (!name) return;
-        await editPrompt(prompt.id, { name, text: result?.text ?? "" });
+        await editPrompt(prompt.id, {
+          name,
+          text: result?.text ?? "",
+          ...(result?.folderId !== undefined
+            ? { folderId: result.folderId }
+            : {}),
+        });
       } catch (err) {
         logger.error("onEditPrompt handler failed:", err);
       }
     },
-    [onEditPrompt, editPrompt]
+    [onEditPrompt, editPrompt, folders]
   );
 
   const buildPromptContextMenu = useCallback(

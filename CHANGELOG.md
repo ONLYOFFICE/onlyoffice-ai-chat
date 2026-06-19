@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.139
+
+### Changed
+
+- `onCreatePrompt` / `onEditPrompt` now also receive `folders` (`{ id, name }[]`, all existing prompt folders) so the host can render a folder picker, and may return a `folderId: string | null` to choose where to save (`null` = root). Omitting `folderId` keeps the previous behavior (create: the triggering folder; edit: the prompt's current folder). New exported types: `PromptFolderInfo`, `PromptResult`.
+
+## 0.4.138
+
+### Added
+
+- `suggestions` widget config — clickable prompt chips shown above the composer in a new (empty) chat. Each item is `{ name, prompt }`; clicking inserts its `prompt` into the composer. Capped at 20. Chips wrap into rows, cap at the parent width, and truncate the label with an ellipsis when it overflows.
+- `suggestionsHeader` widget config — arbitrary content rendered at the very top of a new (empty) chat, shown only when `suggestions` are visible.
+
+  ```tsx
+  <AIChatWidget
+    suggestions={[
+      { name: "Summarize", prompt: "Summarize this document" },
+      { name: "Translate", prompt: "Translate to English" },
+    ]}
+  />
+  ```
+
 ## 0.4.137
 
 ### Fixed

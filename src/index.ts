@@ -43,6 +43,8 @@ export {
   useWidgetConfig,
   type ToolCallApproveContext,
   type PromptDraft,
+  type PromptFolderInfo,
+  type PromptResult,
   type WidgetConfig,
   type WidgetConfigProviderProps,
 } from "./widget-config";
@@ -53,6 +55,8 @@ export type {
 } from "./ui/pages/chat/assistant-actions";
 
 export type { ComposerAction } from "./ui/pages/chat/composer-actions";
+
+export type { Suggestion } from "./ui/pages/chat/suggestions";
 
 // ---------------------------------------------------------------------------
 // Imperative Ref

@@ -147,17 +147,25 @@ const UserActionBar = () => {
         return;
       }
       try {
-        const result = await onCreatePrompt({ ...draft, folderId });
+        const result = await onCreatePrompt({
+          ...draft,
+          folderId,
+          folders: folders.map((f) => ({ id: f.id, name: f.name })),
+        });
         const name = result?.name?.trim();
         if (!name) return;
-        await addPrompt({ name, text: result?.text ?? "", folderId });
+        await addPrompt({
+          name,
+          text: result?.text ?? "",
+          folderId: result?.folderId !== undefined ? result.folderId : folderId,
+        });
       } catch (err) {
         logger.error("onCreatePrompt handler failed:", err);
       }
     },
     // getMessageText reads from `message`, captured fresh each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [onCreatePrompt, addPrompt]
+    [onCreatePrompt, addPrompt, folders]
   );
 
   const getMessageText = () =>

@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo } from "react";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
+import type { Suggestion } from "./ui/pages/chat/suggestions";
 import type { ModelFormValues } from "./ui/components/model-config-cards/sub-components/ModelConfigForm";
 import type { Profile } from "./types";
 
@@ -80,6 +81,19 @@ export interface WidgetConfig {
    * item is an onClick-only entry; toggles and submenus are not supported.
    */
   composerActions?: ComposerAction[];
+  /**
+   * Clickable prompt suggestions shown above the composer in a new
+   * (empty) chat only. Each item is `{ name, prompt }`; clicking inserts
+   * its `prompt` into the composer input. Capped at 20 — extras are
+   * ignored.
+   */
+  suggestions?: Suggestion[];
+  /**
+   * Arbitrary content rendered at the very top of a new (empty) chat
+   * (above the welcome screen, with a 12px top offset). Shown only when
+   * {@link WidgetConfig.suggestions} are visible.
+   */
+  suggestionsHeader?: React.ReactNode;
   /**
    * Handler for the "Import" link in the add-profile card. The host
    * owns the entire import flow (file picker, parsing, registering a
@@ -175,11 +189,14 @@ export interface WidgetConfig {
    * name derived from the message text.
    *
    * @param draft suggested fields — `name` (message text, truncated), the
-   *   full `text`, and the target `folderId` (`null` for the root list)
+   *   full `text`, the target `folderId` (`null` for the root list), and
+   *   `folders` (all existing prompt folders, for a folder picker). Return a
+   *   {@link PromptResult}; set its `folderId` to choose where to save
+   *   (omit it to keep the suggested one).
    */
   onCreatePrompt?: (
-    draft: PromptDraft & { folderId: string | null }
-  ) => PromptDraft | void | Promise<PromptDraft | void>;
+    draft: PromptDraft & { folderId: string | null; folders: PromptFolderInfo[] }
+  ) => PromptResult | void | Promise<PromptResult | void>;
   /**
    * Custom UI for editing a prompt. When provided, the widget's built-in
    * "Edit prompt" dialog is NOT shown — the host owns the input UI (e.g. its
@@ -192,12 +209,18 @@ export interface WidgetConfig {
    * The widget always performs the actual update itself; the host only owns
    * the input step. When omitted, the built-in dialog is used.
    *
-   * @param prompt the current prompt being edited (`id`, `name`, `text`, and
-   *   its `folderId`, `null` when in the root list)
+   * @param prompt the current prompt being edited (`id`, `name`, `text`, its
+   *   `folderId`, `null` when in the root list, and `folders` — all existing
+   *   prompt folders, for a folder picker). Return a {@link PromptResult}; set
+   *   its `folderId` to move the prompt (omit it to keep the current folder).
    */
   onEditPrompt?: (
-    prompt: PromptDraft & { id: string; folderId: string | null }
-  ) => PromptDraft | void | Promise<PromptDraft | void>;
+    prompt: PromptDraft & {
+      id: string;
+      folderId: string | null;
+      folders: PromptFolderInfo[];
+    }
+  ) => PromptResult | void | Promise<PromptResult | void>;
   /**
    * Confirmation gate fired when the user navigates away from the MCP
    * servers tab while the inline config editor holds unsaved edits. The
@@ -234,6 +257,22 @@ export interface WidgetConfig {
 export interface PromptDraft {
   name: string;
   text: string;
+}
+
+/** Minimal prompt folder shape passed to the host for folder pickers. */
+export interface PromptFolderInfo {
+  id: string;
+  name: string;
+}
+
+/**
+ * Resolved prompt fields returned by the host's create/edit windows — the
+ * {@link PromptDraft} plus an optional `folderId` choosing the target folder
+ * (`null` for the root list). When `folderId` is omitted, the widget keeps
+ * the folder the action was triggered from.
+ */
+export interface PromptResult extends PromptDraft {
+  folderId?: string | null;
 }
 
 /** Context for the tool call whose result is passed to {@link WidgetConfig.onToolCallApproveResult}. */
