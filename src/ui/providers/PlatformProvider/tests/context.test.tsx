@@ -5,7 +5,6 @@ import { PlatformProvider, usePlatform } from "../context";
 import type { PlatformAdapter } from "../types";
 
 const platform = {
-  file: null,
   process: null,
   hostTools: null,
   clouds: null,

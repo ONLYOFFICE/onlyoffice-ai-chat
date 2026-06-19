@@ -3,17 +3,26 @@
 import { lazy, memo, Suspense } from "react";
 
 const LazyMarkdownText = lazy(async () => {
-  const [{ MarkdownTextPrimitive }, { default: remarkGfm }, defaultComponents] =
-    await Promise.all([
-      import("@assistant-ui/react-markdown"),
-      import("remark-gfm"),
-      import("./Markdown.utils").then((m) => m.default),
-      import("@assistant-ui/react-markdown/styles/dot.css"),
-    ]);
+  const [
+    { MarkdownTextPrimitive },
+    { default: remarkGfm },
+    { default: remarkMath },
+    { default: rehypeKatex },
+    defaultComponents,
+  ] = await Promise.all([
+    import("@assistant-ui/react-markdown"),
+    import("remark-gfm"),
+    import("remark-math"),
+    import("rehype-katex"),
+    import("./Markdown.utils").then((m) => m.default),
+    import("@assistant-ui/react-markdown/styles/dot.css"),
+    import("katex/dist/katex.min.css"),
+  ]);
   return {
     default: () => (
       <MarkdownTextPrimitive
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         className="aui-md"
         components={defaultComponents}
       />
@@ -25,18 +34,24 @@ const LazyMarkdownContent = lazy(async () => {
   const [
     { default: ReactMarkdown },
     { default: remarkGfm },
+    { default: remarkMath },
+    { default: rehypeKatex },
     defaultComponents,
   ] = await Promise.all([
     import("react-markdown"),
     import("remark-gfm"),
+    import("remark-math"),
+    import("rehype-katex"),
     import("./Markdown.utils").then((m) => m.default),
     import("@assistant-ui/react-markdown/styles/dot.css"),
+    import("katex/dist/katex.min.css"),
   ]);
   return {
     default: ({ children }: { children: string }) => (
       <div className="aui-md">
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeKatex]}
           components={defaultComponents}
         >
           {children}

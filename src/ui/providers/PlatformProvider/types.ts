@@ -127,7 +127,6 @@ export interface PlatformHostTools {
  * // Minimal browser-only implementation — no native file ops, no process
  * // spawning, no host tools, no clouds.
  * const minimalPlatform: PlatformAdapter = {
- *   file: null,
  *   process: null,
  *   env: {
  *     theme: "light",
@@ -141,8 +140,8 @@ export interface PlatformHostTools {
  * ```
  */
 export interface PlatformAdapter {
-  /** File operations: picking, converting, saving, opening files via the host. If null — file attachment buttons and "Save as DOCX" are hidden */
-  file: PlatformFileOperations | null;
+  /** File operations: picking, converting, saving, opening files via the host. Omit (or provide only a subset) when the host implements none/part of these — unavailable operations hide the file attachment buttons and "Save as DOCX" */
+  file?: Partial<PlatformFileOperations>;
 
   /** External process runner for MCP STDIO server transport. If null — only HTTP MCP servers are available */
   process: PlatformProcessRunner | null;

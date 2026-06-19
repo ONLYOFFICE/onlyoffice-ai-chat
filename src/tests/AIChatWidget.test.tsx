@@ -139,7 +139,6 @@ vi.mock("../ui/providers/PlatformProvider/context", () => ({
   ),
   usePlatform: () => ({
     process: { isAvailable: () => true },
-    file: null,
     hostTools: null,
     clouds: null,
     env: {
@@ -235,7 +234,6 @@ import { AIChatWidget } from "../AIChatWidget";
 const mockStorage = {} as Parameters<typeof AIChatWidget>[0]["storage"];
 const mockSettings = {} as Parameters<typeof AIChatWidget>[0]["settings"];
 const mockPlatform = {
-  file: null,
   process: { isAvailable: () => true },
   hostTools: null,
   clouds: null,
