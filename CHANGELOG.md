@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.142
+
+### Added
+
+- LaTeX math rendering in chat messages via KaTeX (`remark-math` + `rehype-katex`). Inline `$...$` and block `$$...$$` formulas now render. KaTeX fonts are inlined into the bundled CSS as base64, so no external font assets are required.
+
+### Changed
+
+- `PlatformAdapter.file` is now optional and accepts a partial implementation (`file?: Partial<PlatformFileOperations>`). Hosts may omit it or provide only a subset of file operations; unavailable operations hide their UI. Previously required `file: PlatformFileOperations | null`.
+
+## 0.4.141
+
+### Changed
+
+- The `onlyoffice` provider is now a thin OpenAI-compatible provider (no custom URL transform, SSE transport, or REST model endpoint). It is registered so host-supplied profiles resolve and run from storage, but stays hidden from the manual add-profile dropdown — users cannot create one by hand.
+
 ## 0.4.140
 
 ### Fixed
