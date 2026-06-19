@@ -5,11 +5,16 @@ import {
 } from "../reasoning";
 
 describe("supportsNoneReasoning", () => {
-  it("is true for gpt-5.1 and newer (5.1, 5.2, 5.5, 5.5-pro)", () => {
+  it("is true for non-pro gpt-5.1 and newer (5.1, 5.2, 5.5)", () => {
     expect(supportsNoneReasoning("gpt-5.1")).toBe(true);
     expect(supportsNoneReasoning("gpt-5.2-2025-12-11")).toBe(true);
     expect(supportsNoneReasoning("gpt-5.5")).toBe(true);
-    expect(supportsNoneReasoning("gpt-5.5-pro")).toBe(true);
+  });
+
+  it("is false for pro variants (no effort below medium)", () => {
+    expect(supportsNoneReasoning("gpt-5.5-pro")).toBe(false);
+    expect(supportsNoneReasoning("gpt-5.1-pro")).toBe(false);
+    expect(supportsNoneReasoning("gpt-5-pro")).toBe(false);
   });
 
   it("is false for gpt-5(.0), o-series and non-reasoning models", () => {
@@ -31,9 +36,15 @@ describe("resolveReasoningEffort", () => {
     expect(resolveReasoningEffort("gpt-5.1", false)).toBe("none");
   });
 
+  it("returns medium for pro models even when off (no lower effort allowed)", () => {
+    expect(resolveReasoningEffort("gpt-5.5-pro", true)).toBe("medium");
+    expect(resolveReasoningEffort("gpt-5.5-pro", false)).toBeUndefined();
+  });
+
   it("returns undefined when off for models without none support", () => {
     expect(resolveReasoningEffort("gpt-4o", false)).toBeUndefined();
     expect(resolveReasoningEffort("gpt-5", false)).toBeUndefined();
+    expect(resolveReasoningEffort("gpt-5.5-pro", false)).toBeUndefined();
     expect(resolveReasoningEffort("o3", undefined)).toBeUndefined();
   });
 });
