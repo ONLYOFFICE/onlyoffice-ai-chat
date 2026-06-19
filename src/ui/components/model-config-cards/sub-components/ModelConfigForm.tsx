@@ -107,7 +107,10 @@ export const ModelConfigForm = ({
     // PlatformAdapter.externalFetch and `basedOn` has no UI). Hide the
     // entry from the manual add-profile dropdown — hosts create these
     // profiles programmatically via `addProfile()`.
-    .filter((p) => p.type !== "external");
+    .filter((p) => p.type !== "external")
+    // ONLYOFFICE profiles are host-supplied via storage; they must resolve
+    // and run when loaded, but users may not create one by hand.
+    .filter((p) => p.type !== "onlyoffice");
   const isFieldsDisabled = !values.provider;
 
   const providerItems = [

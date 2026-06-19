@@ -1,86 +1,35 @@
+import OpenAI from "openai";
 import { CapabilitiesUI } from "../../../shared/capabilities-ui";
-import type { TErrorData } from "../../../shared/error-data";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
-import { getErrorCode, ProviderErrors } from "../errors";
-
-/** Internal ONLYOFFICE backend provider id for "use OpenAI-compatible route". */
-export const ONLYOFFICE_PROVIDER_ID = -1;
-
-/** Shape of a model row returned by `/api/2.0/ai/chats/models`. */
-type OnlyOfficeModel = {
-  modelId: string;
-  providerId: number;
-  providerTitle: string;
-};
 
 /**
- * Fetch the ONLYOFFICE-curated model list from the host's REST endpoint.
+ * Fetch the model list from the ONLYOFFICE OpenAI-compatible endpoint.
  *
- * ONLYOFFICE exposes its model catalogue on a separate non-OpenAI URL
- * (`/api/2.0/ai/chats/models`), so we bypass the SDK and hit the REST
- * route directly. The caller passes the *original* base URL — the
- * provider constructor's URL transformation isn't applied here.
+ * No filtering or capability inference — every model returned by the
+ * endpoint is included and tagged with the broad default capability mask
+ * (Chat + Vision + Tools).
  *
- * @param creds - Original ONLYOFFICE base URL + optional API key.
- * @returns Array of {@link Model}.
+ * @param creds - Credentials pointing at the target endpoint.
+ * @returns Array of {@link Model} exactly as reported by the endpoint.
  */
 export const listModels = async (
   creds: ProviderCredentials
 ): Promise<Model[]> => {
-  const baseUrl = creds.baseUrl.replace(/\/+$/, "");
-  const headers: HeadersInit = creds.apiKey
-    ? { Authorization: `Bearer ${creds.apiKey}` }
-    : {};
+  const client = new OpenAI({
+    apiKey: creds.apiKey,
+    baseURL: creds.baseUrl,
+    dangerouslyAllowBrowser: true,
+  });
+  const response = await client.models.list();
 
-  const response = await (creds.fetch ?? fetch)(
-    `${baseUrl}/api/2.0/ai/chats/models?provider=${ONLYOFFICE_PROVIDER_ID}`,
-    { headers }
-  );
-
-  if (!response.ok) return [];
-  const json = await response.json();
-  const models: OnlyOfficeModel[] = json.response ?? json;
-
-  // Capabilities of the upstream model are not exposed by the
-  // ONLYOFFICE catalogue endpoint. Default to the broad mask (Chat +
-  // Vision + Tools) — same fallback as the generic OpenAI-compatible
-  // provider — so model-assignment validation doesn't reject every
-  // ONLYOFFICE profile for "lacking capabilities".
   const defaultCaps =
     CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
 
-  return models.map((m) => ({
-    id: m.modelId,
-    name: m.modelId,
+  return response.data.map((m) => ({
+    id: m.id,
+    name: m.id,
     provider: "onlyoffice" as const,
     capabilities: defaultCaps,
   }));
-};
-
-/**
- * Validate ONLYOFFICE credentials by probing the model-list endpoint.
- *
- * Error classification mirrors the OpenAI provider's behaviour but
- * uses the ONLYOFFICE-specific endpoint, so that "endpoint reachable
- * but list returns 404/401" is mapped to the right user-facing field.
- *
- * @param creds - Credentials to check.
- * @returns `true` on success, or a {@link TErrorData} describing the
- *   offending field.
- */
-export const checkCredentials = async (
-  creds: ProviderCredentials
-): Promise<boolean | TErrorData> => {
-  try {
-    await listModels(creds);
-    return true;
-  } catch (error) {
-    const errorCode = getErrorCode(error);
-    if (errorCode === "invalid_api_key") return ProviderErrors.invalidKey();
-    if (errorCode === 404) return ProviderErrors.invalidUrl();
-    return creds.apiKey
-      ? ProviderErrors.invalidKey()
-      : ProviderErrors.emptyKey();
-  }
 };

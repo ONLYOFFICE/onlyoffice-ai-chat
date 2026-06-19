@@ -1,4 +1,4 @@
 export const onlyOfficeInfo = {
-  name: "ONLYOFFICE AI",
+  name: "ONLYOFFICE",
   baseUrl: "",
 };
