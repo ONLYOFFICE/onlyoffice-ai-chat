@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.144
+
+### Fixed
+
+- Removed a stray left indent on assistant (agent) messages. A leftover `ml-4`/`ml-3` from the avatar-column template offset agent replies and their action bar; both now align flush with the thread padding edge, matching user messages.
+
 ## 0.4.143
 
 ### Fixed
