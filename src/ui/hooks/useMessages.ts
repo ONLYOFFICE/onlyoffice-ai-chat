@@ -754,10 +754,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       // and streams the result back, which the watcher hands to the callback.
       if (data.serverExecuted) {
         setIsToolPending(false);
-        if (!useMessageStore.getState().isStreamRunning) {
-          closeDialog();
-          return;
-        }
         const stream = api.ai.approveToolCall({
           threadId: data.threadId,
           messageId: data.messageId,
@@ -857,10 +853,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       updateLastMessage(patched);
 
       setTimeout(() => setIsToolPending(false), 300);
-
-      // If the user pressed stop while the client-side tool was running,
-      // don't resume — the original stream was already torn down.
-      if (!useMessageStore.getState().isStreamRunning) return;
 
       const stream = api.ai.approveToolCall({
         threadId: data.threadId,
