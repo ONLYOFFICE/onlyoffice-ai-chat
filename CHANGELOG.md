@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.145
+
+### Added
+
+- `onRenamePromptFolder` widget callback — lets the host own the prompt-folder rename UI (mirrors `onCreatePromptFolder`). Receives `(currentName, folderId)`; return a non-empty string to rename, or nothing to cancel. Falls back to the built-in dialog when omitted.
+
 ## 0.4.144
 
 ### Fixed
