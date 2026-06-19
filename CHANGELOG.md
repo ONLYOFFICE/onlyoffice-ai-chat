@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.137
+
+### Fixed
+
+- Sending a message and immediately pressing "stop" no longer surfaces a spurious `Stream ended unexpectedly without response` error. When the abort closes the OpenAI stream iterator without throwing and before any content arrived, the empty end is now reported as a cancellation (status `cancelled`) instead of an error — Chat Completions and Responses paths (and the ONLYOFFICE proxy). Combined with the empty-cancelled-bubble fix, the stopped turn just disappears.
+- Approving a tool no longer stops the chat. The stream-running guard added in 0.4.136 also blocked the manual approve/deny resume — by then the first stream has ended, so it always tripped, the tool result was never persisted, and later requests failed with `No tool output found for function call`. The guard is now scoped to the inline auto-execute path only.
+- Stopping the stream while a tool was executing no longer breaks all subsequent requests with `No tool output found for function call`. Request history now strips assistant `tool-call` parts that never got a result before hitting the provider (so the unpaired `function_call` is never sent). Applies to new sends, regenerate, and resume, and repairs already-corrupted threads.
+- `reasoning_effort: "none"` is no longer sent to "pro" models (e.g. gpt-5.5-pro), which don't allow any effort below `"medium"`; the field is omitted for them when extended thinking is off.
+
+### Changed
+
+- All 40 non-English locales now carry the full translation key set (previously partial, falling back to English at runtime); unused keys were also removed across every locale and the English audit dropped 26 dead keys.
+
 ## 0.4.136
 
 ### Added
@@ -8,18 +21,14 @@
 
 ### Fixed
 
-- Sending a message and immediately pressing "stop" no longer surfaces a spurious `Stream ended unexpectedly without response` error. When the abort closes the OpenAI stream iterator without throwing and before any content arrived, the empty end is now reported as a cancellation (status `cancelled`) instead of an error — for both the Chat Completions and Responses paths (and the ONLYOFFICE proxy, which shares them). Combined with the empty-cancelled-bubble fix, the stopped turn just disappears.
-- Approving a tool no longer stops the chat. A too-aggressive stream-running guard (added with the stop-during-tool fix) also blocked the manual approve/deny resume — by then the first stream has ended, so the guard always tripped, the tool result was never persisted, and later requests failed with `No tool output found for function call`. The guard is now scoped to the inline auto-execute path only.
-- Stopping the stream while a tool was executing no longer breaks all subsequent requests with `No tool output found for function call`. A cancelled turn leaves an assistant `tool-call` with no result in storage; request history now strips such unresolved tool-call parts before hitting the provider (so the unpaired `function_call` is never sent). Applies to new sends, regenerate, and resume, and also repairs already-corrupted threads.
 - Web search now routes through the host `fetchProxy` on every path, including auto-allowed execution in the first chat turn. `webSearchFetch` was only wired into the approve/resume run contexts (introduced in 0.4.135), so an auto-allowed `web_search` ran inline in the initial stream with no proxy and hit the global `fetch` (CORS failure). All four run contexts now carry the proxy.
 - The composer web-search toggle now reliably turns web search off. Toggling flipped its two tools (`web_search`, `web_crawling`) with parallel `changeToolStatus` calls that raced — both read the same pre-update disabled list, so only the last write survived and one tool stayed enabled. `changeToolStatus` now accepts an array of names and writes them in one atomic persist; the toggle passes both at once.
-- Pressing "stop" while an auto-allowed client-side tool (host / MCP) is executing now actually stops the turn. Previously the tool was cancelled but the chat still ran a resume round and the model kept answering ("I'll do it without a file, just as text: …"). The inline auto-execute resume is gated on the stream still running, and the abort signal is threaded into the resume request so a stop mid-resume also short-circuits. Manual approve/deny resumes are unaffected (the first stream has already ended by the time the user clicks), and engine-side tools already behaved correctly.
-- Extended thinking OFF now actually disables reasoning for OpenAI gpt-5.1+ models (5.1 / 5.2 / 5.5): the request sends `reasoning_effort: "none"` instead of omitting the field, so the model's default (medium for the 5.5 family) no longer kicks in. Applies to the Chat Completions and Responses paths and the ONLYOFFICE proxy. Excluded: "pro" variants (e.g. gpt-5.5-pro) can't go below `"medium"`, and gpt-5.0 / o-series / non-reasoning models don't accept `"none"` — all keep their prior behavior. ON still sends `"medium"`. Anthropic already disables thinking when off.
+- Pressing "stop" while a client-side tool (host / MCP) is executing now actually stops the turn. Previously the tool was cancelled but the chat still ran a resume round and the model kept answering ("I'll do it without a file, just as text: …"). The resume after a client-side tool is gated on the stream still running, and the abort signal is now threaded into the resume request so a stop mid-resume also short-circuits. Engine-side tools already behaved correctly.
+- Extended thinking OFF now actually disables reasoning for OpenAI gpt-5.1+ models: the request sends `reasoning_effort: "none"` instead of omitting the field, so the model's default (medium for the 5.5 family) no longer kicks in. Applies to the Chat Completions and Responses paths and the ONLYOFFICE proxy. Models that don't support `"none"` (gpt-5.0, o-series) and non-reasoning models are unchanged. ON still sends `"medium"`. Anthropic already disables thinking when off.
 - Sending a message and immediately pressing "stop" no longer leaves an empty assistant bubble with action buttons. A user-cancelled turn (`incomplete`, `reason !== "error"`) with no streamed content is no longer rendered; error turns and cancellations that already have partial text still render as before.
 
 ### Changed
 
-- Removed 26 unused keys from the English locale (`en.json`) and regenerated the i18n key types. Only English was audited in this pass.
 - Parallel tool calls are now disabled across all providers that support it, so the model calls at most one tool per turn. OpenAI (Chat Completions + Responses API) and the OpenAI-compatible family (DeepSeek, xAI, OpenRouter, Groq, Together, Ollama, LM Studio, GPT4All, Zhipu, openai-compatible) send `parallel_tool_calls: false`; Mistral sends `parallelToolCalls: false`; the ONLYOFFICE proxy adds `parallel_tool_calls: false` to the body. The flag is only sent when tools are present. Anthropic already disabled it (`disable_parallel_tool_use`). Gemini is unchanged — its API exposes no such flag.
 - `PlatformFileOperations` methods are now all optional, and each file-related UI element is gated on its specific capability instead of the whole `file` object. A host can expose only what it supports — e.g. pass `file: { saveAsFile }` to keep chat save/export while hiding the local-file and recent-files pickers. "Add local image" no longer depends on `file` (it uses the HTML input + drag-and-drop). The message "Save" button now renders only when `saveAsFile` is present (also fixes a previously dead button), and `openFile` / thread export are called optionally.
 
