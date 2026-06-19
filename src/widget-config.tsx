@@ -175,6 +175,24 @@ export interface WidgetConfig {
     defaultName: string
   ) => string | void | Promise<string | void>;
   /**
+   * Custom UI for renaming a prompt folder. When provided, the widget's
+   * built-in "Rename folder" dialog is NOT shown — the host owns the input
+   * UI (e.g. its own modal) and resolves the new folder name:
+   * - a non-empty string — the widget renames the folder
+   * - `""` / `undefined` / no return (or a rejected promise) — cancelled,
+   *   the folder keeps its current name
+   *
+   * The widget always performs the actual rename itself; the host only
+   * owns the name-input step. When omitted, the built-in dialog is used.
+   *
+   * @param currentName the folder's current name (to prefill the input)
+   * @param folderId the id of the folder being renamed
+   */
+  onRenamePromptFolder?: (
+    currentName: string,
+    folderId: string
+  ) => string | void | Promise<string | void>;
+  /**
    * Custom UI for creating a prompt. When provided, the widget's built-in
    * "Save prompt" path (which auto-names from the message) is replaced — the
    * host owns the name/text input UI (e.g. its own window) and resolves the
@@ -195,7 +213,10 @@ export interface WidgetConfig {
    *   (omit it to keep the suggested one).
    */
   onCreatePrompt?: (
-    draft: PromptDraft & { folderId: string | null; folders: PromptFolderInfo[] }
+    draft: PromptDraft & {
+      folderId: string | null;
+      folders: PromptFolderInfo[];
+    }
   ) => PromptResult | void | Promise<PromptResult | void>;
   /**
    * Custom UI for editing a prompt. When provided, the widget's built-in

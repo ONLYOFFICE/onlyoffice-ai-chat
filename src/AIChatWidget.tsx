@@ -191,6 +191,12 @@ export interface AIChatWidgetProps {
    */
   onCreatePromptFolder?: WidgetConfig["onCreatePromptFolder"];
   /**
+   * Custom UI for renaming a prompt folder. When provided, the built-in
+   * "Rename folder" dialog is skipped and the host owns the input UI.
+   * See {@link WidgetConfig.onRenamePromptFolder}.
+   */
+  onRenamePromptFolder?: WidgetConfig["onRenamePromptFolder"];
+  /**
    * Custom UI for creating a prompt. When provided, the built-in
    * "Save prompt" auto-name path is replaced and the host owns the input UI.
    * See {@link WidgetConfig.onCreatePrompt}.
@@ -265,6 +271,7 @@ export const AIChatWidget = React.forwardRef<
       onDownloadTemplate,
       onDeleteProfile,
       onCreatePromptFolder,
+      onRenamePromptFolder,
       onCreatePrompt,
       onEditPrompt,
       onOpenCustomProvider,
@@ -292,6 +299,7 @@ export const AIChatWidget = React.forwardRef<
         onDownloadTemplate,
         onDeleteProfile,
         onCreatePromptFolder,
+        onRenamePromptFolder,
         onCreatePrompt,
         onEditPrompt,
         onOpenCustomProvider,
@@ -316,6 +324,7 @@ export const AIChatWidget = React.forwardRef<
         onDownloadTemplate,
         onDeleteProfile,
         onCreatePromptFolder,
+        onRenamePromptFolder,
         onCreatePrompt,
         onEditPrompt,
         onOpenCustomProvider,
@@ -621,9 +630,7 @@ const AppInner = ({
 
   return (
     <ComposerBridgeProvider bridgeRef={composerBridgeRef}>
-      <Layout>
-        {currentPage === "settings" ? <Settings /> : <Thread />}
-      </Layout>
+      <Layout>{currentPage === "settings" ? <Settings /> : <Thread />}</Layout>
     </ComposerBridgeProvider>
   );
 };

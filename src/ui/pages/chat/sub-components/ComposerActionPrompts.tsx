@@ -227,10 +227,11 @@ const ComposerActionPrompts = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
   const { usePromptsStore } = useStores();
-  const { onEditPrompt } = useWidgetConfig();
+  const { onEditPrompt, onRenamePromptFolder } = useWidgetConfig();
   const prompts = usePromptsStore((s) => s.prompts);
   const folders = usePromptsStore((s) => s.folders);
   const editPrompt = usePromptsStore((s) => s.editPrompt);
+  const renameFolder = usePromptsStore((s) => s.renameFolder);
   const removePrompt = usePromptsStore((s) => s.removePrompt);
   const composerRuntime = useComposerRuntime();
   const [isOpen, setIsOpen] = useState(false);
@@ -259,6 +260,27 @@ const ComposerActionPrompts = () => {
       composerRuntime.setText(text);
     },
     [composerRuntime]
+  );
+
+  // When the host supplies `onRenamePromptFolder`, it owns the input UI
+  // (its own modal) and resolves the new name; the widget renames once the
+  // host returns a non-empty name. Otherwise fall back to the built-in dialog.
+  const requestRenameFolder = useCallback(
+    async (folder: { id: string; name: string }) => {
+      if (!onRenamePromptFolder) {
+        setRenamingFolder({ id: folder.id, name: folder.name });
+        return;
+      }
+      try {
+        const next = await onRenamePromptFolder(folder.name, folder.id);
+        const trimmed = next?.trim();
+        if (!trimmed) return;
+        renameFolder(folder.id, trimmed);
+      } catch (err) {
+        logger.error("onRenamePromptFolder handler failed:", err);
+      }
+    },
+    [onRenamePromptFolder, renameFolder]
   );
 
   // When the host supplies `onEditPrompt`, it owns the input UI (its own
@@ -398,8 +420,7 @@ const ComposerActionPrompts = () => {
           {
             text: t("RenameFolder"),
             icon: "btn-rename",
-            onClick: () =>
-              setRenamingFolder({ id: folder.id, name: folder.name }),
+            onClick: () => requestRenameFolder(folder),
           },
           {
             text: t("DeleteFolder"),
@@ -411,7 +432,14 @@ const ComposerActionPrompts = () => {
     }
 
     return result;
-  }, [prompts, folders, applyPrompt, buildPromptContextMenu, t]);
+  }, [
+    prompts,
+    folders,
+    applyPrompt,
+    buildPromptContextMenu,
+    requestRenameFolder,
+    t,
+  ]);
 
   if (prompts.length === 0 && folders.length === 0) return null;
 
