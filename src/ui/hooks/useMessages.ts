@@ -14,6 +14,7 @@ import {
 import { useWidgetConfig } from "../../widget-config";
 import { useStores } from "../store/context";
 import { useToolsContext } from "../tools/context";
+import logger from "../../shared/logger";
 
 type UseMessagesProps = {
   isReady: boolean;
@@ -540,8 +541,19 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         // don't resume — the original stream was already torn down. Unlike
         // engine-side tools (which execute inside the signalled request and
         // short-circuit on abort), this resume is a separate stream, so it
-        // must be gated explicitly.
-        if (!useMessageStore.getState().isStreamRunning) return;
+        // must be gated explicitly. We still persist the resolved result
+        // (e.g. a host-supplied `{ cancelled: true }`) onto the message —
+        // `resumeChat` (which normally mirrors it to storage) never runs on
+        // this path, so without this the tool-call stays result-less in
+        // storage and shows as "running" when the thread is reopened.
+        if (!useMessageStore.getState().isStreamRunning) {
+          try {
+            await api.threads.updateMessage(event.messageId, patched);
+          } catch (err) {
+            logger.error("Failed to persist cancelled tool result:", err);
+          }
+          return;
+        }
 
         const next = api.ai.approveToolCall({
           threadId: event.threadId,

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.140
+
+### Fixed
+
+- A tool result resolved after the user stopped the stream (e.g. a host-supplied `{ cancelled: true }`) is now persisted to storage, not just shown in the UI. The auto-execute path returned early on stop before `resumeChat` mirrored the result, so the tool-call stayed result-less and showed as "running" when the thread was reopened. The result is now written directly via `updateMessage` on that path.
+
 ## 0.4.139
 
 ### Changed
