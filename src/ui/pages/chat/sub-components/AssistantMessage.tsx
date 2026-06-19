@@ -263,7 +263,7 @@ const AssistantActionBar = () => {
   return (
     <ActionBarPrimitive.Root
       hidden={isStreamRunning}
-      className="col-start-3 row-start-2 ml-3 mt-3 flex gap-[8px]"
+      className="col-start-3 row-start-2 mt-3 flex gap-[8px]"
     >
       {platform.copyToClipboard ? (
         <PlatformCopyButton text={getMessageText(message)} />
@@ -349,7 +349,7 @@ export const AssistantMessage = memo(() => {
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
       >
-        <div className="col-span-2 col-start-2 row-start-1 ml-4 break-words leading-7 text-[var(--chat-message-color)] select-text">
+        <div className="col-span-2 col-start-2 row-start-1 break-words leading-7 text-[var(--chat-message-color)] select-text">
           <MessagePrimitive.Content
             components={{
               tools: { Fallback: ToolFallback },
