@@ -36,6 +36,20 @@ describe("anthropic/messages/convertMessages", () => {
       expect(block.source?.media_type).toBe("image/png");
     });
 
+    it("degrades an empty data URL (0-byte file) to inert text", () => {
+      const out = convertMessages([
+        {
+          role: "user",
+          content: [{ type: "image", image: "data:image/png;base64," }],
+        } as ThreadMessageLike,
+      ]);
+      const block = (
+        out[0].content as Array<{ type: string; text?: string }>
+      )[0];
+      expect(block.type).toBe("text");
+      expect(block.text).toBe("");
+    });
+
     it("coerces unknown mime types to image/jpeg", () => {
       const out = convertMessages([
         {

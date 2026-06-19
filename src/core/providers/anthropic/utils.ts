@@ -27,23 +27,29 @@ const DEFAULT_MIME_TYPE: ImageMimeType = "image/jpeg";
 // Image Helpers
 // ============================================================================
 
-const parseDataUrl = (dataUrl: string) => ({
-  base64: dataUrl.split(",")[1],
-  mimeType: dataUrl.split(";")[0].split(":")[1],
-});
+const parseDataUrl = (
+  dataUrl: string
+): { base64: string; mimeType: string } | null => {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  return { base64: match[2], mimeType: match[1] };
+};
 
 const toValidMimeType = (mimeType: string): ImageMimeType =>
   MIME_TYPE_MAP[mimeType] ?? DEFAULT_MIME_TYPE;
 
 const convertImageToBlock = (imageDataUrl: string): ContentBlockParam => {
-  const { base64, mimeType } = parseDataUrl(imageDataUrl);
+  const parsed = parseDataUrl(imageDataUrl);
+  // Empty / malformed data URL — degrade to inert text so the SDK never
+  // sees an empty `data` field.
+  if (!parsed) return { type: "text", text: "" };
 
   return {
     type: "image",
     source: {
       type: "base64",
-      media_type: toValidMimeType(mimeType),
-      data: base64,
+      media_type: toValidMimeType(parsed.mimeType),
+      data: parsed.base64,
     },
   };
 };

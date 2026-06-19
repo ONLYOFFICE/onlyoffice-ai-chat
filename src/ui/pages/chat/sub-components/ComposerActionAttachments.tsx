@@ -234,7 +234,11 @@ const ComposerActionAttachment = () => {
 
     const inputs = (
       await Promise.all(
-        Array.from(files).map(
+        // Skip 0-byte files — they produce an empty `data:...;base64,`
+        // URL that vision providers reject.
+        Array.from(files)
+          .filter((file) => file.size > 0)
+          .map(
           (file) =>
             new Promise<{ name: string; base64: string } | null>((resolve) => {
               const reader = new FileReader();

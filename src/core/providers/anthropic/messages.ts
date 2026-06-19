@@ -17,11 +17,19 @@ const MIME_TYPE_MAP: Record<string, ImageMimeType> = {
 
 const DEFAULT_MIME_TYPE: ImageMimeType = "image/jpeg";
 
-/** Split a `data:...;base64,...` URL into its base64 payload + mime type. */
-const parseDataUrl = (dataUrl: string) => ({
-  base64: dataUrl.split(",")[1],
-  mimeType: dataUrl.split(";")[0].split(":")[1],
-});
+/**
+ * Split a `data:...;base64,...` URL into its base64 payload + mime type.
+ * Returns `null` when the string is not a base64 data URL or carries an
+ * empty payload (e.g. a 0-byte file the user attached) — Anthropic's SDK
+ * rejects an empty `data` field, so the caller drops the block instead.
+ */
+const parseDataUrl = (
+  dataUrl: string
+): { base64: string; mimeType: string } | null => {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  return { base64: match[2], mimeType: match[1] };
+};
 
 /** Normalize an arbitrary mime string to one Anthropic accepts. */
 const toValidMimeType = (mimeType: string): ImageMimeType =>
@@ -34,13 +42,16 @@ const toValidMimeType = (mimeType: string): ImageMimeType =>
  * @returns An Anthropic content block suitable for a user message.
  */
 const convertImageToBlock = (imageDataUrl: string): ContentBlockParam => {
-  const { base64, mimeType } = parseDataUrl(imageDataUrl);
+  const parsed = parseDataUrl(imageDataUrl);
+  // Empty / malformed data URL — degrade to inert text so the converter
+  // never feeds the SDK an empty `data` field (which it rejects).
+  if (!parsed) return { type: "text", text: "" };
   return {
     type: "image",
     source: {
       type: "base64",
-      media_type: toValidMimeType(mimeType),
-      data: base64,
+      media_type: toValidMimeType(parsed.mimeType),
+      data: parsed.base64,
     },
   };
 };

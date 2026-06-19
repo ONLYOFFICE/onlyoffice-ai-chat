@@ -123,7 +123,9 @@ export const useChatDropAttachments = () => {
     dragDepthRef.current = 0;
     setIsDragOver(false);
 
-    const files = Array.from(e.dataTransfer.files);
+    // Drop 0-byte files — an empty image yields a payload-less data URL
+    // that vision providers reject, and an empty text file adds nothing.
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.size > 0);
     // Read every dropped file in parallel, then hand each batch to the
     // store in one call. Per-file failures collapse to `null` so a single
     // unreadable file can't sink the whole drop.
