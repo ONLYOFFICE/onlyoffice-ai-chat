@@ -338,4 +338,15 @@ describe("openai/stream/processStream", () => {
     };
     expect(last.responseMessage.status.reason).toBe("error");
   });
+
+  it("yields a cancelled (stop) response when ended empty after abort", async () => {
+    const ac = new AbortController();
+    ac.abort();
+    const out = await collect(processStream(toStream([]), ac.signal));
+    const last = out[out.length - 1] as unknown as {
+      isEnd: true;
+      responseMessage: { status: { reason: string } };
+    };
+    expect(last.responseMessage.status.reason).toBe("cancelled");
+  });
 });

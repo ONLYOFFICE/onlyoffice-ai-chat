@@ -232,4 +232,14 @@ describe("processResponsesStream", () => {
     };
     expect(msg.status?.reason).toBe("error");
   });
+
+  it("stream ends empty after abort — surfaces a cancellation, not an error", async () => {
+    const ac = new AbortController();
+    ac.abort();
+    const results = await collect(processResponsesStream(iter([]), ac.signal));
+    const final = lastTerminal(results);
+    if (!("isEnd" in final)) throw new Error("expected terminal");
+    const msg = final.responseMessage as { status?: { reason?: string } };
+    expect(msg.status?.reason).toBe("cancelled");
+  });
 });

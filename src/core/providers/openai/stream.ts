@@ -274,7 +274,8 @@ type OpenAIStream = AsyncIterable<ChatCompletionChunk>;
  * @yields Intermediate snapshots and, last, the terminal `isEnd` result.
  */
 export async function* processStream(
-  stream: OpenAIStream
+  stream: OpenAIStream,
+  signal?: AbortSignal
 ): AsyncGenerator<SendMessageResult> {
   let responseMessage: ThreadMessageLike = createEmptyResponse();
   let isStreamComplete = false;
@@ -335,6 +336,11 @@ export async function* processStream(
 
   if (hasContent) {
     yield { isEnd: true, responseMessage };
+  } else if (signal?.aborted) {
+    // User stopped before any content arrived — the SDK closes the
+    // iterator without throwing, so treat the empty end as a cancellation
+    // rather than an error.
+    yield { isEnd: true, responseMessage: createStopResponse() };
   } else {
     yield {
       isEnd: true,

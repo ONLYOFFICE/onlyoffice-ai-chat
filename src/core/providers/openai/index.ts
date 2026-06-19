@@ -85,7 +85,7 @@ class OpenAIProvider extends AbstractBaseProvider {
         signal,
       });
 
-      yield* processStream(stream);
+      yield* processStream(stream, signal);
     } catch (error) {
       if (isAbortError(error, signal)) {
         yield { isEnd: true, responseMessage: createStopResponse() };
@@ -131,7 +131,7 @@ class OpenAIProvider extends AbstractBaseProvider {
         { signal }
       );
 
-      yield* processResponsesStream(stream);
+      yield* processResponsesStream(stream, signal);
     } catch (error) {
       if (isAbortError(error, signal)) {
         yield { isEnd: true, responseMessage: createStopResponse() };

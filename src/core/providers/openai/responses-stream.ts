@@ -8,6 +8,7 @@ import type { SendMessageResult } from "../../../shared/send-message-args";
 import {
   createEmptyResponse,
   createErrorResponse,
+  createStopResponse,
   finalizeReasoning,
 } from "./stream";
 
@@ -95,7 +96,8 @@ const createToolCallPart = (
  * multiple in-flight calls.
  */
 export async function* processResponsesStream(
-  stream: ResponsesStream
+  stream: ResponsesStream,
+  signal?: AbortSignal
 ): AsyncGenerator<SendMessageResult> {
   let responseMessage: ThreadMessageLike = createEmptyResponse();
   let hasUnfinalizedReasoning = false;
@@ -237,6 +239,11 @@ export async function* processResponsesStream(
       responseMessage = finalizeReasoning(responseMessage, true);
     }
     yield { isEnd: true, responseMessage };
+  } else if (signal?.aborted) {
+    // User stopped before any content arrived — the SDK closes the
+    // iterator without throwing, so treat the empty end as a cancellation
+    // rather than an error.
+    yield { isEnd: true, responseMessage: createStopResponse() };
   } else {
     yield {
       isEnd: true,
