@@ -190,7 +190,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
       className="flex flex-col w-full py-[8px] mb-[8px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)]"
     >
       <div className="flex items-center justify-between ps-[16px] pe-[8px] mb-[8px]">
-        <p className="font-bold text-[12px] leading-[18px] text-[var(--settings-header-color)]">
+        <p className="font-bold text-[var(--fs-12)] leading-[var(--lh-18)] text-[var(--settings-header-color)]">
           {t("EditConfiguration")}
         </p>
         {/* <IconButton iconName="btn-close" size={24} onClick={onClose} /> */}

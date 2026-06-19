@@ -134,13 +134,13 @@ export const AddModelCard = ({
                 align="start"
               >
                 <div className="flex flex-col gap-[6px] max-w-[221px]">
-                  <p className="leading-[16px] select-none">
+                  <p className="leading-[var(--lh-16)] select-none">
                     {t("EnterModelConfigTooltip")}
                   </p>
                   <Link
                     variant="primary"
                     href="#"
-                    className="leading-[16px]"
+                    className="leading-[var(--lh-16)]"
                     onClick={
                       onDownloadTemplate
                         ? (e) => {
@@ -178,7 +178,7 @@ export const AddModelCard = ({
   if (variant === "standalone") {
     return (
       <div>
-        <h3 className="select-none text-[20px] font-bold leading-[28px] text-[var(--text-normal)] text-center mb-[16px]">
+        <h3 className="select-none text-[var(--fs-20)] font-bold leading-[var(--lh-28)] text-[var(--text-normal)] text-center mb-[16px]">
           {t("ConnectAIModelToEnableChat")}
         </h3>
 

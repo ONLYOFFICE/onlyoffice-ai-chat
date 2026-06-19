@@ -13,7 +13,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h1: ({ className, ...props }) => (
     <h1
       className={cn(
-        "mb-8 scroll-m-20 text-[28px] leading-[36px] font-bold last:mb-0 text-[var(--chat-message-color)]",
+        "mb-8 scroll-m-20 text-[var(--fs-28)] leading-[var(--lh-36)] font-bold last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -22,7 +22,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h2: ({ className, ...props }) => (
     <h2
       className={cn(
-        "mb-4 mt-8 scroll-m-20 text-[24px] leading-[32px] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "mb-4 mt-8 scroll-m-20 text-[var(--fs-24)] leading-[var(--lh-32)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -31,7 +31,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h3: ({ className, ...props }) => (
     <h3
       className={cn(
-        "mb-4 mt-6 scroll-m-20 text-[20px] leading-[28px] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "mb-4 mt-6 scroll-m-20 text-[var(--fs-20)] leading-[var(--lh-28)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -40,7 +40,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h4: ({ className, ...props }) => (
     <h4
       className={cn(
-        "mb-4 mt-6 scroll-m-20 text-[18px] leading-[24px] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "mb-4 mt-6 scroll-m-20 text-[var(--fs-18)] leading-[var(--lh-24)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -49,7 +49,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h5: ({ className, ...props }) => (
     <h5
       className={cn(
-        "my-4 text-[16px] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "my-4 text-[var(--fs-16)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}

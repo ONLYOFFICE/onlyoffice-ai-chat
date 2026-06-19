@@ -31,7 +31,7 @@ const primaryDisabledStyles = "disabled:opacity-50 disabled:cursor-not-allowed";
 
 // Size styles
 
-const defaultSizeStyles = "h-[24px] min-w-[40px] px-[8px] leading-[16px]";
+const defaultSizeStyles = "h-[24px] min-w-[40px] px-[8px] leading-[var(--lh-16)]";
 
 const buttonVariants = cva(`${baseStyles} ${focusStyles}`, {
   variants: {

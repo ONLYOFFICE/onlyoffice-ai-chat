@@ -21,7 +21,7 @@ const DialogTitle = ({
         className,
         withWarningIcon
           ? ""
-          : "text-[18px] leading-[24px]"
+          : "text-[var(--fs-18)] leading-[var(--lh-24)]"
       )}
       {...props}
     />

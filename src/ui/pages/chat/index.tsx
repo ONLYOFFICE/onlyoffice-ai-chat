@@ -127,7 +127,7 @@ const ThreadInner = () => {
       {isDragOver ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-[var(--layout-background-color)]/80 backdrop-blur-sm">
           <div className="m-[16px] flex h-full w-full items-center justify-center rounded-[16px] border-2 border-dashed border-[var(--input-active-border-color)]">
-            <p className="select-none text-[18px] font-bold leading-[24px] text-[var(--text-normal)]">
+            <p className="select-none text-[var(--fs-18)] font-bold leading-[var(--lh-24)] text-[var(--text-normal)]">
               {t("DropFilesHere")}
             </p>
           </div>

@@ -134,7 +134,7 @@ const MessageError = () => {
       <div className="text-[var(--chat-message-error-color)] font-normal">
         {text}
       </div>
-      <div className="text-[var(--chat-message-error-color)] leading-[16px] font-normal opacity-60 mt-[2px]">
+      <div className="text-[var(--chat-message-error-color)] leading-[var(--lh-16)] font-normal opacity-60 mt-[2px]">
         {code}
       </div>
     </div>

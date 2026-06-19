@@ -204,7 +204,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     >
       <p
         className={cn(
-          "font-normal leading-[16px] text-[var(--settings-description-color)]",
+          "font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)]",
           isRTL ? "text-end" : ""
         )}
       >

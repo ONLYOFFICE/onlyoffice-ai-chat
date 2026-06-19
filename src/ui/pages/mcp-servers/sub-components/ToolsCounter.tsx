@@ -21,7 +21,7 @@ const ToolsCounter = () => {
   if (allToolsCount <= TOOLS_COUNTER_THRESHOLD) return null;
 
   return (
-    <p className="font-normal leading-[16px] text-[var(--servers-available-tools-sub-header-color)]">
+    <p className="font-normal leading-[var(--lh-16)] text-[var(--servers-available-tools-sub-header-color)]">
       <span className="text-[var(--servers-available-tools-current-tool-color)]">
         {allToolsCount}
       </span>

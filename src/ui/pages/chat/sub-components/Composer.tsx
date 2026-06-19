@@ -94,7 +94,7 @@ const Composer = () => {
         />
         <ComposerAction />
       </ComposerPrimitive.Root>
-      <p className="text-center font-normal text-[10px] leading-[16px] text-[var(--text-tertiary)]">
+      <p className="text-center font-normal text-[var(--fs-10)] leading-[var(--lh-16)] text-[var(--text-tertiary)]">
         {t("CheckInfo")}
       </p>
     </div>

@@ -54,7 +54,7 @@ const ComboBox = ({
         placeholder={searchPlaceholder}
         className={cn(
           "w-full h-[32px] px-[8px] rounded-[4px]",
-          "leading-[16px] text-[var(--input-color)]",
+          "leading-[var(--lh-16)] text-[var(--input-color)]",
           "bg-[var(--input-background-color)] border border-[var(--input-border-color)]",
           "placeholder:text-[var(--input-placeholder-color)]",
           "focus:outline-none focus:border-[var(--input-active-border-color)]"
@@ -73,7 +73,7 @@ const ComboBox = ({
           className={cn(
             "h-[36px] rounded-[var(--input-border-radius)] ps-[12px] box-border",
             "cursor-pointer flex items-center justify-between",
-            "text-[var(--input-color)] leading-[16px]",
+            "text-[var(--input-color)] leading-[var(--lh-16)]",
             withoutBg
               ? isOpen
                 ? "bg-[var(--input-background-color)]"

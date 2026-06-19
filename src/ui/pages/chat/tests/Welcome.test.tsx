@@ -39,6 +39,6 @@ describe("ThreadWelcome", () => {
     render(<ThreadWelcome />);
     const desc = screen.getByText("WelcomeDescription");
     expect(desc.tagName).toBe("P");
-    expect(desc.className).toContain("text-[20px]");
+    expect(desc.className).toContain("text-[var(--fs-20)]");
   });
 });

@@ -21,7 +21,7 @@ const Suggestions = () => {
             onClick={() => composerRuntime.setText(suggestion.prompt)}
             className="inline-flex h-[25px] max-w-full min-w-0 items-center gap-[6px] rounded-full border border-[var(--chat-suggestion-border-color)] px-[10px] py-[3px] text-[var(--text-normal)] hover:bg-[var(--highlight-button-hover)]"
           >
-            <span className="truncate font-normal text-[12px] leading-[18px] tracking-[0px]">
+            <span className="truncate font-normal text-[var(--fs-12)] leading-[var(--lh-18)] tracking-[0px]">
               {suggestion.name}
             </span>
           </button>

@@ -67,7 +67,7 @@ const ModelAssignment = () => {
 
   return (
     <div className="w-full">
-      <p className="font-normal leading-[16px] text-[var(--settings-description-color)] mb-[24px]">
+      <p className="font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[24px]">
         {t("ModelAssignmentDescription")}
       </p>
       <div className="flex flex-col">
@@ -86,7 +86,7 @@ const ModelAssignment = () => {
           />
         </FieldContainer>
 
-        <p className="select-none font-bold leading-[18px] text-[var(--settings-header-color)] mb-[8px]">
+        <p className="select-none font-bold leading-[var(--lh-18)] text-[var(--settings-header-color)] mb-[8px]">
           {t("OverrideForTasks")}
         </p>
 

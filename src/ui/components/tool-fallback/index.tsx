@@ -143,7 +143,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           <Loader size={16} />
         )}
         {isLoading && !isWebSearch && !isWebCrawling ? (
-          <p className="text-[var(--chat-message-tool-call-header-color)] font-normal leading-[16px]">
+          <p className="text-[var(--chat-message-tool-call-header-color)] font-normal leading-[var(--lh-16)]">
             {t("ToolExecuted")}
           </p>
         ) : null}

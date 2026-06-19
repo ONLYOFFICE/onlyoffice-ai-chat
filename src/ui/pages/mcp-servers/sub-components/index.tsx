@@ -36,7 +36,7 @@ const Servers = () => {
     <div className="flex flex-col pb-[32px] w-full">
       <p
         className={cn(
-          "font-normal leading-[16px] text-[var(--settings-description-color)] mb-[8px]",
+          "font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[8px]",
           isRTL ? "text-end" : ""
         )}
       >

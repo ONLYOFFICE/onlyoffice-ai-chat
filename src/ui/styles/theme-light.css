@@ -1,4 +1,10 @@
 .theme-light {
+  /* typography — base font size (px) and optional multiplier. Defaults
+     live in index.css (.aui-root); declared here so they surface in the
+     generated ThemeTokens type and are settable via `customTheme`. */
+  --aui-font-base: 12px;
+  --aui-font-scale: 1;
+
   /* base colors */
   --background-normal: #ffffff;
   --background-normal-element: #efefef;

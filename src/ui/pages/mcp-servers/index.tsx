@@ -16,7 +16,7 @@ const McpServersPage = ({ hideHeader, noPadding }: McpServersPageProps) => {
     <div className="aui-root select-text flex h-full w-full bg-[var(--layout-background-color)]">
       <div className="w-full max-w-[560px] min-w-0">
         {!hideHeader && (
-          <h1 className="select-none font-bold text-[20px] leading-[28px] text-[var(--settings-header-color)] mb-[24px]">
+          <h1 className="select-none font-bold text-[var(--fs-20)] leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[24px]">
             {t("MCPServers")}
           </h1>
         )}

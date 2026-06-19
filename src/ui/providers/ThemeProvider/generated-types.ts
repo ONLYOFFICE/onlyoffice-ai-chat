@@ -6,6 +6,8 @@ export interface ThemeTokens {
   "--ai-provider-item-color"?: string;
   "--ai-provider-item-description-color"?: string;
   "--ai-provider-item-shadow"?: string;
+  "--aui-font-base"?: string;
+  "--aui-font-scale"?: string;
   "--background-accent-button"?: string;
   "--background-normal"?: string;
   "--background-normal-element"?: string;

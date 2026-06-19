@@ -203,7 +203,7 @@ const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
             }
           }}
         >
-          <p className="select-none h-[40px] flex items-center leading-[16px] text-[var(--text-normal)]">
+          <p className="select-none h-[40px] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
             {t("WantDeleteFolder")}
           </p>
           <div

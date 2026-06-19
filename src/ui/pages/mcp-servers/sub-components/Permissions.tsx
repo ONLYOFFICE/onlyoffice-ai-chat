@@ -30,7 +30,7 @@ const Permissions = ({ dimmed }: PermissionsProps) => {
           isRTL ? "flex-row-reverse" : ""
         )}
       >
-        <p className="font-bold leading-[16px] text-[var(--servers-available-tools-header-color)]">
+        <p className="font-bold leading-[var(--lh-16)] text-[var(--servers-available-tools-header-color)]">
           {t("Permissions")}
         </p>
         <ToolsCounter />

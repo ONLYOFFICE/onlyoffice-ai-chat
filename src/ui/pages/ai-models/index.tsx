@@ -22,11 +22,11 @@ const AiModelsPage = ({
       <div className="w-full max-w-[560px] min-w-0">
         <>
           {!hideHeader && (
-            <h1 className="select-none font-bold text-[20px] leading-[28px] text-[var(--settings-header-color)] mb-[8px]">
+            <h1 className="select-none font-bold text-[var(--fs-20)] leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[8px]">
               {t("AIModels")}
             </h1>
           )}
-          <p className="select-none font-normal leading-[16px] text-[var(--settings-description-color)] mb-[8px]">
+          <p className="select-none font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[8px]">
             {t("AIModelsDescription")}
           </p>
         </>
