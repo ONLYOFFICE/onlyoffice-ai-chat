@@ -84,7 +84,7 @@ const Composer = () => {
         ) : null}
 
         <ComposerPrimitive.Input
-          placeholder=""
+          placeholder={t("AskAnything")}
           className="composer-input max-h-[calc(50vh)] min-h-[20px] w-full resize-none outline-none select-text px-[4px]"
           rows={1}
           autoFocus

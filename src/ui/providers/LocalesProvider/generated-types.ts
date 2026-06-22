@@ -17,6 +17,7 @@ export type TranslationKey =
   | "Analyzing"
   | "Ask"
   | "AskAI"
+  | "AskAnything"
   | "Attachments"
   | "BaseURL"
   | "Cancel"
