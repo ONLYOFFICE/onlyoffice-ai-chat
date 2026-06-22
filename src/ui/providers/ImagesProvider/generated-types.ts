@@ -43,6 +43,7 @@ export type IconName =
   | "pdf-form"
   | "presentations"
   | "search"
+  | "send"
   | "show-chat"
   | "spreadsheets"
   | "status.error"

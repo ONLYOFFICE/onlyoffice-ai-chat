@@ -36,7 +36,7 @@
   --text-normal: #ffffffcc;
   --text-normal-pressed: #ffffffcc;
   --text-secondary: #ffffff99;
-  --text-tertiary: #ffffff66;
+  --text-tertiary: #B2B2B2;
   --text-link: #acbfff;
   --text-inverse: #333333;
   --text-contrast-background: #ffffff;
@@ -260,7 +260,7 @@
   --chat-composer-hover-border-color: var(--highlight-button-hover);
   --chat-composer-active-border-color: var(--background-accent-button);
   --chat-composer-text-color: var(--text-normal);
-  --chat-composer-placeholder-color: var(--text-secondary);
+  --chat-composer-placeholder-color: var(--text-tertiary);
 
   --chat-composer-action-send-color: var(--text-contrast-background);
   --chat-composer-action-send-background-color: var(--background-accent-button);

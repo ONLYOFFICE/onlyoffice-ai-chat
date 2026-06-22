@@ -249,7 +249,12 @@ const ComposerActionPrompts = () => {
   const trigger = useMemo(
     () => (
       <TooltipIconButton visible={!isOpen} tooltip={t("SavedPrompts")}>
-        <IconButton iconName="btn-prompt" size={20} isActive={isOpen} />
+        <IconButton
+          iconName="btn-prompt"
+          size={20}
+          isActive={isOpen}
+          isStroke
+        />
       </TooltipIconButton>
     ),
     [isOpen, t, IconButton, TooltipIconButton]

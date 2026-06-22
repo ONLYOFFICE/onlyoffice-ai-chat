@@ -43,10 +43,6 @@ vi.mock("@assistant-ui/react", () => ({
   useComposerRuntime: () => ({ setText: vi.fn() }),
 }));
 
-vi.mock("../sub-components/ComposerActionSelectModel", () => ({
-  SelectModel: () => <div data-testid="select-model" />,
-}));
-
 vi.mock("../sub-components/ComposerAction", () => ({
   ComposerAction: () => <div data-testid="composer-action" />,
 }));
@@ -104,19 +100,12 @@ describe("Composer", () => {
     expect(screen.getByText("CheckInfo")).toBeInTheDocument();
   });
 
-  it("renders the Ask label and select model", () => {
-    setupStores();
-    render(<Composer />);
-    expect(screen.getByText("Ask")).toBeInTheDocument();
-    expect(screen.getByTestId("select-model")).toBeInTheDocument();
-  });
-
   it("renders composer input with placeholder", () => {
     setupStores({ currentProfile: { id: "1", name: "GPT" } });
     render(<Composer />);
     const input = screen.getByTestId("composer-input");
     expect(input).toBeInTheDocument();
-    expect(input.getAttribute("placeholder")).toBe("AskAI");
+    expect(input.getAttribute("placeholder")).toBe("AskAnything");
   });
 
   it("disables input when no profile selected", () => {
@@ -149,26 +138,5 @@ describe("Composer", () => {
     setupStores();
     render(<Composer />);
     expect(screen.getByTestId("composer-action")).toBeInTheDocument();
-  });
-
-  it("hides the Ask label and select model when hideProfilePicker is true", () => {
-    setupStores({ hideProfilePicker: true });
-    render(<Composer />);
-    expect(screen.queryByText("Ask")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("select-model")).not.toBeInTheDocument();
-  });
-
-  it("hides the profile selector when entityId is set (room mode)", () => {
-    setupStores({ entityId: "e1" });
-    render(<Composer />);
-    expect(screen.queryByText("Ask")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("select-model")).not.toBeInTheDocument();
-  });
-
-  it("shows the profile selector in passthrough mode (entityId undefined)", () => {
-    setupStores({ entityId: undefined });
-    render(<Composer />);
-    expect(screen.getByText("Ask")).toBeInTheDocument();
-    expect(screen.getByTestId("select-model")).toBeInTheDocument();
   });
 });

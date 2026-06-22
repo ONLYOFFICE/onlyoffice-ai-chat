@@ -4,10 +4,8 @@ import type { MouseEvent as ReactMouseEvent } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { FileItem } from "../../../components/file-item";
 import { useStores } from "../../../store/context";
-import { useWidgetConfig } from "../../../../widget-config";
 import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { ComposerAction } from "./ComposerAction";
-import { SelectModel } from "./ComposerActionSelectModel";
 
 const Composer = () => {
   const { useAttachmentsStore, useProfilesStore, selectCurrentChatProfile } =
@@ -15,7 +13,6 @@ const Composer = () => {
   const attachmentFiles = useAttachmentsStore((s) => s.attachmentFiles);
   const attachmentImages = useAttachmentsStore((s) => s.attachmentImages);
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
-  const { hideProfilePicker, entityId } = useWidgetConfig();
   const { t } = useI18n();
   const composerRuntime = useComposerRuntime();
   const composerBridge = useComposerBridge();
@@ -49,29 +46,14 @@ const Composer = () => {
       }
     };
   }, [composerBridge, composerRuntime]);
-  // In entity ("room") mode the chat profile is fixed by the host —
-  // the composer selector would let the user override it locally,
-  // which contradicts the contract. Always hide.
-  const shouldHidePicker = hideProfilePicker || entityId !== undefined;
 
   return (
     <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[8px] px-[12px] pb-[4px]">
       <ComposerPrimitive.Root
         ref={rootRef}
         onClick={focusInputOnClick}
-        className="composer-root relative flex w-full cursor-text flex-col gap-[6px] rounded-[16px] border px-[8px] py-[6px] box-border"
+        className="composer-root relative flex w-full cursor-text flex-col gap-[6px] rounded-[4px] border px-[8px] pt-[10px] pb-[6px] box-border"
       >
-        {!shouldHidePicker ? (
-          <div className="flex items-center gap-[4px] min-w-0 px-[4px]">
-            <span className="shrink-0 text-[var(--text-tertiary)] select-none">
-              {t("Ask")}
-            </span>
-            <div className="min-w-0 flex-1">
-              <SelectModel />
-            </div>
-          </div>
-        ) : null}
-
         {attachmentFiles.length || attachmentImages.length ? (
           <div className="flex flex-row gap-[8px] overflow-x-auto">
             {attachmentFiles.map((file) => (
