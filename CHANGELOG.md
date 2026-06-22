@@ -1,5 +1,7 @@
 # Changelog
 
+## [Unreleased]
+
 ## 0.4.145
 
 ### Added

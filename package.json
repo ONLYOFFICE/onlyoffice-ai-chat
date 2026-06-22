@@ -107,7 +107,10 @@
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "pack:pre": "node scripts/pack-pre.mjs",
+    "pack:docs": "node scripts/pack-pre.mjs --preid docs",
+    "pack:docspace": "node scripts/pack-pre.mjs --preid docspace"
   },
   "dependencies": {
     "lodash.clonedeep": "^4.5.0"
