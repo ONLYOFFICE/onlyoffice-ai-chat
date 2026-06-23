@@ -49,6 +49,41 @@
   --lh-36: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 3);
 }
 
+/* Font-size utilities backed by the `--fs-*` type scale. A bare
+   `text-[var(--fs-*)]` is ambiguous in Tailwind and compiles to `color`,
+   not `font-size`; these named utilities set `font-size` explicitly so the
+   scale actually applies (and stops clobbering text color). */
+@utility text-fs-10 {
+  font-size: var(--fs-10);
+}
+@utility text-fs-11 {
+  font-size: var(--fs-11);
+}
+@utility text-fs-12 {
+  font-size: var(--fs-12);
+}
+@utility text-fs-13 {
+  font-size: var(--fs-13);
+}
+@utility text-fs-16 {
+  font-size: var(--fs-16);
+}
+@utility text-fs-18 {
+  font-size: var(--fs-18);
+}
+@utility text-fs-20 {
+  font-size: var(--fs-20);
+}
+@utility text-fs-24 {
+  font-size: var(--fs-24);
+}
+@utility text-fs-28 {
+  font-size: var(--fs-28);
+}
+@utility text-fs-32 {
+  font-size: var(--fs-32);
+}
+
 .font-rtl {
   font-family:
     system-ui,

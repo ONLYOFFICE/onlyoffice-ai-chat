@@ -178,7 +178,7 @@ export const AddModelCard = ({
   if (variant === "standalone") {
     return (
       <div>
-        <h3 className="select-none text-[var(--fs-20)] font-bold leading-[var(--lh-28)] text-[var(--text-normal)] text-center mb-[16px]">
+        <h3 className="select-none text-fs-20 font-bold leading-[var(--lh-28)] text-[var(--text-normal)] text-center mb-[16px]">
           {t("ConnectAIModelToEnableChat")}
         </h3>
 

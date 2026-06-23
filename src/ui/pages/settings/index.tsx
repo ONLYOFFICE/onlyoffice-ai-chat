@@ -68,7 +68,7 @@ const Settings = ({
         className={`flex flex-col gap-[16px] box-border w-full max-w-[640px] min-w-0 overflow-hidden${noPadding ? "" : " mx-[32px] mt-[32px]"}`}
       >
         {!hideHeader && (
-          <h1 className="select-none font-bold text-[var(--fs-20)] leading-[var(--lh-28)] text-[var(--settings-header-color)]">
+          <h1 className="select-none font-bold text-fs-20 leading-[var(--lh-28)] text-[var(--settings-header-color)]">
             {t("Settings")}
           </h1>
         )}

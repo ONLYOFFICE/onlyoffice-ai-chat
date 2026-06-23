@@ -106,7 +106,7 @@ const ModelCard = ({
           </Tooltip>
           <p
             className={cn(
-              "text-[var(--fs-10)] leading-[var(--lh-14)] text-[var(--model-card-description-color)] truncate",
+              "text-fs-10 leading-[var(--lh-14)] text-[var(--model-card-description-color)] truncate",
               isRTL ? "text-end" : ""
             )}
           >
