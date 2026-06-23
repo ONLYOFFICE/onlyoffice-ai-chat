@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Composer input now shows an "Ask anything…" placeholder, translated across all locales.
+
+### Changed
+
+- Redesigned the composer. The model picker moved from the top "Ask <model>" row into the bottom action bar, next to the send button; new send and stop icons (light/dark variants); the saved-prompts button now uses a stroke icon; the composer corners are squared off (16px → 4px radius); and the input no longer hard-codes `font-size`/`line-height`, so it follows the configurable font sizing.
+
 ## 0.4.145
 
 ### Added
