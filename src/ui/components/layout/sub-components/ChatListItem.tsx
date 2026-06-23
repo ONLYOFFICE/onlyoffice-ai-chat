@@ -22,6 +22,9 @@ const DownloadIcon = () => <Icon name="btn-save" size={24} isStroke />;
 const RenameIcon = () => <Icon name="btn-rename" size={24} />;
 const RemoveIcon = () => <Icon name="btn-remove" size={24} />;
 
+const activeThreadMarker =
+  "relative before:content-[''] before:absolute before:start-0 before:w-[2px] before:h-full before:bg-[var(--chat-list-item-active-marker-bg)] hover:before:hidden";
+
 const ChatListItemComponent = ({
   thread,
   isActive,
@@ -97,14 +100,14 @@ const ChatListItemComponent = ({
   return (
     <div
       key={thread.threadId}
-      className={`cursor-pointer rounded-[4px] h-[36px] min-h-[36px] flex items-center justify-between ${
+      className={`cursor-pointer rounded-[4px] h-[28px] min-h-[28px] px-[8px] flex items-center justify-between hover:bg-[var(--chat-list-item-hover-background-color)] ${
         isRenameInputVisible
-          ? ""
-          : `px-[12px] ${
-              isActive || isOpen
-                ? "bg-[var(--chat-list-item-active-background-color)]"
-                : "hover:bg-[var(--chat-list-item-hover-background-color)] active:bg-[var(--chat-list-item-active-background-color)]"
-            }`
+          ? "px-[0px]"
+          : isOpen
+            ? "bg-[var(--chat-list-item-hover-background-color)]"
+            : isActive
+              ? activeThreadMarker
+              : "active:bg-[var(--chat-list-item-active-background-color)]"
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {

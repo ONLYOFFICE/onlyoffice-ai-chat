@@ -28,6 +28,14 @@ export interface WidgetConfig {
    */
   hideSettingsButton?: boolean;
   /**
+   * Icon name for the chat-history panel's close button (top-right).
+   * Defaults to `"btn-close"` (the "×" icon). When the widget is embedded in
+   * a host panel that already provides its own close button, set this to
+   * `"btn-arrow-up"` to show a back/collapse arrow instead, avoiding two
+   * stacked "×" controls.
+   */
+  chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
+  /**
    * Hide the "Always allow" checkbox in the tool-call confirmation dialog.
    * When hidden, the host can only approve/deny a single call at a time and
    * cannot opt into persisting the allow decision for the tool.

@@ -106,6 +106,12 @@ export interface AIChatWidgetProps {
   hiddenWebSearchProviders?: WebSearchProviderId[];
   hideProfilePicker?: boolean;
   hideSettingsButton?: boolean;
+  /**
+   * Icon name for the chat-history panel's close button. Defaults to
+   * `"btn-close"`; set to `"btn-arrow-up"` when the host panel already has
+   * its own close button. See {@link WidgetConfig.chatHistoryCloseIcon}.
+   */
+  chatHistoryCloseIcon?: WidgetConfig["chatHistoryCloseIcon"];
   hideToolAllowAlways?: WidgetConfig["hideToolAllowAlways"];
   /**
    * Render the "Add model" form in a two-row (horizontal) layout
@@ -254,6 +260,7 @@ export const AIChatWidget = React.forwardRef<
       hiddenWebSearchProviders,
       hideProfilePicker,
       hideSettingsButton,
+      chatHistoryCloseIcon,
       hideToolAllowAlways,
       isAddModelCardHorizontal,
       onSettingsClick,
@@ -284,6 +291,7 @@ export const AIChatWidget = React.forwardRef<
       () => ({
         hideProfilePicker,
         hideSettingsButton,
+        chatHistoryCloseIcon,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
@@ -309,6 +317,7 @@ export const AIChatWidget = React.forwardRef<
       [
         hideProfilePicker,
         hideSettingsButton,
+        chatHistoryCloseIcon,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,

@@ -14,6 +14,8 @@
   --border-error: #f62211;
   --border-sidebar-icon: #666666;
 
+  --border-toolbar: #585858;
+
   --highlight-button-hover: #555555;
   --highlight-button-pressed: #707070;
   --highlight-button-hover-on-active: #999999;
@@ -62,6 +64,8 @@
   --chat-list-item-color: var(--text-normal);
   --chat-list-item-hover-background-color: var(--highlight-button-hover);
   --chat-list-item-active-background-color: var(--highlight-button-pressed);
+
+  --chat-list-item-active-marker-bg: var(--border-toolbar);
 
   /* icon button */
   --icon-button-color: var(--icon-normal);

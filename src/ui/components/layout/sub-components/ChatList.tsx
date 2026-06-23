@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
 import { IconButton } from "../../icon-button";
 import { Input } from "../../input";
 import { ChatListItem } from "./ChatListItem";
@@ -15,6 +16,8 @@ const ChatList = () => {
   const onDownloadThread = useThreadsStore((s) => s.onDownloadThread);
   const onClearThreadHistory = useThreadsStore((s) => s.onClearThreadHistory);
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
+  const { chatHistoryCloseIcon } = useWidgetConfig();
+  const closeIconName = chatHistoryCloseIcon ?? "btn-close";
 
   const [searchValue, setSearchValue] = React.useState("");
 
@@ -61,24 +64,24 @@ const ChatList = () => {
 
   return (
     <div className="w-full h-full max-h-full flex flex-col overflow-y-auto">
-      <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[24px] px-[24px]">
-        <div className="flex items-center justify-between px-[8px]">
+      <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[8px] px-[12px]">
+        <div className="flex items-center justify-between">
           <h4 className="text-fs-13 leading-[var(--lh-16)] font-bold text-[var(--chat-list-color)]">
             {t("ChatHistory")}
           </h4>
           <IconButton
-            iconName="btn-close"
+            iconName={closeIconName}
             size={24}
             onClick={() => setCurrentPage("chat")}
           />
         </div>
         {!isEmptyList && (
-          <div className="mt-[16px]">
+          <div className="mt-[8px]">
             <Input
               className="w-full"
               type="search"
               placeholder={t("Search")}
-              icon="search"
+              icon="btn-menu-search"
               value={searchValue}
               onChange={onChangeSearchValue}
               onClear={() => setSearchValue("")}
@@ -86,17 +89,17 @@ const ChatList = () => {
           </div>
         )}
       </div>
-      <div className="flex flex-col px-[24px] pb-[24px]">
+      <div className="flex flex-col px-[12px] pb-[8px]">
         {isEmptyList ? (
-          <p className="text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[24px]">
+          <p className="text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[8px]">
             {t("NoChatYet")}
           </p>
         ) : (
-          <div className="flex flex-col mt-[16px]">
+          <div className="flex flex-col mt-[8px]">
             {showingThreads.length ? (
               groups.map((group) => (
-                <div key={group.key} className="flex flex-col">
-                  <p className="select-none font-normal text-fs-11 leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] mt-[16px] mb-[8px] first:mt-0">
+                <div key={group.key} className="flex flex-col mb-[8px]">
+                  <p className="select-none font-normal text-fs-11 leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[8px]">
                     {group.label}
                   </p>
                   {group.threads.map((thread) => (

@@ -9,6 +9,7 @@ export type IconName =
   | "ask-ai"
   | "attachment"
   | "attention"
+  | "btn-arrow-up"
   | "btn-close"
   | "btn-close.small"
   | "btn-copy"

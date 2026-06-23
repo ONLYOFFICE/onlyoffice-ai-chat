@@ -20,6 +20,8 @@
   --border-error: #f62211;
   --border-sidebar-icon: #c0c0c0;
 
+  --border-toolbar: #cbcbcb;
+
   --highlight-button-hover: #e0e0e0;
   --highlight-button-pressed: #cbcbcb;
   --highlight-button-hover-on-active: #c0c0c0;
@@ -68,6 +70,8 @@
   --chat-list-item-color: var(--text-normal);
   --chat-list-item-hover-background-color: var(--highlight-button-hover);
   --chat-list-item-active-background-color: var(--highlight-button-pressed);
+
+  --chat-list-item-active-marker-bg: var(--border-toolbar);
 
   /* icon button */
   --icon-button-color: var(--icon-normal);

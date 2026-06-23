@@ -1,5 +1,4 @@
 import React from "react";
-import { useI18n } from "../../providers/LocalesProvider";
 import { cn } from "../../../shared/utils";
 import { Icon } from "../icon";
 
@@ -13,24 +12,16 @@ const INPUT_COLOR = "var(--input-color)";
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, isError, icon, onClear, ...props }, ref) => {
-    const { isRTL } = useI18n();
-
     return (
       <div className={`relative ${className}`}>
-        {icon && (
-          <div
-            className={cn(
-              "absolute top-[50%] translate-y-[-50%] w-[20px] h-[20px] flex items-center justify-center",
-              isRTL ? "right-[10px]" : "left-[10px]"
-            )}
-          >
+        {icon && !(props.type === "search" && props.value) && (
+          <div className="absolute top-[50%] translate-y-[-50%] end-[10px] w-[20px] h-[20px] flex items-center justify-center">
             <Icon name={icon} size={20} color={INPUT_COLOR} isStroke />
           </div>
         )}
         <input
           ref={ref}
           type={props.type ?? "text"}
-          dir={isRTL ? "rtl" : "ltr"}
           className={cn(
             "h-[24px] rounded-[4px] box-border border border-[var(--input-border-color)]",
             "bg-[var(--input-background-color)]",
@@ -41,8 +32,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             "outline-none",
             "placeholder:text-[var(--input-placeholder-color)] text-[var(--input-color)]",
             "[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden",
-            icon ? "ps-[40px]" : "ps-[12px]",
-            props.type === "search" && props.value ? "pe-[40px]" : "pe-[2px]",
+            "ps-[12px]",
+            icon || (props.type === "search" && props.value)
+              ? "pe-[40px]"
+              : "pe-[2px]",
             className
           )}
           style={{
@@ -56,10 +49,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <button
             type="button"
             onClick={onClear}
-            className={cn(
-              "absolute top-[50%] translate-y-[-50%] w-[20px] h-[20px] flex items-center justify-center cursor-pointer",
-              isRTL ? "left-[10px]" : "right-[10px]"
-            )}
+            className="absolute top-[50%] translate-y-[-50%] end-[10px] w-[20px] h-[20px] flex items-center justify-center cursor-pointer"
           >
             <Icon name="clear.search" size={20} color={INPUT_COLOR} isStroke />
           </button>

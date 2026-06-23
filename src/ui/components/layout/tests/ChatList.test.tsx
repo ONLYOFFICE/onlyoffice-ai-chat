@@ -40,6 +40,14 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
+let mockWidgetConfig: {
+  chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
+} = {};
+
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => mockWidgetConfig,
+}));
+
 vi.mock("../../icon-button", () => ({
   IconButton: ({
     iconName,
@@ -100,6 +108,7 @@ describe("ChatList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     currentThreads = mockThreads;
+    mockWidgetConfig = {};
   });
 
   it("renders the ChatHistory heading", () => {
@@ -134,6 +143,24 @@ describe("ChatList", () => {
   it("clicking close button navigates to chat", () => {
     render(<ChatList />);
     fireEvent.click(screen.getByTestId("icon-btn-btn-close"));
+    expect(mockSetCurrentPage).toHaveBeenCalledWith("chat");
+  });
+
+  it("uses the close icon for the dismiss button by default", () => {
+    render(<ChatList />);
+    expect(screen.getByTestId("icon-btn-btn-close")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("icon-btn-btn-arrow-up")
+    ).not.toBeInTheDocument();
+  });
+
+  it("uses the arrow-up icon when chatHistoryCloseIcon is 'btn-arrow-up'", () => {
+    mockWidgetConfig = { chatHistoryCloseIcon: "btn-arrow-up" };
+    render(<ChatList />);
+    const dismiss = screen.getByTestId("icon-btn-btn-arrow-up");
+    expect(dismiss).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-btn-close")).not.toBeInTheDocument();
+    fireEvent.click(dismiss);
     expect(mockSetCurrentPage).toHaveBeenCalledWith("chat");
   });
 

@@ -14,8 +14,10 @@
   --border-error: #f62211;
   --border-sidebar-icon: #dfdfdf;
 
-  --highlight-button-hover: #e0e0e0;
-  --highlight-button-pressed: #cccccc;
+  --border-toolbar: #cbcbcb;
+
+  --highlight-button-hover: #00000014;
+  --highlight-button-pressed: #0000001f;
   --highlight-button-hover-on-active: #d4d4d4;
   --highlight-button-pressed-on-active: #e1e1e1;
   --highlight-accent-button-hover: #5293e2;
@@ -36,7 +38,7 @@
   --text-normal: #000000cc;
   --text-normal-pressed: #000000cc;
   --text-secondary: #00000099;
-  --text-tertiary: #7F7F7F;
+  --text-tertiary: #00000066;
   --text-link: #445799;
   --text-inverse: #ffffff;
   --text-contrast-background: #ffffff;
@@ -62,6 +64,8 @@
   --chat-list-item-color: var(--text-normal);
   --chat-list-item-hover-background-color: var(--highlight-button-hover);
   --chat-list-item-active-background-color: var(--highlight-button-pressed);
+
+  --chat-list-item-active-marker-bg: var(--border-toolbar);
 
   /* icon button */
   --icon-button-color: var(--icon-normal);
