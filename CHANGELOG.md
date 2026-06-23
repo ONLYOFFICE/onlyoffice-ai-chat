@@ -12,7 +12,7 @@
 - Redesigned the composer. The model picker moved from the top "Ask <model>" row into the bottom action bar, next to the send button; new send and stop icons (light/dark variants); the saved-prompts button now uses a stroke icon; the composer corners are squared off (16px → 4px radius); and the input no longer hard-codes `font-size`/`line-height`, so it follows the configurable font sizing.
 - Redesigned the chat-history panel: tighter, denser spacing (24px gutters → 8/12px, smaller header and group-header margins), restyled date-group headers, and a new search icon (a cleaner single-stroke magnifying glass). The search field's icon now sits at the trailing (end) edge of the input instead of the leading edge, and hides while the clear ("×") button is shown.
 - The active conversation's accent marker is now theme-driven. New `--border-toolbar` token (reused by `--chat-list-item-active-marker-bg`) replaces the hard-coded `#585858` bar — `#cbcbcb` in light themes, `#585858` in dark.
-- White and night themes: hover/pressed backgrounds (`--highlight-button-hover` / `--highlight-button-pressed`) and `--text-tertiary` now use translucent (alpha) colors so they layer correctly over any surface, replacing the previous opaque values.
+- White and night themes: hover/pressed backgrounds (`--highlight-button-hover` / `--highlight-button-pressed`) now use translucent (alpha) colors so they layer correctly over any surface, replacing the previous opaque values.
 
 ### Fixed
 
