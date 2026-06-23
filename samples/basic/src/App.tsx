@@ -23,7 +23,7 @@ document.documentElement.style.backgroundColor = theme.bg;
 
 export function App() {
   const [storage, setStorage] = useState<StorageAdapter | null>(null);
-  const { width, onMouseDown } = useResize(520);
+  const { width, onMouseDown } = useResize(400, 213);
 
   useEffect(() => {
     createStorage().then(setStorage);
