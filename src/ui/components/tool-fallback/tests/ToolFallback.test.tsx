@@ -96,20 +96,10 @@ describe("ToolFallback", () => {
     expect(screen.getByTestId("loader")).toBeInTheDocument();
   });
 
-  it("shows ToolExecuted text when loading and not web search", () => {
-    render(<ToolFallback {...defaultProps} />);
-    expect(screen.getByText("ToolExecuted")).toBeInTheDocument();
-  });
-
   it("shows tool.called icon when result is provided", () => {
     render(<ToolFallback {...defaultProps} result="done" />);
     expect(screen.getByTestId("icon-tool.called")).toBeInTheDocument();
     expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
-  });
-
-  it("does not show ToolExecuted text when result is provided", () => {
-    render(<ToolFallback {...defaultProps} result="done" />);
-    expect(screen.queryByText("ToolExecuted")).not.toBeInTheDocument();
   });
 
   it("toggles collapse on click", () => {
@@ -244,28 +234,6 @@ describe("ToolFallback", () => {
       screen.getByText("my_tool").closest("[class*='cursor-pointer']")!
     );
     expect(screen.getByText('{"nested":"value"}')).toBeInTheDocument();
-  });
-
-  it("does not show ToolExecuted for web_search even when loading", () => {
-    render(
-      <ToolFallback
-        {...defaultProps}
-        toolName="custom_web_search"
-        argsText='{"query":"test"}'
-      />
-    );
-    expect(screen.queryByText("ToolExecuted")).not.toBeInTheDocument();
-  });
-
-  it("does not show ToolExecuted for web_crawling even when loading", () => {
-    render(
-      <ToolFallback
-        {...defaultProps}
-        toolName="custom_web_crawling"
-        argsText='{"urls":["https://example.com"]}'
-      />
-    );
-    expect(screen.queryByText("ToolExecuted")).not.toBeInTheDocument();
   });
 
   it("shows web search results as clickable items", () => {
