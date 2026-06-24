@@ -2,6 +2,7 @@
 // Run `npm run generate:icons` to regenerate from src/assets/.
 
 export type IconName =
+  | "arrow"
   | "arrow.bottom"
   | "arrow.bottom.big"
   | "arrow.right"

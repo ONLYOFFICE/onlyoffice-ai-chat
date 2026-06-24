@@ -83,7 +83,7 @@ const DropdownMenuComponent = ({
           data-align={effectiveAlign}
           data-orientation="vertical"
           className={cn(
-            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[8px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[8px] max-h-56 overflow-y-auto flex flex-col gap-[4px]",
+            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[4px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[5px] max-h-56 overflow-y-auto flex flex-col",
             matchTriggerWidth
               ? "min-w-[150px] w-[var(--radix-dropdown-menu-trigger-width)]"
               : "w-fit",

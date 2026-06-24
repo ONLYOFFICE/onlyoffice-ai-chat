@@ -242,7 +242,7 @@
   --chat-composer-background-color: var(--background-normal-element-light);
   --chat-composer-border-color: var(--border-divider);
   --chat-composer-hover-border-color: var(--highlight-button-hover);
-  --chat-composer-active-border-color: var(--background-accent-button);
+  --chat-composer-active-border-color: var(--input-active-border-color);
   --chat-composer-text-color: var(--text-normal);
   --chat-composer-placeholder-color: var(--text-secondary);
 

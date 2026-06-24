@@ -8,15 +8,15 @@ export type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   onClear?: () => void;
 };
 
-const INPUT_COLOR = "var(--input-color)";
+const ICON_COLOR = "var(--icon-normal)";
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, isError, icon, onClear, ...props }, ref) => {
     return (
       <div className={`relative ${className}`}>
         {icon && !(props.type === "search" && props.value) && (
-          <div className="absolute top-[50%] translate-y-[-50%] end-[10px] w-[20px] h-[20px] flex items-center justify-center">
-            <Icon name={icon} size={20} color={INPUT_COLOR} isStroke />
+          <div className="absolute top-[50%] translate-y-[-50%] end-[0px] w-[24px] h-[24px] flex items-center justify-center">
+            <Icon name={icon} size={24} color={ICON_COLOR} isStroke />
           </div>
         )}
         <input
@@ -32,7 +32,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             "outline-none",
             "placeholder:text-[var(--input-placeholder-color)] text-[var(--input-color)]",
             "[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden",
-            "ps-[12px]",
+            "ps-[4px]",
             icon || (props.type === "search" && props.value)
               ? "pe-[40px]"
               : "pe-[2px]",
@@ -49,9 +49,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <button
             type="button"
             onClick={onClear}
-            className="absolute top-[50%] translate-y-[-50%] end-[10px] w-[20px] h-[20px] flex items-center justify-center cursor-pointer"
+            className="absolute top-[50%] translate-y-[-50%] end-[0px] w-[24px] h-[24px] flex items-center justify-center cursor-pointer"
           >
-            <Icon name="clear.search" size={20} color={INPUT_COLOR} isStroke />
+            <Icon name="clear.search" size={24} color={ICON_COLOR} isStroke />
           </button>
         )}
       </div>

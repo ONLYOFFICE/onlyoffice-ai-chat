@@ -9,7 +9,7 @@
   --background-scroll-thumb: #555555;
 
   --border-divider: #505050;
-  --border-regular-control: #585858;
+  --border-regular-control: #686868;
   --border-control-focus: #cccccc;
   --border-error: #f62211;
   --border-sidebar-icon: #585858;
@@ -32,12 +32,12 @@
   --checkbox-background-checked: #f3f3f3;
   --checkbox-border-normal: #c0c0c0;
 
-  --icon-normal: #ffffffcc;
+  --icon-normal: #EFEFEF;
   --icon-success: #009900;
 
-  --text-normal: #ffffffcc;
-  --text-normal-pressed: #ffffffcc;
-  --text-secondary: #ffffff99;
+  --text-normal: #F3F3F3;
+  --text-normal-pressed: #F3F3F3;
+  --text-secondary: #CBCBCB;
   --text-tertiary: #B2B2B2;
   --text-link: #acbfff;
   --text-inverse: #333333;
@@ -100,13 +100,13 @@
   --button-default-disabled-background-color: var(--background-normal);
 
   /* input */
-  --input-background-color: var(--background-normal-element);
+  --input-background-color: var(--background-normal);
   --input-placeholder-color: var(--text-tertiary);
   --input-color: var(--text-normal);
   --input-border-color: var(--border-regular-control);
-  --input-hover-background-color: var(--highlight-button-hover);
-  --input-hover-border-color: var(--checkbox-border-normal);
-  --input-active-border-color: var(--background-accent-button);
+  --input-hover-background-color: var(--background-normal);
+  --input-hover-border-color: var(--border-regular-control);
+  --input-active-border-color: #306AD9;
   --input-active-background-color: var(--background-normal);
   --input-error-color: var(--border-error);
   --input-border-radius: 4px;
@@ -262,7 +262,7 @@
   --chat-composer-background-color: var(--background-normal-element-light);
   --chat-composer-border-color: var(--border-divider);
   --chat-composer-hover-border-color: var(--highlight-button-hover);
-  --chat-composer-active-border-color: var(--background-accent-button);
+  --chat-composer-active-border-color: var(--input-active-border-color);
   --chat-composer-text-color: var(--text-normal);
   --chat-composer-placeholder-color: var(--text-tertiary);
 
