@@ -99,7 +99,7 @@ const ThreadInner = () => {
         </ThreadPrimitive.If>
 
         <ThreadPrimitive.If empty={false}>
-          <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto">
+          <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto">
             <ThreadPrimitive.Messages
               components={{
                 UserMessage,
@@ -118,7 +118,7 @@ const ThreadInner = () => {
               </div>
             ) : null}
 
-            <motion.div className="min-h-6 min-w-6 shrink-0" />
+            <motion.div className="min-h-[8px] min-w-6 shrink-0" />
           </ThreadPrimitive.Viewport>
 
           <Composer />

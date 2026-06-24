@@ -117,7 +117,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   const imageData = imageBase64 ?? refImageBase64;
 
   return (
-    <div className="my-[16px] flex w-full flex-col gap-3">
+    <div className="my-[8px] flex w-full flex-col gap-[8px]">
       <div
         className="flex items-center gap-[10px] cursor-pointer"
         onClick={() => {
@@ -142,11 +142,6 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
         ) : (
           <Loader size={16} />
         )}
-        {isLoading && !isWebSearch && !isWebCrawling ? (
-          <p className="text-[var(--chat-message-tool-call-header-color)] font-normal leading-[var(--lh-16)]">
-            {t("ToolExecuted")}
-          </p>
-        ) : null}
         <span className="flex items-center gap-[8px] rounded-[4px] ps-[4px] pe-[8px] font-normal text-[var(--chat-message-tool-call-name-color)] bg-[var(--chat-message-tool-call-name-background-color)] min-w-0 w-fit">
           {isWebSearch ? (
             <Icon name="btn-web-search" size={24} color={TOOL_CALL_COLOR} />
@@ -182,7 +177,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
         )}
       </div>
       {!isCollapsed ? (
-        <div className="flex flex-col gap-[24px] mt-[8px] p-[12px] bg-[var(--chat-message-tool-call-body-background-color)] rounded-[12px]">
+        <div className="flex flex-col gap-[8px] mt-[8px] px-[12px] py-[8px] bg-[var(--chat-message-tool-call-body-background-color)] rounded-[12px]">
           {isWebSearch ? null : (
             <div className="">
               <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] font-bold">
