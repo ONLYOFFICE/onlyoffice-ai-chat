@@ -110,6 +110,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
             }),
             EditorView.theme({
               ".cm-content": {
+                minHeight: "215px",
                 padding: "10px",
               },
               ".cm-focused": {
@@ -124,6 +125,9 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
                 // `hidden` never clips here since there is no height cap.
                 overflowX: "auto",
                 overflowY: "hidden",
+              },
+              ".cm-gutters": {
+                minHeight: "215px",
               },
             }),
           ],
