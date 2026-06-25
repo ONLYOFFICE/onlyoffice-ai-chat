@@ -17,7 +17,7 @@ const InitialSetup = () => {
 
   return (
     <div className="aui-root flex h-full w-full bg-[var(--layout-background-color)]">
-      <div className="w-full max-w-[560px] flex flex-col mx-[32px] mt-[32px] overflow-hidden">
+      <div className="w-full max-w-[560px] flex flex-col mx-[32px] mt-[32px] overflow-hidden select-none">
         <AddModelCard
           variant="standalone"
           isHorizontal={isAddModelCardHorizontal}

@@ -187,7 +187,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
       id="config-editor"
       data-testid="config-editor"
       dir={isRTL ? "rtl" : "ltr"}
-      className="flex flex-col w-full py-[8px] mb-[8px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)]"
+      className="flex flex-col w-full py-[8px] mb-[8px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)] select-text"
     >
       <div className="flex items-center justify-between ps-[16px] pe-[8px] mb-[8px]">
         <p className="font-bold text-fs-12 leading-[var(--lh-18)] text-[var(--settings-header-color)]">
