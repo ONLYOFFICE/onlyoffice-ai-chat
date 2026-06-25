@@ -8,11 +8,16 @@ import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { ComposerAction } from "./ComposerAction";
 
 const Composer = () => {
-  const { useAttachmentsStore, useProfilesStore, selectCurrentChatProfile } =
-    useStores();
+  const {
+    useAttachmentsStore,
+    useProfilesStore,
+    selectCurrentChatProfile,
+    useMessageStore,
+  } = useStores();
   const attachmentFiles = useAttachmentsStore((s) => s.attachmentFiles);
   const attachmentImages = useAttachmentsStore((s) => s.attachmentImages);
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
+  const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const { t } = useI18n();
   const composerRuntime = useComposerRuntime();
   const composerBridge = useComposerBridge();
@@ -73,6 +78,11 @@ const Composer = () => {
           aria-label="Message input"
           disabled={!currentProfile}
           data-testid="composer-input"
+          onKeyDown={(e) => {
+            if (isStreamRunning && e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+            }
+          }}
         />
         <ComposerAction />
       </ComposerPrimitive.Root>
