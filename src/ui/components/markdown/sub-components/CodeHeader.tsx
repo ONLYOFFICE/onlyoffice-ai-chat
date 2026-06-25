@@ -22,9 +22,9 @@ const CodeHeader = ({ language, code }: CodeHeaderProps) => {
         onClick={onCopy}
         visible={!isCopied}
       >
-        {!isCopied && <IconButton iconName="btn-copy" size={24} />}
+        {!isCopied && <IconButton iconName="btn-copy" size={20} isStroke />}
         {isCopied && (
-          <IconButton iconName="checked" size={24} isStroke disableHover />
+          <IconButton iconName="checked" size={20} isStroke disableHover />
         )}
       </TooltipIconButton>
     </div>

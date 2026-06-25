@@ -128,6 +128,7 @@ export interface ThemeTokens {
   "--icon-button-hover-on-active-background-color"?: string;
   "--icon-button-pressed-background-color"?: string;
   "--icon-button-pressed-on-active-background-color"?: string;
+  "--icon-gray-secondary"?: string;
   "--icon-normal"?: string;
   "--icon-success"?: string;
   "--input-active-background-color"?: string;

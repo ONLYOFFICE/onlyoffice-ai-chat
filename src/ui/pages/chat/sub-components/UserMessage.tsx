@@ -201,12 +201,12 @@ const UserActionBar = () => {
 
   return (
     <>
-      <ActionBarPrimitive.Root className="col-start-2 mt-1 flex justify-end gap-[8px]">
+      <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[2px]">
         <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onCopy}>
           {copied ? (
-            <IconButton iconName="checked" size={24} isStroke disabled />
+            <IconButton iconName="checked" size={20} isStroke color="var(--icon-gray-secondary)" disabled />
           ) : (
-            <IconButton iconName="btn-copy" size={24} />
+            <IconButton iconName="btn-copy" size={20} isStroke color="var(--icon-gray-secondary)" />
           )}
         </TooltipIconButton>
         <DropdownMenu
@@ -218,6 +218,7 @@ const UserActionBar = () => {
               size={20}
               isActive={isOpen}
               insideElement
+              color="var(--icon-gray-secondary)"
             />
           }
           items={[
