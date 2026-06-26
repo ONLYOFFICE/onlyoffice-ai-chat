@@ -22,6 +22,7 @@ export const generateTitle = async (args: ActionArgs): Promise<string> => {
     model: args.profile.modelId,
     useResponsesApi: args.profile.useResponsesApi === true,
     systemPrompt: resolveSystemPrompt(systemPrompt, args.prompt),
+    withReasoning: args.isReasoning,
     signal: args.signal,
   });
   return title.trim();

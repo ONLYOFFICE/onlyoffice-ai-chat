@@ -4,6 +4,7 @@
 
 ### Added
 
+- Extended reasoning is now available on the one-shot (`sendMessageSync`) path, not just streaming chat. `SendMessageSyncArgs` gained a `withReasoning?` flag (mirroring `SendMessageArgs`), wired from `actionArgs.isReasoning` through every one-shot action (summarization, translation, OCR, vision, text-analysis, title, custom-prompt, and the image-generation text fallback). The OpenAI, Anthropic, GenAI, and Mistral providers honor it in their sync requests using the same per-provider mapping as the streaming path; other providers ignore it. Defaults to off, so existing one-shot calls are unchanged.
 - Composer input now shows an "Ask anything…" placeholder, translated across all locales.
 - `chatHistoryCloseIcon` widget config — chooses the icon for the chat-history panel's close button (`"btn-close"` default, or `"btn-arrow-up"`). Lets hosts that embed the widget in a panel with its own close button show a back/collapse arrow instead of a second "×".
 

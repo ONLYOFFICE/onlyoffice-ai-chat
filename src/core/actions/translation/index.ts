@@ -19,6 +19,7 @@ export const translate = async (
     model: args.profile.modelId,
     useResponsesApi: args.profile.useResponsesApi === true,
     systemPrompt: resolveSystemPrompt(systemPrompt, args.prompt),
+    withReasoning: args.isReasoning,
     signal: args.signal,
   });
   return { role: "assistant", content: [{ type: "text", text }] };

@@ -64,9 +64,9 @@ class MistralProvider extends AbstractBaseProvider {
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
-    const { messages, model, systemPrompt } = args;
+    const { messages, model, systemPrompt, withReasoning } = args;
     const response = await this.client.chat.complete({
-      model,
+      model: withReasoning ? resolveReasoningModel(model) : model,
       messages: [
         { role: "system", content: systemPrompt },
         ...convertMessages(messages),
