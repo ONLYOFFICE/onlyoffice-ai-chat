@@ -6,6 +6,7 @@
 
 - Composer input now shows an "Ask anything…" placeholder, translated across all locales.
 - `chatHistoryCloseIcon` widget config — chooses the icon for the chat-history panel's close button (`"btn-close"` default, or `"btn-arrow-up"`). Lets hosts that embed the widget in a panel with its own close button show a back/collapse arrow instead of a second "×".
+- Per-section font-size tokens for the chat-history list: `--chat-list-title-font-size`, `--chat-list-group-header-font-size`, and `--chat-list-item-font-size`. They default to the existing `--fs-*` scale (sizing unchanged), so hosts can resize the history list independently of the rest of the widget via `customTheme` or host CSS.
 
 ### Changed
 

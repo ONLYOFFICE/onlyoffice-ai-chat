@@ -66,7 +66,7 @@ const ChatList = () => {
     <div className="w-full h-full max-h-full flex flex-col overflow-y-auto">
       <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[8px] px-[12px]">
         <div className="flex items-center justify-between">
-          <h4 className="text-fs-13 leading-[var(--lh-16)] font-bold text-[var(--chat-list-color)]">
+          <h4 className="text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] font-bold text-[var(--chat-list-color)]">
             {t("ChatHistory")}
           </h4>
           <IconButton
@@ -99,7 +99,7 @@ const ChatList = () => {
             {showingThreads.length ? (
               groups.map((group) => (
                 <div key={group.key} className="flex flex-col mb-[8px]">
-                  <p className="select-none font-normal text-fs-11 leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[8px]">
+                  <p className="select-none font-normal text-[length:var(--chat-list-group-header-font-size,var(--fs-11))] leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[8px]">
                     {group.label}
                   </p>
                   {group.threads.map((thread) => (
