@@ -27,7 +27,8 @@ const IconButtonComponent = ({
     ? "active:enabled:bg-[var(--icon-button-pressed-background-color)]"
     : undefined;
 
-  const baseStyles = "border-none cursor-pointer rounded-[4px] bg-none p-0 m-0";
+  const baseStyles =
+    "border-none cursor-pointer rounded-[4px] border-none bg-none bg-transparent p-0 m-0";
   const layoutStyles = "flex items-center justify-center";
   const disabledStyles = "disabled:cursor-not-allowed disabled:opacity-[0.5]";
   const focusStyles =

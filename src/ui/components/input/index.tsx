@@ -51,7 +51,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <button
             type="button"
             onClick={onClear}
-            className="shrink-0 w-[24px] h-[24px] flex items-center justify-center cursor-pointer bg-transparent"
+            className="shrink-0 w-[24px] h-[24px] flex items-center justify-center cursor-pointer border-none bg-transparent"
           >
             <Icon name="clear.search" size={24} color={ICON_COLOR} isStroke />
           </button>

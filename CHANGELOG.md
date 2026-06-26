@@ -13,6 +13,7 @@
 
 ### Changed
 
+- `IconButton` now sets an explicit `bg-transparent` (transparent `background-color`) in its base styles, so it no longer inherits a surface background by default; hover / active / active-state backgrounds still apply on top.
 - Reworked the `Input` component's layout from absolute-positioned overlays to flexbox: the bordered box (border / background / hover / focus state, now `focus-within`) moved to the wrapper, the input fills the remaining space as a transparent flex child, and the trailing icon / clear button are laid out as flex siblings instead of being absolutely positioned over the input's padding. The error border now sits on the wrapper rather than the inner `<input>`.
 - Message action bar icons (`btn-copy`, `btn-reset`, `btn-save`) replaced with new 20 px stroke-based designs; icon size reduced from 24 px to 20 px for a denser interface. Action bar icons now render in a new `--icon-gray-secondary` theme token (`#949494` in light themes, `#B2B2B2` in dark themes) instead of the primary icon color.
 - Redesigned the initial-setup page: tighter page margins (32 px → 12 px) and a smaller, left-aligned heading on the "Connect AI Model" card (20 px bold centered → 13 px bold).
