@@ -20,8 +20,8 @@
   --highlight-button-pressed: #ffffff33;
   --highlight-button-hover-on-active: #606060;
   --highlight-button-pressed-on-active: #686868;
-  --highlight-accent-button-hover: #5293e2;
-  --highlight-accent-button-pressed: #3475c5;
+  --highlight-accent-button-hover: #306AD9;
+  --highlight-accent-button-pressed: #1B55C1;
   --highlight-primary-button-hover: #e5e5e5;
   --highlight-primary-button-pressed: #e5e5e5;
   --highlight-scroll-thumb-hover: #606060;
@@ -34,6 +34,7 @@
 
   --icon-normal: #EFEFEF;
   --icon-success: #009900;
+  --icon-gray-secondary: #B2B2B2;
 
   --text-normal: #F3F3F3;
   --text-normal-pressed: #F3F3F3;

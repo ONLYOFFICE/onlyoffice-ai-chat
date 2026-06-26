@@ -188,9 +188,9 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                 >
                   <Icon
                     name={isArgsCopied ? "checked" : "btn-copy"}
-                    size={24}
+                    size={20}
                     color={TOOL_CALL_COLOR}
-                    isStroke={isArgsCopied}
+                    isStroke
                   />
                 </span>
               </p>
@@ -289,9 +289,9 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                     >
                       <Icon
                         name={isResultCopied ? "checked" : "btn-copy"}
-                        size={24}
+                        size={20}
                         color={TOOL_CALL_COLOR}
-                        isStroke={isResultCopied}
+                        isStroke
                       />
                     </span>
                   </p>

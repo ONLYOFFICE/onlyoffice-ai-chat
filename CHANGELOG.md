@@ -10,6 +10,9 @@
 
 ### Changed
 
+- Message action bar icons (`btn-copy`, `btn-reset`, `btn-save`) replaced with new 20 px stroke-based designs; icon size reduced from 24 px to 20 px for a denser interface. Action bar icons now render in a new `--icon-gray-secondary` theme token (`#949494` in light themes, `#B2B2B2` in dark themes) instead of the primary icon color.
+- Redesigned the initial-setup page: tighter page margins (32 px → 12 px) and a smaller, left-aligned heading on the "Connect AI Model" card (20 px bold centered → 13 px bold).
+- Text selection disabled across settings pages (initial-setup, MCP servers, model assignment, web search) and tab labels; the MCP config editor retains `select-text` so JSON configs can still be copied.
 - Redesigned the composer. The model picker moved from the top "Ask <model>" row into the bottom action bar, next to the send button; new send and stop icons (light/dark variants); the saved-prompts button now uses a stroke icon; the composer corners are squared off (16px → 4px radius); and the input no longer hard-codes `font-size`/`line-height`, so it follows the configurable font sizing.
 - Redesigned the chat-history panel: tighter, denser spacing (24px gutters → 8/12px, smaller header and group-header margins), restyled date-group headers, and a new search icon (a cleaner single-stroke magnifying glass). The search field's icon now sits at the trailing (end) edge of the input instead of the leading edge, and hides while the clear ("×") button is shown.
 - The active conversation's accent marker is now theme-driven. New `--border-toolbar` token (reused by `--chat-list-item-active-marker-bg`) replaces the hard-coded `#585858` bar — `#cbcbcb` in light themes, `#585858` in dark.
@@ -20,6 +23,10 @@
 
 ### Fixed
 
+- Composer no longer submits a new message via Enter while a response is still streaming.
+- "Open" item in the chat-list context menu now closes the menu before navigating to the conversation.
+- Spinner loader no longer shrinks when placed inside a flex container (`shrink-0` added).
+- MCP server config editor (CodeMirror) now has a minimum height of 215 px so the editor and its gutter don't collapse on short configs.
 - Per-element font sizing now actually applies. The `--fs-*` type-scale tokens were used as `text-[var(--fs-*)]`, which Tailwind compiles to `color` (not `font-size`) — so element sizes never took effect and, on elements that also set a text color, the invalid `color` value clobbered it. Added `text-fs-*` utilities that set `font-size` explicitly and switched all usages to them.
 
 ## 0.4.145

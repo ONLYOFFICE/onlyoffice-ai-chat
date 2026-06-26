@@ -77,6 +77,12 @@ const ChatListItemComponent = ({
     setCurrentPage("chat");
   };
 
+  const onOpenClick = () => {
+    setIsOpen(false);
+    onSwitchToThread(thread.threadId);
+    setCurrentPage("chat");
+  };
+
   const onDeleteClick = () => {
     setIsDeleteDialogVisible(true);
     setIsOpen(false);
@@ -153,7 +159,7 @@ const ChatListItemComponent = ({
               items={[
                 {
                   text: t("Open"),
-                  onClick: onSwitchToThreadAction,
+                  onClick: onOpenClick,
                 },
                 {
                   icon: <DownloadIcon />,
