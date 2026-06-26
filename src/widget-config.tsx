@@ -36,6 +36,13 @@ export interface WidgetConfig {
    */
   chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
   /**
+   * Hide the chat-history panel's header row (the "Chat history" title and its
+   * close button). The search field and the thread list stay visible. Use this
+   * when the widget is embedded in a host panel that already provides its own
+   * title bar and close control, to avoid a duplicated header.
+   */
+  hideChatHistoryHeader?: boolean;
+  /**
    * Hide the "Always allow" checkbox in the tool-call confirmation dialog.
    * When hidden, the host can only approve/deny a single call at a time and
    * cannot opt into persisting the allow decision for the tool.

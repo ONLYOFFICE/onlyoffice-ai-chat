@@ -7,7 +7,17 @@ import { Input } from "../../input";
 import { ChatListItem } from "./ChatListItem";
 import { groupThreadsByDate } from "./ChatList.utils";
 
-const ChatList = () => {
+type ChatListProps = {
+  /**
+   * Hide the header row (the "Chat history" title and its close button),
+   * keeping the search field and thread list. When provided, this overrides
+   * the `hideChatHistoryHeader` widget config — useful when rendering
+   * `ChatList` directly (headless), where the widget config isn't in scope.
+   */
+  hideHeader?: boolean;
+};
+
+const ChatList = ({ hideHeader }: ChatListProps) => {
   const { useThreadsStore, useRouter } = useStores();
   const threads = useThreadsStore((s) => s.threads);
   const threadId = useThreadsStore((s) => s.threadId);
@@ -16,8 +26,9 @@ const ChatList = () => {
   const onDownloadThread = useThreadsStore((s) => s.onDownloadThread);
   const onClearThreadHistory = useThreadsStore((s) => s.onClearThreadHistory);
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
-  const { chatHistoryCloseIcon } = useWidgetConfig();
+  const { chatHistoryCloseIcon, hideChatHistoryHeader } = useWidgetConfig();
   const closeIconName = chatHistoryCloseIcon ?? "btn-close";
+  const isHeaderHidden = hideHeader ?? hideChatHistoryHeader;
 
   const [searchValue, setSearchValue] = React.useState("");
 
@@ -65,16 +76,18 @@ const ChatList = () => {
   return (
     <div className="w-full h-full max-h-full flex flex-col overflow-y-auto">
       <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[8px] px-[12px]">
-        <div className="flex items-center justify-between">
-          <h4 className="text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] font-bold text-[var(--chat-list-color)]">
-            {t("ChatHistory")}
-          </h4>
-          <IconButton
-            iconName={closeIconName}
-            size={24}
-            onClick={() => setCurrentPage("chat")}
-          />
-        </div>
+        {!isHeaderHidden && (
+          <div className="flex items-center justify-between">
+            <h4 className="text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] font-bold text-[var(--chat-list-color)]">
+              {t("ChatHistory")}
+            </h4>
+            <IconButton
+              iconName={closeIconName}
+              size={24}
+              onClick={() => setCurrentPage("chat")}
+            />
+          </div>
+        )}
         {!isEmptyList && (
           <div className="mt-[8px]">
             <Input
