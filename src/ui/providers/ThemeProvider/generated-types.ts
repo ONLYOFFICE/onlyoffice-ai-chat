@@ -9,6 +9,8 @@ export interface ThemeTokens {
   "--aui-font-base"?: string;
   "--aui-font-scale"?: string;
   "--background-accent-button"?: string;
+  "--background-card-normal"?: string;
+  "--background-icon-normal"?: string;
   "--background-normal"?: string;
   "--background-normal-element"?: string;
   "--background-normal-element-light"?: string;

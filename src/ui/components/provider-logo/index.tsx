@@ -18,7 +18,7 @@ export const ProviderLogo = ({
   return (
     <div
       className={cn(
-        "flex items-center justify-center w-[32px] h-[32px] rounded-[var(--model-card-logo-border-radius)] border border-[var(--model-card-logo-border-color)] shrink-0",
+        "flex items-center justify-center w-[32px] h-[32px] bg-[var(--model-card-logo-background)] rounded-[var(--model-card-logo-border-radius)] border border-[var(--model-card-logo-border-color)] shrink-0",
         className
       )}
     >
