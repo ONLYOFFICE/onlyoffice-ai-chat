@@ -8,6 +8,12 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // Pin the root explicitly. typescript-eslint v8 auto-infers
+    // `tsconfigRootDir`, which errors when multiple candidate roots exist
+    // (repo root + each `samples/*` with its own tsconfig.json).
+    languageOptions: {
+      parserOptions: { tsconfigRootDir: import.meta.dirname },
+    },
     plugins: {
       react: reactPlugin,
       "react-hooks": reactHooksPlugin,
