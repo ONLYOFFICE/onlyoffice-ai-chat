@@ -14,6 +14,13 @@ export type WebSearchConfig = {
 
   /** Whether this provider is cloud-hosted (vs. self-hosted). */
   isCloudProvider?: boolean;
+
+  /**
+   * Extra HTTP headers sent with each request to the ONLYOFFICE /
+   * cloud backend (e.g. `X-Tenant`). Merged after the derived
+   * `Authorization` header, so a custom header of the same name wins.
+   */
+  headers?: Record<string, string>;
 };
 
 /**

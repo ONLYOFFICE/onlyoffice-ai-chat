@@ -3,7 +3,8 @@ import type { ProviderFetch } from "../../../shared/provider-credentials";
 import { ProviderErrors } from "../../providers/errors";
 import type { WebSearchConfig } from "../../storage";
 
-const TEST_QUERY = { query: "test", numResults: 1 };
+const TEST_EXA_QUERY = { query: "test", numResults: 1 };
+const TEST_ONLYOFFICE_QUERY = { engine: "exa", query: "test", numResults: 1 };
 
 /**
  * Static validation of the config shape — runs before any network
@@ -42,8 +43,8 @@ export function validateConfigShape(
  *
  * Built-in branches:
  * - `isCloudProvider` or `provider === "ONLYOFFICE"`: POST to
- *   `<baseUrl>/api/2.0/ai/web-search/v1/search` with optional Bearer
- *   token.
+ *   `<baseUrl>/search` with optional Bearer token plus any
+ *   `config.headers`.
  * - `provider === "Exa"`: POST to `https://api.exa.ai/search` with
  *   `x-api-key`.
  * - Anything else: rejected as unknown provider.
@@ -62,15 +63,16 @@ export async function testWebSearchConnection(
 
   try {
     if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
-      const url = new URL("/api/2.0/ai/web-search/v1/search", config.baseUrl);
+      const url = new URL("search", config.baseUrl);
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
+        ...config.headers,
       };
-      if (config.key) headers.Authorization = `Bearer ${config.key}`;
       const response = await doFetch(url.href, {
         method: "POST",
         headers,
-        body: JSON.stringify(TEST_QUERY),
+        body: JSON.stringify(TEST_ONLYOFFICE_QUERY),
       });
       return mapResponse(response, !!config.key);
     }
@@ -82,7 +84,7 @@ export async function testWebSearchConnection(
           "Content-Type": "application/json",
           "x-api-key": config.key ?? "",
         },
-        body: JSON.stringify(TEST_QUERY),
+        body: JSON.stringify(TEST_EXA_QUERY),
       });
       return mapResponse(response, !!config.key);
     }
