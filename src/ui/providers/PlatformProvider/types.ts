@@ -163,7 +163,8 @@ export interface PlatformAdapter {
    * is delegated to this function. The host is responsible for
    * authentication, routing, and the actual network call; the library
    * only takes care of parsing the response in the format chosen by
-   * `Profile.basedOn` (currently `"openai"` only).
+   * `Profile.basedOn` (`"openai"`, `"anthropic"`, `"mistral"`,
+   * `"openrouter"`).
    *
    * Required when any `Profile` has `providerType: "external"` —
    * absence raises a clear error at request time and is independent of

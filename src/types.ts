@@ -346,9 +346,9 @@ export type Profile = {
 
   /**
    * Selects the response-format parser used by the `"external"`
-   * provider. Ignored for any other `providerType`. Currently only
-   * `"openai"` is implemented — other values are reserved and throw at
-   * request time.
+   * provider. Ignored for any other `providerType`. Supported values
+   * are `"openai"`, `"anthropic"`, `"mistral"` and `"openrouter"`;
+   * other values are reserved and throw at request time.
    */
   basedOn?: BuiltinProviderType;
 

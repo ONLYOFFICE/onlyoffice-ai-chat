@@ -8,18 +8,24 @@ import type {
   SendMessageResult,
 } from "../../../shared/send-message-args";
 import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args";
+import { AnthropicProvider } from "../anthropic";
 import { AbstractBaseProvider, type ProviderConstructor } from "../base";
+import { MistralProvider } from "../mistral";
 import { OpenAIProvider } from "../openai";
+import { OpenRouterProvider } from "../openrouter";
 import { externalInfo } from "./info";
 
 /**
- * Inner providers whose response parsers the External provider can
- * delegate to. Currently only OpenAI is implemented; the other
- * placeholders document the reserved values exposed through
- * `BuiltinProviderType` for `Profile.basedOn`.
+ * Inner providers whose request builders / response parsers the External
+ * provider can delegate to. Each entry reuses that provider's wire
+ * format end to end. The remaining `BuiltinProviderType` values stay
+ * reserved until they are wired up.
  */
 const SUPPORTED_BASED_ON = {
   openai: OpenAIProvider,
+  anthropic: AnthropicProvider,
+  mistral: MistralProvider,
+  openrouter: OpenRouterProvider,
 } satisfies Partial<Record<BuiltinProviderType, ProviderConstructor>>;
 
 function resolveInnerCtor(

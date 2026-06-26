@@ -197,10 +197,10 @@ export type Profile = {
    * Selects the response-format parser used by the `"external"`
    * provider. Ignored for any other `providerType`.
    *
-   * Currently the only supported value is `"openai"` — passing
-   * anything else raises an error at request time. Reserved values
-   * (`"anthropic"`, `"mistral"`, `"genai"`, …) are accepted by the
-   * type but not yet implemented.
+   * Supported values are `"openai"`, `"anthropic"`, `"mistral"` and
+   * `"openrouter"`. Remaining values (`"genai"`, `"stabilityai"`, …)
+   * are accepted by the type but not yet implemented; passing one
+   * raises an error at request time.
    */
   basedOn?: BuiltinProviderType;
 
