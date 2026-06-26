@@ -141,7 +141,7 @@ const ChatListItemComponent = ({
         />
       ) : (
         <>
-          <p className="text-[length:var(--chat-list-item-font-size,var(--fs-12))] text-[var(--chat-list-item-color)] font-normal truncate">
+          <p className="text-[length:var(--chat-list-item-font-size,var(--fs-12))] text-[var(--chat-list-item-color)] [font-weight:var(--chat-list-item-font-weight,400)] truncate">
             {thread.title}
           </p>
           {isHovered && !isRenameInputVisible ? (

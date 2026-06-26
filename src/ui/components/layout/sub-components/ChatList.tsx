@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from "react";
+import { cn } from "../../../../shared/utils";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
@@ -15,9 +16,15 @@ type ChatListProps = {
    * `ChatList` directly (headless), where the widget config isn't in scope.
    */
   hideHeader?: boolean;
+  /**
+   * Extra class names merged onto the root container for external styling.
+   * Resolved with `tailwind-merge`, so utilities here win over the built-in
+   * ones (e.g. pass `"h-auto px-0"` to override the defaults).
+   */
+  className?: string;
 };
 
-const ChatList = ({ hideHeader }: ChatListProps) => {
+const ChatList = ({ hideHeader, className }: ChatListProps) => {
   const { useThreadsStore, useRouter } = useStores();
   const threads = useThreadsStore((s) => s.threads);
   const threadId = useThreadsStore((s) => s.threadId);
@@ -74,11 +81,16 @@ const ChatList = ({ hideHeader }: ChatListProps) => {
   };
 
   return (
-    <div className="w-full h-full max-h-full flex flex-col overflow-y-auto">
+    <div
+      className={cn(
+        "w-full h-full max-h-full flex flex-col overflow-y-auto",
+        className
+      )}
+    >
       <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[8px] px-[12px]">
         {!isHeaderHidden && (
           <div className="flex items-center justify-between">
-            <h4 className="text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] font-bold text-[var(--chat-list-color)]">
+            <h4 className="text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] [font-weight:var(--chat-list-title-font-weight,700)] text-[var(--chat-list-color)]">
               {t("ChatHistory")}
             </h4>
             <IconButton
@@ -112,7 +124,7 @@ const ChatList = ({ hideHeader }: ChatListProps) => {
             {showingThreads.length ? (
               groups.map((group) => (
                 <div key={group.key} className="flex flex-col mb-[8px]">
-                  <p className="select-none font-normal text-[length:var(--chat-list-group-header-font-size,var(--fs-11))] leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[8px]">
+                  <p className="select-none [font-weight:var(--chat-list-group-header-font-weight,400)] text-[length:var(--chat-list-group-header-font-size,var(--fs-11))] leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[8px]">
                     {group.label}
                   </p>
                   {group.threads.map((thread) => (

@@ -190,6 +190,13 @@ describe("ChatList", () => {
     expect(screen.getByTestId("icon-btn-btn-close")).toBeInTheDocument();
   });
 
+  it("merges the className prop onto the root container", () => {
+    const { container } = render(<ChatList className="custom-list-xyz" />);
+    expect(container.firstChild).toHaveClass("custom-list-xyz");
+    // Built-in layout classes are kept.
+    expect(container.firstChild).toHaveClass("flex");
+  });
+
   it("clicking a thread item switches to thread and navigates to chat", () => {
     render(<ChatList />);
     fireEvent.click(screen.getByTestId("chat-item-t2"));

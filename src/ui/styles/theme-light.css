@@ -77,6 +77,13 @@
   --chat-list-group-header-font-size: initial;
   --chat-list-item-font-size: initial;
 
+  /* chat list font weights — override hooks only (same `initial` rationale as
+     the font sizes above). The effective defaults (bold title, normal group
+     headers and items) are baked into the component utilities as fallbacks. */
+  --chat-list-title-font-weight: initial;
+  --chat-list-group-header-font-weight: initial;
+  --chat-list-item-font-weight: initial;
+
   /* chat list item */
   --chat-list-item-color: var(--text-normal);
   --chat-list-item-hover-background-color: var(--highlight-button-hover);
