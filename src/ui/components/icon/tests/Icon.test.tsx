@@ -51,16 +51,20 @@ vi.mock("../../../providers/ThemeProvider", () => ({
 
 import { Icon } from "../index";
 
+const createMockEl = (attrs: Record<string, string> = {}) => ({
+  setAttribute: vi.fn(),
+  getAttribute: vi.fn((name: string) => attrs[name] ?? null),
+});
+
 const createMockSvg = () => {
-  const paths: { setAttribute: ReturnType<typeof vi.fn> }[] = [
-    { setAttribute: vi.fn() },
-    { setAttribute: vi.fn() },
-  ];
-  const circles: { setAttribute: ReturnType<typeof vi.fn> }[] = [
-    { setAttribute: vi.fn() },
-  ];
+  const paths = [createMockEl(), createMockEl()];
+  const circles = [createMockEl()];
+  const all = [...paths, ...circles];
   return {
+    // The component queries every shape type in one combined selector;
+    // the older single-type selectors are kept for backward compatibility.
     querySelectorAll: (selector: string) => {
+      if (selector.includes(",")) return all;
       if (selector === "path") return paths;
       if (selector === "circle") return circles;
       return [];
@@ -183,6 +187,53 @@ describe("Icon", () => {
     mockSvg.paths.forEach((path) => {
       expect(path.setAttribute).toHaveBeenCalledWith("stroke", "#00ff00");
     });
+  });
+
+  it("beforeInjection recolors each shape by its existing paint method", () => {
+    render(<Icon name="test" size={24} />);
+    expect(capturedBeforeInjection).not.toBeNull();
+
+    const strokeEl = createMockEl({ stroke: "#383838" });
+    const fillEl = createMockEl({ fill: "#383838" });
+    const bothEl = createMockEl({ stroke: "#000", fill: "#000" });
+    const bareEl = createMockEl();
+    const mockSvg = {
+      querySelectorAll: () => [strokeEl, fillEl, bothEl, bareEl],
+    };
+    capturedBeforeInjection!(mockSvg as unknown as SVGSVGElement);
+
+    // stroke-only shape: only stroke recolored
+    expect(strokeEl.setAttribute).toHaveBeenCalledWith(
+      "stroke",
+      "var(--icon-button-color)"
+    );
+    expect(strokeEl.setAttribute).not.toHaveBeenCalledWith(
+      "fill",
+      expect.anything()
+    );
+    // fill-only shape: only fill recolored
+    expect(fillEl.setAttribute).toHaveBeenCalledWith(
+      "fill",
+      "var(--icon-button-color)"
+    );
+    expect(fillEl.setAttribute).not.toHaveBeenCalledWith(
+      "stroke",
+      expect.anything()
+    );
+    // both declared: both recolored
+    expect(bothEl.setAttribute).toHaveBeenCalledWith(
+      "stroke",
+      "var(--icon-button-color)"
+    );
+    expect(bothEl.setAttribute).toHaveBeenCalledWith(
+      "fill",
+      "var(--icon-button-color)"
+    );
+    // neither declared: falls back to isStroke hint (fill by default)
+    expect(bareEl.setAttribute).toHaveBeenCalledWith(
+      "fill",
+      "var(--icon-button-color)"
+    );
   });
 
   it("beforeInjection does nothing when noColor is true", () => {
