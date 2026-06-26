@@ -121,9 +121,9 @@ export const AddModelCard = ({
                 <IconButton
                   className="cursor-pointer"
                   iconName="btn-menu-about"
-                  size={24}
+                  size={20}
                   disableHover
-                  isStroke
+                  noColor
                   onClick={() => setIsTooltipOpen((val) => !val)}
                 />
               </TooltipTrigger>
