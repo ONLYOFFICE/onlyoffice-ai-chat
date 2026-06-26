@@ -96,6 +96,7 @@ const ModelAssignment = () => {
           reserveErrorSpace={false}
           className="mb-[12px]"
           icon="ask-ai"
+          iconIsStroke
         >
           <ComboBox
             className="w-full h-[24px]"
@@ -110,6 +111,7 @@ const ModelAssignment = () => {
           reserveErrorSpace={false}
           className="mb-[12px]"
           icon="code"
+          iconIsStroke
         >
           <ComboBox
             className="w-full h-[24px]"
@@ -124,6 +126,7 @@ const ModelAssignment = () => {
           reserveErrorSpace={false}
           className="mb-[12px]"
           icon="summarization"
+          iconIsStroke
         >
           <ComboBox
             className="w-full h-[24px]"
