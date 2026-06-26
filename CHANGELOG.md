@@ -33,6 +33,7 @@
 - Spinner loader no longer shrinks when placed inside a flex container (`shrink-0` added).
 - MCP server config editor (CodeMirror) now has a minimum height of 215 px so the editor and its gutter don't collapse on short configs.
 - Per-element font sizing now actually applies. The `--fs-*` type-scale tokens were used as `text-[var(--fs-*)]`, which Tailwind compiles to `color` (not `font-size`) — so element sizes never took effect and, on elements that also set a text color, the invalid `color` value clobbered it. Added `text-fs-*` utilities that set `font-size` explicitly and switched all usages to them.
+- `text-fs-*` utilities no longer get stripped by `cn()`. tailwind-merge treated these custom utilities as text-color classes and dropped them whenever a `text-[...]` color class shared the same `cn()` call (e.g. the model-card provider name lost its `text-fs-10`). Registered them in tailwind-merge's `font-size` group so size and color no longer conflict.
 
 ## 0.4.145
 
