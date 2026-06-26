@@ -12,44 +12,46 @@ const ICON_COLOR = "var(--icon-normal)";
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, isError, icon, onClear, ...props }, ref) => {
+    const showClear = props.type === "search" && Boolean(props.value);
+
     return (
-      <div className={`relative ${className}`}>
-        {icon && !(props.type === "search" && props.value) && (
-          <div className="absolute top-[50%] translate-y-[-50%] end-[0px] w-[24px] h-[24px] flex items-center justify-center">
-            <Icon name={icon} size={24} color={ICON_COLOR} isStroke />
-          </div>
+      <div
+        className={cn(
+          "flex items-center h-[24px] rounded-[4px] box-border border ps-[4px] pe-[2px]",
+          "border-[var(--input-border-color)] bg-[var(--input-background-color)]",
+          props.disabled
+            ? "cursor-not-allowed opacity-50"
+            : "hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]",
+          "focus-within:bg-[var(--input-active-background-color)] focus-within:border-[var(--input-active-border-color)]",
+          className
         )}
+        style={{
+          border: isError ? "1px solid var(--input-error-color)" : undefined,
+        }}
+      >
         <input
           ref={ref}
           type={props.type ?? "text"}
           className={cn(
-            "h-[24px] rounded-[4px] box-border border border-[var(--input-border-color)]",
-            "bg-[var(--input-background-color)]",
-            props.disabled
-              ? "cursor-not-allowed pointer-events-none opacity-50"
-              : "hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]",
-            "focus:bg-[var(--input-active-background-color)] focus:border focus:border-[var(--input-active-border-color)]",
-            "outline-none",
+            "min-w-0 flex-1 h-full border-0 bg-transparent p-0 outline-none",
             "placeholder:text-[var(--input-placeholder-color)] text-[var(--input-color)]",
             "[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden",
-            "ps-[4px]",
-            icon || (props.type === "search" && props.value)
-              ? "pe-[40px]"
-              : "pe-[2px]",
-            className
+            props.disabled ? "cursor-not-allowed" : ""
           )}
-          style={{
-            border: isError ? "1px solid var(--input-error-color)" : "",
-          }}
           value={props.value}
           spellCheck={false}
           {...props}
-        ></input>
-        {props.type === "search" && props.value && (
+        />
+        {icon && !showClear && (
+          <div className="shrink-0 w-[24px] h-[24px] flex items-center justify-center">
+            <Icon name={icon} size={24} color={ICON_COLOR} isStroke />
+          </div>
+        )}
+        {showClear && (
           <button
             type="button"
             onClick={onClear}
-            className="absolute top-[50%] translate-y-[-50%] end-[0px] w-[24px] h-[24px] flex items-center justify-center cursor-pointer"
+            className="shrink-0 w-[24px] h-[24px] flex items-center justify-center cursor-pointer bg-transparent"
           >
             <Icon name="clear.search" size={24} color={ICON_COLOR} isStroke />
           </button>
