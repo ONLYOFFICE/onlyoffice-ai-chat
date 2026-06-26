@@ -76,6 +76,8 @@ export type { StoreKeys } from "./config";
 
 export { PlatformProvider, usePlatform } from "./ui/providers/PlatformProvider";
 export type {
+  CopyFormat,
+  CopyMeta,
   PlatformAdapter,
   PlatformClouds,
   PlatformEnvironment,

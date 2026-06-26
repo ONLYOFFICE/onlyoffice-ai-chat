@@ -210,7 +210,9 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
 
   const onClick = useCallback(() => {
     if (!text || !platform.copyToClipboard) return;
-    void Promise.resolve(platform.copyToClipboard(text)).then(() => {
+    void Promise.resolve(
+      platform.copyToClipboard(text, { format: "markdown" })
+    ).then(() => {
       setCopied(true);
       if (resetTimer.current) clearTimeout(resetTimer.current);
       resetTimer.current = setTimeout(() => setCopied(false), 3000);
