@@ -192,6 +192,25 @@ describe("AnthropicProvider", () => {
         })
       ).rejects.toThrow("x");
     });
+
+    it("enables thinking when withReasoning is set", async () => {
+      messagesCreateMock.mockResolvedValueOnce({
+        content: [{ type: "text", text: "hi" }],
+      });
+      const p = new AnthropicProvider({
+        baseUrl: "https://api.anthropic.com",
+        apiKey: "sk",
+      });
+      await p.sendMessageSync({
+        messages: [],
+        model: "claude",
+        systemPrompt: "",
+        withReasoning: true,
+      });
+      expect(messagesCreateMock.mock.calls[0]?.[0]?.thinking?.type).toBe(
+        "enabled"
+      );
+    });
   });
 
   describe("static checkProvider", () => {

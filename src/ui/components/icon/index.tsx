@@ -14,6 +14,16 @@ type IconProps = {
   className?: string;
 };
 
+const SHAPE_SELECTOR = "path, circle, rect, line, polygon, polyline, ellipse";
+
+const isPaintSet = (value: string | null) =>
+  value !== null && value !== "" && value !== "none";
+
+// Recolor each shape by the paint method it already declares: an element
+// with an explicit `stroke` gets its stroke recolored, one with an explicit
+// `fill` gets its fill recolored, and one declaring both gets both. This
+// keeps mixed icons (e.g. stroked outline + filled detail) consistent. When
+// a shape declares neither, we fall back to the caller's `isStroke` hint.
 const applySvgColor = (
   svg: SVGSVGElement,
   isStroke: boolean | undefined,
@@ -21,12 +31,17 @@ const applySvgColor = (
   noColor: boolean | undefined
 ) => {
   if (noColor) return;
-  const fillColor = color || "var(--icon-button-color)";
-  const attr = isStroke ? "stroke" : "fill";
-  svg.querySelectorAll("path").forEach((p) => p.setAttribute(attr, fillColor));
-  svg
-    .querySelectorAll("circle")
-    .forEach((c) => c.setAttribute(attr, fillColor));
+  const paintColor = color || "var(--icon-button-color)";
+  svg.querySelectorAll(SHAPE_SELECTOR).forEach((el) => {
+    const hasStroke = isPaintSet(el.getAttribute("stroke"));
+    const hasFill = isPaintSet(el.getAttribute("fill"));
+    if (!hasStroke && !hasFill) {
+      el.setAttribute(isStroke ? "stroke" : "fill", paintColor);
+      return;
+    }
+    if (hasStroke) el.setAttribute("stroke", paintColor);
+    if (hasFill) el.setAttribute("fill", paintColor);
+  });
 };
 
 const IconComponent = ({

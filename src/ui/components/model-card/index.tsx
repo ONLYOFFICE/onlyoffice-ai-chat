@@ -84,13 +84,13 @@ const ModelCard = ({
   return (
     <div
       className={cn(
-        "flex justify-between gap-[12px] px-[16px] py-[12px] w-full rounded-[var(--model-card-border-radius)] bg-[var(--model-card-background-color)] border border-[var(--model-card-border-color)]",
+        "flex justify-between gap-[8px] p-[8px] w-full rounded-[var(--model-card-border-radius)] bg-[var(--model-card-background-color)] border border-[var(--model-card-border-color)]",
         isRTL ? "flex-row-reverse" : "flex-row"
       )}
     >
       <div
         className={cn(
-          "flex items-center gap-[12px] min-w-0 flex-1",
+          "flex items-center gap-[8px] min-w-0 flex-1",
           isRTL ? "flex-row-reverse" : "flex-row"
         )}
       >

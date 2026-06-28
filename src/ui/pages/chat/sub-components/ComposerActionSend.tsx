@@ -20,6 +20,7 @@ const ComposerActionSend = () => {
         className={BUTTON_STYLES}
         width={17}
         height={17}
+        color="var(--chat-composer-action-send-color)"
         data-testid="stop-button"
       />
     </ComposerPrimitive.Cancel>

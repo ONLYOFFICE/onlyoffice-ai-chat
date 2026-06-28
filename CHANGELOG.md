@@ -4,6 +4,7 @@
 
 ### Added
 
+- Extended reasoning is now available on the one-shot (`sendMessageSync`) path, not just streaming chat. `SendMessageSyncArgs` gained a `withReasoning?` flag (mirroring `SendMessageArgs`), wired from `actionArgs.isReasoning` through every one-shot action (summarization, translation, OCR, vision, text-analysis, title, custom-prompt, and the image-generation text fallback). The OpenAI, Anthropic, GenAI, and Mistral providers honor it in their sync requests using the same per-provider mapping as the streaming path; other providers ignore it. Defaults to off, so existing one-shot calls are unchanged.
 - Composer input now shows an "Ask anything…" placeholder, translated across all locales.
 - `chatHistoryCloseIcon` widget config — chooses the icon for the chat-history panel's close button (`"btn-close"` default, or `"btn-arrow-up"`). Lets hosts that embed the widget in a panel with its own close button show a back/collapse arrow instead of a second "×".
 - Per-section font-size tokens for the chat-history list: `--chat-list-title-font-size`, `--chat-list-group-header-font-size`, and `--chat-list-item-font-size`. They default to the existing `--fs-*` scale (sizing unchanged), so hosts can resize the history list independently of the rest of the widget via `customTheme` or host CSS.
@@ -11,6 +12,7 @@
 - Chat-history header can be hidden — the "Chat history" title and its close button, keeping the search field and thread list. Via the `hideChatHistoryHeader` widget config (for `<AIChatWidget>` hosts that provide their own title bar/close control), or the new `hideHeader` prop on the exported `ChatList` component (for headless usage); the prop overrides the config when both are set.
 - `className` prop on the exported `ChatList` component, merged onto its root container with `tailwind-merge` (so passed utilities override the built-in ones) for external styling in headless usage.
 - Chat-history thread actions trigger ("⋯") can be shown permanently instead of only on hover. Via the `chatHistoryAlwaysShowActions` widget config (for `<AIChatWidget>` hosts, e.g. touch devices), the `alwaysShowActions` prop on the exported `ChatList`, or the same prop on `ChatListItem`; the props override the config when set.
+- The `"external"` provider now supports `Profile.basedOn` values `"anthropic"`, `"mistral"`, and `"openrouter"` in addition to `"openai"`. Each delegates to the matching inner provider, so a profile with `providerType: "external"` reuses that provider's request builder and response parser while the host owns transport via `PlatformAdapter.externalFetch`. The remaining values (`"genai"`, `"stabilityai"`, …) stay reserved and throw at request time.
 
 ### Changed
 
@@ -26,6 +28,12 @@
 - Tightened vertical spacing throughout chat messages. Markdown blocks (headings, paragraphs, lists, rules, tables) now use a uniform 8px vertical margin instead of the previous 16–32px; the gap between messages dropped from 24px to 10px and per-message padding from 16px to 8px; and tool-call cards are more compact. List indents switched to logical (`ms-*`) so they mirror correctly in RTL. The "Tool executed" label shown while a tool runs was removed.
 - Redesigned the input, combo-box, and dropdown components for a denser, flatter look. Inputs and combo-boxes are shorter (24px) with tighter padding; the combo-box uses a new minimal chevron icon (`arrow`); input search/clear icons are larger (24px); and dropdown menus have a smaller corner radius (8px → 4px) with tighter rows (28px → 26px). Component icons are now tinted with `--icon-normal`.
 - Retuned the white and night themes: flatter text/icon colors, a simplified input background and hover state, and a dedicated blue `--input-active-border-color`. The composer's active border now reuses it (`--chat-composer-active-border-color` → `--input-active-border-color`) across all themes.
+- Replaced the `ask-ai`, `summarization`, `translation`, `text-analysis-ai`, `image-generation`, `ocr`, and `vision-ai` icons (light, dark, and SVG variants) with new designs.
+- Replaced the `btn-menu-about` (info) icon with a new filled design (light, dark, and SVG variants). It now renders self-colored (`noColor`) instead of being theme-recolored, since it carries its own grey/white knockout that reads on both light and dark themes.
+- `Icon` now recolors each SVG shape by the paint method it already declares — shapes with an explicit `stroke` get their stroke recolored, those with a `fill` get their fill recolored, and those with both get both. This makes mixed fill/stroke icons (such as the new `summarization` icon) theme correctly, and also covers `rect`/`line`/`polygon`/`polyline`/`ellipse` in addition to `path`/`circle`. The `isStroke` prop is now only a fallback for shapes that declare neither.
+- `FieldContainer` accepts an `iconIsStroke` prop, forwarded to its header `Icon` as `isStroke`.
+- Added a `--background-card-normal` base color token to every theme (`#FFFFFF` in light themes, `#505050` in dark themes). The model card now derives its background from it (`--model-card-background-color` → `var(--background-card-normal)`).
+- Added a `--background-icon-normal` base color token to every theme (`#FFFFFF` in light themes, `#404040` in dark themes).
 
 ### Fixed
 
@@ -34,6 +42,7 @@
 - Spinner loader no longer shrinks when placed inside a flex container (`shrink-0` added).
 - MCP server config editor (CodeMirror) now has a minimum height of 215 px so the editor and its gutter don't collapse on short configs.
 - Per-element font sizing now actually applies. The `--fs-*` type-scale tokens were used as `text-[var(--fs-*)]`, which Tailwind compiles to `color` (not `font-size`) — so element sizes never took effect and, on elements that also set a text color, the invalid `color` value clobbered it. Added `text-fs-*` utilities that set `font-size` explicitly and switched all usages to them.
+- `text-fs-*` utilities no longer get stripped by `cn()`. tailwind-merge treated these custom utilities as text-color classes and dropped them whenever a `text-[...]` color class shared the same `cn()` call (e.g. the model-card provider name lost its `text-fs-10`). Registered them in tailwind-merge's `font-size` group so size and color no longer conflict.
 
 ## 0.4.145
 

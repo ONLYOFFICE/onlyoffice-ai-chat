@@ -44,6 +44,7 @@ export const customSync = async (
     model: args.profile.modelId,
     useResponsesApi: args.profile.useResponsesApi === true,
     systemPrompt: args.systemPrompt,
+    withReasoning: args.isReasoning,
     signal: args.signal,
   });
   return { role: "assistant", content: [{ type: "text", text }] };

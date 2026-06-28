@@ -1,5 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
 
 // Re-export message utilities so components can import from lib/utils
 export {
@@ -7,6 +7,30 @@ export {
   getMessageTitleFromMd,
   removeSpecialCharacter,
 } from "../utils";
+
+// `text-fs-*` are custom font-size utilities (see ui/styles/index.css). They are
+// not part of Tailwind's default config, so tailwind-merge would classify them
+// as text-color classes and silently drop e.g. `text-fs-10` whenever another
+// `text-[...]` color class appears in the same cn() call. Registering them in
+// the `font-size` group keeps font-size and color independent.
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [
+        "text-fs-10",
+        "text-fs-11",
+        "text-fs-12",
+        "text-fs-13",
+        "text-fs-16",
+        "text-fs-18",
+        "text-fs-20",
+        "text-fs-24",
+        "text-fs-28",
+        "text-fs-32",
+      ],
+    },
+  },
+});
 
 /**
  * Merges class names using `clsx` and resolves Tailwind CSS conflicts

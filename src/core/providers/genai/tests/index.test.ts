@@ -166,6 +166,21 @@ describe("GenAIProvider", () => {
         })
       ).rejects.toThrow("x");
     });
+
+    it("enables thinking config when withReasoning is set", async () => {
+      generateContentMock.mockResolvedValueOnce({ text: "answer" });
+      const p = new GenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await p.sendMessageSync({
+        messages: [],
+        model: "gemini",
+        systemPrompt: "",
+        withReasoning: true,
+      });
+      expect(
+        generateContentMock.mock.calls[0]?.[0]?.config?.thinkingConfig
+          ?.includeThoughts
+      ).toBe(true);
+    });
   });
 
   describe("static checkProvider", () => {

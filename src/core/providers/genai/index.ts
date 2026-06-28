@@ -70,12 +70,18 @@ class GenAIProvider extends AbstractBaseProvider {
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
-    const { messages, model, systemPrompt, signal } = args;
+    const { messages, model, systemPrompt, withReasoning, signal } = args;
     const response = await this.client.models.generateContent({
       model,
       contents: convertMessages(messages),
       config: {
         systemInstruction: systemPrompt,
+        ...(withReasoning && {
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.THINKING_LEVEL_UNSPECIFIED,
+            includeThoughts: true,
+          },
+        }),
         abortSignal: signal,
       },
     });

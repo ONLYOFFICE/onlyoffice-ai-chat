@@ -7,6 +7,8 @@
   --background-primary-button: #306AD9;
   --background-scrim: #00000033;
   --background-scroll-thumb: #e0e0e0;
+  --background-card-normal: #ffffff;
+  --background-icon-normal: #ffffff;
 
   --border-divider: #dfdfdf;
   --border-regular-control: #E1E1E1;
@@ -215,13 +217,14 @@
     0px 1px 2px 0px #0000000f, 0px 1px 3px 0px #0000001a;
 
   /* model card */
-  --model-card-background-color: var(--background-normal);
+  --model-card-background-color: var(--background-card-normal);
   --model-card-color: var(--text-normal);
   --model-card-description-color: var(--text-secondary);
   --model-card-border-color: var(--border-divider);
-  --model-card-border-radius: 8px;
+  --model-card-border-radius: 4px;
   --model-card-logo-border-color: var(--border-divider);
   --model-card-logo-border-radius: 6px;
+  --model-card-logo-background: var(--background-icon-normal);
 
   /* settings servers */
   --servers-description-color: var(--text-secondary);
