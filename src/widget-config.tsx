@@ -43,6 +43,12 @@ export interface WidgetConfig {
    */
   hideChatHistoryHeader?: boolean;
   /**
+   * Show each chat-history thread's actions trigger ("⋯") permanently instead
+   * of only revealing it on hover. Useful on touch devices or when the menu
+   * should always be discoverable.
+   */
+  chatHistoryAlwaysShowActions?: boolean;
+  /**
    * Hide the "Always allow" checkbox in the tool-call confirmation dialog.
    * When hidden, the host can only approve/deny a single call at a time and
    * cannot opt into persisting the allow decision for the tool.

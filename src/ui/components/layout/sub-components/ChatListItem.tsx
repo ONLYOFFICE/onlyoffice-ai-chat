@@ -16,6 +16,11 @@ type ChatListItemProps = {
   onDownloadThread: (threadId: string, title?: string) => void;
   onClearThreadHistory: (threadId: string) => void;
   setCurrentPage: (page: Page) => void;
+  /**
+   * Show the actions trigger ("⋯") permanently instead of only on hover.
+   * Useful on touch devices or hosts that want the menu always discoverable.
+   */
+  alwaysShowActions?: boolean;
 };
 
 const DownloadIcon = () => <Icon name="btn-save" size={24} isStroke />;
@@ -33,6 +38,7 @@ const ChatListItemComponent = ({
   onDownloadThread,
   onClearThreadHistory,
   setCurrentPage,
+  alwaysShowActions,
 }: ChatListItemProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
@@ -144,7 +150,7 @@ const ChatListItemComponent = ({
           <p className="text-[length:var(--chat-list-item-font-size,var(--fs-12))] text-[var(--chat-list-item-color)] [font-weight:var(--chat-list-item-font-weight,400)] truncate">
             {thread.title}
           </p>
-          {isHovered && !isRenameInputVisible ? (
+          {(alwaysShowActions || isHovered) && !isRenameInputVisible ? (
             <DropdownMenu
               open={isOpen}
               onOpenChange={setIsOpen}

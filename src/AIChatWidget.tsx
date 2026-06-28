@@ -118,6 +118,11 @@ export interface AIChatWidgetProps {
    * {@link WidgetConfig.hideChatHistoryHeader}.
    */
   hideChatHistoryHeader?: boolean;
+  /**
+   * Show each chat-history thread's actions trigger ("⋯") permanently instead
+   * of only on hover. See {@link WidgetConfig.chatHistoryAlwaysShowActions}.
+   */
+  chatHistoryAlwaysShowActions?: boolean;
   hideToolAllowAlways?: WidgetConfig["hideToolAllowAlways"];
   /**
    * Render the "Add model" form in a two-row (horizontal) layout
@@ -268,6 +273,7 @@ export const AIChatWidget = React.forwardRef<
       hideSettingsButton,
       chatHistoryCloseIcon,
       hideChatHistoryHeader,
+      chatHistoryAlwaysShowActions,
       hideToolAllowAlways,
       isAddModelCardHorizontal,
       onSettingsClick,
@@ -300,6 +306,7 @@ export const AIChatWidget = React.forwardRef<
         hideSettingsButton,
         chatHistoryCloseIcon,
         hideChatHistoryHeader,
+        chatHistoryAlwaysShowActions,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
@@ -327,6 +334,7 @@ export const AIChatWidget = React.forwardRef<
         hideSettingsButton,
         chatHistoryCloseIcon,
         hideChatHistoryHeader,
+        chatHistoryAlwaysShowActions,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,

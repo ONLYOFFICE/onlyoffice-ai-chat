@@ -145,6 +145,12 @@ describe("ChatListItem", () => {
     expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
   });
 
+  it("shows dropdown menu without hover when alwaysShowActions is true", () => {
+    render(<ChatListItem {...defaultProps} alwaysShowActions />);
+    // No mouseEnter — the trigger is rendered immediately.
+    expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
+  });
+
   it("hides dropdown menu on mouse leave when not open", () => {
     render(<ChatListItem {...defaultProps} />);
     const container = screen.getByText("Test Thread").closest("div")!;

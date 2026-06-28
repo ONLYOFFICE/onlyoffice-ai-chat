@@ -22,9 +22,19 @@ type ChatListProps = {
    * ones (e.g. pass `"h-auto px-0"` to override the defaults).
    */
   className?: string;
+  /**
+   * Show each thread's actions trigger ("⋯") permanently instead of only on
+   * hover. When provided, this overrides the `chatHistoryAlwaysShowActions`
+   * widget config.
+   */
+  alwaysShowActions?: boolean;
 };
 
-const ChatList = ({ hideHeader, className }: ChatListProps) => {
+const ChatList = ({
+  hideHeader,
+  className,
+  alwaysShowActions,
+}: ChatListProps) => {
   const { useThreadsStore, useRouter } = useStores();
   const threads = useThreadsStore((s) => s.threads);
   const threadId = useThreadsStore((s) => s.threadId);
@@ -33,9 +43,14 @@ const ChatList = ({ hideHeader, className }: ChatListProps) => {
   const onDownloadThread = useThreadsStore((s) => s.onDownloadThread);
   const onClearThreadHistory = useThreadsStore((s) => s.onClearThreadHistory);
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
-  const { chatHistoryCloseIcon, hideChatHistoryHeader } = useWidgetConfig();
+  const {
+    chatHistoryCloseIcon,
+    hideChatHistoryHeader,
+    chatHistoryAlwaysShowActions,
+  } = useWidgetConfig();
   const closeIconName = chatHistoryCloseIcon ?? "btn-close";
   const isHeaderHidden = hideHeader ?? hideChatHistoryHeader;
+  const showActionsAlways = alwaysShowActions ?? chatHistoryAlwaysShowActions;
 
   const [searchValue, setSearchValue] = React.useState("");
 
@@ -137,6 +152,7 @@ const ChatList = ({ hideHeader, className }: ChatListProps) => {
                       onRenameThread={onRenameThread}
                       onDownloadThread={onDownloadThread}
                       onClearThreadHistory={onClearThreadHistory}
+                      alwaysShowActions={showActionsAlways}
                     />
                   ))}
                 </div>

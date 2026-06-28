@@ -43,6 +43,7 @@ vi.mock("../../../store/context", () => ({
 let mockWidgetConfig: {
   chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
   hideChatHistoryHeader?: boolean;
+  chatHistoryAlwaysShowActions?: boolean;
 } = {};
 
 vi.mock("../../../../widget-config", () => ({
@@ -88,14 +89,17 @@ vi.mock("../sub-components/ChatListItem", () => ({
     thread,
     isActive,
     onSwitchToThread,
+    alwaysShowActions,
   }: {
     thread: { threadId: string; title: string };
     isActive: boolean;
     onSwitchToThread: (id: string) => void;
+    alwaysShowActions?: boolean;
   }) => (
     <div
       data-testid={`chat-item-${thread.threadId}`}
       data-active={isActive}
+      data-always-actions={alwaysShowActions ? "true" : "false"}
       onClick={() => onSwitchToThread(thread.threadId)}
     >
       {thread.title}
@@ -195,6 +199,24 @@ describe("ChatList", () => {
     expect(container.firstChild).toHaveClass("custom-list-xyz");
     // Built-in layout classes are kept.
     expect(container.firstChild).toHaveClass("flex");
+  });
+
+  it("passes chatHistoryAlwaysShowActions config down to items", () => {
+    mockWidgetConfig = { chatHistoryAlwaysShowActions: true };
+    render(<ChatList />);
+    expect(screen.getByTestId("chat-item-t1")).toHaveAttribute(
+      "data-always-actions",
+      "true"
+    );
+  });
+
+  it("alwaysShowActions prop overrides the config", () => {
+    mockWidgetConfig = { chatHistoryAlwaysShowActions: true };
+    render(<ChatList alwaysShowActions={false} />);
+    expect(screen.getByTestId("chat-item-t1")).toHaveAttribute(
+      "data-always-actions",
+      "false"
+    );
   });
 
   it("clicking a thread item switches to thread and navigates to chat", () => {

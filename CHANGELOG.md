@@ -10,6 +10,7 @@
 - Per-section font-weight tokens for the chat-history list: `--chat-list-title-font-weight` (defaults to bold/700), `--chat-list-group-header-font-weight`, and `--chat-list-item-font-weight` (default to normal/400). Settable via `customTheme` or host CSS, with sizing/weight unchanged by default.
 - Chat-history header can be hidden — the "Chat history" title and its close button, keeping the search field and thread list. Via the `hideChatHistoryHeader` widget config (for `<AIChatWidget>` hosts that provide their own title bar/close control), or the new `hideHeader` prop on the exported `ChatList` component (for headless usage); the prop overrides the config when both are set.
 - `className` prop on the exported `ChatList` component, merged onto its root container with `tailwind-merge` (so passed utilities override the built-in ones) for external styling in headless usage.
+- Chat-history thread actions trigger ("⋯") can be shown permanently instead of only on hover. Via the `chatHistoryAlwaysShowActions` widget config (for `<AIChatWidget>` hosts, e.g. touch devices), the `alwaysShowActions` prop on the exported `ChatList`, or the same prop on `ChatListItem`; the props override the config when set.
 
 ### Changed
 
