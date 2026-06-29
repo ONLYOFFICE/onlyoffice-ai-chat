@@ -76,8 +76,11 @@ const DropDownItem = ({
   }, []);
 
   if (isSeparator)
+    // A 1px-tall background bar rounds away at fractional zoom levels; a top
+    // border is snapped to the device pixel grid by the browser and stays
+    // visible across scales.
     return (
-      <div className="h-px min-h-[1px] w-full bg-[var(--drop-down-menu-separator-color)] my-[4px] flex-shrink-0" />
+      <div className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[4px] shrink-0" />
     );
 
   const onSelect = (e: Event) => {

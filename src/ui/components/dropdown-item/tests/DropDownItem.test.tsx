@@ -162,7 +162,7 @@ describe("DropDownItem", () => {
     const { container } = renderInDropdownContext(
       <DropDownItem text="" onClick={vi.fn()} isSeparator />
     );
-    expect(container.querySelector(".h-px")).toBeInTheDocument();
+    expect(container.querySelector(".border-t")).toBeInTheDocument();
   });
 
   it("renders icon when provided as string", () => {
