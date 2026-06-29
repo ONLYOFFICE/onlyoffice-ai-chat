@@ -253,7 +253,7 @@ export const ModelConfigForm = ({
         }
       >
         <ComboBox
-          className="w-full h-[24px]"
+          className="w-full"
           placeholder={t("SelectProvider")}
           value={selectedProviderText}
           items={providerItems}
@@ -316,7 +316,7 @@ export const ModelConfigForm = ({
         isHorizontal={isHorizontal}
       >
         <ComboBox
-          className="w-full h-[24px]"
+          className="w-full"
           placeholder={t("SelectModel")}
           value={models.find((m) => m.id === values.model)?.name}
           // Locked (but still showing the current selection) while the

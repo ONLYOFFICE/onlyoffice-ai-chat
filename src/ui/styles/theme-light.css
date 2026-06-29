@@ -135,6 +135,7 @@
   --input-active-border-color: var(--background-accent-button);
   --input-active-background-color: var(--background-normal);
   --input-error-color: var(--border-error);
+  --combo-box-height: 24px;
 
   /* tabs */
   --tabs-border-width: 1px;

@@ -66,6 +66,7 @@ const DropdownMenuComponent = ({
     >
       <DropdownMenu.Trigger
         asChild
+        className="text-[var(--dropdown-trigger-color)]"
         ref={triggerRef as React.RefObject<HTMLButtonElement>}
       >
         {trigger}

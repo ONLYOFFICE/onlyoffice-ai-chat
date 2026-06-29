@@ -69,9 +69,8 @@ const ComboBox = ({
       trigger={
         <div
           data-testid={dataTestId}
-          onClick={undefined}
           className={cn(
-            "h-[24px] rounded-[var(--input-border-radius)] ps-[4px] box-border",
+            "h-[var(--combo-box-height,24px)] rounded-[var(--input-border-radius)] ps-[4px] box-border",
             "cursor-pointer flex items-center justify-between",
             "text-[var(--input-color)] leading-[var(--lh-16)]",
             withoutBg
@@ -98,7 +97,7 @@ const ComboBox = ({
           >
             {value || placeholder}
           </span>
-          <div className="flex items-center justify-center h-[24px] w-[16px] shrink-0">
+          <div className="flex items-center justify-center h-[var(--combo-box-height,24px)] w-[16px] shrink-0">
             <Icon
               name="arrow"
               color="var(--icon-normal)"

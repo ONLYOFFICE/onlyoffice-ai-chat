@@ -98,6 +98,7 @@ export interface ThemeTokens {
   "--checkbox-border-normal"?: string;
   "--checkbox-check-mark-background"?: string;
   "--checkbox-color"?: string;
+  "--combo-box-height"?: string;
   "--drop-down-menu-background-color"?: string;
   "--drop-down-menu-border-color"?: string;
   "--drop-down-menu-item-active-color"?: string;

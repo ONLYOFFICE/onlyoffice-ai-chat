@@ -216,7 +216,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
           isHorizontal={fieldIsHorizontal}
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={provider?.label ?? t("SelectEngine")}
             items={comboItems}
           />

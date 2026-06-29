@@ -28,7 +28,7 @@ const IconButtonComponent = ({
     : undefined;
 
   const baseStyles =
-    "border-none cursor-pointer rounded-[4px] border-none bg-none bg-transparent p-0 m-0";
+    "icon-button border-none cursor-pointer rounded-[4px] border-none bg-none bg-transparent p-0 m-0";
   const layoutStyles = "flex items-center justify-center";
   const disabledStyles = "disabled:cursor-not-allowed disabled:opacity-[0.5]";
   const focusStyles =

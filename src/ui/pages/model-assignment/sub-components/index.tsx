@@ -79,7 +79,7 @@ const ModelAssignment = () => {
           headerClassName="font-bold"
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             placeholder={t("SelectProvider")}
             value={defaultProfile?.name ?? ""}
             items={defaultItems}
@@ -99,7 +99,7 @@ const ModelAssignment = () => {
           iconIsStroke
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={chatProfile?.name ?? t("DefaultModel")}
             items={taskItems(setChatProfile, CapabilitiesUI.Chat)}
           />
@@ -114,7 +114,7 @@ const ModelAssignment = () => {
           iconIsStroke
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={codeProfile?.name ?? t("DefaultModel")}
             items={taskItems(setCodeProfile, CapabilitiesUI.Chat)}
           />
@@ -129,7 +129,7 @@ const ModelAssignment = () => {
           iconIsStroke
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={summarizationProfile?.name ?? t("DefaultModel")}
             items={taskItems(setSummarizationProfile, CapabilitiesUI.Chat)}
           />
@@ -143,7 +143,7 @@ const ModelAssignment = () => {
           icon="translation"
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={translationProfile?.name ?? t("DefaultModel")}
             items={taskItems(setTranslationProfile, CapabilitiesUI.Chat)}
           />
@@ -157,7 +157,7 @@ const ModelAssignment = () => {
           icon="text-analysis-ai"
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={textAnalysisProfile?.name ?? t("DefaultModel")}
             items={taskItems(setTextAnalysisProfile, CapabilitiesUI.Chat)}
           />
@@ -171,7 +171,7 @@ const ModelAssignment = () => {
           icon="image-generation"
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={imageGenerationProfile?.name ?? t("DefaultModel")}
             items={taskItems(setImageGenerationProfile, CapabilitiesUI.Image)}
           />
@@ -185,7 +185,7 @@ const ModelAssignment = () => {
           icon="ocr"
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={ocrProfile?.name ?? t("DefaultModel")}
             items={taskItems(setOcrProfile, CapabilitiesUI.Vision)}
           />
@@ -199,7 +199,7 @@ const ModelAssignment = () => {
           icon="vision-ai"
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={visionProfile?.name ?? t("DefaultModel")}
             items={taskItems(setVisionProfile, CapabilitiesUI.Vision)}
           />
