@@ -59,6 +59,12 @@ const DropdownMenuComponent = ({
   const effectiveSide = (side ?? autoSideRef.current) as "top" | "bottom";
   const effectiveAlign = (align ?? autoAlignRef.current) as "start" | "end";
 
+  // When at least one row in this menu carries a leading icon, the icon-less
+  // rows reserve the same icon column (via `withSpace`) so all labels line up.
+  // Per-item `withSpace` still wins as an explicit override. Each submenu is a
+  // separate DropdownMenu instance, so it evaluates this over its own items.
+  const hasLeadingIcon = items.some((item) => item.icon && !item.isSeparator);
+
   return (
     <DropdownMenu.Root
       open={open}
@@ -98,6 +104,10 @@ const DropdownMenuComponent = ({
               key={item.id || item.text || `item-${index}`}
               {...item}
               variant={variant}
+              withSpace={
+                item.withSpace ??
+                (hasLeadingIcon && !item.icon && !item.isSeparator)
+              }
             />
           ))}
         </DropdownMenu.Content>
