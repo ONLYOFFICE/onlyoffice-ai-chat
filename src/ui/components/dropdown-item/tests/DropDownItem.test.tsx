@@ -792,4 +792,75 @@ describe("DropDownItem", () => {
     }
     mockIsRTL.value = false;
   });
+
+  describe("drill-down navigation", () => {
+    it("folder row drills via onDrill (not onClick) and renders a chevron, not a flyout", () => {
+      const onDrill = vi.fn();
+      const onClick = vi.fn();
+      renderInDropdownContext(
+        <DropDownItem
+          text="Folder"
+          navigation="drilldown"
+          subMenu={[{ text: "Child", onClick: vi.fn() }]}
+          onDrill={onDrill}
+          onClick={onClick}
+        />
+      );
+      fireEvent.click(screen.getByRole("menuitem"));
+      expect(onDrill).toHaveBeenCalledTimes(1);
+      expect(onClick).not.toHaveBeenCalled();
+      // No nested flyout in drill mode; just an inline chevron indicator.
+      expect(screen.queryByTestId("submenu")).not.toBeInTheDocument();
+      expect(screen.getByTestId("icon-btn-arrow.right")).toBeInTheDocument();
+    });
+
+    it("more-icon row drills via the icon", () => {
+      const onDrill = vi.fn();
+      const onClick = vi.fn();
+      renderInDropdownContext(
+        <DropDownItem
+          text="Prompt"
+          navigation="drilldown"
+          subMenuIcon="more"
+          subMenu={[{ text: "Edit", onClick: vi.fn() }]}
+          onDrill={onDrill}
+          onClick={onClick}
+        />
+      );
+      fireEvent.click(screen.getByTestId("icon-btn-more"));
+      expect(onDrill).toHaveBeenCalledTimes(1);
+      // Icon click stops propagation, so the row's leaf onClick stays untouched.
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it("more-icon row keeps its leaf onClick when the row itself is clicked", () => {
+      const onDrill = vi.fn();
+      const onClick = vi.fn();
+      renderInDropdownContext(
+        <DropDownItem
+          text="Prompt"
+          navigation="drilldown"
+          subMenuIcon="more"
+          subMenu={[{ text: "Edit", onClick: vi.fn() }]}
+          onDrill={onDrill}
+          onClick={onClick}
+        />
+      );
+      fireEvent.click(screen.getByRole("menuitem"));
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(onDrill).not.toHaveBeenCalled();
+    });
+
+    it("flyout mode still renders a nested submenu (no regression)", () => {
+      renderInDropdownContext(
+        <DropDownItem
+          text="Folder"
+          navigation="flyout"
+          subMenu={[{ text: "Child", onClick: vi.fn() }]}
+          onClick={vi.fn()}
+        />
+      );
+      expect(screen.getByTestId("submenu")).toBeInTheDocument();
+    });
+  });
 });

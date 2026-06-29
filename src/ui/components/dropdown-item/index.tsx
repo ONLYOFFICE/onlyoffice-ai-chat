@@ -51,6 +51,8 @@ const DropDownItem = ({
   withAbout,
   aboutContent,
   variant = "menu",
+  navigation = "flyout",
+  onDrill,
 }: DropDownItemProps) => {
   const { isRTL } = useI18n();
   const { portalContainer } = useTheme();
@@ -83,10 +85,20 @@ const DropDownItem = ({
       <div className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[4px] shrink-0" />
     );
 
+  const isDrill = navigation === "drilldown";
+
   const onSelect = (e: Event) => {
     if (withToggle) {
       e.stopPropagation();
       e.preventDefault();
+      return;
+    }
+    // Drill-down: a folder row (has subMenu, no explicit "more" icon) descends
+    // in place instead of running a leaf action; keep the menu open. A
+    // subMenuIcon row keeps its own leaf onClick and drills via the icon only.
+    if (isDrill && subMenu && !subMenuIcon) {
+      e.preventDefault();
+      onDrill?.();
       return;
     }
     onClick(e);
@@ -235,7 +247,7 @@ const DropDownItem = ({
       )}
       onSelect={withToggle ? (e) => e.preventDefault() : onSelect}
       onClick={withToggle ? handleToggleClick : undefined}
-      onMouseEnter={subMenuIcon ? undefined : handleMouseEnter}
+      onMouseEnter={!isDrill && !subMenuIcon ? handleMouseEnter : undefined}
       ref={itemRef}
       dir={isRTL ? "rtl" : "ltr"}
     >
@@ -282,7 +294,39 @@ const DropDownItem = ({
         ) : null}
       </div>
 
-      {subMenu ? (
+      {subMenu && isDrill ? (
+        subMenuIcon ? (
+          // "More"-style row: reveal on row hover/focus, click drills in.
+          // stopPropagation so the row's own onSelect (leaf action) doesn't
+          // also fire.
+          <div
+            className="opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDrill?.();
+            }}
+          >
+            <IconButton
+              iconName={subMenuIcon}
+              size={subMenuIconSize ?? 12}
+              insideElement
+            />
+          </div>
+        ) : (
+          // Folder-style row: a plain chevron indicator with no hover of its
+          // own — the whole row is the drill target (via onSelect).
+          <IconButton
+            iconName="arrow.right"
+            size={12}
+            insideElement
+            isStroke
+            disableHover
+            className={isRTL ? "rotate-180" : ""}
+          />
+        )
+      ) : null}
+
+      {subMenu && !isDrill ? (
         <div
           onClick={subMenuIcon ? (e) => e.stopPropagation() : undefined}
           // The "more" trigger only reveals on row hover/focus (or while its

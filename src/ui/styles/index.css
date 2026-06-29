@@ -39,6 +39,11 @@
   --dropdown-item-padding-start-combobox: 8px; /* combobox rows — start edge */
   --dropdown-item-padding-end-combobox: 8px; /* combobox rows — end edge */
 
+  /* Drill-down "back" row (only shown in `dropdownNavigation: "drilldown"`
+     menus when not at the root level). */
+  --dropdown-back-row-height: 20px;
+  --dropdown-back-row-padding: 8px; /* horizontal padding */
+
   font-size: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1));
   line-height: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333);
 

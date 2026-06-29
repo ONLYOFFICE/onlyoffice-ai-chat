@@ -36,6 +36,17 @@ export interface WidgetConfig {
    */
   chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
   /**
+   * How nested submenus are presented in dropdown menus.
+   * - `"flyout"` (default) — side flyouts that open on hover/click. Can
+   *   overflow narrow or embedded hosts (iframe, mobile, side panels).
+   * - `"drilldown"` — clicking a row with a submenu replaces the current
+   *   level's content with the next level, with a "back" row to return.
+   *   Keeps everything inside the menu's own bounds.
+   *
+   * Can be overridden per menu via `DropdownMenu`'s `navigation` prop.
+   */
+  dropdownNavigation?: "flyout" | "drilldown";
+  /**
    * Hide the "Always allow" checkbox in the tool-call confirmation dialog.
    * When hidden, the host can only approve/deny a single call at a time and
    * cannot opt into persisting the allow decision for the tool.
