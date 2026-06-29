@@ -99,7 +99,6 @@ const Shell = ({
           align={effectiveAlign}
           sideOffset={sideOffset ?? 6}
           alignOffset={alignOffset}
-          avoidCollisions={false}
           collisionPadding={8}
           data-side={effectiveSide}
           data-align={effectiveAlign}
@@ -112,7 +111,18 @@ const Shell = ({
               : "w-fit",
             contentClassName
           )}
-          style={{ zIndex: 400, ...(maxWidth ? { maxWidth } : null) }}
+          // Cap to the space Radix measured inside the boundary so a menu
+          // wider/taller than the host shrinks and scrolls instead of
+          // overflowing. (These vars are populated only with collision
+          // avoidance on, which is the default now that `avoidCollisions` is
+          // no longer disabled.)
+          style={{
+            zIndex: 400,
+            maxWidth:
+              maxWidth ?? "var(--radix-dropdown-menu-content-available-width)",
+            maxHeight:
+              "min(14rem, var(--radix-dropdown-menu-content-available-height))",
+          }}
         >
           {children}
         </DropdownMenu.Content>

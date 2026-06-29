@@ -34,6 +34,7 @@
 
 ### Fixed
 
+- Dropdown menus no longer spill off the edge of the screen in narrow or embedded hosts (iframes, side panels). Radix collision avoidance is re-enabled (it had been disabled), so menus flip and shift to stay within the viewport, and the content is capped to the available width/height (`--radix-dropdown-menu-content-available-*`) so a menu wider or taller than the space shrinks and scrolls instead of overflowing. The previous manual `side`/`align` heuristic is kept only as a preferred-direction hint. Affects every dropdown, including the composer "+" and saved-prompts menus.
 - Composer no longer submits a new message via Enter while a response is still streaming.
 - "Open" item in the chat-list context menu now closes the menu before navigating to the conversation.
 - Spinner loader no longer shrinks when placed inside a flex container (`shrink-0` added).
