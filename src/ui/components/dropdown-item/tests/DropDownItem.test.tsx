@@ -267,6 +267,76 @@ describe("DropDownItem", () => {
     expect(span.className).toContain("ms-[28px]");
   });
 
+  describe("horizontal padding", () => {
+    it("uses text-row padding for a plain text item", () => {
+      renderInDropdownContext(<DropDownItem text="Plain" onClick={vi.fn()} />);
+      const item = screen.getByRole("menuitem");
+      expect(item.className).toContain(
+        "ps-[var(--dropdown-item-padding-start-text,16px)]"
+      );
+      expect(item.className).toContain(
+        "pe-[var(--dropdown-item-padding-end-text,16px)]"
+      );
+    });
+
+    it("uses icon-row padding when a leading icon is present", () => {
+      renderInDropdownContext(
+        <DropDownItem text="Withicon" icon="copy" onClick={vi.fn()} />
+      );
+      const item = screen.getByRole("menuitem");
+      expect(item.className).toContain(
+        "ps-[var(--dropdown-item-padding-start-icon,4px)]"
+      );
+      expect(item.className).toContain(
+        "pe-[var(--dropdown-item-padding-end-icon,20px)]"
+      );
+    });
+
+    it("uses icon-row padding when withSpace reserves the icon column", () => {
+      renderInDropdownContext(
+        <DropDownItem text="Reserved" withSpace onClick={vi.fn()} />
+      );
+      const item = screen.getByRole("menuitem");
+      expect(item.className).toContain(
+        "ps-[var(--dropdown-item-padding-start-icon,4px)]"
+      );
+      expect(item.className).toContain(
+        "pe-[var(--dropdown-item-padding-end-icon,20px)]"
+      );
+    });
+
+    it("tightens the end padding when the row ends in a control", () => {
+      renderInDropdownContext(
+        <DropDownItem
+          text="Trailing"
+          icon="copy"
+          trailingIcon={<span>T</span>}
+          onClick={vi.fn()}
+        />
+      );
+      const item = screen.getByRole("menuitem");
+      expect(item.className).toContain(
+        "pe-[var(--dropdown-item-padding-end-control,8px)]"
+      );
+      expect(item.className).not.toContain(
+        "pe-[var(--dropdown-item-padding-end-icon,20px)]"
+      );
+    });
+
+    it("uses symmetric combobox padding for the combobox variant", () => {
+      renderInDropdownContext(
+        <DropDownItem text="Combo" variant="combobox" onClick={vi.fn()} />
+      );
+      const item = screen.getByRole("menuitem");
+      expect(item.className).toContain(
+        "ps-[var(--dropdown-item-padding-start-combobox,8px)]"
+      );
+      expect(item.className).toContain(
+        "pe-[var(--dropdown-item-padding-end-combobox,8px)]"
+      );
+    });
+  });
+
   it("wraps in tooltip when tooltipText is provided", () => {
     renderInDropdownContext(
       <DropDownItem text="Tip" onClick={vi.fn()} tooltipText="Help text" />

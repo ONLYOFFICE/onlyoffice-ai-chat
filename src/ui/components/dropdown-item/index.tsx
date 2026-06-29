@@ -12,6 +12,22 @@ import type { DropDownItemProps } from "./DropDownItem.types";
 const SUBMENU_WIDTH = 300;
 const SUBMENU_MARGIN = 8;
 
+// Horizontal padding per row layout, as overridable CSS tokens (see
+// styles/index.css for the defaults). The start and end edges are resolved
+// independently from the row's "kind"; combobox keeps its own symmetric pair.
+const START_PADDING = {
+  combobox: "ps-[var(--dropdown-item-padding-start-combobox,8px)]",
+  icon: "ps-[var(--dropdown-item-padding-start-icon,4px)]",
+  text: "ps-[var(--dropdown-item-padding-start-text,16px)]",
+} as const;
+
+const END_PADDING = {
+  combobox: "pe-[var(--dropdown-item-padding-end-combobox,8px)]",
+  control: "pe-[var(--dropdown-item-padding-end-control,8px)]",
+  icon: "pe-[var(--dropdown-item-padding-end-icon,20px)]",
+  text: "pe-[var(--dropdown-item-padding-end-text,16px)]",
+} as const;
+
 const DropDownItem = ({
   text,
   icon,
@@ -174,19 +190,32 @@ const DropDownItem = ({
 
   const isHorizontalSide = submenuSide === "left" || submenuSide === "right";
 
-  // Horizontal padding. Combobox keeps the symmetric padding that lines its
-  // items up with the trigger field. Menus indent the start edge based on
-  // whether the row carries (or reserves) a leading icon, all driven by
-  // integrator-overridable `--dropdown-item-*` tokens.
-  const paddingClass =
-    variant === "combobox"
-      ? "ps-[var(--dropdown-item-pad-start-combobox,8px)] pe-[var(--dropdown-item-pad-end,8px)]"
-      : cn(
-          icon || withSpace
-            ? "ps-[var(--dropdown-item-pad-start-icon,4px)]"
-            : "ps-[var(--dropdown-item-pad-start,16px)]",
-          "pe-[var(--dropdown-item-pad-end,8px)]"
-        );
+  // Whether the row ends with an interactive control (these sit on the end
+  // edge and supply their own visual weight, so the row's end padding tightens).
+  const hasTrailingControl = Boolean(
+    trailingIcon ||
+      subMenu ||
+      checked ||
+      (withToggle && onToggleChange) ||
+      withAbout
+  );
+  const hasLeadingIcon = Boolean(icon) || Boolean(withSpace);
+  const isCombobox = variant === "combobox";
+
+  // Classify each edge into a row "kind", then look up its padding class.
+  // Start: icon rows indent less than plain text rows. End: a trailing control
+  // tightens the edge; otherwise it mirrors the start (icon vs text). Combobox
+  // overrides both with its own symmetric padding.
+  const startKind = isCombobox ? "combobox" : hasLeadingIcon ? "icon" : "text";
+  const endKind = isCombobox
+    ? "combobox"
+    : hasTrailingControl
+      ? "control"
+      : hasLeadingIcon
+        ? "icon"
+        : "text";
+
+  const paddingClass = cn(START_PADDING[startKind], END_PADDING[endKind]);
 
   const itemContent = (
     <Item
