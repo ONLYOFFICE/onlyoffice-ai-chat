@@ -15,4 +15,9 @@ export type DropdownMenuProps = {
   open?: boolean;
   dropdownRef?: React.RefObject<HTMLDivElement | null>;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Visual context propagated to every rendered item. Defaults to "menu";
+   * `ComboBox` sets "combobox" to keep the symmetric trigger-matching padding.
+   */
+  variant?: "menu" | "combobox";
 };

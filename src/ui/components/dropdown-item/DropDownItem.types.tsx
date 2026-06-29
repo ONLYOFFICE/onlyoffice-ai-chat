@@ -31,6 +31,14 @@ export type DropDownItemProps = {
 
   withSpace?: boolean;
 
+  /**
+   * Visual context the item is rendered in. "combobox" keeps symmetric
+   * padding (matching the trigger field); "menu" (default) uses the
+   * icon-aware horizontal padding driven by the `--dropdown-item-*`
+   * tokens. Set automatically by `DropdownMenu` / `ComboBox`.
+   */
+  variant?: "menu" | "combobox";
+
   withAbout?: boolean;
   aboutContent?: React.ReactNode;
 };

@@ -23,6 +23,15 @@
   --aui-font-base: 12px;
   --aui-font-scale: 1;
 
+  /* Dropdown menu item horizontal padding (logical: start = left in LTR).
+     Combobox items keep symmetric padding; menu items indent the start edge
+     based on whether they carry a leading icon. Integrators can override any
+     of these without touching the components. */
+  --dropdown-item-pad-start: 16px; /* menu rows without an icon */
+  --dropdown-item-pad-start-icon: 4px; /* menu rows with icon / withSpace */
+  --dropdown-item-pad-start-combobox: 8px; /* combobox rows */
+  --dropdown-item-pad-end: 8px; /* end edge, all rows */
+
   font-size: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1));
   line-height: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333);
 

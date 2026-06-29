@@ -20,6 +20,7 @@ const DropdownMenuComponent = ({
   dropdownRef,
   onOpenChange,
   headerContent,
+  variant = "menu",
 }: DropdownMenuProps) => {
   const { isRTL } = useI18n();
   const { portalContainer } = useTheme();
@@ -96,6 +97,7 @@ const DropdownMenuComponent = ({
             <DropDownItem
               key={item.id || item.text || `item-${index}`}
               {...item}
+              variant={variant}
             />
           ))}
         </DropdownMenu.Content>

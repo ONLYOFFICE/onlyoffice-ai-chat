@@ -34,6 +34,7 @@ const DropDownItem = ({
   withSpace,
   withAbout,
   aboutContent,
+  variant = "menu",
 }: DropDownItemProps) => {
   const { isRTL } = useI18n();
   const { portalContainer } = useTheme();
@@ -173,11 +174,26 @@ const DropDownItem = ({
 
   const isHorizontalSide = submenuSide === "left" || submenuSide === "right";
 
+  // Horizontal padding. Combobox keeps the symmetric padding that lines its
+  // items up with the trigger field. Menus indent the start edge based on
+  // whether the row carries (or reserves) a leading icon, all driven by
+  // integrator-overridable `--dropdown-item-*` tokens.
+  const paddingClass =
+    variant === "combobox"
+      ? "ps-[var(--dropdown-item-pad-start-combobox,8px)] pe-[var(--dropdown-item-pad-end,8px)]"
+      : cn(
+          icon || withSpace
+            ? "ps-[var(--dropdown-item-pad-start-icon,4px)]"
+            : "ps-[var(--dropdown-item-pad-start,16px)]",
+          "pe-[var(--dropdown-item-pad-end,8px)]"
+        );
+
   const itemContent = (
     <Item
       className={cn(
         "dropdown-menu-item",
-        "flex items-center justify-between gap-[10px] min-w-0 w-full max-w-full min-h-[26px] h-[26px] px-[8px] select-none cursor-pointer",
+        "flex items-center justify-between gap-[10px] min-w-0 w-full max-w-full min-h-[26px] h-[26px] select-none cursor-pointer",
+        paddingClass,
         "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 border-0",
         "hover:bg-[var(--drop-down-menu-item-hover-color)] hover:text-[var(--drop-down-menu-item-hover-color)]",
         "data-[disabled]:opacity-50 data-[disabled]:pointer-events-none",

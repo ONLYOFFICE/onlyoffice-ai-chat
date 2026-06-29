@@ -28,6 +28,7 @@
 - `FieldContainer` accepts an `iconIsStroke` prop, forwarded to its header `Icon` as `isStroke`.
 - Added a `--background-card-normal` base color token to every theme (`#FFFFFF` in light themes, `#505050` in dark themes). The model card now derives its background from it (`--model-card-background-color` → `var(--background-card-normal)`).
 - Added a `--background-icon-normal` base color token to every theme (`#FFFFFF` in light themes, `#404040` in dark themes).
+- Dropdown menu items now use icon-aware horizontal padding driven by overridable CSS tokens, distinct from combo-box items. `DropdownMenu` gained a `variant` prop (`"menu"` default, `"combobox"`) propagated to every item; `ComboBox` sets `"combobox"` to keep its symmetric, trigger-matching padding. Menu items indent the start edge by whether they carry (or reserve, via `withSpace`) a leading icon. New tokens, settable on `.aui-root`, control the values: `--dropdown-item-pad-start` (16px, no icon), `--dropdown-item-pad-start-icon` (4px, with icon/`withSpace`), `--dropdown-item-pad-start-combobox` (8px), and `--dropdown-item-pad-end` (8px). Padding is logical (`ps`/`pe`), so it mirrors correctly in RTL.
 
 ### Fixed
 
