@@ -220,7 +220,7 @@ const DropDownItem = ({
   const itemContent = (
     <Item
       className={cn(
-        "dropdown-menu-item",
+        "dropdown-menu-item group",
         "flex items-center justify-between gap-[10px] min-w-0 w-full max-w-full min-h-[26px] h-[26px] select-none cursor-pointer",
         paddingClass,
         "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 border-0",
@@ -280,7 +280,17 @@ const DropDownItem = ({
       </div>
 
       {subMenu ? (
-        <div onClick={subMenuIcon ? (e) => e.stopPropagation() : undefined}>
+        <div
+          onClick={subMenuIcon ? (e) => e.stopPropagation() : undefined}
+          // The "more" trigger only reveals on row hover/focus (or while its
+          // menu is open), kept in layout via opacity so the row doesn't shift.
+          // The plain submenu chevron (no subMenuIcon) stays always visible.
+          className={
+            subMenuIcon
+              ? "opacity-0 group-hover:opacity-100 focus-within:opacity-100 has-[[data-state=open]]:opacity-100"
+              : undefined
+          }
+        >
           <DropdownMenu
             trigger={
               <IconButton
