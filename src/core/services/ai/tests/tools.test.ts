@@ -288,9 +288,10 @@ describe("executeAdapterTool", () => {
     );
   });
 
-  it("dispatches generate_image through callImageGenerationTool", async () => {
+  it("dispatches generate_image through callImageGenerationTool, forwarding ctx.pickFetch", async () => {
     callImageGenerationToolMock.mockResolvedValue("image-result");
     resumeChatMock.mockImplementation(async function* () {});
+    const pickFetch = vi.fn();
     const gen = executeAdapterTool(
       makeStorage(),
       undefined,
@@ -306,12 +307,25 @@ describe("executeAdapterTool", () => {
           ],
         } as never,
       } as never,
-      { profile: {} as never, profileId: "p", tools: [] }
+      {
+        profile: {} as never,
+        profileId: "p",
+        tools: [],
+        pickFetch: pickFetch as never,
+      }
     );
     for await (const _ of gen) {
       void _;
     }
-    expect(callImageGenerationToolMock).toHaveBeenCalled();
+    // `pickFetch` reaches the tool so it can resolve `externalFetch` /
+    // `fetchProxy` for the image-generation profile (distinct from the
+    // chat profile that issued the call).
+    expect(callImageGenerationToolMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "generate_image",
+      {},
+      pickFetch
+    );
     // The base64 → attachment-ref swap is centralized in `resumeChat`
     // (covered by tool-call.test.ts), so `executeAdapterTool` forwards the
     // raw tool result through unchanged.

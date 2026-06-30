@@ -1,11 +1,27 @@
 import { ActionType } from "../../../../shared/action-type";
 import logger from "../../../../shared/logger";
 import type { TMCPItem } from "../../../../shared/mcp-item";
+import type { ProviderFetch } from "../../../../shared/provider-credentials";
 import { providerFor } from "../../../actions/provider";
 import type { StorageAdapter } from "../../../storage";
 
 /** Stable serverType prefix used in `storage.toolPrefs` and runtime routing. */
 export const IMAGE_GENERATION_TYPE = "image-generation";
+
+/**
+ * Resolve the proxy / external fetch for a profile — the engine's
+ * `pickFetch`. The image-generation tool resolves its OWN profile
+ * (distinct from the chat profile that issued the tool call), so it must
+ * run that profile through the same resolver to wire
+ * `PlatformAdapter.externalFetch` (required for `providerType: "external"`)
+ * or `fetchProxy` into the image request. Without it, an `external`
+ * profile would fall back to the global `fetch` and the inner SDK would
+ * have no transport.
+ */
+export type ProfileFetchResolver = (profile: {
+  providerType?: string;
+  useProxy?: boolean;
+}) => ProviderFetch | undefined;
 
 /**
  * Built-in image-generation tool.
@@ -58,7 +74,8 @@ export async function getImageGenerationTools(
 export async function callImageGenerationTool(
   storage: StorageAdapter,
   bareName: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  pickFetch?: ProfileFetchResolver
 ): Promise<string> {
   logger.info("[generate_image] tool called", { bareName, args });
 
@@ -86,14 +103,24 @@ export async function callImageGenerationTool(
     });
   }
 
-  const provider = providerFor({ profile, messages: [] });
-  if (typeof provider.imageGeneration !== "function") {
-    return JSON.stringify({
-      error: "Image generation provider is not configured.",
-    });
-  }
-
   try {
+    // Resolve the fetch for THIS profile (not the chat profile that
+    // issued the call): `providerType: "external"` requires the host's
+    // `externalFetch`, and any provider opts into `fetchProxy` via
+    // `useProxy`/`forceProxy`. Done inside the try so a misconfigured
+    // `external` profile surfaces as a tool-result error string instead
+    // of throwing into the chat stream.
+    const fetch = pickFetch?.(profile);
+    const provider = providerFor({
+      profile,
+      messages: [],
+      ...(fetch ? { fetch } : {}),
+    });
+    if (typeof provider.imageGeneration !== "function") {
+      return JSON.stringify({
+        error: "Image generation provider is not configured.",
+      });
+    }
     const base64 = await provider.imageGeneration({
       model: profile.modelId,
       prompt,

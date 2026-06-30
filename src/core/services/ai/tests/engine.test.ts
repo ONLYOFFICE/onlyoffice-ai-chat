@@ -493,3 +493,118 @@ describe("AIEngine.sendCustom", () => {
     });
   });
 });
+
+describe("AIEngine built-in generate_image fetch wiring", () => {
+  const IMG_STUB = "ai-engine-image-stub";
+
+  /** Credentials the most recently constructed image provider received. */
+  let capturedImageCreds: ProviderCredentials | undefined;
+  const imageGenerationMock = vi.fn();
+
+  class StubImageProvider extends AbstractBaseProvider {
+    constructor(creds: ProviderCredentials) {
+      super(creds);
+      capturedImageCreds = creds;
+    }
+    async *sendMessage(): AsyncGenerator<SendMessageResult> {
+      // not exercised — image profile is only used for imageGeneration
+    }
+    async sendMessageSync(): Promise<string> {
+      return "";
+    }
+    async imageGeneration(): Promise<string> {
+      return imageGenerationMock();
+    }
+    static getName(): string {
+      return "StubImage";
+    }
+    static getBaseUrl(): string {
+      return "https://stub-image";
+    }
+    static async checkProvider(): Promise<boolean> {
+      return true;
+    }
+    static async getProviderModels(): Promise<[]> {
+      return [];
+    }
+  }
+
+  // Chat profile has NO proxy; the image profile opts into useProxy. So
+  // wiring `fetchProxy` into the image request can only happen if the tool
+  // resolves fetch from its OWN profile via the engine's `pickFetch`.
+  const imageProfile: Profile = {
+    id: "img",
+    name: "Image",
+    providerType: IMG_STUB,
+    baseUrl: "https://stub-image",
+    modelId: "dall-e-3",
+    capabilities: 0xff,
+    useProxy: true,
+  };
+
+  beforeEach(() => {
+    registerProvider(IMG_STUB, StubImageProvider);
+    capturedImageCreds = undefined;
+    imageGenerationMock.mockReset().mockResolvedValue("B64");
+  });
+
+  afterEach(() => {
+    unregisterProvider(IMG_STUB);
+  });
+
+  it("auto-executes generate_image and wires the image profile's proxy fetch (regression: pickFetch dropped from runChatStream ctx)", async () => {
+    const { storage } = makeStorage();
+    // Route ImageGeneration to the image profile; everything else stays p1.
+    (
+      storage.assignments.readByType as ReturnType<typeof vi.fn>
+    ).mockImplementation(async (type: ActionType) =>
+      type === ActionType.ImageGeneration ? "img" : "p1"
+    );
+    (storage.profiles.readById as ReturnType<typeof vi.fn>).mockImplementation(
+      async (id: string) => (id === "img" ? imageProfile : profile)
+    );
+    // persistGeneratedImage swaps base64 → an attachment ref.
+    (storage as unknown as { attachments: unknown }).attachments = {
+      create: vi.fn(async () => ({ id: "att1" })),
+      readById: vi.fn(async () => null),
+    };
+
+    const toolCallReply: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        {
+          type: "tool-call",
+          toolCallId: "c1",
+          toolName: "generate_image",
+          args: { prompt: "a cat" },
+        },
+      ],
+    };
+    const followUp: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "here you go" }],
+    };
+    sendMessageSyncMock.mockResolvedValue("Title");
+    // 1st provider round: the model asks for the image. 2nd round (resume
+    // after the tool runs): a plain text reply that ends the stream.
+    sendMessageMock
+      .mockReturnValueOnce(
+        arrayToStream([{ isEnd: true, responseMessage: toolCallReply }])
+      )
+      .mockReturnValueOnce(
+        arrayToStream([{ isEnd: true, responseMessage: followUp }])
+      );
+
+    const fetchProxy = vi.fn();
+    const engine = new AIEngine({ storage, fetchProxy });
+    for await (const _ of engine.sendWithStream({ userMessage })) {
+      // drain
+    }
+
+    expect(imageGenerationMock).toHaveBeenCalledTimes(1);
+    // The image provider was built with the image profile's proxy fetch...
+    expect(capturedImageCreds?.fetch).toBe(fetchProxy);
+    // ...even though the chat profile itself never opts into the proxy.
+    expect(capturedCreds?.fetch).toBeUndefined();
+  });
+});

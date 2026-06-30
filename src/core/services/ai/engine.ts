@@ -284,6 +284,7 @@ export class AIEngine {
       entityId: input.entityId,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
+      pickFetch: (p) => this.pickFetch(p),
     });
 
     if (titlePromise) {
@@ -394,6 +395,7 @@ export class AIEngine {
       entityId: input.entityId,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
+      pickFetch: (p) => this.pickFetch(p),
     });
   }
 
@@ -453,6 +455,7 @@ export class AIEngine {
             entityId: input.entityId,
             fetch: proxiedFetch,
             webSearchFetch: this.deps.fetchProxy,
+            pickFetch: (p) => this.pickFetch(p),
           };
           const resumed = executeAdapterTool(
             this.deps.storage,
@@ -518,6 +521,7 @@ export class AIEngine {
       entityId: input.entityId,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
+      pickFetch: (p) => this.pickFetch(p),
     };
 
     const resumed = resumeChat(
