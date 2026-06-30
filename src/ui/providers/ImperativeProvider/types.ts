@@ -66,8 +66,14 @@ export interface AIChatWidgetRef {
   /** Clear all messages in a thread. */
   clearHistory(threadId: string): Promise<void>;
 
-  /** Download a thread as a file. */
+  /** Download a thread as a file (default "Save" — `.docx`). */
   downloadThread(threadId: string): void;
+
+  /**
+   * Export a thread in a host-declared format. `formatId` must match an
+   * {@link ExportFormat.id} returned by `platform.file.getExportFormats()`.
+   */
+  exportThread(threadId: string, formatId: string): void;
 
   /** Get all threads. */
   getThreads(): Thread[];

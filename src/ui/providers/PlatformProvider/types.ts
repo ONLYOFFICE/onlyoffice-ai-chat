@@ -11,6 +11,24 @@ import type { TCloud, TCloudKey, TMCPItem, TProcess } from "../../../types";
 export type CopyFormat = "markdown" | "text";
 
 /**
+ * A chat-export format offered by the host application.
+ *
+ * Returned from {@link PlatformFileOperations.getExportFormats}. When the host
+ * declares more than one format, the chat menu replaces the single "Save" item
+ * with an "Export" submenu listing every format; the chosen format's
+ * {@link ExportFormat.id} is passed back to
+ * {@link PlatformFileOperations.saveAsFile} as its third argument.
+ */
+export interface ExportFormat {
+  /** Stable identifier passed back to `saveAsFile`, e.g. `"docx"`, `"pdf"`, `"md"`. */
+  id: string;
+  /** Human-readable label shown in the export submenu, e.g. `"Word (.docx)"`. */
+  label: string;
+  /** File extension used for the default file name (without a leading dot), e.g. `"docx"`. */
+  extension: string;
+}
+
+/**
  * Metadata describing what is being copied, passed as the second argument to
  * {@link PlatformAdapter.copyToClipboard}.
  */
@@ -49,8 +67,31 @@ export interface PlatformFileOperations {
   /** Get a JSON string of recently opened files from the host editor */
   getRecentFiles?(): Promise<string>;
 
-  /** Show a "Save As" dialog and save content as a file (e.g. export message as DOCX) */
-  saveAsFile?(content: string, defaultName: string): Promise<void>;
+  /**
+   * Show a "Save As" dialog and save content as a file (e.g. export message
+   * as DOCX). The library always passes Markdown source as `content`; the
+   * host is responsible for converting it to the target format.
+   *
+   * `format` is the {@link ExportFormat.id} chosen from the export submenu.
+   * It is omitted for the default "Save" action (when the host declares no
+   * formats via {@link getExportFormats}), in which case the host should fall
+   * back to its default behavior — preserving backward compatibility with
+   * hosts that ignore the third argument.
+   */
+  saveAsFile?(
+    content: string,
+    defaultName: string,
+    format?: string
+  ): Promise<void>;
+
+  /**
+   * Declare the chat-export formats offered in the chat menu. Return more than
+   * one {@link ExportFormat} to replace the single "Save" item with an
+   * "Export" submenu; the chosen format's `id` is forwarded to
+   * {@link saveAsFile}. Omit (or return `[]` / a single entry) to keep the
+   * default single "Save" action.
+   */
+  getExportFormats?(): ExportFormat[];
 
   /** Open a file in the host editor by path */
   openFile?(path: string, name: string): void;

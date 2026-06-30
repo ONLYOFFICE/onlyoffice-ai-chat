@@ -6,7 +6,10 @@ const mockSetCurrentPage = vi.fn();
 const mockOnSwitchToThread = vi.fn();
 const mockOnRenameThread = vi.fn();
 const mockOnDownloadThread = vi.fn();
+const mockOnExportThread = vi.fn();
 const mockOnClearThreadHistory = vi.fn();
+
+let mockExportFormats: { id: string; label: string; extension: string }[] = [];
 
 const mockThreads = [
   { threadId: "t1", title: "First Chat" },
@@ -29,6 +32,7 @@ vi.mock("../../../store/context", () => ({
         onSwitchToThread: mockOnSwitchToThread,
         onRenameThread: mockOnRenameThread,
         onDownloadThread: mockOnDownloadThread,
+        onExportThread: mockOnExportThread,
         onClearThreadHistory: mockOnClearThreadHistory,
       };
       return selector ? selector(state) : state;
@@ -37,6 +41,12 @@ vi.mock("../../../store/context", () => ({
       const state = { setCurrentPage: mockSetCurrentPage };
       return selector ? selector(state) : state;
     },
+  }),
+}));
+
+vi.mock("../../../providers/PlatformProvider/context", () => ({
+  usePlatform: () => ({
+    file: { getExportFormats: () => mockExportFormats },
   }),
 }));
 
@@ -109,6 +119,7 @@ describe("ChatList", () => {
     vi.clearAllMocks();
     currentThreads = mockThreads;
     mockWidgetConfig = {};
+    mockExportFormats = [];
   });
 
   it("renders the ChatHistory heading", () => {

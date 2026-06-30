@@ -17,6 +17,7 @@ function makeStores() {
     onRenameThread: vi.fn(),
     onClearThreadHistory: vi.fn().mockResolvedValue(undefined),
     onDownloadThread: vi.fn().mockResolvedValue(undefined),
+    onExportThread: vi.fn().mockResolvedValue(undefined),
     threads: [{ threadId: "t1", title: "Title 1" }],
     threadId: "t1",
     initThreads: vi.fn().mockResolvedValue(undefined),
@@ -147,6 +148,16 @@ describe("createWidgetRef", () => {
     ref.downloadThread("t1");
     expect(states.threadsState.onDownloadThread).toHaveBeenCalledWith(
       "t1",
+      "Title 1"
+    );
+  });
+
+  it("exportThread looks up title and forwards the format id", () => {
+    const { ref, states } = build();
+    ref.exportThread("t1", "pdf");
+    expect(states.threadsState.onExportThread).toHaveBeenCalledWith(
+      "t1",
+      "pdf",
       "Title 1"
     );
   });

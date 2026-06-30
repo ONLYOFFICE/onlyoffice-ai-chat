@@ -78,6 +78,7 @@ export { PlatformProvider, usePlatform } from "./ui/providers/PlatformProvider";
 export type {
   CopyFormat,
   CopyMeta,
+  ExportFormat,
   PlatformAdapter,
   PlatformClouds,
   PlatformEnvironment,

@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
+import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 import { IconButton } from "../../icon-button";
@@ -14,8 +15,14 @@ const ChatList = () => {
   const onSwitchToThread = useThreadsStore((s) => s.onSwitchToThread);
   const onRenameThread = useThreadsStore((s) => s.onRenameThread);
   const onDownloadThread = useThreadsStore((s) => s.onDownloadThread);
+  const onExportThread = useThreadsStore((s) => s.onExportThread);
   const onClearThreadHistory = useThreadsStore((s) => s.onClearThreadHistory);
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
+  const platform = usePlatform();
+  const exportFormats = useMemo(
+    () => platform.file?.getExportFormats?.() ?? [],
+    [platform]
+  );
   const { chatHistoryCloseIcon } = useWidgetConfig();
   const closeIconName = chatHistoryCloseIcon ?? "btn-close";
 
@@ -111,6 +118,8 @@ const ChatList = () => {
                       setCurrentPage={setCurrentPage}
                       onRenameThread={onRenameThread}
                       onDownloadThread={onDownloadThread}
+                      onExportThread={onExportThread}
+                      exportFormats={exportFormats}
                       onClearThreadHistory={onClearThreadHistory}
                     />
                   ))}

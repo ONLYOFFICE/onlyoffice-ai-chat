@@ -58,6 +58,7 @@ export type TranslationKey =
   | "EnterURL"
   | "EnterYourJSONConfiguration"
   | "Error"
+  | "ExportTo"
   | "ExtendedThinking"
   | "ExtendedThinkingDescription"
   | "FinishAISetup"

@@ -6,6 +6,13 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
+type MockItem = {
+  text: string;
+  onClick: () => void;
+  isSeparator?: boolean;
+  subMenu?: MockItem[];
+};
+
 vi.mock("../../dropdown", () => ({
   DropdownMenu: ({
     trigger,
@@ -13,7 +20,7 @@ vi.mock("../../dropdown", () => ({
     open,
   }: {
     trigger: React.ReactNode;
-    items: { text: string; onClick: () => void; isSeparator?: boolean }[];
+    items: MockItem[];
     open?: boolean;
   }) => (
     <div data-testid="dropdown-menu" data-open={open}>
@@ -29,6 +36,20 @@ vi.mock("../../dropdown", () => ({
               <button data-testid={`menu-${item.text}`} onClick={item.onClick}>
                 {item.text}
               </button>
+              {item.subMenu ? (
+                <ul data-testid={`submenu-${item.text}`}>
+                  {item.subMenu.map((sub, j) => (
+                    <li key={j}>
+                      <button
+                        data-testid={`submenu-item-${sub.text}`}
+                        onClick={sub.onClick}
+                      >
+                        {sub.text}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </li>
           )
         )}
@@ -105,6 +126,8 @@ const defaultProps = {
   onSwitchToThread: vi.fn(),
   onRenameThread: vi.fn(),
   onDownloadThread: vi.fn(),
+  onExportThread: vi.fn(),
+  exportFormats: [],
   onClearThreadHistory: vi.fn(),
   setCurrentPage: vi.fn(),
 };
@@ -293,6 +316,55 @@ describe("ChatListItem", () => {
       "thread-1",
       "Test Thread"
     );
+  });
+
+  it("shows Export submenu instead of Save when host declares multiple formats", () => {
+    const props = {
+      ...defaultProps,
+      exportFormats: [
+        { id: "docx", label: "Word (.docx)", extension: "docx" },
+        { id: "pdf", label: "PDF (.pdf)", extension: "pdf" },
+      ],
+    };
+    render(<ChatListItem {...props} />);
+    const container = screen.getByText("Test Thread").closest("div")!;
+    fireEvent.mouseEnter(container);
+
+    expect(screen.queryByTestId("menu-Save")).not.toBeInTheDocument();
+    expect(screen.getByTestId("menu-ExportTo")).toBeInTheDocument();
+    expect(screen.getByTestId("submenu-item-Word (.docx)")).toBeInTheDocument();
+    expect(screen.getByTestId("submenu-item-PDF (.pdf)")).toBeInTheDocument();
+  });
+
+  it("calls onExportThread with the chosen format id from the submenu", () => {
+    const onExportThread = vi.fn();
+    const props = {
+      ...defaultProps,
+      onExportThread,
+      exportFormats: [
+        { id: "docx", label: "Word (.docx)", extension: "docx" },
+        { id: "pdf", label: "PDF (.pdf)", extension: "pdf" },
+      ],
+    };
+    render(<ChatListItem {...props} />);
+    const container = screen.getByText("Test Thread").closest("div")!;
+    fireEvent.mouseEnter(container);
+    fireEvent.click(screen.getByTestId("submenu-item-PDF (.pdf)"));
+
+    expect(onExportThread).toHaveBeenCalledWith("thread-1", "pdf", "Test Thread");
+  });
+
+  it("keeps a single Save item when only one format is declared", () => {
+    const props = {
+      ...defaultProps,
+      exportFormats: [{ id: "docx", label: "Word (.docx)", extension: "docx" }],
+    };
+    render(<ChatListItem {...props} />);
+    const container = screen.getByText("Test Thread").closest("div")!;
+    fireEvent.mouseEnter(container);
+
+    expect(screen.getByTestId("menu-Save")).toBeInTheDocument();
+    expect(screen.queryByTestId("menu-ExportTo")).not.toBeInTheDocument();
   });
 
   it("calls onClearThreadHistory when ClearHistory is clicked", () => {

@@ -40,8 +40,12 @@ function makeDeps(initialThreads: Thread[] = []) {
   } as unknown as ServerAPI;
 
   const saveAsFile = vi.fn();
+  const getExportFormats = vi.fn(() => [
+    { id: "docx", label: "Word (.docx)", extension: "docx" },
+    { id: "pdf", label: "PDF (.pdf)", extension: "pdf" },
+  ]);
   const platform = {
-    file: { saveAsFile },
+    file: { saveAsFile, getExportFormats },
   } as unknown as PlatformAdapter;
 
   const callbacksManager = { emit: vi.fn() } as unknown as CallbacksManager;
@@ -56,6 +60,7 @@ function makeDeps(initialThreads: Thread[] = []) {
     claimThreadId,
     fetchPrevMessages,
     saveAsFile,
+    getExportFormats,
   };
 }
 
@@ -187,6 +192,29 @@ describe("createThreadsStore", () => {
     expect(deps.saveAsFile).toHaveBeenCalledWith(
       expect.any(String),
       "Chat Export.docx"
+    );
+  });
+
+  it("onExportThread resolves extension by formatId and passes format through", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    await s.getState().onExportThread("a", "pdf", "My Chat");
+    expect(deps.api.threads.readMessages).toHaveBeenCalledWith("a");
+    expect(deps.saveAsFile).toHaveBeenCalledWith(
+      expect.any(String),
+      "My Chat.pdf",
+      "pdf"
+    );
+  });
+
+  it("onExportThread falls back to docx for an unknown formatId", async () => {
+    const deps = makeDeps();
+    const s = createThreadsStore(deps);
+    await s.getState().onExportThread("a", "unknown", "My Chat");
+    expect(deps.saveAsFile).toHaveBeenCalledWith(
+      expect.any(String),
+      "My Chat.docx",
+      "unknown"
     );
   });
 
