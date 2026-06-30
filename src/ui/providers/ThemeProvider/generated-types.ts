@@ -81,6 +81,7 @@ export interface ThemeTokens {
   "--chat-user-message-color"?: string;
   "--chat-welcome-color"?: string;
   "--chat-welcome-description-color"?: string;
+  "--chb-border-normal"?: string;
   "--checkbox-active-color"?: string;
   "--checkbox-active-hover-color"?: string;
   "--checkbox-active-icon-color"?: string;
@@ -190,6 +191,8 @@ export interface ThemeTokens {
   "--toggle-button-background-hover-color"?: string;
   "--toggle-button-circle-color"?: string;
   "--toggle-button-off-background-color"?: string;
+  "--toggle-button-off-border-color"?: string;
+  "--toggle-button-off-circle-color"?: string;
   "--tool-fallback-color"?: string;
   "--tooltip-background-color"?: string;
   "--tooltip-border-color"?: string;
