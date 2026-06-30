@@ -199,11 +199,11 @@ describe("ChatList", () => {
     expect(screen.queryByTestId("chat-item-t3")).not.toBeInTheDocument();
   });
 
-  it("shows NoChatYet when search matches nothing", () => {
+  it("shows NoChatsFound when search matches nothing", () => {
     render(<ChatList />);
     const input = screen.getByTestId("search-input");
     fireEvent.change(input, { target: { value: "zzzzzzz" } });
-    expect(screen.getByText("NoChatYet")).toBeInTheDocument();
+    expect(screen.getByText("NoChatsFound")).toBeInTheDocument();
   });
 
   it("search is case-insensitive", () => {

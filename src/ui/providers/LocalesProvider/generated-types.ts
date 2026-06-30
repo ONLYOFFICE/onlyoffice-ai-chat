@@ -80,6 +80,7 @@ export type TranslationKey =
   | "NewFolder"
   | "No"
   | "NoChatYet"
+  | "NoChatsFound"
   | "OCR"
   | "Older"
   | "OnlyofficeAISettings"

@@ -13,6 +13,10 @@
 - `disableBuiltinImageTool` widget config (and matching `AIEngine` dep) — opts the built-in `generate_image` chat tool out of the tool list. Lets a host that ships its own image-generation tool avoid offering the model two same-purpose tools. Default false. Gates only the chat tool: the one-shot image-generation action (and its `ImageGeneration` assignment) keep working. When set, the engine skips the tool — and the assignment read behind it — entirely.
 - Host-defined chat export formats. The new optional `PlatformFileOperations.getExportFormats()` lets a host declare a list of export formats (`ExportFormat = { id, label, extension }`, also exported). When more than one format is returned, the chat-list "Save" item becomes an "Export to…" submenu listing every format; choosing one calls `saveAsFile(content, "<name>.<extension>", formatId)` with the new optional third `format` argument (the chosen `ExportFormat.id`). The library always passes Markdown source as `content`, so the host converts it to the target format. When no formats are declared (or only one), the single default "Save" action is kept and `saveAsFile` is called with two arguments as before — fully backward compatible. Also added `AIChatWidgetRef.exportThread(threadId, formatId)` and the `onExportThread` thread-store action.
 
+### Fixed
+
+- Chat-history search no longer shows the empty-history message ("There is no chat history yet…") when a search simply matches nothing. The no-results state now uses a distinct `NoChatsFound` string ("No chats found"), translated across all locales, leaving "There is no chat history yet…" for when there are genuinely no threads.
+
 ### Changed
 
 - Message action bar icons (`btn-copy`, `btn-reset`, `btn-save`) replaced with new 20 px stroke-based designs; icon size reduced from 24 px to 20 px for a denser interface. Action bar icons now render in a new `--icon-gray-secondary` theme token (`#949494` in light themes, `#B2B2B2` in dark themes) instead of the primary icon color.

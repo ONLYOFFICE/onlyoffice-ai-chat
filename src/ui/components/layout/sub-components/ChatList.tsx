@@ -127,7 +127,7 @@ const ChatList = () => {
               ))
             ) : (
               <p className="text-[var(--chat-list-empty-color)] font-normal w-full">
-                {t("NoChatYet")}
+                {t("NoChatsFound")}
               </p>
             )}
           </div>
