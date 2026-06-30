@@ -118,7 +118,7 @@ const AvailableToolsItem = ({
         <div>
           {isLoadingAction ? (
             <Loader />
-          ) : (
+          ) : dropdownItems.length > 0 ? (
             <DropdownMenu
               onOpenChange={setDropdownOpen}
               trigger={
@@ -134,7 +134,7 @@ const AvailableToolsItem = ({
               align="start"
               sideOffset={0}
             />
-          )}
+          ) : null}
         </div>
       </div>
       {opened ? (

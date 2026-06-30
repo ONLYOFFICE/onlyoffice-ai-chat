@@ -245,7 +245,11 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
             isHorizontal={fieldIsHorizontal}
             action={
               getApiKeyLink(selectedId) ? (
-                <Link href={getApiKeyLink(selectedId)} target="_blank">
+                <Link
+                  href={getApiKeyLink(selectedId)}
+                  target="_blank"
+                  className="!text-[var(--link-secondary-color)]"
+                >
                   {t("GetAPIKey")}
                 </Link>
               ) : undefined
