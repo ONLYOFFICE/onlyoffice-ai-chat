@@ -1,6 +1,25 @@
 import type { TCloud, TCloudKey, TMCPItem, TProcess } from "../../../types";
 
 /**
+ * Content format of the text passed to {@link PlatformAdapter.copyToClipboard}.
+ *
+ * - `"markdown"` — a message body (assistant reply or user prompt); the
+ *   string is Markdown source.
+ * - `"text"` — raw, verbatim content: a code block's source or a tool call's
+ *   arguments / result (JSON).
+ */
+export type CopyFormat = "markdown" | "text";
+
+/**
+ * Metadata describing what is being copied, passed as the second argument to
+ * {@link PlatformAdapter.copyToClipboard}.
+ */
+export interface CopyMeta {
+  /** Content format of the copied `text`. See {@link CopyFormat}. */
+  format: CopyFormat;
+}
+
+/**
  * File-system operations delegated to the host application.
  *
  * Covers picking files/images, converting document formats, and opening or
@@ -180,8 +199,13 @@ export interface PlatformAdapter {
    * environments where the Clipboard API is unavailable (cross-origin
    * iframe without `clipboard-write` permission, native WebView host,
    * etc.). May return a `Promise` or be synchronous.
+   *
+   * The optional second argument {@link CopyMeta} describes what is being
+   * copied — `format: "markdown"` for message bodies (assistant / user) and
+   * `format: "text"` for raw content (code blocks, tool args/results). It is
+   * additive and backward compatible; it can be ignored if not needed.
    */
-  copyToClipboard?: (text: string) => void | Promise<void>;
+  copyToClipboard?: (text: string, meta?: CopyMeta) => void | Promise<void>;
 
   /** Cloud accounts connected in the host application. If null — cloud provider features are unavailable */
   clouds: PlatformClouds | null;

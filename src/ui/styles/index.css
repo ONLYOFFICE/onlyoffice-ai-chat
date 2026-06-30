@@ -23,6 +23,27 @@
   --aui-font-base: 12px;
   --aui-font-scale: 1;
 
+  /* Dropdown menu item horizontal padding (logical edges: start = left in
+     LTR). Each token names the row type it applies to, so overriding one is
+     unambiguous. A row is a "text" row (no leading icon) or an "icon" row
+     (leading icon, or space reserved via `withSpace`); its end padding
+     tightens to the "control" value when the row ends with an interactive
+     control (trailing icon, toggle, submenu chevron, about button). Combobox
+     rows keep their own symmetric padding. Integrators can override any of
+     these on `.aui-root` without touching the components. */
+  --dropdown-item-padding-start-text: 16px; /* text rows — start edge */
+  --dropdown-item-padding-end-text: 16px; /* text rows — end edge */
+  --dropdown-item-padding-start-icon: 4px; /* icon rows — start edge */
+  --dropdown-item-padding-end-icon: 20px; /* icon rows — end edge (label end) */
+  --dropdown-item-padding-end-control: 8px; /* any row ending in a control */
+  --dropdown-item-padding-start-combobox: 8px; /* combobox rows — start edge */
+  --dropdown-item-padding-end-combobox: 8px; /* combobox rows — end edge */
+
+  /* Drill-down "back" row (only shown in `dropdownNavigation: "drilldown"`
+     menus when not at the root level). */
+  --dropdown-back-row-height: 20px;
+  --dropdown-back-row-padding: 8px; /* horizontal padding */
+
   font-size: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1));
   line-height: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333);
 

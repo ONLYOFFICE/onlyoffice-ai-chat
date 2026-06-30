@@ -114,6 +114,7 @@ const ComboBox = ({
       matchTriggerWidth={true}
       headerContent={searchHeader}
       items={visibleItems}
+      variant="combobox"
     />
   );
 };

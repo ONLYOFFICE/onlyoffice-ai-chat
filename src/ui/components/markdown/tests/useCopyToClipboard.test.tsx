@@ -2,7 +2,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
-let mockPlatformCopy: ((text: string) => void | Promise<void>) | undefined;
+let mockPlatformCopy:
+  | ((text: string, meta?: { format: string }) => void | Promise<void>)
+  | undefined;
 
 vi.mock("../../../providers/PlatformProvider", () => ({
   usePlatform: () => ({ copyToClipboard: mockPlatformCopy }),
@@ -34,9 +36,23 @@ describe("useCopyToClipboard", () => {
       result.current.copyToClipboard("hi");
     });
 
-    expect(platformCopy).toHaveBeenCalledWith("hi");
+    expect(platformCopy).toHaveBeenCalledWith("hi", { format: "text" });
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
     expect(result.current.isCopied).toBe(true);
+  });
+
+  it("forwards an explicit copy format to platform.copyToClipboard", async () => {
+    const platformCopy = vi.fn().mockResolvedValue(undefined);
+    mockPlatformCopy = platformCopy;
+    const { result } = renderHook(() => useCopyToClipboard());
+
+    await act(async () => {
+      result.current.copyToClipboard("# Title", "markdown");
+    });
+
+    expect(platformCopy).toHaveBeenCalledWith("# Title", {
+      format: "markdown",
+    });
   });
 
   it("returns isCopied as false initially", () => {

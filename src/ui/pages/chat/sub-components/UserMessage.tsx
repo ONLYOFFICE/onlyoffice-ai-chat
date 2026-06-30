@@ -187,7 +187,7 @@ const UserActionBar = () => {
     const text = getMessageText();
     if (!text) return;
     const write = platformCopy
-      ? Promise.resolve(platformCopy(text))
+      ? Promise.resolve(platformCopy(text, { format: "markdown" }))
       : navigator.clipboard.writeText(text);
     void write.then(() => {
       setCopied(true);

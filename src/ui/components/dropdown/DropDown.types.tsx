@@ -15,4 +15,18 @@ export type DropdownMenuProps = {
   open?: boolean;
   dropdownRef?: React.RefObject<HTMLDivElement | null>;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Visual context propagated to every rendered item. Defaults to "menu";
+   * `ComboBox` sets "combobox" to keep the symmetric trigger-matching padding.
+   */
+  variant?: "menu" | "combobox";
+  /**
+   * Overrides the global `WidgetConfig.dropdownNavigation` for this menu.
+   * - `"flyout"` — nested submenus open as side flyouts (the historical
+   *   behavior).
+   * - `"drilldown"` — submenus replace the current level in place, with a
+   *   "back" row to return.
+   * When omitted, falls back to the widget config, then to `"flyout"`.
+   */
+  navigation?: "flyout" | "drilldown";
 };
