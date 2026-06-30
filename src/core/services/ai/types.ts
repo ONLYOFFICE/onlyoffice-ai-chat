@@ -102,6 +102,17 @@ export type AIEngineDeps = {
    * `useProxy`. Typically the host's `PlatformAdapter.externalFetch`.
    */
   externalFetch?: import("../../../shared/provider-credentials").ProviderFetch;
+
+  /**
+   * Host opt-out for the built-in `generate_image` chat tool. When true,
+   * the tool is never exposed to the model, so a host that ships its own
+   * image-generation tool isn't forced to surface two same-purpose tools.
+   * Default false (the tool is offered whenever an `ImageGeneration`
+   * profile is assigned). Gates ONLY the chat tool — the one-shot
+   * {@link ActionType.ImageGeneration} action is unaffected. Pass a
+   * function to resolve lazily at request time.
+   */
+  disableBuiltinImageTool?: boolean | (() => boolean);
 };
 
 /**

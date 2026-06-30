@@ -148,6 +148,13 @@ export interface AIChatWidgetProps {
    * doesn't supply `fetchProxy`.
    */
   forceProxy?: boolean;
+  /**
+   * Opt out of the built-in `generate_image` chat tool. Use this when the
+   * host ships its own image-generation tool and doesn't want two
+   * same-purpose tools offered to the model. Default false. Affects only
+   * the chat tool — the one-shot image-generation action still works.
+   */
+  disableBuiltinImageTool?: boolean;
   /** Optional remote API routing — defaults to in-process engines. */
   apiConfig?: Partial<Pick<ServerAPIConfig, "origin" | "baseUrl" | "headers">>;
   /**
@@ -269,6 +276,7 @@ export const AIChatWidget = React.forwardRef<
       entityId,
       systemPrompt,
       forceProxy,
+      disableBuiltinImageTool,
       apiConfig,
       assistantActions,
       composerActions,
@@ -398,6 +406,7 @@ export const AIChatWidget = React.forwardRef<
         ...(proxyFetch ? { fetchProxy: proxyFetch } : {}),
         ...(externalFetch ? { externalFetch } : {}),
         ...(forceProxy ? { forceProxy: true } : {}),
+        ...(disableBuiltinImageTool ? { disableBuiltinImageTool: true } : {}),
       });
 
       const ctx: AppContext = {
@@ -452,6 +461,7 @@ export const AIChatWidget = React.forwardRef<
       toolsAdapter,
       entityId,
       forceProxy,
+      disableBuiltinImageTool,
     ]);
 
     return (

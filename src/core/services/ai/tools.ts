@@ -69,14 +69,19 @@ export async function buildToolContext(
   userTools: TMCPItem[],
   entityId?: string,
   config?: { attachmentId: string[] },
-  systemServerTypes: string[] = []
+  systemServerTypes: string[] = [],
+  disableBuiltinImageTool = false
 ): Promise<ToolContext> {
   const [adapterCustom, webSearchTools, imageGenerationTools, disabled] =
     await Promise.all([
       adapter?.getTools(entityId, config) ??
         Promise.resolve<Record<string, TMCPItem[]>>({}),
       getWebSearchTools(storage, entityId),
-      getImageGenerationTools(storage),
+      // Host opt-out: skip the built-in `generate_image` tool entirely
+      // (no assignment read either) so it's never offered to the model.
+      disableBuiltinImageTool
+        ? Promise.resolve<TMCPItem[]>([])
+        : getImageGenerationTools(storage),
       storage.toolPrefs.readDisabled(entityId),
     ]);
 

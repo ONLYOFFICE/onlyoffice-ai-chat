@@ -112,6 +112,30 @@ describe("buildToolContext", () => {
     expect(ctx.adapterToolNames.has("web_search")).toBe(true);
   });
 
+  it("omits the built-in generate_image tool when disableBuiltinImageTool is true", async () => {
+    getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
+    getImageGenerationToolsMock.mockResolvedValue([tool("generate_image")]);
+    // Mocks aren't auto-reset between tests in this file; clear the call
+    // log so the "never called" assertion reflects only this invocation.
+    getImageGenerationToolsMock.mockClear();
+
+    const ctx = await buildToolContext(
+      makeStorage(),
+      undefined,
+      [],
+      undefined,
+      undefined,
+      [],
+      true
+    );
+
+    const names = ctx.mergedTools.map((t) => t.name);
+    expect(names).not.toContain("generate_image");
+    expect(names).toContain("web_search");
+    // The opt-out short-circuits before the assignment read.
+    expect(getImageGenerationToolsMock).not.toHaveBeenCalled();
+  });
+
   it("marks tools from systemServerTypes groups as systemToolNames", async () => {
     getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
     getImageGenerationToolsMock.mockResolvedValue([]);
