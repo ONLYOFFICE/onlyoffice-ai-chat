@@ -57,7 +57,8 @@ const IconComponent = ({
   const w = width ?? size;
   const h = height ?? size;
   const { themeType, scale } = useTheme();
-  const { getImageSrc, getIconComponent, getBundledIcon } = useImages();
+  const { getImageSrc, getIconComponent, getBundledIcon, iconFormat } =
+    useImages();
   const CustomIcon = getIconComponent(name);
   const BundledIcon = CustomIcon ? null : getBundledIcon(name);
   const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -77,7 +78,17 @@ const IconComponent = ({
     return <CustomIcon size={w ?? h} className={className} />;
   }
 
-  if (BundledIcon) {
+  const image = getImageSrc(name, themeType, scale);
+  const hasRaster = image !== null && !image.isSvg;
+  const preferRaster = iconFormat === "png";
+
+  // Default (`iconFormat: "svg"`): the bundled SVG component wins whenever it
+  // exists, so `getImageSrc` (host URL override / bundled PNG) is only reached
+  // when no SVG matches. Raster mode (`iconFormat: "png"`): a scale-appropriate
+  // PNG takes priority, and the bundled SVG is used only as a fallback for
+  // names that ship no raster variant. Host component overrides (`CustomIcon`)
+  // always win over both, regardless of this preference.
+  if (BundledIcon && !(preferRaster && hasRaster)) {
     return (
       <span
         ref={wrapperRef}
@@ -89,7 +100,6 @@ const IconComponent = ({
     );
   }
 
-  const image = getImageSrc(name, themeType, scale);
   if (!image) {
     return null;
   }

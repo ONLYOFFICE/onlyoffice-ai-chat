@@ -90,6 +90,15 @@ export interface AIChatWidgetProps {
   storeKeys: StoreKeys;
   components?: Partial<ComponentOverrides>;
   images?: ImageOverrides;
+  /**
+   * Preferred format for built-in icons that ship as both a vector SVG and a
+   * multi-scale raster (PNG) set. `"svg"` (default) renders the inlined SVG
+   * component — crisp at any size, recolored to the theme. `"png"` gives
+   * priority to the scale-appropriate PNG, falling back to the SVG for icons
+   * that have no raster variant. Host overrides via `images` always win over
+   * both. See {@link ImagesProviderProps.iconFormat}.
+   */
+  iconFormat?: "svg" | "png";
   hostToolGroups?: HostToolGroup[];
   /**
    * Optional pluggable tool source. The engine resolves `getTools()`
@@ -263,6 +272,7 @@ export const AIChatWidget = React.forwardRef<
       storeKeys,
       components,
       images,
+      iconFormat,
       hostToolGroups: hostToolGroupsProp,
       toolsAdapter,
       onMigrate,
@@ -489,7 +499,7 @@ export const AIChatWidget = React.forwardRef<
                       customTheme={customTheme}
                       customThemes={customThemes}
                     >
-                      <ImagesProvider overrides={images}>
+                      <ImagesProvider overrides={images} iconFormat={iconFormat}>
                         <AppWithTools
                           hostToolGroupsProp={hostToolGroupsProp}
                           onMigrate={onMigrate}

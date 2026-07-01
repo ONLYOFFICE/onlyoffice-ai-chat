@@ -54,6 +54,18 @@ export interface ImagesContextValue {
     theme?: "light" | "dark",
     scale?: number
   ) => string;
+
+  /**
+   * Preferred icon format when a name resolves to both a bundled SVG
+   * component and a bundled raster (PNG) set.
+   * - `"svg"` (default): the bundled SVG component wins; raster PNGs are only
+   *   used for names that have no SVG. This is the historical behavior.
+   * - `"png"`: the scale-appropriate raster PNG wins, falling back to the
+   *   bundled SVG when no PNG matches the name.
+   * Host component/URL overrides always take priority over both, regardless
+   * of this preference.
+   */
+  iconFormat: "svg" | "png";
 }
 
 /**

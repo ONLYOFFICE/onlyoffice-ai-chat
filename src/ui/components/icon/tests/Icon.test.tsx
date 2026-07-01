@@ -8,6 +8,8 @@ let capturedBeforeInjection: ((svg: any) => void) | null = null;
 let mockBundledIcon: React.ComponentType<React.SVGProps<SVGSVGElement>> | null =
   null;
 
+let mockIconFormat: "svg" | "png" = "svg";
+
 vi.mock("../../../providers/ImagesProvider", () => ({
   useImages: () => ({
     getImageSrc: vi.fn((name: string) => {
@@ -18,6 +20,7 @@ vi.mock("../../../providers/ImagesProvider", () => ({
     getIconComponent: vi.fn(() => null),
     getBundledIcon: vi.fn(() => mockBundledIcon),
     getProviderImageSrc: vi.fn(() => ""),
+    iconFormat: mockIconFormat,
   }),
 }));
 
@@ -78,6 +81,7 @@ describe("Icon", () => {
   beforeEach(() => {
     capturedBeforeInjection = null;
     mockBundledIcon = null;
+    mockIconFormat = "svg";
   });
 
   it("renders SVG via ReactSVG", () => {
@@ -333,6 +337,48 @@ describe("Icon", () => {
       const path = container.querySelector("path")!;
       expect(path.getAttribute("fill")).toBeNull();
       expect(path.getAttribute("stroke")).toBeNull();
+    });
+  });
+
+  describe("iconFormat preference", () => {
+    it('default ("svg"): bundled SVG wins even when a raster exists', () => {
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      // name "raster" resolves to a PNG via getImageSrc, but the bundled SVG
+      // takes priority in the default mode.
+      render(<Icon name="raster" size={20} />);
+      expect(screen.getByTestId("bundled-svg")).toBeInTheDocument();
+      expect(screen.queryByRole("img")).toBeNull();
+    });
+
+    it('"png": raster wins over the bundled SVG when a PNG exists', () => {
+      mockIconFormat = "png";
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      render(<Icon name="raster" size={20} />);
+      const img = screen.getByRole("img");
+      expect(img).toHaveAttribute("src", "/img/raster.png");
+      expect(screen.queryByTestId("bundled-svg")).toBeNull();
+    });
+
+    it('"png": falls back to the bundled SVG when no raster matches', () => {
+      mockIconFormat = "png";
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      // name "test" resolves to an SVG (not a raster) via getImageSrc, so the
+      // bundled SVG component is used instead.
+      render(<Icon name="test" size={20} />);
+      expect(screen.getByTestId("bundled-svg")).toBeInTheDocument();
+      expect(screen.queryByRole("img")).toBeNull();
     });
   });
 });

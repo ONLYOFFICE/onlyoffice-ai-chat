@@ -10,4 +10,5 @@ export const defaultImages: ImagesContextValue = {
   getIconComponent: () => null,
   getBundledIcon: getBundledIconInternal,
   getProviderImageSrc: getProviderImageSrcInternal,
+  iconFormat: "svg",
 };
