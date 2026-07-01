@@ -88,7 +88,7 @@ const Shell = ({
     >
       <DropdownMenu.Trigger
         asChild
-        className="text-[var(--dropdown-trigger-color)]"
+        className="text-[var(--dropdown-trigger-color,var(--icon-button-color))] hover:enabled:text-[var(--dropdown-trigger-hover-color,var(--text-normal))]"
         ref={triggerRef as React.RefObject<HTMLButtonElement>}
       >
         {trigger}

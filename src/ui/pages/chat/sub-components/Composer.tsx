@@ -72,7 +72,7 @@ const Composer = () => {
 
         <ComposerPrimitive.Input
           placeholder={t("AskAnything")}
-          className="composer-input max-h-[calc(50vh)] min-h-[20px] w-full resize-none outline-none select-text px-[4px]"
+          className="composer-input max-h-[calc(50vh)] min-h-[var(--chat-input-min-height,20px)] w-full resize-none outline-none select-text px-[4px]"
           rows={1}
           autoFocus
           aria-label="Message input"

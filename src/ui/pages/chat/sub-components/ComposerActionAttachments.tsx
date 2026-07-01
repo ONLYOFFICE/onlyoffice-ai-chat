@@ -128,7 +128,7 @@ const ComposerActionAttachment = () => {
         iconName="btn-zoomup"
         size={20}
         isStroke
-        className="cursor-pointer rounded-[4px] outline-none"
+        className="cursor-pointer rounded-[4px] outline-none text-[var(--attachment-button-color,var(--icon-button-color))] hover:enabled:text-[var(--attachment-button-hover-color,var(--text-normal))]"
         isActive={isOpen}
         data-testid="attachment-button"
       />
@@ -239,18 +239,20 @@ const ComposerActionAttachment = () => {
         Array.from(files)
           .filter((file) => file.size > 0)
           .map(
-          (file) =>
-            new Promise<{ name: string; base64: string } | null>((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (event) =>
-                resolve({
-                  name: file.name,
-                  base64: event.target?.result as string,
-                });
-              reader.onerror = () => resolve(null);
-              reader.readAsDataURL(file);
-            })
-        )
+            (file) =>
+              new Promise<{ name: string; base64: string } | null>(
+                (resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = (event) =>
+                    resolve({
+                      name: file.name,
+                      base64: event.target?.result as string,
+                    });
+                  reader.onerror = () => resolve(null);
+                  reader.readAsDataURL(file);
+                }
+              )
+          )
       )
     ).filter((x) => x !== null);
 

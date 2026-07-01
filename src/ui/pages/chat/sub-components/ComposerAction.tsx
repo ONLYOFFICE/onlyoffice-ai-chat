@@ -13,8 +13,8 @@ const ComposerAction = () => {
 
   return (
     <div className="relative flex flex-col">
-      <div className="relative flex items-center justify-between gap-[8px] h-[20px]">
-        <div className="flex items-center gap-[4px] flex-row">
+      <div className="relative flex items-center justify-between gap-[8px] h-[var(--chat-input-actions-height,20px)]">
+        <div className="flex items-center gap-[var(--action-gap,4px)] flex-row">
           <ComposerActionAttachment />
           <ComposerActionPrompts />
         </div>

@@ -251,6 +251,7 @@ const ComposerActionPrompts = () => {
       <TooltipIconButton visible={!isOpen} tooltip={t("SavedPrompts")}>
         <IconButton
           iconName="btn-prompt"
+          className="text-[var(--prompt-button-color,var(--icon-button-color))] hover:enabled:text-[var(--prompt-button-hover-color,var(--text-normal))]"
           size={20}
           isActive={isOpen}
           isStroke

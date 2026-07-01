@@ -114,6 +114,12 @@ export interface WidgetConfig {
    */
   composerActions?: ComposerAction[];
   /**
+   * Pixel size of the composer's send / stop action button (the icon and
+   * its square button box). Defaults to `17`. Use this in hosts that need a
+   * larger or smaller send control to match a custom composer height.
+   */
+  composerActionSendSize?: number;
+  /**
    * Clickable prompt suggestions shown above the composer in a new
    * (empty) chat only. Each item is `{ name, prompt }`; clicking inserts
    * its `prompt` into the composer input. Capped at 20 — extras are

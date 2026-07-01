@@ -28,11 +28,14 @@ const IconButtonComponent = ({
     : undefined;
 
   const baseStyles =
-    "icon-button border-none cursor-pointer rounded-[4px] border-none bg-none bg-transparent p-0 m-0";
+    "icon-button border-none cursor-pointer rounded-[4px] border-none bg-none bg-transparent p-0 m-0 text-[var(--icon-button-color)]";
   const layoutStyles = "flex items-center justify-center";
   const disabledStyles = "disabled:cursor-not-allowed disabled:opacity-[0.5]";
   const focusStyles =
     "outline-none focus:outline-none focus-visible:outline-none";
+
+  const iconColorStyles =
+    "[&_svg_path]:fill-current [&_svg_path[stroke]]:fill-none [&_svg_path[stroke]]:stroke-current";
 
   return (
     <button
@@ -43,6 +46,7 @@ const IconButtonComponent = ({
         activeStyles,
         disabledStyles,
         focusStyles,
+        iconColorStyles,
         className
       )}
       style={{
