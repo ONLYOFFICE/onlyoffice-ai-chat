@@ -17,6 +17,7 @@ export interface ThemeTokens {
   "--background-primary-button"?: string;
   "--background-scrim"?: string;
   "--background-scroll-thumb"?: string;
+  "--border-button-pressed-focus"?: string;
   "--border-control-focus"?: string;
   "--border-divider"?: string;
   "--border-error"?: string;
