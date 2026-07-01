@@ -55,10 +55,17 @@ export const useModelForm = (initialValues: ModelFormValues) => {
   const nameTouchedRef = useRef(initialValues.profileName !== "");
 
   // Mirrors the credentials-visibility logic in ModelConfigForm: when the
-  // API Key field is shown to the user, a non-empty key is required.
+  // API Key field is shown to the user, a non-empty key is required —
+  // except for locally-hosted providers that run an unauthenticated
+  // OpenAI-compatible server and don't need a key.
   const isExternalOnlyoffice =
     values.provider === "onlyoffice" && !!externalOnlyofficeConfig;
-  const apiKeyRequired = !values.isCloudProvider && !isExternalOnlyoffice;
+  const isKeylessProvider =
+    values.provider === "ollama" ||
+    values.provider === "lm-studio" ||
+    values.provider === "gpt4all";
+  const apiKeyRequired =
+    !values.isCloudProvider && !isExternalOnlyoffice && !isKeylessProvider;
 
   const isFormValid =
     !isLoading &&

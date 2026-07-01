@@ -15,6 +15,7 @@
 
 ### Fixed
 
+- Adding a model for locally-hosted providers (Ollama, LM Studio, GPT4All) no longer requires filling in the API Key field. These providers run an unauthenticated OpenAI-compatible server, so the "Add Model" button is now enabled with an empty key. The core already substitutes a dummy key, so such profiles work without one.
 - Chat-history search no longer shows the empty-history message ("There is no chat history yet…") when a search simply matches nothing. The no-results state now uses a distinct `NoChatsFound` string ("No chats found"), translated across all locales, leaving "There is no chat history yet…" for when there are genuinely no threads.
 
 ### Changed
