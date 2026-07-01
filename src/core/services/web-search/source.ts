@@ -7,6 +7,16 @@ import type { StorageAdapter } from "../../storage";
 export const WEB_SEARCH_TYPE = "web-search";
 
 /**
+ * Ensure a trailing slash so `new URL(path, base)` keeps the full base
+ * path: `new URL("search", "https://host/api")` would drop `/api`,
+ * while `.../api/` + `search` resolves to `.../api/search`. Lets callers
+ * pass the base URL with or without a trailing slash.
+ */
+export function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+}
+
+/**
  * Built-in web-search tools.
  *
  * Available when {@link StorageAdapter.webSearch} carries a configured
@@ -105,7 +115,7 @@ async function webSearch(
     try {
       const baseUrl =
         config.baseUrl || (config.isCloudProvider ? config.provider : "");
-      const url = new URL("search", baseUrl);
+      const url = new URL("search", normalizeBaseUrl(baseUrl));
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
@@ -160,7 +170,7 @@ async function webCrawling(
     try {
       const baseUrl =
         config.baseUrl || (config.isCloudProvider ? config.provider : "");
-      const url = new URL("contents", baseUrl);
+      const url = new URL("contents", normalizeBaseUrl(baseUrl));
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),

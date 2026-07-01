@@ -2,6 +2,7 @@ import type { TErrorData } from "../../../shared/error-data";
 import type { ProviderFetch } from "../../../shared/provider-credentials";
 import { ProviderErrors } from "../../providers/errors";
 import type { WebSearchConfig } from "../../storage";
+import { normalizeBaseUrl } from "./source";
 
 const TEST_EXA_QUERY = { query: "test", numResults: 1 };
 const TEST_ONLYOFFICE_QUERY = { engine: "exa", query: "test", numResults: 1 };
@@ -63,7 +64,7 @@ export async function testWebSearchConnection(
 
   try {
     if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
-      const url = new URL("search", config.baseUrl);
+      const url = new URL("search", normalizeBaseUrl(config.baseUrl ?? ""));
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
