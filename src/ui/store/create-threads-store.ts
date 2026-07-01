@@ -44,6 +44,16 @@ export interface ThreadsStoreState {
   onSwitchToThread: (id: string) => void;
   /** Download the thread conversation as a `.docx` file via the platform file adapter. */
   onDownloadThread: (id: string, title?: string) => Promise<void>;
+  /**
+   * Export the thread conversation in a host-declared format. Resolves the
+   * file extension from `platform.file.getExportFormats()` by `formatId` and
+   * passes the format id through to `saveAsFile`.
+   */
+  onExportThread: (
+    id: string,
+    formatId: string,
+    title?: string
+  ) => Promise<void>;
   /** Rename a thread and persist the change. */
   onRenameThread: (id: string, title: string) => Promise<void>;
   /** Delete a thread; if it is the active thread, switches to a new one first. */
@@ -164,6 +174,16 @@ export function createThreadsStore(deps: {
       const fileName = removeSpecialCharacter(title || "Chat Export");
       const content = convertMessagesToMd(messages);
       platform.file?.saveAsFile?.(content, `${fileName}.docx`);
+    },
+
+    onExportThread: async (id, formatId, title) => {
+      const formats = platform.file?.getExportFormats?.() ?? [];
+      const extension =
+        formats.find((f) => f.id === formatId)?.extension || "docx";
+      const messages = await api.threads.readMessages(id);
+      const fileName = removeSpecialCharacter(title || "Chat Export");
+      const content = convertMessagesToMd(messages);
+      platform.file?.saveAsFile?.(content, `${fileName}.${extension}`, formatId);
     },
 
     onRenameThread: async (id, title) => {

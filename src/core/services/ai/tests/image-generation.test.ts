@@ -125,6 +125,49 @@ describe("image-generation source", () => {
       });
     });
 
+    it("resolves fetch for its OWN profile via pickFetch and wires it into providerFor", async () => {
+      const imageGeneration = vi.fn().mockResolvedValue("base64-data");
+      providerForMock.mockReturnValue({ imageGeneration });
+      const profile = {
+        id: "p1",
+        modelId: "m",
+        providerType: "external",
+        useProxy: false,
+      };
+      const storage = makeStorage({ profileId: "p1", profile });
+      const externalFetch = vi.fn();
+      const pickFetch = vi.fn().mockReturnValue(externalFetch);
+
+      await callImageGenerationTool(
+        storage,
+        "generate_image",
+        { prompt: "cat" },
+        pickFetch
+      );
+
+      expect(pickFetch).toHaveBeenCalledWith(profile);
+      expect(providerForMock).toHaveBeenCalledWith(
+        expect.objectContaining({ profile, fetch: externalFetch })
+      );
+    });
+
+    it("surfaces a pickFetch throw as a tool-result error instead of throwing", async () => {
+      const pickFetch = vi.fn(() => {
+        throw new Error("externalFetch is required");
+      });
+      const storage = makeStorage({
+        profileId: "p1",
+        profile: { id: "p1", modelId: "m", providerType: "external" },
+      });
+      const out = await callImageGenerationTool(
+        storage,
+        "generate_image",
+        { prompt: "cat" },
+        pickFetch
+      );
+      expect(JSON.parse(out)).toEqual({ error: "externalFetch is required" });
+    });
+
     it("captures Error from provider", async () => {
       const imageGeneration = vi.fn().mockRejectedValue(new Error("boom"));
       providerForMock.mockReturnValue({ imageGeneration });

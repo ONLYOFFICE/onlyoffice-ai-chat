@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import { cn } from "../../../../shared/utils";
 import { useI18n } from "../../../providers/LocalesProvider";
+import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 import { IconButton } from "../../icon-button";
@@ -41,6 +42,7 @@ const ChatList = ({
   const onSwitchToThread = useThreadsStore((s) => s.onSwitchToThread);
   const onRenameThread = useThreadsStore((s) => s.onRenameThread);
   const onDownloadThread = useThreadsStore((s) => s.onDownloadThread);
+  const onExportThread = useThreadsStore((s) => s.onExportThread);
   const onClearThreadHistory = useThreadsStore((s) => s.onClearThreadHistory);
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
   const {
@@ -48,6 +50,12 @@ const ChatList = ({
     hideChatHistoryHeader,
     chatHistoryAlwaysShowActions,
   } = useWidgetConfig();
+  const platform = usePlatform();
+  const exportFormats = useMemo(
+    () => platform.file?.getExportFormats?.() ?? [],
+    [platform]
+  );
+
   const closeIconName = chatHistoryCloseIcon ?? "btn-close";
   const isHeaderHidden = hideHeader ?? hideChatHistoryHeader;
   const showActionsAlways = alwaysShowActions ?? chatHistoryAlwaysShowActions;
@@ -151,6 +159,8 @@ const ChatList = ({
                       setCurrentPage={setCurrentPage}
                       onRenameThread={onRenameThread}
                       onDownloadThread={onDownloadThread}
+                      onExportThread={onExportThread}
+                      exportFormats={exportFormats}
                       onClearThreadHistory={onClearThreadHistory}
                       alwaysShowActions={showActionsAlways}
                     />
@@ -159,7 +169,7 @@ const ChatList = ({
               ))
             ) : (
               <p className="text-[var(--chat-list-empty-color)] font-normal w-full">
-                {t("NoChatYet")}
+                {t("NoChatsFound")}
               </p>
             )}
           </div>

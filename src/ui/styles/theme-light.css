@@ -39,6 +39,7 @@
   --checkbox-check-mark-background: #ffffff;
   --checkbox-background-checked: #444444;
   --checkbox-border-normal: #cbcbcb;
+  --chb-border-normal: #7f7f7f;
 
   --icon-normal: #444444;
   --icon-success: #009900;
@@ -177,8 +178,10 @@
   /* toggle button */
   --toggle-button-background-color: var(--background-accent-button);
   --toggle-button-background-hover-color: var(--highlight-accent-button-hover);
-  --toggle-button-off-background-color: var(--checkbox-border-normal);
+  --toggle-button-off-background-color: var(--background-normal);
+  --toggle-button-off-border-color: var(--chb-border-normal);
   --toggle-button-circle-color: var(--background-normal);
+  --toggle-button-off-circle-color: var(--chb-border-normal);
 
   /* file-items */
   --file-items-background-color: var(--background-normal);

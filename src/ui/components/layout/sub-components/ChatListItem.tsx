@@ -2,6 +2,8 @@ import React, { memo } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import type { Page } from "../../../store/create-stores";
 import type { Thread } from "../../../../types";
+import type { ExportFormat } from "../../../providers/PlatformProvider/types";
+import type { DropDownItemProps } from "../../dropdown-item/DropDownItem.types";
 import { DropdownMenu } from "../../dropdown";
 import { Icon } from "../../icon";
 import { IconButton } from "../../icon-button";
@@ -14,6 +16,8 @@ type ChatListItemProps = {
   onSwitchToThread: (threadId: string) => void;
   onRenameThread: (threadId: string, newTitle: string) => void;
   onDownloadThread: (threadId: string, title?: string) => void;
+  onExportThread: (threadId: string, formatId: string, title?: string) => void;
+  exportFormats: ExportFormat[];
   onClearThreadHistory: (threadId: string) => void;
   setCurrentPage: (page: Page) => void;
   /**
@@ -36,6 +40,8 @@ const ChatListItemComponent = ({
   onSwitchToThread,
   onRenameThread,
   onDownloadThread,
+  onExportThread,
+  exportFormats,
   onClearThreadHistory,
   setCurrentPage,
   alwaysShowActions,
@@ -109,6 +115,28 @@ const ChatListItemComponent = ({
     setIsOpen(false);
   };
 
+  // When the host declares more than one export format, the single "Save"
+  // item becomes an "Export" submenu listing every format. Otherwise the
+  // default "Save" action is kept (current behavior).
+  const exportMenuItem: DropDownItemProps =
+    exportFormats.length > 1
+      ? {
+          text: t("ExportTo"),
+          onClick: () => undefined,
+          subMenu: exportFormats.map((format) => ({
+            text: format.label,
+            onClick: () => {
+              onExportThread(thread.threadId, format.id, thread.title);
+              setIsOpen(false);
+            },
+          })),
+        }
+      : {
+          icon: <DownloadIcon />,
+          text: t("Save"),
+          onClick: onDownloadClick,
+        };
+
   return (
     <div
       key={thread.threadId}
@@ -167,11 +195,7 @@ const ChatListItemComponent = ({
                   text: t("Open"),
                   onClick: onOpenClick,
                 },
-                {
-                  icon: <DownloadIcon />,
-                  text: t("Save"),
-                  onClick: onDownloadClick,
-                },
+                exportMenuItem,
                 {
                   icon: <RenameIcon />,
                   text: t("Rename"),

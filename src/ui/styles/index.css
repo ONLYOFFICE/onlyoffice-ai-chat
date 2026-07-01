@@ -44,6 +44,19 @@
   --dropdown-back-row-height: 20px;
   --dropdown-back-row-padding: 8px; /* horizontal padding */
 
+  /* Toggle (switch) geometry. Colors live in the theme files
+     (`--toggle-button-*-color`); these tokens are the structural sizes.
+     The thumb keeps a 3px visual gap from the track's outer edge: the track
+     always reserves a 1px border, so the offset is measured inside the
+     content box (offset + 1px border = 3px). The checked offset is
+     `track-width - 2*border - thumb-size - unchecked-offset`
+     (30 − 2 − 12 − 2 = 14px) so the gap is symmetric on both ends. */
+  --toggle-button-track-width: 30px;
+  --toggle-button-track-height: 18px;
+  --toggle-button-thumb-size: 12px;
+  --toggle-button-thumb-offset: 2px; /* unchecked: thumb x inside content box */
+  --toggle-button-thumb-offset-checked: 14px; /* checked: thumb x inside content box */
+
   font-size: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1));
   line-height: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333);
 

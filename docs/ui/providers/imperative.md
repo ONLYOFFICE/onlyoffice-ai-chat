@@ -38,7 +38,8 @@ The ref is null until the widget mounts — always use `?.` or guard.
 | `deleteThread` | `(threadId) => void` | Delete a thread. |
 | `renameThread` | `(threadId, title) => void` | Rename a thread. |
 | `clearHistory` | `(threadId) => Promise<void>` | Clear all messages in a thread. |
-| `downloadThread` | `(threadId) => void` | Download a thread as a file. |
+| `downloadThread` | `(threadId) => void` | Download a thread as a file (default "Save", `.docx`). |
+| `exportThread` | `(threadId, formatId) => void` | Export a thread in a host-declared format (`formatId` must match an `ExportFormat.id` from `getExportFormats()`). |
 | `getThreads` | `() => Thread[]` | Get all threads. |
 | `getCurrentThreadId` | `() => string` | Get the active thread id. |
 
