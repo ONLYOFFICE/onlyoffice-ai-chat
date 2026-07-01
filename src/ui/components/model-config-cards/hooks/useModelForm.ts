@@ -28,6 +28,16 @@ const fieldToErrorKey: Partial<
   profileName: "name",
 };
 
+/**
+ * Locally-hosted providers that run an unauthenticated OpenAI-compatible
+ * server, so no API key is needed to add a model for them.
+ */
+const KEYLESS_PROVIDERS = new Set<ProviderType>([
+  "ollama",
+  "lm-studio",
+  "gpt4all",
+]);
+
 export const useModelForm = (initialValues: ModelFormValues) => {
   const { t } = useI18n();
   const api = useApi();
@@ -60,10 +70,9 @@ export const useModelForm = (initialValues: ModelFormValues) => {
   // OpenAI-compatible server and don't need a key.
   const isExternalOnlyoffice =
     values.provider === "onlyoffice" && !!externalOnlyofficeConfig;
-  const isKeylessProvider =
-    values.provider === "ollama" ||
-    values.provider === "lm-studio" ||
-    values.provider === "gpt4all";
+  const isKeylessProvider = KEYLESS_PROVIDERS.has(
+    values.provider as ProviderType
+  );
   const apiKeyRequired =
     !values.isCloudProvider && !isExternalOnlyoffice && !isKeylessProvider;
 
@@ -118,9 +127,18 @@ export const useModelForm = (initialValues: ModelFormValues) => {
         // Only surface the API-key error once the user has actually entered a
         // key. Switching provider triggers a model fetch with an empty key,
         // and a pristine field shouldn't flash an auth error before any input.
-        if (apiKey) {
+        // Keyless providers (Ollama, LM Studio, GPT4All) never get a key, so
+        // without this a failed fetch (server down / CORS) would fail silently
+        // — surface the raw error for them regardless of the key field. Since
+        // there's no key to blame, the failure is about reaching the server,
+        // so attach it to the Base URL field instead.
+        const isKeyless = KEYLESS_PROVIDERS.has(providerType);
+        if (apiKey || isKeyless) {
           const message = e instanceof Error ? e.message : String(e);
-          setErrors((prev) => ({ ...prev, key: message }));
+          setErrors((prev) => ({
+            ...prev,
+            [isKeyless ? "url" : "key"]: message,
+          }));
         }
         return;
       }
