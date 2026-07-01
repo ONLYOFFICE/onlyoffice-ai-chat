@@ -85,6 +85,10 @@ export const initAIChatI18n = (
       interpolation: {
         escapeValue: false,
       },
+      // Suppress i18next's Locize promo console.info shown on init in
+      // v25.8.0–v25.10.x (removed upstream in v26). We embed the library, so
+      // the notice is just noise in the host's console.
+      showSupportNotice: false,
     });
 
     return i18n;
