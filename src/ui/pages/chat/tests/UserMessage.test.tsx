@@ -389,7 +389,7 @@ describe("UserMessage", () => {
 
   it("renders the more button in dropdown trigger", () => {
     render(<UserMessage />);
-    expect(screen.getByTestId("icon-btn-more")).toBeInTheDocument();
+    expect(screen.getByTestId("icon-btn-btn-more.small")).toBeInTheDocument();
   });
 
   describe("UserActionBar dropdown items", () => {

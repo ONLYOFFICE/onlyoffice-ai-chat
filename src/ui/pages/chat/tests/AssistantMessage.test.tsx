@@ -413,7 +413,7 @@ describe("AssistantMessage", () => {
   it("hides save button when saveAsFile is not available", () => {
     mockPlatformFile = null;
     render(<AssistantMessage />);
-    expect(screen.queryByTestId("icon-btn-btn-save")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-btn-save.small")).not.toBeInTheDocument();
   });
 
   it("renders copied and not-copied icon states", () => {
@@ -425,7 +425,7 @@ describe("AssistantMessage", () => {
   it("renders save icon button when saveAsFile is available", () => {
     mockPlatformFile = { saveAsFile: mockSaveAsFile };
     render(<AssistantMessage />);
-    expect(screen.getByTestId("icon-btn-btn-save")).toBeInTheDocument();
+    expect(screen.getByTestId("icon-btn-btn-save.small")).toBeInTheDocument();
   });
 
   it("renders the Regenerate (Reload) button", () => {
@@ -443,7 +443,7 @@ describe("AssistantMessage", () => {
     it("does not render the save button when platform.file is null", () => {
       mockPlatformFile = null;
       render(<AssistantMessage />);
-      expect(screen.queryByTestId("icon-btn-btn-save")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("icon-btn-btn-save.small")).not.toBeInTheDocument();
       expect(mockSaveAsFile).not.toHaveBeenCalled();
     });
 
@@ -452,7 +452,7 @@ describe("AssistantMessage", () => {
       mockMessages = [{ content: [{ type: "text", text: "User question" }] }];
       mockMessageParentId = "0";
       render(<AssistantMessage />);
-      const saveBtn = screen.getByTestId("icon-btn-btn-save");
+      const saveBtn = screen.getByTestId("icon-btn-btn-save.small");
       fireEvent.click(saveBtn);
       // Wait for async
       await vi.waitFor(() => {
@@ -562,7 +562,7 @@ describe("AssistantMessage", () => {
     it("renders nothing extra when assistantActions is undefined", () => {
       mockAssistantActions = undefined;
       render(<AssistantMessage />);
-      // Only built-in icons: btn-copy, checked, btn-save
+      // Only built-in icons: btn-copy, checked, btn-save.small
       expect(screen.queryByTestId("icon-btn-my-icon")).not.toBeInTheDocument();
     });
 

@@ -15,6 +15,12 @@ const ImagesContext = createContext<ImagesContextValue>(defaultImages);
 
 export interface ImagesProviderProps {
   overrides?: ImageOverrides;
+  /**
+   * Preferred icon format for names that ship as both a bundled SVG and a
+   * raster PNG set. Defaults to `"svg"` (historical behavior). See
+   * {@link ImagesContextValue.iconFormat}.
+   */
+  iconFormat?: "svg" | "png";
   children: React.ReactNode;
 }
 
@@ -30,12 +36,18 @@ const isThemeFunction = (
 
 export const ImagesProvider = ({
   overrides,
+  iconFormat = "svg",
   children,
 }: ImagesProviderProps) => {
   const value = useMemo<ImagesContextValue>(() => {
-    if (!overrides) return defaultImages;
+    if (!overrides) {
+      return iconFormat === defaultImages.iconFormat
+        ? defaultImages
+        : { ...defaultImages, iconFormat };
+    }
 
     return {
+      iconFormat,
       getImageSrc: (name, theme, scale) => {
         const override = overrides[name];
         if (override !== undefined) {
@@ -71,7 +83,7 @@ export const ImagesProvider = ({
         return getProviderImageSrcInternal(providerType, theme);
       },
     };
-  }, [overrides]);
+  }, [overrides, iconFormat]);
 
   return (
     <ImagesContext.Provider value={value}>{children}</ImagesContext.Provider>

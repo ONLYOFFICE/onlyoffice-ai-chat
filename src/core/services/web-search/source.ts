@@ -7,6 +7,16 @@ import type { StorageAdapter } from "../../storage";
 export const WEB_SEARCH_TYPE = "web-search";
 
 /**
+ * Ensure a trailing slash so `new URL(path, base)` keeps the full base
+ * path: `new URL("search", "https://host/api")` would drop `/api`,
+ * while `.../api/` + `search` resolves to `.../api/search`. Lets callers
+ * pass the base URL with or without a trailing slash.
+ */
+export function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+}
+
+/**
  * Built-in web-search tools.
  *
  * Available when {@link StorageAdapter.webSearch} carries a configured
@@ -92,6 +102,7 @@ type WebSearchConfig = {
   key?: string;
   baseUrl?: string;
   isCloudProvider?: boolean;
+  headers?: Record<string, string>;
 };
 
 async function webSearch(
@@ -104,15 +115,20 @@ async function webSearch(
     try {
       const baseUrl =
         config.baseUrl || (config.isCloudProvider ? config.provider : "");
-      const url = new URL("/api/2.0/ai/web-search/v1/search", baseUrl);
+      const url = new URL("search", normalizeBaseUrl(baseUrl));
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
+        ...config.headers,
       };
-      if (config.key) headers.Authorization = `Bearer ${config.key}`;
       const response = await doFetch(url.href, {
         method: "POST",
         headers,
-        body: JSON.stringify({ query: args.query, numResults: 5 }),
+        body: JSON.stringify({
+          engine: "exa",
+          query: args.query,
+          numResults: 5,
+        }),
       });
       return await formatResponse(response);
     } catch (e) {
@@ -154,17 +170,16 @@ async function webCrawling(
     try {
       const baseUrl =
         config.baseUrl || (config.isCloudProvider ? config.provider : "");
-      const url = new URL("/api/2.0/ai/web-search/v1/contents", baseUrl);
+      const url = new URL("contents", normalizeBaseUrl(baseUrl));
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
+        ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
+        ...config.headers,
       };
-      if (config.key) headers.Authorization = `Bearer ${config.key}`;
       const response = await doFetch(url.href, {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          url: Array.isArray(args.urls) ? (args.urls as string[])[0] ?? "" : "",
-        }),
+        body: JSON.stringify({ engine: "exa", urls: args.urls }),
       });
       return await formatResponse(response);
     } catch (e) {

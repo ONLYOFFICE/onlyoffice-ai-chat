@@ -8,16 +8,31 @@ let capturedBeforeInjection: ((svg: any) => void) | null = null;
 let mockBundledIcon: React.ComponentType<React.SVGProps<SVGSVGElement>> | null =
   null;
 
+let mockIconFormat: "svg" | "png" = "svg";
+
+let mockScale = 1;
+
 vi.mock("../../../providers/ImagesProvider", () => ({
   useImages: () => ({
-    getImageSrc: vi.fn((name: string) => {
+    getImageSrc: vi.fn((name: string, _theme: string, scale: number) => {
       if (name === "missing") return null;
+      // Host-override-style raster with no known authoring density.
       if (name === "raster") return { src: "/img/raster.png", isSvg: false };
+      // Bundled raster capped at @2x: `getImageSrc` never returns a scale
+      // above the densest available entry, so it stays at 2 even when a
+      // higher scale is requested.
+      if (name === "raster2x")
+        return {
+          src: "/img/raster.png",
+          isSvg: false,
+          scale: Math.min(scale, 2),
+        };
       return { src: "/img/icon.svg", isSvg: true };
     }),
     getIconComponent: vi.fn(() => null),
     getBundledIcon: vi.fn(() => mockBundledIcon),
     getProviderImageSrc: vi.fn(() => ""),
+    iconFormat: mockIconFormat,
   }),
 }));
 
@@ -46,7 +61,7 @@ vi.mock("react-svg", () => ({
 }));
 
 vi.mock("../../../providers/ThemeProvider", () => ({
-  useTheme: () => ({ themeType: "light", scale: 1 }),
+  useTheme: () => ({ themeType: "light", scale: mockScale }),
 }));
 
 import { Icon } from "../index";
@@ -78,6 +93,8 @@ describe("Icon", () => {
   beforeEach(() => {
     capturedBeforeInjection = null;
     mockBundledIcon = null;
+    mockIconFormat = "svg";
+    mockScale = 1;
   });
 
   it("renders SVG via ReactSVG", () => {
@@ -333,6 +350,100 @@ describe("Icon", () => {
       const path = container.querySelector("path")!;
       expect(path.getAttribute("fill")).toBeNull();
       expect(path.getAttribute("stroke")).toBeNull();
+    });
+  });
+
+  describe("iconFormat preference", () => {
+    it('default ("svg"): bundled SVG wins even when a raster exists', () => {
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      // name "raster" resolves to a PNG via getImageSrc, but the bundled SVG
+      // takes priority in the default mode.
+      render(<Icon name="raster" size={20} />);
+      expect(screen.getByTestId("bundled-svg")).toBeInTheDocument();
+      expect(screen.queryByRole("img")).toBeNull();
+    });
+
+    it('"png": raster wins over the bundled SVG when a PNG exists', () => {
+      mockIconFormat = "png";
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      render(<Icon name="raster" size={20} />);
+      const img = screen.getByRole("img");
+      expect(img).toHaveAttribute("src", "/img/raster.png");
+      expect(screen.queryByTestId("bundled-svg")).toBeNull();
+    });
+
+    it('"png": falls back to the bundled SVG when no raster matches', () => {
+      mockIconFormat = "png";
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      // name "test" resolves to an SVG (not a raster) via getImageSrc, so the
+      // bundled SVG component is used instead.
+      render(<Icon name="test" size={20} />);
+      expect(screen.getByTestId("bundled-svg")).toBeInTheDocument();
+      expect(screen.queryByRole("img")).toBeNull();
+    });
+
+    it('"png": raster still wins at exactly 2x (matches densest variant)', () => {
+      mockIconFormat = "png";
+      mockScale = 2;
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      render(<Icon name="raster2x" size={20} />);
+      expect(screen.getByRole("img")).toHaveAttribute("src", "/img/raster.png");
+      expect(screen.queryByTestId("bundled-svg")).toBeNull();
+    });
+
+    it('"png": falls back to the bundled SVG above 2x instead of upscaling', () => {
+      mockIconFormat = "png";
+      mockScale = 3;
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      // The densest bundled raster is @2x; at scale 3 it can't render crisply,
+      // so the vector wins.
+      render(<Icon name="raster2x" size={20} />);
+      expect(screen.getByTestId("bundled-svg")).toBeInTheDocument();
+      expect(screen.queryByRole("img")).toBeNull();
+    });
+
+    it('"png": above 2x still uses the raster when no bundled SVG exists', () => {
+      mockIconFormat = "png";
+      mockScale = 3;
+      mockBundledIcon = null;
+      render(<Icon name="raster2x" size={20} />);
+      // No vector to fall back to — the @2x bitmap is the best available.
+      expect(screen.getByRole("img")).toHaveAttribute("src", "/img/raster.png");
+    });
+
+    it('"png": host-override raster (no scale) wins at any scale', () => {
+      mockIconFormat = "png";
+      mockScale = 3;
+      mockBundledIcon = (props) => (
+        <svg data-testid="bundled-svg" {...props}>
+          <path d="M0 0" />
+        </svg>
+      );
+      // name "raster" returns no `scale` (host override) — treated as
+      // authoritative at any density, so it is not overridden by the vector.
+      render(<Icon name="raster" size={20} />);
+      expect(screen.getByRole("img")).toHaveAttribute("src", "/img/raster.png");
+      expect(screen.queryByTestId("bundled-svg")).toBeNull();
     });
   });
 });

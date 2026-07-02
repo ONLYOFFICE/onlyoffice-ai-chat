@@ -110,7 +110,7 @@ const ModelAssignment = () => {
           isHorizontal
           reserveErrorSpace={false}
           className="mb-[12px]"
-          icon="code"
+          icon="code.small"
           iconIsStroke
         >
           <ComboBox

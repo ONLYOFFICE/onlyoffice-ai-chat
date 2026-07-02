@@ -18,6 +18,13 @@ export interface ImageResult {
   src: string;
   /** `true` when the source points to an SVG image. */
   isSvg: boolean;
+  /**
+   * Pixel-density the resolved raster was authored for (e.g. `2` for a `@2x`
+   * PNG). Absent for host-provided overrides and SVG sources, whose density
+   * is not fixed. `<Icon>` uses this to fall back to a bundled vector when the
+   * requested scale exceeds the densest available raster.
+   */
+  scale?: number;
 }
 
 /** Value exposed by the images React context for resolving icon/image assets. */
@@ -54,6 +61,18 @@ export interface ImagesContextValue {
     theme?: "light" | "dark",
     scale?: number
   ) => string;
+
+  /**
+   * Preferred icon format when a name resolves to both a bundled SVG
+   * component and a bundled raster (PNG) set.
+   * - `"svg"` (default): the bundled SVG component wins; raster PNGs are only
+   *   used for names that have no SVG. This is the historical behavior.
+   * - `"png"`: the scale-appropriate raster PNG wins, falling back to the
+   *   bundled SVG when no PNG matches the name.
+   * Host component/URL overrides always take priority over both, regardless
+   * of this preference.
+   */
+  iconFormat: "svg" | "png";
 }
 
 /**

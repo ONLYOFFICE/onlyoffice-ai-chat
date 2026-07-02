@@ -133,6 +133,40 @@ describe("ImagesProvider", () => {
     );
   });
 
+  it("defaults iconFormat to 'svg'", () => {
+    const { result } = renderHook(() => useImages(), {
+      wrapper: ({ children }) => <ImagesProvider>{children}</ImagesProvider>,
+    });
+    expect(result.current.iconFormat).toBe("svg");
+  });
+
+  it("propagates iconFormat without overrides", () => {
+    const { result } = renderHook(() => useImages(), {
+      wrapper: ({ children }) => (
+        <ImagesProvider iconFormat="png">{children}</ImagesProvider>
+      ),
+    });
+    expect(result.current.iconFormat).toBe("png");
+  });
+
+  it("propagates iconFormat alongside overrides", () => {
+    const { result } = renderHook(() => useImages(), {
+      wrapper: ({ children }) => (
+        <ImagesProvider
+          iconFormat="png"
+          overrides={{ logo: "/cdn/logo.png" } as never}
+        >
+          {children}
+        </ImagesProvider>
+      ),
+    });
+    expect(result.current.iconFormat).toBe("png");
+    expect(result.current.getImageSrc("logo" as never, "light", 1)).toEqual({
+      src: "/cdn/logo.png",
+      isSvg: false,
+    });
+  });
+
   it("renders children", () => {
     const { getByText } = render(
       <ImagesProvider>

@@ -57,7 +57,8 @@ const IconComponent = ({
   const w = width ?? size;
   const h = height ?? size;
   const { themeType, scale } = useTheme();
-  const { getImageSrc, getIconComponent, getBundledIcon } = useImages();
+  const { getImageSrc, getIconComponent, getBundledIcon, iconFormat } =
+    useImages();
   const CustomIcon = getIconComponent(name);
   const BundledIcon = CustomIcon ? null : getBundledIcon(name);
   const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -85,7 +86,26 @@ const IconComponent = ({
     );
   }
 
-  if (BundledIcon) {
+  const image = getImageSrc(name, themeType, scale);
+  const preferRaster = iconFormat === "png";
+
+  // A raster only renders crisply up to the density it was authored for;
+  // bundled PNGs top out at @2x. `image.scale` is the matched raster's density
+  // (absent for host-provided overrides, which we trust at any scale). When
+  // the requested `scale` exceeds it, an upscaled bitmap would look soft.
+  const rasterCoversScale =
+    image !== null &&
+    !image.isSvg &&
+    (image.scale === undefined || image.scale >= scale);
+
+  // Default (`iconFormat: "svg"`): the bundled SVG component wins whenever it
+  // exists, so `getImageSrc` (host URL override / bundled PNG) is only reached
+  // when no SVG matches. Raster mode (`iconFormat: "png"`): a scale-appropriate
+  // PNG takes priority, but the bundled SVG is used as a fallback both for
+  // names that ship no raster variant AND when the requested scale exceeds the
+  // densest bundled PNG — the vector stays crisp where an upscaled bitmap
+  // would blur. Host component overrides (`CustomIcon`) always win over both.
+  if (BundledIcon && !(preferRaster && rasterCoversScale)) {
     return (
       <span
         ref={wrapperRef}
@@ -97,7 +117,6 @@ const IconComponent = ({
     );
   }
 
-  const image = getImageSrc(name, themeType, scale);
   if (!image) {
     return null;
   }

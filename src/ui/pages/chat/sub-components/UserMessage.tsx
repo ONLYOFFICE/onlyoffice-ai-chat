@@ -214,7 +214,7 @@ const UserActionBar = () => {
           onOpenChange={setIsOpen}
           trigger={
             <IconButton
-              iconName="more"
+              iconName="btn-more.small"
               size={20}
               isActive={isOpen}
               insideElement
