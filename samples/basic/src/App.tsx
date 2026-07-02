@@ -63,6 +63,7 @@ export function App() {
         theme={theme.id}
         hostToolGroups={hostToolGroups}
         toolsAdapter={toolsAdapter}
+        iconFormat="png"
       />
       <div
         onMouseDown={onMouseDown}
