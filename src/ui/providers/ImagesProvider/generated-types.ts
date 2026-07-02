@@ -28,6 +28,7 @@ export type IconName =
   | "btn-rename"
   | "btn-reset"
   | "btn-save"
+  | "btn-save.small"
   | "btn-settings"
   | "btn-web-search"
   | "btn-zoomup"

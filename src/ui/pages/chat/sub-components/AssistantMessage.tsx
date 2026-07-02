@@ -290,7 +290,7 @@ const AssistantActionBar = () => {
         <div>
           <TooltipIconButton tooltip={t("Save")}>
             <IconButton
-              iconName="btn-save"
+              iconName="btn-save.small"
               size={20}
               onClick={onDownload}
               isStroke
