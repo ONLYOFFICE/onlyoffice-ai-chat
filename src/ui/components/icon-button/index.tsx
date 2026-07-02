@@ -34,8 +34,16 @@ const IconButtonComponent = ({
   const focusStyles =
     "outline-none focus:outline-none focus-visible:outline-none";
 
+  // Recolor the icon from the button's text color (currentColor), so `text-*`
+  // and hover utilities passed via `className` drive it. Skipped when the
+  // caller pins an explicit `color` (e.g. the composer send/stop button) or
+  // opts out with `noColor` (self-colored icons) — those keep the color that
+  // `Icon`/`applySvgColor` applies directly and must not be forced to
+  // currentColor.
   const iconColorStyles =
-    "[&_svg_path]:fill-current [&_svg_path[stroke]]:fill-none [&_svg_path[stroke]]:stroke-current";
+    color || noColor
+      ? undefined
+      : "[&_svg_path]:fill-current [&_svg_path[stroke]]:fill-none [&_svg_path[stroke]]:stroke-current";
 
   return (
     <button

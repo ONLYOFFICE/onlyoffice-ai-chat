@@ -62,19 +62,27 @@ const IconComponent = ({
   const BundledIcon = CustomIcon ? null : getBundledIcon(name);
   const wrapperRef = useRef<HTMLSpanElement>(null);
 
-  // Re-apply theme/color attributes whenever the bundled SVG re-renders
-  // (theme switch, color prop change, name change). The SVGR-produced
-  // component renders a fresh DOM tree, so attribute mutations from a
-  // prior render don't carry over — we always do a clean pass here.
+  // Re-apply theme/color attributes whenever the wrapped SVG re-renders
+  // (theme switch, color prop change, name change). Both bundled (SVGR) and
+  // host-supplied custom icon components render a fresh DOM tree, so attribute
+  // mutations from a prior render don't carry over — we always do a clean pass
+  // here on whatever SVG sits inside the ref'd wrapper.
   useLayoutEffect(() => {
-    if (!BundledIcon) return;
     const svg = wrapperRef.current?.querySelector("svg");
     if (!svg) return;
     applySvgColor(svg, isStroke, color, noColor);
   });
 
   if (CustomIcon) {
-    return <CustomIcon size={w ?? h} className={className} />;
+    return (
+      <span
+        ref={wrapperRef}
+        className={`flex items-center justify-center ${className || ""}`}
+        style={{ width: w, height: h }}
+      >
+        <CustomIcon size={w ?? h} />
+      </span>
+    );
   }
 
   if (BundledIcon) {
