@@ -95,6 +95,7 @@ export const allIcons = [
   "btn-menu-about",
   "btn-menu-navigation",
   "btn-menu-search",
+  "btn-more.small",
   "btn-previtem",
   "btn-prompt",
   "btn-remove",

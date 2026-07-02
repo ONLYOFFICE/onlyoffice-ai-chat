@@ -22,6 +22,7 @@ export type IconName =
   | "btn-menu-about"
   | "btn-menu-navigation"
   | "btn-menu-search"
+  | "btn-more.small"
   | "btn-previtem"
   | "btn-prompt"
   | "btn-remove"
