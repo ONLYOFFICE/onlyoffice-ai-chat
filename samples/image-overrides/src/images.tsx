@@ -109,6 +109,7 @@ export const allIcons = [
   "chevron",
   "clear.search",
   "code",
+  "code.small",
   "djvu",
   "documents",
   "image-generation",

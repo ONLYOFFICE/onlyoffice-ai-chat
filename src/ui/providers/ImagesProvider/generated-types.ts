@@ -36,6 +36,7 @@ export type IconName =
   | "chevron"
   | "clear.search"
   | "code"
+  | "code.small"
   | "djvu"
   | "documents"
   | "image-generation"
