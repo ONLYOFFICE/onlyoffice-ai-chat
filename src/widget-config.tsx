@@ -114,6 +114,14 @@ export interface WidgetConfig {
    */
   composerActions?: ComposerAction[];
   /**
+   * Show the built-in "Add local image" item in the composer's "+"
+   * (attachments) dropdown. Opt-in: the item appears only when this is `true`.
+   * `false` / omitted hides it. The item rides on an internal HTML `<input>`
+   * (not on `PlatformAdapter.file`), so enabling it needs no host file
+   * capability.
+   */
+  addLocalImageEnabled?: boolean;
+  /**
    * Pixel size of the composer's send / stop action button (the icon and
    * its square button box). Defaults to `17`. Use this in hosts that need a
    * larger or smaller send control to match a custom composer height.

@@ -38,7 +38,7 @@ const ComposerActionAttachment = () => {
   const toggleExtendedThinking = useProfilesStore(
     (s) => s.toggleExtendedThinking
   );
-  const { composerActions } = useWidgetConfig();
+  const { composerActions, addLocalImageEnabled } = useWidgetConfig();
 
   const onOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -143,12 +143,12 @@ const ComposerActionAttachment = () => {
     items.push({ text: t("AddLocalFile"), onClick: () => selectLocalFile() });
   }
 
-  // "Add local image" rides on the HTML <input>, not on `platform.file`,
-  // so it is always available.
-  items.push({
-    text: t("AddLocalImage"),
-    onClick: () => imageInputRef.current?.click(),
-  });
+  if (addLocalImageEnabled) {
+    items.push({
+      text: t("AddLocalImage"),
+      onClick: () => imageInputRef.current?.click(),
+    });
+  }
 
   if (platform.file?.getRecentFiles && recentFiles.length > 0) {
     items.push({

@@ -87,8 +87,10 @@ const ThreadInner = () => {
       <ThreadPrimitive.Root
         className="flex h-full flex-col bg-[var(--layout-background-color)]"
         style={{
-          ["--thread-max-width" as string]: "687px",
-          ["--thread-padding-x" as string]: "1rem",
+          ["--thread-max-width" as string]:
+            "var(--chat-thread-max-width, 687px)",
+          ["--thread-padding-x" as string]:
+            "var(--chat-thread-padding-x, 1rem)",
         }}
       >
         <ThreadPrimitive.If empty>
