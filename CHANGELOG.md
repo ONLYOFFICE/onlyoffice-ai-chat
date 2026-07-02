@@ -59,6 +59,16 @@
 - The web-search "Get API key" link now pins its color to the `--link-secondary-color` token with `!important`, matching the model config form. Without it, host stylesheets could override the link color, so the same link rendered in a different color in web search than in the model config form.
 - MCP servers with an error (a stopped server that exposes no tools) no longer show a "more" context-menu button with an empty menu. The button is now hidden whenever there are no menu items to show.
 
+## 0.4.146
+
+### Added
+
+- Optional `headers` field on the web-search config (`WebSearchConfig`) — extra HTTP headers (e.g. `X-Tenant`) forwarded with every request to the ONLYOFFICE / cloud backend, for both the live tool calls (`web_search`, `web_crawling`) and the connection test. Headers are merged after the derived `Authorization: Bearer <key>` header, so a custom header of the same name wins.
+
+### Changed
+
+- The ONLYOFFICE / cloud web-search backend is now called at `<baseUrl>/search` and `<baseUrl>/contents` (was `/api/2.0/ai/web-search/v1/*`), with an `engine: "exa"` field in the request body. Crawling now forwards the full `urls` array instead of only the first URL.
+
 ## 0.4.145
 
 ### Added

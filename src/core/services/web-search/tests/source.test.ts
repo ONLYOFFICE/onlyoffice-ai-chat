@@ -137,13 +137,40 @@ describe("callWebSearchTool", () => {
       { query: "x" }
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://only.example/api/2.0/ai/web-search/v1/search",
+      "https://only.example/search",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({ Authorization: "Bearer tk" }),
+        body: JSON.stringify({ engine: "exa", query: "x", numResults: 5 }),
       })
     );
     expect(JSON.parse(out)).toEqual({ data: ["r"] });
+  });
+
+  it("merges custom headers for ONLYOFFICE web_search (custom wins over bearer)", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ results: ["r"] }),
+    });
+    await callWebSearchTool(
+      makeStorage({
+        provider: "ONLYOFFICE",
+        key: "tk",
+        baseUrl: "https://only.example",
+        headers: { "X-Tenant": "acme", Authorization: "Bearer custom" },
+      }),
+      "web_search",
+      { query: "x" }
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://only.example/search",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-Tenant": "acme",
+          Authorization: "Bearer custom",
+        }),
+      })
+    );
   });
 
   it("uses provider as baseUrl when isCloudProvider has no baseUrl", async () => {
@@ -160,7 +187,7 @@ describe("callWebSearchTool", () => {
       { query: "x" }
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://cloud.example/api/2.0/ai/web-search/v1/search",
+      "https://cloud.example/search",
       expect.any(Object)
     );
   });
@@ -176,9 +203,9 @@ describe("callWebSearchTool", () => {
       { urls: ["https://target"] }
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://x/api/2.0/ai/web-search/v1/contents",
+      "https://x/contents",
       expect.objectContaining({
-        body: JSON.stringify({ url: "https://target" }),
+        body: JSON.stringify({ engine: "exa", urls: ["https://target"] }),
       })
     );
   });
