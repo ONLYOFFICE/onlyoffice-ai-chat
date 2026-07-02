@@ -129,6 +129,12 @@ export interface WidgetConfig {
    */
   composerActionSendSize?: number;
   /**
+   * Placeholder text shown in the (empty) composer input. Overrides the
+   * built-in localized "Ask anything…" string. Not translated — the host
+   * supplies the exact text to display. Omit to keep the built-in string.
+   */
+  composerPlaceholder?: string;
+  /**
    * Clickable prompt suggestions shown above the composer in a new
    * (empty) chat only. Each item is `{ name, prompt }`; clicking inserts
    * its `prompt` into the composer input. Capped at 20 — extras are

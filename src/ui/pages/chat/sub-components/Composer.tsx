@@ -5,6 +5,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { FileItem } from "../../../components/file-item";
 import { useStores } from "../../../store/context";
 import { useComposerBridge } from "../../../providers/ImperativeProvider";
+import { useWidgetConfig } from "../../../../widget-config";
 import { ComposerAction } from "./ComposerAction";
 
 const Composer = () => {
@@ -19,6 +20,7 @@ const Composer = () => {
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const { t } = useI18n();
+  const { composerPlaceholder } = useWidgetConfig();
   const composerRuntime = useComposerRuntime();
   const composerBridge = useComposerBridge();
   const rootRef = useRef<HTMLFormElement>(null);
@@ -71,7 +73,7 @@ const Composer = () => {
         ) : null}
 
         <ComposerPrimitive.Input
-          placeholder={t("AskAnything")}
+          placeholder={composerPlaceholder ?? t("AskAnything")}
           className="composer-input max-h-[calc(50vh)] min-h-[var(--chat-input-min-height,20px)] w-full resize-none outline-none select-text px-[4px]"
           rows={1}
           autoFocus
