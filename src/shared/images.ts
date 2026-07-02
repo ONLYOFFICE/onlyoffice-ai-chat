@@ -156,6 +156,12 @@ type ThemeType = "light" | "dark";
 type ImageResult = {
   src: string;
   isSvg: boolean;
+  /**
+   * Pixel-density the matched raster was authored for (e.g. `2` for a `@2x`
+   * PNG). Lets callers detect when the requested `scale` exceeds the densest
+   * available raster and fall back to a crisp vector instead of upscaling.
+   */
+  scale: number;
 };
 
 export const getImageSrc = (
@@ -177,6 +183,7 @@ export const getImageSrc = (
   return {
     src: match.src,
     isSvg: match.scale === VECTOR_IMAGE_SCALE,
+    scale: match.scale,
   };
 };
 

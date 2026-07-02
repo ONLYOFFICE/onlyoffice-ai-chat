@@ -17,6 +17,8 @@
 
 ### Fixed
 
+- In `iconFormat: "png"` mode, icons no longer render a soft, upscaled bitmap on displays whose scale exceeds the densest bundled raster. The built-in PNGs top out at `@2x`, so above 2x `<Icon>` now falls back to the crisp bundled SVG for names that ship one (host overrides and raster-only names are unaffected — the raster is still used as the best available). `getImageSrc` now reports the matched raster's `scale` so callers can make this decision.
+- Renamed the `btn-extended-thinking` high-DPI rasters (`@1.25x`/`@1.5x`/`@1.75x`/`@2x`) whose filenames were missing the trailing `x` in the scale suffix. Without it they failed the image-name parser and were silently dropped, so the icon only ever loaded its 1x variant; they now register and serve at the correct scales.
 - Adding a model for locally-hosted providers (Ollama, LM Studio, GPT4All) no longer requires filling in the API Key field. These providers run an unauthenticated OpenAI-compatible server, so the "Add Model" button is now enabled with an empty key. The core already substitutes a dummy key, so such profiles work without one. A failed model fetch for these providers (server not running or CORS not configured) now surfaces the underlying error instead of failing silently with an empty model list.
 - Chat-history search no longer shows the empty-history message ("There is no chat history yet…") when a search simply matches nothing. The no-results state now uses a distinct `NoChatsFound` string ("No chats found"), translated across all locales, leaving "There is no chat history yet…" for when there are genuinely no threads.
 

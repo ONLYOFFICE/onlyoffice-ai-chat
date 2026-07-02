@@ -18,6 +18,13 @@ export interface ImageResult {
   src: string;
   /** `true` when the source points to an SVG image. */
   isSvg: boolean;
+  /**
+   * Pixel-density the resolved raster was authored for (e.g. `2` for a `@2x`
+   * PNG). Absent for host-provided overrides and SVG sources, whose density
+   * is not fixed. `<Icon>` uses this to fall back to a bundled vector when the
+   * requested scale exceeds the densest available raster.
+   */
+  scale?: number;
 }
 
 /** Value exposed by the images React context for resolving icon/image assets. */
