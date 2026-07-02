@@ -176,8 +176,44 @@ interface PlatformEnvironment {
   locale:           string;
   devicePixelRatio: number;
   onEnvironmentChange?: (
-    callback: (info: { theme?: string; lang?: string }) => void,
+    callback: (info: {
+      theme?: string;
+      lang?: string;
+      devicePixelRatio?: number;
+    }) => void,
   ) => () => void;
+}
+```
+
+`devicePixelRatio` in the callback is optional and additive: report it when
+the display density changes (window moved to a monitor with a different DPR,
+browser zoom, …) so scale-appropriate raster icons re-select at runtime in
+`iconFormat: "png"` mode. Hosts that never send it keep
+the density read at startup — nothing breaks. A DPR-aware `onEnvironmentChange`
+looks like:
+
+```ts
+onEnvironmentChange(cb) {
+  const offTheme = subscribeToHostTheme((t) => cb({ theme: t }));
+
+  // A resolution media query is bound to one dppx value, so re-arm the
+  // listener after each change to track the new ratio.
+  let mql: MediaQueryList;
+  const onDpr = () => {
+    cb({ devicePixelRatio: window.devicePixelRatio });
+    arm();
+  };
+  const arm = () => {
+    mql?.removeEventListener("change", onDpr);
+    mql = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    mql.addEventListener("change", onDpr);
+  };
+  arm();
+
+  return () => {
+    offTheme();
+    mql?.removeEventListener("change", onDpr);
+  };
 }
 ```
 
