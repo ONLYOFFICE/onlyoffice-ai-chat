@@ -249,6 +249,12 @@ export interface AIChatWidgetProps {
    * {@link WidgetConfig.onToolCallApproveResult}.
    */
   onToolCallApproveResult?: WidgetConfig["onToolCallApproveResult"];
+  /**
+   * Minimum log severity that reaches the console. Raise it to quiet the
+   * library's `info`/`debug` tracing (`"warn"`, `"error"`, or `"silent"`);
+   * defaults to logging everything. See {@link WidgetConfig.logLevel}.
+   */
+  logLevel?: WidgetConfig["logLevel"];
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -305,6 +311,7 @@ export const AIChatWidget = React.forwardRef<
       onOpenCustomProvider,
       onDiscardMcpChanges,
       onToolCallApproveResult,
+      logLevel,
     },
     ref
   ) => {
@@ -336,6 +343,7 @@ export const AIChatWidget = React.forwardRef<
         onOpenCustomProvider,
         onDiscardMcpChanges,
         onToolCallApproveResult,
+        logLevel,
       }),
       [
         hideProfilePicker,
@@ -364,6 +372,7 @@ export const AIChatWidget = React.forwardRef<
         onOpenCustomProvider,
         onDiscardMcpChanges,
         onToolCallApproveResult,
+        logLevel,
       ]
     );
 

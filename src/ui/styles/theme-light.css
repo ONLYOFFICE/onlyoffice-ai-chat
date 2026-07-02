@@ -18,7 +18,8 @@
 
   --border-divider: #dfdfdf;
   --border-regular-control: #c0c0c0;
-  --border-control-focus: #888888;
+  --border-control-focus: #848484;
+  --border-button-pressed-focus: #848484;
   --border-error: #f62211;
   --border-sidebar-icon: #c0c0c0;
 
@@ -112,7 +113,9 @@
   --button-background-hover-color: var(--highlight-accent-button-hover);
   --button-background-pressed-color: var(--highlight-accent-button-pressed);
   --button-border-focus-color: var(--text-contrast-background);
-  --button-shadow-focus: 0px 0px 0px 2px #4781d1bf;
+  --button-shadow-focus:
+    inset 0 0 0 1px var(--background-normal),
+    0 0 0 1px var(--border-button-pressed-focus);
 
   --button-default-color: var(--text-normal);
   --button-default-background-color: var(--background-normal);
@@ -121,7 +124,7 @@
     --background-normal-element-light
   );
   --button-default-pressed-background-color: var(--highlight-button-hover);
-  --button-default-focus-shadow: 0px 0px 0px 2px #4781d180;
+  --button-default-focus-shadow: 0 0 0 1px var(--border-control-focus);
   --button-default-disabled-border-color: var(--border-regular-control);
   --button-default-disabled-color: var(--text-normal);
   --button-default-disabled-background-color: var(--background-normal);
@@ -282,7 +285,7 @@
   --chat-user-message-background: var(--highlight-button-hover);
   --chat-user-message-color: var(--text-normal);
   --chat-message-color: var(--text-normal);
-  --chat-message-blockquote-color: var(--border-control-focus);
+  --chat-message-blockquote-color: #888888;
   --chat-message-link-color: var(--text-link);
   --chat-message-divider-color: var(--border-divider);
   --chat-message-th-color: var(--text-normal);

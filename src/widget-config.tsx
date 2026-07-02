@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo } from "react";
+import { setLogLevel, type LogLevel } from "./shared/logger";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
@@ -318,6 +319,20 @@ export interface WidgetConfig {
     result: unknown,
     ctx: ToolCallApproveContext
   ) => void | Promise<void>;
+  /**
+   * Minimum severity that reaches the console. The library logs through a
+   * single module-global logger; setting this raises the threshold so noisy
+   * `info`/`debug` tracing (MCP startup, image generation, …) is suppressed:
+   * - `"debug"` (default) — log everything, unchanged behavior.
+   * - `"warn"` — drop `info`/`debug`, keep warnings and errors.
+   * - `"error"` — errors only.
+   * - `"silent"` — suppress all output.
+   *
+   * Applies globally (the logger is a singleton), not per widget instance.
+   * When omitted, the current level is left untouched, so a host that calls
+   * the exported `setLogLevel` directly is not overridden.
+   */
+  logLevel?: LogLevel;
 }
 
 /** Prompt fields exchanged with the host's create/edit windows. */
@@ -362,6 +377,12 @@ export const WidgetConfigProvider = ({
   children,
 }: WidgetConfigProviderProps) => {
   const value = useMemo<WidgetConfig>(() => config ?? {}, [config]);
+
+  // Apply the log level synchronously during render (module-global side
+  // effect, same pattern the stores use for their global holders) so it takes
+  // effect before children emit anything on first paint. Only when explicitly
+  // set — otherwise a host-side `setLogLevel` call is left intact.
+  if (value.logLevel) setLogLevel(value.logLevel);
 
   return (
     <WidgetConfigContext.Provider value={value}>

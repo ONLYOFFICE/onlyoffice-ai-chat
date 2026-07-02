@@ -3,16 +3,17 @@
   --background-normal: #ffffff;
   --background-normal-element: #f3f3f3;
   --background-normal-element-light: #f9f9f9;
-  --background-accent-button: #306AD9;
-  --background-primary-button: #306AD9;
+  --background-accent-button: #306ad9;
+  --background-primary-button: #306ad9;
   --background-scrim: #00000033;
   --background-scroll-thumb: #e0e0e0;
   --background-card-normal: #ffffff;
   --background-icon-normal: #ffffff;
 
   --border-divider: #dfdfdf;
-  --border-regular-control: #E1E1E1;
-  --border-control-focus: #848484;
+  --border-regular-control: #e1e1e1;
+  --border-control-focus: #306ad9;
+  --border-button-pressed-focus: #1b55c1;
   --border-error: #f62211;
   --border-sidebar-icon: #dfdfdf;
 
@@ -22,8 +23,8 @@
   --highlight-button-pressed: #0000001f;
   --highlight-button-hover-on-active: #d4d4d4;
   --highlight-button-pressed-on-active: #e1e1e1;
-  --highlight-accent-button-hover: #1B55C1;
-  --highlight-accent-button-pressed: #003BA6;
+  --highlight-accent-button-hover: #1b55c1;
+  --highlight-accent-button-pressed: #003ba6;
   --highlight-primary-button-hover: #2b2b2b;
   --highlight-primary-button-pressed: #2b2b2b;
   --highlight-scroll-thumb-hover: #cccccc;
@@ -42,7 +43,7 @@
   --text-normal: #383838;
   --text-normal-pressed: #383838;
   --text-secondary: #686868;
-  --text-tertiary: #7F7F7F;
+  --text-tertiary: #7f7f7f;
   --text-link: #445799;
   --text-inverse: #ffffff;
   --text-contrast-background: #ffffff;
@@ -89,7 +90,9 @@
   --button-background-hover-color: var(--highlight-accent-button-hover);
   --button-background-pressed-color: var(--highlight-accent-button-pressed);
   --button-border-focus-color: var(--text-contrast-background);
-  --button-shadow-focus: 0px 0px 0px 2px #4781d1bf;
+  --button-shadow-focus:
+    inset 0 0 0 1px var(--background-normal),
+    0 0 0 1px var(--border-button-pressed-focus);
 
   --button-default-color: var(--text-normal);
   --button-default-background-color: var(--background-normal);
@@ -98,7 +101,7 @@
     --background-normal-element-light
   );
   --button-default-pressed-background-color: var(--highlight-button-hover);
-  --button-default-focus-shadow: 0px 0px 0px 2px #4781d180;
+  --button-default-focus-shadow: 0 0 0 1px var(--border-control-focus);
   --button-default-disabled-border-color: var(--border-regular-control);
   --button-default-disabled-color: var(--text-normal);
   --button-default-disabled-background-color: var(--background-normal);
@@ -110,7 +113,7 @@
   --input-border-color: var(--border-regular-control);
   --input-hover-background-color: var(--background-normal);
   --input-hover-border-color: var(--border-regular-control);
-  --input-active-border-color: #1B55C1;
+  --input-active-border-color: #1b55c1;
   --input-active-background-color: var(--background-normal);
   --input-error-color: var(--border-error);
   --input-border-radius: 4px;
@@ -286,7 +289,7 @@
   --chat-user-message-background: var(--highlight-button-hover);
   --chat-user-message-color: var(--text-normal);
   --chat-message-color: var(--text-normal);
-  --chat-message-blockquote-color: var(--border-control-focus);
+  --chat-message-blockquote-color: #848484;
   --chat-message-link-color: var(--text-link);
   --chat-message-divider-color: var(--border-divider);
   --chat-message-th-color: var(--text-normal);
