@@ -114,8 +114,22 @@ describe("testWebSearchConnection - cloud / ONLYOFFICE", () => {
     });
     expect(r).toBe(true);
     const callArgs = fetchMock.mock.calls[0];
-    expect(callArgs[0]).toContain("/api/2.0/ai/web-search/v1/search");
+    expect(callArgs[0]).toContain("/search");
     expect(callArgs[1].headers.Authorization).toBe("Bearer tok");
+  });
+
+  it("merges custom headers (custom wins over derived bearer)", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("", { status: 200 }));
+    const r = await testWebSearchConnection({
+      provider: "ONLYOFFICE",
+      baseUrl: "https://o.example",
+      key: "tok",
+      headers: { "X-Tenant": "acme", Authorization: "Bearer custom" },
+    });
+    expect(r).toBe(true);
+    const callArgs = fetchMock.mock.calls[0];
+    expect(callArgs[1].headers["X-Tenant"]).toBe("acme");
+    expect(callArgs[1].headers.Authorization).toBe("Bearer custom");
   });
 
   it("works without key (cloud isCloudProvider)", async () => {

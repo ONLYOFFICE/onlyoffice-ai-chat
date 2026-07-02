@@ -464,6 +464,7 @@ type WebSearchConfig = {
   key?: string;
   baseUrl?: string;
   isCloudProvider?: boolean;
+  headers?: Record<string, string>; // extra headers for the ONLYOFFICE / cloud backend
 };
 
 create(config: WebSearchConfig, entityId?: string): Promise<void>; // throws if exists in scope

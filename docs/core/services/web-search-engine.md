@@ -69,6 +69,7 @@ type WebSearchConfig = {
   key?: string;
   baseUrl?: string;
   isCloudProvider?: boolean;
+  headers?: Record<string, string>; // extra headers for the ONLYOFFICE / cloud backend
 };
 ```
 
@@ -101,12 +102,12 @@ testWebSearchConnection(config: WebSearchConfig): Promise<true | TErrorData>;
 ### Live check
 
 `testWebSearchConnection` first runs the shape check, then makes
-a minimal `{ query: "test", numResults: 1 }` POST against the
-configured backend:
+a minimal `numResults: 1` test query POST against the configured
+backend (the ONLYOFFICE / cloud branch also carries `engine: "exa"`):
 
 | Provider                                | Endpoint                                                     | Header              |
 | --------------------------------------- | ------------------------------------------------------------ | ------------------- |
-| `isCloudProvider` or `"ONLYOFFICE"`     | `<baseUrl>/api/2.0/ai/web-search/v1/search`                   | `Authorization: Bearer <key>` (when key present) |
+| `isCloudProvider` or `"ONLYOFFICE"`     | `<baseUrl>/search`                                           | `Authorization: Bearer <key>` (when key present), plus any `config.headers` |
 | `"Exa"`                                 | `https://api.exa.ai/search`                                   | `x-api-key: <key>`  |
 | anything else                           | rejected as unknown provider                                  | —                   |
 

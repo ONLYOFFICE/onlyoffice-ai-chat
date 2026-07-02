@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.146
+
+### Added
+
+- Optional `headers` field on the web-search config (`WebSearchConfig`) — extra HTTP headers (e.g. `X-Tenant`) forwarded with every request to the ONLYOFFICE / cloud backend, for both the live tool calls (`web_search`, `web_crawling`) and the connection test. Headers are merged after the derived `Authorization: Bearer <key>` header, so a custom header of the same name wins.
+
+### Changed
+
+- The ONLYOFFICE / cloud web-search backend is now called at `<baseUrl>/search` and `<baseUrl>/contents` (was `/api/2.0/ai/web-search/v1/*`), with an `engine: "exa"` field in the request body. Crawling now forwards the full `urls` array instead of only the first URL.
+
 ## 0.4.145
 
 ### Added
