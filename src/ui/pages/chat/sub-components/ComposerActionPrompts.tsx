@@ -416,7 +416,7 @@ const ComposerActionPrompts = () => {
         onClick: () => applyPrompt(prompt.text),
         subMenu: buildPromptContextMenu(prompt),
         subMenuIcon: "more",
-        subMenuIconSize: 20,
+        subMenuIconSize: 24,
       });
     }
 
@@ -439,7 +439,7 @@ const ComposerActionPrompts = () => {
             onClick: () => applyPrompt(prompt.text),
             subMenu: buildPromptContextMenu(prompt),
             subMenuIcon: "more",
-            subMenuIconSize: 20,
+            subMenuIconSize: 24,
           })),
           ...(folderPrompts.length > 0
             ? [{ text: "", isSeparator: true, onClick: () => undefined }]

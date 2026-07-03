@@ -220,7 +220,7 @@ const ChatListItemComponent = ({
               trigger={
                 <IconButton
                   iconName="more"
-                  size={20}
+                  size={24}
                   isActive={isOpen}
                   insideElement
                 />

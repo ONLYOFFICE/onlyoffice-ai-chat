@@ -118,7 +118,7 @@ const ModelCard = ({
         <div className="flex items-center justify-end">
           <DropdownMenu
             onOpenChange={setIsOpen}
-            trigger={<IconButton iconName="more" size={20} isActive={isOpen} />}
+            trigger={<IconButton iconName="more" size={24} isActive={isOpen} />}
             items={[
               {
                 icon: (
