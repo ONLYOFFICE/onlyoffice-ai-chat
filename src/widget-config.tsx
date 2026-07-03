@@ -37,6 +37,16 @@ export interface WidgetConfig {
    */
   chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
   /**
+   * Show the "Clear history" item in each chat's context menu (the "…"
+   * dropdown in the chat-history list). Hidden by default; set to `true` to
+   * expose it.
+   *
+   * When hidden (default), the menu's separator sits before "Delete" so the
+   * destructive action is visually set apart. When shown, "Delete" keeps its
+   * place and the separator moves below it, ahead of "Clear history".
+   */
+  showClearHistory?: boolean;
+  /**
    * How nested submenus are presented in dropdown menus.
    * - `"flyout"` (default) — side flyouts that open on hover/click. Can
    *   overflow narrow or embedded hosts (iframe, mobile, side panels).

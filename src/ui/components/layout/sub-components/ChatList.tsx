@@ -23,7 +23,7 @@ const ChatList = () => {
     () => platform.file?.getExportFormats?.() ?? [],
     [platform]
   );
-  const { chatHistoryCloseIcon } = useWidgetConfig();
+  const { chatHistoryCloseIcon, showClearHistory } = useWidgetConfig();
   const closeIconName = chatHistoryCloseIcon ?? "btn-close";
 
   const [searchValue, setSearchValue] = React.useState("");
@@ -121,6 +121,7 @@ const ChatList = () => {
                       onExportThread={onExportThread}
                       exportFormats={exportFormats}
                       onClearThreadHistory={onClearThreadHistory}
+                      showClearHistory={showClearHistory}
                     />
                   ))}
                 </div>

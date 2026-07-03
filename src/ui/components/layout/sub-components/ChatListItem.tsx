@@ -19,6 +19,7 @@ type ChatListItemProps = {
   onExportThread: (threadId: string, formatId: string, title?: string) => void;
   exportFormats: ExportFormat[];
   onClearThreadHistory: (threadId: string) => void;
+  showClearHistory?: boolean;
   setCurrentPage: (page: Page) => void;
 };
 
@@ -38,6 +39,7 @@ const ChatListItemComponent = ({
   onExportThread,
   exportFormats,
   onClearThreadHistory,
+  showClearHistory = false,
   setCurrentPage,
 }: ChatListItemProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -131,6 +133,45 @@ const ChatListItemComponent = ({
           onClick: onDownloadClick,
         };
 
+  const separatorItem: DropDownItemProps = {
+    text: "",
+    isSeparator: true,
+    onClick: () => undefined,
+  };
+
+  const deleteItem: DropDownItemProps = {
+    icon: <RemoveIcon />,
+    text: t("Delete"),
+    onClick: onDeleteClick,
+  };
+
+  // "Clear history" is opt-in (WidgetConfig.showClearHistory). When shown, it
+  // trails a separator below "Delete" (current layout). When hidden, the
+  // separator instead precedes "Delete" so the destructive action stays set
+  // apart from the neutral Open/Export/Rename group.
+  const menuItems: DropDownItemProps[] = [
+    {
+      text: t("Open"),
+      onClick: onOpenClick,
+    },
+    exportMenuItem,
+    {
+      icon: <RenameIcon />,
+      text: t("Rename"),
+      onClick: onRenameClick,
+    },
+    ...(showClearHistory
+      ? [
+          deleteItem,
+          separatorItem,
+          {
+            text: t("ClearHistory"),
+            onClick: onClearHistoryClick,
+          },
+        ]
+      : [separatorItem, deleteItem]),
+  ];
+
   return (
     <div
       key={thread.threadId}
@@ -184,32 +225,7 @@ const ChatListItemComponent = ({
                   insideElement
                 />
               }
-              items={[
-                {
-                  text: t("Open"),
-                  onClick: onOpenClick,
-                },
-                exportMenuItem,
-                {
-                  icon: <RenameIcon />,
-                  text: t("Rename"),
-                  onClick: onRenameClick,
-                },
-                {
-                  icon: <RemoveIcon />,
-                  text: t("Delete"),
-                  onClick: onDeleteClick,
-                },
-                {
-                  text: "",
-                  isSeparator: true,
-                  onClick: () => undefined,
-                },
-                {
-                  text: t("ClearHistory"),
-                  onClick: onClearHistoryClick,
-                },
-              ]}
+              items={menuItems}
               sideOffset={0}
             />
           ) : null}
