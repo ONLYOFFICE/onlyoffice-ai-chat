@@ -11,6 +11,7 @@ export type IconName =
   | "attachment"
   | "attention"
   | "btn-arrow-up"
+  | "btn-attach.small"
   | "btn-close"
   | "btn-close.small"
   | "btn-copy"
