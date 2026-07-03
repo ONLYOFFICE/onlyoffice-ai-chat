@@ -30,6 +30,8 @@ type ChatListItemProps = {
 const DownloadIcon = () => <Icon name="btn-save" size={24} isStroke />;
 const RenameIcon = () => <Icon name="btn-rename" size={24} />;
 const RemoveIcon = () => <Icon name="btn-remove" size={24} />;
+const OpenIcon = () => <Icon name="btn-open" size={24} />;
+const ClearHistoryIcon = () => <Icon name="btn-clear" size={24} />;
 
 const activeThreadMarker =
   "relative before:content-[''] before:absolute before:start-0 before:w-[2px] before:h-full before:bg-[var(--chat-list-item-active-marker-bg)] hover:before:hidden";
@@ -192,6 +194,7 @@ const ChatListItemComponent = ({
               }
               items={[
                 {
+                  icon: <OpenIcon />,
                   text: t("Open"),
                   onClick: onOpenClick,
                 },
@@ -212,6 +215,7 @@ const ChatListItemComponent = ({
                   onClick: () => undefined,
                 },
                 {
+                  icon: <ClearHistoryIcon />,
                   text: t("ClearHistory"),
                   onClick: onClearHistoryClick,
                 },
