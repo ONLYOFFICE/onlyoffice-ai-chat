@@ -129,6 +129,15 @@ export interface WidgetConfig {
    */
   composerActionSendSize?: number;
   /**
+   * Disable the composer entirely. The input becomes non-editable (no
+   * typing, no Enter-to-send) and every composer control — attachments,
+   * prompts, model selector, send — is made non-interactive and dimmed.
+   * Pair it with {@link WidgetConfig.composerHeader} to explain why (e.g.
+   * an "AI features aren't active" banner). The composer root also carries
+   * a `composer-disabled` class for host CSS targeting. Defaults to `false`.
+   */
+  composerDisabled?: boolean;
+  /**
    * Placeholder text shown in the (empty) composer input. Overrides the
    * built-in localized "Ask anything…" string. Not translated — the host
    * supplies the exact text to display. Omit to keep the built-in string.

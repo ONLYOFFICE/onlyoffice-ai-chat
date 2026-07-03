@@ -207,6 +207,13 @@ export interface AIChatWidgetProps {
    */
   composerHeader?: WidgetConfig["composerHeader"];
   /**
+   * Disable the composer entirely — the input becomes non-editable and every
+   * composer control is made non-interactive and dimmed. Pair with
+   * {@link AIChatWidgetProps.composerHeader} to explain why. See
+   * {@link WidgetConfig.composerDisabled}.
+   */
+  composerDisabled?: WidgetConfig["composerDisabled"];
+  /**
    * Handler for the "Import" link in the add-profile card. The host owns
    * the import flow; an optional `Partial<ModelFormValues>` return pre-fills
    * the add-profile form. See {@link WidgetConfig.onProfileImportClick}.
@@ -318,6 +325,7 @@ export const AIChatWidget = React.forwardRef<
       suggestions,
       suggestionsHeader,
       composerHeader,
+      composerDisabled,
       onProfileImportClick,
       onDownloadTemplate,
       onDeleteProfile,
@@ -351,6 +359,7 @@ export const AIChatWidget = React.forwardRef<
         suggestions,
         suggestionsHeader,
         composerHeader,
+        composerDisabled,
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
@@ -381,6 +390,7 @@ export const AIChatWidget = React.forwardRef<
         suggestions,
         suggestionsHeader,
         composerHeader,
+        composerDisabled,
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
