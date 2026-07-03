@@ -134,9 +134,20 @@ export interface PlatformEnvironment {
   /** Device pixel ratio for high-DPI rendering */
   devicePixelRatio: number;
 
-  /** Subscribe to theme/language changes from the host. Returns an unsubscribe function */
+  /**
+   * Subscribe to environment changes from the host. Returns an unsubscribe
+   * function. The host invokes the callback with only the fields that changed:
+   * `theme`/`lang` for theme or locale switches, and `devicePixelRatio` when
+   * the display density changes (e.g. the window moves to a monitor with a
+   * different DPR, or the user zooms). All fields are optional and additive —
+   * a host that never reports `devicePixelRatio` keeps the startup scale.
+   */
   onEnvironmentChange?: (
-    callback: (info: { theme?: string; lang?: string }) => void
+    callback: (info: {
+      theme?: string;
+      lang?: string;
+      devicePixelRatio?: number;
+    }) => void
   ) => () => void;
 }
 

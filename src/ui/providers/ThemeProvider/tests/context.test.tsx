@@ -15,7 +15,16 @@ const themeStoreState = {
     themeStoreState.themeId = id;
     themeStoreState.themeType = id.includes("dark") ? "dark" : "light";
   }),
+  setScale: vi.fn((scale: number) => {
+    themeStoreState.scale = scale;
+  }),
   initFromPlatform: vi.fn(),
+};
+
+type EnvChangeInfo = {
+  theme?: string;
+  lang?: string;
+  devicePixelRatio?: number;
 };
 
 const platformValue = {
@@ -25,7 +34,7 @@ const platformValue = {
     locale: "en",
     devicePixelRatio: 1,
     onEnvironmentChange: undefined as
-      | ((cb: (info: { theme?: string }) => void) => () => void)
+      | ((cb: (info: EnvChangeInfo) => void) => () => void)
       | undefined,
   },
 };
@@ -48,6 +57,7 @@ function resetState() {
   themeStoreState.themeType = "light";
   themeStoreState.scale = 1;
   themeStoreState.setThemeId.mockClear();
+  themeStoreState.setScale.mockClear();
   themeStoreState.initFromPlatform.mockClear();
   platformValue.env.systemTheme = "light";
   platformValue.env.onEnvironmentChange = undefined;
@@ -153,7 +163,7 @@ describe("ThemeProvider", () => {
 
   it("ignores onEnvironmentChange events without theme", () => {
     resetState();
-    let cb: ((info: { theme?: string }) => void) | undefined;
+    let cb: ((info: EnvChangeInfo) => void) | undefined;
     platformValue.env.onEnvironmentChange = vi.fn((handler) => {
       cb = handler;
       return () => {};
@@ -165,6 +175,28 @@ describe("ThemeProvider", () => {
     );
     act(() => cb!({}));
     expect(themeStoreState.setThemeId).not.toHaveBeenCalled();
+    expect(themeStoreState.setScale).not.toHaveBeenCalled();
+  });
+
+  it("forwards devicePixelRatio changes to setScale", () => {
+    resetState();
+    let cb: ((info: EnvChangeInfo) => void) | undefined;
+    platformValue.env.onEnvironmentChange = vi.fn((handler) => {
+      cb = handler;
+      return () => {};
+    });
+    render(
+      <ThemeProvider>
+        <span />
+      </ThemeProvider>
+    );
+
+    act(() => cb!({ devicePixelRatio: 2 }));
+    expect(themeStoreState.setScale).toHaveBeenCalledWith(2);
+    // A theme-only event must not touch scale.
+    themeStoreState.setScale.mockClear();
+    act(() => cb!({ theme: "theme-dark" }));
+    expect(themeStoreState.setScale).not.toHaveBeenCalled();
   });
 
   it("renders customThemes as CSS blocks and applies inline customTheme", () => {
