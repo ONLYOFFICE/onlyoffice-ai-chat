@@ -18,24 +18,31 @@ export interface ThemeStoreState {
   themeType: ThemeType;
   /** Device pixel ratio / UI scale factor. */
   scale: number;
-  /** `true` after {@link initFromPlatform} has run once. */
+  /** `true` once theme and scale have been seeded from the platform. */
   initialized: boolean;
   /** Set the active theme by ID and recompute the theme type. */
   setThemeId: (id: string) => void;
   /** Update the UI scale factor. */
   setScale: (scale: number) => void;
-  /** Read theme and scale from the platform adapter (runs at most once). */
+  /**
+   * Re-read theme and scale from the platform adapter. The store is already
+   * seeded eagerly at creation, so this is a no-op unless {@link initialized}
+   * is `false`. Retained so {@link createThemeStore} consumers (e.g.
+   * ThemeProvider) can call it safely.
+   */
   initFromPlatform: () => void;
 }
 
 export function createThemeStore(
   ctx: AppContext
 ): UseBoundStore<StoreApi<ThemeStoreState>> {
+  const initialThemeId = ctx.platform.env.theme || "theme-white";
+
   return create<ThemeStoreState>((set, get) => ({
-    themeId: "theme-light",
-    themeType: "light",
-    scale: 1,
-    initialized: false,
+    themeId: initialThemeId,
+    themeType: getThemeType(initialThemeId),
+    scale: ctx.platform.env.devicePixelRatio,
+    initialized: true,
 
     setThemeId: (id) => set({ themeId: id, themeType: getThemeType(id) }),
 

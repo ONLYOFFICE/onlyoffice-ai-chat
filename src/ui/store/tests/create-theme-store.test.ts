@@ -13,13 +13,32 @@ function makeCtx(theme = "theme-light", devicePixelRatio = 1): AppContext {
 }
 
 describe("createThemeStore", () => {
-  it("starts with light theme defaults", () => {
-    const store = createThemeStore(makeCtx());
+  it("seeds theme and scale from the platform on creation", () => {
+    const store = createThemeStore(makeCtx("theme-night", 1.5));
     const state = store.getState();
-    expect(state.themeId).toBe("theme-light");
+    expect(state.themeId).toBe("theme-night");
+    expect(state.themeType).toBe("dark");
+    expect(state.scale).toBe(1.5);
+    expect(state.initialized).toBe(true);
+  });
+
+  it("resolves the theme type of the seeded theme", () => {
+    const store = createThemeStore(makeCtx("theme-white"));
+    const state = store.getState();
+    expect(state.themeId).toBe("theme-white");
     expect(state.themeType).toBe("light");
-    expect(state.scale).toBe(1);
-    expect(state.initialized).toBe(false);
+  });
+
+  it("falls back to a bundled theme when the platform gives no theme", () => {
+    const store = createThemeStore(makeCtx(""));
+    const state = store.getState();
+    expect(state.themeId).toBe("theme-white");
+    expect(state.themeType).toBe("light");
+  });
+
+  it("passes an unbundled custom theme name through untouched", () => {
+    const store = createThemeStore(makeCtx("theme-custom"));
+    expect(store.getState().themeId).toBe("theme-custom");
   });
 
   describe("setThemeId", () => {
@@ -58,7 +77,7 @@ describe("createThemeStore", () => {
   });
 
   describe("initFromPlatform", () => {
-    it("initializes from platform env", () => {
+    it("is a no-op after the eager seed and keeps the seeded values", () => {
       const store = createThemeStore(makeCtx("theme-dark", 1.5));
       store.getState().initFromPlatform();
       const state = store.getState();
@@ -68,14 +87,13 @@ describe("createThemeStore", () => {
       expect(state.initialized).toBe(true);
     });
 
-    it("initializes only once", () => {
-      const store = createThemeStore(makeCtx("theme-dark", 2));
+    it("does not overwrite a runtime theme change", () => {
+      const store = createThemeStore(makeCtx("theme-night", 2));
+      // Change theme at runtime
+      store.getState().setThemeId("theme-white");
+      // A late init call must not clobber it back to the platform theme
       store.getState().initFromPlatform();
-      // Change theme after init
-      store.getState().setThemeId("theme-light");
-      // Second init should be no-op
-      store.getState().initFromPlatform();
-      expect(store.getState().themeId).toBe("theme-light");
+      expect(store.getState().themeId).toBe("theme-white");
     });
   });
 });
