@@ -57,8 +57,27 @@
   --toggle-button-thumb-offset: 2px; /* unchecked: thumb x inside content box */
   --toggle-button-thumb-offset-checked: 14px; /* checked: thumb x inside content box */
 
+  /* Settings page framing (`<Settings />` / `SettingsPage`). The outer margins
+     inset the whole page from its container; `max-width` caps the content
+     column (previously hardcoded at 640px). Integrators override these on
+     `.aui-root`; the `noPadding` prop forces the margins to 0 for hosts that
+     own the framing themselves (max-width is unaffected). */
+  --ai-settings-margin-x: 32px;
+  --ai-settings-margin-y: 32px;
+  --ai-settings-max-width: 640px;
+
+  /* Optional inner padding for the settings page's tabs (passed only to that
+     Tabs instance, so other tabs in the library are unaffected). Default 0, so
+     the tab row and its content sit flush. Raise `--ai-settings-tabs-content-
+     padding` to inset the scrollable content from the scrollbar (inline) and
+     add a bottom gap; raise `--ai-settings-tabs-list-padding` for the tab row. */
+  --ai-settings-tabs-list-padding: 0px;
+  --ai-settings-tabs-content-padding: 0px;
+
   font-size: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1));
-  line-height: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333);
+  line-height: calc(
+    var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333
+  );
 
   /* font-size scale — ratios are size / 12 */
   --fs-10: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 0.8333);

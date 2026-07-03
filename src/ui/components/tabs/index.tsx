@@ -9,6 +9,8 @@ const Tabs = ({
   value,
   onValueChange,
   className,
+  listClassName,
+  contentClassName,
 }: TabsProps) => {
   const { isRTL } = useI18n();
 
@@ -22,7 +24,8 @@ const Tabs = ({
       <TabsPrimitive.List
         className={cn(
           "inline-flex h-[24px] items-center shrink-0",
-          isRTL ? "flex-row-reverse" : ""
+          isRTL ? "flex-row-reverse" : "",
+          listClassName
         )}
       >
         {items.map((item) => (
@@ -46,7 +49,10 @@ const Tabs = ({
         <TabsPrimitive.Content
           key={item.value}
           value={item.value}
-          className="mt-[8px] flex-1 min-h-0 overflow-y-auto"
+          className={cn(
+            "mt-[8px] flex-1 min-h-0 overflow-y-auto",
+            contentClassName
+          )}
         >
           {item.content}
         </TabsPrimitive.Content>
