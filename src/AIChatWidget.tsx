@@ -201,6 +201,12 @@ export interface AIChatWidgetProps {
    */
   suggestionsHeader?: WidgetConfig["suggestionsHeader"];
   /**
+   * Arbitrary content rendered directly above the composer, in both the
+   * empty and non-empty chat states — e.g. a host-owned "AI features
+   * aren't active" banner. See {@link WidgetConfig.composerHeader}.
+   */
+  composerHeader?: WidgetConfig["composerHeader"];
+  /**
    * Handler for the "Import" link in the add-profile card. The host owns
    * the import flow; an optional `Partial<ModelFormValues>` return pre-fills
    * the add-profile form. See {@link WidgetConfig.onProfileImportClick}.
@@ -311,6 +317,7 @@ export const AIChatWidget = React.forwardRef<
       composerActions,
       suggestions,
       suggestionsHeader,
+      composerHeader,
       onProfileImportClick,
       onDownloadTemplate,
       onDeleteProfile,
@@ -343,6 +350,7 @@ export const AIChatWidget = React.forwardRef<
         composerActions,
         suggestions,
         suggestionsHeader,
+        composerHeader,
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
@@ -372,6 +380,7 @@ export const AIChatWidget = React.forwardRef<
         composerActions,
         suggestions,
         suggestionsHeader,
+        composerHeader,
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,

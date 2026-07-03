@@ -148,6 +148,14 @@ export interface WidgetConfig {
    */
   suggestionsHeader?: React.ReactNode;
   /**
+   * Arbitrary content rendered directly above the composer, in both the
+   * empty and non-empty chat states. Use it to inject a host-owned banner
+   * or notice — e.g. an "AI features aren't active" call-to-action. Spans
+   * the composer's width; the host owns the markup and styling. Omit to
+   * render nothing.
+   */
+  composerHeader?: React.ReactNode;
+  /**
    * Handler for the "Import" link in the add-profile card. The host
    * owns the entire import flow (file picker, parsing, registering a
    * custom provider via `registerProvider`, etc.); the widget only

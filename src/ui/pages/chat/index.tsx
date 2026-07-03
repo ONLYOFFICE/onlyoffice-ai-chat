@@ -20,6 +20,7 @@ import useEnsureTools from "../../hooks/useEnsureTools";
 import { ManageToolDialog } from "../../components/manage-tool-dialog";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
 import { Composer } from "./sub-components/Composer";
+import { ComposerHeader } from "./sub-components/ComposerHeader";
 import { Suggestions } from "./sub-components/Suggestions";
 import { SuggestionsHeader } from "./sub-components/SuggestionsHeader";
 import { UserMessage } from "./sub-components/UserMessage";
@@ -97,6 +98,7 @@ const ThreadInner = () => {
           <SuggestionsHeader />
           <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col overflow-y-auto" />
           <Suggestions />
+          <ComposerHeader />
           <Composer />
         </ThreadPrimitive.If>
 
@@ -123,6 +125,7 @@ const ThreadInner = () => {
             <motion.div className="min-h-[8px] min-w-6 shrink-0" />
           </ThreadPrimitive.Viewport>
 
+          <ComposerHeader />
           <Composer />
         </ThreadPrimitive.If>
       </ThreadPrimitive.Root>
