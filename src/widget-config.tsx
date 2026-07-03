@@ -213,6 +213,24 @@ export interface WidgetConfig {
     folderId: string
   ) => string | void | Promise<string | void>;
   /**
+   * Custom UI for deleting a prompt folder. When provided, the widget's
+   * built-in "Delete folder" confirmation dialog is NOT shown — the host owns
+   * the confirmation UI (e.g. its own modal) and resolves whether to proceed:
+   * - `true` — the widget deletes the folder
+   * - `false` / `undefined` / no return (or a rejected promise) — cancelled,
+   *   the folder is kept
+   *
+   * The widget always performs the actual deletion itself; the host only owns
+   * the confirmation step. When omitted, the built-in dialog is used.
+   *
+   * @param currentName the folder's current name (to show in the confirmation)
+   * @param folderId the id of the folder being deleted
+   */
+  onDeletePromptFolder?: (
+    currentName: string,
+    folderId: string
+  ) => boolean | void | Promise<boolean | void>;
+  /**
    * Custom UI for creating a prompt. When provided, the widget's built-in
    * "Save prompt" path (which auto-names from the message) is replaced — the
    * host owns the name/text input UI (e.g. its own window) and resolves the
