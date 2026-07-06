@@ -4,7 +4,16 @@ import { useComponents } from "../../../providers/ComponentsProvider";
 import { useStores } from "../../../store/context";
 import type { Profile } from "../../../../types";
 
-const ModelAssignment = () => {
+interface ModelAssignmentProps {
+  defaultSetupHeader?: React.ReactNode;
+
+  defaultModelLabel?: string;
+}
+
+const ModelAssignment = ({
+  defaultSetupHeader,
+  defaultModelLabel,
+}: ModelAssignmentProps) => {
   const { ComboBox, FieldContainer } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
@@ -65,26 +74,39 @@ const ModelAssignment = () => {
     })),
   ];
 
+  const hasDefaultSetup = Boolean(defaultSetupHeader);
+
+  const defaultModelField = (
+    <FieldContainer
+      header={defaultModelLabel ?? t("DefaultModel")}
+      isHorizontal={!hasDefaultSetup}
+      reserveErrorSpace={false}
+      className={hasDefaultSetup ? undefined : "mb-[20px]"}
+      headerClassName="font-bold"
+    >
+      <ComboBox
+        className="w-full"
+        placeholder={t("SelectProvider")}
+        value={defaultProfile?.name ?? ""}
+        items={defaultItems}
+      />
+    </FieldContainer>
+  );
+
   return (
     <div className="w-full">
       <p className="font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[24px]">
         {t("ModelAssignmentDescription")}
       </p>
       <div className="flex flex-col">
-        <FieldContainer
-          header={t("DefaultModel")}
-          isHorizontal
-          reserveErrorSpace={false}
-          className="mb-[20px]"
-          headerClassName="font-bold"
-        >
-          <ComboBox
-            className="w-full"
-            placeholder={t("SelectProvider")}
-            value={defaultProfile?.name ?? ""}
-            items={defaultItems}
-          />
-        </FieldContainer>
+        {hasDefaultSetup ? (
+          <div className="default-ai-setup flex flex-col mb-[20px]">
+            {defaultSetupHeader}
+            {defaultModelField}
+          </div>
+        ) : (
+          defaultModelField
+        )}
 
         <p className="select-none font-bold leading-[var(--lh-18)] text-[var(--settings-header-color)] mb-[8px]">
           {t("OverrideForTasks")}
