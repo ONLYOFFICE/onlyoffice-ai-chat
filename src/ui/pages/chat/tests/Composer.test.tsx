@@ -59,10 +59,14 @@ function setupStores(overrides?: {
   currentProfile?: { id: string; name: string } | null;
   hideProfilePicker?: boolean;
   entityId?: string;
+  isStreamRunning?: boolean;
 }) {
   const attachmentsState = {
     attachmentFiles: overrides?.attachmentFiles ?? [],
     attachmentImages: overrides?.attachmentImages ?? [],
+  };
+  const messageState = {
+    isStreamRunning: overrides?.isStreamRunning ?? false,
   };
   mockUseStores.mockReturnValue({
     useAttachmentsStore: (
@@ -77,6 +81,8 @@ function setupStores(overrides?: {
       }
       return {};
     },
+    useMessageStore: (selector?: (s: typeof messageState) => unknown) =>
+      typeof selector === "function" ? selector(messageState) : messageState,
     selectCurrentChatProfile: () => overrides?.currentProfile ?? null,
   });
   mockUseWidgetConfig.mockReturnValue({

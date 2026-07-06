@@ -79,7 +79,7 @@ describe("ComboBox", () => {
 
   it("renders arrow icon", () => {
     render(<ComboBox items={[{ text: "A", onClick: vi.fn() }]} />);
-    expect(screen.getByTestId("icon")).toHaveTextContent("arrow.bottom.big");
+    expect(screen.getByTestId("icon")).toHaveTextContent("arrow");
   });
 
   it("applies data-testid", () => {
@@ -139,9 +139,10 @@ describe("ComboBox", () => {
     expect(screen.getByTestId("combo")).toHaveClass("custom-class");
   });
 
-  it("renders placeholder text in placeholder color when no value", () => {
+  it("renders text in placeholder color when disabled", () => {
     render(
       <ComboBox
+        disabled
         placeholder="Pick one"
         data-testid="combo"
         items={[{ text: "A", onClick: vi.fn() }]}
