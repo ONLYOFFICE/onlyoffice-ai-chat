@@ -210,7 +210,7 @@ const ChatListItemComponent = ({
         />
       ) : (
         <>
-          <p className="text-[var(--chat-list-item-color)] font-normal truncate">
+          <p className="select-none text-[var(--chat-list-item-color)] font-normal truncate">
             {thread.title}
           </p>
           {isHovered && !isRenameInputVisible ? (

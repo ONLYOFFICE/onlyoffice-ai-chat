@@ -73,7 +73,7 @@ const ChatList = () => {
     <div className="w-full h-full max-h-full flex flex-col overflow-y-auto">
       <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[8px] px-[12px]">
         <div className="flex items-center justify-between">
-          <h4 className="text-fs-13 leading-[var(--lh-16)] font-bold text-[var(--chat-list-color)]">
+          <h4 className="select-none text-fs-13 leading-[var(--lh-16)] font-bold text-[var(--chat-list-color)]">
             {t("ChatHistory")}
           </h4>
           <IconButton
@@ -98,7 +98,7 @@ const ChatList = () => {
       </div>
       <div className="flex flex-col px-[12px] pb-[8px]">
         {isEmptyList ? (
-          <p className="text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[8px]">
+          <p className="select-none text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[8px]">
             {t("NoChatYet")}
           </p>
         ) : (
@@ -127,7 +127,7 @@ const ChatList = () => {
                 </div>
               ))
             ) : (
-              <p className="text-[var(--chat-list-empty-color)] font-normal w-full">
+              <p className="select-none text-[var(--chat-list-empty-color)] font-normal w-full">
                 {t("NoChatsFound")}
               </p>
             )}
