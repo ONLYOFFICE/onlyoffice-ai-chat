@@ -16,7 +16,7 @@ const WebSearchPage = ({
   const { t } = useI18n();
 
   return (
-    <div className="aui-root select-text flex h-full w-full bg-[var(--layout-background-color)]">
+    <div className="aui-root select-text flex min-h-full w-full bg-[var(--layout-background-color)]">
       <div className="w-full max-w-[560px] min-w-0 select-none">
         {!hideHeader && (
           <h1 className="select-none font-bold text-fs-20 leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[24px]">
