@@ -164,6 +164,18 @@ describe("ComboBox", () => {
     expect(span.className).toContain("input-color");
   });
 
+  it('renders the value span with dir="auto" so LTR text truncates at its own end', () => {
+    render(
+      <ComboBox
+        value="OpenRouter - openai/gpt-5.2"
+        items={[{ text: "A", onClick: vi.fn() }]}
+      />
+    );
+    const span = screen.getByText("OpenRouter - openai/gpt-5.2");
+    expect(span).toHaveClass("truncate");
+    expect(span.getAttribute("dir")).toBe("auto");
+  });
+
   it("applies open state styles when dropdown is opened", async () => {
     const { fireEvent } = await import("@testing-library/react");
     render(

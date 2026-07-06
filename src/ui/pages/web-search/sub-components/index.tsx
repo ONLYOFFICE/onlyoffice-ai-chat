@@ -33,7 +33,7 @@ const WEB_SEARCH_PROVIDERS: WebSearchProvider[] = [
 
 const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const { ComboBox, FieldContainer, Input, Link } = useComponents();
-  const { t, isRTL } = useI18n();
+  const { t } = useI18n();
   const { eventBus } = useToolsContext();
   const { useCloudsStore, api, callbacksManager } = useStores();
   const { entityId } = useWidgetConfig();
@@ -204,8 +204,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     >
       <p
         className={cn(
-          "font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)]",
-          isRTL ? "text-end" : ""
+          "font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)]"
         )}
       >
         {t("WebSearchDescription")}

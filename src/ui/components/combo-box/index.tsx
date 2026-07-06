@@ -89,8 +89,9 @@ const ComboBox = ({
           }}
         >
           <span
+            dir="auto"
             className={cn(
-              "min-w-0 flex-1 truncate",
+              "min-w-0 truncate",
               disabled
                 ? "text-[var(--input-placeholder-color)]"
                 : "text-[var(--input-color)]"

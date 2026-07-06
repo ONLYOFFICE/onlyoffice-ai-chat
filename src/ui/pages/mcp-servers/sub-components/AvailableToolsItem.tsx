@@ -97,7 +97,7 @@ const AvailableToolsItem = ({
             className="flex items-center justify-center w-[12px] h-full"
             style={{
               transform: isRTL
-                ? `rotate(${opened ? 180 : 90}deg)`
+                ? `rotate(${opened ? 0 : 90}deg)`
                 : `rotate(${opened ? 0 : -90}deg)`,
             }}
           >
