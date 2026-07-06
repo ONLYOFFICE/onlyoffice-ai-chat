@@ -54,6 +54,9 @@ const SelectModel = () => {
       value={currentProfile?.name ?? ""}
       items={items}
       withoutBg
+      matchTriggerWidth={false}
+      contentClassName="min-w-[var(--dropdown-model-selector-min-width)]"
+      maxWidth="min(var(--dropdown-model-selector-max-width), var(--radix-dropdown-menu-content-available-width))"
       className="h-[22px] ps-0 pe-0 hover:bg-transparent"
       data-testid="model-selector"
     />

@@ -44,6 +44,13 @@
   --dropdown-back-row-height: 20px;
   --dropdown-back-row-padding: 8px; /* horizontal padding */
 
+  /* Composer model-selector dropdown width bounds. The panel sizes to its
+     content (`w-fit`) between these two; the max is additionally clamped to
+     the space Radix measured, so it shrinks on narrow screens instead of
+     overflowing. Integrators can override either on `.aui-root`. */
+  --dropdown-model-selector-min-width: 150px;
+  --dropdown-model-selector-max-width: 300px;
+
   /* Toggle (switch) geometry. Colors live in the theme files
      (`--toggle-button-*-color`); these tokens are the structural sizes.
      The thumb keeps a 3px visual gap from the track's outer edge: the track
