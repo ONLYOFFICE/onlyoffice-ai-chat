@@ -60,6 +60,30 @@ function extractErrorMessage(error: unknown): string {
   return "";
 }
 
+/**
+ * Detect a non-{@link ChatEvent} error envelope on the stream. Server-mode
+ * backends can stream `{ type: "error", message: "..." }` on a failed
+ * resume/approve instead of a proper `message-incomplete` event. It's not
+ * part of the `ChatEvent` union, so it must be recognized explicitly — left
+ * unhandled it falls through to the message-chunk path, where `event.message`
+ * (a plain string here) is pushed into the store and assistant-ui throws
+ * "Unknown message role: undefined". Returns the error text when matched,
+ * otherwise `null`.
+ */
+function readStreamErrorEnvelope(event: unknown): string | null {
+  if (
+    typeof event !== "object" ||
+    event === null ||
+    !("type" in event) ||
+    event.type !== "error"
+  ) {
+    return null;
+  }
+  return "message" in event && typeof event.message === "string"
+    ? event.message
+    : "";
+}
+
 const useMessages = ({ isReady }: UseMessagesProps) => {
   const {
     useMessageStore,
@@ -223,6 +247,59 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
       try {
         for await (const event of stream) {
+          // A malformed / out-of-contract event (e.g. a server `{ type:
+          // "error", message }` envelope) must never reach the message-chunk
+          // path below — otherwise its `message` (a plain string) is pushed
+          // into the store as a message and assistant-ui throws
+          // "Unknown message role: undefined". Surface it as a stream error
+          // and drop the event.
+          const streamError = readStreamErrorEnvelope(event);
+          if (streamError !== null) {
+            // Surface the failure with the same `incomplete` / `reason: "error"`
+            // status a real `message-incomplete` event carries, so the UI
+            // renders its error block instead of leaving a tool call spinning
+            // forever.
+            const errorStatus = {
+              type: "incomplete" as const,
+              reason: "error" as const,
+              error: { code: "unknown", message: streamError },
+            };
+            // Attach the error to the in-flight assistant turn — spread the
+            // *stored* last message so its `id` / `createdAt` / content are
+            // preserved and it stays in place. Building a bare
+            // `{ role, content }` would drop those fields and assistant-ui
+            // sorts the (createdAt-less) message to the top of the thread.
+            const stored = useMessageStore.getState().messages;
+            const lastStored = stored[stored.length - 1];
+            let erroredMessage: ThreadMessageLike;
+            if (assistantPlaceholderAdded && lastStored?.role === "assistant") {
+              erroredMessage = { ...lastStored, status: errorStatus };
+            } else {
+              erroredMessage = {
+                role: "assistant",
+                content: [],
+                createdAt: new Date(),
+                status: errorStatus,
+              };
+            }
+            const display = await applyMiddlewareDisplay(erroredMessage, false);
+            if (display) {
+              if (!assistantPlaceholderAdded) {
+                addMessage(display);
+                assistantPlaceholderAdded = true;
+              } else {
+                updateLastMessage(display);
+              }
+              lastDisplayedMessage = display;
+            }
+            callbacksManager.emit("onStreamError", {
+              threadId: resolvedThreadId,
+              messageUID: "",
+              error: { reason: "error", message: streamError },
+            });
+            continue;
+          }
+
           if (event.type === "thread-title") {
             if (event.threadId !== resolvedThreadId) {
               resolvedThreadId = event.threadId;
