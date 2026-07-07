@@ -12,6 +12,10 @@ vi.mock("../../../providers/ThemeProvider", () => ({
   useTheme: () => ({ portalContainer: null }),
 }));
 
+vi.mock("../../../providers/LocalesProvider", () => ({
+  useI18n: () => ({ isRTL: false, direction: "ltr" }),
+}));
+
 beforeAll(() => {
   // Radix UI tooltip uses ResizeObserver
   globalThis.ResizeObserver = class {

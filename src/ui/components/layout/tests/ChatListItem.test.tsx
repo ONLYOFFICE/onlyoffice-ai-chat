@@ -204,8 +204,23 @@ describe("ChatListItem", () => {
     expect(screen.getByTestId("menu-Save")).toBeInTheDocument();
     expect(screen.getByTestId("menu-Rename")).toBeInTheDocument();
     expect(screen.getByTestId("menu-Delete")).toBeInTheDocument();
-    expect(screen.getByTestId("menu-ClearHistory")).toBeInTheDocument();
     expect(screen.getByTestId("separator")).toBeInTheDocument();
+  });
+
+  it("hides ClearHistory by default", () => {
+    render(<ChatListItem {...defaultProps} />);
+    const container = screen.getByText("Test Thread").closest("div")!;
+    fireEvent.mouseEnter(container);
+
+    expect(screen.queryByTestId("menu-ClearHistory")).not.toBeInTheDocument();
+  });
+
+  it("shows ClearHistory when showClearHistory is true", () => {
+    render(<ChatListItem {...defaultProps} showClearHistory />);
+    const container = screen.getByText("Test Thread").closest("div")!;
+    fireEvent.mouseEnter(container);
+
+    expect(screen.getByTestId("menu-ClearHistory")).toBeInTheDocument();
   });
 
   it("shows rename input when Rename is clicked", () => {
@@ -374,7 +389,7 @@ describe("ChatListItem", () => {
   });
 
   it("calls onClearThreadHistory when ClearHistory is clicked", () => {
-    render(<ChatListItem {...defaultProps} />);
+    render(<ChatListItem {...defaultProps} showClearHistory />);
     const container = screen.getByText("Test Thread").closest("div")!;
     fireEvent.mouseEnter(container);
     fireEvent.click(screen.getByTestId("menu-ClearHistory"));

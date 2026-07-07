@@ -125,7 +125,7 @@ const ComposerActionAttachment = () => {
   const trigger = (
     <TooltipIconButton tooltip={t("Attachments")} visible={!isOpen}>
       <IconButton
-        iconName="btn-zoomup"
+        iconName="btn-attach.small"
         size={20}
         isStroke
         className="cursor-pointer rounded-[4px] outline-none text-[var(--attachment-button-color,var(--icon-button-color))] hover:enabled:text-[var(--attachment-button-hover-color,var(--text-normal))]"

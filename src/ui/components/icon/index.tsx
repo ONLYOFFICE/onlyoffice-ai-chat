@@ -1,5 +1,6 @@
 import { memo, useLayoutEffect, useRef } from "react";
 import { ReactSVG } from "react-svg";
+import { cn } from "../../../shared/utils";
 import { useImages } from "../../providers/ImagesProvider";
 import { useTheme } from "../../providers/ThemeProvider";
 
@@ -78,7 +79,10 @@ const IconComponent = ({
     return (
       <span
         ref={wrapperRef}
-        className={`flex items-center justify-center ${className || ""}`}
+        className={cn(
+          "flex items-center justify-center select-none",
+          className
+        )}
         style={{ width: w, height: h }}
       >
         <CustomIcon size={w ?? h} />
@@ -109,7 +113,10 @@ const IconComponent = ({
     return (
       <span
         ref={wrapperRef}
-        className={`flex items-center justify-center ${className || ""}`}
+        className={cn(
+          "select-none flex items-center justify-center",
+          className
+        )}
         style={{ width: w, height: h }}
       >
         <BundledIcon width={w} height={h} />
@@ -128,7 +135,10 @@ const IconComponent = ({
     return (
       <ReactSVG
         src={image.src}
-        className={`flex items-center justify-center ${className || ""}`}
+        className={cn(
+          "select-none flex items-center justify-center",
+          className
+        )}
         beforeInjection={(svg) => applySvgColor(svg, isStroke, color, noColor)}
         style={{ width: w, height: h }}
       />
@@ -139,7 +149,8 @@ const IconComponent = ({
     <img
       src={image.src}
       alt={name}
-      className={className}
+      draggable={false}
+      className={cn("select-none", className)}
       style={{ width: w, height: h }}
     />
   );

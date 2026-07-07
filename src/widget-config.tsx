@@ -50,6 +50,16 @@ export interface WidgetConfig {
    */
   chatHistoryAlwaysShowActions?: boolean;
   /**
+   * Show the "Clear history" item in each chat's context menu (the "…"
+   * dropdown in the chat-history list). Hidden by default; set to `true` to
+   * expose it.
+   *
+   * When hidden (default), the menu's separator sits before "Delete" so the
+   * destructive action is visually set apart. When shown, "Delete" keeps its
+   * place and the separator moves below it, ahead of "Clear history".
+   */
+  showClearHistory?: boolean;
+  /**
    * How nested submenus are presented in dropdown menus.
    * - `"flyout"` (default) — side flyouts that open on hover/click. Can
    *   overflow narrow or embedded hosts (iframe, mobile, side panels).
@@ -262,6 +272,24 @@ export interface WidgetConfig {
     currentName: string,
     folderId: string
   ) => string | void | Promise<string | void>;
+  /**
+   * Custom UI for deleting a prompt folder. When provided, the widget's
+   * built-in "Delete folder" confirmation dialog is NOT shown — the host owns
+   * the confirmation UI (e.g. its own modal) and resolves whether to proceed:
+   * - `true` — the widget deletes the folder
+   * - `false` / `undefined` / no return (or a rejected promise) — cancelled,
+   *   the folder is kept
+   *
+   * The widget always performs the actual deletion itself; the host only owns
+   * the confirmation step. When omitted, the built-in dialog is used.
+   *
+   * @param currentName the folder's current name (to show in the confirmation)
+   * @param folderId the id of the folder being deleted
+   */
+  onDeletePromptFolder?: (
+    currentName: string,
+    folderId: string
+  ) => boolean | void | Promise<boolean | void>;
   /**
    * Custom UI for creating a prompt. When provided, the widget's built-in
    * "Save prompt" path (which auto-names from the message) is replaced — the

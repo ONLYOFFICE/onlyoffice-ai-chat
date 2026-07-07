@@ -12,5 +12,10 @@ export type TabsProps = {
   defaultValue?: string;
   value?: string;
   onValueChange?: (value: string) => void;
+  /** Class on the tabs root (`TabsPrimitive.Root`). */
   className?: string;
+  /** Class on the tab-row (`TabsPrimitive.List`) — e.g. per-instance padding. */
+  listClassName?: string;
+  /** Class on each scrollable panel (`TabsPrimitive.Content`). */
+  contentClassName?: string;
 };

@@ -19,6 +19,7 @@ type ChatListItemProps = {
   onExportThread: (threadId: string, formatId: string, title?: string) => void;
   exportFormats: ExportFormat[];
   onClearThreadHistory: (threadId: string) => void;
+  showClearHistory?: boolean;
   setCurrentPage: (page: Page) => void;
   /**
    * Show the actions trigger ("⋯") permanently instead of only on hover.
@@ -45,6 +46,7 @@ const ChatListItemComponent = ({
   onExportThread,
   exportFormats,
   onClearThreadHistory,
+  showClearHistory = false,
   setCurrentPage,
   alwaysShowActions,
 }: ChatListItemProps) => {
@@ -139,6 +141,47 @@ const ChatListItemComponent = ({
           onClick: onDownloadClick,
         };
 
+  const separatorItem: DropDownItemProps = {
+    text: "",
+    isSeparator: true,
+    onClick: () => undefined,
+  };
+
+  const deleteItem: DropDownItemProps = {
+    icon: <RemoveIcon />,
+    text: t("Delete"),
+    onClick: onDeleteClick,
+  };
+
+  // "Clear history" is opt-in (WidgetConfig.showClearHistory). When shown, it
+  // trails a separator below "Delete" (current layout). When hidden, the
+  // separator instead precedes "Delete" so the destructive action stays set
+  // apart from the neutral Open/Export/Rename group.
+  const menuItems: DropDownItemProps[] = [
+    {
+      icon: <OpenIcon />,
+      text: t("Open"),
+      onClick: onOpenClick,
+    },
+    exportMenuItem,
+    {
+      icon: <RenameIcon />,
+      text: t("Rename"),
+      onClick: onRenameClick,
+    },
+    ...(showClearHistory
+      ? [
+          deleteItem,
+          separatorItem,
+          {
+            icon: <ClearHistoryIcon />,
+            text: t("ClearHistory"),
+            onClick: onClearHistoryClick,
+          },
+        ]
+      : [separatorItem, deleteItem]),
+  ];
+
   return (
     <div
       key={thread.threadId}
@@ -177,7 +220,7 @@ const ChatListItemComponent = ({
         />
       ) : (
         <>
-          <p className="text-[length:var(--chat-list-item-font-size,var(--fs-12))] text-[var(--chat-list-item-color)] [font-weight:var(--chat-list-item-font-weight,400)] truncate">
+          <p className="select-none text-[length:var(--chat-list-item-font-size,var(--fs-12))] text-[var(--chat-list-item-color)] [font-weight:var(--chat-list-item-font-weight,400)] truncate">
             {thread.title}
           </p>
           {(alwaysShowActions || isHovered) && !isRenameInputVisible ? (
@@ -187,39 +230,12 @@ const ChatListItemComponent = ({
               trigger={
                 <IconButton
                   iconName="more"
-                  size={20}
+                  size={24}
                   isActive={isOpen}
                   insideElement
                 />
               }
-              items={[
-                {
-                  icon: <OpenIcon />,
-                  text: t("Open"),
-                  onClick: onOpenClick,
-                },
-                exportMenuItem,
-                {
-                  icon: <RenameIcon />,
-                  text: t("Rename"),
-                  onClick: onRenameClick,
-                },
-                {
-                  icon: <RemoveIcon />,
-                  text: t("Delete"),
-                  onClick: onDeleteClick,
-                },
-                {
-                  text: "",
-                  isSeparator: true,
-                  onClick: () => undefined,
-                },
-                {
-                  icon: <ClearHistoryIcon />,
-                  text: t("ClearHistory"),
-                  onClick: onClearHistoryClick,
-                },
-              ]}
+              items={menuItems}
               sideOffset={0}
             />
           ) : null}

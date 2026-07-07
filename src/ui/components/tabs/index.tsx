@@ -9,11 +9,14 @@ const Tabs = ({
   value,
   onValueChange,
   className,
+  listClassName,
+  contentClassName,
 }: TabsProps) => {
-  const { isRTL } = useI18n();
+  const { direction } = useI18n();
 
   return (
     <TabsPrimitive.Root
+      dir={direction}
       defaultValue={defaultValue || items[0]?.value}
       value={value}
       onValueChange={onValueChange}
@@ -22,7 +25,7 @@ const Tabs = ({
       <TabsPrimitive.List
         className={cn(
           "inline-flex h-[24px] items-center shrink-0",
-          isRTL ? "flex-row-reverse" : ""
+          listClassName
         )}
       >
         {items.map((item) => (
@@ -31,10 +34,10 @@ const Tabs = ({
             value={item.value}
             disabled={item.disabled}
             className={cn(
-              "font-semibold cursor-pointer select-none whitespace-nowrap px-[12px] h-[24px] border-[length:var(--tabs-border-width)] border-[color:var(--tabs-border-color)] border-solid -ml-px first:ml-0 transition-colors",
+              "font-semibold cursor-pointer select-none whitespace-nowrap px-[12px] h-[24px] border-[length:var(--tabs-border-width)] border-[color:var(--tabs-border-color)] border-solid -ms-px first:ms-0 transition-colors",
               "text-[var(--text-secondary)] bg-[var(--background-normal)]",
               "data-[state=active]:text-[var(--text-normal)] data-[state=active]:bg-[var(--highlight-button-hover)]",
-              "first:rounded-l-[var(--tabs-border-radius)] last:rounded-r-[var(--tabs-border-radius)]",
+              "first:rounded-s-[var(--tabs-border-radius)] last:rounded-e-[var(--tabs-border-radius)]",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
@@ -46,7 +49,10 @@ const Tabs = ({
         <TabsPrimitive.Content
           key={item.value}
           value={item.value}
-          className="mt-[8px] flex-1 min-h-0 overflow-y-auto"
+          className={cn(
+            "mt-[8px] flex-1 min-h-0 overflow-y-auto",
+            contentClassName
+          )}
         >
           {item.content}
         </TabsPrimitive.Content>

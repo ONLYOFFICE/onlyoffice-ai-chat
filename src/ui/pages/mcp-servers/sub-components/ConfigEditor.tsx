@@ -212,6 +212,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
             </div>
             <div
               ref={editorRef}
+              dir="ltr"
               className="border border-[var(--servers-edit-config-json-editor-border-color)] bg-[var(--servers-edit-config-json-editor-background-color)] rounded-[4px]"
             />
             {error ? (

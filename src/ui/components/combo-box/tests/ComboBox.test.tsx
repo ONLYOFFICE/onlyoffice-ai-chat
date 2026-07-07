@@ -79,7 +79,7 @@ describe("ComboBox", () => {
 
   it("renders arrow icon", () => {
     render(<ComboBox items={[{ text: "A", onClick: vi.fn() }]} />);
-    expect(screen.getByTestId("icon")).toHaveTextContent("arrow.bottom.big");
+    expect(screen.getByTestId("icon")).toHaveTextContent("arrow");
   });
 
   it("applies data-testid", () => {
@@ -139,9 +139,10 @@ describe("ComboBox", () => {
     expect(screen.getByTestId("combo")).toHaveClass("custom-class");
   });
 
-  it("renders placeholder text in placeholder color when no value", () => {
+  it("renders text in placeholder color when disabled", () => {
     render(
       <ComboBox
+        disabled
         placeholder="Pick one"
         data-testid="combo"
         items={[{ text: "A", onClick: vi.fn() }]}
@@ -161,6 +162,18 @@ describe("ComboBox", () => {
     );
     const span = screen.getByText("Hello");
     expect(span.className).toContain("input-color");
+  });
+
+  it('renders the value span with dir="auto" so LTR text truncates at its own end', () => {
+    render(
+      <ComboBox
+        value="OpenRouter - openai/gpt-5.2"
+        items={[{ text: "A", onClick: vi.fn() }]}
+      />
+    );
+    const span = screen.getByText("OpenRouter - openai/gpt-5.2");
+    expect(span).toHaveClass("truncate");
+    expect(span.getAttribute("dir")).toBe("auto");
   });
 
   it("applies open state styles when dropdown is opened", async () => {

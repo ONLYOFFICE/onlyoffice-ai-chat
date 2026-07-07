@@ -9,7 +9,7 @@ import Permissions from "./Permissions";
 
 const Servers = () => {
   const { Button } = useComponents();
-  const { t, isRTL } = useI18n();
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = React.useState(false);
   const { servers: serversInstance } = useToolsContext();
   const { useServersStore } = useStores();
@@ -36,19 +36,13 @@ const Servers = () => {
     <div className="flex flex-col pb-[32px] w-full">
       <p
         className={cn(
-          "font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[8px]",
-          isRTL ? "text-end" : ""
+          "font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[8px]"
         )}
       >
         {t("MCPServersDescription")}
       </p>
       {isOpen ? null : (
-        <div
-          className={cn(
-            "flex mb-[8px]",
-            isRTL ? "justify-end" : "justify-start"
-          )}
-        >
+        <div className={cn("flex mb-[8px]")}>
           <Button className="w-fit" onClick={() => setIsOpen(true)}>
             {t("EditConfiguration")}
           </Button>

@@ -46,6 +46,7 @@ const ChatList = ({
   const onClearThreadHistory = useThreadsStore((s) => s.onClearThreadHistory);
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
   const {
+    showClearHistory,
     chatHistoryCloseIcon,
     hideChatHistoryHeader,
     chatHistoryAlwaysShowActions,
@@ -113,7 +114,7 @@ const ChatList = ({
       <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[8px] px-[12px]">
         {!isHeaderHidden && (
           <div className="flex items-center justify-between">
-            <h4 className="text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] [font-weight:var(--chat-list-title-font-weight,700)] text-[var(--chat-list-color)]">
+            <h4 className="select-none text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] [font-weight:var(--chat-list-title-font-weight,700)] text-[var(--chat-list-color)]">
               {t("ChatHistory")}
             </h4>
             <IconButton
@@ -139,7 +140,7 @@ const ChatList = ({
       </div>
       <div className="flex flex-col px-[12px] pb-[8px]">
         {isEmptyList ? (
-          <p className="text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[8px]">
+          <p className="select-none text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[8px]">
             {t("NoChatYet")}
           </p>
         ) : (
@@ -163,12 +164,13 @@ const ChatList = ({
                       exportFormats={exportFormats}
                       onClearThreadHistory={onClearThreadHistory}
                       alwaysShowActions={showActionsAlways}
+                      showClearHistory={showClearHistory}
                     />
                   ))}
                 </div>
               ))
             ) : (
-              <p className="text-[var(--chat-list-empty-color)] font-normal w-full">
+              <p className="select-none text-[var(--chat-list-empty-color)] font-normal w-full">
                 {t("NoChatsFound")}
               </p>
             )}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -33,48 +33,61 @@ vi.mock("../../../components/model-card", () => ({
   ),
 }));
 
+const mockUseWidgetConfig = vi.fn();
+
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => mockUseWidgetConfig(),
+}));
+
 vi.mock("../../../components/model-config-cards", () => ({
-  AddModelCard: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="add-model-card">
-      <button onClick={onClose}>Close</button>
-    </div>
+  AddModelCard: ({
+    variant,
+    isHorizontal,
+  }: {
+    variant?: string;
+    isHorizontal?: boolean;
+  }) => (
+    <div
+      data-testid="add-model-card"
+      data-variant={variant}
+      data-horizontal={String(isHorizontal)}
+    />
   ),
 }));
 
 import InitialSetup from "../index";
 
 describe("InitialSetupPage", () => {
-  it("renders heading", () => {
-    render(<InitialSetup />);
-    expect(screen.getByText("AIModels")).toBeInTheDocument();
+  beforeEach(() => {
+    mockUseWidgetConfig.mockReturnValue({});
   });
 
-  it("renders description", () => {
+  it("always renders the standalone AddModelCard", () => {
     render(<InitialSetup />);
-    expect(screen.getByText("AIModelsDescription")).toBeInTheDocument();
+    const card = screen.getByTestId("add-model-card");
+    expect(card).toBeInTheDocument();
+    expect(card).toHaveAttribute("data-variant", "standalone");
   });
 
-  it("renders Add Model button initially", () => {
+  it("defaults AddModelCard to horizontal layout", () => {
     render(<InitialSetup />);
-    expect(screen.getByText("AddModel")).toBeInTheDocument();
+    expect(screen.getByTestId("add-model-card")).toHaveAttribute(
+      "data-horizontal",
+      "true"
+    );
   });
 
-  it("shows AddModelCard when Add button is clicked", () => {
+  it("respects isAddModelCardHorizontal from widget config", () => {
+    mockUseWidgetConfig.mockReturnValue({ isAddModelCardHorizontal: false });
     render(<InitialSetup />);
-    fireEvent.click(screen.getByText("AddModel"));
-    expect(screen.getByTestId("add-model-card")).toBeInTheDocument();
+    expect(screen.getByTestId("add-model-card")).toHaveAttribute(
+      "data-horizontal",
+      "false"
+    );
   });
 
   it("renders existing profiles as ModelCards", () => {
     render(<InitialSetup />);
     expect(screen.getByTestId("model-card")).toHaveTextContent("GPT-4");
-  });
-
-  it("closes AddModelCard when onClose is called", () => {
-    render(<InitialSetup />);
-    fireEvent.click(screen.getByText("AddModel"));
-    expect(screen.getByTestId("add-model-card")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Close"));
-    expect(screen.queryByTestId("add-model-card")).not.toBeInTheDocument();
   });
 });

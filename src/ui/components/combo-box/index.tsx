@@ -14,6 +14,15 @@ export type ComboBoxProps = {
   items: DropDownItemProps[];
   searchable?: boolean;
   searchPlaceholder?: string;
+  /**
+   * When true (default) the dropdown matches the trigger width (min 150px).
+   * Set to false to size the panel to its content (`w-fit`).
+   */
+  matchTriggerWidth?: boolean;
+  /** Extra classes applied to the dropdown panel (e.g. min width). */
+  contentClassName?: string;
+  /** Caps the dropdown panel width (px number or CSS length). */
+  maxWidth?: number | string;
   "data-testid"?: string;
 };
 
@@ -27,6 +36,9 @@ const ComboBox = ({
   items,
   searchable,
   searchPlaceholder,
+  matchTriggerWidth = true,
+  contentClassName,
+  maxWidth,
   "data-testid": dataTestId,
 }: ComboBoxProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -88,8 +100,9 @@ const ComboBox = ({
           }}
         >
           <span
+            dir="auto"
             className={cn(
-              "min-w-0 flex-1 truncate",
+              "min-w-0 truncate",
               disabled
                 ? "text-[var(--input-placeholder-color)]"
                 : "text-[var(--input-color)]"
@@ -111,7 +124,9 @@ const ComboBox = ({
           </div>
         </div>
       }
-      matchTriggerWidth={true}
+      matchTriggerWidth={matchTriggerWidth}
+      contentClassName={contentClassName}
+      maxWidth={maxWidth}
       headerContent={searchHeader}
       items={visibleItems}
       variant="combobox"

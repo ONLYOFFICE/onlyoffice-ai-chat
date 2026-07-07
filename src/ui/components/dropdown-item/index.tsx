@@ -209,10 +209,10 @@ const DropDownItem = ({
   // edge and supply their own visual weight, so the row's end padding tightens).
   const hasTrailingControl = Boolean(
     trailingIcon ||
-      subMenu ||
-      checked ||
-      (withToggle && onToggleChange) ||
-      withAbout
+    subMenu ||
+    checked ||
+    (withToggle && onToggleChange) ||
+    withAbout
   );
   const hasLeadingIcon = Boolean(icon) || Boolean(withSpace);
   const isCombobox = variant === "combobox";
@@ -258,6 +258,7 @@ const DropDownItem = ({
           (icon ?? null)
         )}
         <span
+          dir="auto"
           className={cn(
             "truncate font-normal text-[var(--drop-down-menu-item-color)]",
             withSpace ? "ms-[28px]" : "",

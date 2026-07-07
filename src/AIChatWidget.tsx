@@ -243,6 +243,12 @@ export interface AIChatWidgetProps {
    */
   onRenamePromptFolder?: WidgetConfig["onRenamePromptFolder"];
   /**
+   * Custom UI for deleting a prompt folder. When provided, the built-in
+   * "Delete folder" confirmation dialog is skipped and the host owns the
+   * confirmation UI. See {@link WidgetConfig.onDeletePromptFolder}.
+   */
+  onDeletePromptFolder?: WidgetConfig["onDeletePromptFolder"];
+  /**
    * Custom UI for creating a prompt. When provided, the built-in
    * "Save prompt" auto-name path is replaced and the host owns the input UI.
    * See {@link WidgetConfig.onCreatePrompt}.
@@ -331,6 +337,7 @@ export const AIChatWidget = React.forwardRef<
       onDeleteProfile,
       onCreatePromptFolder,
       onRenamePromptFolder,
+      onDeletePromptFolder,
       onCreatePrompt,
       onEditPrompt,
       onOpenCustomProvider,
@@ -365,6 +372,7 @@ export const AIChatWidget = React.forwardRef<
         onDeleteProfile,
         onCreatePromptFolder,
         onRenamePromptFolder,
+        onDeletePromptFolder,
         onCreatePrompt,
         onEditPrompt,
         onOpenCustomProvider,
@@ -396,6 +404,7 @@ export const AIChatWidget = React.forwardRef<
         onDeleteProfile,
         onCreatePromptFolder,
         onRenamePromptFolder,
+        onDeletePromptFolder,
         onCreatePrompt,
         onEditPrompt,
         onOpenCustomProvider,
