@@ -17,7 +17,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div
         className={cn(
-          "flex items-center h-[var(--input-height,24px)] rounded-[4px] box-border border ps-[4px] pe-[2px]",
+          "flex items-center h-[var(--input-height,24px)] rounded-[4px] box-border border ps-[var(--input-padding-start,4px)] pe-[var(--input-padding-end,2px)]",
           "border-[var(--input-border-color)] bg-[var(--input-background-color)]",
           props.disabled
             ? "cursor-not-allowed opacity-50"
