@@ -82,7 +82,7 @@ const ComboBox = ({
         <div
           data-testid={dataTestId}
           className={cn(
-            "h-[var(--combo-box-height,24px)] rounded-[var(--input-border-radius)] ps-[4px] box-border",
+            "h-[var(--combo-box-height,24px)] rounded-[var(--input-border-radius)] ps-[var(--combo-box-padding-start,4px)] pe-[var(--combo-box-padding-end,0px)] box-border",
             "cursor-pointer flex items-center justify-between",
             "text-[var(--input-color)] leading-[var(--lh-16)]",
             withoutBg
