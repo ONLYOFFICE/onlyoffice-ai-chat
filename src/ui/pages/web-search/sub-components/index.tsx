@@ -227,7 +227,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
             error={baseUrlError}
           >
             <Input
-              className="w-full h-[24px]"
+              className="w-full"
               placeholder={t("EnterURL")}
               value={baseUrl}
               onChange={(e) => {
@@ -255,7 +255,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
             }
           >
             <Input
-              className="w-full h-[24px]"
+              className="w-full"
               type="password"
               placeholder={t("EnterKey")}
               value={apiKey}
