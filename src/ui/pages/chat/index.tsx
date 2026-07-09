@@ -40,7 +40,7 @@ const ThreadInner = () => {
   const messages = useMessageStore((s) => s.messages);
   const { t } = useI18n();
   const { isDragOver, handlers } = useChatDropAttachments();
-  const { hideScrollToBottomButton } = useWidgetConfig();
+  const { hideScrollToBottomButton, hideThreadFade } = useWidgetConfig();
 
   // Derive "tool is running" from the last assistant message — adapter
   // tools are executed inside the engine and never surface as
@@ -102,51 +102,71 @@ const ThreadInner = () => {
         </ThreadPrimitive.If>
 
         <ThreadPrimitive.If empty={false}>
-          <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto">
-            <ThreadPrimitive.Messages
-              components={{
-                UserMessage,
-                AssistantMessage,
-              }}
-            />
+          {/* Non-scrolling wrapper so the fade overlays stay pinned to the
+              top and bottom edges of the message area instead of scrolling
+              away with the content inside the viewport. */}
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+            <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto">
+              <ThreadPrimitive.Messages
+                components={{
+                  UserMessage,
+                  AssistantMessage,
+                }}
+              />
 
-            {showAnalyzing ? (
-              <div className="flex items-center justify-center">
-                <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
-                  <Loader />
-                  <p className="font-normal text-[var(--chat-message-analyze-color)]">
-                    {t("Analyzing")}
-                  </p>
+              {showAnalyzing ? (
+                <div className="flex items-center justify-center">
+                  <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
+                    <Loader />
+                    <p className="font-normal text-[var(--chat-message-analyze-color)]">
+                      {t("Analyzing")}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            <motion.div className="min-h-[8px] min-w-6 shrink-0" />
+              <motion.div className="min-h-[8px] min-w-6 shrink-0" />
 
-            {/* Floating "scroll to bottom" button (shown by default; hide
-                via `hideScrollToBottomButton`). Sticks to the bottom of the
-                scroll viewport and is auto-disabled by the primitive when the
-                thread is already scrolled to the end — we fade it out via
-                `disabled:` so it only appears while scrolled up. */}
-            {!hideScrollToBottomButton ? (
-              <div className="scroll-to-bottom pointer-events-none sticky z-10 mx-auto flex w-full max-w-[var(--thread-max-width)] justify-end">
-                <ThreadPrimitive.ScrollToBottom asChild>
-                  <button
-                    type="button"
-                    className="scroll-to-bottom-btn pointer-events-auto m-0 box-border flex items-center justify-center border p-0 leading-none transition-opacity duration-150 disabled:pointer-events-none disabled:opacity-0"
-                  >
-                    <Icon
-                      name="dropdown-toggle"
-                      color="var(--icon-normal)"
-                      width={16}
-                      height={24}
-                      isStroke
-                    />
-                  </button>
-                </ThreadPrimitive.ScrollToBottom>
-              </div>
+              {/* Floating "scroll to bottom" button (shown by default; hide
+                  via `hideScrollToBottomButton`). Sticks to the bottom of the
+                  scroll viewport and is auto-disabled by the primitive when
+                  the thread is already scrolled to the end — we fade it out
+                  via `disabled:` so it only appears while scrolled up. */}
+              {!hideScrollToBottomButton ? (
+                <div className="scroll-to-bottom pointer-events-none sticky z-10 mx-auto flex w-full max-w-[var(--thread-max-width)] justify-end">
+                  <ThreadPrimitive.ScrollToBottom asChild>
+                    <button
+                      type="button"
+                      className="scroll-to-bottom-btn pointer-events-auto m-0 box-border flex items-center justify-center border p-0 leading-none transition-opacity duration-150 disabled:pointer-events-none disabled:opacity-0"
+                    >
+                      <Icon
+                        name="dropdown-toggle"
+                        color="var(--icon-normal)"
+                        width={16}
+                        height={24}
+                        isStroke
+                      />
+                    </button>
+                  </ThreadPrimitive.ScrollToBottom>
+                </div>
+              ) : null}
+            </ThreadPrimitive.Viewport>
+
+            {/* Top/bottom fade of the thread content into the panel
+                background. */}
+            {!hideThreadFade ? (
+              <>
+                <div
+                  aria-hidden="true"
+                  className="thread-fade thread-fade-top pointer-events-none"
+                />
+                <div
+                  aria-hidden="true"
+                  className="thread-fade thread-fade-bottom pointer-events-none"
+                />
+              </>
             ) : null}
-          </ThreadPrimitive.Viewport>
+          </div>
 
           <Composer />
         </ThreadPrimitive.If>

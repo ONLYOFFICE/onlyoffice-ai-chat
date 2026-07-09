@@ -1,6 +1,7 @@
 .theme-dark {
   /* base colors */
   --background-normal: #333333;
+  --background-normal-rgb: 51 51 51;
   --background-normal-element: #505050;
   --background-normal-element-light: #404040;
   --background-accent-button: #486f9e;

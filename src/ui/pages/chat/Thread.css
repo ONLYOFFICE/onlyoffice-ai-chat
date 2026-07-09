@@ -43,6 +43,43 @@
   outline: none;
 }
 
+/* Fade the thread content into the panel background at the top and bottom
+   edges of the message area. */
+.thread-fade {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  margin-inline: auto;
+  max-width: var(--thread-max-width);
+  padding-inline: var(--thread-padding-x);
+  box-sizing: border-box;
+  /* Paint only over the message content column, not the padding gutters, so
+     the fade lines up with the messages' own horizontal insets. */
+  background-clip: content-box;
+}
+
+.thread-fade-top {
+  top: 0;
+  height: var(--chat-thread-fade-height-top);
+  background-image: linear-gradient(
+    to bottom,
+    rgb(var(--background-normal-rgb)),
+    rgb(var(--background-normal-rgb) / 0)
+  );
+}
+
+.thread-fade-bottom {
+  bottom: 0;
+  height: var(--chat-thread-fade-height-bottom);
+  /* Per Figma the bottom fade stops at 60% opacity (not fully transparent):
+     opaque panel color at the bottom edge → same color at 60% at the top. */
+  background-image: linear-gradient(
+    to top,
+    rgb(var(--background-normal-rgb)),
+    rgb(var(--background-normal-rgb) / 0)
+  );
+}
+
 .composer-input {
   /*font-size: 14px;*/
   /*line-height: 15px;*/

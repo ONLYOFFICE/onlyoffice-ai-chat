@@ -31,6 +31,12 @@ export interface WidgetConfig {
    */
   hideScrollToBottomButton?: boolean;
   /**
+   * Hide the top and bottom fade overlays in the chat thread. The fades blend
+   * the message content into the panel background at both edges of the scroll
+   * area. Shown by default; set to `true` to remove them entirely.
+   */
+  hideThreadFade?: boolean;
+  /**
    * Hide the settings (gear) button in the header. The settings page itself
    * remains reachable programmatically via the router store.
    */

@@ -1,6 +1,7 @@
 .theme-night {
   /* base colors */
   --background-normal: #404040;
+  --background-normal-rgb: 64 64 64;
   --background-normal-element: #4b4b4b;
   --background-normal-element-light: #4b4b4b;
   --background-accent-button: #4e8afb;

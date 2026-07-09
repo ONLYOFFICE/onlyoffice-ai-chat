@@ -119,6 +119,11 @@ export interface AIChatWidgetProps {
    * default. See {@link WidgetConfig.hideScrollToBottomButton}.
    */
   hideScrollToBottomButton?: boolean;
+  /**
+   * Hide the top and bottom fade overlays in the chat thread. Shown by
+   * default. See {@link WidgetConfig.hideThreadFade}.
+   */
+  hideThreadFade?: boolean;
   hideSettingsButton?: boolean;
   /**
    * Icon name for the chat-history panel's close button. Defaults to
@@ -294,6 +299,7 @@ export const AIChatWidget = React.forwardRef<
       hiddenWebSearchProviders,
       hideProfilePicker,
       hideScrollToBottomButton,
+      hideThreadFade,
       hideSettingsButton,
       chatHistoryCloseIcon,
       hideToolAllowAlways,
@@ -329,6 +335,7 @@ export const AIChatWidget = React.forwardRef<
       () => ({
         hideProfilePicker,
         hideScrollToBottomButton,
+        hideThreadFade,
         hideSettingsButton,
         chatHistoryCloseIcon,
         hideToolAllowAlways,
@@ -358,6 +365,7 @@ export const AIChatWidget = React.forwardRef<
       [
         hideProfilePicker,
         hideScrollToBottomButton,
+        hideThreadFade,
         hideSettingsButton,
         chatHistoryCloseIcon,
         hideToolAllowAlways,

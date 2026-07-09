@@ -14,6 +14,7 @@ export interface ThemeTokens {
   "--background-normal"?: string;
   "--background-normal-element"?: string;
   "--background-normal-element-light"?: string;
+  "--background-normal-rgb"?: string;
   "--background-primary-button"?: string;
   "--background-scrim"?: string;
   "--background-scroll-thumb"?: string;

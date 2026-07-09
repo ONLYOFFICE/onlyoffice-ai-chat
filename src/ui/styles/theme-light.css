@@ -7,6 +7,10 @@
 
   /* base colors */
   --background-normal: #ffffff;
+  /* RGB channels of --background-normal, for composing translucent variants
+     via `rgb(var(--background-normal-rgb) / <alpha>)` without color-mix. Keep
+     in sync with --background-normal above. */
+  --background-normal-rgb: 255 255 255;
   --background-normal-element: #efefef;
   --background-normal-element-light: #f7f7f7;
   --background-accent-button: #446995;
