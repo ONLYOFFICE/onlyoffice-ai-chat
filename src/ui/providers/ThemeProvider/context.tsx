@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import { usePlatform } from "../PlatformProvider/context";
 import { useStores } from "../../store/context";
-import { useScrollbarWidth } from "../../hooks/useScrollbarWidth";
 import type { ThemeType } from "./constants";
 import { getThemeType } from "./constants";
 import type { ThemeTokens } from "./generated-types";
@@ -121,16 +120,9 @@ export const ThemeProvider = ({
     };
   }, [setThemeId, setScale, platform]);
 
-  // Real scrollbar width, published on the theme root (below) as
-  // `--scrollbar-width` alongside the theme tokens so the whole widget can
-  // read it
-  const scrollbarWidth = useScrollbarWidth();
-
-  // --- Build inline style from customTheme overrides + runtime tokens ---
+  // --- Build inline style from customTheme overrides ---
   const inlineStyle = useMemo(() => {
-    const style: Record<string, string> = {
-      "--scrollbar-width": `${scrollbarWidth}px`,
-    };
+    const style: Record<string, string> = {};
     if (customTheme) {
       for (const [key, value] of Object.entries(customTheme)) {
         if (value !== undefined) {
@@ -139,7 +131,7 @@ export const ThemeProvider = ({
       }
     }
     return style;
-  }, [customTheme, scrollbarWidth]);
+  }, [customTheme]);
 
   // --- Generate <style> tags for customThemes ---
   const customStyleContent = useMemo(() => {

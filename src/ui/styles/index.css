@@ -86,8 +86,8 @@
      `--chat-scroll-to-bottom-gap` is the space above the composer and
      `--chat-scroll-to-bottom-edge-inset` matches the composer's horizontal
      padding so the button's edge lines up with the composer's edge. The
-     button lives inside the scroll viewport, whose content box is narrowed
-     by the scrollbar, so its end inset is trimmed by `--scrollbar-width`. */
+     button is positioned absolutely over the message area (outside the scroll
+     viewport), so it reserves no layout height at the end of the thread. */
   --chat-scroll-to-bottom-width: 24px;
   --chat-scroll-to-bottom-height: 24px;
   --chat-scroll-to-bottom-border-radius: 4px;

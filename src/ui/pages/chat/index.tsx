@@ -126,31 +126,31 @@ const ThreadInner = () => {
               ) : null}
 
               <motion.div className="min-h-[8px] min-w-6 shrink-0" />
+            </ThreadPrimitive.Viewport>
 
-              {/* Floating "scroll to bottom" button (shown by default; hide
+            {/* Floating "scroll to bottom" button (shown by default; hide
                   via `hideScrollToBottomButton`). Sticks to the bottom of the
                   scroll viewport and is auto-disabled by the primitive when
                   the thread is already scrolled to the end — we fade it out
                   via `disabled:` so it only appears while scrolled up. */}
-              {!hideScrollToBottomButton ? (
-                <div className="scroll-to-bottom pointer-events-none sticky z-10 mx-auto flex w-full max-w-[var(--thread-max-width)] justify-end">
-                  <ThreadPrimitive.ScrollToBottom asChild>
-                    <button
-                      type="button"
-                      className="scroll-to-bottom-btn pointer-events-auto m-0 box-border flex items-center justify-center border p-0 leading-none transition-opacity duration-150 disabled:pointer-events-none disabled:opacity-0"
-                    >
-                      <Icon
-                        name="dropdown-toggle"
-                        color="var(--icon-normal)"
-                        width={16}
-                        height={24}
-                        isStroke
-                      />
-                    </button>
-                  </ThreadPrimitive.ScrollToBottom>
-                </div>
-              ) : null}
-            </ThreadPrimitive.Viewport>
+            {!hideScrollToBottomButton ? (
+              <div className="scroll-to-bottom pointer-events-none absolute inset-x-0 z-10 mx-auto flex w-full max-w-[var(--thread-max-width)] justify-end">
+                <ThreadPrimitive.ScrollToBottom asChild>
+                  <button
+                    type="button"
+                    className="scroll-to-bottom-btn pointer-events-auto m-0 box-border flex items-center justify-center border p-0 leading-none transition-opacity duration-150 disabled:pointer-events-none disabled:opacity-0"
+                  >
+                    <Icon
+                      name="dropdown-toggle"
+                      color="var(--icon-normal)"
+                      width={16}
+                      height={24}
+                      isStroke
+                    />
+                  </button>
+                </ThreadPrimitive.ScrollToBottom>
+              </div>
+            ) : null}
 
             {/* Top/bottom fade of the thread content into the panel
                 background. */}

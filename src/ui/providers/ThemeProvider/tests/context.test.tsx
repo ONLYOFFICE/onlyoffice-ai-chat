@@ -235,7 +235,7 @@ describe("ThemeProvider", () => {
     expect(container.querySelector("style")).toBeNull();
   });
 
-  it("skips undefined customTheme values but still publishes --scrollbar-width", () => {
+  it("skips undefined customTheme values", () => {
     resetState();
     const { container } = render(
       <ThemeProvider
@@ -247,9 +247,7 @@ describe("ThemeProvider", () => {
       </ThemeProvider>
     );
     const themed = container.querySelector(".theme-light") as HTMLElement;
-    // The theme root always carries the runtime `--scrollbar-width` token,
-    // but the undefined customTheme override must not be emitted.
-    expect(themed.style.getPropertyValue("--scrollbar-width")).not.toBe("");
+    // An undefined customTheme override must not be emitted.
     expect(themed.style.getPropertyValue("--unset")).toBe("");
   });
 

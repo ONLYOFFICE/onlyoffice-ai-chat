@@ -13,14 +13,7 @@
 
 .scroll-to-bottom {
   bottom: var(--chat-scroll-to-bottom-gap);
-  padding-inline-start: var(--chat-scroll-to-bottom-edge-inset);
-  /* Trim the end inset by the scrollbar width: this button sits inside the
-     scroll viewport (content box narrowed by the scrollbar) while the
-     composer sits outside it at full width, so without this the button's
-     edge lands a scrollbar-width short of the composer's edge. */
-  padding-inline-end: calc(
-    var(--chat-scroll-to-bottom-edge-inset) - var(--scrollbar-width, 8px)
-  );
+  padding-inline: var(--chat-scroll-to-bottom-edge-inset);
 }
 
 .scroll-to-bottom-btn {
