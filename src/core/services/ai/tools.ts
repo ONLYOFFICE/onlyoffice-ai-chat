@@ -1,4 +1,5 @@
 import type { TMCPItem } from "../../../shared/mcp-item";
+import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { ToolsAdapter } from "../../tools-adapter";
 import type { Profile } from "../../types";
@@ -169,6 +170,8 @@ export type AdapterRunContext = {
   profile: Profile;
   profileId: string;
   tools: TMCPItem[];
+  /** System-prompt override; threaded so resume rounds keep it. */
+  prompt?: ActionArgs["prompt"];
   isReasoning?: boolean;
   signal?: AbortSignal;
   /** Opaque scope token forwarded to scoped storage reads in resume rounds. */
@@ -238,6 +241,7 @@ export async function* executeAdapterTool(
       isReasoning: ctx.isReasoning,
       signal: ctx.signal,
       tools: ctx.tools,
+      prompt: ctx.prompt,
       entityId: ctx.entityId,
       fetch: ctx.fetch,
     }
