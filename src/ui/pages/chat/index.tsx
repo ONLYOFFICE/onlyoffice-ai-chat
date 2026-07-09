@@ -193,6 +193,10 @@ const Thread = () => {
   useEnsureTools();
   const messages = useMessageStore((s) => s.messages);
   const stopMessage = useMessageStore((s) => s.stopMessage);
+  // `isStreamRunning` spans the whole round (request → stream → tool calls);
+  // feeding it to the runtime as `isRunning` lets assistant-ui emit
+  // `thread.run-start`, which drives its built-in scroll-to-bottom on send.
+  const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const profilesInitialized = useProfilesStore((s) => s.initialized);
   const hasProfiles = useProfilesStore((s) => s.profiles.length > 0);
   const currentPage = useRouter((s) => s.currentPage);
@@ -235,6 +239,7 @@ const Thread = () => {
 
   const runtime = useExternalStoreRuntime<ThreadMessageLike>({
     messages,
+    isRunning: isStreamRunning,
     onNew,
     onCancel,
     onReload,

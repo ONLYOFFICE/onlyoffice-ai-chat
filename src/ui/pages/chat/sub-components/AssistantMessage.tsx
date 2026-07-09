@@ -332,14 +332,18 @@ export const AssistantMessage = memo(() => {
     | { type?: string; reason?: string }
     | undefined;
 
-  // A user-cancelled turn (stop pressed before any content streamed) leaves
-  // an empty "incomplete" shell. Don't render it — otherwise an empty bubble
-  // with action buttons lingers. Error turns (reason === "error") still
-  // render so their banner shows even with no partial content.
+  // Don't render an empty assistant shell. Two cases produce one:
+  //   • a user-cancelled turn (stop pressed before any content streamed)
+  //     leaves an empty "incomplete" message; and
+  //   • the runtime's optimistic placeholder for an in-flight turn is an
+  //     empty "running" message — which would otherwise show an empty bubble
+  //     alongside our own "Analyzing" indicator.
+  // Error turns (reason === "error") still render so their banner shows even
+  // with no partial content.
   if (
-    status?.type === "incomplete" &&
-    status?.reason !== "error" &&
-    !hasRenderableContent(message.content)
+    !hasRenderableContent(message.content) &&
+    ((status?.type === "incomplete" && status?.reason !== "error") ||
+      status?.type === "running")
   ) {
     return null;
   }
