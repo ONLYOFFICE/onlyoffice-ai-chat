@@ -11,6 +11,38 @@
   border-color: var(--chat-composer-active-border-color);
 }
 
+.scroll-to-bottom {
+  bottom: var(--chat-scroll-to-bottom-gap);
+  padding-inline-start: var(--chat-scroll-to-bottom-edge-inset);
+  /* Trim the end inset by the scrollbar width: this button sits inside the
+     scroll viewport (content box narrowed by the scrollbar) while the
+     composer sits outside it at full width, so without this the button's
+     edge lands a scrollbar-width short of the composer's edge. */
+  padding-inline-end: calc(
+    var(--chat-scroll-to-bottom-edge-inset) - var(--scrollbar-width, 8px)
+  );
+}
+
+.scroll-to-bottom-btn {
+  width: var(--chat-scroll-to-bottom-width);
+  height: var(--chat-scroll-to-bottom-height);
+  border-radius: var(--chat-scroll-to-bottom-border-radius);
+  border-color: var(--chat-scroll-to-bottom-border-color);
+  background: var(--chat-scroll-to-bottom-background-color);
+  box-shadow: var(--chat-scroll-to-bottom-shadow);
+  cursor: pointer;
+  /* No hover / focus / active affordances are planned yet — only the
+     pointer cursor. Neutralize the browser defaults so the button keeps
+     the same look in every state. */
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scroll-to-bottom-btn:focus,
+.scroll-to-bottom-btn:focus-visible {
+  outline: none;
+}
+
 .composer-input {
   /*font-size: 14px;*/
   /*line-height: 15px;*/

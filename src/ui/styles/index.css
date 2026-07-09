@@ -81,6 +81,19 @@
   --ai-settings-tabs-list-padding: 0px;
   --ai-settings-tabs-content-padding: 0px;
 
+  /* Chat "scroll to bottom" button geometry. Colors live in the theme files
+     (`--chat-scroll-to-bottom-*-color`); these are the structural sizes.
+     `--chat-scroll-to-bottom-gap` is the space above the composer and
+     `--chat-scroll-to-bottom-edge-inset` matches the composer's horizontal
+     padding so the button's edge lines up with the composer's edge. The
+     button lives inside the scroll viewport, whose content box is narrowed
+     by the scrollbar, so its end inset is trimmed by `--scrollbar-width`. */
+  --chat-scroll-to-bottom-width: 24px;
+  --chat-scroll-to-bottom-height: 24px;
+  --chat-scroll-to-bottom-border-radius: 4px;
+  --chat-scroll-to-bottom-gap: 12px;
+  --chat-scroll-to-bottom-edge-inset: 12px;
+
   font-size: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1));
   line-height: calc(
     var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333

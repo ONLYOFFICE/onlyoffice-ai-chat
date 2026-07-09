@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
+import { useWidgetConfig } from "../../../widget-config";
 import { useStores } from "../../store/context";
 import { useMessages } from "../../hooks";
 import useEnsureProfiles from "../../hooks/useEnsureProfiles";
@@ -18,6 +19,7 @@ import useEnsureThreads from "../../hooks/useEnsureThreads";
 import useEnsurePrompts from "../../hooks/useEnsurePrompts";
 import useEnsureTools from "../../hooks/useEnsureTools";
 import { ManageToolDialog } from "../../components/manage-tool-dialog";
+import { Icon } from "../../components/icon";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
 import { Composer } from "./sub-components/Composer";
 import { Suggestions } from "./sub-components/Suggestions";
@@ -38,6 +40,7 @@ const ThreadInner = () => {
   const messages = useMessageStore((s) => s.messages);
   const { t } = useI18n();
   const { isDragOver, handlers } = useChatDropAttachments();
+  const { hideScrollToBottomButton } = useWidgetConfig();
 
   // Derive "tool is running" from the last assistant message — adapter
   // tools are executed inside the engine and never surface as
@@ -119,6 +122,30 @@ const ThreadInner = () => {
             ) : null}
 
             <motion.div className="min-h-[8px] min-w-6 shrink-0" />
+
+            {/* Floating "scroll to bottom" button (shown by default; hide
+                via `hideScrollToBottomButton`). Sticks to the bottom of the
+                scroll viewport and is auto-disabled by the primitive when the
+                thread is already scrolled to the end — we fade it out via
+                `disabled:` so it only appears while scrolled up. */}
+            {!hideScrollToBottomButton ? (
+              <div className="scroll-to-bottom pointer-events-none sticky z-10 mx-auto flex w-full max-w-[var(--thread-max-width)] justify-end">
+                <ThreadPrimitive.ScrollToBottom asChild>
+                  <button
+                    type="button"
+                    className="scroll-to-bottom-btn pointer-events-auto m-0 box-border flex items-center justify-center border p-0 leading-none transition-opacity duration-150 disabled:pointer-events-none disabled:opacity-0"
+                  >
+                    <Icon
+                      name="dropdown-toggle"
+                      color="var(--icon-normal)"
+                      width={16}
+                      height={24}
+                      isStroke
+                    />
+                  </button>
+                </ThreadPrimitive.ScrollToBottom>
+              </div>
+            ) : null}
           </ThreadPrimitive.Viewport>
 
           <Composer />

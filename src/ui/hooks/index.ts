@@ -8,3 +8,7 @@ export { default as useEnsureProfiles } from "./useEnsureProfiles";
 export { default as useEnsureThreads } from "./useEnsureThreads";
 export { default as useEnsurePrompts } from "./useEnsurePrompts";
 export { default as useEnsureTools } from "./useEnsureTools";
+export {
+  default as useScrollbarWidth,
+  measureScrollbarWidth,
+} from "./useScrollbarWidth";

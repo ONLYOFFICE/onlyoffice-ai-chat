@@ -24,6 +24,13 @@ export interface WidgetConfig {
   entityId?: string;
   hideProfilePicker?: boolean;
   /**
+   * Hide the floating "scroll to bottom" button in the chat thread. The
+   * button sits just above the composer and appears only while the thread is
+   * scrolled up, hiding itself once the user is back at the latest message.
+   * Shown by default; set to `true` to remove it entirely.
+   */
+  hideScrollToBottomButton?: boolean;
+  /**
    * Hide the settings (gear) button in the header. The settings page itself
    * remains reachable programmatically via the router store.
    */

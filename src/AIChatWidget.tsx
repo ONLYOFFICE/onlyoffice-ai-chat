@@ -114,6 +114,11 @@ export interface AIChatWidgetProps {
   hiddenProviders?: ProviderType[];
   hiddenWebSearchProviders?: WebSearchProviderId[];
   hideProfilePicker?: boolean;
+  /**
+   * Hide the floating "scroll to bottom" button in the chat thread. Shown by
+   * default. See {@link WidgetConfig.hideScrollToBottomButton}.
+   */
+  hideScrollToBottomButton?: boolean;
   hideSettingsButton?: boolean;
   /**
    * Icon name for the chat-history panel's close button. Defaults to
@@ -288,6 +293,7 @@ export const AIChatWidget = React.forwardRef<
       hiddenProviders,
       hiddenWebSearchProviders,
       hideProfilePicker,
+      hideScrollToBottomButton,
       hideSettingsButton,
       chatHistoryCloseIcon,
       hideToolAllowAlways,
@@ -322,6 +328,7 @@ export const AIChatWidget = React.forwardRef<
     const widgetConfig = useMemo(
       () => ({
         hideProfilePicker,
+        hideScrollToBottomButton,
         hideSettingsButton,
         chatHistoryCloseIcon,
         hideToolAllowAlways,
@@ -350,6 +357,7 @@ export const AIChatWidget = React.forwardRef<
       }),
       [
         hideProfilePicker,
+        hideScrollToBottomButton,
         hideSettingsButton,
         chatHistoryCloseIcon,
         hideToolAllowAlways,
@@ -508,7 +516,10 @@ export const AIChatWidget = React.forwardRef<
                       customTheme={customTheme}
                       customThemes={customThemes}
                     >
-                      <ImagesProvider overrides={images} iconFormat={iconFormat}>
+                      <ImagesProvider
+                        overrides={images}
+                        iconFormat={iconFormat}
+                      >
                         <AppWithTools
                           hostToolGroupsProp={hostToolGroupsProp}
                           onMigrate={onMigrate}

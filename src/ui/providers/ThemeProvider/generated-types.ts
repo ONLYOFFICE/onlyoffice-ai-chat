@@ -21,6 +21,7 @@ export interface ThemeTokens {
   "--border-control-focus"?: string;
   "--border-divider"?: string;
   "--border-error"?: string;
+  "--border-fill-input"?: string;
   "--border-regular-control"?: string;
   "--border-sidebar-icon"?: string;
   "--border-toolbar"?: string;
@@ -78,6 +79,9 @@ export interface ThemeTokens {
   "--chat-message-tool-call-pre-background-color"?: string;
   "--chat-message-tool-call-pre-border-color"?: string;
   "--chat-message-tool-call-pre-color"?: string;
+  "--chat-scroll-to-bottom-background-color"?: string;
+  "--chat-scroll-to-bottom-border-color"?: string;
+  "--chat-scroll-to-bottom-shadow"?: string;
   "--chat-user-message-background"?: string;
   "--chat-user-message-color"?: string;
   "--chat-welcome-color"?: string;

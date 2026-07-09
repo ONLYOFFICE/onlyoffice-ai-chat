@@ -18,6 +18,7 @@
 
   --border-divider: #dfdfdf;
   --border-regular-control: #c0c0c0;
+  --border-fill-input: var(--border-regular-control);
   --border-control-focus: #848484;
   --border-button-pressed-focus: #848484;
   --border-error: #f62211;
@@ -108,7 +109,7 @@
   );
   --button-default-pressed-background-color: var(--highlight-button-hover);
   --button-default-focus-shadow: 0 0 0 1px var(--border-control-focus);
-  --button-default-disabled-border-color: var(--border-regular-control);
+  --button-default-disabled-border-color: var(--border-fill-input);
   --button-default-disabled-color: var(--text-normal);
   --button-default-disabled-background-color: var(--background-normal);
 
@@ -116,7 +117,7 @@
   --input-background-color: var(--background-normal-element);
   --input-placeholder-color: var(--text-tertiary);
   --input-color: var(--text-normal);
-  --input-border-color: var(--border-regular-control);
+  --input-border-color: var(--border-fill-input);
   --input-hover-background-color: var(--highlight-button-hover);
   --input-hover-border-color: var(--checkbox-border-normal);
   --input-active-border-color: var(--background-accent-button);
@@ -249,10 +250,14 @@
   --chat-welcome-description-color: var(--text-secondary);
 
   --chat-composer-background-color: var(--background-normal-element-light);
-  --chat-composer-border-color: var(--border-divider);
+  --chat-composer-border-color: var(--border-fill-input);
   --chat-composer-hover-border-color: var(--highlight-button-hover);
   --chat-composer-active-border-color: var(--input-active-border-color);
   --chat-composer-text-color: var(--text-normal);
+
+  --chat-scroll-to-bottom-background-color: var(--background-normal);
+  --chat-scroll-to-bottom-border-color: var(--border-fill-input);
+  --chat-scroll-to-bottom-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --chat-composer-placeholder-color: var(--text-secondary);
 
   --chat-composer-action-send-color: var(--text-contrast-background);
