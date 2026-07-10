@@ -122,14 +122,15 @@ export const ThemeProvider = ({
 
   // --- Build inline style from customTheme overrides ---
   const inlineStyle = useMemo(() => {
-    if (!customTheme) return undefined;
     const style: Record<string, string> = {};
-    for (const [key, value] of Object.entries(customTheme)) {
-      if (value !== undefined) {
-        style[key] = value;
+    if (customTheme) {
+      for (const [key, value] of Object.entries(customTheme)) {
+        if (value !== undefined) {
+          style[key] = value;
+        }
       }
     }
-    return Object.keys(style).length > 0 ? style : undefined;
+    return style;
   }, [customTheme]);
 
   // --- Generate <style> tags for customThemes ---

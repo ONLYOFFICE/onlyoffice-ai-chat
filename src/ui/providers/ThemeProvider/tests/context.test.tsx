@@ -235,7 +235,7 @@ describe("ThemeProvider", () => {
     expect(container.querySelector("style")).toBeNull();
   });
 
-  it("renders no inline style when customTheme has only undefined values", () => {
+  it("skips undefined customTheme values", () => {
     resetState();
     const { container } = render(
       <ThemeProvider
@@ -247,7 +247,8 @@ describe("ThemeProvider", () => {
       </ThemeProvider>
     );
     const themed = container.querySelector(".theme-light") as HTMLElement;
-    expect(themed.getAttribute("style")).toBe(null);
+    // An undefined customTheme override must not be emitted.
+    expect(themed.style.getPropertyValue("--unset")).toBe("");
   });
 
   it("getThemeType is re-exported", () => {

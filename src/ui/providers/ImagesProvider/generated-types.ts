@@ -41,6 +41,7 @@ export type IconName =
   | "code.small"
   | "djvu"
   | "documents"
+  | "dropdown-toggle"
   | "image-generation"
   | "more"
   | "ocr"

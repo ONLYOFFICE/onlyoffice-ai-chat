@@ -114,7 +114,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   );
   const setManageToolData = useServersStore((s) => s.setManageToolData);
   const setIsApprovingTool = useServersStore((s) => s.setIsApprovingTool);
-  const tools = useServersStore((s) => s.tools);
+  // resume paths must read tools fresh from the store, not the stale render snapshot
+  const currentTools = useCallback(() => {
+    const t = useServersStore.getState().tools;
+    return t.length > 0 ? t : undefined;
+  }, [useServersStore]);
   const attachmentFiles = useAttachmentsStore((s) => s.attachmentFiles);
   const clearAttachmentFiles = useAttachmentsStore(
     (s) => s.clearAttachmentFiles
@@ -497,7 +501,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               entityId,
               actionArgs: {
                 isReasoning: extendedThinking,
-                tools: tools.length > 0 ? tools : undefined,
+                tools: currentTools(),
                 prompt: systemPrompt,
               },
             });
@@ -555,7 +559,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           entityId,
           actionArgs: {
             isReasoning: extendedThinking,
-            tools: tools.length > 0 ? tools : undefined,
+            tools: currentTools(),
             prompt: systemPrompt,
             signal: useMessageStore.getState()._abortController?.signal,
           },
@@ -641,7 +645,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           entityId,
           actionArgs: {
             isReasoning: extendedThinking,
-            tools: tools.length > 0 ? tools : undefined,
+            tools: currentTools(),
             prompt: systemPrompt,
             signal: useMessageStore.getState()._abortController?.signal,
           },
@@ -670,7 +674,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setAbortController,
       setManageToolData,
       systemPrompt,
-      tools,
+      currentTools,
       useMessageStore,
     ]
   );
@@ -853,7 +857,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           entityId,
           actionArgs: {
             isReasoning: extendedThinking,
-            tools: tools.length > 0 ? tools : undefined,
+            tools: currentTools(),
             prompt: systemPrompt,
             signal: useMessageStore.getState()._abortController?.signal,
           },
@@ -954,7 +958,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         profileId: currentProfile?.id,
         actionArgs: {
           isReasoning: extendedThinking,
-          tools: tools.length > 0 ? tools : undefined,
+          tools: currentTools(),
           prompt: systemPrompt,
           signal: useMessageStore.getState()._abortController?.signal,
         },
@@ -979,7 +983,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setIsToolPending,
       setManageToolData,
       systemPrompt,
-      tools,
+      currentTools,
       updateLastMessage,
       useMessageStore,
       useServersStore,
@@ -1002,7 +1006,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       profileId: currentProfile?.id,
       actionArgs: {
         isReasoning: extendedThinking,
-        tools: tools.length > 0 ? tools : undefined,
+        tools: currentTools(),
         prompt: systemPrompt,
       },
     });
@@ -1018,7 +1022,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     setIsToolPending,
     setManageToolData,
     systemPrompt,
-    tools,
+    currentTools,
     useServersStore,
   ]);
 

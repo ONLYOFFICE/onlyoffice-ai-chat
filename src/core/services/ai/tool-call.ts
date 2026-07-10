@@ -181,6 +181,8 @@ export async function* resumeChat(
     isReasoning?: boolean;
     signal?: AbortSignal;
     tools?: ActionArgs["tools"];
+    /** System-prompt override; threaded so it survives the tool-call resume. */
+    prompt?: ActionArgs["prompt"];
     /** Opaque scope token forwarded to scoped storage reads. */
     entityId?: string;
     /** Proxy fetch — mirrors {@link ActionArgs.fetch}. */
@@ -226,6 +228,7 @@ export async function* resumeChat(
     profile: input.profile,
     messages: await resolveAttachmentRefs(history, ctx.storage.attachments),
     tools: input.tools,
+    prompt: input.prompt,
     isReasoning: input.isReasoning,
     signal: input.signal,
     fetch: input.fetch,

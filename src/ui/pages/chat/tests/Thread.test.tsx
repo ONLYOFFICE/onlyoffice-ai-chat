@@ -109,7 +109,14 @@ vi.mock("@assistant-ui/react", () => ({
       empty?: boolean;
     }) => <div data-testid={`if-empty-${empty}`}>{children}</div>,
     Messages: () => <div data-testid="messages" />,
+    ScrollToBottom: ({ children }: { children?: React.ReactNode }) => (
+      <div data-testid="scroll-to-bottom">{children}</div>
+    ),
   },
+}));
+
+vi.mock("../../../components/icon", () => ({
+  Icon: () => <span data-testid="icon" />,
 }));
 
 vi.mock("../../../components/loader", () => ({

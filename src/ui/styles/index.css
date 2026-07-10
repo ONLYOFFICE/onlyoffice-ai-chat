@@ -81,6 +81,28 @@
   --ai-settings-tabs-list-padding: 0px;
   --ai-settings-tabs-content-padding: 0px;
 
+  /* Chat "scroll to bottom" button geometry. Colors live in the theme files
+     (`--chat-scroll-to-bottom-*-color`); these are the structural sizes.
+     `--chat-scroll-to-bottom-gap` is the space above the composer and
+     `--chat-scroll-to-bottom-edge-inset` matches the composer's horizontal
+     padding so the button's edge lines up with the composer's edge. The
+     button is positioned absolutely over the message area (outside the scroll
+     viewport), so it reserves no layout height at the end of the thread. */
+  --chat-scroll-to-bottom-width: 24px;
+  --chat-scroll-to-bottom-height: 24px;
+  --chat-scroll-to-bottom-border-radius: 4px;
+  --chat-scroll-to-bottom-gap: 12px;
+  --chat-scroll-to-bottom-edge-inset: 12px;
+
+  /* Heights of the fade overlays at the top and bottom of the message thread.
+     The overlay color is the panel background (`--background-normal-rgb`, set
+     in Thread.css) so it tracks the active theme's surface rather than a
+     hardcoded white. The overlays span the same centered, `--thread-padding-x`-
+     inset column as the messages so they only cover message content. Set a
+     height to `0` to remove that edge's fade. */
+  --chat-thread-fade-height-top: 8px;
+  --chat-thread-fade-height-bottom: 12px;
+
   font-size: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1));
   line-height: calc(
     var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333
