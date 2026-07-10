@@ -5,12 +5,14 @@ interface WebSearchPageProps {
   hideHeader?: boolean;
   noPadding?: boolean;
   isHorizontal?: boolean;
+  saveMode?: "blur" | "button";
 }
 
 const WebSearchPage = ({
   hideHeader,
   noPadding,
   isHorizontal,
+  saveMode,
 }: WebSearchPageProps) => {
   void noPadding;
   const { t } = useI18n();
@@ -23,7 +25,11 @@ const WebSearchPage = ({
             {t("WebSearch")}
           </h1>
         )}
-        <WebSearch variant="page" isHorizontal={isHorizontal} />
+        <WebSearch
+          variant="page"
+          isHorizontal={isHorizontal}
+          saveMode={saveMode}
+        />
       </div>
     </div>
   );

@@ -207,6 +207,12 @@ export interface WidgetConfig {
    */
   isAddModelCardHorizontal?: boolean;
   /**
+   * Persist the Web Search settings on an explicit Save button instead of
+   * saving implicitly on input blur / provider select.
+   * @default "blur"
+   */
+  webSearchSaveMode?: "blur" | "button";
+  /**
    * Handler for the "Download template" link shown in the add-profile
    * card's info tooltip. Used by hosts that ship a downloadable JSON /
    * config template for custom providers. The widget calls

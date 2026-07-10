@@ -313,6 +313,8 @@ export interface ChatCallbacks {
   onModelAssignmentUpdated?: (data: ModelAssignmentUpdatedEvent) => void;
   onServersUpdated?: (data: ServersUpdatedEvent) => void;
   onWebSearchUpdated?: (data: WebSearchUpdatedEvent) => void;
+  /** Fired when the Web Search config is persisted (explicit save / blur save). */
+  onWebSearchSaved?: (data: WebSearchUpdatedEvent) => void;
   onExtendedThinkingUpdated?: (data: ExtendedThinkingUpdatedEvent) => void;
   // Lifecycle
   onReady?: (data: ReadyEvent) => void;
