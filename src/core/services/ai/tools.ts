@@ -1,4 +1,5 @@
 import type { TMCPItem } from "../../../shared/mcp-item";
+import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { ToolsAdapter } from "../../tools-adapter";
 import type { Profile } from "../../types";
@@ -11,6 +12,7 @@ import {
   callImageGenerationTool,
   getImageGenerationTools,
   IMAGE_GENERATION_TYPE,
+  type ProfileFetchResolver,
 } from "./sources/image-generation";
 import { readToolCall, readToolCallArgs, resumeChat } from "./tool-call";
 import type { ChatEvent } from "./types";
@@ -68,14 +70,19 @@ export async function buildToolContext(
   userTools: TMCPItem[],
   entityId?: string,
   config?: { attachmentId: string[] },
-  systemServerTypes: string[] = []
+  systemServerTypes: string[] = [],
+  disableBuiltinImageTool = false
 ): Promise<ToolContext> {
   const [adapterCustom, webSearchTools, imageGenerationTools, disabled] =
     await Promise.all([
       adapter?.getTools(entityId, config) ??
         Promise.resolve<Record<string, TMCPItem[]>>({}),
       getWebSearchTools(storage, entityId),
-      getImageGenerationTools(storage),
+      // Host opt-out: skip the built-in `generate_image` tool entirely
+      // (no assignment read either) so it's never offered to the model.
+      disableBuiltinImageTool
+        ? Promise.resolve<TMCPItem[]>([])
+        : getImageGenerationTools(storage),
       storage.toolPrefs.readDisabled(entityId),
     ]);
 
@@ -163,6 +170,8 @@ export type AdapterRunContext = {
   profile: Profile;
   profileId: string;
   tools: TMCPItem[];
+  /** System-prompt override; threaded so resume rounds keep it. */
+  prompt?: ActionArgs["prompt"];
   isReasoning?: boolean;
   signal?: AbortSignal;
   /** Opaque scope token forwarded to scoped storage reads in resume rounds. */
@@ -179,6 +188,12 @@ export type AdapterRunContext = {
    * `useProxy` flag.
    */
   webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch;
+  /**
+   * Engine `pickFetch`, forwarded to built-in image-generation so it can
+   * resolve `externalFetch` / `fetchProxy` for its OWN profile. Without
+   * it, `generate_image` on an `external` profile loses its transport.
+   */
+  pickFetch?: ProfileFetchResolver;
 };
 
 /**
@@ -207,7 +222,8 @@ export async function* executeAdapterTool(
     toolCall.toolName,
     args,
     ctx.entityId,
-    ctx.webSearchFetch
+    ctx.webSearchFetch,
+    ctx.pickFetch
   );
 
   // Note: `generate_image` base64 → attachment-ref swap happens centrally
@@ -225,6 +241,7 @@ export async function* executeAdapterTool(
       isReasoning: ctx.isReasoning,
       signal: ctx.signal,
       tools: ctx.tools,
+      prompt: ctx.prompt,
       entityId: ctx.entityId,
       fetch: ctx.fetch,
     }
@@ -244,13 +261,14 @@ async function dispatchAdapterTool(
   toolName: string,
   args: Record<string, unknown>,
   entityId?: string,
-  webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch
+  webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch,
+  pickFetch?: ProfileFetchResolver
 ): Promise<unknown> {
   if (toolName === "web_search" || toolName === "web_crawling") {
     return callWebSearchTool(storage, toolName, args, entityId, webSearchFetch);
   }
   if (toolName === "generate_image") {
-    return callImageGenerationTool(storage, toolName, args);
+    return callImageGenerationTool(storage, toolName, args, pickFetch);
   }
   if (adapter) {
     return adapter.callTool(toolName, args, entityId);

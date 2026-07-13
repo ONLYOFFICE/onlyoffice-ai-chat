@@ -6,6 +6,7 @@ export type FieldContainerProps = {
   children: React.ReactNode;
   header: string;
   icon?: string;
+  iconIsStroke?: boolean;
   error?: string;
   isHorizontal?: boolean;
   reserveErrorSpace?: boolean;
@@ -35,6 +36,7 @@ const FieldContainer = ({
   children,
   header,
   icon,
+  iconIsStroke,
   error,
   isHorizontal,
   reserveErrorSpace,
@@ -58,7 +60,7 @@ const FieldContainer = ({
         {!isHorizontal ? (
           <div className="flex justify-between items-center w-full mb-[2px]">
             <div className="flex items-center gap-[8px]">
-              {icon && <Icon name={icon} size={20} />}
+              {icon && <Icon name={icon} size={20} isStroke={iconIsStroke} />}
               <p
                 className={cn(
                   "select-none text-[var(--field-container-header-color)]",
@@ -72,7 +74,7 @@ const FieldContainer = ({
           </div>
         ) : (
           <div className="flex items-center gap-[8px] w-full max-w-[160px] shrink-0">
-            {icon && <Icon name={icon} size={20} />}
+            {icon && <Icon name={icon} size={20} isStroke={iconIsStroke} />}
             <p
               className={cn(
                 "select-none text-[var(--field-container-header-color)]",

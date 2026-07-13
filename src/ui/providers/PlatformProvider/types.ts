@@ -1,6 +1,43 @@
 import type { TCloud, TCloudKey, TMCPItem, TProcess } from "../../../types";
 
 /**
+ * Content format of the text passed to {@link PlatformAdapter.copyToClipboard}.
+ *
+ * - `"markdown"` — a message body (assistant reply or user prompt); the
+ *   string is Markdown source.
+ * - `"text"` — raw, verbatim content: a code block's source or a tool call's
+ *   arguments / result (JSON).
+ */
+export type CopyFormat = "markdown" | "text";
+
+/**
+ * A chat-export format offered by the host application.
+ *
+ * Returned from {@link PlatformFileOperations.getExportFormats}. When the host
+ * declares more than one format, the chat menu replaces the single "Save" item
+ * with an "Export" submenu listing every format; the chosen format's
+ * {@link ExportFormat.id} is passed back to
+ * {@link PlatformFileOperations.saveAsFile} as its third argument.
+ */
+export interface ExportFormat {
+  /** Stable identifier passed back to `saveAsFile`, e.g. `"docx"`, `"pdf"`, `"md"`. */
+  id: string;
+  /** Human-readable label shown in the export submenu, e.g. `"Word (.docx)"`. */
+  label: string;
+  /** File extension used for the default file name (without a leading dot), e.g. `"docx"`. */
+  extension: string;
+}
+
+/**
+ * Metadata describing what is being copied, passed as the second argument to
+ * {@link PlatformAdapter.copyToClipboard}.
+ */
+export interface CopyMeta {
+  /** Content format of the copied `text`. See {@link CopyFormat}. */
+  format: CopyFormat;
+}
+
+/**
  * File-system operations delegated to the host application.
  *
  * Covers picking files/images, converting document formats, and opening or
@@ -30,8 +67,31 @@ export interface PlatformFileOperations {
   /** Get a JSON string of recently opened files from the host editor */
   getRecentFiles?(): Promise<string>;
 
-  /** Show a "Save As" dialog and save content as a file (e.g. export message as DOCX) */
-  saveAsFile?(content: string, defaultName: string): Promise<void>;
+  /**
+   * Show a "Save As" dialog and save content as a file (e.g. export message
+   * as DOCX). The library always passes Markdown source as `content`; the
+   * host is responsible for converting it to the target format.
+   *
+   * `format` is the {@link ExportFormat.id} chosen from the export submenu.
+   * It is omitted for the default "Save" action (when the host declares no
+   * formats via {@link getExportFormats}), in which case the host should fall
+   * back to its default behavior — preserving backward compatibility with
+   * hosts that ignore the third argument.
+   */
+  saveAsFile?(
+    content: string,
+    defaultName: string,
+    format?: string
+  ): Promise<void>;
+
+  /**
+   * Declare the chat-export formats offered in the chat menu. Return more than
+   * one {@link ExportFormat} to replace the single "Save" item with an
+   * "Export" submenu; the chosen format's `id` is forwarded to
+   * {@link saveAsFile}. Omit (or return `[]` / a single entry) to keep the
+   * default single "Save" action.
+   */
+  getExportFormats?(): ExportFormat[];
 
   /** Open a file in the host editor by path */
   openFile?(path: string, name: string): void;
@@ -74,9 +134,20 @@ export interface PlatformEnvironment {
   /** Device pixel ratio for high-DPI rendering */
   devicePixelRatio: number;
 
-  /** Subscribe to theme/language changes from the host. Returns an unsubscribe function */
+  /**
+   * Subscribe to environment changes from the host. Returns an unsubscribe
+   * function. The host invokes the callback with only the fields that changed:
+   * `theme`/`lang` for theme or locale switches, and `devicePixelRatio` when
+   * the display density changes (e.g. the window moves to a monitor with a
+   * different DPR, or the user zooms). All fields are optional and additive —
+   * a host that never reports `devicePixelRatio` keeps the startup scale.
+   */
   onEnvironmentChange?: (
-    callback: (info: { theme?: string; lang?: string }) => void
+    callback: (info: {
+      theme?: string;
+      lang?: string;
+      devicePixelRatio?: number;
+    }) => void
   ) => () => void;
 }
 
@@ -163,7 +234,8 @@ export interface PlatformAdapter {
    * is delegated to this function. The host is responsible for
    * authentication, routing, and the actual network call; the library
    * only takes care of parsing the response in the format chosen by
-   * `Profile.basedOn` (currently `"openai"` only).
+   * `Profile.basedOn` (`"openai"`, `"anthropic"`, `"mistral"`,
+   * `"openrouter"`).
    *
    * Required when any `Profile` has `providerType: "external"` —
    * absence raises a clear error at request time and is independent of
@@ -179,8 +251,13 @@ export interface PlatformAdapter {
    * environments where the Clipboard API is unavailable (cross-origin
    * iframe without `clipboard-write` permission, native WebView host,
    * etc.). May return a `Promise` or be synchronous.
+   *
+   * The optional second argument {@link CopyMeta} describes what is being
+   * copied — `format: "markdown"` for message bodies (assistant / user) and
+   * `format: "text"` for raw content (code blocks, tool args/results). It is
+   * additive and backward compatible; it can be ignored if not needed.
    */
-  copyToClipboard?: (text: string) => void | Promise<void>;
+  copyToClipboard?: (text: string, meta?: CopyMeta) => void | Promise<void>;
 
   /** Cloud accounts connected in the host application. If null — cloud provider features are unavailable */
   clouds: PlatformClouds | null;

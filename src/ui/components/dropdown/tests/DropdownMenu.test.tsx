@@ -82,6 +82,53 @@ describe("DropdownMenu", () => {
     expect(screen.getByText("B")).toBeInTheDocument();
   });
 
+  it("reserves the icon column for icon-less rows in a mixed menu", () => {
+    render(
+      <DropdownMenu
+        trigger={<button>Trigger</button>}
+        items={[
+          { text: "Open", onClick: vi.fn() },
+          { text: "Save", icon: "btn-save", onClick: vi.fn() },
+        ]}
+        open={true}
+      />
+    );
+    // Icon-less row gets the reserved-space indent; the icon row does not.
+    expect(screen.getByText("Open").className).toContain("ms-[28px]");
+    expect(screen.getByText("Save").className).not.toContain("ms-[28px]");
+  });
+
+  it("does not indent rows when no item has an icon", () => {
+    render(
+      <DropdownMenu
+        trigger={<button>Open</button>}
+        items={[
+          { text: "First", onClick: vi.fn() },
+          { text: "Second", onClick: vi.fn() },
+        ]}
+        open={true}
+      />
+    );
+    expect(screen.getByText("First").className).not.toContain("ms-[28px]");
+    expect(screen.getByText("Second").className).not.toContain("ms-[28px]");
+  });
+
+  it("honors an explicit withSpace override over auto-detection", () => {
+    render(
+      <DropdownMenu
+        trigger={<button>Open</button>}
+        items={[
+          { text: "NoIcons", withSpace: true, onClick: vi.fn() },
+          { text: "Other", onClick: vi.fn() },
+        ]}
+        open={true}
+      />
+    );
+    // No item has an icon, but the explicit flag still applies.
+    expect(screen.getByText("NoIcons").className).toContain("ms-[28px]");
+    expect(screen.getByText("Other").className).not.toContain("ms-[28px]");
+  });
+
   it("passes onOpenChange prop", () => {
     const onOpenChange = vi.fn();
     // Just verify it renders without error with onOpenChange

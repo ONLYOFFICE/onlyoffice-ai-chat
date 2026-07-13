@@ -103,6 +103,12 @@ export class AIEngine {
     return typeof value === "function" ? value() : (value ?? false);
   }
 
+  /** Resolve the `disableBuiltinImageTool` switch (lazy or static). */
+  private isBuiltinImageToolDisabled(): boolean {
+    const value = this.deps.disableBuiltinImageTool;
+    return typeof value === "function" ? value() : (value ?? false);
+  }
+
   /**
    * Resolve the custom fetch (if any) to wire into the provider
    * request for the given profile. Two independent code paths:
@@ -248,7 +254,8 @@ export class AIEngine {
       {
         attachmentId: collectRefIds([...priorMessages, input.userMessage]),
       },
-      this.getSystemServerTypes()
+      this.getSystemServerTypes(),
+      this.isBuiltinImageToolDisabled()
     );
 
     const proxiedFetch = this.pickFetch(profile);
@@ -279,11 +286,13 @@ export class AIEngine {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
+      prompt: input.actionArgs?.prompt,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
       entityId: input.entityId,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
+      pickFetch: (p) => this.pickFetch(p),
     });
 
     if (titlePromise) {
@@ -358,7 +367,8 @@ export class AIEngine {
       input.actionArgs?.tools ?? [],
       input.entityId,
       { attachmentId: collectRefIds(priorMessages) },
-      this.getSystemServerTypes()
+      this.getSystemServerTypes(),
+      this.isBuiltinImageToolDisabled()
     );
 
     const proxiedFetch = this.pickFetch(profile);
@@ -389,11 +399,13 @@ export class AIEngine {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
+      prompt: input.actionArgs?.prompt,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
       entityId: input.entityId,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
+      pickFetch: (p) => this.pickFetch(p),
     });
   }
 
@@ -440,7 +452,8 @@ export class AIEngine {
           input.actionArgs?.tools ?? [],
           input.entityId,
           undefined,
-          systemServerTypes
+          systemServerTypes,
+          this.isBuiltinImageToolDisabled()
         );
         if (toolCtx.systemToolNames.has(toolCall.toolName)) {
           const proxiedFetch = this.pickFetch(profile);
@@ -448,11 +461,13 @@ export class AIEngine {
             profile,
             profileId,
             tools: toolCtx.mergedTools,
+            prompt: input.actionArgs?.prompt,
             isReasoning: input.actionArgs?.isReasoning,
             signal: input.actionArgs?.signal,
             entityId: input.entityId,
             fetch: proxiedFetch,
             webSearchFetch: this.deps.fetchProxy,
+            pickFetch: (p) => this.pickFetch(p),
           };
           const resumed = executeAdapterTool(
             this.deps.storage,
@@ -506,18 +521,21 @@ export class AIEngine {
       input.actionArgs?.tools ?? [],
       input.entityId,
       undefined,
-      this.getSystemServerTypes()
+      this.getSystemServerTypes(),
+      this.isBuiltinImageToolDisabled()
     );
     const proxiedFetch = this.pickFetch(profile);
     const runCtx: AdapterRunContext = {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
+      prompt: input.actionArgs?.prompt,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
       entityId: input.entityId,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
+      pickFetch: (p) => this.pickFetch(p),
     };
 
     const resumed = resumeChat(
@@ -533,6 +551,7 @@ export class AIEngine {
         isReasoning: input.actionArgs?.isReasoning,
         signal: input.actionArgs?.signal,
         tools: toolCtx.mergedTools,
+        prompt: input.actionArgs?.prompt,
         entityId: input.entityId,
         fetch: proxiedFetch,
       }

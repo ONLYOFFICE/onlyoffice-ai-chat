@@ -206,7 +206,9 @@ describe("OpenAIProvider", () => {
           tools: [{ name: "t", description: "d", inputSchema: {} }],
         })
       );
-      expect(chatCreateMock.mock.calls[0]?.[0]?.parallel_tool_calls).toBe(false);
+      expect(chatCreateMock.mock.calls[0]?.[0]?.parallel_tool_calls).toBe(
+        false
+      );
     });
 
     it("omits parallel_tool_calls when no tools are provided", async () => {
@@ -455,6 +457,37 @@ describe("OpenAIProvider", () => {
       });
       expect(chatCreateMock).toHaveBeenCalledTimes(1);
       expect(responsesCreateMock).not.toHaveBeenCalled();
+    });
+
+    it("passes reasoning_effort when withReasoning is set", async () => {
+      chatCreateMock.mockResolvedValueOnce({
+        choices: [{ message: { content: "answer" } }],
+      });
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await p.sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "gpt-5",
+        systemPrompt: "s",
+        withReasoning: true,
+      });
+      expect(chatCreateMock.mock.calls[0]?.[0]?.reasoning_effort).toBe(
+        "medium"
+      );
+    });
+
+    it("maps withReasoning to reasoning.effort on the Responses payload", async () => {
+      responsesCreateMock.mockResolvedValueOnce({ output_text: "answer" });
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await p.sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "gpt-5.5",
+        systemPrompt: "s",
+        useResponsesApi: true,
+        withReasoning: true,
+      });
+      expect(responsesCreateMock.mock.calls[0]?.[0]?.reasoning?.effort).toBe(
+        "medium"
+      );
     });
   });
 

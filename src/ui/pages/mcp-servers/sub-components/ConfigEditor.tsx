@@ -110,6 +110,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
             }),
             EditorView.theme({
               ".cm-content": {
+                minHeight: "215px",
                 padding: "10px",
               },
               ".cm-focused": {
@@ -124,6 +125,9 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
                 // `hidden` never clips here since there is no height cap.
                 overflowX: "auto",
                 overflowY: "hidden",
+              },
+              ".cm-gutters": {
+                minHeight: "215px",
               },
             }),
           ],
@@ -187,10 +191,10 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
       id="config-editor"
       data-testid="config-editor"
       dir={isRTL ? "rtl" : "ltr"}
-      className="flex flex-col w-full py-[8px] mb-[8px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)]"
+      className="flex flex-col w-full py-[8px] mb-[8px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)] select-text"
     >
       <div className="flex items-center justify-between ps-[16px] pe-[8px] mb-[8px]">
-        <p className="font-bold text-[var(--fs-12)] leading-[var(--lh-18)] text-[var(--settings-header-color)]">
+        <p className="font-bold text-fs-12 leading-[var(--lh-18)] text-[var(--settings-header-color)]">
           {t("EditConfiguration")}
         </p>
         {/* <IconButton iconName="btn-close" size={24} onClick={onClose} /> */}
@@ -208,6 +212,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
             </div>
             <div
               ref={editorRef}
+              dir="ltr"
               className="border border-[var(--servers-edit-config-json-editor-border-color)] bg-[var(--servers-edit-config-json-editor-background-color)] rounded-[4px]"
             />
             {error ? (

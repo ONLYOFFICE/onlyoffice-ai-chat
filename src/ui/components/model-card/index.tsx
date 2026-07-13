@@ -35,7 +35,7 @@ const ModelCard = ({
     ? new URL(profile.baseUrl).hostname
     : (getProvider(profile.providerType)?.getName() ?? profile.providerType);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
-  const { t, isRTL } = useI18n();
+  const { t } = useI18n();
 
   // When the host supplies `onDeleteProfile`, it owns the confirmation step
   // (its own modal); the widget only performs the deletion once the host
@@ -84,41 +84,49 @@ const ModelCard = ({
   return (
     <div
       className={cn(
-        "flex justify-between gap-[12px] px-[16px] py-[12px] w-full rounded-[var(--model-card-border-radius)] bg-[var(--model-card-background-color)] border border-[var(--model-card-border-color)]",
-        isRTL ? "flex-row-reverse" : "flex-row"
+        "flex justify-between gap-[8px] p-[8px] w-full rounded-[var(--model-card-border-radius)] bg-[var(--model-card-background-color)] border border-[var(--model-card-border-color)]"
       )}
     >
-      <div
-        className={cn(
-          "flex items-center gap-[12px] min-w-0 flex-1",
-          isRTL ? "flex-row-reverse" : "flex-row"
-        )}
-      >
+      <div className={cn("flex items-center gap-[8px] min-w-0 flex-1")}>
         <ProviderLogo providerType={profile.providerType} />
-        <div className="flex flex-col overflow-hidden">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p className="font-normal text-[var(--model-card-color)] truncate">
-                {profile?.name}
-              </p>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{profile?.name}</TooltipContent>
-          </Tooltip>
-          <p
-            className={cn(
-              "text-[var(--fs-10)] leading-[var(--lh-14)] text-[var(--model-card-description-color)] truncate",
-              isRTL ? "text-end" : ""
-            )}
-          >
-            {providerName}
-          </p>
+        {/* Each line sits in its own flex row so `justify-content: flex-start`
+            (which follows the ambient `dir`) parks a short label at the reading
+            start — right in RTL, left in LTR — mirroring the ComboBox trigger.
+            `dir="auto"` on the text picks the writing direction from the
+            content so the ellipsis lands at the string's own end: LTR model IDs
+            truncate on the right, not the head. `min-w-0` lets long labels
+            shrink and truncate instead of overflowing. */}
+        <div className="flex flex-col min-w-0 overflow-hidden">
+          <div className="flex min-w-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p
+                  dir="auto"
+                  className="min-w-0 font-normal text-[var(--model-card-color)] truncate"
+                >
+                  {profile?.name}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{profile?.name}</TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex min-w-0">
+            <p
+              dir="auto"
+              className={cn(
+                "min-w-0 text-fs-10 leading-[var(--lh-14)] text-[var(--model-card-description-color)] truncate"
+              )}
+            >
+              {providerName}
+            </p>
+          </div>
         </div>
       </div>
       {!isReadOnly && (
         <div className="flex items-center justify-end">
           <DropdownMenu
             onOpenChange={setIsOpen}
-            trigger={<IconButton iconName="more" size={20} isActive={isOpen} />}
+            trigger={<IconButton iconName="more" size={24} isActive={isOpen} />}
             items={[
               {
                 icon: (

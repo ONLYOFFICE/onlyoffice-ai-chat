@@ -1,25 +1,32 @@
 .theme-night {
   /* base colors */
   --background-normal: #404040;
+  --background-normal-rgb: 64 64 64;
   --background-normal-element: #4b4b4b;
   --background-normal-element-light: #4b4b4b;
-  --background-accent-button: #6E9FEC;
-  --background-primary-button: #6E9FEC;
+  --background-accent-button: #4e8afb;
+  --background-primary-button: #4e8afb;
   --background-scrim: #00000099;
   --background-scroll-thumb: #555555;
+  --background-card-normal: #4b4b4b;
+  --background-icon-normal: #404040;
 
   --border-divider: #505050;
-  --border-regular-control: #585858;
-  --border-control-focus: #cccccc;
+  --border-regular-control: #686868;
+  --border-fill-input: var(--border-regular-control);
+  --border-control-focus: #4e8afb;
+  --border-button-pressed-focus: #306ad9;
   --border-error: #f62211;
   --border-sidebar-icon: #585858;
 
-  --highlight-button-hover: #585858;
-  --highlight-button-pressed: #686868;
+  --border-toolbar: #585858;
+
+  --highlight-button-hover: #ffffff1f;
+  --highlight-button-pressed: #ffffff33;
   --highlight-button-hover-on-active: #606060;
   --highlight-button-pressed-on-active: #686868;
-  --highlight-accent-button-hover: #5293e2;
-  --highlight-accent-button-pressed: #3475c5;
+  --highlight-accent-button-hover: #306ad9;
+  --highlight-accent-button-pressed: #1b55c1;
   --highlight-primary-button-hover: #e5e5e5;
   --highlight-primary-button-pressed: #e5e5e5;
   --highlight-scroll-thumb-hover: #606060;
@@ -29,14 +36,16 @@
   --checkbox-check-mark-background: #000000;
   --checkbox-background-checked: #f3f3f3;
   --checkbox-border-normal: #c0c0c0;
+  --chb-border-normal: #949494;
 
-  --icon-normal: #ffffffcc;
+  --icon-normal: #efefef;
   --icon-success: #009900;
+  --icon-gray-secondary: #b2b2b2;
 
-  --text-normal: #ffffffcc;
-  --text-normal-pressed: #ffffffcc;
-  --text-secondary: #ffffff99;
-  --text-tertiary: #ffffff66;
+  --text-normal: #f3f3f3;
+  --text-normal-pressed: #f3f3f3;
+  --text-secondary: #cbcbcb;
+  --text-tertiary: #b2b2b2;
   --text-link: #acbfff;
   --text-inverse: #333333;
   --text-contrast-background: #ffffff;
@@ -63,6 +72,8 @@
   --chat-list-item-hover-background-color: var(--highlight-button-hover);
   --chat-list-item-active-background-color: var(--highlight-button-pressed);
 
+  --chat-list-item-active-marker-bg: var(--border-toolbar);
+
   /* icon button */
   --icon-button-color: var(--icon-normal);
   --icon-button-background-color: transparent;
@@ -81,7 +92,9 @@
   --button-background-hover-color: var(--highlight-accent-button-hover);
   --button-background-pressed-color: var(--highlight-accent-button-pressed);
   --button-border-focus-color: var(--text-contrast-background);
-  --button-shadow-focus: 0px 0px 0px 2px #4781d1bf;
+  --button-shadow-focus:
+    inset 0 0 0 1px var(--background-normal),
+    0 0 0 1px var(--border-button-pressed-focus);
 
   --button-default-color: var(--text-normal);
   --button-default-background-color: var(--background-normal);
@@ -90,19 +103,19 @@
     --background-normal-element-light
   );
   --button-default-pressed-background-color: var(--highlight-button-hover);
-  --button-default-focus-shadow: 0px 0px 0px 2px #4781d180;
-  --button-default-disabled-border-color: var(--border-regular-control);
+  --button-default-focus-shadow: 0 0 0 1px var(--border-control-focus);
+  --button-default-disabled-border-color: var(--border-fill-input);
   --button-default-disabled-color: var(--text-normal);
   --button-default-disabled-background-color: var(--background-normal);
 
   /* input */
-  --input-background-color: var(--background-normal-element);
+  --input-background-color: var(--background-normal);
   --input-placeholder-color: var(--text-tertiary);
   --input-color: var(--text-normal);
-  --input-border-color: var(--border-regular-control);
-  --input-hover-background-color: var(--highlight-button-hover);
-  --input-hover-border-color: var(--checkbox-border-normal);
-  --input-active-border-color: var(--background-accent-button);
+  --input-border-color: var(--border-fill-input);
+  --input-hover-background-color: var(--background-normal);
+  --input-hover-border-color: var(--border-fill-input);
+  --input-active-border-color: #306ad9;
   --input-active-background-color: var(--background-normal);
   --input-error-color: var(--border-error);
   --input-border-radius: 4px;
@@ -147,8 +160,10 @@
   /* toggle button */
   --toggle-button-background-color: var(--background-accent-button);
   --toggle-button-background-hover-color: var(--highlight-accent-button-hover);
-  --toggle-button-off-background-color: var(--checkbox-border-normal);
+  --toggle-button-off-background-color: var(--background-normal);
+  --toggle-button-off-border-color: var(--chb-border-normal);
   --toggle-button-circle-color: var(--background-normal);
+  --toggle-button-off-circle-color: var(--chb-border-normal);
 
   /* file-items */
   --file-items-background-color: var(--background-normal);
@@ -167,7 +182,7 @@
 
   /* link */
   --link-color: var(--text-tertiary);
-  --link-secondary-color: #CBCBCB;
+  --link-secondary-color: #cbcbcb;
   --link-primary-color: var(--background-accent-button);
 
   /* model-config-card */
@@ -210,13 +225,14 @@
     0px 1px 2px 0px #0000000f, 0px 1px 3px 0px #0000001a;
 
   /* model card */
-  --model-card-background-color: var(--background-normal);
+  --model-card-background-color: var(--background-card-normal);
   --model-card-color: var(--text-normal);
   --model-card-description-color: var(--text-secondary);
   --model-card-border-color: var(--border-divider);
-  --model-card-border-radius: 8px;
+  --model-card-border-radius: 4px;
   --model-card-logo-border-color: var(--border-divider);
   --model-card-logo-border-radius: 6px;
+  --model-card-logo-background: var(--background-icon-normal);
 
   /* settings servers */
   --servers-description-color: var(--text-secondary);
@@ -256,11 +272,15 @@
   --chat-suggestion-border-color: var(--border-divider);
 
   --chat-composer-background-color: var(--background-normal-element-light);
-  --chat-composer-border-color: var(--border-divider);
+  --chat-composer-border-color: var(--border-fill-input);
   --chat-composer-hover-border-color: var(--highlight-button-hover);
-  --chat-composer-active-border-color: var(--background-accent-button);
+  --chat-composer-active-border-color: var(--input-active-border-color);
   --chat-composer-text-color: var(--text-normal);
-  --chat-composer-placeholder-color: var(--text-secondary);
+  --chat-composer-placeholder-color: var(--text-tertiary);
+
+  --chat-scroll-to-bottom-background-color: var(--background-normal);
+  --chat-scroll-to-bottom-border-color: var(--border-fill-input);
+  --chat-scroll-to-bottom-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 
   --chat-composer-action-send-color: var(--text-contrast-background);
   --chat-composer-action-send-background-color: var(--background-accent-button);
@@ -274,7 +294,7 @@
   --chat-user-message-background: var(--highlight-button-hover);
   --chat-user-message-color: var(--text-normal);
   --chat-message-color: var(--text-normal);
-  --chat-message-blockquote-color: var(--border-control-focus);
+  --chat-message-blockquote-color: #cccccc;
   --chat-message-link-color: var(--text-link);
   --chat-message-divider-color: var(--border-divider);
   --chat-message-th-color: var(--text-normal);

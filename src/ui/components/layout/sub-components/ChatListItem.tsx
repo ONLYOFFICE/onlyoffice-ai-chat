@@ -2,6 +2,8 @@ import React, { memo } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import type { Page } from "../../../store/create-stores";
 import type { Thread } from "../../../../types";
+import type { ExportFormat } from "../../../providers/PlatformProvider/types";
+import type { DropDownItemProps } from "../../dropdown-item/DropDownItem.types";
 import { DropdownMenu } from "../../dropdown";
 import { Icon } from "../../icon";
 import { IconButton } from "../../icon-button";
@@ -14,7 +16,10 @@ type ChatListItemProps = {
   onSwitchToThread: (threadId: string) => void;
   onRenameThread: (threadId: string, newTitle: string) => void;
   onDownloadThread: (threadId: string, title?: string) => void;
+  onExportThread: (threadId: string, formatId: string, title?: string) => void;
+  exportFormats: ExportFormat[];
   onClearThreadHistory: (threadId: string) => void;
+  showClearHistory?: boolean;
   setCurrentPage: (page: Page) => void;
 };
 
@@ -22,13 +27,19 @@ const DownloadIcon = () => <Icon name="btn-save" size={24} isStroke />;
 const RenameIcon = () => <Icon name="btn-rename" size={24} />;
 const RemoveIcon = () => <Icon name="btn-remove" size={24} />;
 
+const activeThreadMarker =
+  "relative before:content-[''] before:absolute before:start-0 before:w-[2px] before:h-full before:bg-[var(--chat-list-item-active-marker-bg)] hover:before:hidden";
+
 const ChatListItemComponent = ({
   thread,
   isActive,
   onSwitchToThread,
   onRenameThread,
   onDownloadThread,
+  onExportThread,
+  exportFormats,
   onClearThreadHistory,
+  showClearHistory = false,
   setCurrentPage,
 }: ChatListItemProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -74,6 +85,12 @@ const ChatListItemComponent = ({
     setCurrentPage("chat");
   };
 
+  const onOpenClick = () => {
+    setIsOpen(false);
+    onSwitchToThread(thread.threadId);
+    setCurrentPage("chat");
+  };
+
   const onDeleteClick = () => {
     setIsDeleteDialogVisible(true);
     setIsOpen(false);
@@ -94,17 +111,78 @@ const ChatListItemComponent = ({
     setIsOpen(false);
   };
 
+  // When the host declares more than one export format, the single "Save"
+  // item becomes an "Export" submenu listing every format. Otherwise the
+  // default "Save" action is kept (current behavior).
+  const exportMenuItem: DropDownItemProps =
+    exportFormats.length > 1
+      ? {
+          text: t("ExportTo"),
+          onClick: () => undefined,
+          subMenu: exportFormats.map((format) => ({
+            text: format.label,
+            onClick: () => {
+              onExportThread(thread.threadId, format.id, thread.title);
+              setIsOpen(false);
+            },
+          })),
+        }
+      : {
+          icon: <DownloadIcon />,
+          text: t("Save"),
+          onClick: onDownloadClick,
+        };
+
+  const separatorItem: DropDownItemProps = {
+    text: "",
+    isSeparator: true,
+    onClick: () => undefined,
+  };
+
+  const deleteItem: DropDownItemProps = {
+    icon: <RemoveIcon />,
+    text: t("Delete"),
+    onClick: onDeleteClick,
+  };
+
+  // "Clear history" is opt-in (WidgetConfig.showClearHistory). When shown, it
+  // trails a separator below "Delete" (current layout). When hidden, the
+  // separator instead precedes "Delete" so the destructive action stays set
+  // apart from the neutral Open/Export/Rename group.
+  const menuItems: DropDownItemProps[] = [
+    {
+      text: t("Open"),
+      onClick: onOpenClick,
+    },
+    exportMenuItem,
+    {
+      icon: <RenameIcon />,
+      text: t("Rename"),
+      onClick: onRenameClick,
+    },
+    ...(showClearHistory
+      ? [
+          deleteItem,
+          separatorItem,
+          {
+            text: t("ClearHistory"),
+            onClick: onClearHistoryClick,
+          },
+        ]
+      : [separatorItem, deleteItem]),
+  ];
+
   return (
     <div
       key={thread.threadId}
-      className={`cursor-pointer rounded-[4px] h-[36px] min-h-[36px] flex items-center justify-between ${
+      className={`cursor-pointer rounded-[4px] h-[28px] min-h-[28px] px-[8px] flex items-center justify-between hover:bg-[var(--chat-list-item-hover-background-color)] ${
         isRenameInputVisible
-          ? ""
-          : `px-[12px] ${
-              isActive || isOpen
-                ? "bg-[var(--chat-list-item-active-background-color)]"
-                : "hover:bg-[var(--chat-list-item-hover-background-color)] active:bg-[var(--chat-list-item-active-background-color)]"
-            }`
+          ? "px-[0px]"
+          : isOpen
+            ? "bg-[var(--chat-list-item-hover-background-color)]"
+            : isActive
+              ? activeThreadMarker
+              : "active:bg-[var(--chat-list-item-active-background-color)]"
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
@@ -132,7 +210,7 @@ const ChatListItemComponent = ({
         />
       ) : (
         <>
-          <p className="text-[var(--chat-list-item-color)] font-normal truncate">
+          <p className="select-none text-[var(--chat-list-item-color)] font-normal truncate">
             {thread.title}
           </p>
           {isHovered && !isRenameInputVisible ? (
@@ -142,41 +220,12 @@ const ChatListItemComponent = ({
               trigger={
                 <IconButton
                   iconName="more"
-                  size={20}
+                  size={24}
                   isActive={isOpen}
                   insideElement
                 />
               }
-              items={[
-                {
-                  text: t("Open"),
-                  onClick: onSwitchToThreadAction,
-                },
-                {
-                  icon: <DownloadIcon />,
-                  text: t("Save"),
-                  onClick: onDownloadClick,
-                },
-                {
-                  icon: <RenameIcon />,
-                  text: t("Rename"),
-                  onClick: onRenameClick,
-                },
-                {
-                  icon: <RemoveIcon />,
-                  text: t("Delete"),
-                  onClick: onDeleteClick,
-                },
-                {
-                  text: "",
-                  isSeparator: true,
-                  onClick: () => undefined,
-                },
-                {
-                  text: t("ClearHistory"),
-                  onClick: onClearHistoryClick,
-                },
-              ]}
+              items={menuItems}
               sideOffset={0}
             />
           ) : null}

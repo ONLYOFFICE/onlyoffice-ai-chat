@@ -121,9 +121,9 @@ export const AddModelCard = ({
                 <IconButton
                   className="cursor-pointer"
                   iconName="btn-menu-about"
-                  size={24}
+                  size={20}
                   disableHover
-                  isStroke
+                  noColor
                   onClick={() => setIsTooltipOpen((val) => !val)}
                 />
               </TooltipTrigger>
@@ -177,8 +177,8 @@ export const AddModelCard = ({
 
   if (variant === "standalone") {
     return (
-      <div>
-        <h3 className="select-none text-[var(--fs-20)] font-bold leading-[var(--lh-28)] text-[var(--text-normal)] text-center mb-[16px]">
+      <div className="flex flex-col gap-[8px]">
+        <h3 className="select-none text-fs-13 font-bold leading-[var(--lh-16)] text-[var(--text-normal)]">
           {t("ConnectAIModelToEnableChat")}
         </h3>
 

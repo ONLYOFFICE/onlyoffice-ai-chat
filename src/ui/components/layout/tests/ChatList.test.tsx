@@ -6,7 +6,10 @@ const mockSetCurrentPage = vi.fn();
 const mockOnSwitchToThread = vi.fn();
 const mockOnRenameThread = vi.fn();
 const mockOnDownloadThread = vi.fn();
+const mockOnExportThread = vi.fn();
 const mockOnClearThreadHistory = vi.fn();
+
+let mockExportFormats: { id: string; label: string; extension: string }[] = [];
 
 const mockThreads = [
   { threadId: "t1", title: "First Chat" },
@@ -29,6 +32,7 @@ vi.mock("../../../store/context", () => ({
         onSwitchToThread: mockOnSwitchToThread,
         onRenameThread: mockOnRenameThread,
         onDownloadThread: mockOnDownloadThread,
+        onExportThread: mockOnExportThread,
         onClearThreadHistory: mockOnClearThreadHistory,
       };
       return selector ? selector(state) : state;
@@ -38,6 +42,20 @@ vi.mock("../../../store/context", () => ({
       return selector ? selector(state) : state;
     },
   }),
+}));
+
+vi.mock("../../../providers/PlatformProvider/context", () => ({
+  usePlatform: () => ({
+    file: { getExportFormats: () => mockExportFormats },
+  }),
+}));
+
+let mockWidgetConfig: {
+  chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
+} = {};
+
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => mockWidgetConfig,
 }));
 
 vi.mock("../../icon-button", () => ({
@@ -100,6 +118,8 @@ describe("ChatList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     currentThreads = mockThreads;
+    mockWidgetConfig = {};
+    mockExportFormats = [];
   });
 
   it("renders the ChatHistory heading", () => {
@@ -137,6 +157,24 @@ describe("ChatList", () => {
     expect(mockSetCurrentPage).toHaveBeenCalledWith("chat");
   });
 
+  it("uses the close icon for the dismiss button by default", () => {
+    render(<ChatList />);
+    expect(screen.getByTestId("icon-btn-btn-close")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("icon-btn-btn-arrow-up")
+    ).not.toBeInTheDocument();
+  });
+
+  it("uses the arrow-up icon when chatHistoryCloseIcon is 'btn-arrow-up'", () => {
+    mockWidgetConfig = { chatHistoryCloseIcon: "btn-arrow-up" };
+    render(<ChatList />);
+    const dismiss = screen.getByTestId("icon-btn-btn-arrow-up");
+    expect(dismiss).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-btn-close")).not.toBeInTheDocument();
+    fireEvent.click(dismiss);
+    expect(mockSetCurrentPage).toHaveBeenCalledWith("chat");
+  });
+
   it("clicking a thread item switches to thread and navigates to chat", () => {
     render(<ChatList />);
     fireEvent.click(screen.getByTestId("chat-item-t2"));
@@ -161,11 +199,11 @@ describe("ChatList", () => {
     expect(screen.queryByTestId("chat-item-t3")).not.toBeInTheDocument();
   });
 
-  it("shows NoChatYet when search matches nothing", () => {
+  it("shows NoChatsFound when search matches nothing", () => {
     render(<ChatList />);
     const input = screen.getByTestId("search-input");
     fireEvent.change(input, { target: { value: "zzzzzzz" } });
-    expect(screen.getByText("NoChatYet")).toBeInTheDocument();
+    expect(screen.getByText("NoChatsFound")).toBeInTheDocument();
   });
 
   it("search is case-insensitive", () => {

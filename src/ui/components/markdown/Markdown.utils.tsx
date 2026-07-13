@@ -13,7 +13,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h1: ({ className, ...props }) => (
     <h1
       className={cn(
-        "mb-8 scroll-m-20 text-[var(--fs-28)] leading-[var(--lh-36)] font-bold last:mb-0 text-[var(--chat-message-color)]",
+        "my-[8px] scroll-m-20 text-fs-28 leading-[var(--lh-36)] font-bold last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -22,7 +22,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h2: ({ className, ...props }) => (
     <h2
       className={cn(
-        "mb-4 mt-8 scroll-m-20 text-[var(--fs-24)] leading-[var(--lh-32)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "my-[8px] scroll-m-20 text-fs-24 leading-[var(--lh-32)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -31,7 +31,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h3: ({ className, ...props }) => (
     <h3
       className={cn(
-        "mb-4 mt-6 scroll-m-20 text-[var(--fs-20)] leading-[var(--lh-28)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "my-[8px] scroll-m-20 text-fs-20 leading-[var(--lh-28)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -40,7 +40,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h4: ({ className, ...props }) => (
     <h4
       className={cn(
-        "mb-4 mt-6 scroll-m-20 text-[var(--fs-18)] leading-[var(--lh-24)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "my-[8px] scroll-m-20 text-fs-18 leading-[var(--lh-24)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -49,7 +49,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h5: ({ className, ...props }) => (
     <h5
       className={cn(
-        "my-4 text-[var(--fs-16)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "my-[8px] text-fs-16 font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -58,7 +58,7 @@ const defaultComponents = memoizeMarkdownComponents({
   h6: ({ className, ...props }) => (
     <h6
       className={cn(
-        "my-4 font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "my-[8px] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -67,7 +67,7 @@ const defaultComponents = memoizeMarkdownComponents({
   p: ({ className, ...props }) => (
     <p
       className={cn(
-        "mb-5 mt-5 font-normal first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
+        "my-[8px] font-normal first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -93,7 +93,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ul: ({ className, ...props }) => (
     <ul
       className={cn(
-        "my-5 ml-6 list-disc [&>li]:mt-[4px] text-[var(--chat-message-color)]",
+        "my-[8px] ms-6 list-disc [&>li]:mt-[4px] text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -102,7 +102,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ol: ({ className, ...props }) => (
     <ol
       className={cn(
-        "my-5 ml-6 list-decimal [&>li]:mt-[4px] text-[var(--chat-message-color)]",
+        "my-[8px] ms-6 list-decimal [&>li]:mt-[4px] text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -111,7 +111,7 @@ const defaultComponents = memoizeMarkdownComponents({
   hr: ({ className, ...props }) => (
     <hr
       className={cn(
-        "my-5 border-b border-[var(--chat-message-divider-color)]",
+        "my-[8px] border-b border-[var(--chat-message-divider-color)]",
         className
       )}
       {...props}
@@ -120,7 +120,7 @@ const defaultComponents = memoizeMarkdownComponents({
   table: ({ className, ...props }) => (
     <table
       className={cn(
-        "my-5 w-full border-separate border-spacing-0 overflow-y-auto text-[var(--chat-message-color)]",
+        "my-[8px] w-full border-separate border-spacing-0 overflow-y-auto text-[var(--chat-message-color)]",
         className
       )}
       {...props}
@@ -154,13 +154,10 @@ const defaultComponents = memoizeMarkdownComponents({
     />
   ),
   sup: ({ className, ...props }) => (
-    <sup
-      className={cn("[&>a]:[&>a]:no-underline", className)}
-      {...props}
-    />
+    <sup className={cn("[&>a]:[&>a]:no-underline", className)} {...props} />
   ),
   pre: ({ className, ...props }) => (
-    <div className="px-[12px] pb-[12px] bg-[var(--chat-message-code-block-background-color)] rounded-[12px]">
+    <div className="px-[12px] py-[8px] bg-[var(--chat-message-code-block-background-color)] rounded-[12px]">
       <pre
         className={cn(
           "overflow-x-auto bg-[var(--chat-message-code-block-pre-background-color)] border border-[var(--chat-message-code-block-border-color)] rounded-[4px] p-[6px]",

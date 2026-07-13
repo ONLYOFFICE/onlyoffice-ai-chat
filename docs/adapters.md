@@ -124,18 +124,32 @@ interface PlatformAdapter {
 File picking, conversion, save-as, open-in-editor.
 
 ```ts
+interface ExportFormat {
+  id: string; // forwarded to saveAsFile, e.g. "docx", "pdf", "md"
+  label: string; // submenu label, e.g. "Word (.docx)"
+  extension: string; // file extension, e.g. "docx"
+}
+
 interface PlatformFileOperations {
   pickFiles():  Promise<{ path: string; name: string }[] | null>;
   pickImage():  Promise<{ name: string; base64: string } | null>;
   convertFileToText(path: string, format: number): Promise<string>;
   getFileType(path: string):                       number;
   getRecentFiles():                                Promise<string>;
-  saveAsFile(content: string, defaultName: string): Promise<void>;
+  saveAsFile(content: string, defaultName: string, format?: string): Promise<void>;
+  getExportFormats?(): ExportFormat[];
   openFile(path: string, name: string):             void;
 }
 ```
 
 `null` → attachment button and "Save as" options are hidden.
+
+The library always passes Markdown source as `saveAsFile`'s `content`; the host
+converts it to the target format. Declare more than one `getExportFormats()`
+entry to replace the chat-list "Save" item with an "Export" submenu — the chosen
+`ExportFormat.id` is forwarded as `saveAsFile`'s third `format` argument. Omit
+`getExportFormats` (or return one/zero entries) to keep the single default "Save"
+action, where `saveAsFile` is called with two arguments as before.
 
 ### `PlatformProcessRunner`
 
@@ -162,8 +176,44 @@ interface PlatformEnvironment {
   locale:           string;
   devicePixelRatio: number;
   onEnvironmentChange?: (
-    callback: (info: { theme?: string; lang?: string }) => void,
+    callback: (info: {
+      theme?: string;
+      lang?: string;
+      devicePixelRatio?: number;
+    }) => void,
   ) => () => void;
+}
+```
+
+`devicePixelRatio` in the callback is optional and additive: report it when
+the display density changes (window moved to a monitor with a different DPR,
+browser zoom, …) so scale-appropriate raster icons re-select at runtime in
+`iconFormat: "png"` mode. Hosts that never send it keep
+the density read at startup — nothing breaks. A DPR-aware `onEnvironmentChange`
+looks like:
+
+```ts
+onEnvironmentChange(cb) {
+  const offTheme = subscribeToHostTheme((t) => cb({ theme: t }));
+
+  // A resolution media query is bound to one dppx value, so re-arm the
+  // listener after each change to track the new ratio.
+  let mql: MediaQueryList;
+  const onDpr = () => {
+    cb({ devicePixelRatio: window.devicePixelRatio });
+    arm();
+  };
+  const arm = () => {
+    mql?.removeEventListener("change", onDpr);
+    mql = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    mql.addEventListener("change", onDpr);
+  };
+  arm();
+
+  return () => {
+    offTheme();
+    mql?.removeEventListener("change", onDpr);
+  };
 }
 ```
 

@@ -210,7 +210,9 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
 
   const onClick = useCallback(() => {
     if (!text || !platform.copyToClipboard) return;
-    void Promise.resolve(platform.copyToClipboard(text)).then(() => {
+    void Promise.resolve(
+      platform.copyToClipboard(text, { format: "markdown" })
+    ).then(() => {
       setCopied(true);
       if (resetTimer.current) clearTimeout(resetTimer.current);
       resetTimer.current = setTimeout(() => setCopied(false), 3000);
@@ -220,9 +222,9 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
   return (
     <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onClick}>
       {copied ? (
-        <IconButton iconName="checked" size={24} isStroke disabled />
+        <IconButton iconName="checked" size={20} isStroke color="var(--icon-gray-secondary)" disabled />
       ) : (
-        <IconButton iconName="btn-copy" size={24} />
+        <IconButton iconName="btn-copy" size={20} isStroke color="var(--icon-gray-secondary)" />
       )}
     </TooltipIconButton>
   );
@@ -263,7 +265,7 @@ const AssistantActionBar = () => {
   return (
     <ActionBarPrimitive.Root
       hidden={isStreamRunning}
-      className="col-start-3 row-start-2 mt-3 flex gap-[8px]"
+      className="col-start-3 row-start-2 mt-[4px] flex gap-[2px]"
     >
       {platform.copyToClipboard ? (
         <PlatformCopyButton text={getMessageText(message)} />
@@ -271,27 +273,28 @@ const AssistantActionBar = () => {
         <ActionBarPrimitive.Copy asChild>
           <TooltipIconButton tooltip={t("CopyToClipboard")}>
             <MessagePrimitive.If copied>
-              <IconButton iconName="checked" size={24} isStroke disabled />
+              <IconButton iconName="checked" size={20} isStroke color="var(--icon-gray-secondary)" disabled />
             </MessagePrimitive.If>
             <MessagePrimitive.If copied={false}>
-              <IconButton iconName="btn-copy" size={24} />
+              <IconButton iconName="btn-copy" size={20} isStroke color="var(--icon-gray-secondary)" />
             </MessagePrimitive.If>
           </TooltipIconButton>
         </ActionBarPrimitive.Copy>
       )}
       <ActionBarPrimitive.Reload asChild>
         <TooltipIconButton tooltip={t("Regenerate")}>
-          <IconButton iconName="btn-reset" size={24} isStroke />
+          <IconButton iconName="btn-reset" size={20} isStroke color="var(--icon-gray-secondary)" />
         </TooltipIconButton>
       </ActionBarPrimitive.Reload>
       {platform.file?.saveAsFile && (
         <div>
           <TooltipIconButton tooltip={t("Save")}>
             <IconButton
-              iconName="btn-save"
-              size={24}
+              iconName="btn-save.small"
+              size={20}
               onClick={onDownload}
               isStroke
+              color="var(--icon-gray-secondary)"
             />
           </TooltipIconButton>
         </div>
@@ -329,14 +332,18 @@ export const AssistantMessage = memo(() => {
     | { type?: string; reason?: string }
     | undefined;
 
-  // A user-cancelled turn (stop pressed before any content streamed) leaves
-  // an empty "incomplete" shell. Don't render it — otherwise an empty bubble
-  // with action buttons lingers. Error turns (reason === "error") still
-  // render so their banner shows even with no partial content.
+  // Don't render an empty assistant shell. Two cases produce one:
+  //   • a user-cancelled turn (stop pressed before any content streamed)
+  //     leaves an empty "incomplete" message; and
+  //   • the runtime's optimistic placeholder for an in-flight turn is an
+  //     empty "running" message — which would otherwise show an empty bubble
+  //     alongside our own "Analyzing" indicator.
+  // Error turns (reason === "error") still render so their banner shows even
+  // with no partial content.
   if (
-    status?.type === "incomplete" &&
-    status?.reason !== "error" &&
-    !hasRenderableContent(message.content)
+    !hasRenderableContent(message.content) &&
+    ((status?.type === "incomplete" && status?.reason !== "error") ||
+      status?.type === "running")
   ) {
     return null;
   }
@@ -344,7 +351,7 @@ export const AssistantMessage = memo(() => {
   return (
     <MessagePrimitive.Root asChild>
       <motion.div
-        className="relative mx-auto grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] px-[var(--thread-padding-x)] py-4"
+        className="relative mx-auto grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] px-[var(--thread-padding-x)] py-[8px]"
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"

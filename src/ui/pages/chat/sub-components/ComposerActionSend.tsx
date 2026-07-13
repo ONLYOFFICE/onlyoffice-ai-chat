@@ -16,10 +16,11 @@ const ComposerActionSend = () => {
     <ComposerPrimitive.Cancel asChild>
       <IconButton
         iconName="stop"
-        size={20}
+        size={17}
         className={BUTTON_STYLES}
-        width={12}
-        height={12}
+        width={17}
+        height={17}
+        color="var(--chat-composer-action-send-color)"
         data-testid="stop-button"
       />
     </ComposerPrimitive.Cancel>
@@ -27,10 +28,10 @@ const ComposerActionSend = () => {
     <ThreadPrimitive.If running={false}>
       <ComposerPrimitive.Send asChild disabled={!currentProfile}>
         <IconButton
-          iconName="arrow.top"
-          size={20}
-          width={12}
-          height={14}
+          iconName="send"
+          size={17}
+          width={17}
+          height={17}
           color="var(--chat-composer-action-send-color)"
           className={BUTTON_STYLES}
           data-testid="send-button"

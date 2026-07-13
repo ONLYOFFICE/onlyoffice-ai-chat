@@ -14,6 +14,15 @@ export type ComboBoxProps = {
   items: DropDownItemProps[];
   searchable?: boolean;
   searchPlaceholder?: string;
+  /**
+   * When true (default) the dropdown matches the trigger width (min 150px).
+   * Set to false to size the panel to its content (`w-fit`).
+   */
+  matchTriggerWidth?: boolean;
+  /** Extra classes applied to the dropdown panel (e.g. min width). */
+  contentClassName?: string;
+  /** Caps the dropdown panel width (px number or CSS length). */
+  maxWidth?: number | string;
   "data-testid"?: string;
 };
 
@@ -27,6 +36,9 @@ const ComboBox = ({
   items,
   searchable,
   searchPlaceholder,
+  matchTriggerWidth = true,
+  contentClassName,
+  maxWidth,
   "data-testid": dataTestId,
 }: ComboBoxProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -53,7 +65,7 @@ const ComboBox = ({
         onKeyDown={(e) => e.stopPropagation()}
         placeholder={searchPlaceholder}
         className={cn(
-          "w-full h-[32px] px-[8px] rounded-[4px]",
+          "w-full h-[24px] px-[4px] rounded-[4px]",
           "leading-[var(--lh-16)] text-[var(--input-color)]",
           "bg-[var(--input-background-color)] border border-[var(--input-border-color)]",
           "placeholder:text-[var(--input-placeholder-color)]",
@@ -71,13 +83,11 @@ const ComboBox = ({
           data-testid={dataTestId}
           onClick={undefined}
           className={cn(
-            "h-[36px] rounded-[var(--input-border-radius)] ps-[12px] box-border",
+            "h-[24px] rounded-[var(--input-border-radius)] ps-[4px] box-border",
             "cursor-pointer flex items-center justify-between",
             "text-[var(--input-color)] leading-[var(--lh-16)]",
             withoutBg
-              ? isOpen
-                ? "bg-[var(--input-background-color)]"
-                : "hover:bg-[var(--input-hover-background-color)]"
+              ? ""
               : isOpen
                 ? "border bg-[var(--input-background-color)] border-[var(--input-active-border-color)]"
                 : "border bg-[var(--input-background-color)] border-[var(--input-border-color)] hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]",
@@ -91,32 +101,36 @@ const ComboBox = ({
           }}
         >
           <span
+            dir="auto"
             className={cn(
-              "min-w-0 flex-1 truncate",
-              value
-                ? "text-[var(--input-color)]"
-                : "text-[var(--input-placeholder-color)]"
+              "min-w-0 truncate",
+              disabled
+                ? "text-[var(--input-placeholder-color)]"
+                : "text-[var(--input-color)]"
             )}
           >
             {value || placeholder}
           </span>
-          <div className="flex items-center h-[20px] w-[16px] shrink-0 py-[2px]">
+          <div className="flex items-center justify-center h-[24px] w-[16px] shrink-0">
             <Icon
-              name="arrow.bottom.big"
-              color="var(--input-color)"
-              width={9}
-              height={4.5}
+              name="arrow"
+              color="var(--icon-normal)"
+              width={7}
+              height={4}
               isStroke
-              className={cn("transition-transform ms-[4px]", {
+              className={cn("transition-transform", {
                 "rotate-180": isOpen,
               })}
             />
           </div>
         </div>
       }
-      matchTriggerWidth={true}
+      matchTriggerWidth={matchTriggerWidth}
+      contentClassName={contentClassName}
+      maxWidth={maxWidth}
       headerContent={searchHeader}
       items={visibleItems}
+      variant="combobox"
     />
   );
 };

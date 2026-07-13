@@ -90,6 +90,15 @@ export interface AIChatWidgetProps {
   storeKeys: StoreKeys;
   components?: Partial<ComponentOverrides>;
   images?: ImageOverrides;
+  /**
+   * Preferred format for built-in icons that ship as both a vector SVG and a
+   * multi-scale raster (PNG) set. `"svg"` (default) renders the inlined SVG
+   * component — crisp at any size, recolored to the theme. `"png"` gives
+   * priority to the scale-appropriate PNG, falling back to the SVG for icons
+   * that have no raster variant. Host overrides via `images` always win over
+   * both. See {@link ImagesProviderProps.iconFormat}.
+   */
+  iconFormat?: "svg" | "png";
   hostToolGroups?: HostToolGroup[];
   /**
    * Optional pluggable tool source. The engine resolves `getTools()`
@@ -105,7 +114,23 @@ export interface AIChatWidgetProps {
   hiddenProviders?: ProviderType[];
   hiddenWebSearchProviders?: WebSearchProviderId[];
   hideProfilePicker?: boolean;
+  /**
+   * Hide the floating "scroll to bottom" button in the chat thread. Shown by
+   * default. See {@link WidgetConfig.hideScrollToBottomButton}.
+   */
+  hideScrollToBottomButton?: boolean;
+  /**
+   * Hide the top and bottom fade overlays in the chat thread. Shown by
+   * default. See {@link WidgetConfig.hideThreadFade}.
+   */
+  hideThreadFade?: boolean;
   hideSettingsButton?: boolean;
+  /**
+   * Icon name for the chat-history panel's close button. Defaults to
+   * `"btn-close"`; set to `"btn-arrow-up"` when the host panel already has
+   * its own close button. See {@link WidgetConfig.chatHistoryCloseIcon}.
+   */
+  chatHistoryCloseIcon?: WidgetConfig["chatHistoryCloseIcon"];
   hideToolAllowAlways?: WidgetConfig["hideToolAllowAlways"];
   /**
    * Render the "Add model" form in a two-row (horizontal) layout
@@ -142,6 +167,13 @@ export interface AIChatWidgetProps {
    * doesn't supply `fetchProxy`.
    */
   forceProxy?: boolean;
+  /**
+   * Opt out of the built-in `generate_image` chat tool. Use this when the
+   * host ships its own image-generation tool and doesn't want two
+   * same-purpose tools offered to the model. Default false. Affects only
+   * the chat tool — the one-shot image-generation action still works.
+   */
+  disableBuiltinImageTool?: boolean;
   /** Optional remote API routing — defaults to in-process engines. */
   apiConfig?: Partial<Pick<ServerAPIConfig, "origin" | "baseUrl" | "headers">>;
   /**
@@ -197,6 +229,12 @@ export interface AIChatWidgetProps {
    */
   onRenamePromptFolder?: WidgetConfig["onRenamePromptFolder"];
   /**
+   * Custom UI for deleting a prompt folder. When provided, the built-in
+   * "Delete folder" confirmation dialog is skipped and the host owns the
+   * confirmation UI. See {@link WidgetConfig.onDeletePromptFolder}.
+   */
+  onDeletePromptFolder?: WidgetConfig["onDeletePromptFolder"];
+  /**
    * Custom UI for creating a prompt. When provided, the built-in
    * "Save prompt" auto-name path is replaced and the host owns the input UI.
    * See {@link WidgetConfig.onCreatePrompt}.
@@ -225,6 +263,12 @@ export interface AIChatWidgetProps {
    * {@link WidgetConfig.onToolCallApproveResult}.
    */
   onToolCallApproveResult?: WidgetConfig["onToolCallApproveResult"];
+  /**
+   * Minimum log severity that reaches the console. Raise it to quiet the
+   * library's `info`/`debug` tracing (`"warn"`, `"error"`, or `"silent"`);
+   * defaults to logging everything. See {@link WidgetConfig.logLevel}.
+   */
+  logLevel?: WidgetConfig["logLevel"];
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -244,6 +288,7 @@ export const AIChatWidget = React.forwardRef<
       storeKeys,
       components,
       images,
+      iconFormat,
       hostToolGroups: hostToolGroupsProp,
       toolsAdapter,
       onMigrate,
@@ -253,7 +298,10 @@ export const AIChatWidget = React.forwardRef<
       hiddenProviders,
       hiddenWebSearchProviders,
       hideProfilePicker,
+      hideScrollToBottomButton,
+      hideThreadFade,
       hideSettingsButton,
+      chatHistoryCloseIcon,
       hideToolAllowAlways,
       isAddModelCardHorizontal,
       onSettingsClick,
@@ -262,6 +310,7 @@ export const AIChatWidget = React.forwardRef<
       entityId,
       systemPrompt,
       forceProxy,
+      disableBuiltinImageTool,
       apiConfig,
       assistantActions,
       composerActions,
@@ -272,18 +321,23 @@ export const AIChatWidget = React.forwardRef<
       onDeleteProfile,
       onCreatePromptFolder,
       onRenamePromptFolder,
+      onDeletePromptFolder,
       onCreatePrompt,
       onEditPrompt,
       onOpenCustomProvider,
       onDiscardMcpChanges,
       onToolCallApproveResult,
+      logLevel,
     },
     ref
   ) => {
     const widgetConfig = useMemo(
       () => ({
         hideProfilePicker,
+        hideScrollToBottomButton,
+        hideThreadFade,
         hideSettingsButton,
+        chatHistoryCloseIcon,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
@@ -300,15 +354,20 @@ export const AIChatWidget = React.forwardRef<
         onDeleteProfile,
         onCreatePromptFolder,
         onRenamePromptFolder,
+        onDeletePromptFolder,
         onCreatePrompt,
         onEditPrompt,
         onOpenCustomProvider,
         onDiscardMcpChanges,
         onToolCallApproveResult,
+        logLevel,
       }),
       [
         hideProfilePicker,
+        hideScrollToBottomButton,
+        hideThreadFade,
         hideSettingsButton,
+        chatHistoryCloseIcon,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
@@ -325,11 +384,13 @@ export const AIChatWidget = React.forwardRef<
         onDeleteProfile,
         onCreatePromptFolder,
         onRenamePromptFolder,
+        onDeletePromptFolder,
         onCreatePrompt,
         onEditPrompt,
         onOpenCustomProvider,
         onDiscardMcpChanges,
         onToolCallApproveResult,
+        logLevel,
       ]
     );
 
@@ -389,6 +450,7 @@ export const AIChatWidget = React.forwardRef<
         ...(proxyFetch ? { fetchProxy: proxyFetch } : {}),
         ...(externalFetch ? { externalFetch } : {}),
         ...(forceProxy ? { forceProxy: true } : {}),
+        ...(disableBuiltinImageTool ? { disableBuiltinImageTool: true } : {}),
       });
 
       const ctx: AppContext = {
@@ -443,6 +505,7 @@ export const AIChatWidget = React.forwardRef<
       toolsAdapter,
       entityId,
       forceProxy,
+      disableBuiltinImageTool,
     ]);
 
     return (
@@ -461,7 +524,10 @@ export const AIChatWidget = React.forwardRef<
                       customTheme={customTheme}
                       customThemes={customThemes}
                     >
-                      <ImagesProvider overrides={images}>
+                      <ImagesProvider
+                        overrides={images}
+                        iconFormat={iconFormat}
+                      >
                         <AppWithTools
                           hostToolGroupsProp={hostToolGroupsProp}
                           onMigrate={onMigrate}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePlatform } from "../../../providers/PlatformProvider";
+import type { CopyFormat } from "../../../providers/PlatformProvider";
 
 const useCopyToClipboard = ({
   copiedDuration = 3000,
@@ -15,11 +16,11 @@ const useCopyToClipboard = ({
   }, []);
 
   const copyToClipboard = useCallback(
-    (value: string) => {
+    (value: string, format: CopyFormat = "text") => {
       if (!value) return;
 
       const writer = platformCopy
-        ? () => Promise.resolve(platformCopy(value))
+        ? () => Promise.resolve(platformCopy(value, { format }))
         : () => navigator.clipboard.writeText(value);
 
       writer().then(() => {

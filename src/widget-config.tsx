@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo } from "react";
+import { setLogLevel, type LogLevel } from "./shared/logger";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
@@ -23,10 +24,52 @@ export interface WidgetConfig {
   entityId?: string;
   hideProfilePicker?: boolean;
   /**
+   * Hide the floating "scroll to bottom" button in the chat thread. The
+   * button sits just above the composer and appears only while the thread is
+   * scrolled up, hiding itself once the user is back at the latest message.
+   * Shown by default; set to `true` to remove it entirely.
+   */
+  hideScrollToBottomButton?: boolean;
+  /**
+   * Hide the top and bottom fade overlays in the chat thread. The fades blend
+   * the message content into the panel background at both edges of the scroll
+   * area. Shown by default; set to `true` to remove them entirely.
+   */
+  hideThreadFade?: boolean;
+  /**
    * Hide the settings (gear) button in the header. The settings page itself
    * remains reachable programmatically via the router store.
    */
   hideSettingsButton?: boolean;
+  /**
+   * Icon name for the chat-history panel's close button (top-right).
+   * Defaults to `"btn-close"` (the "X" close icon). When the widget is embedded in
+   * a host panel that already provides its own close button, set this to
+   * `"btn-arrow-up"` to show a back/collapse arrow instead, avoiding two
+   * stacked "X" close controls.
+   */
+  chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
+  /**
+   * Show the "Clear history" item in each chat's context menu (the "…"
+   * dropdown in the chat-history list). Hidden by default; set to `true` to
+   * expose it.
+   *
+   * When hidden (default), the menu's separator sits before "Delete" so the
+   * destructive action is visually set apart. When shown, "Delete" keeps its
+   * place and the separator moves below it, ahead of "Clear history".
+   */
+  showClearHistory?: boolean;
+  /**
+   * How nested submenus are presented in dropdown menus.
+   * - `"flyout"` (default) — side flyouts that open on hover/click. Can
+   *   overflow narrow or embedded hosts (iframe, mobile, side panels).
+   * - `"drilldown"` — clicking a row with a submenu replaces the current
+   *   level's content with the next level, with a "back" row to return.
+   *   Keeps everything inside the menu's own bounds.
+   *
+   * Can be overridden per menu via `DropdownMenu`'s `navigation` prop.
+   */
+  dropdownNavigation?: "flyout" | "drilldown";
   /**
    * Hide the "Always allow" checkbox in the tool-call confirmation dialog.
    * When hidden, the host can only approve/deny a single call at a time and
@@ -193,6 +236,24 @@ export interface WidgetConfig {
     folderId: string
   ) => string | void | Promise<string | void>;
   /**
+   * Custom UI for deleting a prompt folder. When provided, the widget's
+   * built-in "Delete folder" confirmation dialog is NOT shown — the host owns
+   * the confirmation UI (e.g. its own modal) and resolves whether to proceed:
+   * - `true` — the widget deletes the folder
+   * - `false` / `undefined` / no return (or a rejected promise) — cancelled,
+   *   the folder is kept
+   *
+   * The widget always performs the actual deletion itself; the host only owns
+   * the confirmation step. When omitted, the built-in dialog is used.
+   *
+   * @param currentName the folder's current name (to show in the confirmation)
+   * @param folderId the id of the folder being deleted
+   */
+  onDeletePromptFolder?: (
+    currentName: string,
+    folderId: string
+  ) => boolean | void | Promise<boolean | void>;
+  /**
    * Custom UI for creating a prompt. When provided, the widget's built-in
    * "Save prompt" path (which auto-names from the message) is replaced — the
    * host owns the name/text input UI (e.g. its own window) and resolves the
@@ -272,6 +333,20 @@ export interface WidgetConfig {
     result: unknown,
     ctx: ToolCallApproveContext
   ) => void | Promise<void>;
+  /**
+   * Minimum severity that reaches the console. The library logs through a
+   * single module-global logger; setting this raises the threshold so noisy
+   * `info`/`debug` tracing (MCP startup, image generation, …) is suppressed:
+   * - `"debug"` (default) — log everything, unchanged behavior.
+   * - `"warn"` — drop `info`/`debug`, keep warnings and errors.
+   * - `"error"` — errors only.
+   * - `"silent"` — suppress all output.
+   *
+   * Applies globally (the logger is a singleton), not per widget instance.
+   * When omitted, the current level is left untouched, so a host that calls
+   * the exported `setLogLevel` directly is not overridden.
+   */
+  logLevel?: LogLevel;
 }
 
 /** Prompt fields exchanged with the host's create/edit windows. */
@@ -316,6 +391,12 @@ export const WidgetConfigProvider = ({
   children,
 }: WidgetConfigProviderProps) => {
   const value = useMemo<WidgetConfig>(() => config ?? {}, [config]);
+
+  // Apply the log level synchronously during render (module-global side
+  // effect, same pattern the stores use for their global holders) so it takes
+  // effect before children emit anything on first paint. Only when explicitly
+  // set — otherwise a host-side `setLogLevel` call is left intact.
+  if (value.logLevel) setLogLevel(value.logLevel);
 
   return (
     <WidgetConfigContext.Provider value={value}>

@@ -23,8 +23,90 @@
   --aui-font-base: 12px;
   --aui-font-scale: 1;
 
+  /* Dropdown menu item horizontal padding (logical edges: start = left in
+     LTR). Each token names the row type it applies to, so overriding one is
+     unambiguous. A row is a "text" row (no leading icon) or an "icon" row
+     (leading icon, or space reserved via `withSpace`); its end padding
+     tightens to the "control" value when the row ends with an interactive
+     control (trailing icon, toggle, submenu chevron, about button). Combobox
+     rows keep their own symmetric padding. Integrators can override any of
+     these on `.aui-root` without touching the components. */
+  --dropdown-item-padding-start-text: 16px; /* text rows — start edge */
+  --dropdown-item-padding-end-text: 16px; /* text rows — end edge */
+  --dropdown-item-padding-start-icon: 4px; /* icon rows — start edge */
+  --dropdown-item-padding-end-icon: 20px; /* icon rows — end edge (label end) */
+  --dropdown-item-padding-end-control: 8px; /* any row ending in a control */
+  --dropdown-item-padding-start-combobox: 8px; /* combobox rows — start edge */
+  --dropdown-item-padding-end-combobox: 8px; /* combobox rows — end edge */
+
+  /* Drill-down "back" row (only shown in `dropdownNavigation: "drilldown"`
+     menus when not at the root level). */
+  --dropdown-back-row-height: 20px;
+  --dropdown-back-row-padding: 8px; /* horizontal padding */
+
+  /* Composer model-selector dropdown width bounds. The panel sizes to its
+     content (`w-fit`) between these two; the max is additionally clamped to
+     the space Radix measured, so it shrinks on narrow screens instead of
+     overflowing. Integrators can override either on `.aui-root`. */
+  --dropdown-model-selector-min-width: 150px;
+  --dropdown-model-selector-max-width: 300px;
+
+  /* Toggle (switch) geometry. Colors live in the theme files
+     (`--toggle-button-*-color`); these tokens are the structural sizes.
+     The thumb keeps a 3px visual gap from the track's outer edge: the track
+     always reserves a 1px border, so the offset is measured inside the
+     content box (offset + 1px border = 3px). The checked offset is
+     `track-width - 2*border - thumb-size - unchecked-offset`
+     (30 − 2 − 12 − 2 = 14px) so the gap is symmetric on both ends. */
+  --toggle-button-track-width: 30px;
+  --toggle-button-track-height: 18px;
+  --toggle-button-thumb-size: 12px;
+  --toggle-button-thumb-offset: 2px; /* unchecked: thumb x inside content box */
+  --toggle-button-thumb-offset-checked: 14px; /* checked: thumb x inside content box */
+
+  /* Settings page framing (`<Settings />` / `SettingsPage`). The outer margins
+     inset the whole page from its container; `max-width` caps the content
+     column (previously hardcoded at 640px). Integrators override these on
+     `.aui-root`; the `noPadding` prop forces the margins to 0 for hosts that
+     own the framing themselves (max-width is unaffected). */
+  --ai-settings-margin-x: 32px;
+  --ai-settings-margin-y: 32px;
+  --ai-settings-max-width: 640px;
+
+  /* Optional inner padding for the settings page's tabs (passed only to that
+     Tabs instance, so other tabs in the library are unaffected). Default 0, so
+     the tab row and its content sit flush. Raise `--ai-settings-tabs-content-
+     padding` to inset the scrollable content from the scrollbar (inline) and
+     add a bottom gap; raise `--ai-settings-tabs-list-padding` for the tab row. */
+  --ai-settings-tabs-list-padding: 0px;
+  --ai-settings-tabs-content-padding: 0px;
+
+  /* Chat "scroll to bottom" button geometry. Colors live in the theme files
+     (`--chat-scroll-to-bottom-*-color`); these are the structural sizes.
+     `--chat-scroll-to-bottom-gap` is the space above the composer and
+     `--chat-scroll-to-bottom-edge-inset` matches the composer's horizontal
+     padding so the button's edge lines up with the composer's edge. The
+     button is positioned absolutely over the message area (outside the scroll
+     viewport), so it reserves no layout height at the end of the thread. */
+  --chat-scroll-to-bottom-width: 24px;
+  --chat-scroll-to-bottom-height: 24px;
+  --chat-scroll-to-bottom-border-radius: 4px;
+  --chat-scroll-to-bottom-gap: 12px;
+  --chat-scroll-to-bottom-edge-inset: 12px;
+
+  /* Heights of the fade overlays at the top and bottom of the message thread.
+     The overlay color is the panel background (`--background-normal-rgb`, set
+     in Thread.css) so it tracks the active theme's surface rather than a
+     hardcoded white. The overlays span the same centered, `--thread-padding-x`-
+     inset column as the messages so they only cover message content. Set a
+     height to `0` to remove that edge's fade. */
+  --chat-thread-fade-height-top: 8px;
+  --chat-thread-fade-height-bottom: 12px;
+
   font-size: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1));
-  line-height: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333);
+  line-height: calc(
+    var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 1.3333
+  );
 
   /* font-size scale — ratios are size / 12 */
   --fs-10: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 0.8333);
@@ -47,6 +129,41 @@
   --lh-28: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 2.3333);
   --lh-32: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 2.6667);
   --lh-36: calc(var(--aui-font-base, 12px) * var(--aui-font-scale, 1) * 3);
+}
+
+/* Font-size utilities backed by the `--fs-*` type scale. A bare
+   `text-[var(--fs-*)]` is ambiguous in Tailwind and compiles to `color`,
+   not `font-size`; these named utilities set `font-size` explicitly so the
+   scale actually applies (and stops clobbering text color). */
+@utility text-fs-10 {
+  font-size: var(--fs-10);
+}
+@utility text-fs-11 {
+  font-size: var(--fs-11);
+}
+@utility text-fs-12 {
+  font-size: var(--fs-12);
+}
+@utility text-fs-13 {
+  font-size: var(--fs-13);
+}
+@utility text-fs-16 {
+  font-size: var(--fs-16);
+}
+@utility text-fs-18 {
+  font-size: var(--fs-18);
+}
+@utility text-fs-20 {
+  font-size: var(--fs-20);
+}
+@utility text-fs-24 {
+  font-size: var(--fs-24);
+}
+@utility text-fs-28 {
+  font-size: var(--fs-28);
+}
+@utility text-fs-32 {
+  font-size: var(--fs-32);
 }
 
 .font-rtl {

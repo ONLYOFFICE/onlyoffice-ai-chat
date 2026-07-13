@@ -165,6 +165,13 @@ describe("EditModelCard", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("renders delete button", () => {
+    render(
+      <EditModelCard profile={profile} onClose={vi.fn()} onDelete={vi.fn()} />
+    );
+    expect(screen.getByText("Delete")).toBeInTheDocument();
+  });
+
   it("calls onDelete when Delete is clicked", () => {
     const onDelete = vi.fn();
     render(
@@ -172,13 +179,6 @@ describe("EditModelCard", () => {
     );
     fireEvent.click(screen.getByText("Delete"));
     expect(onDelete).toHaveBeenCalledOnce();
-  });
-
-  it("renders delete icon", () => {
-    render(
-      <EditModelCard profile={profile} onClose={vi.fn()} onDelete={vi.fn()} />
-    );
-    expect(screen.getByText("btn-remove")).toBeInTheDocument();
   });
 
   it("calls fetchModels on mount", () => {

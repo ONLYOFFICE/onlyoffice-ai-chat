@@ -187,7 +187,7 @@ const UserActionBar = () => {
     const text = getMessageText();
     if (!text) return;
     const write = platformCopy
-      ? Promise.resolve(platformCopy(text))
+      ? Promise.resolve(platformCopy(text, { format: "markdown" }))
       : navigator.clipboard.writeText(text);
     void write.then(() => {
       setCopied(true);
@@ -201,12 +201,12 @@ const UserActionBar = () => {
 
   return (
     <>
-      <ActionBarPrimitive.Root className="col-start-2 mt-1 flex justify-end gap-[8px]">
+      <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[2px]">
         <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onCopy}>
           {copied ? (
-            <IconButton iconName="checked" size={24} isStroke disabled />
+            <IconButton iconName="checked" size={20} isStroke color="var(--icon-gray-secondary)" disabled />
           ) : (
-            <IconButton iconName="btn-copy" size={24} />
+            <IconButton iconName="btn-copy" size={20} isStroke color="var(--icon-gray-secondary)" />
           )}
         </TooltipIconButton>
         <DropdownMenu
@@ -214,10 +214,11 @@ const UserActionBar = () => {
           onOpenChange={setIsOpen}
           trigger={
             <IconButton
-              iconName="more"
+              iconName="btn-more.small"
               size={20}
               isActive={isOpen}
               insideElement
+              color="var(--icon-gray-secondary)"
             />
           }
           items={[
@@ -284,7 +285,7 @@ export const UserMessage = memo(() => {
     <MessagePrimitive.Root asChild>
       <motion.div
         dir={isRTL ? "rtl" : "ltr"}
-        className="mx-auto grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-1 px-[var(--thread-padding-x)] py-4 [&:where(>*)]:col-start-2"
+        className="mx-auto grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-1 px-[var(--thread-padding-x)] py-[8px] first:pt-[12px] [&:where(>*)]:col-start-2"
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         data-role="user"
@@ -307,7 +308,7 @@ export const UserMessage = memo(() => {
 
         <div
           className={cn(
-            "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 break-words rounded-[16px] px-[12px] py-[8px] select-text",
+            "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[16px] px-[12px] py-[8px] select-text",
             isRTL ? "rounded-bl-[0px]" : "rounded-br-[0px]"
           )}
         >

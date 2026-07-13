@@ -76,6 +76,9 @@ export type { StoreKeys } from "./config";
 
 export { PlatformProvider, usePlatform } from "./ui/providers/PlatformProvider";
 export type {
+  CopyFormat,
+  CopyMeta,
+  ExportFormat,
   PlatformAdapter,
   PlatformClouds,
   PlatformEnvironment,
@@ -527,3 +530,10 @@ export {
   isXps,
   sanitizeProviderName,
 } from "./shared/utils";
+
+// ---------------------------------------------------------------------------
+// Logging — module-global level control (also settable via the widget's
+// `logLevel` config). Raise the threshold to quiet the console output.
+// ---------------------------------------------------------------------------
+
+export { setLogLevel, getLogLevel, type LogLevel } from "./shared/logger";

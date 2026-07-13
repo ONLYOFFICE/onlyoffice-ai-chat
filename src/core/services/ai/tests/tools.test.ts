@@ -112,6 +112,30 @@ describe("buildToolContext", () => {
     expect(ctx.adapterToolNames.has("web_search")).toBe(true);
   });
 
+  it("omits the built-in generate_image tool when disableBuiltinImageTool is true", async () => {
+    getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
+    getImageGenerationToolsMock.mockResolvedValue([tool("generate_image")]);
+    // Mocks aren't auto-reset between tests in this file; clear the call
+    // log so the "never called" assertion reflects only this invocation.
+    getImageGenerationToolsMock.mockClear();
+
+    const ctx = await buildToolContext(
+      makeStorage(),
+      undefined,
+      [],
+      undefined,
+      undefined,
+      [],
+      true
+    );
+
+    const names = ctx.mergedTools.map((t) => t.name);
+    expect(names).not.toContain("generate_image");
+    expect(names).toContain("web_search");
+    // The opt-out short-circuits before the assignment read.
+    expect(getImageGenerationToolsMock).not.toHaveBeenCalled();
+  });
+
   it("marks tools from systemServerTypes groups as systemToolNames", async () => {
     getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
     getImageGenerationToolsMock.mockResolvedValue([]);
@@ -288,9 +312,10 @@ describe("executeAdapterTool", () => {
     );
   });
 
-  it("dispatches generate_image through callImageGenerationTool", async () => {
+  it("dispatches generate_image through callImageGenerationTool, forwarding ctx.pickFetch", async () => {
     callImageGenerationToolMock.mockResolvedValue("image-result");
     resumeChatMock.mockImplementation(async function* () {});
+    const pickFetch = vi.fn();
     const gen = executeAdapterTool(
       makeStorage(),
       undefined,
@@ -306,12 +331,25 @@ describe("executeAdapterTool", () => {
           ],
         } as never,
       } as never,
-      { profile: {} as never, profileId: "p", tools: [] }
+      {
+        profile: {} as never,
+        profileId: "p",
+        tools: [],
+        pickFetch: pickFetch as never,
+      }
     );
     for await (const _ of gen) {
       void _;
     }
-    expect(callImageGenerationToolMock).toHaveBeenCalled();
+    // `pickFetch` reaches the tool so it can resolve `externalFetch` /
+    // `fetchProxy` for the image-generation profile (distinct from the
+    // chat profile that issued the call).
+    expect(callImageGenerationToolMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "generate_image",
+      {},
+      pickFetch
+    );
     // The base64 → attachment-ref swap is centralized in `resumeChat`
     // (covered by tool-call.test.ts), so `executeAdapterTool` forwards the
     // raw tool result through unchanged.

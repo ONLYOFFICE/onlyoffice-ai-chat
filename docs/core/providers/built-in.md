@@ -246,11 +246,15 @@ override `imageGeneration` to throw or use a different provider
 | `checkProvider` strategy | delegated to the inner provider |
 
 `ExternalProvider` is a thin delegate: in its constructor it
-resolves an inner provider class from `creds.basedOn` (currently
-only `"openai"` is implemented) and forwards every call to it.
-The inner SDK receives `creds.fetch = PlatformAdapter.externalFetch`,
-so the host owns every HTTP request while the library reuses the
-existing OpenAI stream / sync / image / models parsers.
+resolves an inner provider class from `creds.basedOn` (`"openai"`,
+`"anthropic"`, `"mistral"` and `"openrouter"` are implemented) and
+forwards every call to it. The inner SDK receives
+`creds.fetch = PlatformAdapter.externalFetch`, so the host owns every
+HTTP request while the library reuses the inner provider's existing
+stream / sync / image / models parsers.
+
+The remaining `BuiltinProviderType` values (`genai`, `stabilityai`,
+…) are reserved and not yet wired up.
 
 Configuration shape:
 

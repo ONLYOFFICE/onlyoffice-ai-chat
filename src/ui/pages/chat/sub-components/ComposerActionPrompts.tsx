@@ -227,11 +227,13 @@ const ComposerActionPrompts = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
   const { usePromptsStore } = useStores();
-  const { onEditPrompt, onRenamePromptFolder } = useWidgetConfig();
+  const { onEditPrompt, onRenamePromptFolder, onDeletePromptFolder } =
+    useWidgetConfig();
   const prompts = usePromptsStore((s) => s.prompts);
   const folders = usePromptsStore((s) => s.folders);
   const editPrompt = usePromptsStore((s) => s.editPrompt);
   const renameFolder = usePromptsStore((s) => s.renameFolder);
+  const removeFolder = usePromptsStore((s) => s.removeFolder);
   const removePrompt = usePromptsStore((s) => s.removePrompt);
   const composerRuntime = useComposerRuntime();
   const [isOpen, setIsOpen] = useState(false);
@@ -249,7 +251,12 @@ const ComposerActionPrompts = () => {
   const trigger = useMemo(
     () => (
       <TooltipIconButton visible={!isOpen} tooltip={t("SavedPrompts")}>
-        <IconButton iconName="btn-prompt" size={20} isActive={isOpen} />
+        <IconButton
+          iconName="btn-prompt"
+          size={20}
+          isActive={isOpen}
+          isStroke
+        />
       </TooltipIconButton>
     ),
     [isOpen, t, IconButton, TooltipIconButton]
@@ -281,6 +288,26 @@ const ComposerActionPrompts = () => {
       }
     },
     [onRenamePromptFolder, renameFolder]
+  );
+
+  // When the host supplies `onDeletePromptFolder`, it owns the confirmation
+  // UI (its own modal) and resolves whether to proceed; the widget deletes
+  // once the host returns `true`. Otherwise fall back to the built-in dialog.
+  const requestDeleteFolder = useCallback(
+    async (folder: { id: string; name: string }) => {
+      if (!onDeletePromptFolder) {
+        setDeletingFolderId(folder.id);
+        return;
+      }
+      try {
+        const confirmed = await onDeletePromptFolder(folder.name, folder.id);
+        if (confirmed !== true) return;
+        removeFolder(folder.id);
+      } catch (err) {
+        logger.error("onDeletePromptFolder handler failed:", err);
+      }
+    },
+    [onDeletePromptFolder, removeFolder]
   );
 
   // When the host supplies `onEditPrompt`, it owns the input UI (its own
@@ -389,7 +416,7 @@ const ComposerActionPrompts = () => {
         onClick: () => applyPrompt(prompt.text),
         subMenu: buildPromptContextMenu(prompt),
         subMenuIcon: "more",
-        subMenuIconSize: 20,
+        subMenuIconSize: 24,
       });
     }
 
@@ -412,7 +439,7 @@ const ComposerActionPrompts = () => {
             onClick: () => applyPrompt(prompt.text),
             subMenu: buildPromptContextMenu(prompt),
             subMenuIcon: "more",
-            subMenuIconSize: 20,
+            subMenuIconSize: 24,
           })),
           ...(folderPrompts.length > 0
             ? [{ text: "", isSeparator: true, onClick: () => undefined }]
@@ -425,7 +452,7 @@ const ComposerActionPrompts = () => {
           {
             text: t("DeleteFolder"),
             icon: "btn-remove",
-            onClick: () => setDeletingFolderId(folder.id),
+            onClick: () => requestDeleteFolder(folder),
           },
         ],
       });
@@ -438,6 +465,7 @@ const ComposerActionPrompts = () => {
     applyPrompt,
     buildPromptContextMenu,
     requestRenameFolder,
+    requestDeleteFolder,
     t,
   ]);
 

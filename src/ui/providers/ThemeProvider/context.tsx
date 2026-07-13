@@ -83,6 +83,7 @@ export const ThemeProvider = ({
   const themeType = useThemeStore((s) => s.themeType);
   const scale = useThemeStore((s) => s.scale);
   const setThemeId = useThemeStore((s) => s.setThemeId);
+  const setScale = useThemeStore((s) => s.setScale);
   const initFromPlatform = useThemeStore((s) => s.initFromPlatform);
 
   // --- Initialize from platform on first render ---
@@ -95,7 +96,7 @@ export const ThemeProvider = ({
     setThemeId(theme);
   }
 
-  // --- Listen for platform environment changes (theme) ---
+  // --- Listen for platform environment changes (theme, display density) ---
   useLayoutEffect(() => {
     const unsubscribe = platform.env.onEnvironmentChange?.((info) => {
       if (info.theme) {
@@ -107,23 +108,29 @@ export const ThemeProvider = ({
           setThemeId(info.theme);
         }
       }
+      // A changed display density re-selects scale-appropriate raster icons
+      // (in `iconFormat: "png"` mode). Absent field → keep the startup scale.
+      if (info.devicePixelRatio !== undefined) {
+        setScale(info.devicePixelRatio);
+      }
     });
 
     return () => {
       unsubscribe?.();
     };
-  }, [setThemeId, platform]);
+  }, [setThemeId, setScale, platform]);
 
   // --- Build inline style from customTheme overrides ---
   const inlineStyle = useMemo(() => {
-    if (!customTheme) return undefined;
     const style: Record<string, string> = {};
-    for (const [key, value] of Object.entries(customTheme)) {
-      if (value !== undefined) {
-        style[key] = value;
+    if (customTheme) {
+      for (const [key, value] of Object.entries(customTheme)) {
+        if (value !== undefined) {
+          style[key] = value;
+        }
       }
     }
-    return Object.keys(style).length > 0 ? style : undefined;
+    return style;
   }, [customTheme]);
 
   // --- Generate <style> tags for customThemes ---

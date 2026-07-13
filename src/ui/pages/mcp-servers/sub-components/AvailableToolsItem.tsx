@@ -97,7 +97,7 @@ const AvailableToolsItem = ({
             className="flex items-center justify-center w-[12px] h-full"
             style={{
               transform: isRTL
-                ? `rotate(${opened ? 180 : 90}deg)`
+                ? `rotate(${opened ? 0 : 90}deg)`
                 : `rotate(${opened ? 0 : -90}deg)`,
             }}
           >
@@ -118,13 +118,13 @@ const AvailableToolsItem = ({
         <div>
           {isLoadingAction ? (
             <Loader />
-          ) : (
+          ) : dropdownItems.length > 0 ? (
             <DropdownMenu
               onOpenChange={setDropdownOpen}
               trigger={
                 <IconButton
                   iconName="more"
-                  size={20}
+                  size={24}
                   isActive={dropdownOpen}
                   insideElement
                 />
@@ -134,7 +134,7 @@ const AvailableToolsItem = ({
               align="start"
               sideOffset={0}
             />
-          )}
+          ) : null}
         </div>
       </div>
       {opened ? (

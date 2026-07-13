@@ -205,7 +205,14 @@ class OpenAIProvider extends AbstractBaseProvider {
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
-    const { messages, model, systemPrompt, useResponsesApi, signal } = args;
+    const {
+      messages,
+      model,
+      systemPrompt,
+      useResponsesApi,
+      withReasoning,
+      signal,
+    } = args;
 
     if (useResponsesApi) {
       const response = await this.client.responses.create(
@@ -213,6 +220,10 @@ class OpenAIProvider extends AbstractBaseProvider {
           model,
           instructions: systemPrompt,
           input: convertMessagesToResponses(messages, this.downgradeSystem),
+          reasoning: ((): { effort: string } | undefined => {
+            const effort = resolveReasoningEffort(model, withReasoning);
+            return effort ? { effort } : undefined;
+          })() as OpenAI.Reasoning | undefined,
           stream: false,
         },
         { signal }
@@ -227,6 +238,10 @@ class OpenAIProvider extends AbstractBaseProvider {
           { role: "system", content: systemPrompt },
           ...convertMessages(messages, this.downgradeSystem),
         ],
+        reasoning_effort: resolveReasoningEffort(
+          model,
+          withReasoning
+        ) as OpenAI.Chat.ChatCompletionCreateParams["reasoning_effort"],
         stream: false,
       },
       { signal }

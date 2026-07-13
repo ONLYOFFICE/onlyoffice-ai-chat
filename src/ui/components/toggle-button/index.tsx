@@ -11,24 +11,29 @@ const ToggleButton = ({
 }: ToggleButtonProps) => {
   // Base styles
   const baseStyles =
-    "relative inline-flex items-center shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out";
+    "relative inline-flex items-center shrink-0 cursor-pointer rounded-full border transition-colors duration-200 ease-in-out";
   const focusStyles = "focus:outline-none";
   const disabledStyles = "disabled:cursor-not-allowed disabled:opacity-50";
 
   // State styles
   const backgroundStyles =
     "bg-[var(--toggle-button-off-background-color)] data-[state=checked]:bg-[var(--toggle-button-background-color)]";
+  const borderStyles =
+    "border-[var(--toggle-button-off-border-color)] data-[state=checked]:border-transparent";
   const hoverStyles =
     "data-[state=checked]:hover:enabled:bg-[var(--toggle-button-background-hover-color)]";
 
   // Size styles
-  const sizeStyles = "w-[30px] h-[18px]";
+  const sizeStyles =
+    "w-[var(--toggle-button-track-width)] h-[var(--toggle-button-track-height)]";
 
   // Thumb styles
   const thumbBaseStyles =
-    "pointer-events-none inline-block rounded-full bg-[var(--toggle-button-circle-color)] ring-0 transition-transform duration-200 ease-in-out";
+    "pointer-events-none inline-block rounded-full ring-0 transition-transform duration-200 ease-in-out";
+  const thumbColorStyles =
+    "bg-[var(--toggle-button-off-circle-color)] data-[state=checked]:bg-[var(--toggle-button-circle-color)]";
   const thumbSizeStyles =
-    "w-[12px] h-[12px] translate-x-[0px] data-[state=checked]:translate-x-[16px]";
+    "w-[var(--toggle-button-thumb-size)] h-[var(--toggle-button-thumb-size)] translate-x-[var(--toggle-button-thumb-offset)] data-[state=checked]:translate-x-[var(--toggle-button-thumb-offset-checked)]";
 
   return (
     <div className="flex items-center gap-2">
@@ -43,12 +48,15 @@ const ToggleButton = ({
           focusStyles,
           disabledStyles,
           backgroundStyles,
+          borderStyles,
           hoverStyles,
           sizeStyles,
           className
         )}
       >
-        <Switch.Thumb className={cn(thumbBaseStyles, thumbSizeStyles)} />
+        <Switch.Thumb
+          className={cn(thumbBaseStyles, thumbColorStyles, thumbSizeStyles)}
+        />
       </Switch.Root>
     </div>
   );

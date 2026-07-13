@@ -15,6 +15,7 @@ export const themes = [
 
 export const customThemeTokens: ThemeTokens = {
   "--background-normal": "#1a1b2e",
+  "--background-normal-rgb": "26 27 46",
   "--background-normal-element": "#252640",
   "--background-normal-element-light": "#2d2e4a",
   "--background-accent-button": "#7c5cfc",

@@ -67,14 +67,18 @@ class AnthropicProvider extends AbstractBaseProvider {
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
-    const { messages, model, systemPrompt, signal } = args;
+    const { messages, model, systemPrompt, withReasoning, signal } = args;
     const response = await this.client.messages.create(
       {
         model,
         system: systemPrompt,
         messages: convertMessages(messages),
-        max_tokens: 4096,
+        // Thinking needs headroom above its own budget for the visible reply.
+        max_tokens: withReasoning ? 16000 : 4096,
         stream: false,
+        ...(withReasoning && {
+          thinking: { type: "enabled", budget_tokens: 10000 },
+        }),
       },
       { signal }
     );

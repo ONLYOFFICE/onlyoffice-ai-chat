@@ -206,6 +206,26 @@ describe("MistralProvider", () => {
         })
       ).rejects.toThrow("x");
     });
+
+    it("resolves the reasoning model alias when withReasoning is set", async () => {
+      chatCompleteMock.mockResolvedValueOnce({
+        choices: [{ message: { content: "answer" } }],
+      });
+      const p = new MistralProvider({
+        baseUrl: "https://api.mistral.ai",
+        apiKey: "sk",
+      });
+      const [level, variant] = mistralInfo.reasoningModels[0] ?? ["", ""];
+      if (!level) return;
+
+      await p.sendMessageSync({
+        messages: [],
+        model: level,
+        systemPrompt: "",
+        withReasoning: true,
+      });
+      expect(chatCompleteMock.mock.calls[0]?.[0]?.model).toBe(variant);
+    });
   });
 
   describe("static checkProvider", () => {

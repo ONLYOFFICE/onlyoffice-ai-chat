@@ -31,6 +31,27 @@ export type DropDownItemProps = {
 
   withSpace?: boolean;
 
+  /**
+   * Visual context the item is rendered in. "combobox" keeps symmetric
+   * padding (matching the trigger field); "menu" (default) uses the
+   * icon-aware horizontal padding driven by the `--dropdown-item-*`
+   * tokens. Set automatically by `DropdownMenu` / `ComboBox`.
+   */
+  variant?: "menu" | "combobox";
+
+  /**
+   * How this row presents its `subMenu`. Set automatically by `DropdownMenu`.
+   * - `"flyout"` (default) — the row renders its own nested side flyout.
+   * - `"drilldown"` — the row does NOT render a flyout; instead it shows a
+   *   drill indicator and calls `onDrill` to ask the parent menu to descend.
+   */
+  navigation?: "flyout" | "drilldown";
+  /**
+   * Called when a `"drilldown"` row should descend into its `subMenu`. The
+   * parent `DropdownMenu` owns the navigation stack and supplies this.
+   */
+  onDrill?: () => void;
+
   withAbout?: boolean;
   aboutContent?: React.ReactNode;
 };

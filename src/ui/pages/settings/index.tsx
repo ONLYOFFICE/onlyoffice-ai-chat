@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, type CSSProperties } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useStores } from "../../store/context";
@@ -43,6 +43,11 @@ const Settings = ({
 
   const [activeTab, setActiveTab] = useState("ai-settings");
 
+  const frameStyle = {
+    marginInline: noPadding ? "0px" : "var(--ai-settings-margin-x)",
+    marginTop: noPadding ? "0px" : "var(--ai-settings-margin-y)",
+  } as CSSProperties;
+
   const handleTabChange = useCallback(
     async (next: string) => {
       const leavingMcp = activeTab === "mcp-servers" && next !== "mcp-servers";
@@ -65,16 +70,19 @@ const Settings = ({
   return (
     <div className="aui-root select-text flex justify-center h-full bg-[var(--layout-background-color)]">
       <div
-        className={`flex flex-col gap-[16px] box-border w-full max-w-[640px] min-w-0 overflow-hidden${noPadding ? "" : " mx-[32px] mt-[32px]"}`}
+        className="flex flex-col gap-[16px] box-border w-full max-w-[var(--ai-settings-max-width)] min-w-0 overflow-hidden"
+        style={frameStyle}
       >
         {!hideHeader && (
-          <h1 className="select-none font-bold text-[var(--fs-20)] leading-[var(--lh-28)] text-[var(--settings-header-color)]">
+          <h1 className="select-none font-bold text-fs-20 leading-[var(--lh-28)] text-[var(--settings-header-color)]">
             {t("Settings")}
           </h1>
         )}
         <Tabs
           value={activeTab}
           onValueChange={handleTabChange}
+          listClassName="[padding-inline:var(--ai-settings-tabs-list-padding)]"
+          contentClassName="[padding-inline:var(--ai-settings-tabs-content-padding)] [padding-bottom:var(--ai-settings-tabs-content-padding)]"
           items={[
             {
               value: "ai-settings",

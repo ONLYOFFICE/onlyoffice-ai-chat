@@ -88,6 +88,7 @@ vi.mock("@assistant-ui/react", () => ({
     <div data-testid="runtime-provider">{children}</div>
   ),
   useExternalStoreRuntime: () => ({}),
+  useComposerRuntime: () => ({ setText: vi.fn() }),
   CompositeAttachmentAdapter: class {},
   SimpleImageAttachmentAdapter: class {},
   SimpleTextAttachmentAdapter: class {},
@@ -108,7 +109,14 @@ vi.mock("@assistant-ui/react", () => ({
       empty?: boolean;
     }) => <div data-testid={`if-empty-${empty}`}>{children}</div>,
     Messages: () => <div data-testid="messages" />,
+    ScrollToBottom: ({ children }: { children?: React.ReactNode }) => (
+      <div data-testid="scroll-to-bottom">{children}</div>
+    ),
   },
+}));
+
+vi.mock("../../../components/icon", () => ({
+  Icon: () => <span data-testid="icon" />,
 }));
 
 vi.mock("../../../components/loader", () => ({
@@ -127,8 +135,8 @@ vi.mock("../sub-components/AssistantMessage", () => ({
   AssistantMessage: () => <div />,
 }));
 
-vi.mock("../sub-components/Welcome", () => ({
-  ThreadWelcome: () => <div data-testid="welcome" />,
+vi.mock("../sub-components/SuggestionsHeader", () => ({
+  SuggestionsHeader: () => <div data-testid="suggestions-header" />,
 }));
 
 vi.mock("../Thread.css", () => ({}));
@@ -147,9 +155,9 @@ describe("ChatPage (Thread)", () => {
     expect(screen.getByTestId("thread-root")).toBeInTheDocument();
   });
 
-  it("renders welcome and composer for empty state", () => {
+  it("renders suggestions header and composer for empty state", () => {
     render(<Thread />);
-    expect(screen.getByTestId("welcome")).toBeInTheDocument();
+    expect(screen.getByTestId("suggestions-header")).toBeInTheDocument();
     expect(screen.getAllByTestId("composer").length).toBeGreaterThanOrEqual(1);
   });
 

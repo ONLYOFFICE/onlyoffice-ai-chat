@@ -76,6 +76,15 @@ export function createWidgetRef(
         .onDownloadThread(threadId, thread?.title);
     },
 
+    exportThread(threadId, formatId) {
+      const thread = stores.useThreadsStore
+        .getState()
+        .threads.find((t) => t.threadId === threadId);
+      void stores.useThreadsStore
+        .getState()
+        .onExportThread(threadId, formatId, thread?.title);
+    },
+
     getThreads() {
       return stores.useThreadsStore.getState().threads;
     },

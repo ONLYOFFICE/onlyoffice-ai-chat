@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
+import { useWidgetConfig } from "../../../widget-config";
 import { useStores } from "../../store/context";
 import { useMessages } from "../../hooks";
 import useEnsureProfiles from "../../hooks/useEnsureProfiles";
@@ -18,6 +19,7 @@ import useEnsureThreads from "../../hooks/useEnsureThreads";
 import useEnsurePrompts from "../../hooks/useEnsurePrompts";
 import useEnsureTools from "../../hooks/useEnsureTools";
 import { ManageToolDialog } from "../../components/manage-tool-dialog";
+import { Icon } from "../../components/icon";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
 import { Composer } from "./sub-components/Composer";
 import { Suggestions } from "./sub-components/Suggestions";
@@ -38,6 +40,7 @@ const ThreadInner = () => {
   const messages = useMessageStore((s) => s.messages);
   const { t } = useI18n();
   const { isDragOver, handlers } = useChatDropAttachments();
+  const { hideScrollToBottomButton, hideThreadFade } = useWidgetConfig();
 
   // Derive "tool is running" from the last assistant message — adapter
   // tools are executed inside the engine and never surface as
@@ -99,27 +102,71 @@ const ThreadInner = () => {
         </ThreadPrimitive.If>
 
         <ThreadPrimitive.If empty={false}>
-          <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto">
-            <ThreadPrimitive.Messages
-              components={{
-                UserMessage,
-                AssistantMessage,
-              }}
-            />
+          {/* Non-scrolling wrapper so the fade overlays stay pinned to the
+              top and bottom edges of the message area instead of scrolling
+              away with the content inside the viewport. */}
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+            <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto">
+              <ThreadPrimitive.Messages
+                components={{
+                  UserMessage,
+                  AssistantMessage,
+                }}
+              />
 
-            {showAnalyzing ? (
-              <div className="flex items-center justify-center">
-                <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
-                  <Loader />
-                  <p className="font-normal text-[var(--chat-message-analyze-color)]">
-                    {t("Analyzing")}
-                  </p>
+              {showAnalyzing ? (
+                <div className="flex items-center justify-center">
+                  <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
+                    <Loader />
+                    <p className="font-normal text-[var(--chat-message-analyze-color)]">
+                      {t("Analyzing")}
+                    </p>
+                  </div>
                 </div>
+              ) : null}
+
+              <motion.div className="min-h-[8px] min-w-6 shrink-0" />
+            </ThreadPrimitive.Viewport>
+
+            {/* Floating "scroll to bottom" button (shown by default; hide
+                  via `hideScrollToBottomButton`). Sticks to the bottom of the
+                  scroll viewport and is auto-disabled by the primitive when
+                  the thread is already scrolled to the end — we fade it out
+                  via `disabled:` so it only appears while scrolled up. */}
+            {!hideScrollToBottomButton ? (
+              <div className="scroll-to-bottom pointer-events-none absolute inset-x-0 z-10 mx-auto flex w-full max-w-[var(--thread-max-width)] justify-end">
+                <ThreadPrimitive.ScrollToBottom asChild>
+                  <button
+                    type="button"
+                    className="scroll-to-bottom-btn pointer-events-auto m-0 box-border flex items-center justify-center border p-0 leading-none transition-opacity duration-150 disabled:pointer-events-none disabled:opacity-0"
+                  >
+                    <Icon
+                      name="dropdown-toggle"
+                      color="var(--icon-normal)"
+                      width={16}
+                      height={24}
+                      isStroke
+                    />
+                  </button>
+                </ThreadPrimitive.ScrollToBottom>
               </div>
             ) : null}
 
-            <motion.div className="min-h-6 min-w-6 shrink-0" />
-          </ThreadPrimitive.Viewport>
+            {/* Top/bottom fade of the thread content into the panel
+                background. */}
+            {!hideThreadFade ? (
+              <>
+                <div
+                  aria-hidden="true"
+                  className="thread-fade thread-fade-top pointer-events-none"
+                />
+                <div
+                  aria-hidden="true"
+                  className="thread-fade thread-fade-bottom pointer-events-none"
+                />
+              </>
+            ) : null}
+          </div>
 
           <Composer />
         </ThreadPrimitive.If>
@@ -127,7 +174,7 @@ const ThreadInner = () => {
       {isDragOver ? (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-[var(--layout-background-color)]/80 backdrop-blur-sm">
           <div className="m-[16px] flex h-full w-full items-center justify-center rounded-[16px] border-2 border-dashed border-[var(--input-active-border-color)]">
-            <p className="select-none text-[var(--fs-18)] font-bold leading-[var(--lh-24)] text-[var(--text-normal)]">
+            <p className="select-none text-fs-18 font-bold leading-[var(--lh-24)] text-[var(--text-normal)]">
               {t("DropFilesHere")}
             </p>
           </div>
@@ -146,6 +193,10 @@ const Thread = () => {
   useEnsureTools();
   const messages = useMessageStore((s) => s.messages);
   const stopMessage = useMessageStore((s) => s.stopMessage);
+  // `isStreamRunning` spans the whole round (request → stream → tool calls);
+  // feeding it to the runtime as `isRunning` lets assistant-ui emit
+  // `thread.run-start`, which drives its built-in scroll-to-bottom on send.
+  const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const profilesInitialized = useProfilesStore((s) => s.initialized);
   const hasProfiles = useProfilesStore((s) => s.profiles.length > 0);
   const currentPage = useRouter((s) => s.currentPage);
@@ -188,6 +239,7 @@ const Thread = () => {
 
   const runtime = useExternalStoreRuntime<ThreadMessageLike>({
     messages,
+    isRunning: isStreamRunning,
     onNew,
     onCancel,
     onReload,

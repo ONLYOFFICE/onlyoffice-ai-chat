@@ -2,6 +2,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import type React from "react";
 import { cn } from "../../../../shared/utils";
 import { useTheme } from "../../../providers/ThemeProvider";
+import { useI18n } from "../../../providers/LocalesProvider";
 
 import "./TooltipContent.css";
 
@@ -19,9 +20,11 @@ const TooltipContent = ({
   ...props
 }: TooltipContentProps) => {
   const { portalContainer } = useTheme();
+  const { direction } = useI18n();
   return (
     <TooltipPrimitive.Portal container={portalContainer ?? undefined}>
       <TooltipPrimitive.Content
+        dir={direction}
         data-slot="tooltip-content"
         sideOffset={sideOffset}
         className={cn(

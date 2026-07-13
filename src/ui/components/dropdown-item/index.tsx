@@ -12,6 +12,22 @@ import type { DropDownItemProps } from "./DropDownItem.types";
 const SUBMENU_WIDTH = 300;
 const SUBMENU_MARGIN = 8;
 
+// Horizontal padding per row layout, as overridable CSS tokens (see
+// styles/index.css for the defaults). The start and end edges are resolved
+// independently from the row's "kind"; combobox keeps its own symmetric pair.
+const START_PADDING = {
+  combobox: "ps-[var(--dropdown-item-padding-start-combobox,8px)]",
+  icon: "ps-[var(--dropdown-item-padding-start-icon,4px)]",
+  text: "ps-[var(--dropdown-item-padding-start-text,16px)]",
+} as const;
+
+const END_PADDING = {
+  combobox: "pe-[var(--dropdown-item-padding-end-combobox,8px)]",
+  control: "pe-[var(--dropdown-item-padding-end-control,8px)]",
+  icon: "pe-[var(--dropdown-item-padding-end-icon,20px)]",
+  text: "pe-[var(--dropdown-item-padding-end-text,16px)]",
+} as const;
+
 const DropDownItem = ({
   text,
   icon,
@@ -34,6 +50,9 @@ const DropDownItem = ({
   withSpace,
   withAbout,
   aboutContent,
+  variant = "menu",
+  navigation = "flyout",
+  onDrill,
 }: DropDownItemProps) => {
   const { isRTL } = useI18n();
   const { portalContainer } = useTheme();
@@ -59,14 +78,27 @@ const DropDownItem = ({
   }, []);
 
   if (isSeparator)
+    // A 1px-tall background bar rounds away at fractional zoom levels; a top
+    // border is snapped to the device pixel grid by the browser and stays
+    // visible across scales.
     return (
-      <div className="h-px min-h-[1px] w-full bg-[var(--drop-down-menu-separator-color)] my-[4px] flex-shrink-0" />
+      <div className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[4px] shrink-0" />
     );
+
+  const isDrill = navigation === "drilldown";
 
   const onSelect = (e: Event) => {
     if (withToggle) {
       e.stopPropagation();
       e.preventDefault();
+      return;
+    }
+    // Drill-down: a folder row (has subMenu, no explicit "more" icon) descends
+    // in place instead of running a leaf action; keep the menu open. A
+    // subMenuIcon row keeps its own leaf onClick and drills via the icon only.
+    if (isDrill && subMenu && !subMenuIcon) {
+      e.preventDefault();
+      onDrill?.();
       return;
     }
     onClick(e);
@@ -173,11 +205,39 @@ const DropDownItem = ({
 
   const isHorizontalSide = submenuSide === "left" || submenuSide === "right";
 
+  // Whether the row ends with an interactive control (these sit on the end
+  // edge and supply their own visual weight, so the row's end padding tightens).
+  const hasTrailingControl = Boolean(
+    trailingIcon ||
+    subMenu ||
+    checked ||
+    (withToggle && onToggleChange) ||
+    withAbout
+  );
+  const hasLeadingIcon = Boolean(icon) || Boolean(withSpace);
+  const isCombobox = variant === "combobox";
+
+  // Classify each edge into a row "kind", then look up its padding class.
+  // Start: icon rows indent less than plain text rows. End: a trailing control
+  // tightens the edge; otherwise it mirrors the start (icon vs text). Combobox
+  // overrides both with its own symmetric padding.
+  const startKind = isCombobox ? "combobox" : hasLeadingIcon ? "icon" : "text";
+  const endKind = isCombobox
+    ? "combobox"
+    : hasTrailingControl
+      ? "control"
+      : hasLeadingIcon
+        ? "icon"
+        : "text";
+
+  const paddingClass = cn(START_PADDING[startKind], END_PADDING[endKind]);
+
   const itemContent = (
     <Item
       className={cn(
-        "dropdown-menu-item",
-        "flex items-center justify-between gap-[32px] min-w-0 w-full max-w-full min-h-[28px] h-[28px] px-[12px] select-none cursor-pointer",
+        "dropdown-menu-item group",
+        "flex items-center justify-between gap-[10px] min-w-0 w-full max-w-full min-h-[26px] h-[26px] select-none cursor-pointer",
+        paddingClass,
         "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 border-0",
         "hover:bg-[var(--drop-down-menu-item-hover-color)] hover:text-[var(--drop-down-menu-item-hover-color)]",
         "data-[disabled]:opacity-50 data-[disabled]:pointer-events-none",
@@ -187,7 +247,7 @@ const DropDownItem = ({
       )}
       onSelect={withToggle ? (e) => e.preventDefault() : onSelect}
       onClick={withToggle ? handleToggleClick : undefined}
-      onMouseEnter={subMenuIcon ? undefined : handleMouseEnter}
+      onMouseEnter={!isDrill && !subMenuIcon ? handleMouseEnter : undefined}
       ref={itemRef}
       dir={isRTL ? "rtl" : "ltr"}
     >
@@ -198,6 +258,7 @@ const DropDownItem = ({
           (icon ?? null)
         )}
         <span
+          dir="auto"
           className={cn(
             "truncate font-normal text-[var(--drop-down-menu-item-color)]",
             withSpace ? "ms-[28px]" : "",
@@ -221,9 +282,9 @@ const DropDownItem = ({
             <TooltipTrigger asChild>
               <IconButton
                 iconName="btn-menu-about"
-                size={24}
+                size={20}
                 disableHover
-                isStroke
+                noColor
                 onClick={() => setIsAboutOpen((val) => !val)}
               />
             </TooltipTrigger>
@@ -234,8 +295,50 @@ const DropDownItem = ({
         ) : null}
       </div>
 
-      {subMenu ? (
-        <div onClick={subMenuIcon ? (e) => e.stopPropagation() : undefined}>
+      {subMenu && isDrill ? (
+        subMenuIcon ? (
+          // "More"-style row: reveal on row hover/focus, click drills in.
+          // stopPropagation so the row's own onSelect (leaf action) doesn't
+          // also fire.
+          <div
+            className="opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDrill?.();
+            }}
+          >
+            <IconButton
+              iconName={subMenuIcon}
+              size={subMenuIconSize ?? 12}
+              insideElement
+            />
+          </div>
+        ) : (
+          // Folder-style row: a plain chevron indicator with no hover of its
+          // own — the whole row is the drill target (via onSelect).
+          <IconButton
+            iconName="arrow.right"
+            size={12}
+            insideElement
+            isStroke
+            disableHover
+            className={isRTL ? "rotate-180" : ""}
+          />
+        )
+      ) : null}
+
+      {subMenu && !isDrill ? (
+        <div
+          onClick={subMenuIcon ? (e) => e.stopPropagation() : undefined}
+          // The "more" trigger only reveals on row hover/focus (or while its
+          // menu is open), kept in layout via opacity so the row doesn't shift.
+          // The plain submenu chevron (no subMenuIcon) stays always visible.
+          className={
+            subMenuIcon
+              ? "opacity-0 group-hover:opacity-100 focus-within:opacity-100 has-[[data-state=open]]:opacity-100"
+              : undefined
+          }
+        >
           <DropdownMenu
             trigger={
               <IconButton

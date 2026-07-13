@@ -1,5 +1,6 @@
 import { memo, useLayoutEffect, useRef } from "react";
 import { ReactSVG } from "react-svg";
+import { cn } from "../../../shared/utils";
 import { useImages } from "../../providers/ImagesProvider";
 import { useTheme } from "../../providers/ThemeProvider";
 
@@ -14,6 +15,16 @@ type IconProps = {
   className?: string;
 };
 
+const SHAPE_SELECTOR = "path, circle, rect, line, polygon, polyline, ellipse";
+
+const isPaintSet = (value: string | null) =>
+  value !== null && value !== "" && value !== "none";
+
+// Recolor each shape by the paint method it already declares: an element
+// with an explicit `stroke` gets its stroke recolored, one with an explicit
+// `fill` gets its fill recolored, and one declaring both gets both. This
+// keeps mixed icons (e.g. stroked outline + filled detail) consistent. When
+// a shape declares neither, we fall back to the caller's `isStroke` hint.
 const applySvgColor = (
   svg: SVGSVGElement,
   isStroke: boolean | undefined,
@@ -21,12 +32,17 @@ const applySvgColor = (
   noColor: boolean | undefined
 ) => {
   if (noColor) return;
-  const fillColor = color || "var(--icon-button-color)";
-  const attr = isStroke ? "stroke" : "fill";
-  svg.querySelectorAll("path").forEach((p) => p.setAttribute(attr, fillColor));
-  svg
-    .querySelectorAll("circle")
-    .forEach((c) => c.setAttribute(attr, fillColor));
+  const paintColor = color || "var(--icon-button-color)";
+  svg.querySelectorAll(SHAPE_SELECTOR).forEach((el) => {
+    const hasStroke = isPaintSet(el.getAttribute("stroke"));
+    const hasFill = isPaintSet(el.getAttribute("fill"));
+    if (!hasStroke && !hasFill) {
+      el.setAttribute(isStroke ? "stroke" : "fill", paintColor);
+      return;
+    }
+    if (hasStroke) el.setAttribute("stroke", paintColor);
+    if (hasFill) el.setAttribute("fill", paintColor);
+  });
 };
 
 const IconComponent = ({
@@ -42,7 +58,8 @@ const IconComponent = ({
   const w = width ?? size;
   const h = height ?? size;
   const { themeType, scale } = useTheme();
-  const { getImageSrc, getIconComponent, getBundledIcon } = useImages();
+  const { getImageSrc, getIconComponent, getBundledIcon, iconFormat } =
+    useImages();
   const CustomIcon = getIconComponent(name);
   const BundledIcon = CustomIcon ? null : getBundledIcon(name);
   const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -59,14 +76,35 @@ const IconComponent = ({
   });
 
   if (CustomIcon) {
-    return <CustomIcon size={w ?? h} className={className} />;
+    return (
+      <CustomIcon size={w ?? h} className={cn("select-none", className)} />
+    );
   }
 
-  if (BundledIcon) {
+  const image = getImageSrc(name, themeType, scale);
+  const preferRaster = iconFormat === "png";
+
+  // A raster only renders crisply up to the density it was authored for;
+  // bundled PNGs top out at @2x. `image.scale` is the matched raster's density
+  // (absent for host-provided overrides, which we trust at any scale). When
+  // the requested `scale` exceeds it, an upscaled bitmap would look soft.
+  const rasterCoversScale =
+    image !== null &&
+    !image.isSvg &&
+    (image.scale === undefined || image.scale >= scale);
+
+  // Default (`iconFormat: "svg"`): the bundled SVG component wins whenever it
+  // exists, so `getImageSrc` (host URL override / bundled PNG) is only reached
+  // when no SVG matches. Raster mode (`iconFormat: "png"`): a scale-appropriate
+  // PNG takes priority, but the bundled SVG is used as a fallback both for
+  // names that ship no raster variant AND when the requested scale exceeds the
+  // densest bundled PNG — the vector stays crisp where an upscaled bitmap
+  // would blur. Host component overrides (`CustomIcon`) always win over both.
+  if (BundledIcon && !(preferRaster && rasterCoversScale)) {
     return (
       <span
         ref={wrapperRef}
-        className={`flex items-center justify-center ${className || ""}`}
+        className={cn("select-none flex items-center justify-center", className)}
         style={{ width: w, height: h }}
       >
         <BundledIcon width={w} height={h} />
@@ -74,7 +112,6 @@ const IconComponent = ({
     );
   }
 
-  const image = getImageSrc(name, themeType, scale);
   if (!image) {
     return null;
   }
@@ -86,7 +123,7 @@ const IconComponent = ({
     return (
       <ReactSVG
         src={image.src}
-        className={`flex items-center justify-center ${className || ""}`}
+        className={cn("select-none flex items-center justify-center", className)}
         beforeInjection={(svg) => applySvgColor(svg, isStroke, color, noColor)}
         style={{ width: w, height: h }}
       />
@@ -97,7 +134,8 @@ const IconComponent = ({
     <img
       src={image.src}
       alt={name}
-      className={className}
+      draggable={false}
+      className={cn("select-none", className)}
       style={{ width: w, height: h }}
     />
   );

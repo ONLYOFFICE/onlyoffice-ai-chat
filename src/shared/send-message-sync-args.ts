@@ -12,5 +12,13 @@ export type SendMessageSyncArgs = {
    * don't implement a Responses transport.
    */
   useResponsesApi?: boolean;
+  /**
+   * Enable the model's extended-thinking / reasoning mode for this one-shot
+   * call. Mirrors {@link SendMessageArgs.withReasoning} on the streaming
+   * path. Defaults to off; providers that don't implement reasoning (or
+   * models that don't support it) ignore the flag. Actions wire this from
+   * `actionArgs.isReasoning`.
+   */
+  withReasoning?: boolean;
   signal?: AbortSignal;
 };
