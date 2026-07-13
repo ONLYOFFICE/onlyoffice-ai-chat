@@ -57,7 +57,7 @@ export interface WidgetConfig {
    */
   hideChatHistoryHeader?: boolean;
   /**
-   * Show each chat-history thread's actions trigger ("⋯") permanently instead
+   * Show each chat-history thread's actions trigger permanently instead
    * of only revealing it on hover. Useful on touch devices or when the menu
    * should always be discoverable.
    */

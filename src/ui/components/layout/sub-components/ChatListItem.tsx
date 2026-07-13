@@ -22,7 +22,7 @@ type ChatListItemProps = {
   showClearHistory?: boolean;
   setCurrentPage: (page: Page) => void;
   /**
-   * Show the actions trigger ("⋯") permanently instead of only on hover.
+   * Show the actions trigger permanently instead of only on hover.
    * Useful on touch devices or hosts that want the menu always discoverable.
    */
   alwaysShowActions?: boolean;

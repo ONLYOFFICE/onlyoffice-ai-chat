@@ -24,7 +24,7 @@ type ChatListProps = {
    */
   className?: string;
   /**
-   * Show each thread's actions trigger ("⋯") permanently instead of only on
+   * Show each thread's actions trigger permanently instead of only on
    * hover. When provided, this overrides the `chatHistoryAlwaysShowActions`
    * widget config.
    */

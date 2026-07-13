@@ -138,7 +138,7 @@ export interface AIChatWidgetProps {
    */
   hideChatHistoryHeader?: boolean;
   /**
-   * Show each chat-history thread's actions trigger ("⋯") permanently instead
+   * Show each chat-history thread's actions trigger permanently instead
    * of only on hover. See {@link WidgetConfig.chatHistoryAlwaysShowActions}.
    */
   chatHistoryAlwaysShowActions?: boolean;
