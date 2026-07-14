@@ -53,7 +53,7 @@ export interface ComponentOverrides {
   DialogContent?: React.ComponentType<DialogContentProps>;
   /** Dialog backdrop overlay. */
   DialogOverlay?: React.ComponentType<DialogOverlayProps>;
-  /** Dialog footer with action buttons. */
+  /** Dialog footer with secondary (cancel) and primary (submit) buttons. */
   DialogFooter?: React.ComponentType<DialogFooterProps>;
   /** Dropdown menu container. */
   DropdownMenu?: React.ComponentType<DropdownMenuProps>;

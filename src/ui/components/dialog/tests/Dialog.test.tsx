@@ -138,27 +138,62 @@ describe("DialogDescription", () => {
 });
 
 describe("DialogFooter", () => {
-  it("renders children", () => {
-    render(
-      <DialogFooter>
-        <button>OK</button>
-        <button>Cancel</button>
-      </DialogFooter>
-    );
-    expect(screen.getByText("OK")).toBeInTheDocument();
+  it("renders the cancel and submit labels", () => {
+    render(<DialogFooter cancelLabel="Cancel" submitLabel="Save" />);
     expect(screen.getByText("Cancel")).toBeInTheDocument();
+    expect(screen.getByText("Save")).toBeInTheDocument();
   });
 
-  it("has data-slot attribute", () => {
-    const { container } = render(
-      <DialogFooter>
-        <button>OK</button>
-      </DialogFooter>
+  it("calls onCancel and onSubmit when the buttons are clicked", () => {
+    const onCancel = vi.fn();
+    const onSubmit = vi.fn();
+    render(
+      <DialogFooter
+        cancelLabel="Cancel"
+        onCancel={onCancel}
+        submitLabel="Save"
+        onSubmit={onSubmit}
+      />
     );
-    expect(container.firstElementChild).toHaveAttribute(
-      "data-slot",
-      "dialog-footer"
+    fireEvent.click(screen.getByText("Cancel"));
+    fireEvent.click(screen.getByText("Save"));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables only the submit button via submitDisabled", () => {
+    render(
+      <DialogFooter cancelLabel="Cancel" submitLabel="Save" submitDisabled />
     );
+    expect(screen.getByText("Save")).toBeDisabled();
+    expect(screen.getByText("Cancel")).not.toBeDisabled();
+  });
+
+  it("disables only the cancel button via cancelDisabled", () => {
+    render(
+      <DialogFooter cancelLabel="Cancel" submitLabel="Save" cancelDisabled />
+    );
+    expect(screen.getByText("Cancel")).toBeDisabled();
+    expect(screen.getByText("Save")).not.toBeDisabled();
+  });
+
+  it("disables the submit button while submitLoading", () => {
+    render(
+      <DialogFooter cancelLabel="Cancel" submitLabel="Save" submitLoading />
+    );
+    expect(screen.getByText("Save").closest("button")).toBeDisabled();
+  });
+
+  it("defaults both buttons to type=button and honors overrides", () => {
+    render(
+      <DialogFooter
+        cancelLabel="Cancel"
+        submitLabel="Save"
+        submitType="submit"
+      />
+    );
+    expect(screen.getByText("Cancel")).toHaveAttribute("type", "button");
+    expect(screen.getByText("Save")).toHaveAttribute("type", "submit");
   });
 });
 

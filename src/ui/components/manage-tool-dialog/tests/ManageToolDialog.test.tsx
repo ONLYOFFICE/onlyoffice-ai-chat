@@ -67,14 +67,29 @@ vi.mock("../../dialog", () => ({
     </div>
   ),
   DialogFooter: ({
-    children,
-    ...props
+    cancelLabel,
+    onCancel,
+    submitLabel,
+    onSubmit,
+    submitDisabled,
+    submitLoading,
+    cancelDisabled,
   }: {
-    children?: React.ReactNode;
-    className?: string;
+    cancelLabel: string;
+    onCancel?: () => void;
+    submitLabel: string;
+    onSubmit?: () => void;
+    submitDisabled?: boolean;
+    submitLoading?: boolean;
+    cancelDisabled?: boolean;
   }) => (
-    <div data-testid="dialog-footer" {...props}>
-      {children}
+    <div data-testid="dialog-footer">
+      <button onClick={onCancel} disabled={cancelDisabled}>
+        {cancelLabel}
+      </button>
+      <button onClick={onSubmit} disabled={submitDisabled || submitLoading}>
+        {submitLabel}
+      </button>
     </div>
   ),
 }));

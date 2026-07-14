@@ -25,8 +25,8 @@ type NewFolderDialogProps = {
 };
 
 const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
-  const { Button, DialogContent, Input } = useComponents();
-  const { t, isRTL } = useI18n();
+  const { DialogContent, Input, DialogFooter } = useComponents();
+  const { t } = useI18n();
   const { usePromptsStore } = useStores();
   const addFolder = usePromptsStore((s) => s.addFolder);
   const addPrompt = usePromptsStore((s) => s.addPrompt);
@@ -65,28 +65,15 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
               autoFocus
             />
           </div>
-          <div
-            className={cn(
-              "flex items-center gap-[8px] h-[64px] mx-[-24px] px-[24px]",
-              isRTL ? "flex-row-reverse justify-end" : "flex-row justify-end"
-            )}
-          >
-            <Button
-              type="button"
-              variant="default"
-              onClick={onClose}
-              className="h-[36px]"
-            >
-              {t("Cancel")}
-            </Button>
-            <Button
-              type="submit"
-              disabled={!folderName.trim()}
-              className="h-[36px]"
-            >
-              {t("Save")}
-            </Button>
-          </div>
+          <DialogFooter
+            className="h-[64px] mx-[-24px] px-[24px]"
+            cancelLabel={t("Cancel")}
+            onCancel={onClose}
+            submitLabel={t("Save")}
+            submitType="submit"
+            submitDisabled={!folderName.trim()}
+            buttonClassName="h-[36px]"
+          />
         </form>
       </DialogContent>
     </Dialog>

@@ -17,7 +17,7 @@ const ManageToolDialog = ({
   onDeny,
   onClose,
 }: ManageToolDialogProps) => {
-  const { Button, Checkbox, DialogContent } = useComponents();
+  const { Checkbox, DialogContent, DialogFooter } = useComponents();
   const { t } = useI18n();
   const { hideToolAllowAlways } = useWidgetConfig();
   const { useServersStore } = useStores();
@@ -127,18 +127,15 @@ const ManageToolDialog = ({
             </p>
           )}
         </div>
-        <div className="flex flex-row justify-end items-center gap-[8px] h-[64px] border-t-[1px] border-[var(--border-divider)] mx-[-32px] px-[32px]">
-          <Button
-            variant="default"
-            onClick={onDenyAction}
-            disabled={isApprovingTool}
-          >
-            {t("Deny")}
-          </Button>
-          <Button onClick={onAllowAction} isLoading={isApprovingTool}>
-            {t("Allow")}
-          </Button>
-        </div>
+        <DialogFooter
+          className="h-[64px] border-t-[1px] border-[var(--border-divider)] mx-[-32px] px-[32px]"
+          cancelLabel={t("Deny")}
+          onCancel={onDenyAction}
+          cancelDisabled={isApprovingTool}
+          submitLabel={t("Allow")}
+          onSubmit={onAllowAction}
+          submitLoading={isApprovingTool}
+        />
       </DialogContent>
     </Dialog>
   );

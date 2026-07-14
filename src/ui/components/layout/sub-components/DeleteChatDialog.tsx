@@ -10,10 +10,10 @@ type DeleteChatDialogProps = {
 };
 
 const DeleteChatDialog = ({ id, onClose }: DeleteChatDialogProps) => {
-  const { Button, DialogContent } = useComponents();
+  const { DialogContent, DialogFooter } = useComponents();
   const { useThreadsStore } = useStores();
   const onDeleteThread = useThreadsStore((s) => s.onDeleteThread);
-  const { t, isRTL } = useI18n();
+  const { t } = useI18n();
 
   const onSubmitAction = React.useCallback(async () => {
     await onDeleteThread(id);
@@ -43,18 +43,13 @@ const DeleteChatDialog = ({ id, onClose }: DeleteChatDialogProps) => {
           <p className="select-none h-[40px] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
             {t("WantDeleteChat")}
           </p>
-          <div
-            className={
-              isRTL
-                ? "flex flex-row-reverse justify-end items-center gap-[8px] h-[48px]"
-                : "flex flex-row justify-end items-center gap-[8px] h-[48px]"
-            }
-          >
-            <Button variant="default" onClick={onClose}>
-              {t("No")}
-            </Button>
-            <Button onClick={onSubmitAction}>{t("Yes")}</Button>
-          </div>
+          <DialogFooter
+            className="h-[48px]"
+            cancelLabel={t("No")}
+            onCancel={onClose}
+            submitLabel={t("Yes")}
+            onSubmit={onSubmitAction}
+          />
         </div>
       </DialogContent>
     </Dialog>
