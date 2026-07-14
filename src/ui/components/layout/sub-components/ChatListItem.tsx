@@ -21,11 +21,18 @@ type ChatListItemProps = {
   onClearThreadHistory: (threadId: string) => void;
   showClearHistory?: boolean;
   setCurrentPage: (page: Page) => void;
+  /**
+   * Show the actions trigger permanently instead of only on hover.
+   * Useful on touch devices or hosts that want the menu always discoverable.
+   */
+  alwaysShowActions?: boolean;
 };
 
 const DownloadIcon = () => <Icon name="btn-save" size={24} isStroke />;
 const RenameIcon = () => <Icon name="btn-rename" size={24} />;
 const RemoveIcon = () => <Icon name="btn-remove" size={24} />;
+const OpenIcon = () => <Icon name="btn-open" size={24} />;
+const ClearHistoryIcon = () => <Icon name="btn-clear" size={24} />;
 
 const activeThreadMarker =
   "relative before:content-[''] before:absolute before:start-0 before:w-[2px] before:h-full before:bg-[var(--chat-list-item-active-marker-bg)] hover:before:hidden";
@@ -41,6 +48,7 @@ const ChatListItemComponent = ({
   onClearThreadHistory,
   showClearHistory = false,
   setCurrentPage,
+  alwaysShowActions,
 }: ChatListItemProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
@@ -151,6 +159,7 @@ const ChatListItemComponent = ({
   // apart from the neutral Open/Export/Rename group.
   const menuItems: DropDownItemProps[] = [
     {
+      icon: <OpenIcon />,
       text: t("Open"),
       onClick: onOpenClick,
     },
@@ -165,6 +174,7 @@ const ChatListItemComponent = ({
           deleteItem,
           separatorItem,
           {
+            icon: <ClearHistoryIcon />,
             text: t("ClearHistory"),
             onClick: onClearHistoryClick,
           },
@@ -210,10 +220,10 @@ const ChatListItemComponent = ({
         />
       ) : (
         <>
-          <p className="select-none text-[var(--chat-list-item-color)] font-normal truncate">
+          <p className="select-none text-[length:var(--chat-list-item-font-size,var(--fs-12))] text-[var(--chat-list-item-color)] [font-weight:var(--chat-list-item-font-weight,400)] truncate">
             {thread.title}
           </p>
-          {isHovered && !isRenameInputVisible ? (
+          {(alwaysShowActions || isHovered) && !isRenameInputVisible ? (
             <DropdownMenu
               open={isOpen}
               onOpenChange={setIsOpen}

@@ -335,6 +335,52 @@ describe("DropDownItem", () => {
         "pe-[var(--dropdown-item-padding-end-combobox,8px)]"
       );
     });
+
+    // An element icon can render to null. The row keeps its icon-row padding,
+    // and a CSS `.dd-leading:empty + &` variant on the label reserves the icon
+    // column so the label stays aligned with icon rows when the slot is empty.
+    // jsdom evaluates neither `:empty` nor layout, so we assert the wiring (the
+    // reservation variant sits on the label, the icon in the `.dd-leading`
+    // slot, and the row keeps icon-row start padding) rather than the layout.
+    it("reserves the icon column on the label for an element icon", () => {
+      renderInDropdownContext(
+        <DropDownItem
+          text="Elem"
+          icon={<span data-testid="custom-icon">X</span>}
+          onClick={vi.fn()}
+        />
+      );
+      const item = screen.getByRole("menuitem");
+      // Row keeps icon-row start padding (no fallback to text padding).
+      expect(item.className).toContain(
+        "ps-[var(--dropdown-item-padding-start-icon,4px)]"
+      );
+      // The label carries the empty-slot column reservation.
+      expect(screen.getByText("Elem").className).toContain(
+        "[.dd-leading:empty+&]:ms-[28px]"
+      );
+      expect(
+        item.querySelector(".dd-leading")?.contains(
+          screen.getByTestId("custom-icon")
+        )
+      ).toBe(true);
+    });
+
+    it("does not reserve the column on the label for a string icon", () => {
+      renderInDropdownContext(
+        <DropDownItem text="Str" icon="copy" onClick={vi.fn()} />
+      );
+      expect(screen.getByText("Str").className).not.toContain(
+        "dd-leading:empty"
+      );
+    });
+
+    it("does not reserve the column on the label for a plain text row", () => {
+      renderInDropdownContext(<DropDownItem text="Plain" onClick={vi.fn()} />);
+      expect(screen.getByText("Plain").className).not.toContain(
+        "dd-leading:empty"
+      );
+    });
   });
 
   it("wraps in tooltip when tooltipText is provided", () => {

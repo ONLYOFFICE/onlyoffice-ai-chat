@@ -38,7 +38,7 @@ const ComposerActionAttachment = () => {
   const toggleExtendedThinking = useProfilesStore(
     (s) => s.toggleExtendedThinking
   );
-  const { composerActions } = useWidgetConfig();
+  const { composerActions, addLocalImageEnabled } = useWidgetConfig();
 
   const onOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -127,7 +127,8 @@ const ComposerActionAttachment = () => {
       <IconButton
         iconName="btn-attach.small"
         size={20}
-        className="cursor-pointer rounded-[4px] outline-none"
+        isStroke
+        className="cursor-pointer rounded-[4px] outline-none text-[var(--attachment-button-color,var(--icon-button-color))] hover:enabled:text-[var(--attachment-button-hover-color,var(--text-normal))]"
         isActive={isOpen}
         data-testid="attachment-button"
       />
@@ -142,12 +143,12 @@ const ComposerActionAttachment = () => {
     items.push({ text: t("AddLocalFile"), onClick: () => selectLocalFile() });
   }
 
-  // "Add local image" rides on the HTML <input>, not on `platform.file`,
-  // so it is always available.
-  items.push({
-    text: t("AddLocalImage"),
-    onClick: () => imageInputRef.current?.click(),
-  });
+  if (addLocalImageEnabled) {
+    items.push({
+      text: t("AddLocalImage"),
+      onClick: () => imageInputRef.current?.click(),
+    });
+  }
 
   if (platform.file?.getRecentFiles && recentFiles.length > 0) {
     items.push({
@@ -238,18 +239,20 @@ const ComposerActionAttachment = () => {
         Array.from(files)
           .filter((file) => file.size > 0)
           .map(
-          (file) =>
-            new Promise<{ name: string; base64: string } | null>((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (event) =>
-                resolve({
-                  name: file.name,
-                  base64: event.target?.result as string,
-                });
-              reader.onerror = () => resolve(null);
-              reader.readAsDataURL(file);
-            })
-        )
+            (file) =>
+              new Promise<{ name: string; base64: string } | null>(
+                (resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = (event) =>
+                    resolve({
+                      name: file.name,
+                      base64: event.target?.result as string,
+                    });
+                  reader.onerror = () => resolve(null);
+                  reader.readAsDataURL(file);
+                }
+              )
+          )
       )
     ).filter((x) => x !== null);
 

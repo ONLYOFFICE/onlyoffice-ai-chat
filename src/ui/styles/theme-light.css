@@ -76,6 +76,23 @@
   --chat-list-empty-color: var(--text-tertiary);
   --chat-list-group-header-color: var(--text-tertiary);
 
+  /* chat list font sizes — override hooks only. Left unset (`initial`) so they
+     do NOT shadow the cascade: the effective default is the `--fs-*` fallback
+     baked into the component utilities, which resolves inside `.aui-root` where
+     the `--fs-*` scale is defined. The theme class sits ABOVE `.aui-root`, so a
+     real value here (or via `customTheme`) inherits down cleanly and wins.
+     Declared here purely so they surface in ThemeTokens / `customTheme`. */
+  --chat-list-title-font-size: initial;
+  --chat-list-group-header-font-size: initial;
+  --chat-list-item-font-size: initial;
+
+  /* chat list font weights — override hooks only (same `initial` rationale as
+     the font sizes above). The effective defaults (bold title, normal group
+     headers and items) are baked into the component utilities as fallbacks. */
+  --chat-list-title-font-weight: initial;
+  --chat-list-group-header-font-weight: initial;
+  --chat-list-item-font-weight: initial;
+
   /* chat list item */
   --chat-list-item-color: var(--text-normal);
   --chat-list-item-hover-background-color: var(--highlight-button-hover);
@@ -127,6 +144,7 @@
   --input-active-border-color: var(--background-accent-button);
   --input-active-background-color: var(--background-normal);
   --input-error-color: var(--border-error);
+  --combo-box-height: 24px;
 
   /* tabs */
   --tabs-border-width: 1px;

@@ -222,9 +222,20 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
   return (
     <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onClick}>
       {copied ? (
-        <IconButton iconName="checked" size={20} isStroke color="var(--icon-gray-secondary)" disabled />
+        <IconButton
+          iconName="checked"
+          size={20}
+          isStroke
+          color="var(--icon-gray-secondary)"
+          disabled
+        />
       ) : (
-        <IconButton iconName="btn-copy" size={20} isStroke color="var(--icon-gray-secondary)" />
+        <IconButton
+          iconName="btn-copy"
+          size={20}
+          isStroke
+          color="var(--icon-gray-secondary)"
+        />
       )}
     </TooltipIconButton>
   );
@@ -265,7 +276,7 @@ const AssistantActionBar = () => {
   return (
     <ActionBarPrimitive.Root
       hidden={isStreamRunning}
-      className="col-start-3 row-start-2 mt-[4px] flex gap-[2px]"
+      className="col-start-3 row-start-2 mt-[4px] flex gap-[var(--chat-message-actions-gap,2px)]"
     >
       {platform.copyToClipboard ? (
         <PlatformCopyButton text={getMessageText(message)} />
@@ -273,17 +284,33 @@ const AssistantActionBar = () => {
         <ActionBarPrimitive.Copy asChild>
           <TooltipIconButton tooltip={t("CopyToClipboard")}>
             <MessagePrimitive.If copied>
-              <IconButton iconName="checked" size={20} isStroke color="var(--icon-gray-secondary)" disabled />
+              <IconButton
+                iconName="checked"
+                size={20}
+                isStroke
+                color="var(--icon-gray-secondary)"
+                disabled
+              />
             </MessagePrimitive.If>
             <MessagePrimitive.If copied={false}>
-              <IconButton iconName="btn-copy" size={20} isStroke color="var(--icon-gray-secondary)" />
+              <IconButton
+                iconName="btn-copy"
+                size={20}
+                isStroke
+                color="var(--icon-gray-secondary)"
+              />
             </MessagePrimitive.If>
           </TooltipIconButton>
         </ActionBarPrimitive.Copy>
       )}
       <ActionBarPrimitive.Reload asChild>
         <TooltipIconButton tooltip={t("Regenerate")}>
-          <IconButton iconName="btn-reset" size={20} isStroke color="var(--icon-gray-secondary)" />
+          <IconButton
+            iconName="btn-reset"
+            size={20}
+            isStroke
+            color="var(--icon-gray-secondary)"
+          />
         </TooltipIconButton>
       </ActionBarPrimitive.Reload>
       {platform.file?.saveAsFile && (

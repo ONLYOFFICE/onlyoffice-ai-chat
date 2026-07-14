@@ -5,6 +5,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { FileItem } from "../../../components/file-item";
 import { useStores } from "../../../store/context";
 import { useComposerBridge } from "../../../providers/ImperativeProvider";
+import { useWidgetConfig } from "../../../../widget-config";
 import { ComposerAction } from "./ComposerAction";
 
 const Composer = () => {
@@ -19,6 +20,7 @@ const Composer = () => {
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const { t } = useI18n();
+  const { composerPlaceholder, composerDisabled } = useWidgetConfig();
   const composerRuntime = useComposerRuntime();
   const composerBridge = useComposerBridge();
   const rootRef = useRef<HTMLFormElement>(null);
@@ -28,6 +30,7 @@ const Composer = () => {
   // on a real control (buttons, the model selector, the input itself) are left
   // alone so they keep their own behavior.
   const focusInputOnClick = (e: ReactMouseEvent<HTMLFormElement>) => {
+    if (composerDisabled) return;
     const target = e.target as HTMLElement;
     if (
       target.closest(
@@ -57,7 +60,13 @@ const Composer = () => {
       <ComposerPrimitive.Root
         ref={rootRef}
         onClick={focusInputOnClick}
-        className="composer-root relative flex w-full cursor-text flex-col gap-[6px] rounded-[4px] border px-[8px] pt-[10px] pb-[6px] box-border"
+        inert={composerDisabled}
+        aria-disabled={composerDisabled || undefined}
+        className={`composer-root relative flex w-full flex-col gap-[6px] rounded-[4px] border px-[8px] pt-[10px] pb-[6px] box-border ${
+          composerDisabled
+            ? "composer-disabled pointer-events-none cursor-not-allowed opacity-60"
+            : "cursor-text"
+        }`}
       >
         {attachmentFiles.length || attachmentImages.length ? (
           <div className="flex flex-row gap-[8px] overflow-x-auto">
@@ -71,12 +80,12 @@ const Composer = () => {
         ) : null}
 
         <ComposerPrimitive.Input
-          placeholder={t("AskAnything")}
-          className="composer-input max-h-[calc(50vh)] min-h-[20px] w-full resize-none outline-none select-text px-[4px]"
+          placeholder={composerPlaceholder ?? t("AskAnything")}
+          className="composer-input max-h-[calc(50vh)] min-h-[var(--chat-input-min-height,20px)] w-full resize-none outline-none select-text px-[4px]"
           rows={1}
           autoFocus
           aria-label="Message input"
-          disabled={!currentProfile}
+          disabled={!currentProfile || composerDisabled}
           data-testid="composer-input"
           onKeyDown={(e) => {
             if (isStreamRunning && e.key === "Enter" && !e.shiftKey) {

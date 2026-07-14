@@ -27,11 +27,23 @@ const IconButtonComponent = ({
     ? "active:enabled:bg-[var(--icon-button-pressed-background-color)]"
     : undefined;
 
-  const baseStyles = "border-none cursor-pointer rounded-[4px] bg-none p-0 m-0";
+  const baseStyles =
+    "icon-button border-none cursor-pointer rounded-[4px] border-none bg-none bg-transparent p-0 m-0 text-[var(--icon-button-color)]";
   const layoutStyles = "flex items-center justify-center";
   const disabledStyles = "disabled:cursor-not-allowed disabled:opacity-[0.5]";
   const focusStyles =
     "outline-none focus:outline-none focus-visible:outline-none";
+
+  // Recolor the icon from the button's text color (currentColor), so `text-*`
+  // and hover utilities passed via `className` drive it. Skipped when the
+  // caller pins an explicit `color` (e.g. the composer send/stop button) or
+  // opts out with `noColor` (self-colored icons) — those keep the color that
+  // `Icon`/`applySvgColor` applies directly and must not be forced to
+  // currentColor.
+  const iconColorStyles =
+    color || noColor
+      ? undefined
+      : "[&_svg_path]:fill-current [&_svg_path[stroke]]:fill-none [&_svg_path[stroke]]:stroke-current";
 
   return (
     <button
@@ -42,6 +54,7 @@ const IconButtonComponent = ({
         activeStyles,
         disabledStyles,
         focusStyles,
+        iconColorStyles,
         className
       )}
       style={{

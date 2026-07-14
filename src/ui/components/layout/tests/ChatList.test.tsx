@@ -52,6 +52,8 @@ vi.mock("../../../providers/PlatformProvider/context", () => ({
 
 let mockWidgetConfig: {
   chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
+  hideChatHistoryHeader?: boolean;
+  chatHistoryAlwaysShowActions?: boolean;
 } = {};
 
 vi.mock("../../../../widget-config", () => ({
@@ -97,14 +99,17 @@ vi.mock("../sub-components/ChatListItem", () => ({
     thread,
     isActive,
     onSwitchToThread,
+    alwaysShowActions,
   }: {
     thread: { threadId: string; title: string };
     isActive: boolean;
     onSwitchToThread: (id: string) => void;
+    alwaysShowActions?: boolean;
   }) => (
     <div
       data-testid={`chat-item-${thread.threadId}`}
       data-active={isActive}
+      data-always-actions={alwaysShowActions ? "true" : "false"}
       onClick={() => onSwitchToThread(thread.threadId)}
     >
       {thread.title}
@@ -173,6 +178,56 @@ describe("ChatList", () => {
     expect(screen.queryByTestId("icon-btn-btn-close")).not.toBeInTheDocument();
     fireEvent.click(dismiss);
     expect(mockSetCurrentPage).toHaveBeenCalledWith("chat");
+  });
+
+  it("hides the header (title + close button) when hideChatHistoryHeader is true", () => {
+    mockWidgetConfig = { hideChatHistoryHeader: true };
+    render(<ChatList />);
+    expect(screen.queryByText("ChatHistory")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-btn-close")).not.toBeInTheDocument();
+    // Search and thread list stay visible.
+    expect(screen.getByTestId("search-input")).toBeInTheDocument();
+    expect(screen.getByTestId("chat-item-t1")).toBeInTheDocument();
+  });
+
+  it("hides the header when the hideHeader prop is true (no config needed)", () => {
+    render(<ChatList hideHeader />);
+    expect(screen.queryByText("ChatHistory")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-btn-close")).not.toBeInTheDocument();
+    expect(screen.getByTestId("search-input")).toBeInTheDocument();
+  });
+
+  it("hideHeader prop overrides the hideChatHistoryHeader config", () => {
+    mockWidgetConfig = { hideChatHistoryHeader: true };
+    render(<ChatList hideHeader={false} />);
+    // Prop wins: header is shown even though config asks to hide it.
+    expect(screen.getByText("ChatHistory")).toBeInTheDocument();
+    expect(screen.getByTestId("icon-btn-btn-close")).toBeInTheDocument();
+  });
+
+  it("merges the className prop onto the root container", () => {
+    const { container } = render(<ChatList className="custom-list-xyz" />);
+    expect(container.firstChild).toHaveClass("custom-list-xyz");
+    // Built-in layout classes are kept.
+    expect(container.firstChild).toHaveClass("flex");
+  });
+
+  it("passes chatHistoryAlwaysShowActions config down to items", () => {
+    mockWidgetConfig = { chatHistoryAlwaysShowActions: true };
+    render(<ChatList />);
+    expect(screen.getByTestId("chat-item-t1")).toHaveAttribute(
+      "data-always-actions",
+      "true"
+    );
+  });
+
+  it("alwaysShowActions prop overrides the config", () => {
+    mockWidgetConfig = { chatHistoryAlwaysShowActions: true };
+    render(<ChatList alwaysShowActions={false} />);
+    expect(screen.getByTestId("chat-item-t1")).toHaveAttribute(
+      "data-always-actions",
+      "false"
+    );
   });
 
   it("clicking a thread item switches to thread and navigates to chat", () => {

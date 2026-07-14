@@ -217,6 +217,15 @@ const DropDownItem = ({
   const hasLeadingIcon = Boolean(icon) || Boolean(withSpace);
   const isCombobox = variant === "combobox";
 
+  // A string icon maps to an always-rendering IconButton, but an element icon
+  // can itself render to null — and there's no way to know that before React
+  // renders it. So for element icons we let CSS correct the row: when the
+  // leading slot ends up empty the row falls back to text-row indentation
+  // (see the `:has(.dd-leading:empty)` variants below). `withSpace`
+  // deliberately reserves the icon column with no icon, so it must keep the
+  // icon indentation — hence gating on an element icon, not on the empty slot.
+  const isElementIcon = Boolean(icon) && typeof icon !== "string";
+
   // Classify each edge into a row "kind", then look up its padding class.
   // Start: icon rows indent less than plain text rows. End: a trailing control
   // tightens the edge; otherwise it mirrors the start (icon vs text). Combobox
@@ -252,16 +261,22 @@ const DropDownItem = ({
       dir={isRTL ? "rtl" : "ltr"}
     >
       <div className={cn("flex items-center gap-[4px] min-w-0 flex-1")}>
-        {icon && typeof icon === "string" ? (
-          <IconButton iconName={icon} size={iconSize} disableHover />
-        ) : (
-          (icon ?? null)
-        )}
+        {/* `display: contents` so the icon stays a direct flex child (gap
+            intact); when the icon renders null the wrapper has no children,
+            so it produces no box (no stray gap) and matches `:empty`. */}
+        <span className="dd-leading contents">
+          {icon && typeof icon === "string" ? (
+            <IconButton iconName={icon} size={iconSize} disableHover />
+          ) : (
+            (icon ?? null)
+          )}
+        </span>
         <span
           dir="auto"
           className={cn(
             "truncate font-normal text-[var(--drop-down-menu-item-color)]",
             withSpace ? "ms-[28px]" : "",
+            isElementIcon ? "[.dd-leading:empty+&]:ms-[28px]" : "",
             trailingIcon ? "flex-1" : ""
           )}
         >

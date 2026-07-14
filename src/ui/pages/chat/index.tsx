@@ -22,6 +22,7 @@ import { ManageToolDialog } from "../../components/manage-tool-dialog";
 import { Icon } from "../../components/icon";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
 import { Composer } from "./sub-components/Composer";
+import { ComposerHeader } from "./sub-components/ComposerHeader";
 import { Suggestions } from "./sub-components/Suggestions";
 import { SuggestionsHeader } from "./sub-components/SuggestionsHeader";
 import { UserMessage } from "./sub-components/UserMessage";
@@ -90,14 +91,17 @@ const ThreadInner = () => {
       <ThreadPrimitive.Root
         className="flex h-full flex-col bg-[var(--layout-background-color)]"
         style={{
-          ["--thread-max-width" as string]: "687px",
-          ["--thread-padding-x" as string]: "1rem",
+          ["--thread-max-width" as string]:
+            "var(--chat-thread-max-width, 687px)",
+          ["--thread-padding-x" as string]:
+            "var(--chat-thread-padding-x, 1rem)",
         }}
       >
         <ThreadPrimitive.If empty>
           <SuggestionsHeader />
           <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col overflow-y-auto" />
           <Suggestions />
+          <ComposerHeader />
           <Composer />
         </ThreadPrimitive.If>
 
@@ -168,6 +172,7 @@ const ThreadInner = () => {
             ) : null}
           </div>
 
+          <ComposerHeader />
           <Composer />
         </ThreadPrimitive.If>
       </ThreadPrimitive.Root>

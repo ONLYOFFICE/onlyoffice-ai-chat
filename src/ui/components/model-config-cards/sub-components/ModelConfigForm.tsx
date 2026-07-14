@@ -253,7 +253,7 @@ export const ModelConfigForm = ({
         }
       >
         <ComboBox
-          className="w-full h-[24px]"
+          className="w-full"
           placeholder={t("SelectProvider")}
           value={selectedProviderText}
           items={providerItems}
@@ -283,7 +283,7 @@ export const ModelConfigForm = ({
           <Input
             name="key"
             placeholder={t("EnterKey")}
-            className="w-full h-[24px]"
+            className="w-full"
             type="password"
             disabled={isFieldsDisabled}
             onChange={(e) => onChange("apiKey", e.target.value)}
@@ -302,7 +302,7 @@ export const ModelConfigForm = ({
           <Input
             name="url"
             placeholder={t("EnterURL")}
-            className="w-full h-[24px]"
+            className="w-full"
             disabled={isFieldsDisabled}
             onChange={(e) => onChange("baseUrl", e.target.value)}
             value={values.baseUrl}
@@ -316,7 +316,7 @@ export const ModelConfigForm = ({
         isHorizontal={isHorizontal}
       >
         <ComboBox
-          className="w-full h-[24px]"
+          className="w-full"
           placeholder={t("SelectModel")}
           value={models.find((m) => m.id === values.model)?.name}
           // Locked (but still showing the current selection) while the
@@ -341,7 +341,7 @@ export const ModelConfigForm = ({
         <Input
           name="name"
           placeholder={t("EnterName")}
-          className="w-full h-[24px]"
+          className="w-full"
           disabled={isFieldsDisabled}
           onChange={(e) => onChange("profileName", e.target.value)}
           value={values.profileName}

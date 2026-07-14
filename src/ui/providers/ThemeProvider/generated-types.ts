@@ -55,10 +55,16 @@ export interface ThemeTokens {
   "--chat-list-color"?: string;
   "--chat-list-empty-color"?: string;
   "--chat-list-group-header-color"?: string;
+  "--chat-list-group-header-font-size"?: string;
+  "--chat-list-group-header-font-weight"?: string;
   "--chat-list-item-active-background-color"?: string;
   "--chat-list-item-active-marker-bg"?: string;
   "--chat-list-item-color"?: string;
+  "--chat-list-item-font-size"?: string;
+  "--chat-list-item-font-weight"?: string;
   "--chat-list-item-hover-background-color"?: string;
+  "--chat-list-title-font-size"?: string;
+  "--chat-list-title-font-weight"?: string;
   "--chat-message-analyze-color"?: string;
   "--chat-message-blockquote-color"?: string;
   "--chat-message-code-block-background-color"?: string;
@@ -99,6 +105,7 @@ export interface ThemeTokens {
   "--checkbox-border-normal"?: string;
   "--checkbox-check-mark-background"?: string;
   "--checkbox-color"?: string;
+  "--combo-box-height"?: string;
   "--drop-down-menu-background-color"?: string;
   "--drop-down-menu-border-color"?: string;
   "--drop-down-menu-item-active-color"?: string;

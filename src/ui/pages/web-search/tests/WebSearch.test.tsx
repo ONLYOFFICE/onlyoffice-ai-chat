@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockSetWebSearchData = vi.fn();
 const mockGetWebSearchData = vi.fn().mockReturnValue(null);
@@ -41,6 +41,15 @@ const mockApi = {
   },
 };
 const mockCallbacksManager = { emit: vi.fn() };
+
+const mockWidgetConfig: {
+  entityId?: string;
+  webSearchSaveMode?: "blur" | "button";
+} = {};
+
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => mockWidgetConfig,
+}));
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
@@ -147,6 +156,29 @@ vi.mock("../../../components/link", () => ({
   ),
 }));
 
+vi.mock("../../../components/button", () => ({
+  Button: ({
+    children,
+    onClick,
+    disabled,
+    isLoading,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+    isLoading?: boolean;
+  }) => (
+    <button
+      data-testid="save-button"
+      onClick={onClick}
+      disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
+    >
+      {children}
+    </button>
+  ),
+}));
+
 import { WebSearch } from "../sub-components";
 
 describe("WebSearch", () => {
@@ -154,8 +186,11 @@ describe("WebSearch", () => {
     mockApi.webSearch.setActiveConfig.mockClear();
     mockApi.webSearch.clear.mockClear();
     mockApi.webSearch.getActiveConfig.mockResolvedValue(null);
+    mockCallbacksManager.emit.mockClear();
     mockCloudProviders.length = 0;
     mockStoreState.externalOnlyofficeConfig = undefined;
+    mockWidgetConfig.entityId = undefined;
+    mockWidgetConfig.webSearchSaveMode = undefined;
   });
 
   it("renders description text", () => {
@@ -281,5 +316,93 @@ describe("WebSearch", () => {
 
     expect(mockApi.webSearch.setActiveConfig).not.toHaveBeenCalled();
     expect(mockApi.webSearch.clear).not.toHaveBeenCalled();
+  });
+
+  describe("button save mode", () => {
+    it("does not render the Save button in blur mode (default)", () => {
+      render(<WebSearch />);
+      expect(screen.queryByTestId("save-button")).toBeNull();
+    });
+
+    it("renders the Save button in button mode", () => {
+      render(<WebSearch saveMode="button" />);
+      expect(screen.getByTestId("save-button")).toBeInTheDocument();
+    });
+
+    it("takes the mode from WidgetConfig when no prop is given", () => {
+      mockWidgetConfig.webSearchSaveMode = "button";
+      render(<WebSearch />);
+      expect(screen.getByTestId("save-button")).toBeInTheDocument();
+    });
+
+    it("prop overrides the WidgetConfig mode", () => {
+      mockWidgetConfig.webSearchSaveMode = "button";
+      render(<WebSearch saveMode="blur" />);
+      expect(screen.queryByTestId("save-button")).toBeNull();
+    });
+
+    it("does not persist on API key blur in button mode", () => {
+      render(<WebSearch saveMode="button" />);
+      const apiInput = screen.getByTestId("input-EnterKey");
+      fireEvent.change(apiInput, { target: { value: "my-api-key" } });
+      fireEvent.blur(apiInput);
+
+      expect(mockApi.webSearch.setActiveConfig).not.toHaveBeenCalled();
+      expect(mockApi.webSearch.clear).not.toHaveBeenCalled();
+    });
+
+    it("persists and emits onWebSearchSaved on Save click", async () => {
+      render(<WebSearch saveMode="button" />);
+      const apiInput = screen.getByTestId("input-EnterKey");
+      fireEvent.change(apiInput, { target: { value: "my-api-key" } });
+      fireEvent.click(screen.getByTestId("save-button"));
+
+      expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledWith(
+        {
+          provider: "Exa",
+          key: "my-api-key",
+          baseUrl: "https://api.exa.ai",
+        },
+        undefined
+      );
+      // `onWebSearchSaved` fires after the awaited persist resolves.
+      await waitFor(() =>
+        expect(mockCallbacksManager.emit).toHaveBeenCalledWith(
+          "onWebSearchSaved",
+          {
+            enabled: true,
+            provider: "Exa",
+            isCloudProvider: undefined,
+          }
+        )
+      );
+    });
+
+    it("disables the Save button again after a successful save", async () => {
+      render(<WebSearch saveMode="button" />);
+      const saveButton = screen.getByTestId("save-button");
+      fireEvent.change(screen.getByTestId("input-EnterKey"), {
+        target: { value: "my-api-key" },
+      });
+      expect(saveButton).not.toBeDisabled();
+
+      fireEvent.click(saveButton);
+
+      // Once persisted, the form matches storage again, so there is nothing
+      // left to save.
+      await waitFor(() => expect(saveButton).toBeDisabled());
+    });
+
+    it("keeps the Save button disabled until the form has unsaved changes", () => {
+      render(<WebSearch saveMode="button" />);
+      const saveButton = screen.getByTestId("save-button");
+      // No API key yet — nothing to persist.
+      expect(saveButton).toBeDisabled();
+
+      fireEvent.change(screen.getByTestId("input-EnterKey"), {
+        target: { value: "my-api-key" },
+      });
+      expect(saveButton).not.toBeDisabled();
+    });
   });
 });

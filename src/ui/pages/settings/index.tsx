@@ -20,6 +20,11 @@ interface SettingsProps {
    */
   isAddModelCardHorizontal?: boolean;
   isWebSearchHorizontal?: boolean;
+  /**
+   * Overrides {@link WidgetConfig.webSearchSaveMode}. When omitted, the
+   * context value is used (defaulting to `"blur"`).
+   */
+  webSearchSaveMode?: "blur" | "button";
 }
 
 const Settings = ({
@@ -27,6 +32,7 @@ const Settings = ({
   noPadding,
   isAddModelCardHorizontal: isAddModelCardHorizontalProp,
   isWebSearchHorizontal,
+  webSearchSaveMode,
 }: SettingsProps) => {
   const { Tabs } = useComponents();
   const { t } = useI18n();
@@ -122,6 +128,7 @@ const Settings = ({
                   hideHeader={hideHeader}
                   noPadding={noPadding}
                   isHorizontal={isWebSearchHorizontal}
+                  saveMode={webSearchSaveMode}
                 />
               ),
               disabled: !profiles.length,

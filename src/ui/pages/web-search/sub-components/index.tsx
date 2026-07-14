@@ -10,6 +10,7 @@ import { useWidgetConfig } from "../../../../widget-config";
 type WebSearchProps = {
   variant?: "tab" | "page";
   isHorizontal?: boolean;
+  saveMode?: "blur" | "button";
 };
 
 type WebSearchProvider = {
@@ -31,12 +32,31 @@ const WEB_SEARCH_PROVIDERS: WebSearchProvider[] = [
   { id: "Exa", label: "Exa", baseUrl: "https://api.exa.ai" },
 ];
 
-const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
-  const { ComboBox, FieldContainer, Input, Link } = useComponents();
+const isValidUrl = (value: string) => {
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const configsEqual = (a: WebSearchData | null, b: WebSearchData | null) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
+const WebSearch = ({
+  variant = "tab",
+  isHorizontal,
+  saveMode: saveModeProp,
+}: WebSearchProps) => {
+  const { ComboBox, FieldContainer, Input, Link, Button } = useComponents();
   const { t } = useI18n();
   const { eventBus } = useToolsContext();
   const { useCloudsStore, api, callbacksManager } = useStores();
-  const { entityId } = useWidgetConfig();
+  const { entityId, webSearchSaveMode } = useWidgetConfig();
+
+  const saveMode = saveModeProp ?? webSearchSaveMode ?? "blur";
+  const isButtonMode = saveMode === "button";
   const cloudProviders = useCloudsStore((s) => s.cloudProviders);
   const hiddenWebSearchProviders = useCloudsStore(
     (s) => s.hiddenWebSearchProviders
@@ -52,6 +72,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
   const [apiKey, setApiKey] = React.useState<string>("");
   const [baseUrl, setBaseUrl] = React.useState<string>("");
   const [baseUrlError, setBaseUrlError] = React.useState<string>("");
+  const [isSaving, setIsSaving] = React.useState(false);
 
   // Track the last-persisted shape so the `web-search-changed` listener can
   // skip its sync-from-storage when the change originates from this same
@@ -61,8 +82,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
 
   const persist = React.useCallback(
     async (data: WebSearchData | null) => {
-      const previous = lastPersistedRef.current;
-      const changed = JSON.stringify(previous) !== JSON.stringify(data);
+      const changed = !configsEqual(lastPersistedRef.current, data);
       lastPersistedRef.current = data;
       selfInitiatedRef.current = true;
       if (data) {
@@ -71,13 +91,13 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
         await api.webSearch.clear(entityId);
       }
       eventBus.emit("web-search-changed");
-      if (changed) {
-        callbacksManager.emit("onWebSearchUpdated", {
-          enabled: !!data,
-          provider: data?.provider ?? null,
-          isCloudProvider: data?.isCloudProvider,
-        });
-      }
+      const event = {
+        enabled: !!data,
+        provider: data?.provider ?? null,
+        isCloudProvider: data?.isCloudProvider,
+      };
+      if (changed) callbacksManager.emit("onWebSearchUpdated", event);
+      callbacksManager.emit("onWebSearchSaved", event);
     },
     [api, callbacksManager, eventBus, entityId]
   );
@@ -131,28 +151,20 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     };
   }, [api, eventBus, entityId]);
 
-  const saveData = (desc: WebSearchProvider) => {
-    const resolvedUrl = desc.baseUrl ?? baseUrl;
-
-    if (!desc.baseUrl) {
-      try {
-        new URL(baseUrl);
-      } catch {
-        void persist(null);
-        return;
-      }
-    }
-
-    if (apiKey) {
-      void persist({
-        provider: desc.id,
-        key: apiKey,
-        baseUrl: resolvedUrl,
-      });
-    } else {
-      void persist(null);
-    }
+  // The config the current form state would persist, or `null` when there is
+  // nothing valid to save (missing API key, or an invalid manual base URL).
+  const buildConfig = (desc: WebSearchProvider): WebSearchData | null => {
+    if (!desc.baseUrl && !isValidUrl(baseUrl)) return null;
+    if (!apiKey) return null;
+    return {
+      provider: desc.id,
+      key: apiKey,
+      baseUrl: desc.baseUrl ?? baseUrl,
+      isCloudProvider: desc.isCloudProvider,
+    };
   };
+
+  const saveData = (desc: WebSearchProvider) => persist(buildConfig(desc));
 
   const handleSelect = (selected: WebSearchProvider) => {
     setSelectedId(selected.id);
@@ -160,7 +172,9 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     setBaseUrl("");
     setBaseUrlError("");
 
-    if (selected.isCloudProvider) {
+    // In button mode selecting a provider only updates local state; the
+    // explicit Save button performs the write (even for cloud providers).
+    if (selected.isCloudProvider && !isButtonMode) {
       void persist({
         provider: selected.id,
         key: selected.key ?? "",
@@ -170,20 +184,38 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     }
   };
 
-  const handleBaseUrlBlur = () => {
-    if (!provider) return;
-    try {
-      new URL(baseUrl);
-      setBaseUrlError("");
-    } catch {
-      setBaseUrlError(t("InvalidUrl"));
-    }
-    saveData(provider);
+  // Validate the manual base URL and surface the error message. Returns
+  // whether it is currently valid.
+  const validateBaseUrl = () => {
+    const valid = isValidUrl(baseUrl);
+    setBaseUrlError(valid ? "" : t("InvalidUrl"));
+    return valid;
   };
 
+  const saveProvider = () => {
+    if (provider) void saveData(provider);
+  };
+
+  // Blur-driven autosave persists in blur mode only; in button mode the Save
+  // button owns persistence (blur then just validates the base URL).
   const handleApiKeyBlur = () => {
-    if (!provider) return;
-    saveData(provider);
+    if (!isButtonMode) saveProvider();
+  };
+
+  const handleBaseUrlBlur = () => {
+    if (!validateBaseUrl() || isButtonMode) return;
+    saveProvider();
+  };
+
+  const handleSave = async () => {
+    // Only providers with a manually entered base URL need URL validation.
+    if (!provider || (!provider.baseUrl && !validateBaseUrl())) return;
+    setIsSaving(true);
+    try {
+      await saveData(provider);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isPage = variant === "page";
@@ -194,6 +226,9 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
     id: p.id,
     onClick: () => handleSelect(p),
   }));
+
+  const candidateData = provider ? buildConfig(provider) : null;
+  const isDirty = !configsEqual(candidateData, lastPersistedRef.current);
 
   return (
     <div
@@ -215,7 +250,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
           isHorizontal={fieldIsHorizontal}
         >
           <ComboBox
-            className="w-full h-[24px]"
+            className="w-full"
             value={provider?.label ?? t("SelectEngine")}
             items={comboItems}
           />
@@ -227,7 +262,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
             error={baseUrlError}
           >
             <Input
-              className="w-full h-[24px]"
+              className="w-full"
               placeholder={t("EnterURL")}
               value={baseUrl}
               onChange={(e) => {
@@ -255,7 +290,7 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
             }
           >
             <Input
-              className="w-full h-[24px]"
+              className="w-full"
               type="password"
               placeholder={t("EnterKey")}
               value={apiKey}
@@ -266,6 +301,17 @@ const WebSearch = ({ variant = "tab", isHorizontal }: WebSearchProps) => {
           </FieldContainer>
         )}
       </div>
+      {isButtonMode && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => void handleSave()}
+            isLoading={isSaving}
+            disabled={!provider || !isDirty}
+          >
+            {t("Save")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

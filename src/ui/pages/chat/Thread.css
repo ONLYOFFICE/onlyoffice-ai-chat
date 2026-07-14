@@ -74,10 +74,10 @@
 }
 
 .composer-input {
-  /*font-size: 14px;*/
-  /*line-height: 15px;*/
-
-  /* font-family: Arial; */
+  /* Font size / weight are overridable via tokens; the `inherit` fallbacks
+     keep the default behavior of following the widget's font scale. */
+  font-size: var(--chat-input-font-size, inherit);
+  font-weight: var(--chat-input-font-weight, inherit);
 
   color: var(--chat-composer-text-color);
 }

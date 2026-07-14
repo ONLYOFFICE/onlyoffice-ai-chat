@@ -119,6 +119,7 @@
   --input-active-background-color: var(--background-normal);
   --input-error-color: var(--border-error);
   --input-border-radius: 4px;
+  --combo-box-height: 24px;
 
   /* tabs */
   --tabs-border-width: 1px;

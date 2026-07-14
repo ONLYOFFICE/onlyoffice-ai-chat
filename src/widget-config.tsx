@@ -50,6 +50,19 @@ export interface WidgetConfig {
    */
   chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
   /**
+   * Hide the chat-history panel's header row (the "Chat history" title and its
+   * close button). The search field and the thread list stay visible. Use this
+   * when the widget is embedded in a host panel that already provides its own
+   * title bar and close control, to avoid a duplicated header.
+   */
+  hideChatHistoryHeader?: boolean;
+  /**
+   * Show each chat-history thread's actions trigger permanently instead
+   * of only revealing it on hover. Useful on touch devices or when the menu
+   * should always be discoverable.
+   */
+  chatHistoryAlwaysShowActions?: boolean;
+  /**
    * Show the "Clear history" item in each chat's context menu (the "…"
    * dropdown in the chat-history list). Hidden by default; set to `true` to
    * expose it.
@@ -125,6 +138,35 @@ export interface WidgetConfig {
    */
   composerActions?: ComposerAction[];
   /**
+   * Show the built-in "Add local image" item in the composer's "+"
+   * (attachments) dropdown. Opt-in: the item appears only when this is `true`.
+   * `false` / omitted hides it. The item rides on an internal HTML `<input>`
+   * (not on `PlatformAdapter.file`), so enabling it needs no host file
+   * capability.
+   */
+  addLocalImageEnabled?: boolean;
+  /**
+   * Pixel size of the composer's send / stop action button (the icon and
+   * its square button box). Defaults to `17`. Use this in hosts that need a
+   * larger or smaller send control to match a custom composer height.
+   */
+  composerActionSendSize?: number;
+  /**
+   * Disable the composer entirely. The input becomes non-editable (no
+   * typing, no Enter-to-send) and every composer control — attachments,
+   * prompts, model selector, send — is made non-interactive and dimmed.
+   * Pair it with {@link WidgetConfig.composerHeader} to explain why (e.g.
+   * an "AI features aren't active" banner). The composer root also carries
+   * a `composer-disabled` class for host CSS targeting. Defaults to `false`.
+   */
+  composerDisabled?: boolean;
+  /**
+   * Placeholder text shown in the (empty) composer input. Overrides the
+   * built-in localized "Ask anything…" string. Not translated — the host
+   * supplies the exact text to display. Omit to keep the built-in string.
+   */
+  composerPlaceholder?: string;
+  /**
    * Clickable prompt suggestions shown above the composer in a new
    * (empty) chat only. Each item is `{ name, prompt }`; clicking inserts
    * its `prompt` into the composer input. Capped at 20 — extras are
@@ -137,6 +179,14 @@ export interface WidgetConfig {
    * {@link WidgetConfig.suggestions} are visible.
    */
   suggestionsHeader?: React.ReactNode;
+  /**
+   * Arbitrary content rendered directly above the composer, in both the
+   * empty and non-empty chat states. Use it to inject a host-owned banner
+   * or notice — e.g. an "AI features aren't active" call-to-action. Spans
+   * the composer's width; the host owns the markup and styling. Omit to
+   * render nothing.
+   */
+  composerHeader?: React.ReactNode;
   /**
    * Handler for the "Import" link in the add-profile card. The host
    * owns the entire import flow (file picker, parsing, registering a
@@ -169,6 +219,12 @@ export interface WidgetConfig {
    * in wider hosts where the extra horizontal space is available.
    */
   isAddModelCardHorizontal?: boolean;
+  /**
+   * Persist the Web Search settings on an explicit Save button instead of
+   * saving implicitly on input blur / provider select.
+   * @default "blur"
+   */
+  webSearchSaveMode?: "blur" | "button";
   /**
    * Handler for the "Download template" link shown in the add-profile
    * card's info tooltip. Used by hosts that ship a downloadable JSON /

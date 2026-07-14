@@ -37,10 +37,10 @@ describe("Input", () => {
     expect(screen.getByTestId("icon")).toHaveTextContent("search");
   });
 
-  it("applies error border style", () => {
+  it("applies error border style on the container", () => {
     const { container } = render(<Input isError />);
-    const input = container.querySelector("input");
-    expect(input?.style.border).toContain("var(--input-error-color)");
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.border).toContain("var(--input-error-color)");
   });
 
   it("shows clear button for search input with value", () => {

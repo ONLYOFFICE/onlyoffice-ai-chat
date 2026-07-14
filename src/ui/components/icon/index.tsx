@@ -64,12 +64,12 @@ const IconComponent = ({
   const BundledIcon = CustomIcon ? null : getBundledIcon(name);
   const wrapperRef = useRef<HTMLSpanElement>(null);
 
-  // Re-apply theme/color attributes whenever the bundled SVG re-renders
-  // (theme switch, color prop change, name change). The SVGR-produced
-  // component renders a fresh DOM tree, so attribute mutations from a
-  // prior render don't carry over — we always do a clean pass here.
+  // Re-apply theme/color attributes whenever the wrapped SVG re-renders
+  // (theme switch, color prop change, name change). Both bundled (SVGR) and
+  // host-supplied custom icon components render a fresh DOM tree, so attribute
+  // mutations from a prior render don't carry over — we always do a clean pass
+  // here on whatever SVG sits inside the ref'd wrapper.
   useLayoutEffect(() => {
-    if (!BundledIcon) return;
     const svg = wrapperRef.current?.querySelector("svg");
     if (!svg) return;
     applySvgColor(svg, isStroke, color, noColor);
@@ -77,7 +77,16 @@ const IconComponent = ({
 
   if (CustomIcon) {
     return (
-      <CustomIcon size={w ?? h} className={cn("select-none", className)} />
+      <span
+        ref={wrapperRef}
+        className={cn(
+          "flex items-center justify-center select-none",
+          className
+        )}
+        style={{ width: w, height: h }}
+      >
+        <CustomIcon size={w ?? h} />
+      </span>
     );
   }
 
@@ -104,7 +113,10 @@ const IconComponent = ({
     return (
       <span
         ref={wrapperRef}
-        className={cn("select-none flex items-center justify-center", className)}
+        className={cn(
+          "select-none flex items-center justify-center",
+          className
+        )}
         style={{ width: w, height: h }}
       >
         <BundledIcon width={w} height={h} />
@@ -123,7 +135,10 @@ const IconComponent = ({
     return (
       <ReactSVG
         src={image.src}
-        className={cn("select-none flex items-center justify-center", className)}
+        className={cn(
+          "select-none flex items-center justify-center",
+          className
+        )}
         beforeInjection={(svg) => applySvgColor(svg, isStroke, color, noColor)}
         style={{ width: w, height: h }}
       />

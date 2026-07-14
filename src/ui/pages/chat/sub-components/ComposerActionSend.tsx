@@ -1,6 +1,7 @@
 import { ComposerPrimitive, ThreadPrimitive } from "@assistant-ui/react";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
 
 const BUTTON_STYLES =
   "rounded-[4px] cursor-pointer disabled:cursor-not-allowed flex items-center justify-center bg-[var(--chat-composer-action-send-background-color)] hover:enabled:bg-[var(--chat-composer-action-send-background-hover-color)] active:enabled:bg-[var(--chat-composer-action-send-background-pressed-color)] disabled:opacity-[0.5]";
@@ -11,15 +12,16 @@ const ComposerActionSend = () => {
     useStores();
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
+  const { composerActionSendSize = 17 } = useWidgetConfig();
 
   return isStreamRunning ? (
     <ComposerPrimitive.Cancel asChild>
       <IconButton
         iconName="stop"
-        size={17}
+        size={composerActionSendSize}
         className={BUTTON_STYLES}
-        width={17}
-        height={17}
+        width={composerActionSendSize}
+        height={composerActionSendSize}
         color="var(--chat-composer-action-send-color)"
         data-testid="stop-button"
       />
@@ -29,9 +31,9 @@ const ComposerActionSend = () => {
       <ComposerPrimitive.Send asChild disabled={!currentProfile}>
         <IconButton
           iconName="send"
-          size={17}
-          width={17}
-          height={17}
+          size={composerActionSendSize}
+          width={composerActionSendSize}
+          height={composerActionSendSize}
           color="var(--chat-composer-action-send-color)"
           className={BUTTON_STYLES}
           data-testid="send-button"

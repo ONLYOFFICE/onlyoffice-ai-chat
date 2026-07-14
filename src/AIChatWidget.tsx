@@ -131,6 +131,17 @@ export interface AIChatWidgetProps {
    * its own close button. See {@link WidgetConfig.chatHistoryCloseIcon}.
    */
   chatHistoryCloseIcon?: WidgetConfig["chatHistoryCloseIcon"];
+  /**
+   * Hide the chat-history panel's header row (title + close button), keeping
+   * the search field and thread list. See
+   * {@link WidgetConfig.hideChatHistoryHeader}.
+   */
+  hideChatHistoryHeader?: boolean;
+  /**
+   * Show each chat-history thread's actions trigger permanently instead
+   * of only on hover. See {@link WidgetConfig.chatHistoryAlwaysShowActions}.
+   */
+  chatHistoryAlwaysShowActions?: boolean;
   hideToolAllowAlways?: WidgetConfig["hideToolAllowAlways"];
   /**
    * Render the "Add model" form in a two-row (horizontal) layout
@@ -199,6 +210,19 @@ export interface AIChatWidgetProps {
    * {@link WidgetConfig.suggestionsHeader}.
    */
   suggestionsHeader?: WidgetConfig["suggestionsHeader"];
+  /**
+   * Arbitrary content rendered directly above the composer, in both the
+   * empty and non-empty chat states — e.g. a host-owned "AI features
+   * aren't active" banner. See {@link WidgetConfig.composerHeader}.
+   */
+  composerHeader?: WidgetConfig["composerHeader"];
+  /**
+   * Disable the composer entirely — the input becomes non-editable and every
+   * composer control is made non-interactive and dimmed. Pair with
+   * {@link AIChatWidgetProps.composerHeader} to explain why. See
+   * {@link WidgetConfig.composerDisabled}.
+   */
+  composerDisabled?: WidgetConfig["composerDisabled"];
   /**
    * Handler for the "Import" link in the add-profile card. The host owns
    * the import flow; an optional `Partial<ModelFormValues>` return pre-fills
@@ -302,6 +326,8 @@ export const AIChatWidget = React.forwardRef<
       hideThreadFade,
       hideSettingsButton,
       chatHistoryCloseIcon,
+      hideChatHistoryHeader,
+      chatHistoryAlwaysShowActions,
       hideToolAllowAlways,
       isAddModelCardHorizontal,
       onSettingsClick,
@@ -316,6 +342,8 @@ export const AIChatWidget = React.forwardRef<
       composerActions,
       suggestions,
       suggestionsHeader,
+      composerHeader,
+      composerDisabled,
       onProfileImportClick,
       onDownloadTemplate,
       onDeleteProfile,
@@ -338,6 +366,8 @@ export const AIChatWidget = React.forwardRef<
         hideThreadFade,
         hideSettingsButton,
         chatHistoryCloseIcon,
+        hideChatHistoryHeader,
+        chatHistoryAlwaysShowActions,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
@@ -349,6 +379,8 @@ export const AIChatWidget = React.forwardRef<
         composerActions,
         suggestions,
         suggestionsHeader,
+        composerHeader,
+        composerDisabled,
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
@@ -368,6 +400,8 @@ export const AIChatWidget = React.forwardRef<
         hideThreadFade,
         hideSettingsButton,
         chatHistoryCloseIcon,
+        hideChatHistoryHeader,
+        chatHistoryAlwaysShowActions,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
@@ -379,6 +413,8 @@ export const AIChatWidget = React.forwardRef<
         composerActions,
         suggestions,
         suggestionsHeader,
+        composerHeader,
+        composerDisabled,
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,

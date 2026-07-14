@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from "react";
+import { cn } from "../../../../shared/utils";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useStores } from "../../../store/context";
@@ -8,7 +9,33 @@ import { Input } from "../../input";
 import { ChatListItem } from "./ChatListItem";
 import { groupThreadsByDate } from "./ChatList.utils";
 
-const ChatList = () => {
+type ChatListProps = {
+  /**
+   * Hide the header row (the "Chat history" title and its close button),
+   * keeping the search field and thread list. When provided, this overrides
+   * the `hideChatHistoryHeader` widget config — useful when rendering
+   * `ChatList` directly (headless), where the widget config isn't in scope.
+   */
+  hideHeader?: boolean;
+  /**
+   * Extra class names merged onto the root container for external styling.
+   * Resolved with `tailwind-merge`, so utilities here win over the built-in
+   * ones (e.g. pass `"h-auto px-0"` to override the defaults).
+   */
+  className?: string;
+  /**
+   * Show each thread's actions trigger permanently instead of only on
+   * hover. When provided, this overrides the `chatHistoryAlwaysShowActions`
+   * widget config.
+   */
+  alwaysShowActions?: boolean;
+};
+
+const ChatList = ({
+  hideHeader,
+  className,
+  alwaysShowActions,
+}: ChatListProps) => {
   const { useThreadsStore, useRouter } = useStores();
   const threads = useThreadsStore((s) => s.threads);
   const threadId = useThreadsStore((s) => s.threadId);
@@ -18,13 +45,21 @@ const ChatList = () => {
   const onExportThread = useThreadsStore((s) => s.onExportThread);
   const onClearThreadHistory = useThreadsStore((s) => s.onClearThreadHistory);
   const setCurrentPage = useRouter((s) => s.setCurrentPage);
+  const {
+    showClearHistory,
+    chatHistoryCloseIcon,
+    hideChatHistoryHeader,
+    chatHistoryAlwaysShowActions,
+  } = useWidgetConfig();
   const platform = usePlatform();
   const exportFormats = useMemo(
     () => platform.file?.getExportFormats?.() ?? [],
     [platform]
   );
-  const { chatHistoryCloseIcon, showClearHistory } = useWidgetConfig();
+
   const closeIconName = chatHistoryCloseIcon ?? "btn-close";
+  const isHeaderHidden = hideHeader ?? hideChatHistoryHeader;
+  const showActionsAlways = alwaysShowActions ?? chatHistoryAlwaysShowActions;
 
   const [searchValue, setSearchValue] = React.useState("");
 
@@ -70,18 +105,25 @@ const ChatList = () => {
   };
 
   return (
-    <div className="w-full h-full max-h-full flex flex-col overflow-y-auto">
+    <div
+      className={cn(
+        "w-full h-full max-h-full flex flex-col overflow-y-auto",
+        className
+      )}
+    >
       <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[8px] px-[12px]">
-        <div className="flex items-center justify-between">
-          <h4 className="select-none text-fs-13 leading-[var(--lh-16)] font-bold text-[var(--chat-list-color)]">
-            {t("ChatHistory")}
-          </h4>
-          <IconButton
-            iconName={closeIconName}
-            size={24}
-            onClick={() => setCurrentPage("chat")}
-          />
-        </div>
+        {!isHeaderHidden && (
+          <div className="flex items-center justify-between">
+            <h4 className="select-none text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] [font-weight:var(--chat-list-title-font-weight,700)] text-[var(--chat-list-color)]">
+              {t("ChatHistory")}
+            </h4>
+            <IconButton
+              iconName={closeIconName}
+              size={24}
+              onClick={() => setCurrentPage("chat")}
+            />
+          </div>
+        )}
         {!isEmptyList && (
           <div className="mt-[8px]">
             <Input
@@ -106,7 +148,7 @@ const ChatList = () => {
             {showingThreads.length ? (
               groups.map((group) => (
                 <div key={group.key} className="flex flex-col mb-[8px]">
-                  <p className="select-none font-normal text-fs-11 leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[8px]">
+                  <p className="select-none [font-weight:var(--chat-list-group-header-font-weight,400)] text-[length:var(--chat-list-group-header-font-size,var(--fs-11))] leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[8px]">
                     {group.label}
                   </p>
                   {group.threads.map((thread) => (
@@ -121,6 +163,7 @@ const ChatList = () => {
                       onExportThread={onExportThread}
                       exportFormats={exportFormats}
                       onClearThreadHistory={onClearThreadHistory}
+                      alwaysShowActions={showActionsAlways}
                       showClearHistory={showClearHistory}
                     />
                   ))}
