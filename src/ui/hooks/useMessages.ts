@@ -824,9 +824,22 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       // then the dialog dismisses while the stream keeps flowing. Without the
       // callback we preserve the original behavior of closing immediately.
       const waitForResult = Boolean(onToolCallApproveResult);
+      // Only dismiss the dialog if it still belongs to the call being
+      // approved. While the continuation stream runs, the model may request
+      // another tool that needs approval — `handleToolCallPending` puts its
+      // dialog into the store, and an unconditional clear here (the tail
+      // safety net or a late watch callback) would wipe that pending dialog
+      // and leave the second tool stuck with no stream running.
       const closeDialog = () => {
         setIsApprovingTool(false);
-        setManageToolData(undefined);
+        const current = useServersStore.getState().manageToolData;
+        if (
+          !current ||
+          !data ||
+          (current.messageId === data.messageId && current.idx === data.idx)
+        ) {
+          setManageToolData(undefined);
+        }
       };
 
       if (waitForResult) setIsApprovingTool(true);
