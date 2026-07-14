@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## 0.4.152
+
+### Fixed
+
+- Composer attachments are no longer wiped when the thread view remounts with the same thread — including the empty "new chat" state (`threadId === ""`). The message-sync effect could never "claim" the empty thread id, so every remount of `Thread`/`ChatPage` re-fetched history and cleared just-added attachments. `_currentThreadId` now starts as a `null` sentinel and the claim covers `""` too: the first mount still fetches, remounts with the same (possibly empty) thread are no-ops, and switching to a different thread still clears attachments and loads the right history.
+
 ## 0.4.151
 
 ### Added

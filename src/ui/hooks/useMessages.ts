@@ -144,8 +144,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     // this threadId by the streaming path — see `claimThreadId`. Otherwise
     // a thread freshly created by the engine would briefly load its just-
     // streamed messages from storage and race with the in-memory list.
+    // The claim covers the empty "new chat" id too (`_currentThreadId`
+    // starts as a `null` sentinel, so the first mount still fetches):
+    // remounting the thread view with the same thread must not wipe
+    // composer attachments the user just added.
     const claimedId = useMessageStore.getState()._currentThreadId;
-    if (claimedId === threadId && threadId) return;
+    if (claimedId === threadId) return;
     fetchPrevMessages(threadId);
     clearAttachmentFiles();
     clearAttachmentImages();
