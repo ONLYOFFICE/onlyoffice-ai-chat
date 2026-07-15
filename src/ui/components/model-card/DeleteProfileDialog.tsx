@@ -14,10 +14,10 @@ const DeleteProfileDialog = ({
   profile,
   onClose,
 }: DeleteProfileDialogProps) => {
-  const { Button, DialogContent } = useComponents();
+  const { DialogContent, DialogFooter } = useComponents();
   const { useProfilesStore } = useStores();
   const deleteProfile = useProfilesStore((s) => s.deleteProfile);
-  const { t, isRTL } = useI18n();
+  const { t } = useI18n();
 
   const onSubmitAction = React.useCallback(async () => {
     await deleteProfile(profile.id);
@@ -47,21 +47,16 @@ const DeleteProfileDialog = ({
         withWarningIcon
       >
         <div className="flex flex-col justify-between h-full">
-          <p className="select-none h-[40px] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
+          <p className="select-none h-[var(--delete-profile-dialog-message-height,40px)] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
             {t("WantDeleteModel")}
           </p>
-          <div
-            className={
-              isRTL
-                ? "flex flex-row-reverse justify-end items-center gap-[8px] h-[48px]"
-                : "flex flex-row justify-end items-center gap-[8px] h-[48px]"
-            }
-          >
-            <Button variant="default" onClick={onClose}>
-              {t("No")}
-            </Button>
-            <Button onClick={onSubmitAction}>{t("Yes")}</Button>
-          </div>
+          <DialogFooter
+            className="h-[48px]"
+            cancelLabel={t("No")}
+            onCancel={onClose}
+            submitLabel={t("Yes")}
+            onSubmit={onSubmitAction}
+          />
         </div>
       </DialogContent>
     </Dialog>
