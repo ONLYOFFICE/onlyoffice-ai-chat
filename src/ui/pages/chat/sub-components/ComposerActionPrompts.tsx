@@ -58,7 +58,7 @@ const EditPromptDialog = ({
         className={PROMPT_DIALOG_CLASS}
       >
         <div className="flex flex-col justify-between h-full">
-          <div className="flex flex-col gap-[12px] py-[24px]">
+          <div className="flex flex-col gap-[12px] py-[var(--edit-prompt-dialog-body-padding-y,32px)]">
             <FieldContainer header={t("PromptName")}>
               <Input
                 value={name}
@@ -137,7 +137,7 @@ const RenameFolderDialog = ({
             onSave();
           }}
         >
-          <div className="py-[32px]">
+          <div className="py-[var(--rename-folder-dialog-body-padding-y,32px)]">
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -188,7 +188,7 @@ const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
             }
           }}
         >
-          <p className="select-none h-[40px] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
+          <p className="select-none h-[var(--delete-folder-dialog-message-height,40px)] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
             {t("WantDeleteFolder")}
           </p>
           <DialogFooter

@@ -57,7 +57,7 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
             onSave();
           }}
         >
-          <div className="py-[32px]">
+          <div className="py-[var(--new-folder-dialog-body-padding-y,32px)]">
             <Input
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
@@ -191,9 +191,20 @@ const UserActionBar = () => {
       <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[2px]">
         <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onCopy}>
           {copied ? (
-            <IconButton iconName="checked" size={20} isStroke color="var(--icon-gray-secondary)" disabled />
+            <IconButton
+              iconName="checked"
+              size={20}
+              isStroke
+              color="var(--icon-gray-secondary)"
+              disabled
+            />
           ) : (
-            <IconButton iconName="btn-copy" size={20} isStroke color="var(--icon-gray-secondary)" />
+            <IconButton
+              iconName="btn-copy"
+              size={20}
+              isStroke
+              color="var(--icon-gray-secondary)"
+            />
           )}
         </TooltipIconButton>
         <DropdownMenu
