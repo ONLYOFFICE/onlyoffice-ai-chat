@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## 0.4.152
+
+### Fixed
+
+- Composer attachments are no longer wiped when the thread view remounts with the same thread — including the empty "new chat" state (`threadId === ""`). The message-sync effect could never "claim" the empty thread id, so every remount of `Thread`/`ChatPage` re-fetched history and cleared just-added attachments. `_currentThreadId` now starts as a `null` sentinel and the claim covers `""` too: the first mount still fetches, remounts with the same (possibly empty) thread are no-ops, and switching to a different thread still clears attachments and loads the right history.
+
+## 0.4.151
+
 ### Added
 
 - `DialogFooter` is now the shared dialog footer with actions — a right-aligned, RTL-aware button row with a secondary "cancel" button and a primary "submit" button. The previous children-only `DialogFooter` (an unused generic flex wrapper) is replaced by this props-driven implementation, and the four hand-rolled footer copies in the prompt dialogs (new-folder, edit-prompt, rename-folder, delete-folder confirmation) now use it. Props: `cancelLabel`/`onCancel`/`cancelType`, `submitLabel`/`onSubmit`/`submitType`/`submitDisabled`, plus `className` (wrapper) and `buttonClassName` (both buttons). Hosts can replace the whole footer via the existing `DialogFooter` key in the `components` override map (`DialogFooterProps` is exported, now describing the button props instead of `div` props). DocSpace registers a `DialogFooter` override in `@docspace/ui-kit` that renders the footer with the DocSpace ui-kit `Button` (primary submit + secondary cancel, both full-width).
@@ -81,6 +89,7 @@
 
 ### Fixed
 
+- Approving a tool call no longer dismisses the confirmation dialog of a *different* pending tool call. When the host wires `onToolCallApproveResult` and the model requests a second approval-gated tool in the same continuation stream, the tail safety-net `closeDialog()` in `approveToolCall` cleared `manageToolData` unconditionally — wiping the second tool's just-shown dialog while the stream was already paused waiting for it, leaving that tool stuck forever. The dialog is now cleared only if it still belongs to the call being approved (matching `messageId` + `idx`), in the tail safety net, the tool-result watch callback, and the middleware `skip` branch alike.
 - Tooltips (e.g. on the composer's icon buttons) no longer stay stuck open after the cursor leaves the chat iframe quickly. Radix closes a hover-opened tooltip only when the trigger element receives a `pointerleave` event, but when the pointer crosses the iframe boundary fast that event never reaches the trigger, so the tooltip lingered. The `Tooltip` wrapper now tracks its own open state (only for uncontrolled tooltips — the controlled `open={…}` usages are untouched) and force-closes on `document.documentElement`'s `mouseleave` and the frame's `blur`, both of which fire when the pointer exits the iframe. Listeners are attached only while a tooltip is open and torn down on close.
 - The chat thread now scrolls to the bottom when the user sends a message, even if they had scrolled up to read earlier messages. Previously it only followed the reply if the viewport was already at the bottom. Root cause: the thread is driven by `useExternalStoreRuntime` without an `isRunning` flag, so the runtime never emitted `thread.run-start` and assistant-ui's built-in "scroll to bottom on run start" stayed inert — leaving only the resize-based autoscroll, which is gated on `isAtBottom`. The runtime is now fed `isRunning` (the store's `isStreamRunning`, which spans the whole round), so `thread.run-start` fires and the native scroll-on-send works. Feeding `isRunning` also makes the runtime emit an optimistic empty-assistant placeholder for the in-flight turn; the assistant message renderer now skips empty `running` (and cancelled empty `incomplete`) messages so that placeholder doesn't show an empty bubble next to the "Analyzing" indicator.
 - The MCP config editor no longer mirrors the JSON in RTL locales. The editor container carries the UI direction (so its header, labels, and footer read RTL), which also flipped the CodeMirror editor — right-aligning the code and moving the line-number gutter to the right, making the config unreadable. The CodeMirror host now forces `dir="ltr"` (a JSON config is always left-to-right) while the surrounding chrome keeps following the UI direction.

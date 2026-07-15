@@ -144,8 +144,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     // this threadId by the streaming path — see `claimThreadId`. Otherwise
     // a thread freshly created by the engine would briefly load its just-
     // streamed messages from storage and race with the in-memory list.
+    // The claim covers the empty "new chat" id too (`_currentThreadId`
+    // starts as a `null` sentinel, so the first mount still fetches):
+    // remounting the thread view with the same thread must not wipe
+    // composer attachments the user just added.
     const claimedId = useMessageStore.getState()._currentThreadId;
-    if (claimedId === threadId && threadId) return;
+    if (claimedId === threadId) return;
     fetchPrevMessages(threadId);
     clearAttachmentFiles();
     clearAttachmentImages();
@@ -824,9 +828,22 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       // then the dialog dismisses while the stream keeps flowing. Without the
       // callback we preserve the original behavior of closing immediately.
       const waitForResult = Boolean(onToolCallApproveResult);
+      // Only dismiss the dialog if it still belongs to the call being
+      // approved. While the continuation stream runs, the model may request
+      // another tool that needs approval — `handleToolCallPending` puts its
+      // dialog into the store, and an unconditional clear here (the tail
+      // safety net or a late watch callback) would wipe that pending dialog
+      // and leave the second tool stuck with no stream running.
       const closeDialog = () => {
         setIsApprovingTool(false);
-        setManageToolData(undefined);
+        const current = useServersStore.getState().manageToolData;
+        if (
+          !current ||
+          !data ||
+          (current.messageId === data.messageId && current.idx === data.idx)
+        ) {
+          setManageToolData(undefined);
+        }
       };
 
       if (waitForResult) setIsApprovingTool(true);
