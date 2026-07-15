@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## 0.4.154
+
+### Fixed
+
+- Stop button now actually aborts streaming in server-API mode (`createServerAPI`). The caller's `AbortSignal` is wired onto the `fetch` itself (closing the connection is the only cancellation the backend can observe) and stripped from the JSON body, where it used to serialize as a meaningless `{}`. An abort ends the NDJSON stream gracefully instead of surfacing as a stream error.
+- The UI stream loop now exits as soon as Stop is pressed and finalizes the partial message as stopped by the user (`status: { type: "incomplete", reason: "cancelled" }`) rather than an error — the message stops growing immediately and a new message can be sent right away.
+- Tool-call continuation streams (approve / deny, including server-executed tools) are now abortable too: dialog-driven approve/deny arms a fresh `AbortController` for the resume round — previously they reused an already-cleared controller (or passed no signal at all), so Stop had nothing to abort during post-tool continuations in either mode.
+
 ## 0.4.152
 
 ### Fixed

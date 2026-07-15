@@ -326,6 +326,77 @@ describe("callRoute", () => {
       expect(events).toHaveLength(2);
     });
 
+    it("wires actionArgs.signal onto fetch and strips it from the body", async () => {
+      fetchMock.mockResolvedValue(ndjsonResponse([]));
+      const controller = new AbortController();
+      const stream = callRoute(config, "ai", "sendWithStream", [
+        {
+          userMessage: { role: "user" },
+          actionArgs: { isReasoning: true, signal: controller.signal },
+        },
+      ] as never) as unknown as AsyncIterable<unknown>;
+      await collect(stream);
+      const [, init] = fetchMock.mock.calls[0];
+      expect(init.signal).toBe(controller.signal);
+      expect(JSON.parse(init.body)).toEqual({
+        userMessage: { role: "user" },
+        actionArgs: { isReasoning: true },
+      });
+    });
+
+    it("ends gracefully when the fetch itself is aborted", async () => {
+      const abortError = Object.assign(new Error("The user aborted."), {
+        name: "AbortError",
+      });
+      fetchMock.mockRejectedValue(abortError);
+      const controller = new AbortController();
+      controller.abort();
+      const stream = callRoute(config, "ai", "sendWithStream", [
+        { actionArgs: { signal: controller.signal } },
+      ] as never) as unknown as AsyncIterable<unknown>;
+      await expect(collect(stream)).resolves.toEqual([]);
+    });
+
+    it("treats an AbortError from the body reader as end of stream", async () => {
+      const encoder = new TextEncoder();
+      const abortError = Object.assign(new Error("aborted"), {
+        name: "AbortError",
+      });
+      let step = 0;
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          if (step === 0) {
+            step = 1;
+            controller.enqueue(
+              encoder.encode('{"type":"message-start","messageId":"m1"}\n')
+            );
+          } else {
+            controller.error(abortError);
+          }
+        },
+      });
+      fetchMock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        body,
+        text: () => Promise.resolve(""),
+      } as unknown as Response);
+      const stream = callRoute(config, "ai", "sendWithStream", [
+        {},
+      ] as never) as unknown as AsyncIterable<unknown>;
+      const events = await collect(stream);
+      expect(events).toEqual([{ type: "message-start", messageId: "m1" }]);
+    });
+
+    it("still surfaces non-abort fetch failures", async () => {
+      fetchMock.mockRejectedValue(new TypeError("network down"));
+      const stream = callRoute(config, "ai", "sendWithStream", [
+        {},
+      ] as never) as unknown as AsyncIterable<unknown>;
+      await expect(collect(stream)).rejects.toThrow("network down");
+    });
+
     it("throws on first iteration for non-2xx responses", async () => {
       fetchMock.mockResolvedValue({
         ok: false,
