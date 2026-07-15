@@ -73,6 +73,7 @@ const WebSearch = ({
   const [baseUrl, setBaseUrl] = React.useState<string>("");
   const [baseUrlError, setBaseUrlError] = React.useState<string>("");
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isResetting, setIsResetting] = React.useState(false);
 
   // Track the last-persisted shape so the `web-search-changed` listener can
   // skip its sync-from-storage when the change originates from this same
@@ -218,6 +219,21 @@ const WebSearch = ({
     }
   };
 
+  // Clears the persisted web-search config and restores the form to its
+  // defaults (provider back to the first built-in engine, empty credentials).
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      await persist(null);
+    } finally {
+      setIsResetting(false);
+    }
+    setSelectedId("Exa");
+    setApiKey("");
+    setBaseUrl("");
+    setBaseUrlError("");
+  };
+
   const isPage = variant === "page";
   const fieldIsHorizontal = isHorizontal ?? isPage;
 
@@ -229,11 +245,14 @@ const WebSearch = ({
 
   const candidateData = provider ? buildConfig(provider) : null;
   const isDirty = !configsEqual(candidateData, lastPersistedRef.current);
+  // There is something to reset when a config is already saved or the form
+  // currently holds any credentials.
+  const canReset = !!lastPersistedRef.current || !!apiKey || !!baseUrl;
 
   return (
     <div
       className={cn(
-        "flex flex-col w-full",
+        "web-search-root flex flex-col w-full",
         isPage ? "gap-[8px]" : "gap-[16px]"
       )}
     >
@@ -244,9 +263,10 @@ const WebSearch = ({
       >
         {t("WebSearchDescription")}
       </p>
-      <div className="flex flex-col gap-[8px]">
+      <div className="web-search-fields flex flex-col gap-[8px]">
         <FieldContainer
           header={t("WebSearchEngine")}
+          headerClassName="web-search-field-header"
           isHorizontal={fieldIsHorizontal}
         >
           <ComboBox
@@ -258,6 +278,7 @@ const WebSearch = ({
         {!provider?.baseUrl && (
           <FieldContainer
             header={t("BaseURL")}
+            headerClassName="web-search-field-header"
             isHorizontal={fieldIsHorizontal}
             error={baseUrlError}
           >
@@ -276,6 +297,7 @@ const WebSearch = ({
         {!provider?.isCloudProvider && (
           <FieldContainer
             header={t("APIKey")}
+            headerClassName="web-search-field-header"
             isHorizontal={fieldIsHorizontal}
             action={
               getApiKeyLink(selectedId) ? (
@@ -302,13 +324,23 @@ const WebSearch = ({
         )}
       </div>
       {isButtonMode && (
-        <div className="flex justify-end">
+        <div className="web-search-actions flex gap-[8px]">
           <Button
+            className="web-search-save-button"
             onClick={() => void handleSave()}
             isLoading={isSaving}
-            disabled={!provider || !isDirty}
+            disabled={!provider || !isDirty || isResetting}
           >
             {t("Save")}
+          </Button>
+          <Button
+            className="web-search-reset-button"
+            variant="default"
+            onClick={() => void handleReset()}
+            isLoading={isResetting}
+            disabled={isSaving || !canReset}
+          >
+            {t("ResetSettings")}
           </Button>
         </div>
       )}
