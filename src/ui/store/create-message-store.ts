@@ -23,8 +23,13 @@ export interface MessageStoreState {
    * affordance.
    */
   isToolPending: boolean;
-  /** Internal tracker for the thread whose messages are loaded; used to discard stale fetches. */
-  _currentThreadId: string;
+  /**
+   * Internal tracker for the thread whose messages are loaded; used to
+   * discard stale fetches. Starts as `null` (a sentinel no real `threadId`
+   * can equal — including the empty "new chat" id `""`) so the first sync
+   * always fetches, while remounts with the same thread are no-ops.
+   */
+  _currentThreadId: string | null;
   /** Abort controller for the in-flight streaming request, if any. */
   _abortController?: AbortController;
   /** Set the streaming flag. */
@@ -72,7 +77,7 @@ export function createMessageStore(deps: {
     isStreamRunning: false,
     isRequestRunning: false,
     isToolPending: false,
-    _currentThreadId: "",
+    _currentThreadId: null,
     _abortController: undefined,
 
     fetchPrevMessages: async (threadId: string) => {
@@ -122,7 +127,7 @@ export function createMessageStore(deps: {
         _abortController: undefined,
       });
       ctx.callbacksManager.emit("onStreamStop", {
-        threadId: get()._currentThreadId,
+        threadId: get()._currentThreadId ?? "",
         messageUID: "",
       });
     },

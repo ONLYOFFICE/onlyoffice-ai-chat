@@ -28,7 +28,7 @@ const stores = {
     truncateMessagesAfter: vi.fn(),
     fetchPrevMessages: vi.fn().mockResolvedValue(undefined),
     claimThreadId: vi.fn(),
-    _currentThreadId: "",
+    _currentThreadId: "" as string | null,
   },
   threadsState: {
     threadId: "",
@@ -1049,5 +1049,44 @@ describe("useMessages.regenerate", () => {
     const arg = apiAi.regenerateStream.mock.calls[0][0];
     expect(arg.actionArgs.isReasoning).toBe(true);
     expect(arg.actionArgs.tools).toEqual([{ name: "foo" }]);
+  });
+});
+
+describe("useMessages thread sync effect", () => {
+  it("does not refetch or clear attachments on remount with the same empty thread", () => {
+    // Fresh store: the sentinel `null` claim means "nothing synced yet",
+    // so the first mount fetches the empty "new chat" thread and clears.
+    stores.messageState._currentThreadId = null;
+    const first = renderHook(() => useMessages({ isReady: true }));
+    expect(stores.messageState.fetchPrevMessages).toHaveBeenCalledWith("");
+    expect(stores.attachmentsState.clearAttachmentFiles).toHaveBeenCalledTimes(
+      1
+    );
+
+    // The real fetchPrevMessages records the claim, including for "".
+    stores.messageState._currentThreadId = "";
+    first.unmount();
+    (stores.messageState.fetchPrevMessages as ReturnType<typeof vi.fn>)
+      .mockClear();
+    stores.attachmentsState.clearAttachmentFiles.mockClear();
+    stores.attachmentsState.clearAttachmentImages.mockClear();
+
+    // Remount with the same (empty) thread: composer attachments survive.
+    renderHook(() => useMessages({ isReady: true }));
+    expect(stores.messageState.fetchPrevMessages).not.toHaveBeenCalled();
+    expect(stores.attachmentsState.clearAttachmentFiles).not.toHaveBeenCalled();
+    expect(
+      stores.attachmentsState.clearAttachmentImages
+    ).not.toHaveBeenCalled();
+  });
+
+  it("refetches and clears attachments on an actual thread switch", () => {
+    stores.messageState._currentThreadId = "";
+    stores.threadsState.threadId = "t2";
+    renderHook(() => useMessages({ isReady: true }));
+    expect(stores.messageState.fetchPrevMessages).toHaveBeenCalledWith("t2");
+    expect(stores.attachmentsState.clearAttachmentFiles).toHaveBeenCalledTimes(
+      1
+    );
   });
 });
