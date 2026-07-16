@@ -59,14 +59,29 @@ vi.mock("../../dialog", () => ({
     </div>
   ),
   DialogFooter: ({
-    children,
-    ...props
+    cancelLabel,
+    onCancel,
+    submitLabel,
+    onSubmit,
+    submitDisabled,
+    submitLoading,
+    cancelDisabled,
   }: {
-    children?: React.ReactNode;
-    className?: string;
+    cancelLabel: string;
+    onCancel?: () => void;
+    submitLabel: string;
+    onSubmit?: () => void;
+    submitDisabled?: boolean;
+    submitLoading?: boolean;
+    cancelDisabled?: boolean;
   }) => (
-    <div data-testid="dialog-footer" {...props}>
-      {children}
+    <div data-testid="dialog-footer">
+      <button onClick={onCancel} disabled={cancelDisabled}>
+        {cancelLabel}
+      </button>
+      <button onClick={onSubmit} disabled={submitDisabled || submitLoading}>
+        {submitLabel}
+      </button>
     </div>
   ),
 }));
@@ -155,16 +170,5 @@ describe("DeleteChatDialog", () => {
 
     addSpy.mockRestore();
     removeSpy.mockRestore();
-  });
-
-  it("applies RTL styling when isRTL is true", () => {
-    mockIsRTL = true;
-
-    const { container } = render(
-      <DeleteChatDialog id="thread-1" onClose={mockOnClose} />
-    );
-
-    const buttonRow = container.querySelector(".flex-row-reverse");
-    expect(buttonRow).toBeInTheDocument();
   });
 });

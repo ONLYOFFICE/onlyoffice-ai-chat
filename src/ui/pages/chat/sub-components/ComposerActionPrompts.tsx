@@ -25,7 +25,8 @@ const EditPromptDialog = ({
   initialText,
   onClose,
 }: EditPromptDialogProps) => {
-  const { Button, DialogContent, FieldContainer, Input } = useComponents();
+  const { DialogContent, FieldContainer, Input, DialogFooter } =
+    useComponents();
   const { t, isRTL } = useI18n();
   const { usePromptsStore } = useStores();
   const editPrompt = usePromptsStore((s) => s.editPrompt);
@@ -57,7 +58,7 @@ const EditPromptDialog = ({
         className={PROMPT_DIALOG_CLASS}
       >
         <div className="flex flex-col justify-between h-full">
-          <div className="flex flex-col gap-[12px] py-[24px]">
+          <div className="flex flex-col gap-[12px] py-[var(--edit-prompt-dialog-body-padding-y,32px)]">
             <FieldContainer header={t("PromptName")}>
               <Input
                 value={name}
@@ -84,23 +85,15 @@ const EditPromptDialog = ({
               />
             </FieldContainer>
           </div>
-          <div
-            className={cn(
-              "flex items-center gap-[8px] h-[64px] mx-[-24px] px-[24px]",
-              isRTL ? "flex-row-reverse justify-end" : "flex-row justify-end"
-            )}
-          >
-            <Button variant="default" onClick={onClose} className="h-[36px]">
-              {t("Cancel")}
-            </Button>
-            <Button
-              onClick={onSave}
-              disabled={!name.trim()}
-              className="h-[36px]"
-            >
-              {t("Save")}
-            </Button>
-          </div>
+          <DialogFooter
+            className="h-[64px] mx-[-24px] px-[24px]"
+            cancelLabel={t("Cancel")}
+            onCancel={onClose}
+            submitLabel={t("Save")}
+            onSubmit={onSave}
+            submitDisabled={!name.trim()}
+            buttonClassName="h-[36px]"
+          />
         </div>
       </DialogContent>
     </Dialog>
@@ -118,8 +111,8 @@ const RenameFolderDialog = ({
   initialName,
   onClose,
 }: RenameFolderDialogProps) => {
-  const { Button, DialogContent, Input } = useComponents();
-  const { t, isRTL } = useI18n();
+  const { DialogContent, Input, DialogFooter } = useComponents();
+  const { t } = useI18n();
   const { usePromptsStore } = useStores();
   const renameFolder = usePromptsStore((s) => s.renameFolder);
   const [name, setName] = useState(initialName);
@@ -144,7 +137,7 @@ const RenameFolderDialog = ({
             onSave();
           }}
         >
-          <div className="py-[32px]">
+          <div className="py-[var(--rename-folder-dialog-body-padding-y,32px)]">
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -152,23 +145,15 @@ const RenameFolderDialog = ({
               autoFocus
             />
           </div>
-          <div
-            className={cn(
-              "flex items-center gap-[8px] h-[64px] mx-[-24px] px-[24px]",
-              isRTL ? "flex-row-reverse justify-end" : "flex-row justify-end"
-            )}
-          >
-            <Button variant="default" onClick={onClose} className="h-[36px]">
-              {t("Cancel")}
-            </Button>
-            <Button
-              onClick={onSave}
-              disabled={!name.trim()}
-              className="h-[36px]"
-            >
-              {t("Save")}
-            </Button>
-          </div>
+          <DialogFooter
+            className="h-[64px] mx-[-24px] px-[24px]"
+            cancelLabel={t("Cancel")}
+            onCancel={onClose}
+            submitLabel={t("Save")}
+            onSubmit={onSave}
+            submitDisabled={!name.trim()}
+            buttonClassName="h-[36px]"
+          />
         </form>
       </DialogContent>
     </Dialog>
@@ -181,8 +166,8 @@ type DeleteFolderDialogProps = {
 };
 
 const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
-  const { Button, DialogContent } = useComponents();
-  const { t, isRTL } = useI18n();
+  const { DialogContent, DialogFooter } = useComponents();
+  const { t } = useI18n();
   const { usePromptsStore } = useStores();
   const removeFolder = usePromptsStore((s) => s.removeFolder);
 
@@ -203,20 +188,16 @@ const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
             }
           }}
         >
-          <p className="select-none h-[40px] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
+          <p className="select-none h-[var(--delete-folder-dialog-message-height,40px)] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
             {t("WantDeleteFolder")}
           </p>
-          <div
-            className={cn(
-              "flex items-center gap-[8px] h-[64px] mx-[-24px] px-[24px]",
-              isRTL ? "flex-row-reverse justify-end" : "flex-row justify-end"
-            )}
-          >
-            <Button variant="default" onClick={onClose}>
-              {t("No")}
-            </Button>
-            <Button onClick={onConfirm}>{t("Yes")}</Button>
-          </div>
+          <DialogFooter
+            className="h-[64px] mx-[-24px] px-[24px]"
+            cancelLabel={t("No")}
+            onCancel={onClose}
+            submitLabel={t("Yes")}
+            onSubmit={onConfirm}
+          />
         </div>
       </DialogContent>
     </Dialog>

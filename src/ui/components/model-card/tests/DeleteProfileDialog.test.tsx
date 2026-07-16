@@ -66,14 +66,29 @@ vi.mock("../../dialog", () => ({
     </div>
   ),
   DialogFooter: ({
-    children,
-    ...props
+    cancelLabel,
+    onCancel,
+    submitLabel,
+    onSubmit,
+    submitDisabled,
+    submitLoading,
+    cancelDisabled,
   }: {
-    children?: React.ReactNode;
-    className?: string;
+    cancelLabel: string;
+    onCancel?: () => void;
+    submitLabel: string;
+    onSubmit?: () => void;
+    submitDisabled?: boolean;
+    submitLoading?: boolean;
+    cancelDisabled?: boolean;
   }) => (
-    <div data-testid="dialog-footer" {...props}>
-      {children}
+    <div data-testid="dialog-footer">
+      <button onClick={onCancel} disabled={cancelDisabled}>
+        {cancelLabel}
+      </button>
+      <button onClick={onSubmit} disabled={submitDisabled || submitLoading}>
+        {submitLabel}
+      </button>
     </div>
   ),
 }));
@@ -168,23 +183,5 @@ describe("DeleteProfileDialog", () => {
     render(<DeleteProfileDialog profile={profile} onClose={mockOnClose} />);
     fireEvent.click(screen.getByTestId("dialog-close"));
     expect(mockOnClose).toHaveBeenCalledOnce();
-  });
-
-  it("applies RTL layout when isRTL is true", () => {
-    mockIsRTL = true;
-    const { container } = render(
-      <DeleteProfileDialog profile={profile} onClose={mockOnClose} />
-    );
-    const buttonRow = container.querySelector(".flex-row-reverse");
-    expect(buttonRow).toBeTruthy();
-  });
-
-  it("applies LTR layout when isRTL is false", () => {
-    mockIsRTL = false;
-    const { container } = render(
-      <DeleteProfileDialog profile={profile} onClose={mockOnClose} />
-    );
-    const buttonRow = container.querySelector(".flex-row-reverse");
-    expect(buttonRow).toBeNull();
   });
 });
