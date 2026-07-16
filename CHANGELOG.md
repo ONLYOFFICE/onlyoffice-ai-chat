@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- The Web Search settings page can now be fully restyled by the host through the `className` prop and the stable `web-search-*` classes (`web-search-root`, `web-search-fields`, `web-search-field-header`, …): field-column gaps and `max-width`, header label size/weight, and the "Get API key" link color (via `--link-secondary-color`) — all from the host's own stylesheet.
+
 ## 0.4.152
 
 ### Fixed
