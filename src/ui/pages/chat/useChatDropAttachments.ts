@@ -144,7 +144,12 @@ export const useChatDropAttachments = () => {
       .filter((f) => !f.type.startsWith("image/") && isTextFile(f))
       .map(async (f) => {
         try {
-          return { path: f.name, content: await readFile(f, "text"), type: 0 };
+          return {
+            path: "",
+            content: await readFile(f, "text"),
+            type: 0,
+            title: f.name,
+          };
         } catch {
           return null;
         }
