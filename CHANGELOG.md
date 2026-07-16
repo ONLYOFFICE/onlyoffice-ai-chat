@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## 0.4.156
+
+### Fixed
+
+- `hideProfilePicker` is now tri-state and an explicit value from the host always wins: `true` — the composer's model picker is always hidden, `false` — always shown (even with `entityId` set), omitted — hidden only when `entityId` is set (legacy heuristic). Previously `entityId` was an unconditional veto (`hideProfilePicker || entityId !== undefined`), so hosts that scope every chat by entity lost model selection everywhere with no way to opt back in.
+
+```ts
+<AIChatWidget entityId={roomId} hideProfilePicker={false} /> // picker stays visible
+```
+
 ## 0.4.154
 
 ### Fixed

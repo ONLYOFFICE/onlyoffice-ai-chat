@@ -113,6 +113,11 @@ export interface AIChatWidgetProps {
   onlyofficeConfig?: TOnlyOfficeConfig;
   hiddenProviders?: ProviderType[];
   hiddenWebSearchProviders?: WebSearchProviderId[];
+  /**
+   * Controls the composer's model (profile) picker. An explicit `true` /
+   * `false` always wins; omitted falls back to hiding the picker only when
+   * `entityId` is set. See {@link WidgetConfig.hideProfilePicker}.
+   */
   hideProfilePicker?: boolean;
   /**
    * Hide the floating "scroll to bottom" button in the chat thread. Shown by

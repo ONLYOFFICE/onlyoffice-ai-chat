@@ -22,6 +22,14 @@ export interface WidgetConfig {
    * Fixed at mount; live switching is not supported.
    */
   entityId?: string;
+  /**
+   * Controls the composer's model (profile) picker. Tri-state:
+   *
+   * - `true` — always hidden.
+   * - `false` — always shown, even when {@link WidgetConfig.entityId} is set.
+   * - omitted — hidden when `entityId` is set (legacy heuristic for
+   *   entity chats with a host-fixed profile), shown otherwise.
+   */
   hideProfilePicker?: boolean;
   /**
    * Hide the floating "scroll to bottom" button in the chat thread. The
