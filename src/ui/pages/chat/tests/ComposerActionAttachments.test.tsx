@@ -24,6 +24,7 @@ let mockGetWebSearchEnabled = () => false;
 let mockExtendedThinking = false;
 let mockPlatformFile: unknown = null;
 let mockComposerActions: unknown = undefined;
+let mockAddLocalImageEnabled = false;
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -71,7 +72,10 @@ vi.mock("../../../tools/context", () => ({
 }));
 
 vi.mock("../../../../widget-config", () => ({
-  useWidgetConfig: () => ({ composerActions: mockComposerActions }),
+  useWidgetConfig: () => ({
+    composerActions: mockComposerActions,
+    addLocalImageEnabled: mockAddLocalImageEnabled,
+  }),
 }));
 
 let mockDropdownItems: unknown[] = [];
@@ -175,6 +179,7 @@ describe("ComposerActionAttachment", () => {
     mockDropdownItems = [];
     mockOnOpenChange = undefined;
     mockComposerActions = undefined;
+    mockAddLocalImageEnabled = false;
   });
 
   it("renders the dropdown trigger", () => {
@@ -203,16 +208,29 @@ describe("ComposerActionAttachment", () => {
   });
 
   describe("without platform.file", () => {
-    it("renders AddLocalImage + separator + web search + extended thinking = 4 items", () => {
+    it("renders only web search + extended thinking when AddLocalImage is not enabled", () => {
+      render(<ComposerActionAttachment />);
+      // "Add local image" is opt-in via `addLocalImageEnabled`; with the
+      // flag omitted (and no platform.file) there are no attachment
+      // entries, hence no separator either.
+      expect(mockDropdownItems).toHaveLength(2);
+      const items = mockDropdownItems as { isSeparator?: boolean }[];
+      expect(items.find((i) => i.isSeparator)).toBeUndefined();
+    });
+
+    it("renders AddLocalImage + separator + web search + extended thinking = 4 items when enabled", () => {
+      mockAddLocalImageEnabled = true;
       render(<ComposerActionAttachment />);
       // "Add local image" rides on the HTML <input>, not platform.file,
-      // so it is always present (which adds the leading separator too).
+      // so the opt-in flag alone is enough (which adds the leading
+      // separator too).
       expect(mockDropdownItems).toHaveLength(4);
       const items = mockDropdownItems as { isSeparator?: boolean }[];
       expect(items.find((i) => i.isSeparator)).toBeDefined();
     });
 
     it("includes AddLocalImage but not AddLocalFile", () => {
+      mockAddLocalImageEnabled = true;
       render(<ComposerActionAttachment />);
       const items = mockDropdownItems as { text: string }[];
       expect(items.find((i) => i.text === "AddLocalFile")).toBeUndefined();
@@ -232,6 +250,7 @@ describe("ComposerActionAttachment", () => {
     });
 
     it("includes AddLocalFile and AddLocalImage items", async () => {
+      mockAddLocalImageEnabled = true;
       await act(async () => {
         render(<ComposerActionAttachment />);
       });
@@ -241,6 +260,7 @@ describe("ComposerActionAttachment", () => {
     });
 
     it("includes 5 items: AddLocalFile + AddLocalImage + separator + web search + extended thinking", async () => {
+      mockAddLocalImageEnabled = true;
       await act(async () => {
         render(<ComposerActionAttachment />);
       });
@@ -753,14 +773,14 @@ describe("ComposerActionAttachment", () => {
   describe("composerActions", () => {
     it("renders nothing extra when composerActions is undefined", () => {
       render(<ComposerActionAttachment />);
-      // baseline: AddLocalImage + separator + web search + extended thinking
-      expect(mockDropdownItems).toHaveLength(4);
+      // baseline (AddLocalImage not enabled): web search + extended thinking
+      expect(mockDropdownItems).toHaveLength(2);
     });
 
     it("renders nothing extra when composerActions is empty", () => {
       mockComposerActions = [];
       render(<ComposerActionAttachment />);
-      expect(mockDropdownItems).toHaveLength(4);
+      expect(mockDropdownItems).toHaveLength(2);
     });
 
     it("renders custom items with id, text, and string icon", () => {
@@ -813,6 +833,7 @@ describe("ComposerActionAttachment", () => {
         getFileType: mockGetFileType,
         getRecentFiles: mockGetRecentFiles,
       };
+      mockAddLocalImageEnabled = true;
       mockComposerActions = [{ id: "act-1", text: "Custom", onClick: vi.fn() }];
       await act(async () => {
         render(<ComposerActionAttachment />);

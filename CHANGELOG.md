@@ -5,6 +5,42 @@
 ### Changed
 
 - The Web Search settings page can now be fully restyled by the host through the `className` prop and the stable `web-search-*` classes (`web-search-root`, `web-search-fields`, `web-search-field-header`, …): field-column gaps and `max-width`, header label size/weight, and the "Get API key" link color (via `--link-secondary-color`) — all from the host's own stylesheet.
+### Added
+
+- `onDropFiles` widget config — takes over file drag-and-drop onto the chat surface. When provided, dropping one or more files hands the raw `File[]` to the callback and the built-in handling (reading images as data URLs / text files as text and attaching them in-memory, silently ignoring binary Office/PDF drops) is skipped entirely. Use it to route every dropped file through the same path as the composer's upload button — e.g. a host that uploads to portal storage and attaches by file id, which also lets binary formats (DOCX/PDF/XLSX) be dropped. The drag-over highlight/overlay is still driven by the widget; only the drop's payload handling is delegated. Omit to keep the built-in read-and-attach behavior.
+
+```ts
+<AIChatWidget onDropFiles={(files) => host.uploadAndAttach(files)} />
+```
+## 0.4.160
+
+### Fixed
+
+- Code blocks rendered through `MarkdownContent` (the plain `react-markdown` path used by assistant messages) now get the full block UI — language header, copy button, and shiki syntax highlighting — instead of rendering as bold-italic inline code. The shared components map was written for assistant-ui's `MarkdownTextPrimitive`: its `SyntaxHighlighter` / `CodeHeader` keys are ignored by plain react-markdown, and `useIsMarkdownCodeBlock()` is always false outside assistant-ui's context, so every fenced block fell through to the inline-code styling. `MarkdownContent` now uses its own `plainMarkdownComponents` map whose `pre` / `code` renderers detect blocks by the `language-*` class or multiline content and rebuild the same CodeHeader + shiki composition without assistant-ui context. The `MarkdownText` (assistant-ui) path is unchanged.
+
+## 0.4.159
+
+### Fixed
+
+- Code-block syntax highlighting now works under every theme, not just `theme-light` / `theme-dark`. The shiki palette switch was hardcoded to those two theme ids, so under the other built-in themes (`theme-white`, `theme-gray`, `theme-classic-light`, `theme-night`, `theme-contrast-dark`) and any custom host theme the CSS never matched and tokens fell back to shiki's inline `color: light-dark(...)` — which always resolves to the light palette (nothing sets `color-scheme`), leaving code unreadable on dark themes. `ThemeProvider` now stamps the resolved theme classification on its wrapper as `data-theme-type="light" | "dark"` (derived by `getThemeType`, so custom ids like `theme-portal-dark` classify correctly), and the palette-switch CSS keys off that attribute instead of specific theme ids.
+
+## 0.4.156
+
+### Fixed
+
+- `hideProfilePicker` is now tri-state and an explicit value from the host always wins: `true` — the composer's model picker is always hidden, `false` — always shown (even with `entityId` set), omitted — hidden only when `entityId` is set (legacy heuristic). Previously `entityId` was an unconditional veto (`hideProfilePicker || entityId !== undefined`), so hosts that scope every chat by entity lost model selection everywhere with no way to opt back in.
+
+```ts
+<AIChatWidget entityId={roomId} hideProfilePicker={false} /> // picker stays visible
+```
+
+## 0.4.154
+
+### Fixed
+
+- Stop button now actually aborts streaming in server-API mode (`createServerAPI`). The caller's `AbortSignal` is wired onto the `fetch` itself (closing the connection is the only cancellation the backend can observe) and stripped from the JSON body, where it used to serialize as a meaningless `{}`. An abort ends the NDJSON stream gracefully instead of surfacing as a stream error.
+- The UI stream loop now exits as soon as Stop is pressed and finalizes the partial message as stopped by the user (`status: { type: "incomplete", reason: "cancelled" }`) rather than an error — the message stops growing immediately and a new message can be sent right away.
+- Tool-call continuation streams (approve / deny, including server-executed tools) are now abortable too: dialog-driven approve/deny arms a fresh `AbortController` for the resume round — previously they reused an already-cleared controller (or passed no signal at all), so Stop had nothing to abort during post-tool continuations in either mode.
 
 ## 0.4.152
 

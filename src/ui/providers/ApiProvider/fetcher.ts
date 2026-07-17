@@ -1,4 +1,5 @@
 import type { RouteSpec } from "../../../core/services";
+import { isAbortError } from "../../../shared/abort";
 import type {
   ServerAPIConfig,
   ServerAPIEngines,
@@ -34,6 +35,36 @@ function isStreamingRoute(service: ServiceKey, method: string): boolean {
 }
 
 /**
+ * Pull the caller's `AbortSignal` out of a payload's `actionArgs` so it
+ * can be wired onto the `fetch` itself, and return a copy of `args` with
+ * the signal stripped from the payload — an `AbortSignal` JSON-stringifies
+ * to `{}`, and the only cancellation the server can observe is the client
+ * closing the connection.
+ */
+function extractAbortSignal(args: readonly unknown[]): {
+  signal: AbortSignal | undefined;
+  args: readonly unknown[];
+} {
+  const [input, ...rest] = args;
+  if (input === null || typeof input !== "object") {
+    return { signal: undefined, args };
+  }
+  const actionArgs = (input as { actionArgs?: unknown }).actionArgs;
+  if (actionArgs === null || typeof actionArgs !== "object") {
+    return { signal: undefined, args };
+  }
+  const signal = (actionArgs as { signal?: unknown }).signal;
+  if (!(signal instanceof AbortSignal)) {
+    return { signal: undefined, args };
+  }
+  const stripped: Record<string, unknown> = {
+    ...(actionArgs as Record<string, unknown>),
+  };
+  delete stripped.signal;
+  return { signal, args: [{ ...input, actionArgs: stripped }, ...rest] };
+}
+
+/**
  * Consume a `Response` body as newline-delimited JSON: one event per
  * line, separated by `\n`. Buffers partial reads across chunk boundaries
  * and yields a final unterminated event if the stream closes without a
@@ -65,6 +96,9 @@ async function* readNdjson(res: Response): AsyncIterable<unknown> {
       yield JSON.parse(tail);
     }
   } finally {
+    // Tear down the connection when the consumer exits early (break or
+    // abort) — releasing the lock alone would leave the body stream open.
+    await reader.cancel().catch(() => undefined);
     reader.releaseLock();
   }
 }
@@ -72,13 +106,27 @@ async function* readNdjson(res: Response): AsyncIterable<unknown> {
 /**
  * Issue the fetch eagerly so cancellation/abort signals propagate, but
  * defer the `await` until the consumer pulls the first event. Non-2xx
- * responses surface as an error thrown from the first iteration.
+ * responses surface as an error thrown from the first iteration. An
+ * abort via `init.signal` (Stop pressed) is a graceful end of stream,
+ * not a stream error.
  */
 function streamRoute(url: string, init: RequestInit): AsyncIterable<unknown> {
   const responsePromise = fetch(url, init);
+  // The eager fetch may reject (e.g. on abort) before the consumer starts
+  // iterating — attach a no-op handler so it never surfaces as an
+  // unhandled rejection; the iterator below still awaits the original.
+  void responsePromise.catch(() => undefined);
+  const aborted = (error: unknown) =>
+    isAbortError(error, init.signal ?? undefined);
   return {
     async *[Symbol.asyncIterator]() {
-      const res = await responsePromise;
+      let res: Response;
+      try {
+        res = await responsePromise;
+      } catch (error) {
+        if (aborted(error)) return;
+        throw error;
+      }
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new Error(
@@ -86,7 +134,12 @@ function streamRoute(url: string, init: RequestInit): AsyncIterable<unknown> {
             (text ? ` — ${text}` : "")
         );
       }
-      yield* readNdjson(res);
+      try {
+        yield* readNdjson(res);
+      } catch (error) {
+        if (aborted(error)) return;
+        throw error;
+      }
     },
   };
 }
@@ -120,16 +173,20 @@ export function callRoute<
 
   const route = (config.routes[service] as Record<string, RouteSpec>)[method];
   let url = `${config.origin}${config.baseUrl}/${route.path}`;
+  // The caller's AbortSignal rides on the request itself — closing the
+  // connection is the only cancellation the server can observe.
+  const { signal, args: bodyArgs } = extractAbortSignal(args);
   const init: RequestInit = { method: route.method };
+  if (signal) init.signal = signal;
   const allowsBody = route.method !== "GET";
-  if (allowsBody && args.length > 0) {
+  if (allowsBody && bodyArgs.length > 0) {
     init.headers = { "Content-Type": "application/json", ...config.headers };
-    init.body = JSON.stringify(args.length === 1 ? args[0] : args);
+    init.body = JSON.stringify(bodyArgs.length === 1 ? bodyArgs[0] : bodyArgs);
   } else {
-    if (route.method === "GET" && route.params && args.length > 0) {
+    if (route.method === "GET" && route.params && bodyArgs.length > 0) {
       const qs = new URLSearchParams();
       route.params.forEach((name, i) => {
-        const value = args[i];
+        const value = bodyArgs[i];
         if (value === undefined || value === null) return;
         if (typeof value === "string" && value === "") return;
         qs.set(name, typeof value === "string" ? value : JSON.stringify(value));

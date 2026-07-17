@@ -22,6 +22,14 @@ export interface WidgetConfig {
    * Fixed at mount; live switching is not supported.
    */
   entityId?: string;
+  /**
+   * Controls the composer's model (profile) picker. Tri-state:
+   *
+   * - `true` — always hidden.
+   * - `false` — always shown, even when {@link WidgetConfig.entityId} is set.
+   * - omitted — hidden when `entityId` is set (legacy heuristic for
+   *   entity chats with a host-fixed profile), shown otherwise.
+   */
   hideProfilePicker?: boolean;
   /**
    * Hide the floating "scroll to bottom" button in the chat thread. The
@@ -389,6 +397,20 @@ export interface WidgetConfig {
     result: unknown,
     ctx: ToolCallApproveContext
   ) => void | Promise<void>;
+  /**
+   * Takes over file drag-and-drop onto the chat surface. When provided, a
+   * drop of one or more files hands the raw {@link File} list to this
+   * callback and the widget's built-in handling (reading images as data
+   * URLs / text files as text and attaching them in-memory, ignoring binary
+   * Office/PDF drops) is skipped entirely. Use this to route every dropped
+   * file through the same path as the composer's upload button — e.g. a host
+   * that uploads to portal storage and attaches by file id.
+   *
+   * The drag-over highlight/overlay is still driven by the widget; only the
+   * drop's payload handling is delegated. When omitted, the built-in
+   * read-and-attach behavior is used.
+   */
+  onDropFiles?: (files: File[]) => void | Promise<void>;
   /**
    * Minimum severity that reaches the console. The library logs through a
    * single module-global logger; setting this raises the threshold so noisy

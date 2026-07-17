@@ -6,10 +6,12 @@ import { SelectModel } from "./ComposerActionSelectModel";
 
 const ComposerAction = () => {
   const { hideProfilePicker, entityId } = useWidgetConfig();
-  // In entity ("room") mode the chat profile is fixed by the host —
-  // the composer selector would let the user override it locally,
-  // which contradicts the contract. Always hide.
-  const shouldHidePicker = hideProfilePicker || entityId !== undefined;
+  // An explicit `hideProfilePicker` from the host always wins. Only when
+  // the host says nothing does the entity ("room") heuristic apply:
+  // entity chats historically fix the profile on the host side, so the
+  // selector stays hidden there by default. `entityId` itself is just a
+  // scoping key — it no longer implies a fixed model on its own.
+  const shouldHidePicker = hideProfilePicker ?? entityId !== undefined;
 
   return (
     <div className="relative flex flex-col">

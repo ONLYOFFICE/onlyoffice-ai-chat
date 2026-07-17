@@ -19,10 +19,13 @@ const stores = {
   messageState: {
     messages: [] as unknown[],
     isStreamRunning: false,
+    _abortController: undefined as AbortController | undefined,
     setIsStreamRunning: vi.fn(),
     setIsRequestRunning: vi.fn(),
     setIsToolPending: vi.fn(),
-    setAbortController: vi.fn(),
+    setAbortController: vi.fn((controller?: AbortController) => {
+      stores.messageState._abortController = controller;
+    }),
     addMessage: vi.fn(),
     updateLastMessage: vi.fn(),
     truncateMessagesAfter: vi.fn(),
@@ -165,6 +168,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   stores.messageState.messages = [];
   stores.messageState._currentThreadId = "";
+  stores.messageState._abortController = undefined;
   stores.threadsState.threadId = "";
   stores.threadsState.threads = [];
   stores.serversState.tools = [];
@@ -243,6 +247,59 @@ describe("useMessages.onNew", () => {
       expect.any(Object)
     );
     expect(callbacksManager.emit).toHaveBeenCalledWith(
+      "onStreamEnd",
+      expect.any(Object)
+    );
+  });
+
+  it("stops consuming events after abort and finalizes the message as cancelled", async () => {
+    stores.profilesState.chatProfile = profile;
+    async function* stream() {
+      yield {
+        type: "message-start",
+        message: { role: "assistant", content: "partial" },
+        messageId: "m1",
+      };
+      // Simulate the user pressing Stop between events — abort the
+      // controller armed by onNew and clear it like stopMessage() does.
+      stores.messageState._abortController?.abort();
+      stores.messageState._abortController = undefined;
+      yield {
+        type: "message-delta",
+        message: { role: "assistant", content: "partial more" },
+        messageId: "m1",
+      };
+      yield {
+        type: "message-end",
+        message: { role: "assistant", content: "full" },
+        messageId: "m1",
+      };
+    }
+    apiAi.sendWithStream.mockReturnValue(stream());
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hello" }],
+      } as never);
+    });
+    // The start chunk rendered; everything after the abort was dropped.
+    expect(stores.messageState.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ content: "partial" })
+    );
+    const rendered = [
+      ...stores.messageState.addMessage.mock.calls,
+      ...stores.messageState.updateLastMessage.mock.calls,
+    ].map(([m]) => (m as { content?: unknown }).content);
+    expect(rendered).not.toContain("partial more");
+    expect(rendered).not.toContain("full");
+    // The partial message is finalized as user-cancelled, not an error.
+    expect(stores.messageState.updateLastMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: "partial",
+        status: { type: "incomplete", reason: "cancelled" },
+      })
+    );
+    expect(callbacksManager.emit).not.toHaveBeenCalledWith(
       "onStreamEnd",
       expect.any(Object)
     );
@@ -481,6 +538,56 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
     });
     expect(servers.callTools).toHaveBeenCalled();
     expect(apiAi.approveToolCall).toHaveBeenCalled();
+  });
+
+  it("approveToolCall arms a fresh abort controller and passes its signal", async () => {
+    // Dialog approval runs after the original stream ended and cleared its
+    // controller — the continuation must arm a new one so Stop can abort it.
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: { q: 1 },
+    });
+    apiAi.approveToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.approveToolCall(false);
+    });
+    expect(stores.messageState.setAbortController).toHaveBeenCalledWith(
+      expect.any(AbortController)
+    );
+    const input = apiAi.approveToolCall.mock.calls[0][0] as {
+      actionArgs: { signal?: unknown };
+    };
+    expect(input.actionArgs.signal).toBeInstanceOf(AbortSignal);
+    expect((input.actionArgs.signal as AbortSignal).aborted).toBe(false);
+  });
+
+  it("denyToolCall arms a fresh abort controller and passes its signal", async () => {
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    apiAi.denyToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.denyToolCall();
+    });
+    expect(stores.messageState.setAbortController).toHaveBeenCalledWith(
+      expect.any(AbortController)
+    );
+    const input = apiAi.denyToolCall.mock.calls[0][0] as {
+      actionArgs: { signal?: unknown };
+    };
+    expect(input.actionArgs.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("denyToolCall noops when no manageToolData", async () => {
@@ -1066,8 +1173,9 @@ describe("useMessages thread sync effect", () => {
     // The real fetchPrevMessages records the claim, including for "".
     stores.messageState._currentThreadId = "";
     first.unmount();
-    (stores.messageState.fetchPrevMessages as ReturnType<typeof vi.fn>)
-      .mockClear();
+    (
+      stores.messageState.fetchPrevMessages as ReturnType<typeof vi.fn>
+    ).mockClear();
     stores.attachmentsState.clearAttachmentFiles.mockClear();
     stores.attachmentsState.clearAttachmentImages.mockClear();
 

@@ -119,6 +119,18 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     const t = useServersStore.getState().tools;
     return t.length > 0 ? t : undefined;
   }, [useServersStore]);
+  // Signal for a resume round (approve / deny). Reuses the live controller
+  // when the resume runs inside the original stream, but dialog-driven
+  // approve/deny fires after that stream ended and cleared its controller —
+  // without arming a fresh one here, `stopMessage()` would have nothing to
+  // abort during the continuation.
+  const ensureAbortSignal = useCallback((): AbortSignal => {
+    const existing = useMessageStore.getState()._abortController;
+    if (existing && !existing.signal.aborted) return existing.signal;
+    const controller = new AbortController();
+    setAbortController(controller);
+    return controller.signal;
+  }, [useMessageStore, setAbortController]);
   const attachmentFiles = useAttachmentsStore((s) => s.attachmentFiles);
   const clearAttachmentFiles = useAttachmentsStore(
     (s) => s.clearAttachmentFiles
@@ -252,9 +264,19 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       let lastDisplayedMessage: ThreadMessageLike | null = null;
       let resolvedThreadId = initialThreadId;
       const resolvedProfileId: string | undefined = currentProfile?.id;
+      // The signal driving THIS round, captured up front: `stopMessage()`
+      // clears `_abortController` from the store right after aborting, so
+      // reading it lazily inside the loop would miss the abort.
+      const abortSignal = useMessageStore.getState()._abortController?.signal;
 
       try {
         for await (const event of stream) {
+          // Stop pressed. The transport is being torn down underneath us
+          // (fetch abort in server-API mode, provider abort in engine
+          // mode), but events already decoded may still be in flight —
+          // drop them and finalize as "stopped" below instead of letting
+          // the message keep growing.
+          if (abortSignal?.aborted) break;
           // A malformed / out-of-contract event (e.g. a server `{ type:
           // "error", message }` envelope) must never reach the message-chunk
           // path below — otherwise its `message` (a plain string) is pushed
@@ -434,6 +456,23 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           }
         }
 
+        // Stream ended on a Stop press: in server-API mode the aborted
+        // fetch ends the iteration without a terminal event (in engine
+        // mode the provider usually yields `message-incomplete` /
+        // `cancelled` first). Stamp the partial message as user-cancelled
+        // — not an error — unless a terminal status already arrived.
+        if (
+          abortSignal?.aborted &&
+          lastDisplayedMessage &&
+          lastDisplayedMessage.status?.type !== "incomplete"
+        ) {
+          lastDisplayedMessage = {
+            ...lastDisplayedMessage,
+            status: { type: "incomplete", reason: "cancelled" },
+          } as ThreadMessageLike;
+          updateLastMessage(lastDisplayedMessage);
+        }
+
         if (lastDisplayedMessage?.status?.type === "incomplete") {
           const status = lastDisplayedMessage.status as
             | { reason?: string; error?: unknown }
@@ -507,6 +546,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
                 isReasoning: extendedThinking,
                 tools: currentTools(),
                 prompt: systemPrompt,
+                signal: ensureAbortSignal(),
               },
             });
             await processStream(next, resolvedThreadId, {
@@ -565,7 +605,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             isReasoning: extendedThinking,
             tools: currentTools(),
             prompt: systemPrompt,
-            signal: useMessageStore.getState()._abortController?.signal,
+            signal: ensureAbortSignal(),
           },
         });
         await processStream(next, event.threadId, {
@@ -651,7 +691,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             isReasoning: extendedThinking,
             tools: currentTools(),
             prompt: systemPrompt,
-            signal: useMessageStore.getState()._abortController?.signal,
+            signal: ensureAbortSignal(),
           },
         });
         await processStream(next, event.threadId, {
@@ -667,6 +707,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       claimThreadId,
       currentProfile,
       entityId,
+      ensureAbortSignal,
       extendedThinking,
       insertThread,
       middlewareRunner,
@@ -876,7 +917,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             isReasoning: extendedThinking,
             tools: currentTools(),
             prompt: systemPrompt,
-            signal: useMessageStore.getState()._abortController?.signal,
+            signal: ensureAbortSignal(),
           },
         });
         await processStream(stream, data.threadId, {
@@ -977,7 +1018,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           isReasoning: extendedThinking,
           tools: currentTools(),
           prompt: systemPrompt,
-          signal: useMessageStore.getState()._abortController?.signal,
+          signal: ensureAbortSignal(),
         },
       });
       await processStream(stream, data.threadId, {
@@ -989,6 +1030,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       callbacksManager,
       currentProfile?.id,
       entityId,
+      ensureAbortSignal,
       extendedThinking,
       middlewareRunner,
       onToolCallApproveResult,
@@ -1002,7 +1044,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       systemPrompt,
       currentTools,
       updateLastMessage,
-      useMessageStore,
       useServersStore,
     ]
   );
@@ -1025,6 +1066,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         isReasoning: extendedThinking,
         tools: currentTools(),
         prompt: systemPrompt,
+        signal: ensureAbortSignal(),
       },
     });
     await processStream(stream, data.threadId, {
@@ -1034,6 +1076,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     api,
     currentProfile,
     entityId,
+    ensureAbortSignal,
     extendedThinking,
     processStream,
     setIsToolPending,

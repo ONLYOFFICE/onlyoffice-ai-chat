@@ -32,8 +32,11 @@ function setupWidgetConfig(overrides?: {
   hideProfilePicker?: boolean;
   entityId?: string;
 }) {
+  // `hideProfilePicker` is tri-state: an omitted flag must reach the
+  // component as `undefined` (fall back to the entityId heuristic), so
+  // don't coerce it to `false` (which means "force-show") here.
   mockUseWidgetConfig.mockReturnValue({
-    hideProfilePicker: overrides?.hideProfilePicker ?? false,
+    hideProfilePicker: overrides?.hideProfilePicker,
     entityId: overrides?.entityId,
   });
 }
@@ -88,11 +91,35 @@ describe("ComposerAction", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("hides the model selector in entity (room) mode", () => {
+  it("hides the model selector in entity (room) mode when the flag is omitted", () => {
     setupWidgetConfig({ entityId: "e1" });
     render(<ComposerAction />);
     expect(
       screen.queryByTestId("composer-action-select-model")
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the model selector in entity mode when hideProfilePicker is false", () => {
+    setupWidgetConfig({ entityId: "e1", hideProfilePicker: false });
+    render(<ComposerAction />);
+    expect(
+      screen.getByTestId("composer-action-select-model")
+    ).toBeInTheDocument();
+  });
+
+  it("hides the model selector in entity mode when hideProfilePicker is true", () => {
+    setupWidgetConfig({ entityId: "e1", hideProfilePicker: true });
+    render(<ComposerAction />);
+    expect(
+      screen.queryByTestId("composer-action-select-model")
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the model selector when hideProfilePicker is false without entityId", () => {
+    setupWidgetConfig({ hideProfilePicker: false });
+    render(<ComposerAction />);
+    expect(
+      screen.getByTestId("composer-action-select-model")
+    ).toBeInTheDocument();
   });
 });
