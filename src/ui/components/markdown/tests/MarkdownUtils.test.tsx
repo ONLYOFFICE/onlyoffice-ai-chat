@@ -23,7 +23,7 @@ vi.mock("../../../../shared/utils", () => ({
   cn: (...args: unknown[]) => args.filter(Boolean).join(" "),
 }));
 
-import defaultComponents from "../Markdown.utils";
+import defaultComponents, { plainMarkdownComponents } from "../Markdown.utils";
 
 describe("defaultComponents", () => {
   const expectedKeys = [
@@ -245,5 +245,73 @@ describe("defaultComponents", () => {
     >;
     const { container } = render(<Sup>1</Sup>);
     expect(container.querySelector("sup")).toBeTruthy();
+  });
+});
+
+describe("plainMarkdownComponents", () => {
+  type CodeProps = React.HTMLAttributes<HTMLElement> & {
+    children?: React.ReactNode;
+  };
+  const PlainCode = plainMarkdownComponents.code as React.FC<CodeProps>;
+  const PlainPre = plainMarkdownComponents.pre as React.FC<CodeProps>;
+
+  it("overrides only pre and code, sharing every other renderer", () => {
+    // The object-spread type keeps only the overridden keys statically —
+    // read the inherited ones through a plain record view.
+    const plain = plainMarkdownComponents as unknown as Record<string, unknown>;
+    expect(plainMarkdownComponents.pre).not.toBe(defaultComponents.pre);
+    expect(plainMarkdownComponents.code).not.toBe(defaultComponents.code);
+    expect(plain.h1).toBe(defaultComponents.h1);
+    expect(plain.a).toBe(defaultComponents.a);
+    expect(plain.table).toBe(defaultComponents.table);
+  });
+
+  it("renders a language-classed code as CodeHeader + SyntaxHighlighter", () => {
+    const { container } = render(
+      <PlainCode className="language-js">{"const a = 1;\n"}</PlainCode>
+    );
+    expect(container.querySelector("[data-testid='code-header']")).toBeTruthy();
+    expect(
+      container.querySelector("[data-testid='syntax-highlighter']")
+    ).toBeTruthy();
+    expect(container.querySelector("code")).toBeNull();
+  });
+
+  it("renders multiline content as a block even without a language class", () => {
+    const { container } = render(<PlainCode>{"foo\nbar\n"}</PlainCode>);
+    expect(
+      container.querySelector("[data-testid='syntax-highlighter']")
+    ).toBeTruthy();
+  });
+
+  it("joins array children (streaming) when extracting block text", () => {
+    const { container } = render(
+      <PlainCode className="language-py">{["print(", "'hi')\n"]}</PlainCode>
+    );
+    expect(
+      container.querySelector("[data-testid='syntax-highlighter']")
+    ).toBeTruthy();
+  });
+
+  it("keeps inline code inline with font-bold italic", () => {
+    const { container } = render(<PlainCode>{"x"}</PlainCode>);
+    const code = container.querySelector("code");
+    expect(code).toBeTruthy();
+    expect(code!.className).toContain("font-bold italic");
+  });
+
+  it("pre unwraps a single element child (the block UI owns the markup)", () => {
+    const { container } = render(
+      <PlainPre>
+        <code>x</code>
+      </PlainPre>
+    );
+    expect(container.querySelector("pre")).toBeNull();
+    expect(container.querySelector("code")).toBeTruthy();
+  });
+
+  it("pre keeps the styled wrapper for plain-text children", () => {
+    const { container } = render(<PlainPre>{"raw text"}</PlainPre>);
+    expect(container.querySelector("pre")).toBeTruthy();
   });
 });

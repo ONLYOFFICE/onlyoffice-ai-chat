@@ -13,7 +13,9 @@ const themeStoreState = {
   scale: 1,
   setThemeId: vi.fn((id: string) => {
     themeStoreState.themeId = id;
-    themeStoreState.themeType = id.includes("dark") ? "dark" : "light";
+    // Classify with the real helper (imported below; ESM bindings are
+    // hoisted) so ids like "theme-night" resolve exactly as in the store.
+    themeStoreState.themeType = getThemeType(id);
   }),
   setScale: vi.fn((scale: number) => {
     themeStoreState.scale = scale;
@@ -254,5 +256,38 @@ describe("ThemeProvider", () => {
   it("getThemeType is re-exported", () => {
     expect(getThemeType("theme-night")).toBe("dark");
     expect(getThemeType("theme-light")).toBe("light");
+  });
+
+  it("exposes data-theme-type=light on the wrapper for a light theme", () => {
+    resetState();
+    const { container } = render(
+      <ThemeProvider>
+        <span />
+      </ThemeProvider>
+    );
+    const themed = container.querySelector(".theme-light") as HTMLElement;
+    expect(themed.getAttribute("data-theme-type")).toBe("light");
+  });
+
+  it("exposes data-theme-type=dark on the wrapper for a dark built-in theme", () => {
+    resetState();
+    const { container } = render(
+      <ThemeProvider theme="theme-night">
+        <span />
+      </ThemeProvider>
+    );
+    const themed = container.querySelector(".theme-night") as HTMLElement;
+    expect(themed.getAttribute("data-theme-type")).toBe("dark");
+  });
+
+  it("exposes data-theme-type=dark for a custom theme id containing 'dark'", () => {
+    resetState();
+    const { container } = render(
+      <ThemeProvider theme="theme-portal-dark">
+        <span />
+      </ThemeProvider>
+    );
+    const themed = container.querySelector(".theme-portal-dark") as HTMLElement;
+    expect(themed.getAttribute("data-theme-type")).toBe("dark");
   });
 });

@@ -9,6 +9,17 @@
 ```ts
 <AIChatWidget onDropFiles={(files) => host.uploadAndAttach(files)} />
 ```
+## 0.4.160
+
+### Fixed
+
+- Code blocks rendered through `MarkdownContent` (the plain `react-markdown` path used by assistant messages) now get the full block UI — language header, copy button, and shiki syntax highlighting — instead of rendering as bold-italic inline code. The shared components map was written for assistant-ui's `MarkdownTextPrimitive`: its `SyntaxHighlighter` / `CodeHeader` keys are ignored by plain react-markdown, and `useIsMarkdownCodeBlock()` is always false outside assistant-ui's context, so every fenced block fell through to the inline-code styling. `MarkdownContent` now uses its own `plainMarkdownComponents` map whose `pre` / `code` renderers detect blocks by the `language-*` class or multiline content and rebuild the same CodeHeader + shiki composition without assistant-ui context. The `MarkdownText` (assistant-ui) path is unchanged.
+
+## 0.4.159
+
+### Fixed
+
+- Code-block syntax highlighting now works under every theme, not just `theme-light` / `theme-dark`. The shiki palette switch was hardcoded to those two theme ids, so under the other built-in themes (`theme-white`, `theme-gray`, `theme-classic-light`, `theme-night`, `theme-contrast-dark`) and any custom host theme the CSS never matched and tokens fell back to shiki's inline `color: light-dark(...)` — which always resolves to the light palette (nothing sets `color-scheme`), leaving code unreadable on dark themes. `ThemeProvider` now stamps the resolved theme classification on its wrapper as `data-theme-type="light" | "dark"` (derived by `getThemeType`, so custom ids like `theme-portal-dark` classify correctly), and the palette-switch CSS keys off that attribute instead of specific theme ids.
 
 ## 0.4.156
 

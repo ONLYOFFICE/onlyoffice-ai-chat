@@ -58,6 +58,7 @@ vi.mock("rehype-katex", () => ({
 
 vi.mock("../Markdown.utils", () => ({
   default: {},
+  plainMarkdownComponents: {},
 }));
 
 vi.mock("../../assistant-ui/shiki-highlighter", () => ({
