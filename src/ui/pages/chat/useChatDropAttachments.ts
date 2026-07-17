@@ -1,5 +1,6 @@
 import React from "react";
 import { useStores } from "../../store/context";
+import { useWidgetConfig } from "../../../widget-config";
 
 // Extensions we treat as plain-text when dropped via DND (no host converter).
 // Binary Office documents / PDFs are intentionally excluded — those require
@@ -69,6 +70,9 @@ const readFile = (file: File, as: "dataURL" | "text"): Promise<string> =>
     else reader.readAsText(file);
   });
 
+const hasDraggedFiles = (e: React.DragEvent) =>
+  Array.from(e.dataTransfer.types).includes("Files");
+
 /**
  * Drag-and-drop handlers for attaching files and images to the chat.
  *
@@ -84,14 +88,12 @@ export const useChatDropAttachments = () => {
   const { useAttachmentsStore } = useStores();
   const addAttachmentFile = useAttachmentsStore((s) => s.addAttachmentFile);
   const addAttachmentImage = useAttachmentsStore((s) => s.addAttachmentImage);
+  const { onDropFiles } = useWidgetConfig();
 
   const [isDragOver, setIsDragOver] = React.useState(false);
   // dragenter/dragleave fire for every nested element, so track depth and
   // only clear the highlight once we leave the outermost zone.
   const dragDepthRef = React.useRef(0);
-
-  const hasDraggedFiles = (e: React.DragEvent) =>
-    Array.from(e.dataTransfer.types).includes("Files");
 
   const onDragEnter = (e: React.DragEvent) => {
     if (!hasDraggedFiles(e)) return;
@@ -122,6 +124,14 @@ export const useChatDropAttachments = () => {
     e.stopPropagation();
     dragDepthRef.current = 0;
     setIsDragOver(false);
+
+    // Host override: hand the raw dropped files to the host and skip the
+    // built-in read-and-attach path entirely (the host may upload them to
+    // its own storage, support binary formats, etc.).
+    if (onDropFiles) {
+      await onDropFiles(Array.from(e.dataTransfer.files));
+      return;
+    }
 
     // Drop 0-byte files — an empty image yields a payload-less data URL
     // that vision providers reject, and an empty text file adds nothing.

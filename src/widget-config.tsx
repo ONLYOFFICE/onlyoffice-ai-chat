@@ -398,6 +398,20 @@ export interface WidgetConfig {
     ctx: ToolCallApproveContext
   ) => void | Promise<void>;
   /**
+   * Takes over file drag-and-drop onto the chat surface. When provided, a
+   * drop of one or more files hands the raw {@link File} list to this
+   * callback and the widget's built-in handling (reading images as data
+   * URLs / text files as text and attaching them in-memory, ignoring binary
+   * Office/PDF drops) is skipped entirely. Use this to route every dropped
+   * file through the same path as the composer's upload button — e.g. a host
+   * that uploads to portal storage and attaches by file id.
+   *
+   * The drag-over highlight/overlay is still driven by the widget; only the
+   * drop's payload handling is delegated. When omitted, the built-in
+   * read-and-attach behavior is used.
+   */
+  onDropFiles?: (files: File[]) => void | Promise<void>;
+  /**
    * Minimum severity that reaches the console. The library logs through a
    * single module-global logger; setting this raises the threshold so noisy
    * `info`/`debug` tracing (MCP startup, image generation, …) is suppressed:
