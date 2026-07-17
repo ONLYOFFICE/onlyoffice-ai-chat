@@ -15,10 +15,16 @@
   padding: 6px !important;
 }
 
-.theme-light .line span {
+/* Shiki dual-theme palette switch. Keyed off the resolved theme TYPE
+   (set by ThemeProvider as `data-theme-type` on the theme wrapper), not
+   specific theme ids, so it works for every built-in theme and for
+   custom host themes alike. Without a match, tokens fall back to shiki's
+   inline `color: light-dark(...)`, which resolves to the light palette
+   (no one sets `color-scheme`) and looks unhighlighted on dark themes. */
+[data-theme-type="light"] .line span {
   color: var(--shiki-light) !important;
 }
 
-.theme-dark .line span {
+[data-theme-type="dark"] .line span {
   color: var(--shiki-dark) !important;
 }

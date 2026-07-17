@@ -172,8 +172,14 @@ export const ThemeProvider = ({
   return (
     <ThemeContext.Provider value={value}>
       {customStyleContent ? <style>{customStyleContent}</style> : null}
+      {/* `data-theme-type` exposes the resolved light/dark classification
+          for CSS that must work under ANY theme id (built-in or custom) —
+          e.g. the shiki palette switch keys off it. Deliberately not the
+          CSS `color-scheme` property: that would also restyle native
+          scrollbars/form controls inside the widget. */}
       <div
         className={`${themeId} relative`}
+        data-theme-type={themeType}
         style={inlineStyle as React.CSSProperties | undefined}
       >
         {children}
