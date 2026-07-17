@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- `onDropFiles` widget config — takes over file drag-and-drop onto the chat surface. When provided, dropping one or more files hands the raw `File[]` to the callback and the built-in handling (reading images as data URLs / text files as text and attaching them in-memory, silently ignoring binary Office/PDF drops) is skipped entirely. Use it to route every dropped file through the same path as the composer's upload button — e.g. a host that uploads to portal storage and attaches by file id, which also lets binary formats (DOCX/PDF/XLSX) be dropped. The drag-over highlight/overlay is still driven by the widget; only the drop's payload handling is delegated. Omit to keep the built-in read-and-attach behavior.
+
+```ts
+<AIChatWidget onDropFiles={(files) => host.uploadAndAttach(files)} />
+```
 ## 0.4.160
 
 ### Fixed

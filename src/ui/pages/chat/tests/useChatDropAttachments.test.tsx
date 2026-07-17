@@ -9,6 +9,7 @@ vi.mock("../../../store/context", () => ({
 }));
 
 import { useChatDropAttachments } from "../useChatDropAttachments";
+import { WidgetConfigProvider } from "../../../../widget-config";
 
 const setupStores = (overrides?: {
   addAttachmentFile?: (f: unknown) => void;
@@ -83,7 +84,7 @@ describe("useChatDropAttachments", () => {
       expect(addAttachmentFile).toHaveBeenCalledTimes(1);
     });
     expect(addAttachmentFile.mock.calls[0][0]).toEqual([
-      { path: "notes.md", content: "hello world", type: 0 },
+      { path: "", content: "hello world", type: 0, title: "notes.md" },
     ]);
   });
 
@@ -103,7 +104,7 @@ describe("useChatDropAttachments", () => {
       expect(addAttachmentFile).toHaveBeenCalledTimes(1);
     });
     expect(addAttachmentFile.mock.calls[0][0]).toHaveLength(1);
-    expect(addAttachmentFile.mock.calls[0][0][0].path).toBe("script.ts");
+    expect(addAttachmentFile.mock.calls[0][0][0].title).toBe("script.ts");
   });
 
   it("ignores unsupported binary formats", async () => {
@@ -124,6 +125,40 @@ describe("useChatDropAttachments", () => {
     });
 
     await new Promise((r) => setTimeout(r, 0));
+    expect(addAttachmentFile).not.toHaveBeenCalled();
+    expect(addAttachmentImage).not.toHaveBeenCalled();
+  });
+
+  it("delegates the raw file list to onDropFiles and skips built-in handling", async () => {
+    const addAttachmentFile = vi.fn();
+    const addAttachmentImage = vi.fn();
+    const onDropFiles = vi.fn().mockResolvedValue(undefined);
+    setupStores({ addAttachmentFile, addAttachmentImage });
+    const { getByTestId } = render(
+      <WidgetConfigProvider config={{ onDropFiles }}>
+        <Harness />
+      </WidgetConfigProvider>
+    );
+
+    // A binary format the built-in path would ignore — the override must
+    // still receive it.
+    const docx = makeFile(
+      "report.docx",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "binary"
+    );
+    const img = makeFile("pic.png", "image/png", "pngdata");
+    await act(async () => {
+      fireEvent.drop(getByTestId("drop-zone"), {
+        dataTransfer: makeDataTransfer([docx, img]),
+      });
+    });
+
+    await waitFor(() => {
+      expect(onDropFiles).toHaveBeenCalledTimes(1);
+    });
+    expect(onDropFiles.mock.calls[0][0]).toEqual([docx, img]);
+    // Built-in read-and-attach is fully bypassed.
     expect(addAttachmentFile).not.toHaveBeenCalled();
     expect(addAttachmentImage).not.toHaveBeenCalled();
   });
