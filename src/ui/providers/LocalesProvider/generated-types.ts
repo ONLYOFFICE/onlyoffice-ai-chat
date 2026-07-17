@@ -97,6 +97,7 @@ export type TranslationKey =
   | "Regenerate"
   | "Rename"
   | "RenameFolder"
+  | "ResetSettings"
   | "ReviewEachAction"
   | "Save"
   | "SaveAIPrompt"
