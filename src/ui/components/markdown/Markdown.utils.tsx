@@ -4,6 +4,12 @@ import {
   unstable_memoizeMarkdownComponents as memoizeMarkdownComponents,
   useIsMarkdownCodeBlock,
 } from "@assistant-ui/react-markdown";
+import {
+  Children,
+  isValidElement,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from "react";
 import { cn } from "../../../shared/utils";
 import { SyntaxHighlighter } from "../assistant-ui/shiki-highlighter";
 import CodeHeader from "./sub-components/CodeHeader";
@@ -178,5 +184,104 @@ const defaultComponents = memoizeMarkdownComponents({
   },
   CodeHeader,
 });
+
+// ---------------------------------------------------------------------------
+// Plain react-markdown variant (MarkdownContent)
+// ---------------------------------------------------------------------------
+
+/**
+ * Flatten a code element's children to raw text. Children may be an
+ * array of strings and nested elements (e.g. mid-stream, or when a
+ * plugin wraps parts of the code), so walk them defensively.
+ */
+const extractText = (node: ReactNode): string => {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return extractText(node.props.children);
+  }
+  return "";
+};
+
+/** Stable pass-through components required by SyntaxHighlighter's props. */
+const highlighterComponents = {
+  Pre: (props: ComponentPropsWithoutRef<"pre">) => <pre {...props} />,
+  Code: (props: ComponentPropsWithoutRef<"code">) => <code {...props} />,
+};
+
+type ElementProps<T extends "pre" | "code"> = ComponentPropsWithoutRef<T> & {
+  node?: unknown;
+};
+
+/**
+ * Components map for the plain `react-markdown` path ({@link MarkdownContent}).
+ *
+ * {@link defaultComponents} is written for assistant-ui's
+ * `MarkdownTextPrimitive`: its `SyntaxHighlighter` / `CodeHeader` keys are
+ * an `@assistant-ui/react-markdown` API that plain react-markdown silently
+ * ignores, and its `code` renderer keys inline-vs-block off
+ * `useIsMarkdownCodeBlock()`, whose context provider only
+ * `MarkdownTextPrimitive` renders — under plain react-markdown the hook is
+ * always false, so fenced blocks got the inline-code styling and no
+ * highlighting. These `pre` / `code` overrides rebuild the same block UI
+ * (CodeHeader + shiki) without any assistant-ui context.
+ */
+export const plainMarkdownComponents = {
+  ...defaultComponents,
+  pre: function PlainPre({
+    className,
+    children,
+    node,
+    ...props
+  }: ElementProps<"pre">) {
+    void node;
+    // A fenced block's <pre> wraps exactly one <code> element, and the
+    // whole block UI is produced by the `code` override below — keeping
+    // the styled wrapper here would frame the block twice.
+    const kids = Children.toArray(children);
+    if (kids.length === 1 && isValidElement(kids[0])) {
+      return <>{children}</>;
+    }
+    const StyledPre = defaultComponents.pre ?? "pre";
+    return (
+      <StyledPre className={className} {...props}>
+        {children}
+      </StyledPre>
+    );
+  },
+  code: function PlainCode({
+    className,
+    children,
+    node,
+    ...props
+  }: ElementProps<"code">) {
+    void node;
+    const match = /language-(\w+)/.exec(className ?? "");
+    const text = extractText(children);
+    // A block either declares a language or spans multiple lines — a
+    // block's raw text keeps its trailing newline, so single-line fences
+    // match too.
+    if (match === null && !text.includes("\n")) {
+      return (
+        <code className={cn("font-bold italic", className)} {...props}>
+          {children}
+        </code>
+      );
+    }
+    const code = text.replace(/\n$/, "");
+    const language = match?.[1] ?? "";
+    return (
+      <>
+        <CodeHeader language={language} code={code} />
+        <SyntaxHighlighter
+          language={language}
+          code={code}
+          components={highlighterComponents}
+        />
+      </>
+    );
+  },
+};
 
 export default defaultComponents;

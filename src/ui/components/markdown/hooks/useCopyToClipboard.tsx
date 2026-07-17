@@ -26,10 +26,7 @@ const useCopyToClipboard = ({
       writer().then(() => {
         setIsCopied(true);
         clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(
-          () => setIsCopied(false),
-          copiedDuration
-        );
+        timerRef.current = setTimeout(() => setIsCopied(false), copiedDuration);
       });
     },
     [platformCopy, copiedDuration]

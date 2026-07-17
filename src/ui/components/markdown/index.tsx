@@ -36,13 +36,17 @@ const LazyMarkdownContent = lazy(async () => {
     { default: remarkGfm },
     { default: remarkMath },
     { default: rehypeKatex },
-    defaultComponents,
+    // Not `defaultComponents`: that map relies on assistant-ui context
+    // (PreContext / special SyntaxHighlighter and CodeHeader keys) that
+    // plain react-markdown never provides — code blocks would render as
+    // unhighlighted inline code.
+    plainComponents,
   ] = await Promise.all([
     import("react-markdown"),
     import("remark-gfm"),
     import("remark-math"),
     import("rehype-katex"),
-    import("./Markdown.utils").then((m) => m.default),
+    import("./Markdown.utils").then((m) => m.plainMarkdownComponents),
     import("@assistant-ui/react-markdown/styles/dot.css"),
     import("katex/dist/katex.min.css"),
   ]);
@@ -52,7 +56,7 @@ const LazyMarkdownContent = lazy(async () => {
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeKatex]}
-          components={defaultComponents}
+          components={plainComponents}
         >
           {children}
         </ReactMarkdown>
