@@ -162,14 +162,18 @@ vi.mock("../../../components/button", () => ({
     onClick,
     disabled,
     isLoading,
+    className,
   }: {
     children: React.ReactNode;
     onClick?: () => void;
     disabled?: boolean;
     isLoading?: boolean;
+    className?: string;
   }) => (
+    // Button mode renders both a Save and a Reset button; disambiguate by
+    // the component's class so each maps to its own test id.
     <button
-      data-testid="save-button"
+      data-testid={className?.includes("reset") ? "reset-button" : "save-button"}
       onClick={onClick}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
