@@ -6,6 +6,7 @@ import type {
   ChatCompletionMessageParam,
   ChatCompletionToolMessageParam,
 } from "openai/resources/chat/completions";
+import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 
 /**
  * Produce a unique fallback tool-call identifier when the SDK chunk
@@ -52,6 +53,12 @@ const convertUserContent = (
     }
 
     if (part.type === "image") {
+      // Only forward inlined base64 data URLs. A leftover ref or an
+      // http(s) URL would be sent as `image_url.url` verbatim, which the
+      // model can't fetch — drop it to an empty text part instead.
+      if (!parseGuardedImageDataUrl(part.image)) {
+        return { type: "text", text: "" };
+      }
       return {
         type: "image_url",
         image_url: { url: part.image },

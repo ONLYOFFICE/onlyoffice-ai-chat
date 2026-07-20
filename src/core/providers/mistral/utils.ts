@@ -6,6 +6,7 @@ import type {
   ToolMessage,
   UserMessage,
 } from "@mistralai/mistralai/models/components";
+import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 import type { TMCPItem } from "../../types";
 
 export const convertToolsToModelFormat = (tools: TMCPItem[]): Tool[] => {
@@ -61,9 +62,13 @@ export const convertMessagesToModelFormat = (
           }
 
           if (part.type === "image") {
+            // Folded into text by this SDK path; only embed an inlined
+            // base64 data URL, never a leftover ref or http(s) URL.
             content.push({
               type: "text",
-              text: `Image: ${part.filename}: ${part.image}`,
+              text: parseGuardedImageDataUrl(part.image)
+                ? `Image: ${part.filename}: ${part.image}`
+                : `Image: ${part.filename ?? ""}: [image unavailable]`,
             });
           }
 

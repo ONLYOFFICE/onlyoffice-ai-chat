@@ -158,7 +158,8 @@ describe("mistral utils", () => {
         });
       });
 
-      it("should handle user message with image content part", () => {
+      it("should embed an inlined data-URL image content part", () => {
+        const dataUrl = "data:image/png;base64,AAABBB";
         const messages: ThreadMessageLike[] = [
           {
             role: "user",
@@ -166,7 +167,7 @@ describe("mistral utils", () => {
               { type: "text", text: "Look at this" },
               {
                 type: "image",
-                image: "base64imagedata",
+                image: dataUrl,
                 filename: "screenshot.png",
               },
             ],
@@ -177,7 +178,31 @@ describe("mistral utils", () => {
 
         expect(result[0].content).toContainEqual({
           type: "text",
-          text: "Image: screenshot.png: base64imagedata",
+          text: `Image: screenshot.png: ${dataUrl}`,
+        });
+      });
+
+      it("substitutes a placeholder for a non-data image content part", () => {
+        // A ref that was never hydrated, or a bare URL — must not be
+        // pasted into the text verbatim.
+        const messages: ThreadMessageLike[] = [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                image: "https://host/storage/files/x.png",
+                filename: "screenshot.png",
+              },
+            ],
+          },
+        ];
+
+        const result = convertMessagesToModelFormat(messages);
+
+        expect(result[0].content).toContainEqual({
+          type: "text",
+          text: "Image: screenshot.png: [image unavailable]",
         });
       });
 

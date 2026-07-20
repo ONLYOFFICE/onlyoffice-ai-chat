@@ -5,6 +5,7 @@ import type {
   ToolMessage,
   UserMessage,
 } from "@mistralai/mistralai/models/components";
+import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 
 /**
  * Translate one user-role `ThreadMessageLike` into Mistral's wire format.
@@ -48,9 +49,14 @@ const convertUserMessage = (msg: ThreadMessageLike): Messages[] => {
         toolContent.name = part.toolName;
         toolContent.toolCallId = part.toolCallId;
       } else if (part.type === "image") {
+        // This SDK path folds images into text; only embed an inlined
+        // base64 data URL. A leftover ref or http(s) URL must not be
+        // pasted in verbatim — substitute a placeholder.
         content.push({
           type: "text",
-          text: `Image: ${part.filename}: ${part.image}`,
+          text: parseGuardedImageDataUrl(part.image)
+            ? `Image: ${part.filename}: ${part.image}`
+            : `Image: ${part.filename ?? ""}: [image unavailable]`,
         });
       } else if (part.type === "file") {
         content.push({

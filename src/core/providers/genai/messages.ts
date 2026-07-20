@@ -1,22 +1,11 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Content, Part } from "@google/genai";
+import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 
 /** Extract the filename from a Unix- or Windows-style path. */
 const extractFilename = (path: string): string => {
   const separator = path.includes("\\") ? "\\" : "/";
   return path.split(separator).pop() ?? path;
-};
-
-/**
- * Parse a `data:<mime>;base64,<payload>` URL. Returns `null` if the
- * string is not a data URL with base64 encoding.
- */
-const parseDataUrl = (
-  dataUrl: string
-): { mimeType: string; data: string } | null => {
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) return null;
-  return { mimeType: match[1], data: match[2] };
 };
 
 /**
@@ -37,10 +26,12 @@ const convertUserContent = (message: ThreadMessageLike): Part[] => {
     }
 
     if (part.type === "image") {
-      const parsed = parseDataUrl(part.image);
+      // Skip non-data values (leftover ref or http(s) URL) — GenAI needs
+      // inline base64; `parseGuardedImageDataUrl` warns on a real miss.
+      const parsed = parseGuardedImageDataUrl(part.image);
       if (parsed) {
         parts.push({
-          inlineData: { mimeType: parsed.mimeType, data: parsed.data },
+          inlineData: { mimeType: parsed.mimeType, data: parsed.base64 },
         });
       }
       continue;

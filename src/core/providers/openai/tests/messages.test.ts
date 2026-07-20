@@ -54,6 +54,33 @@ describe("openai/messages/convertMessages", () => {
       ]);
     });
 
+    it("drops a ref-JSON image (never hydrated) to empty text", () => {
+      const out = convertMessages([
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              image: JSON.stringify({ ref: "a1", title: "x", kind: "image" }),
+            },
+          ],
+        } as ThreadMessageLike,
+      ]);
+      expect(out[0].content).toEqual([{ type: "text", text: "" }]);
+    });
+
+    it("drops an http(s) URL image to empty text", () => {
+      const out = convertMessages([
+        {
+          role: "user",
+          content: [
+            { type: "image", image: "https://host/storage/files/x.png" },
+          ],
+        } as ThreadMessageLike,
+      ]);
+      expect(out[0].content).toEqual([{ type: "text", text: "" }]);
+    });
+
     it("degrades unknown parts into empty text", () => {
       const out = convertMessages([
         {

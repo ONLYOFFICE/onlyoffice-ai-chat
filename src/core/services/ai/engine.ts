@@ -618,10 +618,16 @@ export class AIEngine {
       input.actionType,
       input.entityId
     );
+    // Hydrate image/file refs into inline data before the provider sees
+    // them — mirrors the streaming paths. Without this a Vision/OCR/etc.
+    // action would ship the raw ref (or a host URL) instead of base64.
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
       profile,
-      messages: [input.userMessage],
+      messages: await resolveAttachmentRefs(
+        [input.userMessage],
+        this.deps.storage.attachments
+      ),
       fetch: this.pickFetch(profile),
     };
 
@@ -634,8 +640,9 @@ export class AIEngine {
     input: SendCustomInput
   ): AsyncGenerator<SendMessageResult> | Promise<ThreadMessageLike> {
     const pick = this.pickFetch.bind(this);
+    const attachments = this.deps.storage.attachments;
     return input.isStream
-      ? runCustomStream(this.assignments, input, pick)
-      : runCustomOnce(this.assignments, input, pick);
+      ? runCustomStream(this.assignments, input, pick, attachments)
+      : runCustomOnce(this.assignments, input, pick, attachments);
   }
 }

@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Content, FunctionDeclaration, Part } from "@google/genai";
+import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 import type { TMCPItem } from "../../types";
 
 export type GenAIMessageParam = Content;
@@ -43,17 +44,6 @@ export const convertToolsToModelFormat = (
 // ============================================================================
 
 /**
- * Extracts mime type and base64 data from a data URL.
- */
-const parseDataUrl = (
-  dataUrl: string
-): { mimeType: string; data: string } | null => {
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) return null;
-  return { mimeType: match[1], data: match[2] };
-};
-
-/**
  * Converts user/system message content to GenAI parts.
  */
 const convertUserContent = (message: ThreadMessageLike): Part[] => {
@@ -69,12 +59,14 @@ const convertUserContent = (message: ThreadMessageLike): Part[] => {
     }
 
     if (part.type === "image") {
-      const parsed = parseDataUrl(part.image);
+      // Skip non-data values (leftover ref or http(s) URL) — GenAI needs
+      // inline base64; `parseGuardedImageDataUrl` warns on a real miss.
+      const parsed = parseGuardedImageDataUrl(part.image);
       if (parsed) {
         parts.push({
           inlineData: {
             mimeType: parsed.mimeType,
-            data: parsed.data,
+            data: parsed.base64,
           },
         });
       }

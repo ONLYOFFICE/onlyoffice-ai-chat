@@ -12,6 +12,14 @@
 ```ts
 <AIChatWidget onDropFiles={(files) => host.uploadAndAttach(files)} />
 ```
+
+## 0.4.163
+
+### Fixed
+
+- Image attachments now reach the provider as inlined `data:image/*;base64,…` on every dispatch path. `resolveAttachmentRefs` (which hydrates the persisted image ref into base64 via the host storage adapter) ran only on the streaming chat paths; the one-shot `AIEngine.send` (Vision/OCR/Summarization/Translation/TextAnalyze) and `AIEngine.sendCustom` (custom/arbiter flows) shipped the raw ref JSON — or a host pre-signed URL — so vision models couldn't see the image. Both paths now resolve refs before the provider is called.
+- Provider adapters harden the image path as a safety net: the Anthropic / OpenAI / Responses / GenAI / Mistral converters now require a base64 `data:` URL and drop the part (or substitute an inert placeholder) with a warning if the value is still a ref or an http(s) URL, so a non-inlined image can never be forwarded to a provider.
+
 ## 0.4.160
 
 ### Fixed

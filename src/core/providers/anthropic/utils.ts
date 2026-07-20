@@ -5,6 +5,7 @@ import type {
   ToolUnion,
 } from "@anthropic-ai/sdk/resources/index.mjs";
 import type { ThreadMessageLike } from "@assistant-ui/react";
+import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 import type { TMCPItem } from "../../types";
 
 // ============================================================================
@@ -27,21 +28,14 @@ const DEFAULT_MIME_TYPE: ImageMimeType = "image/jpeg";
 // Image Helpers
 // ============================================================================
 
-const parseDataUrl = (
-  dataUrl: string
-): { base64: string; mimeType: string } | null => {
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) return null;
-  return { base64: match[2], mimeType: match[1] };
-};
-
 const toValidMimeType = (mimeType: string): ImageMimeType =>
   MIME_TYPE_MAP[mimeType] ?? DEFAULT_MIME_TYPE;
 
 const convertImageToBlock = (imageDataUrl: string): ContentBlockParam => {
-  const parsed = parseDataUrl(imageDataUrl);
-  // Empty / malformed data URL — degrade to inert text so the SDK never
-  // sees an empty `data` field.
+  const parsed = parseGuardedImageDataUrl(imageDataUrl);
+  // Non-data value (empty attachment, leftover ref, or http(s) URL) —
+  // degrade to inert text so the SDK never sees an empty `data` field or
+  // a value the model cannot read.
   if (!parsed) return { type: "text", text: "" };
 
   return {

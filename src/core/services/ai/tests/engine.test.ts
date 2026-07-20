@@ -118,6 +118,19 @@ function makeStorage() {
         messages = [];
       }),
     },
+    attachments: {
+      // Resolves any ref id to an inlined base64 data URL — the host
+      // adapter's job in production.
+      readManyByIds: vi.fn(async (ids: string[]) =>
+        ids.map((id) => ({
+          id,
+          title: "img",
+          base64: "data:image/png;base64,AAAA",
+        }))
+      ),
+      create: vi.fn(),
+      readById: vi.fn(async () => null),
+    },
   } as unknown as StorageAdapter;
   return {
     storage,
@@ -457,6 +470,46 @@ describe("AIEngine.send", () => {
       role: "assistant",
       content: [{ type: "text", text: "summary" }],
     });
+  });
+
+  it("hydrates image refs to a data: URL before the provider (sync action)", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("desc");
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const imageRefMessage: ThreadMessageLike = {
+      role: "user",
+      content: [
+        {
+          type: "image",
+          image: JSON.stringify({
+            ref: "att-1",
+            title: "img",
+            kind: "image",
+          }),
+          name: "img",
+        } as unknown as Extract<
+          Exclude<ThreadMessageLike["content"], string>[number],
+          { type: "image" }
+        >,
+      ],
+    };
+    await engine.send({
+      actionType: ActionType.Vision,
+      userMessage: imageRefMessage,
+    });
+    expect(
+      (
+        storage.attachments as unknown as {
+          readManyByIds: ReturnType<typeof vi.fn>;
+        }
+      ).readManyByIds
+    ).toHaveBeenCalledWith(["att-1"]);
+    const sent = sendMessageSyncMock.mock.calls[0][0]
+      .messages as ThreadMessageLike[];
+    const part = (
+      sent[0].content as Array<{ type: string; image?: string }>
+    )[0];
+    expect(part.image).toBe("data:image/png;base64,AAAA");
   });
 });
 

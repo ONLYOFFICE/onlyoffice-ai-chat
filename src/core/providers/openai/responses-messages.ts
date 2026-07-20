@@ -4,6 +4,7 @@ import type {
   ResponseInputContent,
   ResponseInputItem,
 } from "openai/resources/responses/responses";
+import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 import type { TMCPItem } from "../../../shared/mcp-item";
 
 /**
@@ -50,6 +51,12 @@ const convertUserContent = (
     }
 
     if (part.type === "image") {
+      // Only forward inlined base64 data URLs — a leftover ref or an
+      // http(s) URL sent as `input_image.image_url` can't be read by the
+      // model, so drop it to an empty text part.
+      if (!parseGuardedImageDataUrl(part.image)) {
+        return { type: "input_text", text: "" };
+      }
       return {
         type: "input_image",
         image_url: part.image,

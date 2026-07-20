@@ -4,6 +4,7 @@ import type {
   ToolResultBlockParam,
 } from "@anthropic-ai/sdk/resources/index.mjs";
 import type { ThreadMessageLike } from "@assistant-ui/react";
+import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 
 type ImageMimeType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
@@ -17,20 +18,6 @@ const MIME_TYPE_MAP: Record<string, ImageMimeType> = {
 
 const DEFAULT_MIME_TYPE: ImageMimeType = "image/jpeg";
 
-/**
- * Split a `data:...;base64,...` URL into its base64 payload + mime type.
- * Returns `null` when the string is not a base64 data URL or carries an
- * empty payload (e.g. a 0-byte file the user attached) — Anthropic's SDK
- * rejects an empty `data` field, so the caller drops the block instead.
- */
-const parseDataUrl = (
-  dataUrl: string
-): { base64: string; mimeType: string } | null => {
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) return null;
-  return { base64: match[2], mimeType: match[1] };
-};
-
 /** Normalize an arbitrary mime string to one Anthropic accepts. */
 const toValidMimeType = (mimeType: string): ImageMimeType =>
   MIME_TYPE_MAP[mimeType] ?? DEFAULT_MIME_TYPE;
@@ -42,9 +29,10 @@ const toValidMimeType = (mimeType: string): ImageMimeType =>
  * @returns An Anthropic content block suitable for a user message.
  */
 const convertImageToBlock = (imageDataUrl: string): ContentBlockParam => {
-  const parsed = parseDataUrl(imageDataUrl);
-  // Empty / malformed data URL — degrade to inert text so the converter
-  // never feeds the SDK an empty `data` field (which it rejects).
+  const parsed = parseGuardedImageDataUrl(imageDataUrl);
+  // Non-data value (empty 0-byte attachment, leftover ref, or an http(s)
+  // URL) — degrade to inert text so the converter never feeds the SDK an
+  // empty `data` field or a value the model cannot read.
   if (!parsed) return { type: "text", text: "" };
   return {
     type: "image",
