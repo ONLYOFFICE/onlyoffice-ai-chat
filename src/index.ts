@@ -94,13 +94,19 @@ export type {
 export {
   AbstractBaseProvider,
   createProvider,
-  getProvider,
+  loadProvider,
+  getProviderMetadata,
+  getProviderName,
   getSupportedProviderTypes,
   isValidProviderType,
   registerProvider,
   unregisterProvider,
 } from "./core/providers";
-export type { BaseProvider, ProviderConstructor } from "./core/providers";
+export type {
+  BaseProvider,
+  ProviderConstructor,
+  ProviderMetadata,
+} from "./core/providers";
 
 // ---------------------------------------------------------------------------
 // Services (core engines)
@@ -350,10 +356,11 @@ export { MarkdownText, MarkdownContent } from "./ui/components/markdown";
 
 // Misc
 export { ProviderLogo } from "./ui/components/provider-logo";
-export {
-  SyntaxHighlighter,
-  type HighlighterProps,
-} from "./ui/components/assistant-ui/shiki-highlighter";
+// `SyntaxHighlighter` is re-exported through a lazy wrapper so react-shiki
+// (large grammar/theme payload) stays out of the eager root chunk; the type
+// re-export is erased at build time and carries no runtime cost.
+export { SyntaxHighlighter } from "./ui/components/assistant-ui/shiki-highlighter.lazy";
+export type { HighlighterProps } from "./ui/components/assistant-ui/shiki-highlighter";
 
 // ---------------------------------------------------------------------------
 // I18n

@@ -145,6 +145,21 @@ function streamRoute(url: string, init: RequestInit): AsyncIterable<unknown> {
 }
 
 /**
+ * Coalesce concurrent identical idempotent (`GET`) reads over the remote
+ * transport. While one request is in flight, further calls with the same
+ * target + service + method + args share its promise instead of firing a
+ * duplicate `fetch`. The entry is cleared the moment the request settles,
+ * so this dedups only *concurrent* callers — it is not a response cache and
+ * never serves stale data.
+ *
+ * This module is client-only (never imported by `core`), so module-level
+ * state is safe. Only `GET` routes without a caller `AbortSignal` qualify:
+ * mutations must never be merged, and a shared fetch must not let one
+ * caller's cancellation abort the others.
+ */
+const inFlightReads = new Map<string, Promise<unknown>>();
+
+/**
  * Dispatch a service-method call. If `origin` and `baseUrl` are set,
  * issue a `fetch` against the route declared for `service.method`
  * (HTTP method + path come from the route entry). Otherwise call the
@@ -201,8 +216,36 @@ export function callRoute<
     return streamRoute(url, init) as unknown as ReturnType<EngineMethod<S, K>>;
   }
 
-  return fetch(url, init).then((res) => {
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    return res.json();
-  }) as ReturnType<EngineMethod<S, K>>;
+  const runFetch = () =>
+    fetch(url, init).then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      return res.json();
+    });
+
+  // Only idempotent GET reads without a caller signal are coalesced (see
+  // {@link inFlightReads}); everything else (mutations, aborted reads) runs
+  // unshared. Key by args, not the URL — some GET routes carry their args
+  // (e.g. `entityId`) in the body rather than the query string, so two
+  // different entities must not collide. Non-serialisable args skip pooling.
+  let poolKey: string | undefined;
+  if (route.method === "GET" && !init.signal) {
+    try {
+      poolKey = `${config.origin}${config.baseUrl}|${service}|${method}|${JSON.stringify(bodyArgs)}`;
+    } catch {
+      poolKey = undefined;
+    }
+  }
+  if (poolKey === undefined) {
+    return runFetch() as ReturnType<EngineMethod<S, K>>;
+  }
+  // `const` so the narrowed `string` type survives into the `finally` closure.
+  const key = poolKey;
+
+  const existing = inFlightReads.get(key);
+  if (existing) return existing as unknown as ReturnType<EngineMethod<S, K>>;
+  const pending = runFetch().finally(() => {
+    inFlightReads.delete(key);
+  });
+  inFlightReads.set(key, pending);
+  return pending as ReturnType<EngineMethod<S, K>>;
 }

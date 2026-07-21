@@ -165,6 +165,17 @@ export async function* processStream(
   const withId = (m: ThreadMessageLike): ThreadMessageLike =>
     messageId ? { ...m, id: messageId } : m;
 
+  // Coalesce per-delta persistence. The UI still receives every
+  // `message-delta` event (streaming is unaffected), but storage is written
+  // at most once per FLUSH_INTERVAL_MS while streaming — instead of a full
+  // whole-message rewrite on every token, which is costly against a remote /
+  // host storage adapter and back-pressures the stream loop. The first update
+  // persists immediately (`lastFlushAt = 0`) for crash recovery, and the
+  // terminal `isEnd` below always writes the authoritative final message.
+  const FLUSH_INTERVAL_MS = 150;
+  let lastFlushAt = 0;
+  let pendingWrite = false;
+
   for await (const result of stream) {
     if ("isEnd" in result) {
       const final = merge(result.responseMessage);
@@ -248,8 +259,26 @@ export async function* processStream(
       inited = true;
       yield { type: "message-start", message: withId(merged), messageId };
     } else {
-      if (messageId) await storage.messages.update(messageId, merged);
+      if (messageId) {
+        const now = Date.now();
+        if (now - lastFlushAt >= FLUSH_INTERVAL_MS) {
+          await storage.messages.update(messageId, merged);
+          lastFlushAt = now;
+          pendingWrite = false;
+        } else {
+          // Persisted lazily — the next flush, the terminal write, or the
+          // post-loop salvage below writes this content.
+          pendingWrite = true;
+        }
+      }
       yield { type: "message-delta", message: withId(merged), messageId };
     }
+  }
+
+  // Providers normally close with a terminal `isEnd` (handled above, which
+  // returns). If the stream instead exhausts without one, persist the last
+  // coalesced delta so nothing streamed is lost.
+  if (pendingWrite && messageId && lastSnapshot) {
+    await storage.messages.update(messageId, lastSnapshot);
   }
 }

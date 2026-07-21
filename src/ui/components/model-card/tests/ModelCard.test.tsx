@@ -37,7 +37,7 @@ vi.mock("../../../../hooks/useDirection", () => ({
 }));
 
 vi.mock("../../../../core/providers", () => ({
-  getProvider: (type: string) => ({ getName: () => type.toUpperCase() }),
+  getProviderName: (type: string) => type.toUpperCase(),
 }));
 
 vi.mock("../../icon", () => ({

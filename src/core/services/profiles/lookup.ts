@@ -1,6 +1,6 @@
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
 import type { Profile } from "../../types";
-import { getProvider } from "../../providers";
+import { loadProvider } from "../../providers";
 import type { ProviderConstructor } from "../../providers";
 import type { StorageAdapter } from "../../storage";
 
@@ -15,8 +15,10 @@ export async function loadProfile(
 }
 
 /** Look up a concrete provider class by type or throw on unknown type. */
-export function providerFor(type: string): ProviderConstructor {
-  const Provider = getProvider(type);
+export async function providerFor(
+  type: string
+): Promise<ProviderConstructor> {
+  const Provider = await loadProvider(type);
   if (!Provider) throw new Error(`Unknown provider type: ${type}`);
   return Provider;
 }

@@ -97,7 +97,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     selectCurrentChatProfile,
   } = useStores();
 
-  const messages = useMessageStore((s) => s.messages);
   const setIsStreamRunning = useMessageStore((s) => s.setIsStreamRunning);
   const setIsRequestRunning = useMessageStore((s) => s.setIsRequestRunning);
   const setIsToolPending = useMessageStore((s) => s.setIsToolPending);
@@ -741,7 +740,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         images: images ?? [],
         threadId,
         profile: currentProfile,
-        existingMessages: messages,
+        // Read lazily at send time instead of subscribing to the whole
+        // `messages` array (which would re-render this hook's host on every
+        // streamed token) — mirrors AssistantActionBar.onDownload.
+        existingMessages: useMessageStore.getState().messages,
         resolveAttachment: async (id) => {
           const rec = await api.attachments.get(id);
           if (!rec) return null;

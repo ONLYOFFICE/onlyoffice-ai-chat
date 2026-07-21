@@ -19,10 +19,7 @@ vi.mock("../../../store/context", () => {
 });
 
 vi.mock("../../../../core/providers", () => ({
-  getProvider: () => ({
-    getName: () => "OpenAI",
-    getProviderModels: mockGetProviderModels,
-  }),
+  getProviderName: () => "OpenAI",
 }));
 
 vi.mock("../../../providers/ApiProvider", () => ({

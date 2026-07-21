@@ -40,7 +40,7 @@ const extractPrompt = (messages: ThreadMessageLike[]): string => {
 export const generateImage = async (
   args: ActionArgs
 ): Promise<ThreadMessageLike> => {
-  const provider = providerFor(args);
+  const provider = await providerFor(args);
 
   if (typeof provider.imageGeneration === "function") {
     const userPrompt = extractPrompt(args.messages);

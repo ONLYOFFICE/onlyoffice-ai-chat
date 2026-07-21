@@ -15,14 +15,18 @@ import { systemPrompt } from "./prompt";
  * system prompt and parses `<TOOL_CALL>...</TOOL_CALL>` blocks out of the
  * model's plain-text response.
  */
-export const chat = (args: ActionArgs): AsyncGenerator<SendMessageResult> => {
+export async function* chat(
+  args: ActionArgs
+): AsyncGenerator<SendMessageResult> {
   const baseSystem = resolveSystemPrompt(systemPrompt, args.prompt);
 
   if (isFallbackProfile(args.profile) && (args.tools?.length ?? 0) > 0) {
-    return streamWithTextProtocol(args, baseSystem);
+    yield* streamWithTextProtocol(args, baseSystem);
+    return;
   }
 
-  return providerFor(args).sendMessage({
+  const provider = await providerFor(args);
+  yield* provider.sendMessage({
     messages: args.messages,
     model: args.profile.modelId,
     systemPrompt: baseSystem,
@@ -31,4 +35,4 @@ export const chat = (args: ActionArgs): AsyncGenerator<SendMessageResult> => {
     useResponsesApi: args.profile.useResponsesApi === true,
     signal: args.signal,
   });
-};
+}

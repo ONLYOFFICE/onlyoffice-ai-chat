@@ -3,13 +3,15 @@ export type { ProviderConstructor } from "./base";
 
 export {
   createProvider,
-  getProvider,
+  loadProvider,
+  getProviderMetadata,
+  getProviderName,
   getSupportedProviderTypes,
   isValidProviderType,
   registerProvider,
   unregisterProvider,
 } from "./registry";
-export type { BaseProvider } from "./registry";
+export type { BaseProvider, ProviderMetadata } from "./registry";
 
 export {
   ProviderErrors,

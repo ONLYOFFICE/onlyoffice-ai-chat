@@ -16,6 +16,51 @@ export function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
 }
 
+/** Abort a hung request instead of waiting on the provider indefinitely. */
+const REQUEST_TIMEOUT_MS = 15_000;
+/** Total attempts (1 initial + retries) on transient network failures. */
+const MAX_ATTEMPTS = 2;
+const RETRY_BACKOFF_MS = 250;
+
+async function fetchWithTimeout(
+  doFetch: ProviderFetch,
+  url: string,
+  init: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await doFetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Issue a web-search request with a per-attempt timeout and a small
+ * exponential backoff on transient failures (network error / timeout).
+ * A non-ok HTTP response is *not* retried — it is returned as-is so
+ * {@link formatResponse} can surface the status, matching prior behaviour.
+ */
+async function fetchWithRetry(
+  doFetch: ProviderFetch,
+  url: string,
+  init: RequestInit
+): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      return await fetchWithTimeout(doFetch, url, init);
+    } catch (e) {
+      lastError = e;
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((r) => setTimeout(r, RETRY_BACKOFF_MS * attempt));
+      }
+    }
+  }
+  throw lastError;
+}
+
 /**
  * Built-in web-search tools.
  *
@@ -121,7 +166,7 @@ async function webSearch(
         ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
         ...config.headers,
       };
-      const response = await doFetch(url.href, {
+      const response = await fetchWithRetry(doFetch, url.href, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -138,7 +183,7 @@ async function webSearch(
   }
   if (config.provider === "Exa") {
     try {
-      const response = await doFetch("https://api.exa.ai/search", {
+      const response = await fetchWithRetry(doFetch, "https://api.exa.ai/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,7 +221,7 @@ async function webCrawling(
         ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
         ...config.headers,
       };
-      const response = await doFetch(url.href, {
+      const response = await fetchWithRetry(doFetch, url.href, {
         method: "POST",
         headers,
         body: JSON.stringify({ engine: "exa", urls: args.urls }),
@@ -189,14 +234,18 @@ async function webCrawling(
   }
   if (config.provider === "Exa") {
     try {
-      const response = await doFetch("https://api.exa.ai/contents", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": config.key ?? "",
-        },
-        body: JSON.stringify({ urls: args.urls, text: true }),
-      });
+      const response = await fetchWithRetry(
+        doFetch,
+        "https://api.exa.ai/contents",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": config.key ?? "",
+          },
+          body: JSON.stringify({ urls: args.urls, text: true }),
+        }
+      );
       return await formatResponse(response);
     } catch (e) {
       logger.error("WebSearch error:", e);

@@ -5,9 +5,11 @@ import { AbstractBaseProvider } from "../base";
 import type { BaseProvider } from "../registry";
 import {
   createProvider,
-  getProvider,
+  getProviderMetadata,
+  getProviderName,
   getSupportedProviderTypes,
   isValidProviderType,
+  loadProvider,
   registerProvider,
   unregisterProvider,
 } from "../registry";
@@ -36,23 +38,48 @@ const builtinTypes: ProviderType[] = [
 ];
 
 describe("Provider Registry", () => {
-  describe("getProvider", () => {
-    it("returns a constructor for built-in types", () => {
-      const Ctor = getProvider("anthropic");
+  describe("loadProvider", () => {
+    it("loads a constructor for built-in types", async () => {
+      const Ctor = await loadProvider("anthropic");
       expect(Ctor).toBeDefined();
       expect(Ctor?.getName()).toBe("Anthropic");
     });
 
-    it("returns a constructor for every built-in type", () => {
+    it("loads a constructor for every built-in type", async () => {
       for (const type of builtinTypes) {
-        const Ctor = getProvider(type);
+        const Ctor = await loadProvider(type);
         expect(Ctor).toBeDefined();
         expect(typeof Ctor?.getName()).toBe("string");
       }
     });
 
-    it("returns undefined for unknown types", () => {
-      expect(getProvider("unknown-provider")).toBeUndefined();
+    it("resolves undefined for unknown types", async () => {
+      expect(await loadProvider("unknown-provider")).toBeUndefined();
+    });
+
+    it("caches the class across calls", async () => {
+      const a = await loadProvider("openai");
+      const b = await loadProvider("openai");
+      expect(a).toBe(b);
+    });
+  });
+
+  describe("getProviderMetadata / getProviderName", () => {
+    it("returns name + baseUrl synchronously without loading the SDK", () => {
+      const meta = getProviderMetadata("anthropic");
+      expect(meta?.name).toBe("Anthropic");
+      expect(typeof meta?.baseUrl).toBe("string");
+    });
+
+    it("returns metadata for every built-in type", () => {
+      for (const type of builtinTypes) {
+        expect(getProviderMetadata(type)?.name).toBeTruthy();
+      }
+    });
+
+    it("falls back to the raw type for unknown providers", () => {
+      expect(getProviderMetadata("unknown-provider")).toBeUndefined();
+      expect(getProviderName("unknown-provider")).toBe("unknown-provider");
     });
   });
 
@@ -112,9 +139,13 @@ describe("Provider Registry", () => {
       unregisterProvider("custom-llm");
     });
 
-    it("registers a custom provider", () => {
+    it("registers a custom provider", async () => {
       registerProvider("custom-llm", customCtor);
-      expect(getProvider("custom-llm")).toBe(customCtor);
+      expect(await loadProvider("custom-llm")).toBe(customCtor);
+      expect(getProviderMetadata("custom-llm")).toEqual({
+        name: "Custom",
+        baseUrl: "https://custom.ai",
+      });
     });
 
     it("shows the custom type in getSupportedProviderTypes", () => {
@@ -127,37 +158,37 @@ describe("Provider Registry", () => {
       expect(isValidProviderType("custom-llm")).toBe(true);
     });
 
-    it("unregisters a custom provider", () => {
+    it("unregisters a custom provider", async () => {
       registerProvider("custom-llm", customCtor);
       unregisterProvider("custom-llm");
-      expect(getProvider("custom-llm")).toBeUndefined();
+      expect(await loadProvider("custom-llm")).toBeUndefined();
       expect(isValidProviderType("custom-llm")).toBe(false);
     });
 
-    it("leaves built-in providers intact", () => {
+    it("leaves built-in providers intact", async () => {
       registerProvider("custom-llm", customCtor);
-      expect(getProvider("anthropic")).toBeDefined();
+      expect(await loadProvider("anthropic")).toBeDefined();
       unregisterProvider("custom-llm");
-      expect(getProvider("anthropic")).toBeDefined();
+      expect(await loadProvider("anthropic")).toBeDefined();
     });
   });
 
   describe("createProvider", () => {
-    it("instantiates each built-in type with the supplied creds", () => {
+    it("instantiates each built-in type with the supplied creds", async () => {
       for (const type of builtinTypes) {
-        const instance = createProvider(type, creds);
+        const instance = await createProvider(type, creds);
         expect(instance).toBeDefined();
         expect(instance).toBeInstanceOf(AbstractBaseProvider);
       }
     });
 
-    it("returns undefined for unknown types", () => {
-      expect(createProvider("nonexistent", creds)).toBeUndefined();
+    it("resolves undefined for unknown types", async () => {
+      expect(await createProvider("nonexistent", creds)).toBeUndefined();
     });
 
-    it("creates independent instances on each call", () => {
-      const a = createProvider("openai", creds);
-      const b = createProvider("openai", creds);
+    it("creates independent instances on each call", async () => {
+      const a = await createProvider("openai", creds);
+      const b = await createProvider("openai", creds);
       expect(a).not.toBe(b);
     });
   });
