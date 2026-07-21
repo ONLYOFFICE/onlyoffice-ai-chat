@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.165
+
+### Fixed
+
+- The chat model no longer resets to the default after approving or denying a tool call. Every request that resumes a thread (tool approve/deny and the in-stream auto-continue paths) now carries the active `profileId`, and — for a separately-deployed `core` — `AIEngine` recovers the thread's own persisted profile when a caller omits `profileId`, instead of falling back to the global default-model assignment.
+
 ## 0.4.164
 
 ### Changed
