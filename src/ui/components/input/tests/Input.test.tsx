@@ -65,4 +65,54 @@ describe("Input", () => {
     render(<Input disabled />);
     expect(screen.getByRole("textbox")).toBeDisabled();
   });
+
+  it("hides the end-anchored icon once a search value is present (default)", () => {
+    render(
+      <Input
+        type="search"
+        icon="search"
+        value="query"
+        onClear={vi.fn()}
+        readOnly
+      />
+    );
+    // Default iconPosition="end": the magnifier yields to the clear button.
+    expect(screen.queryByText("search")).toBeNull();
+    expect(screen.getByRole("button")).toBeInTheDocument();
+  });
+
+  it("keeps a start-anchored icon visible while the clear button shows at the end", () => {
+    render(
+      <Input
+        type="search"
+        icon="search"
+        iconPosition="start"
+        value="query"
+        onClear={vi.fn()}
+        readOnly
+      />
+    );
+    const icon = screen.getByText("search");
+    const input = screen.getByRole("searchbox");
+    const clearBtn = screen.getByRole("button");
+    // Both the magnifier and the clear button are present at once.
+    expect(icon).toBeInTheDocument();
+    expect(clearBtn).toBeInTheDocument();
+    // Icon precedes the input (start edge); the clear button follows it (end).
+    expect(
+      icon.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      input.compareDocumentPosition(clearBtn) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("renders a start-anchored icon before the input even with no value", () => {
+    render(<Input type="search" icon="search" iconPosition="start" readOnly />);
+    const icon = screen.getByText("search");
+    const input = screen.getByRole("searchbox");
+    expect(
+      icon.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
 });

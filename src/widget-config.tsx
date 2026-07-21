@@ -58,6 +58,15 @@ export interface WidgetConfig {
    */
   chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
   /**
+   * Which edge the search input's magnifier icon sits on (currently the
+   * chat-history search field). `"end"` (default) keeps the icon at the
+   * trailing edge, where it is replaced by the clear ("X") button while
+   * typing. `"start"` moves the magnifier to the leading edge, where it stays
+   * visible during input, and the clear button always stays at the trailing
+   * edge.
+   */
+  inputIconPosition?: "start" | "end";
+  /**
    * Hide the chat-history panel's header row (the "Chat history" title and its
    * close button). The search field and the thread list stay visible. Use this
    * when the widget is embedded in a host panel that already provides its own

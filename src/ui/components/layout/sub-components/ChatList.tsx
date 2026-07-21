@@ -50,6 +50,7 @@ const ChatList = ({
     chatHistoryCloseIcon,
     hideChatHistoryHeader,
     chatHistoryAlwaysShowActions,
+    inputIconPosition,
   } = useWidgetConfig();
   const platform = usePlatform();
   const exportFormats = useMemo(
@@ -131,6 +132,7 @@ const ChatList = ({
               type="search"
               placeholder={t("Search")}
               icon="btn-menu-search"
+              iconPosition={inputIconPosition}
               value={searchValue}
               onChange={onChangeSearchValue}
               onClear={() => setSearchValue("")}

@@ -137,6 +137,12 @@ export interface AIChatWidgetProps {
    */
   chatHistoryCloseIcon?: WidgetConfig["chatHistoryCloseIcon"];
   /**
+   * Which edge the search input's magnifier icon sits on (currently the
+   * chat-history search field). Defaults to `"end"`; set to `"start"` to keep
+   * it visible while typing. See {@link WidgetConfig.inputIconPosition}.
+   */
+  inputIconPosition?: WidgetConfig["inputIconPosition"];
+  /**
    * Hide the chat-history panel's header row (title + close button), keeping
    * the search field and thread list. See
    * {@link WidgetConfig.hideChatHistoryHeader}.
@@ -331,6 +337,7 @@ export const AIChatWidget = React.forwardRef<
       hideThreadFade,
       hideSettingsButton,
       chatHistoryCloseIcon,
+      inputIconPosition,
       hideChatHistoryHeader,
       chatHistoryAlwaysShowActions,
       hideToolAllowAlways,
@@ -371,6 +378,7 @@ export const AIChatWidget = React.forwardRef<
         hideThreadFade,
         hideSettingsButton,
         chatHistoryCloseIcon,
+        inputIconPosition,
         hideChatHistoryHeader,
         chatHistoryAlwaysShowActions,
         hideToolAllowAlways,
@@ -405,6 +413,7 @@ export const AIChatWidget = React.forwardRef<
         hideThreadFade,
         hideSettingsButton,
         chatHistoryCloseIcon,
+        inputIconPosition,
         hideChatHistoryHeader,
         chatHistoryAlwaysShowActions,
         hideToolAllowAlways,

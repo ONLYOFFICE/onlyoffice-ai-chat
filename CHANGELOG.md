@@ -18,6 +18,8 @@
 - Chat-history date-group block bottom margin is now themable: `--chat-list-group-margin-bottom`.
 - Dropdown menu sizing is now themable (both flyout and drilldown modes): `--dropdown-menu-padding-y`, `--dropdown-menu-min-width`, `--dropdown-item-height`, `--dropdown-item-gap`, `--dropdown-item-content-gap`, `--dropdown-item-label-space`, `--dropdown-separator-margin-y`.
 - Chat-history thread row height and horizontal padding are now themable: `--chat-list-item-height`, `--chat-list-item-padding-x`.
+- `inputIconPosition` widget config (`"start" | "end"`, default `"end"`) — moves the search input's magnifier icon (currently the chat-history search field) to the leading edge, where it stays visible while typing; the clear ("X") button always stays at the trailing edge. `Input` also gained the matching `iconPosition` prop.
+- `Input` gap between its children (icon, text, clear button) is now themable via `--input-gap` (default `0`).
 
 ## [Unreleased]
 
