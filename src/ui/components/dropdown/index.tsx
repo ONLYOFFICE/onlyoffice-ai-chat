@@ -106,9 +106,9 @@ const Shell = ({
           data-orientation="vertical"
           onKeyDown={onContentKeyDown}
           className={cn(
-            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[4px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[5px] max-h-56 overflow-y-auto flex flex-col",
+            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[4px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[var(--dropdown-menu-padding-y)] max-h-56 overflow-y-auto flex flex-col",
             matchTriggerWidth
-              ? "min-w-[150px] w-[var(--radix-dropdown-menu-trigger-width)]"
+              ? "min-w-[var(--dropdown-menu-min-width)] w-[var(--radix-dropdown-menu-trigger-width)]"
               : "w-fit",
             contentClassName
           )}
@@ -253,7 +253,7 @@ const DropdownMenuComponent = ({
       {canGoBack ? (
         <>
           <BackRow onBack={() => setPath((p) => p.slice(0, -1))} />
-          <div className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[4px] shrink-0" />
+          <div className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[var(--dropdown-separator-margin-y)] shrink-0" />
         </>
       ) : null}
       {headerContent}

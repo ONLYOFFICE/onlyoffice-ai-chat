@@ -185,7 +185,7 @@ const ChatListItemComponent = ({
   return (
     <div
       key={thread.threadId}
-      className={`cursor-pointer rounded-[4px] h-[28px] min-h-[28px] px-[8px] flex items-center justify-between hover:bg-[var(--chat-list-item-hover-background-color)] ${
+      className={`cursor-pointer rounded-[4px] h-[var(--chat-list-item-height)] min-h-[var(--chat-list-item-height)] px-[var(--chat-list-item-padding-x)] flex items-center justify-between hover:bg-[var(--chat-list-item-hover-background-color)] ${
         isRenameInputVisible
           ? "px-[0px]"
           : isOpen

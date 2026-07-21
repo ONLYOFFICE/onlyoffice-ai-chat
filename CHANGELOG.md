@@ -1,5 +1,24 @@
 # Changelog
 
+## [Desktop plugin changes]
+
+### Added
+
+- Suggestion chip height and paddings are now themable: `--chat-suggestion-height`, `--chat-suggestion-padding-x`, `--chat-suggestion-padding-y`.
+- Suggestions block bottom margin is now themable: `--chat-suggestions-margin-bottom`.
+- User message bubble corner radius is now themable: `--chat-user-message-border-radius`.
+- Composer outer wrapper paddings are now themable: `--chat-composer-wrapper-padding-x`, `--chat-composer-wrapper-padding-bottom`.
+- Composer box paddings are now themable: `--chat-composer-padding-x`, `--chat-composer-padding-top`, `--chat-composer-padding-bottom`.
+- Composer disclaimer text font size is now themable: `--chat-composer-disclaimer-font-size`.
+- Gap between the action buttons below assistant and user messages is now themable: `--chat-message-actions-gap` (previously only the assistant side honored it).
+- Chat-history search field top margin is now themable: `--chat-list-search-margin-top`.
+- Chat-history column paddings are now themable: `--chat-list-padding-x` (shared header/list horizontal inset), `--chat-list-header-padding-top`, `--chat-list-content-padding-bottom`.
+- Chat-history thread list top margin is now themable: `--chat-list-items-margin-top`.
+- Chat-history date-group header horizontal padding is now themable: `--chat-list-group-header-padding-x`.
+- Chat-history date-group block bottom margin is now themable: `--chat-list-group-margin-bottom`.
+- Dropdown menu sizing is now themable (both flyout and drilldown modes): `--dropdown-menu-padding-y`, `--dropdown-menu-min-width`, `--dropdown-item-height`, `--dropdown-item-gap`, `--dropdown-item-content-gap`, `--dropdown-item-label-space`, `--dropdown-separator-margin-y`.
+- Chat-history thread row height and horizontal padding are now themable: `--chat-list-item-height`, `--chat-list-item-padding-x`.
+
 ## [Unreleased]
 
 ### Changed

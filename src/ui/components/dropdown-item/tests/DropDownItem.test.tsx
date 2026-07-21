@@ -264,7 +264,7 @@ describe("DropDownItem", () => {
       <DropDownItem text="Spaced" onClick={vi.fn()} withSpace />
     );
     const span = screen.getByText("Spaced");
-    expect(span.className).toContain("ms-[28px]");
+    expect(span.className).toContain("ms-[var(--dropdown-item-label-space)]");
   });
 
   describe("horizontal padding", () => {
@@ -357,7 +357,7 @@ describe("DropDownItem", () => {
       );
       // The label carries the empty-slot column reservation.
       expect(screen.getByText("Elem").className).toContain(
-        "[.dd-leading:empty+&]:ms-[28px]"
+        "[.dd-leading:empty+&]:ms-[var(--dropdown-item-label-space)]"
       );
       expect(
         item.querySelector(".dd-leading")?.contains(

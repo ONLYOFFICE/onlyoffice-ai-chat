@@ -82,7 +82,7 @@ const DropDownItem = ({
     // border is snapped to the device pixel grid by the browser and stays
     // visible across scales.
     return (
-      <div className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[4px] shrink-0" />
+      <div className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[var(--dropdown-separator-margin-y)] shrink-0" />
     );
 
   const isDrill = navigation === "drilldown";
@@ -245,7 +245,7 @@ const DropDownItem = ({
     <Item
       className={cn(
         "dropdown-menu-item group",
-        "flex items-center justify-between gap-[10px] min-w-0 w-full max-w-full min-h-[26px] h-[26px] select-none cursor-pointer",
+        "flex items-center justify-between gap-[var(--dropdown-item-gap)] min-w-0 w-full max-w-full min-h-[var(--dropdown-item-height)] h-[var(--dropdown-item-height)] select-none cursor-pointer",
         paddingClass,
         "outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0 border-0",
         "hover:bg-[var(--drop-down-menu-item-hover-color)] hover:text-[var(--drop-down-menu-item-hover-color)]",
@@ -260,7 +260,11 @@ const DropDownItem = ({
       ref={itemRef}
       dir={isRTL ? "rtl" : "ltr"}
     >
-      <div className={cn("flex items-center gap-[4px] min-w-0 flex-1")}>
+      <div
+        className={cn(
+          "flex items-center gap-[var(--dropdown-item-content-gap)] min-w-0 flex-1"
+        )}
+      >
         {/* `display: contents` so the icon stays a direct flex child (gap
             intact); when the icon renders null the wrapper has no children,
             so it produces no box (no stray gap) and matches `:empty`. */}
@@ -275,8 +279,10 @@ const DropDownItem = ({
           dir="auto"
           className={cn(
             "truncate font-normal text-[var(--drop-down-menu-item-color)]",
-            withSpace ? "ms-[28px]" : "",
-            isElementIcon ? "[.dd-leading:empty+&]:ms-[28px]" : "",
+            withSpace ? "ms-[var(--dropdown-item-label-space)]" : "",
+            isElementIcon
+              ? "[.dd-leading:empty+&]:ms-[var(--dropdown-item-label-space)]"
+              : "",
             trailingIcon ? "flex-1" : ""
           )}
         >

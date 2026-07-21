@@ -111,7 +111,7 @@ const ChatList = ({
         className
       )}
     >
-      <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[8px] px-[12px]">
+      <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[var(--chat-list-header-padding-top)] px-[var(--chat-list-padding-x)]">
         {!isHeaderHidden && (
           <div className="flex items-center justify-between">
             <h4 className="select-none text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] [font-weight:var(--chat-list-title-font-weight,700)] text-[var(--chat-list-color)]">
@@ -125,7 +125,7 @@ const ChatList = ({
           </div>
         )}
         {!isEmptyList && (
-          <div className="mt-[8px]">
+          <div className="mt-[var(--chat-list-search-margin-top)]">
             <Input
               className="w-full"
               type="search"
@@ -138,17 +138,20 @@ const ChatList = ({
           </div>
         )}
       </div>
-      <div className="flex flex-col px-[12px] pb-[8px]">
+      <div className="flex flex-col px-[var(--chat-list-padding-x)] pb-[var(--chat-list-content-padding-bottom)]">
         {isEmptyList ? (
-          <p className="select-none text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[8px]">
+          <p className="select-none text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[var(--chat-list-items-margin-top)]">
             {t("NoChatYet")}
           </p>
         ) : (
-          <div className="flex flex-col mt-[8px]">
+          <div className="flex flex-col mt-[var(--chat-list-items-margin-top)]">
             {showingThreads.length ? (
               groups.map((group) => (
-                <div key={group.key} className="flex flex-col mb-[8px]">
-                  <p className="select-none [font-weight:var(--chat-list-group-header-font-weight,400)] text-[length:var(--chat-list-group-header-font-size,var(--fs-11))] leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[8px]">
+                <div
+                  key={group.key}
+                  className="flex flex-col mb-[var(--chat-list-group-margin-bottom)]"
+                >
+                  <p className="select-none [font-weight:var(--chat-list-group-header-font-weight,400)] text-[length:var(--chat-list-group-header-font-size,var(--fs-11))] leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[var(--chat-list-group-header-padding-x)]">
                     {group.label}
                   </p>
                   {group.threads.map((thread) => (
