@@ -21,6 +21,7 @@ import useEnsureTools from "../../hooks/useEnsureTools";
 import { ManageToolDialog } from "../../components/manage-tool-dialog";
 import { Icon } from "../../components/icon";
 import { AssistantMessage } from "./sub-components/AssistantMessage";
+import { ThreadWelcome } from "./sub-components/Welcome";
 import { Composer } from "./sub-components/Composer";
 import { ComposerHeader } from "./sub-components/ComposerHeader";
 import { Suggestions } from "./sub-components/Suggestions";
@@ -99,7 +100,8 @@ const ThreadInner = () => {
       >
         <ThreadPrimitive.If empty>
           <SuggestionsHeader />
-          <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col overflow-y-auto" />
+          <ThreadPrimitive.Viewport className="chat-viewport--empty relative flex min-w-0 flex-1 flex-col items-center justify-center overflow-y-auto" />
+          <ThreadWelcome />
           <Suggestions />
           <ComposerHeader />
           <Composer />

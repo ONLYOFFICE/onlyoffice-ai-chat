@@ -7,6 +7,16 @@
 - The Web Search settings page can now be fully restyled by the host through the `className` prop and the stable `web-search-*` classes (`web-search-root`, `web-search-fields`, `web-search-field-header`, …): field-column gaps and `max-width`, header label size/weight, and the "Get API key" link color (via `--link-secondary-color`) — all from the host's own stylesheet.
 ### Added
 
+- `showWelcome` / `welcomeTitle` / `welcomeDescription` widget config — control the welcome screen at the top of a new (empty) chat. `showWelcome` is opt-in (hidden by default, set to `true` to render it); the `ThreadWelcome` component reads the flag itself and renders nothing when it is unset, so the same gating applies wherever it is used. `welcomeTitle` / `welcomeDescription` override the built-in localized strings (`WelcomeTitle` / `WelcomeDescription`) with host-supplied, untranslated text — omit either to keep its built-in string.
+
+```ts
+<AIChatWidget
+  showWelcome
+  welcomeTitle="How can I help?"
+  welcomeDescription="Ask me anything about your documents."
+/>
+```
+
 - `onDropFiles` widget config — takes over file drag-and-drop onto the chat surface. When provided, dropping one or more files hands the raw `File[]` to the callback and the built-in handling (reading images as data URLs / text files as text and attaching them in-memory, silently ignoring binary Office/PDF drops) is skipped entirely. Use it to route every dropped file through the same path as the composer's upload button — e.g. a host that uploads to portal storage and attaches by file id, which also lets binary formats (DOCX/PDF/XLSX) be dropped. The drag-over highlight/overlay is still driven by the widget; only the drop's payload handling is delegated. Omit to keep the built-in read-and-attach behavior.
 
 ```ts
