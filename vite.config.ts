@@ -61,7 +61,6 @@ export default defineConfig({
     tailwindcss(),
     dts({
       tsconfigPath: "./tsconfig.build.json",
-      rollupTypes: true,
     }),
   ],
   build: {
