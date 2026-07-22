@@ -1,10 +1,27 @@
 # Changelog
 
-## [Unreleased]
+## 0.4.165
+
+### Fixed
+
+- The chat model no longer resets to the default after approving or denying a tool call. Every request that resumes a thread (tool approve/deny and the in-stream auto-continue paths) now carries the active `profileId`, and — for a separately-deployed `core` — `AIEngine` recovers the thread's own persisted profile when a caller omits `profileId`, instead of falling back to the global default-model assignment.
+
+## 0.4.164
 
 ### Changed
 
 - The Web Search settings page can now be fully restyled by the host through the `className` prop and the stable `web-search-*` classes (`web-search-root`, `web-search-fields`, `web-search-field-header`, …): field-column gaps and `max-width`, header label size/weight, and the "Get API key" link color (via `--link-secondary-color`) — all from the host's own stylesheet.
+- **Provider registry is now lazy — breaking API change.** Each built-in provider SDK (`openai`, `@anthropic-ai/sdk`, `@google/genai`, `@mistralai/mistralai`) loads on demand via dynamic import, so a consumer bundles only the SDK(s) it actually uses instead of all four. As a result `createProvider(type, creds)` and `providerFor(...)` are now **async**, and the sync `getProvider(type)` is replaced by `loadProvider(type)` (async, returns the class) plus `getProviderMetadata(type)` / `getProviderName(type)` (sync — name + base URL, no SDK loaded).
+
+```ts
+// before: const p = createProvider("openai", creds);
+// after:  const p = await createProvider("openai", creds);
+```
+
+- Smaller published package and lighter runtime bundle: sourcemaps are no longer shipped and output is minified (tarball ~1.3 MB → ~0.5 MB), `.d.ts` are rolled up, and CodeMirror + the syntax highlighter now load lazily.
+- Streaming is cheaper end to end: per-token persistence is coalesced, providers no longer emit redundant identical snapshots, and streaming assistant text renders through the block-memoized markdown path.
+- Fewer redundant requests: system MCP servers reuse their session and cached tool list, provider model lists are cached (and reused as the credential-validity signal on save), and the guaranteed-404 Responses-API capability probe is skipped for non-OpenAI providers.
+- Fewer duplicate/concurrent requests on the client: `ProfilesStore.init()` and the servers `getTools()` fetch now coalesce concurrent callers, so several page mounts share one load instead of each firing 2–3×; the redundant widget-level profile init was dropped; and the remote API transport pools in-flight identical `GET` reads.
 ### Added
 
 - `showWelcome` / `welcomeTitle` / `welcomeDescription` widget config — control the welcome screen at the top of a new (empty) chat. `showWelcome` is opt-in (hidden by default, set to `true` to render it); the `ThreadWelcome` component reads the flag itself and renders nothing when it is unset, so the same gating applies wherever it is used. `welcomeTitle` / `welcomeDescription` override the built-in localized strings (`WelcomeTitle` / `WelcomeDescription`) with host-supplied, untranslated text — omit either to keep its built-in string.

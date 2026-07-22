@@ -97,7 +97,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     selectCurrentChatProfile,
   } = useStores();
 
-  const messages = useMessageStore((s) => s.messages);
   const setIsStreamRunning = useMessageStore((s) => s.setIsStreamRunning);
   const setIsRequestRunning = useMessageStore((s) => s.setIsRequestRunning);
   const setIsToolPending = useMessageStore((s) => s.setIsToolPending);
@@ -143,6 +142,33 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const extendedThinking = useProfilesStore((s) => s.extendedThinking);
   const { servers } = useToolsContext();
   const { entityId, systemPrompt, onToolCallApproveResult } = useWidgetConfig();
+
+  // Fields every request that *resumes the same thread* must carry — tool
+  // approve/deny and the in-stream auto-continue paths alike. Critically this
+  // includes `profileId`: without it the server falls back to the
+  // default-model assignment and the user's model choice is silently lost
+  // (the bug this centralisation prevents from recurring). Same `actionArgs`
+  // the original `sendWithStream` sent, so the resumed round is identical.
+  const resumeCommon = useCallback(
+    () => ({
+      entityId,
+      profileId: currentProfile?.id,
+      actionArgs: {
+        isReasoning: extendedThinking,
+        tools: currentTools(),
+        prompt: systemPrompt,
+        signal: ensureAbortSignal(),
+      },
+    }),
+    [
+      entityId,
+      currentProfile?.id,
+      extendedThinking,
+      currentTools,
+      systemPrompt,
+      ensureAbortSignal,
+    ]
+  );
 
   const threadIdRef = useRef(threadId);
 
@@ -541,13 +567,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               messageId: event.messageId,
               idx: event.idx,
               message: event.message,
-              entityId,
-              actionArgs: {
-                isReasoning: extendedThinking,
-                tools: currentTools(),
-                prompt: systemPrompt,
-                signal: ensureAbortSignal(),
-              },
+              ...resumeCommon(),
             });
             await processStream(next, resolvedThreadId, {
               hasAssistantPlaceholder: true,
@@ -600,13 +620,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           idx: event.idx,
           message,
           result: undefined,
-          entityId,
-          actionArgs: {
-            isReasoning: extendedThinking,
-            tools: currentTools(),
-            prompt: systemPrompt,
-            signal: ensureAbortSignal(),
-          },
+          ...resumeCommon(),
         });
         await processStream(next, event.threadId, {
           hasAssistantPlaceholder: true,
@@ -686,13 +700,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           idx: event.idx,
           message: event.message,
           result,
-          entityId,
-          actionArgs: {
-            isReasoning: extendedThinking,
-            tools: currentTools(),
-            prompt: systemPrompt,
-            signal: ensureAbortSignal(),
-          },
+          ...resumeCommon(),
         });
         await processStream(next, event.threadId, {
           hasAssistantPlaceholder: true,
@@ -706,9 +714,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       callbacksManager,
       claimThreadId,
       currentProfile,
-      entityId,
-      ensureAbortSignal,
-      extendedThinking,
       insertThread,
       middlewareRunner,
       api,
@@ -718,9 +723,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setIsToolPending,
       setAbortController,
       setManageToolData,
-      systemPrompt,
-      currentTools,
       useMessageStore,
+      resumeCommon,
     ]
   );
 
@@ -741,7 +745,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         images: images ?? [],
         threadId,
         profile: currentProfile,
-        existingMessages: messages,
+        // Read lazily at send time instead of subscribing to the whole
+        // `messages` array (which would re-render this hook's host on every
+        // streamed token) — mirrors AssistantActionBar.onDownload.
+        existingMessages: useMessageStore.getState().messages,
         resolveAttachment: async (id) => {
           const rec = await api.attachments.get(id);
           if (!rec) return null;
@@ -912,13 +919,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           message: data.message,
           result: undefined,
           allowAlways,
-          entityId,
-          actionArgs: {
-            isReasoning: extendedThinking,
-            tools: currentTools(),
-            prompt: systemPrompt,
-            signal: ensureAbortSignal(),
-          },
+          ...resumeCommon(),
         });
         await processStream(stream, data.threadId, {
           hasAssistantPlaceholder: true,
@@ -1012,14 +1013,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         message: data.message,
         result,
         allowAlways,
-        entityId,
-        profileId: currentProfile?.id,
-        actionArgs: {
-          isReasoning: extendedThinking,
-          tools: currentTools(),
-          prompt: systemPrompt,
-          signal: ensureAbortSignal(),
-        },
+        ...resumeCommon(),
       });
       await processStream(stream, data.threadId, {
         hasAssistantPlaceholder: true,
@@ -1028,10 +1022,6 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     [
       api,
       callbacksManager,
-      currentProfile?.id,
-      entityId,
-      ensureAbortSignal,
-      extendedThinking,
       middlewareRunner,
       onToolCallApproveResult,
       processStream,
@@ -1041,10 +1031,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       setIsStreamRunning,
       setIsToolPending,
       setManageToolData,
-      systemPrompt,
-      currentTools,
       updateLastMessage,
       useServersStore,
+      resumeCommon,
     ]
   );
 
@@ -1060,30 +1049,18 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       messageId: data.messageId,
       idx: data.idx,
       message: data.message,
-      entityId,
-      profileId: currentProfile?.id,
-      actionArgs: {
-        isReasoning: extendedThinking,
-        tools: currentTools(),
-        prompt: systemPrompt,
-        signal: ensureAbortSignal(),
-      },
+      ...resumeCommon(),
     });
     await processStream(stream, data.threadId, {
       hasAssistantPlaceholder: true,
     });
   }, [
     api,
-    currentProfile,
-    entityId,
-    ensureAbortSignal,
-    extendedThinking,
     processStream,
     setIsToolPending,
     setManageToolData,
-    systemPrompt,
-    currentTools,
     useServersStore,
+    resumeCommon,
   ]);
 
   const regenerate = useCallback(

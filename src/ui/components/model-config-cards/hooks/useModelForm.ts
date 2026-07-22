@@ -3,22 +3,13 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
 import { useDebouncedCallback } from "../../../hooks/useDebouncedCallback";
 import { useApi } from "../../../providers/ApiProvider";
-import { getProvider } from "../../../../core/providers";
+import { getProviderName } from "../../../../core/providers";
 import type { Model, ProviderType } from "../../../../types";
 import type {
   ModelFormErrors,
   ModelFormValues,
   ProviderSelection,
 } from "../../model-config-cards/sub-components/ModelConfigForm";
-
-/**
- * Resolve a provider's display name through the static
- * {@link ProviderConstructor.getName} helper. Falls back to the raw
- * type when the provider isn't registered (e.g. tests with a stub).
- */
-function getProviderName(type: ProviderType): string {
-  return getProvider(type)?.getName() ?? type;
-}
 
 const fieldToErrorKey: Partial<
   Record<keyof ModelFormValues, keyof ModelFormErrors>
@@ -57,6 +48,10 @@ export const useModelForm = (initialValues: ModelFormValues) => {
     useState(false);
   const fetchModelsRequestIdRef = useRef(0);
   const walletCheckRequestIdRef = useRef(0);
+  // Cancels the in-flight wallet-service check when a newer one supersedes it
+  // (rapid provider / URL / key edits) so stale requests don't linger on the
+  // wire. The request-id guard below still protects setState ordering.
+  const walletCheckControllerRef = useRef<AbortController | null>(null);
   const valuesRef = useRef(values);
   valuesRef.current = values;
   // Once the user edits the profile name manually, stop auto-generating it
@@ -190,6 +185,10 @@ export const useModelForm = (initialValues: ModelFormValues) => {
         setIsOnlyofficeAISetupIncomplete(false);
         return;
       }
+      // Abort any wallet check still on the wire before starting a new one.
+      walletCheckControllerRef.current?.abort();
+      const controller = new AbortController();
+      walletCheckControllerRef.current = controller;
       const requestId = ++walletCheckRequestIdRef.current;
       try {
         const normalized = baseUrl.replace(/\/+$/, "");
@@ -203,7 +202,7 @@ export const useModelForm = (initialValues: ModelFormValues) => {
           : {};
         const res = await fetch(
           `${normalized}/api/2.0/portal/payment/walletservice?service=aitools`,
-          { headers }
+          { headers, signal: controller.signal }
         );
         if (requestId !== walletCheckRequestIdRef.current) return;
         if (!res.ok) {
@@ -219,6 +218,8 @@ export const useModelForm = (initialValues: ModelFormValues) => {
         const aiTools = features.find((f) => f?.id === "aitools");
         setIsOnlyofficeAISetupIncomplete(aiTools?.value !== true);
       } catch {
+        // A superseded request was aborted on purpose — never surface it.
+        if (controller.signal.aborted) return;
         if (requestId !== walletCheckRequestIdRef.current) return;
         setIsOnlyofficeAISetupIncomplete(true);
       }
@@ -254,8 +255,9 @@ export const useModelForm = (initialValues: ModelFormValues) => {
         ...(apiKey !== undefined && { apiKey }),
       }));
       setModels([]);
-      // Any in-flight wallet check is stale after a provider switch; drop
-      // its result and clear the hint until the new provider re-checks.
+      // Any in-flight wallet check is stale after a provider switch; abort it
+      // and drop its result, clearing the hint until the new provider re-checks.
+      walletCheckControllerRef.current?.abort();
       walletCheckRequestIdRef.current++;
       setIsOnlyofficeAISetupIncomplete(false);
       fetchModels(type, apiKey ?? valuesRef.current.apiKey, newBaseUrl, {

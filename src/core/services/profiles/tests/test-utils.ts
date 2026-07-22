@@ -41,6 +41,12 @@ export class StubProfileProvider extends AbstractBaseProvider {
   async sendMessageSync(): Promise<string> {
     return "";
   }
+  // Behave like a Responses-capable (OpenAI-family) provider so the probe
+  // still fires both transports; `probeCapabilities` gates the Responses
+  // probe on this, and the base default (`false`) would otherwise skip it.
+  async checkResponsesApi(): Promise<boolean> {
+    return true;
+  }
   static getName(): string {
     return "Profile Stub";
   }

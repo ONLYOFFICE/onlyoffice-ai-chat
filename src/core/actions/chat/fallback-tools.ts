@@ -295,14 +295,15 @@ export const wrapStream = async function* (
  * to the provider WITHOUT the `tools` field, and parse `<TOOL_CALL>`
  * blocks out of the stream into synthetic tool-call content parts.
  */
-export const streamWithTextProtocol = (
+export async function* streamWithTextProtocol(
   args: ActionArgs,
   baseSystemPrompt: string
-): AsyncGenerator<SendMessageResult> => {
+): AsyncGenerator<SendMessageResult> {
   const tools = args.tools ?? [];
   const composedSystem = `${baseSystemPrompt}\n\n${buildToolsBlock(tools)}`;
 
-  const upstream = providerFor(args).sendMessage({
+  const provider = await providerFor(args);
+  const upstream = provider.sendMessage({
     messages: transformHistoryToText(args.messages),
     model: args.profile.modelId,
     systemPrompt: composedSystem,
@@ -311,8 +312,8 @@ export const streamWithTextProtocol = (
     signal: args.signal,
   });
 
-  return wrapStream(upstream);
-};
+  yield* wrapStream(upstream);
+}
 
 export const chatViaTextProtocol = (
   args: ActionArgs

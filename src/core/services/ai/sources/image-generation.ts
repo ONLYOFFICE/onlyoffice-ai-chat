@@ -111,7 +111,7 @@ export async function callImageGenerationTool(
     // `external` profile surfaces as a tool-result error string instead
     // of throwing into the chat stream.
     const fetch = pickFetch?.(profile);
-    const provider = providerFor({
+    const provider = await providerFor({
       profile,
       messages: [],
       ...(fetch ? { fetch } : {}),

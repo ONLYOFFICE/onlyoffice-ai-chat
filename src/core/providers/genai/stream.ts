@@ -187,8 +187,11 @@ export async function* processStream(
       yield { isEnd: true, responseMessage: createStopResponse() };
       return;
     }
+    const prev = responseMessage;
     responseMessage = processChunk(responseMessage, chunk);
-    yield responseMessage;
+    // `processChunk` returns the same reference for a content-free chunk;
+    // only emit a snapshot when it actually changed.
+    if (responseMessage !== prev) yield responseMessage;
   }
 
   yield { isEnd: true, responseMessage };

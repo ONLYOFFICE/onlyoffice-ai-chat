@@ -61,7 +61,7 @@ export default defineConfig({
     tailwindcss(),
     dts({
       tsconfigPath: "./tsconfig.build.json",
-      rollupTypes: false,
+      rollupTypes: true,
     }),
   ],
   build: {
@@ -80,7 +80,10 @@ export default defineConfig({
       },
     },
     cssCodeSplit: false,
-    sourcemap: true,
-    minify: false,
+    // Ship neither sourcemaps (they were ~48% of the published tarball) nor
+    // unminified code — consumers' bundlers re-process from their own source,
+    // and the library source is public on GitHub for debugging.
+    sourcemap: false,
+    minify: "esbuild",
   },
 });

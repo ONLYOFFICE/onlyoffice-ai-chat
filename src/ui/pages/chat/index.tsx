@@ -8,7 +8,7 @@ import {
 } from "@assistant-ui/react";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useWidgetConfig } from "../../../widget-config";
@@ -39,7 +39,6 @@ const ThreadInner = () => {
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const isRequestRunning = useMessageStore((s) => s.isRequestRunning);
   const isToolPending = useMessageStore((s) => s.isToolPending);
-  const messages = useMessageStore((s) => s.messages);
   const { t } = useI18n();
   const { isDragOver, handlers } = useChatDropAttachments();
   const { hideScrollToBottomButton, hideThreadFade } = useWidgetConfig();
@@ -49,8 +48,11 @@ const ThreadInner = () => {
   // `tool-call-pending` to the UI, so `isToolPending` from the store
   // misses them. Reading the message itself catches both paths: a
   // tool-call part without a `result` means the tool hasn't returned.
-  const hasUnresolvedToolCall = (() => {
-    const last = messages[messages.length - 1];
+  // Subscribe to the derived boolean, not the whole `messages` array, so
+  // this component re-renders only when the flag flips — not on every
+  // streamed token.
+  const hasUnresolvedToolCall = useMessageStore((s) => {
+    const last = s.messages[s.messages.length - 1];
     if (!last || last.role !== "assistant") return false;
     if (!Array.isArray(last.content)) return false;
     return last.content.some(
@@ -60,7 +62,7 @@ const ThreadInner = () => {
         (p as { type?: string }).type === "tool-call" &&
         (p as { result?: unknown }).result === undefined
     );
-  })();
+  });
 
   const analyzingReady =
     !isRequestRunning &&
@@ -244,6 +246,18 @@ const Thread = () => {
 
   const convertMessage = useCallback((m: ThreadMessageLike) => m, []);
 
+  // Stable across renders — the attachment adapters are stateless, so
+  // rebuilding them on every streamed token only churns the runtime input.
+  const adapters = useMemo(
+    () => ({
+      attachments: new CompositeAttachmentAdapter([
+        new SimpleImageAttachmentAdapter(),
+        new SimpleTextAttachmentAdapter(),
+      ]),
+    }),
+    []
+  );
+
   const runtime = useExternalStoreRuntime<ThreadMessageLike>({
     messages,
     isRunning: isStreamRunning,
@@ -251,12 +265,7 @@ const Thread = () => {
     onCancel,
     onReload,
     convertMessage,
-    adapters: {
-      attachments: new CompositeAttachmentAdapter([
-        new SimpleImageAttachmentAdapter(),
-        new SimpleTextAttachmentAdapter(),
-      ]),
-    },
+    adapters,
   });
 
   if (!profilesInitialized) {

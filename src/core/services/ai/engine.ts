@@ -147,16 +147,33 @@ export class AIEngine {
    * supplied (the UI's session-level model pick from the composer), load
    * it directly from storage — that pick wins over the persisted Chat
    * assignment for the current request without mutating the assignment.
-   * Falls back to {@link AssignmentsEngine.resolveForAction} when no
-   * override is given or the override id no longer exists.
+   *
+   * When no override is given, `fallbackThreadId` lets a request that
+   * continues an existing thread (tool approve/deny) recover the profile
+   * the thread is already bound to — persisted by `sendWithStream` via
+   * `appendUserMessage`. This keeps a resume on the thread's own model
+   * even when the caller (any client of this engine, not just this UI)
+   * didn't re-send `profileId`, instead of silently dropping to the global
+   * default. Falls back to {@link AssignmentsEngine.resolveForAction} only
+   * when neither the override nor the thread yields a live profile.
    */
   private async resolveChatProfile(
     overrideId: string | undefined,
-    entityId: string | undefined
+    entityId: string | undefined,
+    fallbackThreadId?: string
   ): Promise<ResolvedAssignment> {
     if (overrideId) {
       const profile = await this.deps.storage.profiles.readById(overrideId);
       if (profile) return { profileId: overrideId, profile };
+    }
+    if (fallbackThreadId) {
+      const thread = await this.deps.storage.threads.readById(fallbackThreadId);
+      if (thread?.profileId) {
+        const profile = await this.deps.storage.profiles.readById(
+          thread.profileId
+        );
+        if (profile) return { profileId: thread.profileId, profile };
+      }
     }
     return this.assignments.resolveForAction(ActionType.Chat, entityId);
   }
@@ -444,7 +461,8 @@ export class AIEngine {
       if (toolCall) {
         const { profile, profileId } = await this.resolveChatProfile(
           input.profileId,
-          input.entityId
+          input.entityId,
+          input.threadId
         );
         const toolCtx = await buildToolContext(
           this.deps.storage,
@@ -512,7 +530,8 @@ export class AIEngine {
   ): AsyncGenerator<ChatEvent> {
     const { profile, profileId } = await this.resolveChatProfile(
       input.profileId,
-      input.entityId
+      input.entityId,
+      input.threadId
     );
 
     const toolCtx = await buildToolContext(

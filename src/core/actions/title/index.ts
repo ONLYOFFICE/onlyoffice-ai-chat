@@ -17,7 +17,7 @@ export const generateTitle = async (args: ActionArgs): Promise<string> => {
   const messages = isFallbackProfile(args.profile)
     ? transformHistoryToText(args.messages)
     : args.messages;
-  const title = await providerFor(args).sendMessageSync({
+  const title = await (await providerFor(args)).sendMessageSync({
     messages,
     model: args.profile.modelId,
     useResponsesApi: args.profile.useResponsesApi === true,

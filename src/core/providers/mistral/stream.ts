@@ -150,6 +150,7 @@ export async function* processStream(
     if (!choice) continue;
 
     const delta = choice.delta;
+    const prev = responseMessage;
     responseMessage = handleToolCall(delta, responseMessage);
     responseMessage = handleTextContent(delta, responseMessage);
 
@@ -158,6 +159,8 @@ export async function* processStream(
       return;
     }
 
-    yield responseMessage;
+    // The handlers return the same reference for a delta with no text or
+    // tool-calls (role-only / keepalive) — skip the redundant snapshot.
+    if (responseMessage !== prev) yield responseMessage;
   }
 }

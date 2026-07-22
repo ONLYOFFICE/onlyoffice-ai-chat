@@ -10,7 +10,7 @@ import { EditModelCard } from "../model-config-cards";
 import { ProviderLogo } from "../provider-logo";
 import { Tooltip, TooltipTrigger } from "../tooltip";
 import { DeleteProfileDialog } from "./DeleteProfileDialog";
-import { getProvider } from "../../../core/providers";
+import { getProviderName } from "../../../core/providers";
 
 type ModelCardProps = {
   profile: Profile;
@@ -33,7 +33,7 @@ const ModelCard = ({
   const deleteProfile = useProfilesStore((s) => s.deleteProfile);
   const providerName = profile.isCloudProvider
     ? new URL(profile.baseUrl).hostname
-    : (getProvider(profile.providerType)?.getName() ?? profile.providerType);
+    : getProviderName(profile.providerType);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
   const { t } = useI18n();
 

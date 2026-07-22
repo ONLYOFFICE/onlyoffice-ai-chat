@@ -271,6 +271,7 @@ export async function* processStream(
   let responseMessage: ThreadMessageLike = createEmptyResponse();
 
   for await (const event of stream) {
+    const prev = responseMessage;
     switch (event.type) {
       case "message_start":
         responseMessage = handleMessageStart(event);
@@ -288,7 +289,11 @@ export async function* processStream(
         break;
     }
 
-    yield responseMessage;
+    // Only emit a snapshot when an event actually mutated the message. The
+    // content handlers each return a fresh object, so an unchanged reference
+    // means a no-op event (ping, usage/`message_delta` frame,
+    // `content_block_stop`) — skip the redundant downstream write + re-render.
+    if (responseMessage !== prev) yield responseMessage;
   }
 
   // Stream closed without a `message_stop` event (network interruption,

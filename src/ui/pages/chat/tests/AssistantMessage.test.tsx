@@ -198,6 +198,10 @@ vi.mock("../../../components/markdown", () => ({
   MarkdownContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="markdown-content">{children}</div>
   ),
+  // Streaming assistant text renders through the block-memoized primitive.
+  MarkdownText: (props: { text?: string; children?: React.ReactNode }) => (
+    <div data-testid="markdown-text">{props.text ?? props.children}</div>
+  ),
 }));
 
 vi.mock("../../../components/icon", () => ({
@@ -465,12 +469,12 @@ describe("AssistantMessage", () => {
   });
 
   describe("ThinkingMarkdownText", () => {
-    it("renders text type content as MarkdownContent directly", () => {
+    it("renders text type content via the block-memoized MarkdownText", () => {
       mockMessageContent = [{ type: "text", text: "Regular text" }];
       render(<AssistantMessage />);
-      const mdContents = screen.getAllByTestId("markdown-content");
-      expect(mdContents.length).toBeGreaterThanOrEqual(1);
-      expect(mdContents[0].textContent).toBe("Regular text");
+      const mdText = screen.getAllByTestId("markdown-text");
+      expect(mdText.length).toBeGreaterThanOrEqual(1);
+      expect(mdText[0].textContent).toBe("Regular text");
     });
 
     it("renders reasoning type content with collapsed thinking block", () => {
