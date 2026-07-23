@@ -193,7 +193,7 @@ const UserActionBar = () => {
           {copied ? (
             <IconButton
               iconName="checked"
-              size={20}
+              size="var(--chat-message-actions-icon-size, 20px)"
               isStroke
               color="var(--icon-gray-secondary)"
               disabled
@@ -201,7 +201,7 @@ const UserActionBar = () => {
           ) : (
             <IconButton
               iconName="btn-copy"
-              size={20}
+              size="var(--chat-message-actions-icon-size, 20px)"
               isStroke
               color="var(--icon-gray-secondary)"
             />
@@ -213,7 +213,7 @@ const UserActionBar = () => {
           trigger={
             <IconButton
               iconName="btn-more.small"
-              size={20}
+              size="var(--chat-message-actions-icon-size, 20px)"
               isActive={isOpen}
               insideElement
               color="var(--icon-gray-secondary)"

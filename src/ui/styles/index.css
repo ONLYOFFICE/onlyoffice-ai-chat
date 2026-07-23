@@ -136,6 +136,9 @@
      user messages. */
   --chat-message-actions-gap: 2px;
 
+  /* Icon (and button box) size of those same action buttons. */
+  --chat-message-actions-icon-size: 20px;
+
   /* Top margin of the chat-history search field (gap below the header). */
   --chat-list-search-margin-top: 8px;
 

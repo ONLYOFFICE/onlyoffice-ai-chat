@@ -224,7 +224,7 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
       {copied ? (
         <IconButton
           iconName="checked"
-          size={20}
+          size="var(--chat-message-actions-icon-size, 20px)"
           isStroke
           color="var(--icon-gray-secondary)"
           disabled
@@ -232,7 +232,7 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
       ) : (
         <IconButton
           iconName="btn-copy"
-          size={20}
+          size="var(--chat-message-actions-icon-size, 20px)"
           isStroke
           color="var(--icon-gray-secondary)"
         />
@@ -286,7 +286,7 @@ const AssistantActionBar = () => {
             <MessagePrimitive.If copied>
               <IconButton
                 iconName="checked"
-                size={20}
+                size="var(--chat-message-actions-icon-size, 20px)"
                 isStroke
                 color="var(--icon-gray-secondary)"
                 disabled
@@ -295,7 +295,7 @@ const AssistantActionBar = () => {
             <MessagePrimitive.If copied={false}>
               <IconButton
                 iconName="btn-copy"
-                size={20}
+                size="var(--chat-message-actions-icon-size, 20px)"
                 isStroke
                 color="var(--icon-gray-secondary)"
               />
@@ -307,7 +307,7 @@ const AssistantActionBar = () => {
         <TooltipIconButton tooltip={t("Regenerate")}>
           <IconButton
             iconName="btn-reset"
-            size={20}
+            size="var(--chat-message-actions-icon-size, 20px)"
             isStroke
             color="var(--icon-gray-secondary)"
           />
@@ -318,7 +318,7 @@ const AssistantActionBar = () => {
           <TooltipIconButton tooltip={t("Save")}>
             <IconButton
               iconName="btn-save.small"
-              size={20}
+              size="var(--chat-message-actions-icon-size, 20px)"
               onClick={onDownload}
               isStroke
               color="var(--icon-gray-secondary)"

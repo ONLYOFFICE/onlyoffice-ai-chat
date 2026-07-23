@@ -6,14 +6,25 @@ import { useTheme } from "../../providers/ThemeProvider";
 
 type IconProps = {
   name: string;
-  size?: number;
-  width?: number;
-  height?: number;
+  /**
+   * Icon size. A `number` is pixels; a string is a verbatim CSS length, so a
+   * theme token works — e.g. `"var(--chat-message-actions-icon-size, 20px)"`.
+   */
+  size?: number | string;
+  /** Overrides `size` on one axis. Same `number` (px) / CSS-length string rules. */
+  width?: number | string;
+  /** Overrides `size` on one axis. Same `number` (px) / CSS-length string rules. */
+  height?: number | string;
   isStroke?: boolean;
   color?: string;
   noColor?: boolean;
   className?: string;
 };
+
+// A number becomes pixels; a string (e.g. a `var(--token)`) passes through as
+// a CSS length so the value can be theme-driven.
+const toDim = (v: number | string | undefined) =>
+  typeof v === "number" ? `${v}px` : v;
 
 const SHAPE_SELECTOR = "path, circle, rect, line, polygon, polyline, ellipse";
 
@@ -57,6 +68,12 @@ const IconComponent = ({
 }: IconProps) => {
   const w = width ?? size;
   const h = height ?? size;
+  // When the size is a CSS length (string), numeric SVG width/height
+  // attributes can't carry it — so the bundled svg fills its wrapper (100%)
+  // and the wrapper's inline style (the resolved token) defines the box.
+  const isCssSize = typeof w === "string" || typeof h === "string";
+  const numericSize =
+    typeof w === "number" ? w : typeof h === "number" ? h : undefined;
   const { themeType, scale } = useTheme();
   const { getImageSrc, getIconComponent, getBundledIcon, iconFormat } =
     useImages();
@@ -83,9 +100,11 @@ const IconComponent = ({
           "flex items-center justify-center select-none",
           className
         )}
-        style={{ width: w, height: h }}
+        style={{ width: toDim(w), height: toDim(h) }}
       >
-        <CustomIcon size={w ?? h} />
+        {/* Host components take a numeric `size`; with a CSS-length size we
+            leave it unset and let the wrapper box above constrain the icon. */}
+        <CustomIcon size={numericSize} />
       </span>
     );
   }
@@ -117,9 +136,12 @@ const IconComponent = ({
           "select-none flex items-center justify-center",
           className
         )}
-        style={{ width: w, height: h }}
+        style={{ width: toDim(w), height: toDim(h) }}
       >
-        <BundledIcon width={w} height={h} />
+        <BundledIcon
+          width={isCssSize ? "100%" : w}
+          height={isCssSize ? "100%" : h}
+        />
       </span>
     );
   }
@@ -140,7 +162,7 @@ const IconComponent = ({
           className
         )}
         beforeInjection={(svg) => applySvgColor(svg, isStroke, color, noColor)}
-        style={{ width: w, height: h }}
+        style={{ width: toDim(w), height: toDim(h) }}
       />
     );
   }
@@ -151,7 +173,7 @@ const IconComponent = ({
       alt={name}
       draggable={false}
       className={cn("select-none", className)}
-      style={{ width: w, height: h }}
+      style={{ width: toDim(w), height: toDim(h) }}
     />
   );
 };

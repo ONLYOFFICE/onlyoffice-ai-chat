@@ -11,6 +11,7 @@
 - Composer box paddings are now themable: `--chat-composer-padding-x`, `--chat-composer-padding-top`, `--chat-composer-padding-bottom`.
 - Composer disclaimer text font size is now themable: `--chat-composer-disclaimer-font-size`.
 - Gap between the action buttons below assistant and user messages is now themable: `--chat-message-actions-gap` (previously only the assistant side honored it).
+- Icon (and button box) size of the action buttons below assistant and user messages is now themable: `--chat-message-actions-icon-size` (default `20px`). `IconButton`/`Icon` `size` (and `width`/`height`) now also accept a CSS-length string (e.g. a `var(--token)`), so any icon can be theme-sized.
 - Chat-history search field top margin is now themable: `--chat-list-search-margin-top`.
 - Chat-history column paddings are now themable: `--chat-list-padding-x` (shared header/list horizontal inset), `--chat-list-header-padding-top`, `--chat-list-content-padding-bottom`.
 - Chat-history thread list top margin is now themable: `--chat-list-items-margin-top`.

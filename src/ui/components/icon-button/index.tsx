@@ -45,6 +45,11 @@ const IconButtonComponent = ({
       ? undefined
       : "[&_svg_path]:fill-current [&_svg_path[stroke]]:fill-none [&_svg_path[stroke]]:stroke-current";
 
+  // A number is pixels; a string (e.g. a `var(--token)`) passes through as a
+  // CSS length. The inline style still wins over stylesheets, but the `var()`
+  // it carries is resolved by CSS at paint time, so a host token takes effect.
+  const dim = typeof size === "number" ? `${size}px` : size;
+
   return (
     <button
       className={cn(
@@ -58,9 +63,9 @@ const IconButtonComponent = ({
         className
       )}
       style={{
-        width: `${size}px`,
-        minWidth: `${size}px`,
-        height: `${size}px`,
+        width: dim,
+        minWidth: dim,
+        height: dim,
         ...(isActive
           ? {
               backgroundColor: "var(--icon-button-pressed-background-color)",
