@@ -182,6 +182,23 @@
   --config-editor-footer-gap: 8px;
   --config-editor-footer-height: 24px;
 
+  /* Web Search settings page (`<WebSearchPage />`). `--web-search-max-width`
+     caps the content column; `--web-search-justify` places it within the page
+     (any `justify-content` value — `flex-start` default, `center`, `flex-end`);
+     the title tokens size the "Web search" heading and its bottom gap. */
+  --web-search-max-width: 560px;
+  --web-search-justify: flex-start;
+  --web-search-title-font-size: var(--fs-20);
+  --web-search-title-margin-bottom: 24px;
+  /* Web-search form gaps. `--web-search-gap` is the root gap in the page
+     variant; `--web-search-tab-gap` in the tab variant; `--web-search-fields-
+     gap` between fields; `--web-search-actions-gap` between the Save / Reset
+     buttons. (These can also be overridden via the `web-search-*` classes.) */
+  --web-search-gap: 8px;
+  --web-search-tab-gap: 16px;
+  --web-search-fields-gap: 8px;
+  --web-search-actions-gap: 8px;
+
   /* Model card spacing (its colors / border-radius live in the theme files as
      `--model-card-*`). `--model-card-padding` is the card's inner padding;
      `--model-card-gap` separates the content block from the actions menu;
