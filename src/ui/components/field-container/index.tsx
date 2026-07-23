@@ -23,7 +23,7 @@ const ErrorBlock = ({ error }: { error: string }) => (
       </p>
     </TooltipTrigger>
     <TooltipContent
-      className="max-w-[350px] break-words"
+      className="max-w-[var(--field-container-error-max-width)] break-words"
       side="bottom"
       align="start"
     >
@@ -45,7 +45,12 @@ const FieldContainer = ({
   headerClassName,
 }: FieldContainerProps) => {
   return (
-    <div className={cn(className, "flex flex-col w-full min-w-0 gap-[2px]")}>
+    <div
+      className={cn(
+        className,
+        "flex flex-col w-full min-w-0 gap-[var(--field-container-row-gap)]"
+      )}
+    >
       {isHorizontal && action && (
         <div className="flex justify-end w-full">{action}</div>
       )}
@@ -53,14 +58,20 @@ const FieldContainer = ({
         className={cn(
           "flex w-full",
           isHorizontal
-            ? "flex-row items-center gap-[8px]"
-            : "flex-col gap-[4px]"
+            ? "flex-row items-center gap-[var(--field-container-control-gap-horizontal)]"
+            : "flex-col gap-[var(--field-container-control-gap-vertical)]"
         )}
       >
         {!isHorizontal ? (
-          <div className="flex justify-between items-center w-full mb-[2px]">
-            <div className="flex items-center gap-[8px]">
-              {icon && <Icon name={icon} size={20} isStroke={iconIsStroke} />}
+          <div className="flex justify-between items-center w-full mb-[var(--field-container-header-margin-bottom)]">
+            <div className="flex items-center gap-[var(--field-container-header-gap)]">
+              {icon && (
+                <Icon
+                  name={icon}
+                  size="var(--field-container-icon-size, 20px)"
+                  isStroke={iconIsStroke}
+                />
+              )}
               <p
                 className={cn(
                   "select-none text-[var(--field-container-header-color)]",
@@ -73,8 +84,14 @@ const FieldContainer = ({
             {action}
           </div>
         ) : (
-          <div className="flex items-center gap-[8px] w-full max-w-[160px] shrink-0">
-            {icon && <Icon name={icon} size={20} isStroke={iconIsStroke} />}
+          <div className="flex items-center gap-[var(--field-container-header-gap)] w-full max-w-[var(--field-container-label-width)] shrink-0">
+            {icon && (
+              <Icon
+                name={icon}
+                size="var(--field-container-icon-size, 20px)"
+                isStroke={iconIsStroke}
+              />
+            )}
             <p
               className={cn(
                 "select-none text-[var(--field-container-header-color)]",
@@ -96,8 +113,9 @@ const FieldContainer = ({
         <div
           className={cn(
             "w-full min-w-0 overflow-hidden",
-            reserveErrorSpace && "h-[20px]",
-            isHorizontal && "pl-[168px]"
+            reserveErrorSpace && "h-[var(--field-container-error-height)]",
+            isHorizontal &&
+              "ps-[calc(var(--field-container-label-width)+var(--field-container-control-gap-horizontal))]"
           )}
         >
           {error && <ErrorBlock error={error} />}

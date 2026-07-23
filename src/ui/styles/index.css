@@ -199,6 +199,27 @@
   --web-search-fields-gap: 8px;
   --web-search-actions-gap: 8px;
 
+  /* Field container (label + control + error) — shared across settings forms;
+     its header / error colors live in the theme files. `--..-row-gap` is the
+     gap between the container's stacked rows (action / field / error);
+     `--..-control-gap-horizontal` / `--..-control-gap-vertical` separate the
+     label from the control (the two values are the same relationship in the
+     side-by-side vs stacked layout); `--..-header-gap` separates the header
+     icon from its label; `--..-header-margin-bottom` sits under the vertical
+     header; `--..-icon-size` is the header icon; `--..-label-width` is the
+     horizontal label column; `--..-error-height` reserves the error row;
+     `--..-error-max-width` caps the error tooltip. The horizontal error text is
+     indented to line up under the control (label width + control gap). */
+  --field-container-row-gap: 2px;
+  --field-container-control-gap-horizontal: 8px;
+  --field-container-control-gap-vertical: 4px;
+  --field-container-header-gap: 8px;
+  --field-container-header-margin-bottom: 2px;
+  --field-container-icon-size: 20px;
+  --field-container-label-width: 160px;
+  --field-container-error-height: 20px;
+  --field-container-error-max-width: 350px;
+
   /* Model card spacing (its colors / border-radius live in the theme files as
      `--model-card-*`). `--model-card-padding` is the card's inner padding;
      `--model-card-gap` separates the content block from the actions menu;

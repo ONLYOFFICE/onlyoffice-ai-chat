@@ -34,7 +34,12 @@
 - MCP available-tools list spacing is now themable: `--servers-available-tools-header-height`, `--servers-available-tools-header-padding-x`, `--servers-available-tools-list-gap`, `--servers-available-tools-list-padding-x`, `--servers-available-tools-list-padding-bottom`, `--servers-available-tools-list-padding-top`, `--servers-available-tools-list-padding-top-with-header`.
 - MCP tool-group row and its expanded tool list spacing is now themable: `--servers-available-tools-item-height`, `--servers-available-tools-item-padding-x`, `--servers-available-tools-item-content-gap`, `--servers-available-tools-item-chevron-width`, `--servers-available-tools-sublist-gap`, `--servers-available-tools-sublist-margin-top`, `--servers-available-tools-tool-height`, `--servers-available-tools-tool-padding-start`, `--servers-available-tools-tool-padding-end`.
 - MCP config editor outer framing is now themable: `--config-editor-padding-y`, `--config-editor-margin-bottom`, `--config-editor-header-padding-start`, `--config-editor-header-padding-end`, `--config-editor-header-margin-bottom`, `--config-editor-content-padding-x`, `--config-editor-body-padding-bottom`, `--config-editor-footer-gap`, `--config-editor-footer-height`.
+- Field container spacing/sizing is now themable (shared across settings forms): `--field-container-row-gap` (between the container's rows), `--field-container-control-gap-horizontal` / `--field-container-control-gap-vertical` (label ↔ control per layout), `--field-container-header-gap`, `--field-container-header-margin-bottom`, `--field-container-icon-size`, `--field-container-label-width`, `--field-container-error-height`, `--field-container-error-max-width` (the horizontal error text stays aligned under the control via `label-width + control-gap-horizontal`).
 - Web Search page is now themable: `--web-search-max-width` (default `560px`), `--web-search-justify` (content column placement, default `flex-start`), `--web-search-title-font-size` (default `--fs-20`), `--web-search-title-margin-bottom` (default `24px`), and the form gaps `--web-search-gap` (page variant, `8px`), `--web-search-tab-gap` (tab variant, `16px`), `--web-search-fields-gap` (`8px`), `--web-search-actions-gap` (`8px`).
+
+### Fixed
+
+- Field container's horizontal-layout error text now indents on the logical start edge (`ps-*`), so it lines up under the control in RTL too (was a physical left inset).
 
 
 ## 0.4.165
