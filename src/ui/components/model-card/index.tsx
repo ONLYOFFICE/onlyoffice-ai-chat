@@ -84,10 +84,14 @@ const ModelCard = ({
   return (
     <div
       className={cn(
-        "flex justify-between gap-[8px] p-[8px] w-full rounded-[var(--model-card-border-radius)] bg-[var(--model-card-background-color)] border border-[var(--model-card-border-color)]"
+        "flex justify-between gap-[var(--model-card-gap)] p-[var(--model-card-padding)] w-full rounded-[var(--model-card-border-radius)] bg-[var(--model-card-background-color)] border border-[var(--model-card-border-color)]"
       )}
     >
-      <div className={cn("flex items-center gap-[8px] min-w-0 flex-1")}>
+      <div
+        className={cn(
+          "flex items-center gap-[var(--model-card-content-gap)] min-w-0 flex-1"
+        )}
+      >
         <ProviderLogo providerType={profile.providerType} />
         {/* Each line sits in its own flex row so `justify-content: flex-start`
             (which follows the ambient `dir`) parks a short label at the reading

@@ -21,6 +21,13 @@
 - Chat-history thread row height and horizontal padding are now themable: `--chat-list-item-height`, `--chat-list-item-padding-x`.
 - `inputIconPosition` widget config (`"start" | "end"`, default `"end"`) — moves the search input's magnifier icon (currently the chat-history search field) to the leading edge, where it stays visible while typing; the clear ("X") button always stays at the trailing edge. `Input` also gained the matching `iconPosition` prop.
 - `Input` gap between its children (icon, text, clear button) is now themable via `--input-gap` (default `0`).
+- AI Models page is now themable: `--ai-models-max-width` (default `560px`), `--ai-models-justify` (content column placement — any `justify-content` value, default `flex-start`), `--ai-models-title-font-size` (default `--fs-20`), `--ai-models-title-margin-bottom` and `--ai-models-description-margin-bottom` (default `8px`), and the list gaps `--ai-models-content-gap`, `--ai-models-actions-gap`, `--ai-models-list-gap` (default `8px`).
+- Model card spacing is now themable: `--model-card-padding`, `--model-card-gap` (content ↔ actions), `--model-card-content-gap` (logo ↔ labels) — all default `8px`.
+- Add/Edit model card spacing is now themable: `--add-model-card-gap`, `--add-model-card-title-margin-bottom`, `--add-model-card-footer-gap`, `--add-model-card-import-gap`, and the Import-help tooltip's `--add-model-card-tooltip-padding`, `--add-model-card-tooltip-gap`, `--add-model-card-tooltip-max-width`.
+- Model config form spacing is now themable: `--model-config-form-gap`, `--model-config-form-field-margin-bottom`, `--model-config-form-last-field-margin-bottom`, `--model-config-form-action-height`, `--model-config-form-capability-gap`, and the "Finish AI setup" tooltip's `--model-config-form-tooltip-padding`, `--model-config-form-tooltip-gap`, `--model-config-form-tooltip-max-width`.
+- Edit model card spacing is now themable: `--edit-model-card-title-margin-bottom`, `--edit-model-card-provider-gap`, `--edit-model-card-provider-margin-bottom`, `--edit-model-card-footer-gap`.
+- Add/edit model card shell padding is now themable: `--model-config-card-padding` (default `8px`).
+- Provider logo sizing is now themable: `--model-card-logo-size` (box, default `32px`) and `--model-card-logo-image-size` (logo image, default `18px`).
 
 
 ## 0.4.165

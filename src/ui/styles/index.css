@@ -83,6 +83,81 @@
   --ai-settings-margin-y: 32px;
   --ai-settings-max-width: 640px;
 
+  /* AI Models settings page (`<AiModelsPage />`). `--ai-models-max-width` caps
+     the content column; `--ai-models-justify` places that column within the
+     page (any `justify-content` value — `flex-start` default, `center`,
+     `flex-end`); the title tokens size the "AI Models" heading and its bottom
+     gap; the description token is the gap below the sub-header. */
+  --ai-models-max-width: 560px;
+  --ai-models-justify: flex-start;
+  --ai-models-title-font-size: var(--fs-20);
+  --ai-models-title-margin-bottom: 8px;
+  --ai-models-description-margin-bottom: 8px;
+  /* Gaps inside the models list: `--ai-models-content-gap` between the
+     add/actions block and the card list; `--ai-models-actions-gap` between the
+     "Add model" / "Custom providers" buttons; `--ai-models-list-gap` between
+     the model cards. */
+  --ai-models-content-gap: 8px;
+  --ai-models-actions-gap: 8px;
+  --ai-models-list-gap: 8px;
+
+  /* Model card spacing (its colors / border-radius live in the theme files as
+     `--model-card-*`). `--model-card-padding` is the card's inner padding;
+     `--model-card-gap` separates the content block from the actions menu;
+     `--model-card-content-gap` separates the provider logo from the labels. */
+  --model-card-padding: 8px;
+  --model-card-gap: 8px;
+  --model-card-content-gap: 8px;
+
+  /* Provider logo (its background / border / radius live in the theme files as
+     `--model-card-logo-*`). `--model-card-logo-size` is the square box;
+     `--model-card-logo-image-size` is the logo image inside it. */
+  --model-card-logo-size: 32px;
+  --model-card-logo-image-size: 18px;
+
+  /* Inner padding of the add/edit model card shell (its colors / border /
+     radius live in the theme files as `--model-config-card-*`). */
+  --model-config-card-padding: 8px;
+
+  /* Add/Edit model card spacing. `--add-model-card-gap` is the vertical gap in
+     the standalone layout; `--add-model-card-title-margin-bottom` is the gap
+     under the card heading; `--add-model-card-footer-gap` separates the footer
+     action buttons; `--add-model-card-import-gap` separates the "Import" link
+     from its help icon. The tooltip tokens style the "Import" help popover. */
+  --add-model-card-gap: 8px;
+  --add-model-card-title-margin-bottom: 8px;
+  --add-model-card-footer-gap: 12px;
+  --add-model-card-import-gap: 4px;
+  --add-model-card-tooltip-padding: 12px;
+  --add-model-card-tooltip-gap: 6px;
+  --add-model-card-tooltip-max-width: 221px;
+
+  /* Model config form (provider / key / url / model / name fields).
+     `--model-config-form-gap` is the vertical gap between fields;
+     `--model-config-form-field-margin-bottom` is the extra bottom margin fields
+     get in the horizontal layout; `--model-config-form-last-field-margin-bottom`
+     is the last field's bottom margin in the vertical layout;
+     `--model-config-form-action-height` reserves the field action row height;
+     `--model-config-form-capability-gap` spaces the model capability badges.
+     The tooltip tokens style the "Finish AI setup" popover. */
+  --model-config-form-gap: 8px;
+  --model-config-form-field-margin-bottom: 10px;
+  --model-config-form-last-field-margin-bottom: 8px;
+  --model-config-form-action-height: 20px;
+  --model-config-form-capability-gap: 2px;
+  --model-config-form-tooltip-padding: 16px;
+  --model-config-form-tooltip-gap: 8px;
+  --model-config-form-tooltip-max-width: 280px;
+
+  /* Edit model card spacing. `--edit-model-card-title-margin-bottom` is the gap
+     under the "Edit AI model" heading; `--edit-model-card-provider-gap` and
+     `--edit-model-card-provider-margin-bottom` size the provider logo/name row;
+     `--edit-model-card-footer-gap` separates the footer action buttons. */
+  --edit-model-card-title-margin-bottom: 12px;
+  --edit-model-card-provider-gap: 12px;
+  --edit-model-card-provider-margin-bottom: 8px;
+  --edit-model-card-footer-gap: 12px;
+
   /* Optional inner padding for the settings page's tabs (passed only to that
      Tabs instance, so other tabs in the library are unaffected). Default 0, so
      the tab row and its content sit flush. Raise `--ai-settings-tabs-content-

@@ -20,11 +20,11 @@ describe("ProviderLogo", () => {
     expect(img).toHaveAttribute("alt", "model logo");
   });
 
-  it("sets image dimensions", () => {
+  it("sizes the image via the logo image-size token", () => {
     render(<ProviderLogo providerType="anthropic" />);
     const img = screen.getByRole("img");
-    expect(img).toHaveAttribute("width", "18");
-    expect(img).toHaveAttribute("height", "18");
+    expect(img).toHaveClass("w-[var(--model-card-logo-image-size)]");
+    expect(img).toHaveClass("h-[var(--model-card-logo-image-size)]");
   });
 
   it("applies custom className", () => {

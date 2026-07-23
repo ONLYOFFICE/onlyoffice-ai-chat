@@ -18,15 +18,14 @@ export const ProviderLogo = ({
   return (
     <div
       className={cn(
-        "flex items-center justify-center w-[32px] h-[32px] bg-[var(--model-card-logo-background)] rounded-[var(--model-card-logo-border-radius)] border border-[var(--model-card-logo-border-color)] shrink-0",
+        "flex items-center justify-center w-[var(--model-card-logo-size)] h-[var(--model-card-logo-size)] bg-[var(--model-card-logo-background)] rounded-[var(--model-card-logo-border-radius)] border border-[var(--model-card-logo-border-color)] shrink-0",
         className
       )}
     >
       <img
         src={getProviderImageSrc(providerType, themeType)}
         alt="model logo"
-        width={18}
-        height={18}
+        className="w-[var(--model-card-logo-image-size)] h-[var(--model-card-logo-image-size)]"
       />
     </div>
   );

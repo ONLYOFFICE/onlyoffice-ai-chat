@@ -127,11 +127,11 @@ export const EditModelCard = ({
 
   return (
     <ModelCardShell>
-      <h3 className="select-none font-bold text-[var(--text-normal)] mb-[12px]">
+      <h3 className="select-none font-bold text-[var(--text-normal)] mb-[var(--edit-model-card-title-margin-bottom)]">
         {t("EditAIModel")}
       </h3>
 
-      <div className="flex flex-row items-center gap-[12px] mb-[8px]">
+      <div className="flex flex-row items-center gap-[var(--edit-model-card-provider-gap)] mb-[var(--edit-model-card-provider-margin-bottom)]">
         <ProviderLogo providerType={values.provider as ProviderType} />
         <p className="text-[var(--text-normal)] truncate">
           {values.profileName}
@@ -151,7 +151,7 @@ export const EditModelCard = ({
         <Button variant="default" onClick={onDelete}>
           {t("Delete")}
         </Button>
-        <div className="flex flex-row gap-[12px]">
+        <div className="flex flex-row gap-[var(--edit-model-card-footer-gap)]">
           <Button variant="default" onClick={onClose}>
             {t("Cancel")}
           </Button>

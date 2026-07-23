@@ -106,7 +106,7 @@ export const AddModelCard = ({
 
   const footer = (
     <div className="flex flex-row justify-between items-center">
-      <div className="flex flex-row items-center gap-[4px]">
+      <div className="flex flex-row items-center gap-[var(--add-model-card-import-gap)]">
         {onProfileImportClick && (
           <>
             <Link
@@ -128,12 +128,12 @@ export const AddModelCard = ({
                 />
               </TooltipTrigger>
               <TooltipContent
-                className="p-[12px]"
+                className="p-[var(--add-model-card-tooltip-padding)]"
                 side="bottom"
                 isAbout
                 align="start"
               >
-                <div className="flex flex-col gap-[6px] max-w-[221px]">
+                <div className="flex flex-col gap-[var(--add-model-card-tooltip-gap)] max-w-[var(--add-model-card-tooltip-max-width)]">
                   <p className="leading-[var(--lh-16)] select-none">
                     {t("EnterModelConfigTooltip")}
                   </p>
@@ -158,7 +158,7 @@ export const AddModelCard = ({
           </>
         )}
       </div>
-      <div className="flex flex-row gap-[12px]">
+      <div className="flex flex-row gap-[var(--add-model-card-footer-gap)]">
         {variant === "card" && (
           <Button variant="default" onClick={onClose}>
             {t("Cancel")}
@@ -177,7 +177,7 @@ export const AddModelCard = ({
 
   if (variant === "standalone") {
     return (
-      <div className="flex flex-col gap-[8px]">
+      <div className="flex flex-col gap-[var(--add-model-card-gap)]">
         <h3 className="select-none text-fs-13 font-bold leading-[var(--lh-16)] text-[var(--text-normal)]">
           {t("ConnectAIModelToEnableChat")}
         </h3>
@@ -198,7 +198,7 @@ export const AddModelCard = ({
 
   return (
     <ModelCardShell>
-      <h3 className="select-none font-bold text-[var(--text-normal)] mb-[8px]">
+      <h3 className="select-none font-bold text-[var(--text-normal)] mb-[var(--add-model-card-title-margin-bottom)]">
         {t("ConnectNewAIModel")}
       </h3>
 
