@@ -13,10 +13,10 @@ const McpServersPage = ({ hideHeader, noPadding }: McpServersPageProps) => {
   useEnsureTools();
 
   return (
-    <div className="aui-root select-text flex min-h-full w-full bg-[var(--layout-background-color)]">
-      <div className="w-full max-w-[560px] min-w-0 select-none">
+    <div className="aui-root select-text flex min-h-full w-full justify-[var(--mcp-servers-justify)] bg-[var(--layout-background-color)]">
+      <div className="w-full max-w-[var(--mcp-servers-max-width)] min-w-0 select-none">
         {!hideHeader && (
-          <h1 className="select-none font-bold text-fs-20 leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[24px]">
+          <h1 className="select-none font-bold text-[length:var(--mcp-servers-title-font-size)] leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[var(--mcp-servers-title-margin-bottom)]">
             {t("MCPServers")}
           </h1>
         )}

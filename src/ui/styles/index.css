@@ -119,6 +119,69 @@
   --model-assignment-tasks-header-margin-bottom: 8px;
   --model-assignment-task-margin-bottom: 12px;
 
+  /* MCP Servers settings page (`<McpServersPage />`). `--mcp-servers-max-width`
+     caps the content column; `--mcp-servers-justify` places it within the page
+     (any `justify-content` value — `flex-start` default, `center`, `flex-end`);
+     the title tokens size the "MCP servers" heading and its bottom gap. */
+  --mcp-servers-max-width: 560px;
+  --mcp-servers-justify: flex-start;
+  --mcp-servers-title-font-size: var(--fs-20);
+  --mcp-servers-title-margin-bottom: 24px;
+  /* Servers list body: `--mcp-servers-content-padding-bottom` is the bottom
+     padding of the whole block; `--mcp-servers-description-margin-bottom` is
+     the gap under the intro text; `--mcp-servers-actions-margin-bottom` is the
+     gap under the "Edit configuration" button. */
+  --mcp-servers-content-padding-bottom: 32px;
+  --mcp-servers-description-margin-bottom: 8px;
+  --mcp-servers-actions-margin-bottom: 8px;
+  /* Permissions panel (its border color / bg live in the theme files).
+     `--servers-permissions-margin-top` is the gap above the panel;
+     `--servers-permissions-padding-y` is its vertical padding; the header
+     tokens size the "Permissions" title row's horizontal padding and its gap
+     to the tools list. */
+  --servers-permissions-margin-top: 8px;
+  --servers-permissions-padding-y: 8px;
+  --servers-permissions-header-padding-x: 16px;
+  --servers-permissions-header-margin-bottom: 8px;
+  /* Available-tools list (its border tokens live in the theme files as
+     `--servers-available-tools-*`). Header row height / horizontal padding,
+     the list gap, and the list's paddings (top differs when a header shows). */
+  --servers-available-tools-header-height: 40px;
+  --servers-available-tools-header-padding-x: 16px;
+  --servers-available-tools-list-gap: 8px;
+  --servers-available-tools-list-padding-x: 8px;
+  --servers-available-tools-list-padding-bottom: 8px;
+  --servers-available-tools-list-padding-top: 8px;
+  --servers-available-tools-list-padding-top-with-header: 4px;
+  /* A tool group row and its expanded tool list. `--..-item-*` size the group
+     header (height, horizontal padding, its content gap, and the chevron
+     column width); `--..-sublist-*` size the expanded list (gap between tools,
+     gap above it); `--..-tool-*` size each tool row (height + logical
+     paddings — start is indented to line up under the group name). */
+  --servers-available-tools-item-height: 32px;
+  --servers-available-tools-item-padding-x: 8px;
+  --servers-available-tools-item-content-gap: 8px;
+  --servers-available-tools-item-chevron-width: 12px;
+  --servers-available-tools-sublist-gap: 8px;
+  --servers-available-tools-sublist-margin-top: 4px;
+  --servers-available-tools-tool-height: 26px;
+  --servers-available-tools-tool-padding-start: 28px;
+  --servers-available-tools-tool-padding-end: 8px;
+  /* MCP config editor panel — outer framing only (the JSON editor body keeps
+     its own spacing). `--config-editor-padding-y` / `--config-editor-margin-
+     bottom` frame the panel; the header tokens size its title row; `--config-
+     editor-content-padding-x` is the horizontal inset shared by the content and
+     the full-bleed footer; the footer tokens size the Cancel / Save row. */
+  --config-editor-padding-y: 8px;
+  --config-editor-margin-bottom: 8px;
+  --config-editor-header-padding-start: 16px;
+  --config-editor-header-padding-end: 8px;
+  --config-editor-header-margin-bottom: 8px;
+  --config-editor-content-padding-x: 16px;
+  --config-editor-body-padding-bottom: 8px;
+  --config-editor-footer-gap: 8px;
+  --config-editor-footer-height: 24px;
+
   /* Model card spacing (its colors / border-radius live in the theme files as
      `--model-card-*`). `--model-card-padding` is the card's inner padding;
      `--model-card-gap` separates the content block from the actions menu;

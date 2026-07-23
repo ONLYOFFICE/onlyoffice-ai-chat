@@ -79,7 +79,7 @@ const AvailableToolsItem = ({
     <div dir={isRTL ? "rtl" : "ltr"} className="flex flex-col">
       <div
         className={cn(
-          "h-[32px] px-[8px] rounded-[var(--servers-available-tools-item-border-radius)] flex items-center justify-between",
+          "h-[var(--servers-available-tools-item-height)] px-[var(--servers-available-tools-item-padding-x)] rounded-[var(--servers-available-tools-item-border-radius)] flex items-center justify-between",
           isLoadingAction ? "" : "cursor-pointer",
           "bg-[var(--servers-available-tools-item-background-color)]",
           "active:bg-[var(--servers-available-tools-item-active-background-color)]",
@@ -92,9 +92,9 @@ const AvailableToolsItem = ({
           setOpened((val) => !val);
         }}
       >
-        <div className="flex items-center gap-[8px]">
+        <div className="flex items-center gap-[var(--servers-available-tools-item-content-gap)]">
           <div
-            className="flex items-center justify-center w-[12px] h-full"
+            className="flex items-center justify-center w-[var(--servers-available-tools-item-chevron-width)] h-full"
             style={{
               transform: isRTL
                 ? `rotate(${opened ? 0 : 90}deg)`
@@ -138,13 +138,13 @@ const AvailableToolsItem = ({
         </div>
       </div>
       {opened ? (
-        <div className="flex flex-col gap-[8px] mt-[4px]">
+        <div className="flex flex-col gap-[var(--servers-available-tools-sublist-gap)] mt-[var(--servers-available-tools-sublist-margin-top)]">
           {mcpItems.map((tool) => {
             return (
               <div
                 key={tool.name}
                 className={cn(
-                  "rounded-[var(--servers-available-tools-item-border-radius)] cursor-pointer flex flex-col hover:bg-[var(--servers-available-tools-item-hover-background-color)] ps-[28px] pe-[8px] h-[26px]"
+                  "rounded-[var(--servers-available-tools-item-border-radius)] cursor-pointer flex flex-col hover:bg-[var(--servers-available-tools-item-hover-background-color)] ps-[var(--servers-available-tools-tool-padding-start)] pe-[var(--servers-available-tools-tool-padding-end)] h-[var(--servers-available-tools-tool-height)]"
                 )}
                 onClick={() => {
                   changeToolStatus(name, tool.name, !tool.enabled);

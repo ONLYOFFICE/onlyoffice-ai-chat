@@ -19,14 +19,14 @@ const Permissions = ({ dimmed }: PermissionsProps) => {
   return (
     <div
       className={cn(
-        "flex flex-col w-full mt-[8px] py-[8px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)]",
+        "flex flex-col w-full mt-[var(--servers-permissions-margin-top)] py-[var(--servers-permissions-padding-y)] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)]",
         dimmed && "opacity-40 pointer-events-none"
       )}
       aria-hidden={dimmed}
     >
       <div
         className={cn(
-          "flex items-center justify-between px-[16px] mb-[8px]",
+          "flex items-center justify-between px-[var(--servers-permissions-header-padding-x)] mb-[var(--servers-permissions-header-margin-bottom)]",
           isRTL ? "flex-row-reverse" : ""
         )}
       >

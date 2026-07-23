@@ -37,16 +37,18 @@ const Servers = () => {
     Object.keys(systemTools ?? {}).length > 0;
 
   return (
-    <div className="flex flex-col pb-[32px] w-full">
+    <div className="flex flex-col pb-[var(--mcp-servers-content-padding-bottom)] w-full">
       <p
         className={cn(
-          "font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[8px]"
+          "font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[var(--mcp-servers-description-margin-bottom)]"
         )}
       >
         {t("MCPServersDescription")}
       </p>
       {isOpen ? null : (
-        <div className={cn("flex mb-[8px]")}>
+        <div
+          className={cn("flex mb-[var(--mcp-servers-actions-margin-bottom)]")}
+        >
           <Button className="w-fit" onClick={() => setIsOpen(true)}>
             {t("EditConfiguration")}
           </Button>
