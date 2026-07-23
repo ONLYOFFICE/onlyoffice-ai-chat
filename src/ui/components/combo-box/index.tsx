@@ -57,7 +57,7 @@ const ComboBox = ({
       : items;
 
   const searchHeader = searchable ? (
-    <div className="px-[8px] pb-[4px]">
+    <div className="px-[var(--combo-box-search-padding-x,8px)] pb-[var(--combo-box-search-padding-bottom,4px)]">
       <input
         autoFocus
         value={searchQuery}
@@ -65,7 +65,7 @@ const ComboBox = ({
         onKeyDown={(e) => e.stopPropagation()}
         placeholder={searchPlaceholder}
         className={cn(
-          "w-full h-[24px] px-[4px] rounded-[4px]",
+          "w-full h-[var(--combo-box-search-input-height,24px)] px-[var(--combo-box-search-input-padding-x,4px)] rounded-[4px]",
           "leading-[var(--lh-16)] text-[var(--input-color)]",
           "bg-[var(--input-background-color)] border border-[var(--input-border-color)]",
           "placeholder:text-[var(--input-placeholder-color)]",
@@ -110,7 +110,7 @@ const ComboBox = ({
           >
             {value || placeholder}
           </span>
-          <div className="flex items-center justify-center h-[var(--combo-box-height,24px)] w-[16px] shrink-0">
+          <div className="flex items-center justify-center h-[var(--combo-box-height,24px)] w-[var(--combo-box-arrow-container-width,16px)] shrink-0">
             <Icon
               name="arrow"
               color="var(--icon-normal)"

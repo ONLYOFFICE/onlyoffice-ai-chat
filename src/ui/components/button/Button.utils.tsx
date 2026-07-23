@@ -3,7 +3,7 @@ import { cn } from "../../../shared/utils";
 
 // Base styles
 const baseStyles =
-  "inline-flex items-center justify-center rounded-[4px] min-w-[40px]";
+  "inline-flex items-center justify-center rounded-[var(--button-border-radius)] min-w-[var(--button-min-width)]";
 const focusStyles =
   "outline-none focus:outline-none focus-visible:outline-none";
 
@@ -31,7 +31,8 @@ const primaryDisabledStyles = "disabled:opacity-50 disabled:cursor-not-allowed";
 
 // Size styles
 
-const defaultSizeStyles = "h-[24px] min-w-[40px] px-[8px] leading-[var(--lh-16)]";
+const defaultSizeStyles =
+  "h-[var(--button-height)] min-w-[var(--button-min-width)] px-[var(--button-padding-x)] leading-[var(--lh-16)]";
 
 const buttonVariants = cva(`${baseStyles} ${focusStyles}`, {
   variants: {

@@ -45,7 +45,7 @@ const Button = ({
           <span className="invisible">{children}</span>
           <span
             aria-hidden
-            className="absolute inset-0 m-auto h-[16px] w-[16px] animate-spin rounded-full border-2 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"
+            className="absolute inset-0 m-auto h-[var(--button-loader-size)] w-[var(--button-loader-size)] animate-spin rounded-full border-2 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]"
           />
         </>
       ) : (

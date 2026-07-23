@@ -220,6 +220,15 @@
   --field-container-error-height: 20px;
   --field-container-error-max-width: 350px;
 
+  /* Button geometry (its colors live in the theme files as `--button-*`).
+     Height, minimum width, horizontal padding, corner radius, and the size of
+     the inline loading spinner. */
+  --button-height: 24px;
+  --button-min-width: 40px;
+  --button-padding-x: 8px;
+  --button-border-radius: 4px;
+  --button-loader-size: 16px;
+
   /* Model card spacing (its colors / border-radius live in the theme files as
      `--model-card-*`). `--model-card-padding` is the card's inner padding;
      `--model-card-gap` separates the content block from the actions menu;
