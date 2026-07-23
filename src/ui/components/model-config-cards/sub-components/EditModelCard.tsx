@@ -147,7 +147,7 @@ export const EditModelCard = ({
         isOnlyofficeAISetupIncomplete={isOnlyofficeAISetupIncomplete}
       />
 
-      <div className="flex flex-row justify-between items-center">
+      <div className="flex flex-row justify-between items-center mt-[var(--edit-model-card-footer-margin-top)]">
         <Button variant="default" onClick={onDelete}>
           {t("Delete")}
         </Button>

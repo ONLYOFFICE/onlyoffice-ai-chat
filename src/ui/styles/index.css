@@ -265,7 +265,11 @@
      from its help icon. The tooltip tokens style the "Import" help popover. */
   --add-model-card-gap: 8px;
   --add-model-card-title-margin-bottom: 8px;
+  /* Horizontal alignment of the standalone add-model heading (any `text-align`
+     value — `start` default, `center`, `end`). */
+  --add-model-card-title-align: start;
   --add-model-card-footer-gap: 12px;
+  --add-model-card-footer-margin-top: 0px;
   --add-model-card-import-gap: 4px;
   --add-model-card-tooltip-padding: 12px;
   --add-model-card-tooltip-gap: 6px;
@@ -296,6 +300,7 @@
   --edit-model-card-provider-gap: 12px;
   --edit-model-card-provider-margin-bottom: 8px;
   --edit-model-card-footer-gap: 12px;
+  --edit-model-card-footer-margin-top: 0px;
 
   /* Optional inner padding for the settings page's tabs (passed only to that
      Tabs instance, so other tabs in the library are unaffected). Default 0, so

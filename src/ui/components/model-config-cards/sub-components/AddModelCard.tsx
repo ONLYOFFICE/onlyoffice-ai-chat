@@ -105,7 +105,7 @@ export const AddModelCard = ({
   };
 
   const footer = (
-    <div className="flex flex-row justify-between items-center">
+    <div className="flex flex-row justify-between items-center mt-[var(--add-model-card-footer-margin-top)]">
       <div className="flex flex-row items-center gap-[var(--add-model-card-import-gap)]">
         {onProfileImportClick && (
           <>
@@ -178,7 +178,7 @@ export const AddModelCard = ({
   if (variant === "standalone") {
     return (
       <div className="flex flex-col gap-[var(--add-model-card-gap)]">
-        <h3 className="select-none text-fs-13 font-bold leading-[var(--lh-16)] text-[var(--text-normal)]">
+        <h3 className="select-none text-fs-13 font-bold leading-[var(--lh-16)] text-[var(--text-normal)] [text-align:var(--add-model-card-title-align)]">
           {t("ConnectAIModelToEnableChat")}
         </h3>
 
