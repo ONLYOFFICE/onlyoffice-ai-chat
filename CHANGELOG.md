@@ -28,6 +28,7 @@
 - Edit model card spacing is now themable: `--edit-model-card-title-margin-bottom`, `--edit-model-card-provider-gap`, `--edit-model-card-provider-margin-bottom`, `--edit-model-card-footer-gap`.
 - Add/edit model card shell padding is now themable: `--model-config-card-padding` (default `8px`).
 - Provider logo sizing is now themable: `--model-card-logo-size` (box, default `32px`) and `--model-card-logo-image-size` (logo image, default `18px`).
+- Model Assignment page is now themable: `--model-assignment-max-width` (default `560px`), `--model-assignment-justify` (content column placement, default `flex-start`), `--model-assignment-title-font-size` (default `--fs-20`), `--model-assignment-title-margin-bottom` (default `24px`), and the list rhythm `--model-assignment-description-margin-bottom` (`24px`), `--model-assignment-default-margin-bottom` (`20px`), `--model-assignment-tasks-header-margin-bottom` (`8px`), `--model-assignment-task-margin-bottom` (`12px`).
 
 
 ## 0.4.165

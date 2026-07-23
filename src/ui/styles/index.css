@@ -101,6 +101,24 @@
   --ai-models-actions-gap: 8px;
   --ai-models-list-gap: 8px;
 
+  /* Model Assignment settings page (`<ModelAssignmentPage />`).
+     `--model-assignment-max-width` caps the content column;
+     `--model-assignment-justify` places it within the page (any
+     `justify-content` value — `flex-start` default, `center`, `flex-end`); the
+     title tokens size the "Model assignment" heading and its bottom gap. */
+  --model-assignment-max-width: 560px;
+  --model-assignment-justify: flex-start;
+  --model-assignment-title-font-size: var(--fs-20);
+  --model-assignment-title-margin-bottom: 24px;
+  /* Vertical rhythm inside the assignment list: `--..-description-margin-bottom`
+     under the intro text; `--..-default-margin-bottom` after the default-model
+     block; `--..-tasks-header-margin-bottom` under the "Override for tasks"
+     header; `--..-task-margin-bottom` between each task field. */
+  --model-assignment-description-margin-bottom: 24px;
+  --model-assignment-default-margin-bottom: 20px;
+  --model-assignment-tasks-header-margin-bottom: 8px;
+  --model-assignment-task-margin-bottom: 12px;
+
   /* Model card spacing (its colors / border-radius live in the theme files as
      `--model-card-*`). `--model-card-padding` is the card's inner padding;
      `--model-card-gap` separates the content block from the actions menu;

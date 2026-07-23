@@ -26,13 +26,13 @@ const ModelAssignmentPage = ({
   return (
     <div
       className={cn(
-        "aui-root select-text flex min-h-full w-full bg-[var(--layout-background-color)]",
+        "aui-root select-text flex min-h-full w-full justify-[var(--model-assignment-justify)] bg-[var(--layout-background-color)]",
         className
       )}
     >
-      <div className="w-full max-w-[560px] min-w-0 select-none">
+      <div className="w-full max-w-[var(--model-assignment-max-width)] min-w-0 select-none">
         {!hideHeader && (
-          <h1 className="select-none font-bold text-fs-20 leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[24px]">
+          <h1 className="select-none font-bold text-[length:var(--model-assignment-title-font-size)] leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[var(--model-assignment-title-margin-bottom)]">
             {t("ModelAssignment")}
           </h1>
         )}
