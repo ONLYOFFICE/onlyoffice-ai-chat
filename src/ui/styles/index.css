@@ -229,6 +229,17 @@
   --button-border-radius: 4px;
   --button-loader-size: 16px;
 
+  /* Initial setup screen (the no-profiles fallback on the chat surface).
+     `--initial-setup-max-width` caps the content column; `--initial-setup-
+     justify` places it within the surface (any `justify-content` value —
+     `flex-start` default, `center`, `flex-end`); `--initial-setup-margin`
+     insets it; `--initial-setup-list-gap` separates the existing model cards
+     below the add form. */
+  --initial-setup-max-width: 560px;
+  --initial-setup-justify: flex-start;
+  --initial-setup-margin: 12px;
+  --initial-setup-list-gap: 8px;
+
   /* Model card spacing (its colors / border-radius live in the theme files as
      `--model-card-*`). `--model-card-padding` is the card's inner padding;
      `--model-card-gap` separates the content block from the actions menu;
