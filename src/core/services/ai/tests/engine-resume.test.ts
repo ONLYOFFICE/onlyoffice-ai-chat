@@ -72,6 +72,7 @@ function makeStorage() {
     },
     threads: {
       create: vi.fn(),
+      readById: vi.fn(async () => null),
       readAll: vi.fn(async () => []),
       update: vi.fn(),
       touch: vi.fn(),
@@ -296,6 +297,51 @@ describe("AIEngine.approveToolCall", () => {
       void _;
     }
     expect(callTool).not.toHaveBeenCalled();
+  });
+
+  it("resumes on the thread's own profile when the caller omits profileId", async () => {
+    // Core-side guard for the "model resets after tool approve" bug: a resume
+    // without an explicit profileId must recover the profile the thread is
+    // bound to (persisted by sendWithStream) instead of dropping to the global
+    // default assignment. Holds for ANY client of the engine — the UI sending
+    // profileId is defense-in-depth, not the sole guard.
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([
+        {
+          isEnd: true,
+          responseMessage: {
+            role: "assistant",
+            content: [{ type: "text", text: "x" }],
+          },
+        },
+      ])
+    );
+    const threadProfile: Profile = { ...profile, id: "p2", modelId: "m2" };
+    const { storage } = makeStorage();
+    // Thread is bound to p2; the global Chat assignment still resolves p1.
+    storage.threads.readById = vi.fn(async () => ({
+      threadId: "t1",
+      title: "T",
+      profileId: "p2",
+    }));
+    storage.profiles.readById = vi.fn(async (id: string) =>
+      id === "p2" ? threadProfile : profile
+    );
+    await storage.messages.create("t1", toolCallMessage);
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.approveToolCall({
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: toolCallMessage,
+      result: "ok",
+      // no profileId — the bug scenario
+    })) {
+      void _;
+    }
+    // Resolved the thread's profile (p2 / m2), not the default assignment (p1).
+    expect(storage.profiles.readById).toHaveBeenCalledWith("p2");
+    expect(sendMessageMock.mock.calls[0][0].model).toBe("m2");
   });
 });
 

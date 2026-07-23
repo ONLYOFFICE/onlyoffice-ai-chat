@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -96,30 +96,25 @@ describe("Servers", () => {
     expect(screen.getByTestId("tools-counter")).toBeInTheDocument();
   });
 
-  it("opens the inline config editor when edit button is clicked", () => {
+  it("opens the inline config editor when edit button is clicked", async () => {
     render(<Servers />);
-    const editor = screen.getByTestId("config-editor");
-    expect(editor).toHaveAttribute("data-open", "false");
+    // The editor (and its lazy CodeMirror chunk) is not mounted until opened.
+    expect(screen.queryByTestId("config-editor")).toBeNull();
 
     fireEvent.click(screen.getByText("EditConfiguration"));
-    expect(screen.getByTestId("config-editor")).toHaveAttribute(
-      "data-open",
-      "true"
-    );
+    const editor = await screen.findByTestId("config-editor");
+    expect(editor).toHaveAttribute("data-open", "true");
   });
 
-  it("closes the inline config editor when onClose is called", () => {
+  it("closes the inline config editor when onClose is called", async () => {
     render(<Servers />);
     fireEvent.click(screen.getByText("EditConfiguration"));
-    expect(screen.getByTestId("config-editor")).toHaveAttribute(
-      "data-open",
-      "true"
-    );
+    const editor = await screen.findByTestId("config-editor");
+    expect(editor).toHaveAttribute("data-open", "true");
 
-    fireEvent.click(screen.getByTestId("config-editor"));
-    expect(screen.getByTestId("config-editor")).toHaveAttribute(
-      "data-open",
-      "false"
+    fireEvent.click(editor);
+    await waitFor(() =>
+      expect(screen.queryByTestId("config-editor")).toBeNull()
     );
   });
 

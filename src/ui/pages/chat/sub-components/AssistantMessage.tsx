@@ -18,7 +18,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { Icon } from "../../../components/icon";
-import { MarkdownContent } from "../../../components/markdown";
+import { MarkdownContent, MarkdownText } from "../../../components/markdown";
 import { ToolFallback } from "../../../components/tool-fallback";
 import {
   convertMessagesToMd,
@@ -388,7 +388,11 @@ export const AssistantMessage = memo(() => {
             components={{
               tools: { Fallback: ToolFallback },
               Reasoning: ThinkingMarkdownText,
-              Text: ThinkingMarkdownText,
+              // Normal streaming text uses the block-memoized markdown
+              // primitive (same one the static user message uses) so only the
+              // changed block re-parses per token — not the whole document.
+              // Reasoning keeps the custom collapsible renderer above.
+              Text: MarkdownText,
             }}
           />
           <MessageError />

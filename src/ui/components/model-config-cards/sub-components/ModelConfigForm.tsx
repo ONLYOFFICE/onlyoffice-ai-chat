@@ -3,7 +3,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { getApiKeyLink } from "../../../../shared/api-key-links";
 import { useStores } from "../../../store/context";
 import {
-  getProvider,
+  getProviderMetadata,
   getSupportedProviderTypes,
 } from "../../../../core/providers";
 import type { Model, ProviderType } from "../../../../types";
@@ -91,12 +91,12 @@ export const ModelConfigForm = ({
   const hiddenSet = new Set<ProviderType>(hiddenProviders ?? []);
   const providersInfo = getSupportedProviderTypes()
     .map((type) => {
-      const klass = getProvider(type);
-      if (!klass) return null;
+      const meta = getProviderMetadata(type);
+      if (!meta) return null;
       return {
         type,
-        name: klass.getName(),
-        baseUrl: klass.getBaseUrl(),
+        name: meta.name,
+        baseUrl: meta.baseUrl,
       };
     })
     .filter(

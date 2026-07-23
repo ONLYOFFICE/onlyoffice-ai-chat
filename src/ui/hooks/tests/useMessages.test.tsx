@@ -514,6 +514,76 @@ describe("useMessages.approveToolCall / denyToolCall", () => {
     );
   });
 
+  it("server-executed approve resumes with the selected profileId and skips local dispatch", async () => {
+    // Regression: the server-executed (MCP/system) branch used to omit
+    // `profileId`, so the server fell back to the default-model assignment and
+    // the user's model choice was silently lost after approving the tool.
+    stores.profilesState.chatProfile = profile; // id "p1"
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+      serverExecuted: true,
+    };
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "sys_search",
+      args: { q: 1 },
+    });
+    apiAi.approveToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.approveToolCall(true);
+    });
+    // Server-executed tools are never dispatched locally — the engine runs them.
+    expect(servers.callTools).not.toHaveBeenCalled();
+    expect(apiAi.approveToolCall).toHaveBeenCalledWith(
+      expect.objectContaining({ profileId: "p1", allowAlways: true })
+    );
+  });
+
+  it("client-executed approve resumes with the selected profileId", async () => {
+    stores.profilesState.chatProfile = profile; // id "p1"
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    readToolCallMock.mockReturnValue({
+      type: "tool-call",
+      toolName: "search",
+      args: { q: 1 },
+    });
+    apiAi.approveToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.approveToolCall(false);
+    });
+    expect(apiAi.approveToolCall).toHaveBeenCalledWith(
+      expect.objectContaining({ profileId: "p1" })
+    );
+  });
+
+  it("denyToolCall resumes with the selected profileId", async () => {
+    stores.profilesState.chatProfile = profile; // id "p1"
+    stores.serversState.manageToolData = {
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: { role: "assistant", content: [] },
+    };
+    apiAi.denyToolCall.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.denyToolCall();
+    });
+    expect(apiAi.denyToolCall).toHaveBeenCalledWith(
+      expect.objectContaining({ profileId: "p1" })
+    );
+  });
+
   it("approveToolCall resumes even when isStreamRunning is false", async () => {
     // Manual approval happens after the first stream paused on the tool
     // call and already ended (isStreamRunning=false). Approve must still

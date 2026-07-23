@@ -3,12 +3,14 @@ import { createProvider } from "../providers";
 import type { ActionArgs } from "./types";
 
 /**
- * Instantiate the provider class configured by the action's `profile`.
- * Throws on unknown provider type — the shared error path every action
- * used to repeat inline.
+ * Instantiate the provider class configured by the action's `profile`,
+ * importing its SDK on first use. Throws on unknown provider type — the
+ * shared error path every action used to repeat inline.
  */
-export function providerFor(args: ActionArgs): AbstractBaseProvider {
-  const provider = createProvider(args.profile.providerType, {
+export async function providerFor(
+  args: ActionArgs
+): Promise<AbstractBaseProvider> {
+  const provider = await createProvider(args.profile.providerType, {
     baseUrl: args.profile.baseUrl,
     apiKey: args.profile.key,
     ...(args.fetch ? { fetch: args.fetch } : {}),

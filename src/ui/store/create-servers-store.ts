@@ -162,6 +162,14 @@ export function createServersStore(deps: {
     };
   };
 
+  // Coalesces concurrent `getTools()` calls (mount + `tools-changed` bursts
+  // as MCP servers connect + a refresh before every send), each of which
+  // fans out to three reads. While one run is active, extra calls flag a
+  // single trailing re-run so the final state still reflects the latest
+  // tools (an MCP server that connected mid-run) without a fetch per event.
+  let toolsInFlight: Promise<void> | null = null;
+  let toolsDirty = false;
+
   return create<ServersStoreState>((set, get) => ({
     servers: {},
     tools: [],
@@ -187,9 +195,23 @@ export function createServersStore(deps: {
       ctx.servers.startCustomServers();
     },
 
-    getTools: async () => {
-      const result = await buildToolsList();
-      set(result);
+    getTools: () => {
+      if (toolsInFlight) {
+        toolsDirty = true;
+        return toolsInFlight;
+      }
+      toolsInFlight = (async () => {
+        try {
+          do {
+            toolsDirty = false;
+            const result = await buildToolsList();
+            set(result);
+          } while (toolsDirty);
+        } finally {
+          toolsInFlight = null;
+        }
+      })();
+      return toolsInFlight;
     },
 
     reload: async () => {

@@ -14,7 +14,7 @@ export const describeImage = async (
   const messages = isFallbackProfile(args.profile)
     ? transformHistoryToText(args.messages)
     : args.messages;
-  const text = await providerFor(args).sendMessageSync({
+  const text = await (await providerFor(args)).sendMessageSync({
     messages,
     model: args.profile.modelId,
     useResponsesApi: args.profile.useResponsesApi === true,

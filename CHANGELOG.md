@@ -21,11 +21,29 @@
 - `inputIconPosition` widget config (`"start" | "end"`, default `"end"`) — moves the search input's magnifier icon (currently the chat-history search field) to the leading edge, where it stays visible while typing; the clear ("X") button always stays at the trailing edge. `Input` also gained the matching `iconPosition` prop.
 - `Input` gap between its children (icon, text, clear button) is now themable via `--input-gap` (default `0`).
 
-## [Unreleased]
+
+## 0.4.165
+
+### Fixed
+
+- The chat model no longer resets to the default after approving or denying a tool call. Every request that resumes a thread (tool approve/deny and the in-stream auto-continue paths) now carries the active `profileId`, and — for a separately-deployed `core` — `AIEngine` recovers the thread's own persisted profile when a caller omits `profileId`, instead of falling back to the global default-model assignment.
+
+## 0.4.164
 
 ### Changed
 
 - The Web Search settings page can now be fully restyled by the host through the `className` prop and the stable `web-search-*` classes (`web-search-root`, `web-search-fields`, `web-search-field-header`, …): field-column gaps and `max-width`, header label size/weight, and the "Get API key" link color (via `--link-secondary-color`) — all from the host's own stylesheet.
+- **Provider registry is now lazy — breaking API change.** Each built-in provider SDK (`openai`, `@anthropic-ai/sdk`, `@google/genai`, `@mistralai/mistralai`) loads on demand via dynamic import, so a consumer bundles only the SDK(s) it actually uses instead of all four. As a result `createProvider(type, creds)` and `providerFor(...)` are now **async**, and the sync `getProvider(type)` is replaced by `loadProvider(type)` (async, returns the class) plus `getProviderMetadata(type)` / `getProviderName(type)` (sync — name + base URL, no SDK loaded).
+
+```ts
+// before: const p = createProvider("openai", creds);
+// after:  const p = await createProvider("openai", creds);
+```
+
+- Smaller published package and lighter runtime bundle: sourcemaps are no longer shipped and output is minified (tarball ~1.3 MB → ~0.5 MB), `.d.ts` are rolled up, and CodeMirror + the syntax highlighter now load lazily.
+- Streaming is cheaper end to end: per-token persistence is coalesced, providers no longer emit redundant identical snapshots, and streaming assistant text renders through the block-memoized markdown path.
+- Fewer redundant requests: system MCP servers reuse their session and cached tool list, provider model lists are cached (and reused as the credential-validity signal on save), and the guaranteed-404 Responses-API capability probe is skipped for non-OpenAI providers.
+- Fewer duplicate/concurrent requests on the client: `ProfilesStore.init()` and the servers `getTools()` fetch now coalesce concurrent callers, so several page mounts share one load instead of each firing 2–3×; the redundant widget-level profile init was dropped; and the remote API transport pools in-flight identical `GET` reads.
 ### Added
 
 - `onDropFiles` widget config — takes over file drag-and-drop onto the chat surface. When provided, dropping one or more files hands the raw `File[]` to the callback and the built-in handling (reading images as data URLs / text files as text and attaching them in-memory, silently ignoring binary Office/PDF drops) is skipped entirely. Use it to route every dropped file through the same path as the composer's upload button — e.g. a host that uploads to portal storage and attaches by file id, which also lets binary formats (DOCX/PDF/XLSX) be dropped. The drag-over highlight/overlay is still driven by the widget; only the drop's payload handling is delegated. Omit to keep the built-in read-and-attach behavior.

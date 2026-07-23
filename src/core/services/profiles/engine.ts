@@ -4,6 +4,7 @@ import type { Model } from "../../../shared/model";
 import type { Profile, ProviderType } from "../../types";
 import { AssignmentsEngine } from "../assignments";
 import { credsOf, loadProfile, providerFor } from "./lookup";
+import { loadProviderModelsCached } from "./model-cache";
 import { probeCapabilities } from "./probe-capabilities";
 import type {
   CreateProfileInput,
@@ -97,9 +98,8 @@ export class ProfilesEngine {
 
   async listModels(profileId: string): Promise<Model[]> {
     const profile = await loadProfile(this.deps.storage, profileId);
-    return providerFor(profile.providerType).getProviderModels(
-      credsOf(profile)
-    );
+    const Provider = await providerFor(profile.providerType);
+    return Provider.getProviderModels(credsOf(profile));
   }
 
   async listProviderModels(input: {
@@ -107,9 +107,14 @@ export class ProfilesEngine {
     baseUrl: string;
     apiKey: string;
   }): Promise<Model[]> {
-    return providerFor(input.providerType).getProviderModels({
-      baseUrl: input.baseUrl,
-      apiKey: input.apiKey,
+    // Reuse a fresh cached list for identical creds so switching provider
+    // A→B→A (or remounting the form) doesn't re-hit the provider each time.
+    return loadProviderModelsCached(input, async () => {
+      const Provider = await providerFor(input.providerType);
+      return Provider.getProviderModels({
+        baseUrl: input.baseUrl,
+        apiKey: input.apiKey,
+      });
     });
   }
 

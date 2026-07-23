@@ -57,7 +57,6 @@ import {
   WidgetConfigProvider,
   type WidgetConfig,
 } from "./widget-config";
-import useEnsureProfiles from "./ui/hooks/useEnsureProfiles";
 import type { ProviderFetch } from "./shared/provider-credentials";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
@@ -652,11 +651,11 @@ const AppInner = ({
   const { servers, eventBus } = useToolsContext();
   const { entityId } = useWidgetConfig();
 
-  // Kick off profile init at the widget level so `onReady` doesn't
-  // depend on which page mounts first. The page-level `useEnsureProfiles`
-  // calls remain — `init()` is idempotent and just re-syncs.
-  useEnsureProfiles();
-
+  // Profile init is owned by whichever page mounts (`<Thread />` /
+  // `<Settings />`) via its own `useEnsureProfiles` — the widget no longer
+  // fires a second, redundant `init()` here. `init()` now coalesces
+  // concurrent callers, so the page-level hooks that run in the same tick
+  // share one load; `onReady` fires once the mounted page has hydrated.
   const profilesInitialized = useProfilesStore((s) => s.initialized);
   const readyEmittedRef = useRef(false);
   useEffect(() => {

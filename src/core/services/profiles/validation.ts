@@ -1,7 +1,8 @@
 import type { TErrorData } from "../../../shared/error-data";
 import type { Profile } from "../../types";
-import { getProvider } from "../../providers";
+import { loadProvider } from "../../providers";
 import { credsOf } from "./lookup";
+import { hasFreshProviderModels } from "./model-cache";
 
 const NAME_EXISTS_ERROR: TErrorData = {
   field: "name",
@@ -41,12 +42,24 @@ export async function validateProfile(
 export async function checkCredentials(
   input: Pick<Profile, "providerType" | "baseUrl" | "key">
 ): Promise<true | TErrorData> {
-  const Provider = getProvider(input.providerType);
+  const Provider = await loadProvider(input.providerType);
   if (!Provider) {
     return {
       field: "name",
       message: `Unknown provider type: ${input.providerType}`,
     };
+  }
+  // A successful, non-empty model list for these exact creds (fetched moments
+  // ago to populate the add/edit form's model dropdown) already proves the
+  // credentials work — skip the duplicate `checkProvider` round-trip.
+  if (
+    hasFreshProviderModels({
+      providerType: input.providerType,
+      baseUrl: input.baseUrl,
+      apiKey: input.key,
+    })
+  ) {
+    return true;
   }
   const result = await Provider.checkProvider(credsOf(input));
   if (result === true) return true;

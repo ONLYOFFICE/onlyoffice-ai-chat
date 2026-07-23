@@ -1,4 +1,5 @@
 import type { Profile } from "../../types";
+import { credsOf, providerFor } from "./lookup";
 import { probeToolCapability } from "./probe-tools";
 
 export type ProbedCapabilities = {
@@ -28,8 +29,26 @@ export async function probeCapabilities(
   profile: Pick<Profile, "providerType" | "modelId" | "baseUrl" | "key">,
   externalSignal?: AbortSignal
 ): Promise<ProbedCapabilities> {
+  // Only providers that actually expose the OpenAI Responses API should pay
+  // for the Responses-transport tool probe. `checkResponsesApi` returns
+  // `false` without a network call for every non-OpenAI backend (base-class
+  // default), so we skip a probe that would otherwise 404 against
+  // `/v1/responses` on every profile save for the 15 other providers.
+  let supportsResponses = false;
+  try {
+    const Provider = await providerFor(profile.providerType);
+    supportsResponses = await new Provider(credsOf(profile)).checkResponsesApi(
+      profile.modelId,
+      externalSignal
+    );
+  } catch {
+    supportsResponses = false;
+  }
+
   const [viaResponses, viaChat] = await Promise.all([
-    probeToolCapability(profile, true, externalSignal),
+    supportsResponses
+      ? probeToolCapability(profile, true, externalSignal)
+      : Promise.resolve(false),
     probeToolCapability(profile, false, externalSignal),
   ]);
 

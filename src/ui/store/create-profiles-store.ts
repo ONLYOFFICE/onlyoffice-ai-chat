@@ -135,6 +135,13 @@ export function createProfilesStore(deps: {
       | ((state: ProfilesStoreState) => Partial<ProfilesStoreState>)
   ) => void;
 
+  // Coalesces concurrent `init()` calls: several page-level
+  // `useEnsureProfiles` hooks (and the imperative ref) mount in the same
+  // tick and each call `init()`, which fans out to three reads. While one
+  // load is in flight the others share its promise; the guard clears on
+  // settle so a later mount/navigation still re-syncs.
+  let initInFlight: Promise<void> | null = null;
+
   const store = create<ProfilesStoreState>()((setState, get) => {
     set = setState;
 
@@ -153,22 +160,33 @@ export function createProfilesStore(deps: {
       sessionChatProfile: null,
       extendedThinking: false,
 
-      init: async () => {
-        // All three reads are independent — fan them out in one round
-        // so the widget can hydrate in a single network/storage trip.
-        const [rawProfiles, deepMode, assignments] = await Promise.all([
-          api.profiles.list(),
-          api.preferences.getDeepMode(entityId),
-          api.assignments.getAllAssignments(entityId),
-        ]);
-        const profiles = backfillCapabilities(rawProfiles);
-        const assignmentsState = buildAssignmentsState(profiles, assignments);
-        set({
-          profiles,
-          extendedThinking: !!deepMode,
-          initialized: true,
-          ...assignmentsState,
-        } as Partial<ProfilesStoreState>);
+      init: () => {
+        if (initInFlight) return initInFlight;
+        initInFlight = (async () => {
+          try {
+            // All three reads are independent — fan them out in one round
+            // so the widget can hydrate in a single network/storage trip.
+            const [rawProfiles, deepMode, assignments] = await Promise.all([
+              api.profiles.list(),
+              api.preferences.getDeepMode(entityId),
+              api.assignments.getAllAssignments(entityId),
+            ]);
+            const profiles = backfillCapabilities(rawProfiles);
+            const assignmentsState = buildAssignmentsState(
+              profiles,
+              assignments
+            );
+            set({
+              profiles,
+              extendedThinking: !!deepMode,
+              initialized: true,
+              ...assignmentsState,
+            } as Partial<ProfilesStoreState>);
+          } finally {
+            initInFlight = null;
+          }
+        })();
+        return initInFlight;
       },
 
       reloadProfiles: async () => {

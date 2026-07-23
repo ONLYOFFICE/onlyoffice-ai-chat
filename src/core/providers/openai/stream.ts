@@ -208,11 +208,21 @@ const mergeToolCall = (
   const update = delta?.tool_calls?.[0];
   const argsText = existing.argsText + (update?.function?.arguments ?? "");
 
-  let parsedArgs = {};
-  try {
-    parsedArgs = JSON.parse(argsText || "{}");
-  } catch {
-    // arguments still incomplete — keep previous parse attempt
+  // Arguments stream as concatenated JSON fragments. Re-parsing the whole
+  // accumulated string on every delta is O(n²) over a long argument stream,
+  // and only a balanced fragment can parse anyway — so only attempt a parse
+  // once the trimmed text looks complete (ends with `}`), mirroring the
+  // Anthropic path. The try/catch still guards the rare mid-string `}` case.
+  let parsedArgs = existing.args;
+  const trimmed = argsText.trim();
+  if (trimmed === "") {
+    parsedArgs = {};
+  } else if (trimmed.endsWith("}")) {
+    try {
+      parsedArgs = JSON.parse(trimmed);
+    } catch {
+      // arguments still incomplete — keep previous parse attempt
+    }
   }
 
   return {
@@ -282,6 +292,7 @@ export async function* processStream(
   let hasUnfinalizedReasoning = false;
 
   for await (const streamEvent of stream) {
+    const prev = responseMessage;
     for (const chunk of streamEvent.choices) {
       if (isStreamComplete) break;
 
@@ -325,7 +336,11 @@ export async function* processStream(
       return;
     }
 
-    yield responseMessage;
+    // Emit only when a chunk actually mutated the message — the content
+    // handlers return fresh objects, so an unchanged reference means a
+    // no-op event (role-only first chunk, usage-only frame, keepalive) and
+    // skipping it avoids a redundant downstream write + re-render.
+    if (responseMessage !== prev) yield responseMessage;
   }
 
   // Stream closed without a `finish_reason` — salvage whatever we got.

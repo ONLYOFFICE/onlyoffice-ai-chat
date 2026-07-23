@@ -16,12 +16,16 @@ import type { ActionArgs } from "../types";
 export type CustomArgs = ActionArgs & { systemPrompt: string };
 
 /** Streaming custom-prompt action — caller iterates the generator. */
-export const custom = (args: CustomArgs): AsyncGenerator<SendMessageResult> => {
+export async function* custom(
+  args: CustomArgs
+): AsyncGenerator<SendMessageResult> {
   if (isFallbackProfile(args.profile) && (args.tools?.length ?? 0) > 0) {
-    return streamWithTextProtocol(args, args.systemPrompt);
+    yield* streamWithTextProtocol(args, args.systemPrompt);
+    return;
   }
 
-  return providerFor(args).sendMessage({
+  const provider = await providerFor(args);
+  yield* provider.sendMessage({
     messages: args.messages,
     model: args.profile.modelId,
     useResponsesApi: args.profile.useResponsesApi === true,
@@ -30,7 +34,7 @@ export const custom = (args: CustomArgs): AsyncGenerator<SendMessageResult> => {
     withReasoning: args.isReasoning,
     signal: args.signal,
   });
-};
+}
 
 /** One-shot custom-prompt action — caller awaits a single message. */
 export const customSync = async (
@@ -39,7 +43,8 @@ export const customSync = async (
   const messages = isFallbackProfile(args.profile)
     ? transformHistoryToText(args.messages)
     : args.messages;
-  const text = await providerFor(args).sendMessageSync({
+  const provider = await providerFor(args);
+  const text = await provider.sendMessageSync({
     messages,
     model: args.profile.modelId,
     useResponsesApi: args.profile.useResponsesApi === true,

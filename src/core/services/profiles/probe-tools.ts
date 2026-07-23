@@ -63,7 +63,7 @@ export async function probeToolCapability(
   externalSignal?.addEventListener("abort", onExternalAbort);
 
   try {
-    const Provider = providerFor(profile.providerType);
+    const Provider = await providerFor(profile.providerType);
     const provider = new Provider(credsOf(profile));
 
     const stream = provider.sendMessage({

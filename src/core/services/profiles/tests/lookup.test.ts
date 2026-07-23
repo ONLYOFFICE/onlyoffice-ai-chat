@@ -33,12 +33,14 @@ describe("loadProfile", () => {
 });
 
 describe("providerFor", () => {
-  it("returns the registered provider class", () => {
-    expect(providerFor(PROFILE_STUB_TYPE)).toBe(StubProfileProvider);
+  it("returns the registered provider class", async () => {
+    expect(await providerFor(PROFILE_STUB_TYPE)).toBe(StubProfileProvider);
   });
 
-  it("throws on unknown type", () => {
-    expect(() => providerFor("nope")).toThrow("Unknown provider type: nope");
+  it("throws on unknown type", async () => {
+    await expect(providerFor("nope")).rejects.toThrow(
+      "Unknown provider type: nope"
+    );
   });
 });
 

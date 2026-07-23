@@ -116,7 +116,7 @@ async function rpc(
  * notification (best-effort — some servers answer `202` with no body).
  * Returns the session id, or `undefined` for stateless servers.
  */
-async function openSession(
+export async function openSession(
   fetchImpl: FetchLike,
   type: string,
   server: McpHttpServerConfig
@@ -154,6 +154,72 @@ async function openSession(
  * descriptors, or an empty list on any failure (logged, never thrown —
  * a broken system server must not break the whole tool context).
  */
+/**
+ * `tools/list` over an already-open session (no handshake). Throws on
+ * transport failure so a caller managing a session cache can re-open and
+ * retry. Returns `[]` when the response carries no tool array.
+ */
+export async function requestTools(
+  fetchImpl: FetchLike,
+  type: string,
+  server: McpHttpServerConfig,
+  sessionId?: string
+): Promise<TMCPItem[]> {
+  const { messages } = await rpc(
+    fetchImpl,
+    server,
+    { jsonrpc: "2.0", id: `tools-${type}`, method: "tools/list", params: {} },
+    sessionId
+  );
+  for (const msg of messages) {
+    const tools = (msg.result as { tools?: TMCPItem[] } | undefined)?.tools;
+    if (Array.isArray(tools)) return tools;
+  }
+  return [];
+}
+
+/**
+ * `tools/call` over an already-open session (no handshake). Throws on a
+ * JSON-RPC error, a missing result, or a transport failure.
+ */
+export async function requestToolCall(
+  fetchImpl: FetchLike,
+  type: string,
+  server: McpHttpServerConfig,
+  toolName: string,
+  args: Record<string, unknown>,
+  sessionId?: string
+): Promise<string> {
+  const { messages } = await rpc(
+    fetchImpl,
+    server,
+    {
+      jsonrpc: "2.0",
+      id: `call-${type}-${toolName}`,
+      method: "tools/call",
+      params: { name: toolName, arguments: args },
+    },
+    sessionId
+  );
+  for (const msg of messages) {
+    if (msg.error) {
+      throw new Error(
+        `MCP tool error (${msg.error.code}): ${msg.error.message}`
+      );
+    }
+    if (msg.result !== undefined) {
+      return JSON.stringify(msg.result);
+    }
+  }
+  throw new Error(`No result from system MCP server ${type}`);
+}
+
+/**
+ * Enumerate the tools a server exposes: `initialize` handshake (with
+ * session capture) followed by `tools/list`. Returns the tool
+ * descriptors, or an empty list on any failure (logged, never thrown —
+ * a broken system server must not break the whole tool context).
+ */
 export async function listTools(
   fetchImpl: FetchLike,
   type: string,
@@ -161,26 +227,12 @@ export async function listTools(
 ): Promise<TMCPItem[]> {
   try {
     const sessionId = await openSession(fetchImpl, type, server);
-
-    const { messages } = await rpc(
-      fetchImpl,
-      server,
-      { jsonrpc: "2.0", id: `tools-${type}`, method: "tools/list", params: {} },
-      sessionId
+    const tools = await requestTools(fetchImpl, type, server, sessionId);
+    logger.debug(
+      `[mcp] listTools ${type}: ${tools.length} tool(s) — ` +
+        `${tools.map((t) => t.name).join(", ") || "(none)"}`
     );
-
-    for (const msg of messages) {
-      const tools = (msg.result as { tools?: TMCPItem[] } | undefined)?.tools;
-      if (Array.isArray(tools)) {
-        logger.debug(
-          `[mcp] listTools ${type}: ${tools.length} tool(s) — ` +
-            `${tools.map((t) => t.name).join(", ") || "(none)"}`
-        );
-        return tools;
-      }
-    }
-    logger.debug(`[mcp] listTools ${type}: no tools in response`);
-    return [];
+    return tools;
   } catch (error) {
     logger.error(`[mcp] listTools failed for system server ${type}:`, error);
     return [];
@@ -202,28 +254,5 @@ export async function callTool(
   args: Record<string, unknown>
 ): Promise<string> {
   const sessionId = await openSession(fetchImpl, type, server);
-
-  const { messages } = await rpc(
-    fetchImpl,
-    server,
-    {
-      jsonrpc: "2.0",
-      id: `call-${type}-${toolName}`,
-      method: "tools/call",
-      params: { name: toolName, arguments: args },
-    },
-    sessionId
-  );
-
-  for (const msg of messages) {
-    if (msg.error) {
-      throw new Error(
-        `MCP tool error (${msg.error.code}): ${msg.error.message}`
-      );
-    }
-    if (msg.result !== undefined) {
-      return JSON.stringify(msg.result);
-    }
-  }
-  throw new Error(`No result from system MCP server ${type}`);
+  return requestToolCall(fetchImpl, type, server, toolName, args, sessionId);
 }
