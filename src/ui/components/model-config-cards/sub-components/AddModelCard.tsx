@@ -178,7 +178,7 @@ export const AddModelCard = ({
   if (variant === "standalone") {
     return (
       <div className="flex flex-col gap-[var(--add-model-card-gap)]">
-        <h3 className="select-none text-fs-13 font-bold leading-[var(--lh-16)] text-[var(--text-normal)] [text-align:var(--add-model-card-title-align)]">
+        <h3 className="select-none text-[length:var(--add-model-card-title-font-size-standalone)] font-bold leading-[var(--lh-16)] text-[var(--text-normal)] [text-align:var(--add-model-card-title-align-standalone)]">
           {t("ConnectAIModelToEnableChat")}
         </h3>
 
@@ -198,7 +198,7 @@ export const AddModelCard = ({
 
   return (
     <ModelCardShell>
-      <h3 className="select-none font-bold text-[var(--text-normal)] mb-[var(--add-model-card-title-margin-bottom)]">
+      <h3 className="select-none font-bold text-[length:var(--add-model-card-title-font-size-card)] text-[var(--text-normal)] mb-[var(--add-model-card-title-margin-bottom)] [text-align:var(--add-model-card-title-align-card)]">
         {t("ConnectNewAIModel")}
       </h3>
 

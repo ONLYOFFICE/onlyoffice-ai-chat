@@ -26,7 +26,7 @@ const ModelAssignmentPage = ({
   return (
     <div
       className={cn(
-        "aui-root select-text flex min-h-full w-full justify-[var(--model-assignment-justify)] bg-[var(--layout-background-color)]",
+        "aui-root select-text flex min-h-full w-full [justify-content:var(--model-assignment-justify)] bg-[var(--layout-background-color)]",
         className
       )}
     >

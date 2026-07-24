@@ -265,9 +265,15 @@
      from its help icon. The tooltip tokens style the "Import" help popover. */
   --add-model-card-gap: 8px;
   --add-model-card-title-margin-bottom: 8px;
-  /* Horizontal alignment of the standalone add-model heading (any `text-align`
-     value — `start` default, `center`, `end`). */
-  --add-model-card-title-align: start;
+  /* Add-model heading — separate knobs per variant: `-card` is the "Connect
+     new AI model" heading (card variant, in the model shell); `-standalone` is
+     the "Connect an AI Model…" heading (standalone variant, initial setup).
+     Each takes a `text-align` value (`start` default, `center`, `end`) and a
+     font size. */
+  --add-model-card-title-align-card: start;
+  --add-model-card-title-font-size-card: var(--fs-12);
+  --add-model-card-title-align-standalone: start;
+  --add-model-card-title-font-size-standalone: var(--fs-13);
   --add-model-card-footer-gap: 12px;
   --add-model-card-footer-margin-top: 0px;
   --add-model-card-import-gap: 4px;
