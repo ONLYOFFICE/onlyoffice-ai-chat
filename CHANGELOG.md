@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.173
+
+### Fixed
+
+- LaTeX written with `\(...\)` (inline) and `\[...\]` (display) delimiters now renders. Many models emit these instead of `$...$` / `$$...$$`, and `remark-math` only recognizes the dollar forms, so the formulas showed as raw text. Both markdown renderers now normalize `\(...\)` → `$...$` and `\[...\]` → a display `$$...$$` block before parsing (code spans are left untouched); the assistant-streaming path uses `MarkdownTextPrimitive`'s `preprocess` hook.
+
+## 0.4.172
+
+### Fixed
+
+- Sending a message or opening a chat from history no longer crashes the host with `Unable to preload CSS for .../dot.css` (404). The Markdown/KaTeX peer-dep stylesheets were imported dynamically inside the lazy markdown boundary, so a consumer's bundler shipped them as `__vitePreload`-guarded chunks that reject and tear down the markdown Suspense tree when the CSS asset 404s. They are now imported statically (bundled into the host's main stylesheet, loaded via a plain `<link>`); the heavy markdown JS stays lazy.
+
 ## 0.4.165
 
 ### Fixed
