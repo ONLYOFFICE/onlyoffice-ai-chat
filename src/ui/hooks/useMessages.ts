@@ -141,7 +141,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const extendedThinking = useProfilesStore((s) => s.extendedThinking);
   const { servers } = useToolsContext();
-  const { entityId, systemPrompt, onToolCallApproveResult } = useWidgetConfig();
+  const { entityId, contextEntityId, systemPrompt, onToolCallApproveResult } =
+    useWidgetConfig();
 
   // Fields every request that *resumes the same thread* must carry — tool
   // approve/deny and the in-stream auto-continue paths alike. Critically this
@@ -152,6 +153,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const resumeCommon = useCallback(
     () => ({
       entityId,
+      contextEntityId,
       profileId: currentProfile?.id,
       actionArgs: {
         isReasoning: extendedThinking,
@@ -162,6 +164,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     }),
     [
       entityId,
+      contextEntityId,
       currentProfile?.id,
       extendedThinking,
       currentTools,
@@ -853,6 +856,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       threadId: inputThreadId,
       userMessage,
       entityId,
+      contextEntityId,
       profileId: currentProfile.id,
       actionArgs: {
         isReasoning: extendedThinking,
@@ -1090,6 +1094,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       const stream = api.ai.regenerateStream({
         threadId,
         entityId,
+        contextEntityId,
         profileId: currentProfile.id,
         actionArgs: {
           isReasoning: extendedThinking,
@@ -1105,6 +1110,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       api,
       currentProfile,
       entityId,
+      contextEntityId,
       extendedThinking,
       processStream,
       setAbortController,

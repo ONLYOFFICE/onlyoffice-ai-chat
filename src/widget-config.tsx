@@ -27,6 +27,18 @@ export interface WidgetConfig {
    */
   entityId?: string;
   /**
+   * Secondary scope for the *context* of chat rounds, when the
+   * conversation itself lives under {@link WidgetConfig.entityId} but the
+   * request should run against another workspace's context — its tool
+   * list / execution scope, allow-always tool preferences, and assignment
+   * fallback. Threads (history placement and listing) keep following
+   * `entityId`. Hosts use this to talk to an AI agent from outside its
+   * room while the chat history stays where the user is. Forwarded on
+   * send / regenerate / tool-call resume; omitted → requests behave as
+   * before (everything scopes by `entityId`).
+   */
+  contextEntityId?: string;
+  /**
    * Controls the composer's model (profile) picker. Tri-state:
    *
    * - `true` — always hidden.

@@ -141,6 +141,17 @@ export type SendStreamInput = {
   entityId?: string;
 
   /**
+   * Optional secondary scope for the round's *context*, used when the
+   * conversation itself lives elsewhere: the tool list / execution scope,
+   * the allow-always tool preferences, and the assignment fallback resolve
+   * against this value, while the thread stays placed under `entityId`.
+   * Hosts use it to talk to an agent (its tools, workspace and model
+   * fallback) from a conversation stored outside the agent — e.g. the
+   * global history. Falls back to `entityId` when omitted.
+   */
+  contextEntityId?: string;
+
+  /**
    * Session-level profile override. When set, the engine uses this
    * profile for the current request without mutating the persisted
    * `Chat` assignment — used by the UI to honor an ad-hoc model pick
@@ -170,6 +181,9 @@ export type RegenerateStreamInput = {
    * can return an entity-specific Chat profile).
    */
   entityId?: string;
+
+  /** Secondary context scope — see {@link SendStreamInput.contextEntityId}. */
+  contextEntityId?: string;
 
   /**
    * Session-level profile override — see {@link SendStreamInput.profileId}.
@@ -202,6 +216,9 @@ export type SendInput = {
    * to apply it (typically only for `ActionType.Chat`).
    */
   entityId?: string;
+
+  /** Secondary context scope — see {@link SendStreamInput.contextEntityId}. */
+  contextEntityId?: string;
 };
 
 /**
@@ -228,7 +245,7 @@ export type SendCustomInput = {
  */
 export type ToolCallData = Pick<
   SendStreamInput,
-  "actionArgs" | "entityId" | "profileId"
+  "actionArgs" | "entityId" | "contextEntityId" | "profileId"
 > & {
   /** Thread the assistant message belongs to. */
   threadId: string;

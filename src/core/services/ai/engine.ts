@@ -179,9 +179,10 @@ export class AIEngine {
   }
 
   async *sendWithStream(input: SendStreamInput): AsyncGenerator<ChatEvent> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     const { profileId, profile } = await this.resolveChatProfile(
       input.profileId,
-      input.entityId
+      contextScope
     );
 
     let threadId = input.threadId ?? "";
@@ -267,7 +268,7 @@ export class AIEngine {
       this.deps.storage,
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
-      input.entityId,
+      contextScope,
       {
         attachmentId: collectRefIds([...priorMessages, input.userMessage]),
       },
@@ -296,7 +297,7 @@ export class AIEngine {
       tools: toolCtx.mergedTools,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
     });
 
     yield* this.runChatStream(stream, toolCtx, {
@@ -306,7 +307,7 @@ export class AIEngine {
       prompt: input.actionArgs?.prompt,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
@@ -332,9 +333,10 @@ export class AIEngine {
   async *sendWithStreamOpenAI(
     input: SendStreamInput
   ): AsyncGenerator<OpenAIStreamChunk> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     const { profile } = await this.resolveChatProfile(
       input.profileId,
-      input.entityId
+      contextScope
     );
     yield* toOpenAIChatCompletionStream(this.sendWithStream(input), {
       model: profile.modelId,
@@ -351,9 +353,10 @@ export class AIEngine {
   async *regenerateStream(
     input: RegenerateStreamInput
   ): AsyncGenerator<ChatEvent> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     const { profileId, profile } = await this.resolveChatProfile(
       input.profileId,
-      input.entityId
+      contextScope
     );
 
     const stored = await this.deps.storage.messages.readByThread(
@@ -382,7 +385,7 @@ export class AIEngine {
       this.deps.storage,
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
-      input.entityId,
+      contextScope,
       { attachmentId: collectRefIds(priorMessages) },
       this.getSystemServerTypes(),
       this.isBuiltinImageToolDisabled()
@@ -409,7 +412,7 @@ export class AIEngine {
       tools: toolCtx.mergedTools,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
     });
 
     yield* this.runChatStream(stream, toolCtx, {
@@ -419,7 +422,7 @@ export class AIEngine {
       prompt: input.actionArgs?.prompt,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
@@ -437,16 +440,16 @@ export class AIEngine {
   async *approveToolCall(
     input: ApproveToolCallInput
   ): AsyncGenerator<ChatEvent> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     if (input.allowAlways) {
       const toolCall = readToolCall(input.message, input.idx);
       if (toolCall) {
-        const current = await this.deps.storage.toolPrefs.readAllowAlways(
-          input.entityId
-        );
+        const current =
+          await this.deps.storage.toolPrefs.readAllowAlways(contextScope);
         if (!current.includes(toolCall.toolName)) {
           await this.deps.storage.toolPrefs.upsertAllowAlways(
             [...current, toolCall.toolName],
-            input.entityId
+            contextScope
           );
         }
       }
@@ -461,14 +464,14 @@ export class AIEngine {
       if (toolCall) {
         const { profile, profileId } = await this.resolveChatProfile(
           input.profileId,
-          input.entityId,
+          contextScope,
           input.threadId
         );
         const toolCtx = await buildToolContext(
           this.deps.storage,
           this.deps.toolsAdapter,
           input.actionArgs?.tools ?? [],
-          input.entityId,
+          contextScope,
           undefined,
           systemServerTypes,
           this.isBuiltinImageToolDisabled()
@@ -482,7 +485,7 @@ export class AIEngine {
             prompt: input.actionArgs?.prompt,
             isReasoning: input.actionArgs?.isReasoning,
             signal: input.actionArgs?.signal,
-            entityId: input.entityId,
+            entityId: contextScope,
             fetch: proxiedFetch,
             webSearchFetch: this.deps.fetchProxy,
             pickFetch: (p) => this.pickFetch(p),
@@ -528,9 +531,10 @@ export class AIEngine {
     input: DenyToolCallInput,
     result: unknown
   ): AsyncGenerator<ChatEvent> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     const { profile, profileId } = await this.resolveChatProfile(
       input.profileId,
-      input.entityId,
+      contextScope,
       input.threadId
     );
 
@@ -538,7 +542,7 @@ export class AIEngine {
       this.deps.storage,
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
-      input.entityId,
+      contextScope,
       undefined,
       this.getSystemServerTypes(),
       this.isBuiltinImageToolDisabled()
@@ -551,7 +555,7 @@ export class AIEngine {
       prompt: input.actionArgs?.prompt,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
@@ -571,7 +575,7 @@ export class AIEngine {
         signal: input.actionArgs?.signal,
         tools: toolCtx.mergedTools,
         prompt: input.actionArgs?.prompt,
-        entityId: input.entityId,
+        entityId: contextScope,
         fetch: proxiedFetch,
       }
     );
@@ -633,9 +637,10 @@ export class AIEngine {
   }
 
   async send(input: SendInput): Promise<ThreadMessageLike> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     const { profile } = await this.assignments.resolveForAction(
       input.actionType,
-      input.entityId
+      contextScope
     );
     // Hydrate image/file refs into inline data before the provider sees
     // them — mirrors the streaming paths. Without this a Vision/OCR/etc.

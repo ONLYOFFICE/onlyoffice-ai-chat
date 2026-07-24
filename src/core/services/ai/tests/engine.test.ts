@@ -290,6 +290,31 @@ describe("AIEngine.sendWithStream entity scope", () => {
       undefined
     );
   });
+
+  it("contextEntityId scopes the context, entityId keeps the thread", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      entityId: "local-folder",
+      contextEntityId: "agent-room",
+    })) {
+      // drain
+    }
+    // Context (assignment fallback, tool prefs) resolves against the agent…
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Chat,
+      "agent-room"
+    );
+    // …while the thread itself stays placed under the caller's entity.
+    expect(storage.threads.create).toHaveBeenCalledWith(
+      "New chat",
+      "p1",
+      "local-folder"
+    );
+  });
 });
 
 describe("AIEngine.regenerateStream", () => {
