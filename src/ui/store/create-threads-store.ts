@@ -38,8 +38,14 @@ export interface ThreadsStoreState {
   ) => Promise<void>;
   /** Bump current thread's last-edit timestamp (called when a new message is sent). */
   insertNewMessageToThread: (opts?: { profileId?: string }) => Promise<void>;
-  /** Create a fresh empty thread placeholder and switch to it. */
-  onSwitchToNewThread: () => void;
+  /**
+   * Create a fresh empty thread placeholder and switch to it. By default
+   * the session chat profile is reset (the new chat starts on the
+   * assignment-resolved profile); pass `keepSessionProfile` to preserve an
+   * explicit session selection across the switch (e.g. host-driven scope
+   * changes right after a picker selection).
+   */
+  onSwitchToNewThread: (opts?: { keepSessionProfile?: boolean }) => void;
   /** Switch to an existing thread by ID. */
   onSwitchToThread: (id: string) => void;
   /** Download the thread conversation as a `.docx` file via the platform file adapter. */
@@ -130,9 +136,9 @@ export function createThreadsStore(deps: {
       });
     },
 
-    onSwitchToNewThread: () => {
+    onSwitchToNewThread: (opts) => {
       const previousThreadId = get().threadId;
-      applyThreadContextFromThread(undefined);
+      if (!opts?.keepSessionProfile) applyThreadContextFromThread(undefined);
       set({ threadId: "" });
       // Reset the message list synchronously: in headless setups
       // (custom router that mounts/unmounts ChatPage on page change)
@@ -183,7 +189,11 @@ export function createThreadsStore(deps: {
       const messages = await api.threads.readMessages(id);
       const fileName = removeSpecialCharacter(title || "Chat Export");
       const content = convertMessagesToMd(messages);
-      platform.file?.saveAsFile?.(content, `${fileName}.${extension}`, formatId);
+      platform.file?.saveAsFile?.(
+        content,
+        `${fileName}.${extension}`,
+        formatId
+      );
     },
 
     onRenameThread: async (id, title) => {

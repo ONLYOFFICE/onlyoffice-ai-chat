@@ -161,6 +161,25 @@ describe("createThreadsStore", () => {
     );
   });
 
+  it("onSwitchToNewThread keeps the session profile when asked", () => {
+    const deps = makeDeps();
+    const setSessionChatProfile = vi.fn();
+    deps.profilesGetState.mockReturnValue({
+      getProfileById: vi.fn((id: string) => ({ id, name: `p-${id}` })),
+      setSessionChatProfile,
+    });
+    const s = createThreadsStore(deps);
+    s.setState({ threadId: "a" });
+
+    s.getState().onSwitchToNewThread({ keepSessionProfile: true });
+    expect(s.getState().threadId).toBe("");
+    expect(setSessionChatProfile).not.toHaveBeenCalled();
+
+    s.setState({ threadId: "b" });
+    s.getState().onSwitchToNewThread();
+    expect(setSessionChatProfile).toHaveBeenCalledWith(null);
+  });
+
   it("onSwitchToThread sets threadId, loads messages, and emits", () => {
     const deps = makeDeps();
     const s = createThreadsStore(deps);

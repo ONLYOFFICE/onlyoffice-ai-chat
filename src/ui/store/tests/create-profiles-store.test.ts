@@ -81,7 +81,7 @@ describe("createProfilesStore", () => {
     const deps = makeDeps([profile("1")]);
     const getAll = vi.fn().mockResolvedValue({ Chat: "1" });
     deps.api.assignments.getAllAssignments = getAll;
-    const s = createProfilesStore({ ...deps, entityId: "agent-7" });
+    const s = createProfilesStore({ ...deps, getEntityId: () => "agent-7" });
     await s.getState().init();
     expect(getAll).toHaveBeenCalledWith("agent-7");
     expect(s.getState().chatProfile?.id).toBe("1");

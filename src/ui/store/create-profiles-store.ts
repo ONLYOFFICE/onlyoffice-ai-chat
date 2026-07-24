@@ -73,9 +73,10 @@ export function createProfilesStore(deps: {
   keys: StoreKeys;
   ctx: AppContext;
   api: ServerAPI;
-  entityId?: string;
+  getEntityId?: () => string | undefined;
 }): UseBoundStore<StoreApi<ProfilesStoreState>> {
-  const { ctx, api, entityId } = deps;
+  const { ctx, api, getEntityId } = deps;
+  const entity = () => getEntityId?.();
 
   const backfillCapabilities = (profiles: Profile[]) => {
     for (const p of profiles) {
@@ -109,7 +110,7 @@ export function createProfilesStore(deps: {
   const loadAssignmentsState = async (
     profiles: Profile[]
   ): Promise<Partial<ProfilesStoreState>> => {
-    const assignments = await api.assignments.getAllAssignments(entityId);
+    const assignments = await api.assignments.getAllAssignments(entity());
     return buildAssignmentsState(profiles, assignments);
   };
 
@@ -168,8 +169,8 @@ export function createProfilesStore(deps: {
             // so the widget can hydrate in a single network/storage trip.
             const [rawProfiles, deepMode, assignments] = await Promise.all([
               api.profiles.list(),
-              api.preferences.getDeepMode(entityId),
-              api.assignments.getAllAssignments(entityId),
+              api.preferences.getDeepMode(entity()),
+              api.assignments.getAllAssignments(entity()),
             ]);
             const profiles = backfillCapabilities(rawProfiles);
             const assignmentsState = buildAssignmentsState(
@@ -196,7 +197,7 @@ export function createProfilesStore(deps: {
 
       reloadCurrentChat: async () => {
         const profiles = get().profiles;
-        const assignments = await api.assignments.getAllAssignments(entityId);
+        const assignments = await api.assignments.getAllAssignments(entity());
         const byId = new Map(profiles.map((p) => [p.id, p]));
         const chatId = assignments[ActionType.Chat];
         const defaultId = assignments[ActionType.Default];
@@ -362,7 +363,7 @@ export function createProfilesStore(deps: {
 
       toggleExtendedThinking: async () => {
         const next = !get().extendedThinking;
-        await api.preferences.setDeepMode(next, entityId);
+        await api.preferences.setDeepMode(next, entity());
         set({ extendedThinking: next });
         ctx.callbacksManager.emit("onExtendedThinkingUpdated", {
           enabled: next,
@@ -370,7 +371,7 @@ export function createProfilesStore(deps: {
       },
 
       reloadExtendedThinking: async () => {
-        const next = !!(await api.preferences.getDeepMode(entityId));
+        const next = !!(await api.preferences.getDeepMode(entity()));
         if (get().extendedThinking === next) return;
         set({ extendedThinking: next });
         ctx.callbacksManager.emit("onExtendedThinkingUpdated", {

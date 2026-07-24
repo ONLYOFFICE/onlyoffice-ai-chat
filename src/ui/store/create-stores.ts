@@ -71,6 +71,17 @@ export interface Stores {
   middlewareRunner: MiddlewareRunner;
   api: ServerAPI;
   selectCurrentChatProfile: (s: ProfilesStoreState) => Profile | null;
+  /** Scope token currently used by scoped API calls. */
+  getEntityId: () => string | undefined;
+  /**
+   * Switch the scope token in place — subsequent scoped API calls
+   * (assignments / preferences, tools / web search, attachment uploads)
+   * use the new value without re-creating the bundle. The caller owns
+   * re-scoping the UI state afterwards: reset the active thread, reload
+   * the model assignment / extended thinking, reload servers, and clear
+   * attachments (threads re-init themselves off `WidgetConfig.entityId`).
+   */
+  setEntityId: (entityId?: string) => void;
 }
 
 export interface CreateStoresConfig {
@@ -80,8 +91,8 @@ export interface CreateStoresConfig {
   /**
    * Opaque scope token (entity / "room") forwarded to every scoped API
    * call. When `undefined`, stores operate on the unscoped (passthrough)
-   * namespace. Fixed for the lifetime of the bundle — re-create the
-   * stores with a new value to switch scope.
+   * namespace. This is the initial value — switch it later via
+   * {@link Stores.setEntityId} without re-creating the bundle.
    */
   entityId?: string;
 }
@@ -97,8 +108,18 @@ export interface CreateStoresConfig {
 export function createStores(config: CreateStoresConfig): Stores {
   const { keys, ctx, api, entityId } = config;
 
+  // Mutable scope holder: scoped stores read it per call, so the host can
+  // re-scope the live bundle via `setEntityId` instead of re-creating it.
+  const entityRef = { current: entityId };
+  const getEntityId = () => entityRef.current;
+
   const useMessageStore = createMessageStore({ ctx, api });
-  const useProfilesStore = createProfilesStore({ keys, ctx, api, entityId });
+  const useProfilesStore = createProfilesStore({
+    keys,
+    ctx,
+    api,
+    getEntityId,
+  });
   const useThreadsStore = createThreadsStore({
     api,
     platform: ctx.platform,
@@ -110,12 +131,12 @@ export function createStores(config: CreateStoresConfig): Stores {
     ctx,
     api,
     callbacksManager: ctx.callbacksManager,
-    entityId,
+    getEntityId,
   });
   const usePromptsStore = createPromptsStore({ api });
   const useAttachmentsStore = createAttachmentsStore({
     attachments: api.attachments,
-    entityId,
+    getEntityId,
   });
   const useThemeStore = createThemeStore(ctx);
   const useRouter = createRouterStore();
@@ -138,5 +159,9 @@ export function createStores(config: CreateStoresConfig): Stores {
     middlewareRunner: ctx.middlewareRunner,
     api,
     selectCurrentChatProfile,
+    getEntityId,
+    setEntityId: (next?: string) => {
+      entityRef.current = next;
+    },
   };
 }

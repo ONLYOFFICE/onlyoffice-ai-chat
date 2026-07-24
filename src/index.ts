@@ -56,6 +56,8 @@ export type {
 
 export type { ComposerAction } from "./ui/pages/chat/composer-actions";
 
+export type { ProfilePickerAction } from "./ui/pages/chat/profile-picker-actions";
+
 export type { Suggestion } from "./ui/pages/chat/suggestions";
 
 // ---------------------------------------------------------------------------
