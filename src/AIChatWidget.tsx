@@ -152,6 +152,17 @@ export interface AIChatWidgetProps {
    * of only on hover. See {@link WidgetConfig.chatHistoryAlwaysShowActions}.
    */
   chatHistoryAlwaysShowActions?: boolean;
+  /**
+   * Chevron icon for the regular (settings-form) comboboxes. Defaults to
+   * `"arrow"`. See {@link WidgetConfig.comboBoxArrowIcon}.
+   */
+  comboBoxArrowIcon?: WidgetConfig["comboBoxArrowIcon"];
+  /**
+   * Chevron icon for the composer's model selector. Defaults to `"arrow"`;
+   * set it to differ from the form comboboxes. See
+   * {@link WidgetConfig.modelSelectorArrowIcon}.
+   */
+  modelSelectorArrowIcon?: WidgetConfig["modelSelectorArrowIcon"];
   hideToolAllowAlways?: WidgetConfig["hideToolAllowAlways"];
   /**
    * Render the "Add model" form in a two-row (horizontal) layout
@@ -339,6 +350,8 @@ export const AIChatWidget = React.forwardRef<
       inputIconPosition,
       hideChatHistoryHeader,
       chatHistoryAlwaysShowActions,
+      comboBoxArrowIcon,
+      modelSelectorArrowIcon,
       hideToolAllowAlways,
       isAddModelCardHorizontal,
       onSettingsClick,
@@ -380,6 +393,8 @@ export const AIChatWidget = React.forwardRef<
         inputIconPosition,
         hideChatHistoryHeader,
         chatHistoryAlwaysShowActions,
+        comboBoxArrowIcon,
+        modelSelectorArrowIcon,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
@@ -415,6 +430,8 @@ export const AIChatWidget = React.forwardRef<
         inputIconPosition,
         hideChatHistoryHeader,
         chatHistoryAlwaysShowActions,
+        comboBoxArrowIcon,
+        modelSelectorArrowIcon,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,

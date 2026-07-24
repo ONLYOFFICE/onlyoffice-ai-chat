@@ -3,10 +3,12 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { CapabilitiesUI } from "../../../../capabilities";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
 import type { Profile } from "../../../../types";
 
 const SelectModel = () => {
   const { ComboBox } = useComponents();
+  const { modelSelectorArrowIcon } = useWidgetConfig();
   const { useProfilesStore, selectCurrentChatProfile } = useStores();
   const profiles = useProfilesStore((s) => s.profiles);
   const setSessionChatProfile = useProfilesStore(
@@ -58,6 +60,9 @@ const SelectModel = () => {
       contentClassName="min-w-[var(--dropdown-model-selector-min-width)]"
       maxWidth="min(var(--dropdown-model-selector-max-width), var(--radix-dropdown-menu-content-available-width))"
       className="h-[22px] ps-0 pe-0 hover:bg-transparent"
+      arrowIcon={modelSelectorArrowIcon ?? "arrow"}
+      arrowWidth="var(--model-selector-arrow-width, 7px)"
+      arrowHeight="var(--model-selector-arrow-height, 4px)"
       data-testid="model-selector"
     />
   );

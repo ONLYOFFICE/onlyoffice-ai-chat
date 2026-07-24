@@ -101,6 +101,25 @@ export interface WidgetConfig {
    */
   dropdownNavigation?: "flyout" | "drilldown";
   /**
+   * Icon name for the chevron/arrow of the regular comboboxes (the select
+   * fields in settings forms). Defaults to `"arrow"`. Provide the icon itself
+   * via the `images` override if it isn't a bundled name. The composer's model
+   * selector is configured separately via
+   * {@link WidgetConfig.modelSelectorArrowIcon}, so the two can differ.
+   */
+  comboBoxArrowIcon?: string;
+  /**
+   * Icon name for the chevron/arrow of the composer's model selector combobox.
+   * Defaults to `"arrow"` (same as the regular comboboxes). Set it to give the
+   * model selector a distinct arrow without affecting the form comboboxes.
+   *
+   * The arrow *size* is set separately via CSS tokens — `--combo-box-arrow-
+   * width` / `--combo-box-arrow-height` for the form comboboxes and
+   * `--model-selector-arrow-width` / `--model-selector-arrow-height` for the
+   * model selector (both default `7` × `4`).
+   */
+  modelSelectorArrowIcon?: string;
+  /**
    * Hide the "Always allow" checkbox in the tool-call confirmation dialog.
    * When hidden, the host can only approve/deny a single call at a time and
    * cannot opt into persisting the allow decision for the tool.

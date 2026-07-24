@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "../../../shared/utils";
+import { useWidgetConfig } from "../../../widget-config";
 import { DropdownMenu } from "../dropdown";
 import type { DropDownItemProps } from "../dropdown-item/DropDownItem.types";
 import { Icon } from "../icon";
@@ -23,6 +24,18 @@ export type ComboBoxProps = {
   contentClassName?: string;
   /** Caps the dropdown panel width (px number or CSS length). */
   maxWidth?: number | string;
+  /**
+   * Icon name for the trigger's chevron/arrow. When omitted, falls back to the
+   * `comboBoxArrowIcon` widget config and then to the bundled `"arrow"`.
+   */
+  arrowIcon?: string;
+  /**
+   * Size of the arrow glyph. When omitted, falls back to the
+   * `--combo-box-arrow-width` / `--combo-box-arrow-height` tokens (default
+   * `7` × `4`). The model selector passes its own token pair.
+   */
+  arrowWidth?: number | string;
+  arrowHeight?: number | string;
   "data-testid"?: string;
 };
 
@@ -39,10 +52,21 @@ const ComboBox = ({
   matchTriggerWidth = true,
   contentClassName,
   maxWidth,
+  arrowIcon,
+  arrowWidth,
+  arrowHeight,
   "data-testid": dataTestId,
 }: ComboBoxProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const { comboBoxArrowIcon } = useWidgetConfig();
+  // Explicit prop wins (e.g. the model selector passes its own icon/size),
+  // then the host's combobox-wide config, then the bundled default.
+  const resolvedArrowIcon = arrowIcon ?? comboBoxArrowIcon ?? "arrow";
+  // Size is token-driven so the two combobox flavors can differ purely in CSS.
+  const resolvedArrowWidth = arrowWidth ?? "var(--combo-box-arrow-width, 7px)";
+  const resolvedArrowHeight =
+    arrowHeight ?? "var(--combo-box-arrow-height, 4px)";
 
   const handleOpenChange = (next: boolean) => {
     if (!next) setSearchQuery("");
@@ -112,10 +136,10 @@ const ComboBox = ({
           </span>
           <div className="flex items-center justify-center h-[var(--combo-box-height,24px)] w-[var(--combo-box-arrow-container-width,16px)] shrink-0">
             <Icon
-              name="arrow"
+              name={resolvedArrowIcon}
               color="var(--icon-normal)"
-              width={7}
-              height={4}
+              width={resolvedArrowWidth}
+              height={resolvedArrowHeight}
               isStroke
               className={cn("transition-transform", {
                 "rotate-180": isOpen,
