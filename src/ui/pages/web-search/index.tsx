@@ -23,7 +23,7 @@ const WebSearchPage = ({
   return (
     <div
       className={cn(
-        "aui-root select-text flex min-h-full w-full [justify-content:var(--web-search-justify)] bg-[var(--layout-background-color)]",
+        "aui-root select-text flex min-h-full w-full px-[var(--web-search-padding-x)] py-[var(--web-search-padding-y)] [justify-content:var(--web-search-justify)] bg-[var(--layout-background-color)]",
         className
       )}
     >

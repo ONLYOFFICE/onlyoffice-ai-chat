@@ -90,6 +90,11 @@
      gap; the description token is the gap below the sub-header. */
   --ai-models-max-width: 560px;
   --ai-models-justify: flex-start;
+  /* Outer padding of the page, for standalone (non-Settings) mounting; inside
+     the Settings tabs the framing comes from `--ai-settings-margin-*` instead,
+     so these stay 0 by default. */
+  --ai-models-padding-x: 0px;
+  --ai-models-padding-y: 0px;
   --ai-models-title-font-size: var(--fs-20);
   --ai-models-title-margin-bottom: 8px;
   --ai-models-description-margin-bottom: 8px;
@@ -108,6 +113,9 @@
      title tokens size the "Model assignment" heading and its bottom gap. */
   --model-assignment-max-width: 560px;
   --model-assignment-justify: flex-start;
+  /* Outer padding for standalone mounting (0 inside Settings). */
+  --model-assignment-padding-x: 0px;
+  --model-assignment-padding-y: 0px;
   --model-assignment-title-font-size: var(--fs-20);
   --model-assignment-title-margin-bottom: 24px;
   /* Vertical rhythm inside the assignment list: `--..-description-margin-bottom`
@@ -125,6 +133,9 @@
      the title tokens size the "MCP servers" heading and its bottom gap. */
   --mcp-servers-max-width: 560px;
   --mcp-servers-justify: flex-start;
+  /* Outer padding for standalone mounting (0 inside Settings). */
+  --mcp-servers-padding-x: 0px;
+  --mcp-servers-padding-y: 0px;
   --mcp-servers-title-font-size: var(--fs-20);
   --mcp-servers-title-margin-bottom: 24px;
   /* Servers list body: `--mcp-servers-content-padding-bottom` is the bottom
@@ -188,6 +199,9 @@
      the title tokens size the "Web search" heading and its bottom gap. */
   --web-search-max-width: 560px;
   --web-search-justify: flex-start;
+  /* Outer padding for standalone mounting (0 inside Settings). */
+  --web-search-padding-x: 0px;
+  --web-search-padding-y: 0px;
   --web-search-title-font-size: var(--fs-20);
   --web-search-title-margin-bottom: 24px;
   /* Web-search form gaps. `--web-search-gap` is the root gap in the page
