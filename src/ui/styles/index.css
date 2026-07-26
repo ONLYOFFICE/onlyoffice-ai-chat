@@ -96,6 +96,7 @@
   --ai-models-padding-x: 0px;
   --ai-models-padding-y: 0px;
   --ai-models-title-font-size: var(--fs-20);
+  --ai-models-title-line-height: var(--lh-28);
   --ai-models-title-margin-bottom: 8px;
   --ai-models-description-margin-bottom: 8px;
   /* Gaps inside the models list: `--ai-models-content-gap` between the
@@ -117,6 +118,7 @@
   --model-assignment-padding-x: 0px;
   --model-assignment-padding-y: 0px;
   --model-assignment-title-font-size: var(--fs-20);
+  --model-assignment-title-line-height: var(--lh-28);
   --model-assignment-title-margin-bottom: 24px;
   /* Vertical rhythm inside the assignment list: `--..-description-margin-bottom`
      under the intro text; `--..-default-margin-bottom` after the default-model
@@ -137,6 +139,7 @@
   --mcp-servers-padding-x: 0px;
   --mcp-servers-padding-y: 0px;
   --mcp-servers-title-font-size: var(--fs-20);
+  --mcp-servers-title-line-height: var(--lh-28);
   --mcp-servers-title-margin-bottom: 24px;
   /* Servers list body: `--mcp-servers-content-padding-bottom` is the bottom
      padding of the whole block; `--mcp-servers-description-margin-bottom` is
@@ -203,6 +206,7 @@
   --web-search-padding-x: 0px;
   --web-search-padding-y: 0px;
   --web-search-title-font-size: var(--fs-20);
+  --web-search-title-line-height: var(--lh-28);
   --web-search-title-margin-bottom: 24px;
   /* Web-search form gaps. `--web-search-gap` is the root gap in the page
      variant; `--web-search-tab-gap` in the tab variant; `--web-search-fields-

@@ -22,7 +22,7 @@ const AiModelsPage = ({
       <div className="w-full max-w-[var(--ai-models-max-width)] min-w-0">
         <>
           {!hideHeader && (
-            <h1 className="select-none font-bold text-[length:var(--ai-models-title-font-size)] leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[var(--ai-models-title-margin-bottom)]">
+            <h1 className="select-none font-bold text-[length:var(--ai-models-title-font-size)] leading-[var(--ai-models-title-line-height)] text-[var(--settings-header-color)] mb-[var(--ai-models-title-margin-bottom)]">
               {t("AIModels")}
             </h1>
           )}

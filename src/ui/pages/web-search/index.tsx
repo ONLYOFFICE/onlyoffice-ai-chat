@@ -29,7 +29,7 @@ const WebSearchPage = ({
     >
       <div className="w-full max-w-[var(--web-search-max-width)] min-w-0 select-none">
         {!hideHeader && (
-          <h1 className="select-none font-bold text-[length:var(--web-search-title-font-size)] leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[var(--web-search-title-margin-bottom)]">
+          <h1 className="select-none font-bold text-[length:var(--web-search-title-font-size)] leading-[var(--web-search-title-line-height)] text-[var(--settings-header-color)] mb-[var(--web-search-title-margin-bottom)]">
             {t("WebSearch")}
           </h1>
         )}

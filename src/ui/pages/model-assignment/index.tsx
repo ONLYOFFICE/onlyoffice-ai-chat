@@ -32,7 +32,7 @@ const ModelAssignmentPage = ({
     >
       <div className="w-full max-w-[var(--model-assignment-max-width)] min-w-0 select-none">
         {!hideHeader && (
-          <h1 className="select-none font-bold text-[length:var(--model-assignment-title-font-size)] leading-[var(--lh-28)] text-[var(--settings-header-color)] mb-[var(--model-assignment-title-margin-bottom)]">
+          <h1 className="select-none font-bold text-[length:var(--model-assignment-title-font-size)] leading-[var(--model-assignment-title-line-height)] text-[var(--settings-header-color)] mb-[var(--model-assignment-title-margin-bottom)]">
             {t("ModelAssignment")}
           </h1>
         )}
