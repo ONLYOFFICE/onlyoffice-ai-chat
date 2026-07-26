@@ -115,7 +115,7 @@ const ChatList = ({
       <div className="sticky top-0 bg-[var(--layout-background-color)] z-10 pt-[var(--chat-list-header-padding-top)] px-[var(--chat-list-padding-x)]">
         {!isHeaderHidden && (
           <div className="flex items-center justify-between">
-            <h4 className="select-none text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--lh-16)] [font-weight:var(--chat-list-title-font-weight,700)] text-[var(--chat-list-color)]">
+            <h4 className="select-none text-[length:var(--chat-list-title-font-size,var(--fs-13))] leading-[var(--chat-list-title-line-height,var(--lh-16))] [font-weight:var(--chat-list-title-font-weight,700)] text-[var(--chat-list-color)]">
               {t("ChatHistory")}
             </h4>
             <IconButton
