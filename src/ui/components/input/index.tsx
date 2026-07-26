@@ -35,10 +35,24 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const showStartIcon = iconPosition === "start";
     const showEndIcon = iconPosition === "end" && !showClear;
 
+    // Whether an element actually sits on each edge, so the padding can differ
+    // when there's an icon/clear box vs. bare text. The `-with-icon` tokens
+    // fall back to the base padding, so unset hosts keep the current behavior.
+    const hasLeadingIcon = showStartIcon && Boolean(icon);
+    const hasTrailingIcon = showClear || (showEndIcon && Boolean(icon));
+    const startPadding = hasLeadingIcon
+      ? "ps-[var(--input-padding-start-with-icon,var(--input-padding-start,4px))]"
+      : "ps-[var(--input-padding-start,4px)]";
+    const endPadding = hasTrailingIcon
+      ? "pe-[var(--input-padding-end-with-icon,var(--input-padding-end,2px))]"
+      : "pe-[var(--input-padding-end,2px)]";
+
     return (
       <div
         className={cn(
-          "flex items-center gap-[var(--input-gap,0px)] h-[var(--input-height,24px)] rounded-[4px] box-border border ps-[var(--input-padding-start,4px)] pe-[var(--input-padding-end,2px)]",
+          "flex items-center gap-[var(--input-gap,0px)] h-[var(--input-height,24px)] rounded-[4px] box-border border",
+          startPadding,
+          endPadding,
           "border-[var(--input-border-color)] bg-[var(--input-background-color)]",
           props.disabled
             ? "cursor-not-allowed opacity-50"
