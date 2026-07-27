@@ -11,6 +11,13 @@ export type FieldContainerProps = {
   isHorizontal?: boolean;
   reserveErrorSpace?: boolean;
   action?: React.ReactNode;
+  /**
+   * Horizontal layout only: always reserve a fixed-height action zone above
+   * the field (even when there's no `action`), so a group of fields keeps
+   * uniform spacing and a toggling action doesn't shift the layout. Off by
+   * default — the action row is rendered only when an `action` is present.
+   */
+  reserveActionSpace?: boolean;
   className?: string;
   headerClassName?: string;
 };
@@ -41,6 +48,7 @@ const FieldContainer = ({
   isHorizontal,
   reserveErrorSpace,
   action,
+  reserveActionSpace,
   className,
   headerClassName,
 }: FieldContainerProps) => {
@@ -51,9 +59,19 @@ const FieldContainer = ({
         "flex flex-col w-full min-w-0 gap-[var(--field-container-row-gap)]"
       )}
     >
-      {isHorizontal && action && (
-        <div className="flex justify-end w-full">{action}</div>
-      )}
+      {/* Horizontal layout has no header row to hold the action. With
+          `reserveActionSpace` a fixed-height zone above the field is always
+          reserved — the action toggles inside it without shifting the field,
+          so a group of fields keeps uniform spacing. Otherwise (default) the
+          action row is rendered only when an `action` is actually present. */}
+      {isHorizontal &&
+        (reserveActionSpace ? (
+          <div className="flex justify-end w-full h-[var(--field-container-action-height)]">
+            {action}
+          </div>
+        ) : (
+          action && <div className="flex justify-end w-full">{action}</div>
+        ))}
       <div
         className={cn(
           "flex w-full",

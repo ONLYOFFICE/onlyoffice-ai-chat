@@ -199,6 +199,7 @@ export const ModelConfigForm = ({
       <FieldContainer
         header={t("Provider")}
         isHorizontal={isHorizontal}
+        reserveActionSpace
         className={
           isHorizontal
             ? "mb-[var(--model-config-form-field-margin-bottom)]"
@@ -273,6 +274,7 @@ export const ModelConfigForm = ({
           }
           header={t("APIKey")}
           isHorizontal={isHorizontal}
+          reserveActionSpace
           action={
             getApiKeyLink(values.provider) ? (
               <Link
@@ -282,9 +284,7 @@ export const ModelConfigForm = ({
               >
                 {t("GetAPIKey")}
               </Link>
-            ) : (
-              <div className="h-[var(--model-config-form-action-height)]" />
-            )
+            ) : undefined
           }
           error={errors?.key}
         >
@@ -309,6 +309,7 @@ export const ModelConfigForm = ({
           }
           header={t("BaseURL")}
           isHorizontal={isHorizontal}
+          reserveActionSpace
           error={errors?.url}
         >
           <Input
@@ -326,6 +327,7 @@ export const ModelConfigForm = ({
         className={isHorizontal ? "mb-[10px]" : ""}
         header={t("Model")}
         isHorizontal={isHorizontal}
+        reserveActionSpace
       >
         <ComboBox
           className="w-full"
@@ -352,6 +354,7 @@ export const ModelConfigForm = ({
         }
         header={t("ProfileName")}
         isHorizontal={isHorizontal}
+        reserveActionSpace
         error={errors?.name}
       >
         <Input

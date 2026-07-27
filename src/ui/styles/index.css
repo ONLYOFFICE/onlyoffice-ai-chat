@@ -237,6 +237,10 @@
   --field-container-label-width: 160px;
   --field-container-error-height: 20px;
   --field-container-error-max-width: 350px;
+  /* Fixed action zone reserved above every field in the horizontal layout, so
+     the action (e.g. "Get API key") toggles inside it without shifting the
+     field spacing. Vertical layout keeps the action inline in the header. */
+  --field-container-action-height: 20px;
 
   /* Button geometry (its colors live in the theme files as `--button-*`).
      Height, minimum width, horizontal padding, corner radius, and the size of
@@ -304,13 +308,11 @@
      `--model-config-form-field-margin-bottom` is the extra bottom margin fields
      get in the horizontal layout; `--model-config-form-last-field-margin-bottom`
      is the last field's bottom margin in the vertical layout;
-     `--model-config-form-action-height` reserves the field action row height;
      `--model-config-form-capability-gap` spaces the model capability badges.
      The tooltip tokens style the "Finish AI setup" popover. */
   --model-config-form-gap: 8px;
   --model-config-form-field-margin-bottom: 10px;
   --model-config-form-last-field-margin-bottom: 8px;
-  --model-config-form-action-height: 20px;
   --model-config-form-capability-gap: 2px;
   --model-config-form-tooltip-padding: 16px;
   --model-config-form-tooltip-gap: 8px;
