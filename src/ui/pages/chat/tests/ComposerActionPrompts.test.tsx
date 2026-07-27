@@ -227,6 +227,7 @@ vi.mock("../../../../shared/utils", () => ({
 }));
 
 import { ComposerActionPrompts } from "../sub-components/ComposerActionPrompts";
+import { WidgetConfigProvider } from "../../../../widget-config";
 
 describe("ComposerActionPrompts", () => {
   beforeEach(() => {
@@ -698,6 +699,73 @@ describe("ComposerActionPrompts", () => {
       const container = confirmText.closest("div[class*='flex']")!;
       fireEvent.keyDown(container, { key: "Enter" });
       expect(mockRemoveFolder).toHaveBeenCalledWith("f1");
+    });
+  });
+
+  describe("built-in prompts (host suggestions)", () => {
+    const renderWithSuggestions = (
+      suggestions: { name: string; prompt: string }[]
+    ) =>
+      render(
+        <WidgetConfigProvider config={{ suggestions }}>
+          <ComposerActionPrompts />
+        </WidgetConfigProvider>
+      );
+
+    it("renders the built-in-prompts folder when only suggestions exist", () => {
+      renderWithSuggestions([{ name: "S1", prompt: "P1" }]);
+      expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
+      const items = mockDropdownItems as {
+        text: string;
+        subMenu?: { text: string; onClick: () => void }[];
+      }[];
+      expect(items).toHaveLength(1);
+      expect(items[0].text).toBe("built-in-prompts");
+      expect(items[0].subMenu).toHaveLength(1);
+      items[0].subMenu![0].onClick();
+      expect(mockSetText).toHaveBeenCalledWith("P1");
+    });
+
+    it("built-in rows are read-only: no context menu, no folder actions", () => {
+      renderWithSuggestions([
+        { name: "S1", prompt: "P1" },
+        { name: "S2", prompt: "P2" },
+      ]);
+      const items = mockDropdownItems as {
+        text: string;
+        subMenu?: { text: string; subMenu?: unknown }[];
+      }[];
+      const folder = items[items.length - 1];
+      expect(folder.text).toBe("built-in-prompts");
+      const rows = folder.subMenu!;
+      expect(rows.map((r) => r.text)).toEqual(["S1", "S2"]);
+      // No per-row context menu (edit / move / delete)...
+      for (const row of rows) expect(row.subMenu).toBeUndefined();
+      // ...and no rename/delete entries on the folder itself.
+      expect(rows.some((r) => r.text === "RenameFolder")).toBe(false);
+      expect(rows.some((r) => r.text === "DeleteFolder")).toBe(false);
+    });
+
+    it("appends after user folders and separates from root prompts", () => {
+      mockPrompts = [{ id: "1", name: "Prompt A", text: "a", folderId: null }];
+      mockFolders = [{ id: "f1", name: "Folder 1" }];
+      renderWithSuggestions([{ name: "S1", prompt: "P1" }]);
+      const items = mockDropdownItems as {
+        text: string;
+        isSeparator?: boolean;
+      }[];
+      // prompt + separator + user folder + built-in folder
+      expect(items).toHaveLength(4);
+      expect(items[1].isSeparator).toBe(true);
+      expect(items[3].text).toBe("built-in-prompts");
+    });
+
+    it("skips malformed suggestions and hides the folder when none are valid", () => {
+      const { container } = renderWithSuggestions([
+        { name: "", prompt: "P" },
+        { name: "N", prompt: "" },
+      ]);
+      expect(container.innerHTML).toBe("");
     });
   });
 });

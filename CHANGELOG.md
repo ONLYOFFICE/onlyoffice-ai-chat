@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.182
+
+### Added
+
+- Host-configured `suggestions` now also appear in the composer's prompts dropdown as a virtual folder named `built-in-prompts` (fixed identifier, not translated; exported as `BUILT_IN_PROMPTS_FOLDER`). Clicking an entry inserts its prompt into the composer. The folder and its entries are read-only: no edit/move/delete on the rows, no rename/delete on the folder, and regular prompts can't be moved into it. The prompts button is shown even when only suggestions exist.
+
 ## 0.4.181
 
 ### Fixed
