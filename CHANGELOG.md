@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.179
+
+### Fixed
+
+- Anthropic replies are no longer truncated when Extended Thinking is on. The thinking budget (10k) is carved out of `max_tokens`, but the cap was set to 16000 — leaving only ~6k tokens for the visible reply (vs 30000 without thinking). Thinking requests now use `max_tokens: 32000` (the smallest max-output limit among thinking-capable Claude models, safe everywhere), giving the reply 22k tokens of headroom. Applies to both streaming chat and one-shot actions; non-thinking requests are unchanged.
+
 ## 0.4.178
 
 ### Fixed
