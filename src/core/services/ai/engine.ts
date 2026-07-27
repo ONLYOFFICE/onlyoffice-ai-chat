@@ -76,6 +76,25 @@ import type {
  *   system prompt against the `Default` profile. Mode (stream vs
  *   one-shot) chosen at call time via `isStream`.
  */
+// Stamp the round's context scope into the user message before it is
+// persisted: the message blob is the only per-thread storage that needs no
+// backend schema change, so the conversation's context survives on the
+// thread itself. The message store derives the thread's context back from
+// the last user message when a thread is re-opened.
+function stampThreadContext(
+  message: ThreadMessageLike,
+  contextEntityId: string | undefined
+): ThreadMessageLike {
+  if (!contextEntityId) return message;
+  return {
+    ...message,
+    metadata: {
+      ...message.metadata,
+      custom: { ...message.metadata?.custom, contextEntityId },
+    },
+  };
+}
+
 export class AIEngine {
   private readonly deps: AIEngineDeps;
   private readonly assignments: AssignmentsEngine;
@@ -180,6 +199,10 @@ export class AIEngine {
 
   async *sendWithStream(input: SendStreamInput): AsyncGenerator<ChatEvent> {
     const contextScope = input.contextEntityId ?? input.entityId;
+    const userMessage = stampThreadContext(
+      input.userMessage,
+      input.contextEntityId
+    );
     const { profileId, profile } = await this.resolveChatProfile(
       input.profileId,
       contextScope
@@ -198,12 +221,12 @@ export class AIEngine {
       ).filter(hasSendableContent);
       storedUserMessage = await this.threads.appendUserMessage(
         threadId,
-        input.userMessage,
+        userMessage,
         profileId
       );
       const messageId = storedUserMessage.id!;
       await this.attachments.linkToMessage(
-        extractRefIdsFromMessage(input.userMessage),
+        extractRefIdsFromMessage(userMessage),
         messageId,
         threadId
       );
@@ -225,12 +248,12 @@ export class AIEngine {
       threadId = placeholder.threadId;
       const stored = await this.deps.storage.messages.create(
         threadId,
-        input.userMessage
+        userMessage
       );
       storedUserMessage = stored;
       if (stored.id) {
         await this.attachments.linkToMessage(
-          extractRefIdsFromMessage(input.userMessage),
+          extractRefIdsFromMessage(userMessage),
           stored.id,
           threadId
         );
@@ -257,7 +280,7 @@ export class AIEngine {
 
       titlePromise = generateTitle({
         profile,
-        messages: [input.userMessage],
+        messages: [userMessage],
         fetch: this.pickFetch(profile),
       })
         .then((t) => t || "New chat")
@@ -270,7 +293,7 @@ export class AIEngine {
       input.actionArgs?.tools ?? [],
       contextScope,
       {
-        attachmentId: collectRefIds([...priorMessages, input.userMessage]),
+        attachmentId: collectRefIds([...priorMessages, userMessage]),
       },
       this.getSystemServerTypes(),
       this.isBuiltinImageToolDisabled()
@@ -282,7 +305,7 @@ export class AIEngine {
       ...input.actionArgs,
       profile,
       messages: await resolveAttachmentRefs(
-        [...priorMessages, input.userMessage],
+        [...priorMessages, userMessage],
         this.deps.storage.attachments
       ),
       tools: toolCtx.mergedTools,

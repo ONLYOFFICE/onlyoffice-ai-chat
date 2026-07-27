@@ -315,6 +315,39 @@ describe("AIEngine.sendWithStream entity scope", () => {
       "local-folder"
     );
   });
+
+  it("stamps contextEntityId into the persisted user message", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage, messages } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      entityId: "local-folder",
+      contextEntityId: "agent-room",
+    })) {
+      // drain
+    }
+    const storedUser = messages.find((m) => m.role === "user");
+    expect(storedUser?.metadata?.custom?.["contextEntityId"]).toBe(
+      "agent-room"
+    );
+  });
+
+  it("does not stamp the user message without contextEntityId", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage, messages } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      entityId: "e1",
+    })) {
+      // drain
+    }
+    const storedUser = messages.find((m) => m.role === "user");
+    expect(storedUser?.metadata).toBeUndefined();
+  });
 });
 
 describe("AIEngine.regenerateStream", () => {
