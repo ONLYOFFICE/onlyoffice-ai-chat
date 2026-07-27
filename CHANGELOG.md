@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.181
+
+### Fixed
+
+- Adding a model no longer leaves the save button spinning forever when the profile was actually created (e.g. adding an Ollama profile — persisted server-side, but the widget list only showed it after a page refresh). Any failure escaping the create/update round trip (non-JSON or empty response body, non-2xx status, a response without the `profile` field) threw between the form's `isSubmitting(true/false)` calls, so the spinner never reset and the new profile was never inserted into the store.
+  - `addProfile` / `editProfile` never throw anymore: transport and response-shape failures are normalized to a form error.
+  - A `success` response without a profile body now resyncs the list from storage, so the model appears immediately.
+  - The Add/Edit forms reset their spinner in a `finally` and surface unexpected errors in the form instead of an unhandled rejection.
+
 ## 0.4.180
 
 ### Fixed

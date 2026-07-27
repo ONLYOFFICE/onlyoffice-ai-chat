@@ -224,8 +224,35 @@ export function createProfilesStore(deps: {
       },
 
       addProfile: async (data) => {
-        const result = await api.profiles.create(data);
-        if (!result.success) return result.error;
+        // Never let a transport / response-shape failure escape as a
+        // rejection: the caller's `await` sits between the form's
+        // isSubmitting(true/false) calls, and an escaped throw leaves the
+        // save button spinning forever — while the profile may already be
+        // persisted server-side. Normalize every failure to TErrorData.
+        let result: Awaited<ReturnType<typeof api.profiles.create>>;
+        try {
+          result = await api.profiles.create(data);
+        } catch (e) {
+          return {
+            field: "name",
+            message: e instanceof Error ? e.message : String(e),
+          };
+        }
+        if (!result || result.success !== true) {
+          return (
+            result?.error ?? {
+              field: "name",
+              message: "Profile create failed: unexpected response",
+            }
+          );
+        }
+        if (!result.profile) {
+          // Persisted server-side, but the host's route returned no
+          // profile body — resync from storage so the list still shows it.
+          await get().reloadProfiles();
+          await get().reloadModelAssignment();
+          return true;
+        }
         const profile = backfillCapabilities([result.profile])[0];
         const wasFirst = get().profiles.length === 0;
         set((state) => ({
@@ -240,8 +267,25 @@ export function createProfilesStore(deps: {
       },
 
       editProfile: async (profile) => {
-        const result = await api.profiles.update(profile);
-        if (!result.success) return result.error;
+        // Same containment as addProfile — a rejection here would strand
+        // the edit form's spinner.
+        let result: Awaited<ReturnType<typeof api.profiles.update>>;
+        try {
+          result = await api.profiles.update(profile);
+        } catch (e) {
+          return {
+            field: "name",
+            message: e instanceof Error ? e.message : String(e),
+          };
+        }
+        if (!result || result.success !== true) {
+          return (
+            result?.error ?? {
+              field: "name",
+              message: "Profile update failed: unexpected response",
+            }
+          );
+        }
         backfillCapabilities([profile]);
         set((state) => {
           const update = (p: Profile | null) =>

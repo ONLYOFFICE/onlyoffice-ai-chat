@@ -211,6 +211,52 @@ describe("createProfilesStore", () => {
     expect(s.getState().profiles).toEqual([]);
   });
 
+  it("addProfile returns TErrorData instead of throwing when the transport rejects", async () => {
+    const deps = makeDeps();
+    deps.api.profiles.create = vi
+      .fn()
+      .mockRejectedValue(new Error("HTTP 502: Bad Gateway"));
+    const s = createProfilesStore(deps);
+    const result = await s.getState().addProfile(profile("1"));
+    expect(result).toEqual({
+      field: "name",
+      message: "HTTP 502: Bad Gateway",
+    });
+  });
+
+  it("addProfile returns TErrorData on a malformed response", async () => {
+    const deps = makeDeps();
+    // A host route that answers with a bare object instead of the
+    // { success, profile } envelope.
+    deps.api.profiles.create = vi.fn().mockResolvedValue({ id: "1" });
+    const s = createProfilesStore(deps);
+    const result = await s.getState().addProfile(profile("1"));
+    expect(result).toMatchObject({ field: "name" });
+    expect(s.getState().profiles).toEqual([]);
+  });
+
+  it("addProfile resyncs from storage when success carries no profile body", async () => {
+    const p1 = profile("1");
+    const deps = makeDeps([p1]);
+    deps.api.profiles.create = vi.fn().mockResolvedValue({ success: true });
+    const s = createProfilesStore(deps);
+    const result = await s.getState().addProfile(p1);
+    expect(result).toBe(true);
+    // The persisted profile was recovered via reloadProfiles.
+    expect(deps.api.profiles.list).toHaveBeenCalled();
+    expect(s.getState().profiles).toEqual([p1]);
+  });
+
+  it("editProfile returns TErrorData instead of throwing when the transport rejects", async () => {
+    const orig = profile("1");
+    const deps = makeDeps();
+    deps.api.profiles.update = vi.fn().mockRejectedValue(new Error("boom"));
+    const s = createProfilesStore(deps);
+    s.setState({ profiles: [orig] });
+    const result = await s.getState().editProfile(orig);
+    expect(result).toEqual({ field: "name", message: "boom" });
+  });
+
   it("editProfile updates list and refs across all role slots", async () => {
     const orig = profile("1", { name: "old" });
     const updated = profile("1", { name: "new" });
