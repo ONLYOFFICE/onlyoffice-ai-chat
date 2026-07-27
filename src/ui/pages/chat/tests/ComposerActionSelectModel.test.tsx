@@ -311,9 +311,46 @@ describe("SelectModel profilePickerActions", () => {
     );
     const items = lastComboBoxProps.items as DropDownItemProps[];
     items[0].onClick(new Event("click"));
-    expect(mockSetSessionChatProfile).toHaveBeenCalledWith({
-      id: "1",
-      name: "GPT-4",
+    expect(mockSetSessionChatProfile).toHaveBeenCalledWith(
+      { id: "1", name: "GPT-4" },
+      { persistAssignment: true }
+    );
+  });
+
+  it("opts into persisting the Chat assignment on an explicit profile pick", () => {
+    setupStores({
+      profiles: [
+        { id: "1", name: "GPT-4" },
+        { id: "2", name: "Claude" },
+      ],
+      currentProfile: { id: "1", name: "GPT-4" },
     });
+    render(
+      <WidgetConfigProvider config={{}}>
+        <SelectModel />
+      </WidgetConfigProvider>
+    );
+    const items = lastComboBoxProps.items as DropDownItemProps[];
+    items[1].onClick(new Event("click"));
+    expect(mockSetSessionChatProfile).toHaveBeenCalledWith(
+      { id: "2", name: "Claude" },
+      { persistAssignment: true }
+    );
+  });
+
+  it("does not opt into persisting on the initial auto-select", () => {
+    setupStores({
+      profiles: [{ id: "1", name: "GPT-4" }],
+      currentProfile: null,
+    });
+    render(
+      <WidgetConfigProvider config={{}}>
+        <SelectModel />
+      </WidgetConfigProvider>
+    );
+    expect(mockSetSessionChatProfile).toHaveBeenCalledWith(
+      { id: "1", name: "GPT-4" },
+      undefined
+    );
   });
 });

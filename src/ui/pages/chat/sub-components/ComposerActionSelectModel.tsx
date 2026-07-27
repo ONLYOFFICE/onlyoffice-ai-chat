@@ -29,7 +29,7 @@ const SelectModel = () => {
   );
 
   const onSelectProfile = React.useCallback(
-    (profile: Profile) => {
+    (profile: Profile, opts?: { persistAssignment?: boolean }) => {
       // Compare the name too: the same profile can be active under an
       // action's alias (e.g. an agent name), and re-picking the plain
       // profile row must restore its own name.
@@ -38,7 +38,7 @@ const SelectModel = () => {
         currentProfile?.name === profile.name
       )
         return;
-      setSessionChatProfile(profile);
+      setSessionChatProfile(profile, opts);
     },
     [currentProfile, setSessionChatProfile]
   );
@@ -54,9 +54,11 @@ const SelectModel = () => {
       text: p.name,
       id: p.id,
       onClick: () => {
-        onSelectProfile(p);
         // Explicit user pick only — the auto-select effect above goes
-        // through onSelectProfile directly and must not notify the host.
+        // through onSelectProfile directly and must neither notify the
+        // host nor touch the persisted Chat assignment. The store skips
+        // the persist when the widget is entity-scoped.
+        onSelectProfile(p, { persistAssignment: true });
         onProfilePickerSelect?.(p);
       },
       // Name is compared too so the plain profile row is not marked while

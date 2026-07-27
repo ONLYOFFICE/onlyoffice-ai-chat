@@ -1,6 +1,7 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../../app-context";
 import { ActionType } from "../../shared/action-type";
+import logger from "../../shared/logger";
 import { inferCapabilities } from "../../capabilities";
 import type { StoreKeys } from "../../config";
 import type { TErrorData } from "../../shared/error-data";
@@ -49,7 +50,17 @@ export interface ProfilesStoreState {
   setImageGenerationProfile: (profile: Profile | null) => Promise<void>;
   setOcrProfile: (profile: Profile | null) => Promise<void>;
   setVisionProfile: (profile: Profile | null) => Promise<void>;
-  setSessionChatProfile: (profile: Profile | null) => void;
+  /**
+   * Session-scoped chat profile pick (composer model picker, thread
+   * open). `persistAssignment: true` — used by the composer's explicit
+   * pick — additionally mirrors the pick into the persisted Chat
+   * assignment, but only when the widget runs in the global scope (no
+   * `entityId`); an entity-scoped widget keeps picks session-local.
+   */
+  setSessionChatProfile: (
+    profile: Profile | null,
+    opts?: { persistAssignment?: boolean }
+  ) => void;
   toggleExtendedThinking: () => Promise<void>;
   reloadExtendedThinking: () => Promise<void>;
 }
@@ -351,7 +362,7 @@ export function createProfilesStore(deps: {
       setOcrProfile: makeTaskSetter("ocrProfile", "ocr"),
       setVisionProfile: makeTaskSetter("visionProfile", "vision"),
 
-      setSessionChatProfile: (profile) => {
+      setSessionChatProfile: (profile, opts) => {
         set({ sessionChatProfile: profile });
         ctx.callbacksManager.emit("onCurrentChatProfileUpdated", {
           profileId: profile?.id ?? null,
@@ -359,6 +370,19 @@ export function createProfilesStore(deps: {
           providerType: profile?.providerType,
           modelId: profile?.modelId,
         });
+        // Mirror an explicit composer pick into the persisted Chat
+        // assignment — global scope only: with an `entityId` the pick
+        // stays session-local so an entity-scoped widget never rewrites
+        // the global assignment. Fire-and-forget: the session switch
+        // above is already applied and must not wait on (or be undone
+        // by) the persistence write.
+        if (opts?.persistAssignment && profile && !entity()) {
+          void get()
+            .setChatProfile(profile)
+            .catch((e) =>
+              logger.error("Failed to persist chat model assignment:", e)
+            );
+        }
       },
 
       toggleExtendedThinking: async () => {

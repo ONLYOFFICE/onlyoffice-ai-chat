@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.177
+
+### Changed
+
+- Picking a model in the chat composer now also updates the persisted Chat model assignment ("AI chat" in model settings) — only when the widget runs without an `entityId`; an entity-scoped widget keeps composer picks session-local. The initial auto-select, restoring a thread's model on open, and host-defined profile-picker actions (agent aliases) remain session-only. The host receives the usual `onModelAssignmentUpdated` (`task: "chat"`) and `onCurrentChatProfileUpdated` (`scope: "persisted"`) events.
+
 ## 0.4.176
 
 ### Fixed

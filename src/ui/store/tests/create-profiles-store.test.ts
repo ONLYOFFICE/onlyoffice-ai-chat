@@ -48,6 +48,9 @@ function makeDeps(initialProfiles: Profile[] = []) {
   return { ctx, api, keys, emit };
 }
 
+/** Drain the fire-and-forget persistence chain inside setSessionChatProfile. */
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
 describe("createProfilesStore", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -362,6 +365,44 @@ describe("createProfilesStore", () => {
       "onCurrentChatProfileUpdated",
       expect.objectContaining({ scope: "session", profileId: "1" })
     );
+  });
+
+  it("setSessionChatProfile does not touch the Chat assignment by default", async () => {
+    const deps = makeDeps();
+    const s = createProfilesStore(deps);
+    s.getState().setSessionChatProfile(profile("1"));
+    await flush();
+    expect(deps.api.assignments.assign).not.toHaveBeenCalled();
+    expect(s.getState().chatProfile).toBeNull();
+  });
+
+  it("setSessionChatProfile persists the Chat assignment on explicit pick without entityId", async () => {
+    const deps = makeDeps();
+    const s = createProfilesStore(deps);
+    const p = profile("1");
+    s.getState().setSessionChatProfile(p, { persistAssignment: true });
+    await flush();
+    expect(deps.api.assignments.assign).toHaveBeenCalledWith("Chat", "1");
+    expect(s.getState().chatProfile).toEqual(p);
+    expect(deps.emit).toHaveBeenCalledWith(
+      "onModelAssignmentUpdated",
+      expect.objectContaining({ task: "chat", profileId: "1" })
+    );
+    expect(deps.emit).toHaveBeenCalledWith(
+      "onCurrentChatProfileUpdated",
+      expect.objectContaining({ scope: "persisted", profileId: "1" })
+    );
+  });
+
+  it("setSessionChatProfile keeps the pick session-local when entityId is set", async () => {
+    const deps = makeDeps();
+    const s = createProfilesStore({ ...deps, getEntityId: () => "agent-7" });
+    const p = profile("1");
+    s.getState().setSessionChatProfile(p, { persistAssignment: true });
+    await flush();
+    expect(deps.api.assignments.assign).not.toHaveBeenCalled();
+    expect(s.getState().chatProfile).toBeNull();
+    expect(s.getState().sessionChatProfile).toEqual(p);
   });
 
   it("toggleExtendedThinking flips and persists", async () => {
