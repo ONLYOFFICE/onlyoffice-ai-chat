@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.176
+
+### Fixed
+
+- The first message of a new thread no longer reaches the provider with the image as a raw ref marker instead of inline base64. The thread-title request (`generateTitle`) was the only provider-bound call built from the un-hydrated user message — and it fires exactly once per thread, on the first message (built-in providers' safety guard then dropped the image, so the title model never saw it; a host-registered provider received the ref JSON verbatim). All three title paths now resolve attachment refs before the provider call: `AIEngine.sendWithStream`, `ThreadsEngine.openOrCreate`, and `ThreadsEngine.regenerateTitle` (which reads the stored first message — persisted in ref form).
+- `sendWithStream` shares a single hydration pass between the title and chat requests, so a remote storage adapter pays one `readManyByIds` round trip per send instead of two.
+
 ## 0.4.173
 
 ### Fixed

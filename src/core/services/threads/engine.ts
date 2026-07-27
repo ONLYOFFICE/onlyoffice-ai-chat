@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Profile, Thread } from "../../types";
+import { resolveAttachmentRefs } from "../../actions/attachment-resolution";
 import { generateTitle } from "../../actions/title";
 import type {
   OpenOrCreateInput,
@@ -67,9 +68,15 @@ export class ThreadsEngine {
       return { threadId: input.threadId, title: "", priorMessages };
     }
 
+    // Hydrate image/file refs before the provider call — `firstMessage`
+    // arrives in its persisted form, where attachments are lightweight
+    // ref markers rather than inline base64.
     const generated = await generateTitle({
       profile: input.profile,
-      messages: [input.firstMessage],
+      messages: await resolveAttachmentRefs(
+        [input.firstMessage],
+        this.deps.storage.attachments
+      ),
     });
     const title = generated || "New chat";
     const thread = await this.deps.storage.threads.create(
@@ -156,7 +163,15 @@ export class ThreadsEngine {
         `Thread has no messages to derive a title from: ${threadId}`
       );
     }
-    const generated = await generateTitle({ profile, messages: [first] });
+    // Stored messages carry attachments as ref markers — hydrate them
+    // into inline base64 before the provider call.
+    const generated = await generateTitle({
+      profile,
+      messages: await resolveAttachmentRefs(
+        [first],
+        this.deps.storage.attachments
+      ),
+    });
     const title = generated || "New chat";
     await this.deps.storage.threads.update(threadId, title);
     await this.deps.storage.threads.touch(threadId, Date.now());

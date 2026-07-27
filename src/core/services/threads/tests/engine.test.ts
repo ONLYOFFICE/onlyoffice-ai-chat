@@ -125,6 +125,17 @@ function makeStorage(
         messages.delete(tid);
       }),
     },
+    attachments: {
+      // Resolves any ref id to an inlined base64 data URL — the host
+      // adapter's job in production.
+      readManyByIds: vi.fn(async (ids: string[]) =>
+        ids.map((id) => ({
+          id,
+          title: "img",
+          base64: "data:image/png;base64,AAAA",
+        }))
+      ),
+    },
   } as unknown as StorageAdapter;
 
   return {
@@ -153,6 +164,30 @@ afterEach(() => {
 const userMessage: ThreadMessageLike = {
   role: "user",
   content: [{ type: "text", text: "hi" }],
+};
+
+/** User message whose image is a persisted ref marker, not inline base64. */
+const imageRefMessage: ThreadMessageLike = {
+  role: "user",
+  content: [
+    {
+      type: "image",
+      image: JSON.stringify({ ref: "att-1", title: "img", kind: "image" }),
+      name: "img",
+    } as unknown as Extract<
+      Exclude<ThreadMessageLike["content"], string>[number],
+      { type: "image" }
+    >,
+    { type: "text", text: "what is this?" },
+  ],
+};
+
+/** Read the image value the provider actually received for the title call. */
+const sentImage = (): string | undefined => {
+  const sent = sendMessageSyncMock.mock.calls[0][0]
+    .messages as ThreadMessageLike[];
+  const part = (sent[0].content as Array<{ type: string; image?: string }>)[0];
+  return part.image;
 };
 
 describe("ThreadsEngine.create", () => {
@@ -215,6 +250,18 @@ describe("ThreadsEngine.openOrCreate", () => {
       firstMessage: userMessage,
     });
     expect(result.title).toBe("New chat");
+  });
+
+  it("hydrates image refs before the title call", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Auto Title");
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    await engine.openOrCreate({
+      profile,
+      profileId: "p1",
+      firstMessage: imageRefMessage,
+    });
+    expect(sentImage()).toBe("data:image/png;base64,AAAA");
   });
 });
 
@@ -293,6 +340,17 @@ describe("ThreadsEngine.regenerateTitle", () => {
     const engine = new ThreadsEngine({ storage });
     const title = await engine.regenerateTitle("t1", profile);
     expect(title).toBe("New chat");
+  });
+
+  it("hydrates image refs from the stored first message", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Regenerated");
+    const { storage } = makeStorage({
+      threads: [{ threadId: "t1", title: "Old" }],
+      messagesByThread: { t1: [imageRefMessage] },
+    });
+    const engine = new ThreadsEngine({ storage });
+    await engine.regenerateTitle("t1", profile);
+    expect(sentImage()).toBe("data:image/png;base64,AAAA");
   });
 
   it("throws when the thread has no user messages", async () => {

@@ -278,13 +278,9 @@ export class AIEngine {
         };
       }
 
-      titlePromise = generateTitle({
-        profile,
-        messages: [userMessage],
-        fetch: this.pickFetch(profile),
-      })
-        .then((t) => t || "New chat")
-        .catch(() => "New chat");
+      // The real-title request is kicked off below, after attachment
+      // refs are hydrated — it shares the resolved messages with the
+      // chat request instead of paying a second attachments read.
     }
 
     const toolCtx = await buildToolContext(
@@ -301,13 +297,33 @@ export class AIEngine {
 
     const proxiedFetch = this.pickFetch(profile);
 
+    // Single hydration point for the round: image/file refs become inline
+    // base64 here, and BOTH provider-bound requests below (title + chat)
+    // consume the resolved list. Title generation is the only request
+    // built from the bare user message, and it fires exactly once per
+    // thread — on the first message — so without this it would ship the
+    // ref JSON instead of the image.
+    const resolvedMessages = await resolveAttachmentRefs(
+      [...priorMessages, userMessage],
+      this.deps.storage.attachments
+    );
+
+    if (isNewThread) {
+      // priorMessages is empty on a new thread — the last (only) element
+      // is the hydrated user message.
+      titlePromise = generateTitle({
+        profile,
+        messages: [resolvedMessages[resolvedMessages.length - 1]],
+        fetch: proxiedFetch,
+      })
+        .then((t) => t || "New chat")
+        .catch(() => "New chat");
+    }
+
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
       profile,
-      messages: await resolveAttachmentRefs(
-        [...priorMessages, userMessage],
-        this.deps.storage.attachments
-      ),
+      messages: resolvedMessages,
       tools: toolCtx.mergedTools,
       fetch: proxiedFetch,
     };

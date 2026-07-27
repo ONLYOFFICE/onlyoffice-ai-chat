@@ -130,6 +130,7 @@ function makeStorage() {
       ),
       create: vi.fn(),
       readById: vi.fn(async () => null),
+      updateManyByIds: vi.fn(),
     },
   } as unknown as StorageAdapter;
   return {
@@ -197,6 +198,42 @@ describe("AIEngine.sendWithStream", () => {
         expect.objectContaining(final),
       ])
     );
+  });
+
+  it("hydrates image refs before the first-message title request", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Titled");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const imageRefMessage: ThreadMessageLike = {
+      role: "user",
+      content: [
+        {
+          type: "image",
+          image: JSON.stringify({
+            ref: "att-1",
+            title: "img",
+            kind: "image",
+          }),
+          name: "img",
+        } as unknown as Extract<
+          Exclude<ThreadMessageLike["content"], string>[number],
+          { type: "image" }
+        >,
+        { type: "text", text: "what is this?" },
+      ],
+    };
+    for await (const _ of engine.sendWithStream({
+      userMessage: imageRefMessage,
+    })) {
+      // drain
+    }
+    const sent = sendMessageSyncMock.mock.calls[0][0]
+      .messages as ThreadMessageLike[];
+    const part = (
+      sent[0].content as Array<{ type: string; image?: string }>
+    )[0];
+    expect(part.image).toBe("data:image/png;base64,AAAA");
   });
 
   it("uses an injected ThreadsEngine when provided", async () => {
