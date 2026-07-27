@@ -288,6 +288,26 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           idleTimer = null;
         }
       };
+      // Release the round's busy state. Fired on the terminal event
+      // (message-end / message-incomplete) — everything the engine may
+      // still yield after it is out-of-band metadata (`thread-title` for
+      // new threads), so the composer must unblock immediately instead of
+      // holding the loader hostage to the title request. The loop keeps
+      // consuming the stream tail. Guarded so the `finally` of THIS round
+      // (which may run after the user already started a new round) never
+      // clobbers the newer round's flags.
+      let released = false;
+      const releaseBusy = () => {
+        if (released) return;
+        released = true;
+        if (idleTimer !== null) {
+          clearTimeout(idleTimer);
+          idleTimer = null;
+        }
+        setIsStreamRunning(false);
+        setIsRequestRunning(false);
+        setAbortController(undefined);
+      };
 
       let assistantPlaceholderAdded = options?.hasAssistantPlaceholder ?? false;
       let lastDisplayedMessage: ThreadMessageLike | null = null;
@@ -428,6 +448,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
                 message: extractErrorMessage(status?.error),
               },
             });
+            // Terminal for the round — unblock the composer; the loop
+            // keeps draining the tail (`thread-title`) in the background.
+            releaseBusy();
             continue;
           }
 
@@ -482,6 +505,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               messageUID: event.messageId,
               message: display,
             });
+            // The reply is complete — release the busy state now. The
+            // engine may still yield a trailing `thread-title` for new
+            // threads; the loop below keeps reading it without keeping
+            // the composer locked.
+            releaseBusy();
           }
         }
 
@@ -516,13 +544,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           });
         }
       } finally {
-        if (idleTimer !== null) {
-          clearTimeout(idleTimer);
-          idleTimer = null;
-        }
-        setIsStreamRunning(false);
-        setIsRequestRunning(false);
-        setAbortController(undefined);
+        // No-op when the terminal event already released this round; the
+        // guard also keeps a late-finishing tail (title still generating
+        // while the user started a new round) from clobbering the newer
+        // round's flags.
+        releaseBusy();
       }
 
       // ---- nested helpers ----

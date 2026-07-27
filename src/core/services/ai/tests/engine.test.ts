@@ -186,9 +186,14 @@ describe("AIEngine.sendWithStream", () => {
       title: "New chat",
     });
     expect(yielded[1].type).toBe("user-message-stored");
-    expect(yielded[2].type).toBe("message-end");
-    expect(yielded[3]).toMatchObject({
-      type: "thread-title",
+    // The generated title is multiplexed into the stream and races the
+    // reply — both tail events arrive, in either order.
+    const tail = yielded.slice(2);
+    expect(tail.map((e) => e.type).sort()).toEqual([
+      "message-end",
+      "thread-title",
+    ]);
+    expect(tail.find((e) => e.type === "thread-title")).toMatchObject({
       title: "My Title",
     });
     expect(threads).toHaveLength(1);
@@ -198,6 +203,116 @@ describe("AIEngine.sendWithStream", () => {
         expect.objectContaining(final),
       ])
     );
+  });
+
+  it("yields the title mid-stream when it resolves before the reply ends", async () => {
+    // Gate the provider stream so the (instant) title must win the race.
+    let openGate!: () => void;
+    const gate = new Promise<void>((r) => (openGate = r));
+    sendMessageSyncMock.mockResolvedValueOnce("Fast Title");
+    const final: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "ok" }],
+    };
+    sendMessageMock.mockReturnValueOnce(
+      (async function* () {
+        await gate;
+        yield { isEnd: true, responseMessage: final };
+      })()
+    );
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const iter = engine.sendWithStream({ userMessage });
+
+    expect((await iter.next()).value).toMatchObject({
+      type: "thread-title",
+      title: "New chat",
+    });
+    expect((await iter.next()).value.type).toBe("user-message-stored");
+    // Reply still streaming (gated) — the title arrives anyway.
+    expect((await iter.next()).value).toMatchObject({
+      type: "thread-title",
+      title: "Fast Title",
+    });
+    expect(storage.threads.update).toHaveBeenCalledWith(
+      expect.any(String),
+      "Fast Title"
+    );
+
+    openGate();
+    expect((await iter.next()).value.type).toBe("message-end");
+    expect((await iter.next()).done).toBe(true);
+  });
+
+  it("closes immediately and keeps the default title when the title outlives the reply", async () => {
+    let resolveTitle!: (t: string) => void;
+    sendMessageSyncMock.mockReturnValueOnce(
+      new Promise<string>((r) => (resolveTitle = r))
+    );
+    const final: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "ok" }],
+    };
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([{ isEnd: true, responseMessage: final }])
+    );
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const iter = engine.sendWithStream({ userMessage });
+
+    expect((await iter.next()).value).toMatchObject({
+      type: "thread-title",
+      title: "New chat",
+    });
+    expect((await iter.next()).value.type).toBe("user-message-stored");
+    expect((await iter.next()).value.type).toBe("message-end");
+    // The round is over — no waiting for the title, the generator ends.
+    expect((await iter.next()).done).toBe(true);
+
+    // A late resolution is discarded: the placeholder name is final.
+    resolveTitle("Late Title");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(storage.threads.update).not.toHaveBeenCalled();
+  });
+
+  it("still delivers a late title when the round pauses on a tool call", async () => {
+    let resolveTitle!: (t: string) => void;
+    sendMessageSyncMock.mockReturnValueOnce(
+      new Promise<string>((r) => (resolveTitle = r))
+    );
+    // Terminal message with an unresolved tool call — the engine pauses
+    // the round with `tool-call-pending` instead of `message-end`.
+    const paused: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        {
+          type: "tool-call",
+          toolName: "host_tool",
+          toolCallId: "tc1",
+          args: {},
+        },
+      ] as unknown as Exclude<ThreadMessageLike["content"], string>,
+    };
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([{ isEnd: true, responseMessage: paused }])
+    );
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const iter = engine.sendWithStream({ userMessage });
+
+    expect((await iter.next()).value.type).toBe("thread-title");
+    expect((await iter.next()).value.type).toBe("user-message-stored");
+    expect((await iter.next()).value.type).toBe("tool-call-pending");
+
+    // The round isn't over (approval dialog) — the generator stays open
+    // and the title still lands as a trailing event.
+    const tail = iter.next();
+    resolveTitle("Tool Title");
+    expect((await tail).value).toMatchObject({
+      type: "thread-title",
+      title: "Tool Title",
+    });
+    expect((await iter.next()).done).toBe(true);
   });
 
   it("hydrates image refs before the first-message title request", async () => {

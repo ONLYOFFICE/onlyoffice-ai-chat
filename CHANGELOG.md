@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.180
+
+### Fixed
+
+- The loader no longer reappears (and the composer no longer stays locked) after the reply finishes while the auto-generated thread title is still pending. The engine used to await the title only after the chat stream, so a slow or hung title request held the whole round open; the title request has no timeout, so this could hang indefinitely (most visible with single-slot local providers like Ollama/LM Studio, or SDK retry backoff).
+  - The title is now multiplexed into the stream: `thread-title` is yielded between chunks the moment it resolves (the common case — the title request starts before the chat request).
+  - If the reply ends first, the round closes immediately and the thread keeps the default "New chat" title for good — a late title is discarded rather than applied out-of-band. A round paused on a tool call isn't over, so there the title still arrives as a trailing event.
+  - The UI releases its busy state on the terminal event (`message-end` / `message-incomplete`) instead of the generator's end, and keeps draining the stream tail in the background.
+
 ## 0.4.179
 
 ### Fixed
