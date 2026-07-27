@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.183
+
+### Changed
+
+- Attached images are now sent with an explicit `detail: "high"` on both OpenAI transports — chat completions (`image_url.detail`, previously omitted) and the Responses API (previously `"auto"`). This guarantees the tiled high-detail pipeline (input capped at 2048px on the longest side) and prevents OpenAI-compatible backends from falling back to processing the original-size image. Applies to every OpenAI-family provider; Anthropic/Gemini/Mistral have no such parameter.
+
 ## 0.4.182
 
 ### Added

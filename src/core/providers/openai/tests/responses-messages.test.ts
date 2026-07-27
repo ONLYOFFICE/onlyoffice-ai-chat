@@ -55,7 +55,7 @@ describe("openai/responses-messages/convertMessagesToResponses", () => {
       expect(part).toEqual({
         type: "input_image",
         image_url: "data:image/png;base64,AAA",
-        detail: "auto",
+        detail: "high",
       });
     });
   });

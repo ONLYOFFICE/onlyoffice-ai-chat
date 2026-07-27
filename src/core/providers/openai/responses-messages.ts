@@ -60,7 +60,9 @@ const convertUserContent = (
       return {
         type: "input_image",
         image_url: part.image,
-        detail: "auto",
+        // Mirrors the chat-completions converter: explicit "high" so no
+        // backend falls back to the original-size image.
+        detail: "high",
       };
     }
 
