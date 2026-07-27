@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.178
+
+### Fixed
+
+- Clicking "+" (attachments), the prompts button, or an attachment's remove cross in the composer no longer sends the typed message. The composer is a `<form>`, and `IconButton`/`Button` rendered a bare `<button>` without a `type` — which defaults to `type="submit"` inside a form. Both components now default to `type="button"` (an explicit `type` prop still wins; `asChild` buttons are untouched). Send/Stop and Enter-to-send are unaffected — they don't rely on implicit form submission.
+
 ## 0.4.177
 
 ### Changed

@@ -49,4 +49,30 @@ describe("Button", () => {
     render(<Button className="custom-class">Styled</Button>);
     expect(screen.getByRole("button")).toHaveClass("custom-class");
   });
+
+  it("defaults to type=button and does not submit an enclosing form", () => {
+    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <Button>Action</Button>
+      </form>
+    );
+    const btn = screen.getByRole("button");
+    expect(btn).toHaveAttribute("type", "button");
+    fireEvent.click(btn);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("an explicit type=submit still submits the enclosing form", () => {
+    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <Button type="submit">Save</Button>
+      </form>
+    );
+    const btn = screen.getByRole("button");
+    expect(btn).toHaveAttribute("type", "submit");
+    fireEvent.click(btn);
+    expect(onSubmit).toHaveBeenCalledOnce();
+  });
 });
