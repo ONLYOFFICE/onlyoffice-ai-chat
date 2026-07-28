@@ -39,6 +39,21 @@ export interface WidgetConfig {
    */
   contextEntityId?: string;
   /**
+   * Global cursor-pagination switch (default `false`). When enabled:
+   *
+   * - the sidebar loads threads in pages of 100 and infinite-scrolls;
+   * - every full-history read (opening a thread, building the model's
+   *   request history, download/export) fetches messages in pages of
+   *   100 instead of one unbounded request.
+   *
+   * Requires a `StorageAdapter` / backend that honors the `count` /
+   * `cursor` parameters on `threads.readAll` and
+   * `messages.readByThread` (see the storage contract docs). With the
+   * flag off, no pagination parameters are ever sent — the behavior is
+   * identical to previous releases.
+   */
+  enablePagination?: boolean;
+  /**
    * Controls the composer's model (profile) picker. Tri-state:
    *
    * - `true` — always hidden.

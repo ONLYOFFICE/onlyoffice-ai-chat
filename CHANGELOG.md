@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.0
+
+### Added
+
+- **Cursor (keyset) pagination for threads and messages, behind the global `enablePagination` flag** (default `false` — without it no pagination parameters are ever sent, behavior is identical to 0.4.x).
+  - `threads.readAll(entityId?, count?, cursor?)` and `messages.readByThread(threadId, count?, cursor?)` — same methods, optional keyset params; page size is 100. Cursor types (`ThreadsCursor`, `MessagesCursor`), `PAGE_SIZE`, cursor builders, and the `drainPages` page walker are exported for hosts.
+  - With the flag on: the sidebar loads 100 threads and infinite-scrolls (typing into search drains the remaining pages in the background so the filter stays complete); every full-history read (opening a thread, building the model's request history, tool-call resume, download/export) fetches in pages of 100 — same complete result, bounded requests.
+  - Engines accept `pagination?: boolean | (() => boolean)` in deps (`ThreadsEngine`, `AIEngine`) for headless/Express hosts; `createStores` takes `enablePagination`.
+  - Adapters/backends that ignore the new params keep working: the widget detects a full dump (or a cursor-ignoring backend) and stops paging.
+
+```tsx
+<AIChatWidget enablePagination />
+```
+
+### Breaking (only when enabling the flag)
+
+- `threads/read-messages` route query params renamed: `limit`/`startIndex` → `count`/`cursor` (`cursor` is a JSON-encoded keyset object). Backends must honor `count`/`cursor` on `threads/list` and `threads/read-messages` before turning the flag on — see the "Cursor pagination on the server (Express)" section in `docs/ui/providers/api.md` for query parsing, SQL keyset patterns, and recommended indexes.
+- `MessagesStorage.readByThread`'s third parameter changed type: `startIndex: number` → `cursor: MessagesCursor`. With the flag off the parameter is never passed.
+
 ## 0.4.183
 
 ### Changed

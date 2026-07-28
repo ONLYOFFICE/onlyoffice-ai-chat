@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { cn } from "../../../../shared/utils";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
@@ -6,6 +6,7 @@ import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 import { IconButton } from "../../icon-button";
 import { Input } from "../../input";
+import { Loader } from "../../loader";
 import { ChatListItem } from "./ChatListItem";
 import { groupThreadsByDate } from "./ChatList.utils";
 
@@ -39,6 +40,10 @@ const ChatList = ({
   const { useThreadsStore, useRouter } = useStores();
   const threads = useThreadsStore((s) => s.threads);
   const threadId = useThreadsStore((s) => s.threadId);
+  const hasMoreThreads = useThreadsStore((s) => s.hasMoreThreads);
+  const isLoadingMoreThreads = useThreadsStore((s) => s.isLoadingMoreThreads);
+  const loadMoreThreads = useThreadsStore((s) => s.loadMoreThreads);
+  const ensureAllThreads = useThreadsStore((s) => s.ensureAllThreads);
   const onSwitchToThread = useThreadsStore((s) => s.onSwitchToThread);
   const onRenameThread = useThreadsStore((s) => s.onRenameThread);
   const onDownloadThread = useThreadsStore((s) => s.onDownloadThread);
@@ -81,6 +86,48 @@ const ChatList = ({
     [threads, searchValue]
   );
 
+  // The search filter is client-side over the LOADED threads. With
+  // pagination on and pages still remaining, drain the rest in the
+  // background as soon as the user starts searching, so the filter
+  // covers the whole collection — not just the loaded pages.
+  useEffect(() => {
+    if (!searchValue) return;
+    // A drain failure (network) just leaves the search scoped to the
+    // loaded pages — never an unhandled rejection.
+    void ensureAllThreads().catch(() => undefined);
+  }, [searchValue, ensureAllThreads]);
+
+  // While the background drain is still running, an empty match list is
+  // inconclusive — show a loader instead of a premature "no chats found".
+  const isSearchDraining =
+    !!searchValue && (hasMoreThreads || isLoadingMoreThreads);
+
+  // Infinite scroll: when the sentinel below the list enters the scroll
+  // viewport, pull the next page. The observer is rooted in the list's
+  // own overflow container so it works regardless of the host layout.
+  // `threads.length` in the deps reconnects the observer after every
+  // appended page: `observe` fires the initial intersection state, so if
+  // the sentinel is STILL visible (a page shorter than the viewport) the
+  // next page loads without requiring another scroll gesture.
+  const scrollRootRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const showSentinel = hasMoreThreads && !searchValue;
+  const threadsCount = threads.length;
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!showSentinel || !sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          void loadMoreThreads().catch(() => undefined);
+        }
+      },
+      { root: scrollRootRef.current, rootMargin: "120px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [showSentinel, loadMoreThreads, threadsCount]);
+
   // Bucket the (already date-sorted) threads into Today / Yesterday /
   // Previous 7 Days / Previous 30 Days / by month. Recomputed when the
   // visible list or language changes; `Date.now()` is read here so groups
@@ -106,6 +153,7 @@ const ChatList = ({
 
   return (
     <div
+      ref={scrollRootRef}
       className={cn(
         "w-full h-full max-h-full flex flex-col overflow-y-auto",
         className
@@ -169,11 +217,27 @@ const ChatList = ({
                   ))}
                 </div>
               ))
+            ) : isSearchDraining ? (
+              <div
+                data-testid="chat-list-search-loading"
+                className="flex items-center justify-center py-[8px]"
+              >
+                <Loader size={16} />
+              </div>
             ) : (
               <p className="select-none text-[var(--chat-list-empty-color)] font-normal w-full">
                 {t("NoChatsFound")}
               </p>
             )}
+            {showSentinel ? (
+              <div
+                ref={sentinelRef}
+                data-testid="chat-list-sentinel"
+                className="flex items-center justify-center py-[8px]"
+              >
+                {isLoadingMoreThreads ? <Loader size={16} /> : null}
+              </div>
+            ) : null}
           </div>
         )}
       </div>

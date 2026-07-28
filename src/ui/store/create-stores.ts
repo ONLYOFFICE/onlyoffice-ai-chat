@@ -95,6 +95,13 @@ export interface CreateStoresConfig {
    * {@link Stores.setEntityId} without re-creating the bundle.
    */
   entityId?: string;
+  /**
+   * Global cursor-pagination switch (default false) — mirrors
+   * `WidgetConfig.enablePagination`. Threads and messages are read in
+   * pages of 100 via `count`/`cursor`; requires a storage adapter /
+   * backend that honors those parameters.
+   */
+  enablePagination?: boolean;
 }
 
 /**
@@ -106,14 +113,15 @@ export interface CreateStoresConfig {
  * mutable state.
  */
 export function createStores(config: CreateStoresConfig): Stores {
-  const { keys, ctx, api, entityId } = config;
+  const { keys, ctx, api, entityId, enablePagination } = config;
 
   // Mutable scope holder: scoped stores read it per call, so the host can
   // re-scope the live bundle via `setEntityId` instead of re-creating it.
   const entityRef = { current: entityId };
   const getEntityId = () => entityRef.current;
+  const getPagination = () => enablePagination ?? false;
 
-  const useMessageStore = createMessageStore({ ctx, api });
+  const useMessageStore = createMessageStore({ ctx, api, getPagination });
   const useProfilesStore = createProfilesStore({
     keys,
     ctx,
@@ -126,6 +134,7 @@ export function createStores(config: CreateStoresConfig): Stores {
     useProfilesStore,
     useMessageStore,
     callbacksManager: ctx.callbacksManager,
+    getPagination,
   });
   const useServersStore = createServersStore({
     ctx,

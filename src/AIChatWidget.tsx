@@ -189,6 +189,15 @@ export interface AIChatWidgetProps {
    * the chat tool — the one-shot image-generation action still works.
    */
   disableBuiltinImageTool?: boolean;
+  /**
+   * Global cursor-pagination switch (default false). Threads and
+   * messages are read in pages of 100 (`count`/`cursor` params on
+   * `threads.readAll` / `messages.readByThread`), and the sidebar
+   * infinite-scrolls. Requires a storage adapter / backend that honors
+   * those parameters; with the flag off no pagination parameters are
+   * ever sent. See {@link WidgetConfig.enablePagination}.
+   */
+  enablePagination?: boolean;
   /** Optional remote API routing — defaults to in-process engines. */
   apiConfig?: Partial<Pick<ServerAPIConfig, "origin" | "baseUrl" | "headers">>;
   /**
@@ -341,6 +350,7 @@ export const AIChatWidget = React.forwardRef<
       systemPrompt,
       forceProxy,
       disableBuiltinImageTool,
+      enablePagination,
       apiConfig,
       assistantActions,
       composerActions,
@@ -378,6 +388,7 @@ export const AIChatWidget = React.forwardRef<
         isSettingsActive,
         isDialogFullscreen,
         entityId,
+        enablePagination,
         systemPrompt,
         assistantActions,
         composerActions,
@@ -412,6 +423,7 @@ export const AIChatWidget = React.forwardRef<
         isSettingsActive,
         isDialogFullscreen,
         entityId,
+        enablePagination,
         systemPrompt,
         assistantActions,
         composerActions,
@@ -442,7 +454,10 @@ export const AIChatWidget = React.forwardRef<
 
       const assignments = new AssignmentsEngine({ storage });
       const profiles = new ProfilesEngine({ storage, assignments });
-      const threads = new ThreadsEngine({ storage });
+      const threads = new ThreadsEngine({
+        storage,
+        ...(enablePagination ? { pagination: true } : {}),
+      });
       const tools = new ToolsEngine({ storage });
       const prompts = new PromptsEngine({ storage });
       const preferences = new PreferencesEngine({ storage });
@@ -491,6 +506,7 @@ export const AIChatWidget = React.forwardRef<
         ...(externalFetch ? { externalFetch } : {}),
         ...(forceProxy ? { forceProxy: true } : {}),
         ...(disableBuiltinImageTool ? { disableBuiltinImageTool: true } : {}),
+        ...(enablePagination ? { pagination: true } : {}),
       });
 
       const ctx: AppContext = {
@@ -530,6 +546,7 @@ export const AIChatWidget = React.forwardRef<
         ctx,
         api,
         entityId,
+        ...(enablePagination ? { enablePagination: true } : {}),
       });
 
       return { ctx, stores, engines, serverApiConfig };
@@ -546,6 +563,7 @@ export const AIChatWidget = React.forwardRef<
       entityId,
       forceProxy,
       disableBuiltinImageTool,
+      enablePagination,
     ]);
 
     return (

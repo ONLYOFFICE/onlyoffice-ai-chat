@@ -1,6 +1,7 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../../app-context";
+import { drainPages, messagesCursorOf } from "../../core/storage";
 import type { ServerAPI } from "../providers/ApiProvider";
 
 /**
@@ -93,8 +94,24 @@ function deriveThreadContext(messages: ThreadMessageLike[]): string | null {
 export function createMessageStore(deps: {
   ctx: AppContext;
   api: ServerAPI;
+  /** Lazy global pagination switch — mirrors `WidgetConfig.enablePagination`. */
+  getPagination?: () => boolean;
 }): UseBoundStore<StoreApi<MessageStoreState>> {
-  const { ctx, api } = deps;
+  const { ctx, api, getPagination } = deps;
+
+  /**
+   * Read the thread's full history. With pagination on, walks the thread
+   * in cursor pages of 100 (bounded requests, same complete result);
+   * otherwise one unbounded read — the pre-pagination behavior.
+   */
+  const readAllMessages = (threadId: string): Promise<ThreadMessageLike[]> =>
+    getPagination?.()
+      ? drainPages(
+          (count, cursor) => api.threads.readMessages(threadId, count, cursor),
+          messagesCursorOf,
+          (m) => m.id ?? ""
+        )
+      : api.threads.readMessages(threadId);
 
   return create<MessageStoreState>((set, get) => ({
     messages: [],
@@ -107,7 +124,7 @@ export function createMessageStore(deps: {
 
     fetchPrevMessages: async (threadId: string) => {
       set({ _currentThreadId: threadId, threadContextEntityId: undefined });
-      const fetchedMessages = await api.threads.readMessages(threadId);
+      const fetchedMessages = await readAllMessages(threadId);
       const current = get();
       if (current._currentThreadId !== threadId) {
         return;

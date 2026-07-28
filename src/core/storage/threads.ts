@@ -1,4 +1,5 @@
 import type { Thread } from "../types";
+import type { ThreadsCursor } from "./pagination";
 
 /**
  * Storage interface for managing chat threads (conversations).
@@ -32,16 +33,36 @@ export interface ThreadsStorage {
 
   /**
    * Retrieve threads sorted by `lastEditDate` descending (newest first),
-   * filtered by entity scope.
+   * with `threadId` descending as the tiebreaker, filtered by entity
+   * scope. Threads without a `lastEditDate` sort after every dated one.
    *
    * - `entityId === undefined` → return only threads created in the
    *   unscoped (passthrough) area, i.e. without an entity binding.
    * - `entityId === "<id>"` → return only threads bound to that entity.
    *
+   * Cursor pagination (both parameters optional — omitting them returns
+   * the full list, the pre-pagination behavior):
+   *
+   * - `count` — max threads to return.
+   * - `cursor` — sort key of the last thread the caller already has;
+   *   return threads strictly AFTER it in the sort order above.
+   *   `lastEditDate: null` in the cursor means the anchor thread had no
+   *   timestamp.
+   *
+   * Implementations that don't support pagination may ignore both
+   * parameters and return everything — callers detect that and stop
+   * paging.
+   *
    * @param entityId - Optional opaque scope token (entity / "room").
+   * @param count - Optional page size.
+   * @param cursor - Optional keyset cursor of the last received thread.
    * @returns An array of persisted threads in scope.
    */
-  readAll(entityId?: string): Promise<Thread[]>;
+  readAll(
+    entityId?: string,
+    count?: number,
+    cursor?: ThreadsCursor
+  ): Promise<Thread[]>;
 
   /**
    * Update a thread's title. The caller is responsible for bumping

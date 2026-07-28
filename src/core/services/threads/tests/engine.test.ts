@@ -116,11 +116,15 @@ function makeStorage(
           return stored;
         }
       ),
-      readByThread: vi.fn(async (tid: string, limit?: number, start = 0) => {
-        const list = messages.get(tid) ?? [];
-        const sliced = list.slice(start, limit ? start + limit : undefined);
-        return sliced;
-      }),
+      readByThread: vi.fn(
+        async (tid: string, count?: number, cursor?: { id: string }) => {
+          const list = messages.get(tid) ?? [];
+          const from = cursor
+            ? list.findIndex((m) => m.id === cursor.id) + 1
+            : 0;
+          return list.slice(from, count ? from + count : undefined);
+        }
+      ),
       deleteByThread: vi.fn(async (tid: string) => {
         messages.delete(tid);
       }),
@@ -397,7 +401,11 @@ describe("ThreadsEngine entity scope", () => {
     const { storage } = makeStorage();
     const engine = new ThreadsEngine({ storage });
     await engine.list("e1");
-    expect(storage.threads.readAll).toHaveBeenCalledWith("e1");
+    expect(storage.threads.readAll).toHaveBeenCalledWith(
+      "e1",
+      undefined,
+      undefined
+    );
   });
 
   it("list() returns only threads bound to the requested scope", async () => {
@@ -433,8 +441,66 @@ describe("ThreadsEngine pass-through readers", () => {
       messagesByThread: { t1: [userMessage] },
     });
     const engine = new ThreadsEngine({ storage });
-    const msgs = await engine.readMessages("t1", 5, 0);
+    const cursor = { createdAt: "2026-01-01T00:00:00.000Z", id: "m0" };
+    const msgs = await engine.readMessages("t1", 5, cursor);
     expect(msgs).toEqual([userMessage]);
-    expect(storage.messages.readByThread).toHaveBeenCalledWith("t1", 5, 0);
+    expect(storage.messages.readByThread).toHaveBeenCalledWith("t1", 5, cursor);
+  });
+
+  it("list() forwards count and cursor to storage.threads.readAll", async () => {
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    const cursor = { lastEditDate: 500, threadId: "t9" };
+    await engine.list("e1", 100, cursor);
+    expect(storage.threads.readAll).toHaveBeenCalledWith("e1", 100, cursor);
+  });
+});
+
+describe("ThreadsEngine pagination flag", () => {
+  const msg = (id: number): ThreadMessageLike => ({
+    role: "user",
+    content: [{ type: "text", text: `m${id}` }],
+    id: `m${id}`,
+    createdAt: new Date(1000 + id),
+  });
+
+  it("openOrCreate reads history in pages when pagination is on", async () => {
+    const history = Array.from({ length: 150 }, (_, i) => msg(i));
+    const { storage } = makeStorage({
+      threads: [{ threadId: "t1", title: "X" }],
+      messagesByThread: { t1: history },
+    });
+    const engine = new ThreadsEngine({ storage, pagination: true });
+    const result = await engine.openOrCreate({
+      threadId: "t1",
+      profile,
+      profileId: "p1",
+      firstMessage: userMessage,
+    });
+    expect(result.priorMessages).toHaveLength(150);
+    // 100 + 50 → two pages.
+    expect(storage.messages.readByThread).toHaveBeenCalledTimes(2);
+    expect(storage.messages.readByThread).toHaveBeenNthCalledWith(
+      1,
+      "t1",
+      100,
+      undefined
+    );
+  });
+
+  it("openOrCreate keeps the single unbounded read when pagination is off", async () => {
+    const { storage } = makeStorage({
+      threads: [{ threadId: "t1", title: "X" }],
+      messagesByThread: { t1: [userMessage] },
+    });
+    const engine = new ThreadsEngine({ storage });
+    await engine.openOrCreate({
+      threadId: "t1",
+      profile,
+      profileId: "p1",
+      firstMessage: userMessage,
+    });
+    expect(storage.messages.readByThread).toHaveBeenCalledTimes(1);
+    expect(storage.messages.readByThread).toHaveBeenCalledWith("t1");
   });
 });

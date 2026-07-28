@@ -243,16 +243,24 @@ export type {
   AttachmentsStorage,
   McpServerConfig,
   McpServersStorage,
+  MessagesCursor,
   MessagesStorage,
   PreferencesStorage,
   ProfilesStorage,
   PromptFoldersStorage,
   PromptsStorage,
   StorageAdapter,
+  ThreadsCursor,
   ThreadsStorage,
   ToolPrefsStorage,
   WebSearchConfig,
   WebSearchStorage,
+} from "./core/storage";
+export {
+  PAGE_SIZE,
+  drainPages,
+  messagesCursorOf,
+  threadsCursorOf,
 } from "./core/storage";
 
 // ---------------------------------------------------------------------------

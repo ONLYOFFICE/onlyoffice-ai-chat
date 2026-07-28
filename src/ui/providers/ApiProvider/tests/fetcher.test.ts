@@ -150,6 +150,38 @@ describe("callRoute", () => {
       expect(init.headers).toBeUndefined();
     });
 
+    it("serializes an object cursor into the GET query as JSON", async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+      const cursor = { lastEditDate: 123, threadId: "t9" };
+      await callRoute(config, "threads", "list", ["e1", 100, cursor] as never);
+      const [url] = fetchMock.mock.calls[0];
+      const parsed = new URL(url as string);
+      expect(parsed.pathname).toBe("/v1/threads/list");
+      expect(parsed.searchParams.get("entityId")).toBe("e1");
+      expect(parsed.searchParams.get("count")).toBe("100");
+      expect(JSON.parse(parsed.searchParams.get("cursor")!)).toEqual(cursor);
+    });
+
+    it("omits undefined pagination params from the GET query", async () => {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+      await callRoute(config, "threads", "list", [
+        "e1",
+        undefined,
+        undefined,
+      ] as never);
+      const [url] = fetchMock.mock.calls[0];
+      const parsed = new URL(url as string);
+      expect(parsed.searchParams.get("entityId")).toBe("e1");
+      expect(parsed.searchParams.has("count")).toBe(false);
+      expect(parsed.searchParams.has("cursor")).toBe(false);
+    });
+
     it("forwards headers on GET requests when configured", async () => {
       fetchMock.mockResolvedValue({
         ok: true,

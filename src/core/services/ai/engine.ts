@@ -6,6 +6,11 @@ import {
   extractRefIdsFromMessage,
   resolveAttachmentRefs,
 } from "../../actions/attachment-resolution";
+import {
+  drainPages,
+  isPaginationEnabled,
+  messagesCursorOf,
+} from "../../storage";
 import { AttachmentsEngine } from "../attachments";
 import { chat } from "../../actions/chat";
 import { generateTitle } from "../../actions/title";
@@ -106,8 +111,31 @@ export class AIEngine {
     this.deps = deps;
     this.assignments =
       deps.assignments ?? new AssignmentsEngine({ storage: deps.storage });
-    this.threads = deps.threads ?? new ThreadsEngine({ storage: deps.storage });
+    this.threads =
+      deps.threads ??
+      new ThreadsEngine({
+        storage: deps.storage,
+        pagination: deps.pagination,
+      });
     this.attachments = new AttachmentsEngine({ storage: deps.storage });
+  }
+
+  /**
+   * Read a thread's complete history for the provider request. With
+   * {@link AIEngineDeps.pagination} enabled the read walks the thread in
+   * cursor pages (bounded requests, same complete result); otherwise it
+   * is the single unbounded call — the pre-pagination behavior.
+   */
+  private readAllMessages(threadId: string): Promise<ThreadMessageLike[]> {
+    if (!isPaginationEnabled(this.deps.pagination)) {
+      return this.deps.storage.messages.readByThread(threadId);
+    }
+    return drainPages(
+      (count, cursor) =>
+        this.deps.storage.messages.readByThread(threadId, count, cursor),
+      messagesCursorOf,
+      (m) => m.id ?? ""
+    );
   }
 
   /** Resolve the configured system-source server types (lazy or static). */
@@ -217,7 +245,7 @@ export class AIEngine {
 
     if (!isNewThread) {
       priorMessages = stripUnresolvedToolCalls(
-        await this.deps.storage.messages.readByThread(threadId)
+        await this.readAllMessages(threadId)
       ).filter(hasSendableContent);
       storedUserMessage = await this.threads.appendUserMessage(
         threadId,
@@ -350,6 +378,7 @@ export class AIEngine {
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
+      pagination: this.deps.pagination,
     });
 
     if (titlePromise) {
@@ -479,9 +508,7 @@ export class AIEngine {
       contextScope
     );
 
-    const stored = await this.deps.storage.messages.readByThread(
-      input.threadId
-    );
+    const stored = await this.readAllMessages(input.threadId);
 
     let lastUserIdx = -1;
     for (let i = stored.length - 1; i >= 0; i--) {
@@ -546,6 +573,7 @@ export class AIEngine {
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
+      pagination: this.deps.pagination,
     });
   }
 
@@ -609,6 +637,7 @@ export class AIEngine {
             fetch: proxiedFetch,
             webSearchFetch: this.deps.fetchProxy,
             pickFetch: (p) => this.pickFetch(p),
+            pagination: this.deps.pagination,
           };
           const resumed = executeAdapterTool(
             this.deps.storage,
@@ -679,10 +708,11 @@ export class AIEngine {
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
+      pagination: this.deps.pagination,
     };
 
     const resumed = resumeChat(
-      { storage: this.deps.storage },
+      { storage: this.deps.storage, pagination: this.deps.pagination },
       {
         threadId: input.threadId,
         messageId: input.messageId,

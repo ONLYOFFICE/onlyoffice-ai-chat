@@ -113,6 +113,18 @@ export type AIEngineDeps = {
    * function to resolve lazily at request time.
    */
   disableBuiltinImageTool?: boolean | (() => boolean);
+
+  /**
+   * Global cursor-pagination switch. When enabled, every full-history
+   * read the engine performs (`sendWithStream` / `regenerateStream` /
+   * tool-call resume) fetches `storage.messages.readByThread` in pages
+   * of {@link PAGE_SIZE} instead of one unbounded call. The model still
+   * receives the complete history — only the size of each storage
+   * request is capped. Default false (unbounded reads, the
+   * pre-pagination behavior). Pass a function to resolve lazily at
+   * request time.
+   */
+  pagination?: boolean | (() => boolean);
 };
 
 /**

@@ -2,6 +2,13 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Profile, Thread } from "../../types";
 import { resolveAttachmentRefs } from "../../actions/attachment-resolution";
 import { generateTitle } from "../../actions/title";
+import {
+  drainPages,
+  isPaginationEnabled,
+  messagesCursorOf,
+  type MessagesCursor,
+  type ThreadsCursor,
+} from "../../storage";
 import type {
   OpenOrCreateInput,
   OpenOrCreateResult,
@@ -30,6 +37,24 @@ export class ThreadsEngine {
 
   constructor(deps: ThreadsEngineDeps) {
     this.deps = deps;
+  }
+
+  /**
+   * Read a thread's complete history. With {@link ThreadsEngineDeps.pagination}
+   * enabled the read walks the thread in cursor pages (bounded requests,
+   * same complete result); otherwise it is the single unbounded call —
+   * the pre-pagination behavior.
+   */
+  private readAllMessages(threadId: string): Promise<ThreadMessageLike[]> {
+    if (!isPaginationEnabled(this.deps.pagination)) {
+      return this.deps.storage.messages.readByThread(threadId);
+    }
+    return drainPages(
+      (count, cursor) =>
+        this.deps.storage.messages.readByThread(threadId, count, cursor),
+      messagesCursorOf,
+      (m) => m.id ?? ""
+    );
   }
 
   /**
@@ -62,9 +87,7 @@ export class ThreadsEngine {
    */
   async openOrCreate(input: OpenOrCreateInput): Promise<OpenOrCreateResult> {
     if (input.threadId) {
-      const priorMessages = await this.deps.storage.messages.readByThread(
-        input.threadId
-      );
+      const priorMessages = await this.readAllMessages(input.threadId);
       return { threadId: input.threadId, title: "", priorMessages };
     }
 
@@ -152,11 +175,7 @@ export class ThreadsEngine {
    * the thread has no user messages yet.
    */
   async regenerateTitle(threadId: string, profile: Profile): Promise<string> {
-    const messages = await this.deps.storage.messages.readByThread(
-      threadId,
-      1,
-      0
-    );
+    const messages = await this.deps.storage.messages.readByThread(threadId, 1);
     const first = messages[0];
     if (!first) {
       throw new Error(
@@ -181,19 +200,24 @@ export class ThreadsEngine {
   /**
    * List threads in scope, sorted by `lastEditDate` desc — passthrough.
    * `entityId` is opaque to the engine and forwarded to storage; see
-   * {@link ThreadsStorage.readAll} for the scoping semantics.
+   * {@link ThreadsStorage.readAll} for the scoping and cursor-pagination
+   * semantics. Omit `count`/`cursor` for the full list.
    */
-  async list(entityId?: string): Promise<Thread[]> {
-    return this.deps.storage.threads.readAll(entityId);
+  async list(
+    entityId?: string,
+    count?: number,
+    cursor?: ThreadsCursor
+  ): Promise<Thread[]> {
+    return this.deps.storage.threads.readAll(entityId, count, cursor);
   }
 
   /** Read messages from a thread — passthrough with same pagination. */
   async readMessages(
     threadId: string,
-    limit?: number,
-    startIndex?: number
+    count?: number,
+    cursor?: MessagesCursor
   ): Promise<ThreadMessageLike[]> {
-    return this.deps.storage.messages.readByThread(threadId, limit, startIndex);
+    return this.deps.storage.messages.readByThread(threadId, count, cursor);
   }
 
   /** Retrieve a single thread by id, or `null` if it does not exist. */

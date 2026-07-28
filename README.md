@@ -261,6 +261,7 @@ Runtime toggles to adjust built-in UI. Pass directly as `AIChatWidget` props:
 | Prop | Type | Effect |
 |------|------|--------|
 | `hiddenProviders` | `ProviderType[]` | Hide specific providers from the Add/Edit model dropdowns. |
+| `enablePagination` | `boolean` | Cursor-paginate threads and messages (pages of 100): the sidebar infinite-scrolls, and every full-history read is fetched page by page. Requires a storage adapter / backend that honors the `count`/`cursor` params on `threads.readAll` / `messages.readByThread`. Default `false` — no pagination parameters are sent at all. |
 | `hideProfilePicker` | `boolean` | Hide the `Ask <profile>` profile picker row inside the chat composer. The current chat profile is still resolved from the profiles store. |
 | `hideSettingsButton` | `boolean` | Hide the gear button in the header. The settings page stays reachable via `router.setCurrentPage("settings")`. |
 | `onSettingsClick` | `() => void` | Fully override the click on the header settings button — the built-in `setCurrentPage` toggle is not invoked when this is set. |

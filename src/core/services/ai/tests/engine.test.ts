@@ -351,6 +351,53 @@ describe("AIEngine.sendWithStream", () => {
     expect(part.image).toBe("data:image/png;base64,AAAA");
   });
 
+  it("reads existing-thread history in pages when pagination is on", async () => {
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const history: ThreadMessageLike[] = Array.from(
+      { length: 150 },
+      (_, i) => ({
+        role: "user",
+        content: [{ type: "text", text: `m${i}` }],
+        id: `m${i}`,
+        createdAt: new Date(1000 + i),
+      })
+    );
+    const readByThread = vi.fn(
+      async (_t: string, count?: number, cursor?: { id: string }) => {
+        const from = cursor
+          ? history.findIndex((m) => m.id === cursor.id) + 1
+          : 0;
+        return history.slice(from, count ? from + count : undefined);
+      }
+    );
+    (storage.messages as unknown as { readByThread: unknown }).readByThread =
+      readByThread;
+    const engine = new AIEngine({ storage, pagination: true });
+    for await (const _ of engine.sendWithStream({
+      threadId: "t1",
+      userMessage,
+    })) {
+      // drain
+    }
+    // 150 messages → 100 + 50, two paged reads.
+    expect(readByThread).toHaveBeenNthCalledWith(1, "t1", 100, undefined);
+    expect(readByThread).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the single unbounded history read when pagination is off", async () => {
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      threadId: "t1",
+      userMessage,
+    })) {
+      // drain
+    }
+    expect(storage.messages.readByThread).toHaveBeenCalledWith("t1");
+  });
+
   it("uses an injected ThreadsEngine when provided", async () => {
     sendMessageSyncMock.mockResolvedValueOnce("Hello");
     sendMessageMock.mockReturnValueOnce(arrayToStream([]));

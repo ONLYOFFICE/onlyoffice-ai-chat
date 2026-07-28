@@ -194,6 +194,9 @@ export type AdapterRunContext = {
    * it, `generate_image` on an `external` profile loses its transport.
    */
   pickFetch?: ProfileFetchResolver;
+
+  /** Mirrors {@link AIEngineDeps.pagination} for resume-history reads. */
+  pagination?: boolean | (() => boolean);
 };
 
 /**
@@ -229,7 +232,7 @@ export async function* executeAdapterTool(
   // Note: `generate_image` base64 → attachment-ref swap happens centrally
   // in `resumeChat`, which every tool-result path funnels through.
   yield* resumeChat(
-    { storage },
+    { storage, pagination: ctx.pagination },
     {
       threadId: event.threadId,
       messageId: event.messageId,

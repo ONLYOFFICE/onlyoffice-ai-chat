@@ -1,8 +1,15 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
+import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { CallbacksManager } from "../providers/EventsProvider";
 import type { PlatformAdapter } from "../providers/PlatformProvider/types";
 import type { ServerAPI } from "../providers/ApiProvider";
 import type { Thread } from "../../types";
+import {
+  PAGE_SIZE,
+  drainPages,
+  messagesCursorOf,
+  threadsCursorOf,
+} from "../../core/storage";
 import { convertMessagesToMd, removeSpecialCharacter } from "../../utils";
 import type { MessageStoreState } from "./create-message-store";
 import type { ProfilesStoreState } from "./create-profiles-store";
@@ -22,9 +29,31 @@ export interface ThreadsStoreState {
   /**
    * Load threads from persistent storage scoped to `entityId`. Pass
    * `undefined` (the unscoped/passthrough mode) to load only threads
-   * not bound to any entity.
+   * not bound to any entity. With pagination enabled only the first
+   * {@link PAGE_SIZE} threads are loaded — see {@link loadMoreThreads}.
    */
   initThreads: (entityId?: string) => Promise<void>;
+  /**
+   * True when the last loaded page was full, i.e. storage may hold more
+   * threads than are currently in {@link threads}. Always `false` with
+   * pagination disabled (the full list is loaded up front).
+   */
+  hasMoreThreads: boolean;
+  /** True while {@link loadMoreThreads} is on the wire. */
+  isLoadingMoreThreads: boolean;
+  /**
+   * Fetch the next page of threads (cursor derived from the last loaded
+   * thread) and append it, de-duplicated by `threadId`. No-op when
+   * pagination is disabled, everything is loaded, or a page is already
+   * in flight.
+   */
+  loadMoreThreads: () => Promise<void>;
+  /**
+   * Drain every remaining page into the store — used by the sidebar
+   * search so the client-side filter covers the whole collection, not
+   * just the loaded pages. Concurrent callers share one drain.
+   */
+  ensureAllThreads: () => Promise<void>;
   /**
    * Register a thread that the core engine has already persisted (for
    * example, a fresh thread created by `AIEngine.sendWithThread`):
@@ -74,9 +103,18 @@ export function createThreadsStore(deps: {
   useProfilesStore: UseBoundStore<StoreApi<ProfilesStoreState>>;
   useMessageStore: UseBoundStore<StoreApi<MessageStoreState>>;
   callbacksManager: CallbacksManager;
+  /** Lazy global pagination switch — mirrors `WidgetConfig.enablePagination`. */
+  getPagination?: () => boolean;
 }): UseBoundStore<StoreApi<ThreadsStoreState>> {
-  const { api, platform, useProfilesStore, useMessageStore, callbacksManager } =
-    deps;
+  const {
+    api,
+    platform,
+    useProfilesStore,
+    useMessageStore,
+    callbacksManager,
+    getPagination,
+  } = deps;
+  const paginated = () => getPagination?.() ?? false;
 
   const applyThreadContextFromThread = (thread?: Thread) => {
     const { getProfileById, setSessionChatProfile } =
@@ -85,13 +123,98 @@ export function createThreadsStore(deps: {
     setSessionChatProfile(profile);
   };
 
+  /**
+   * Read a thread's full message list for download/export. With
+   * pagination on, walks the thread in cursor pages; otherwise one
+   * unbounded read — the pre-pagination behavior.
+   */
+  const readAllMessages = (threadId: string): Promise<ThreadMessageLike[]> =>
+    paginated()
+      ? drainPages(
+          (count, cursor) => api.threads.readMessages(threadId, count, cursor),
+          messagesCursorOf,
+          (m) => m.id ?? ""
+        )
+      : api.threads.readMessages(threadId);
+
+  // Scope of the currently loaded list — `loadMoreThreads` must page
+  // within the same entity `initThreads` was called with.
+  let loadedEntityId: string | undefined;
+  // Coalesces concurrent `loadMoreThreads` callers onto ONE in-flight
+  // page fetch. Returning the shared promise (instead of bailing out
+  // early) is load-bearing: `ensureAllThreads` loops `while (hasMore)
+  // await loadMoreThreads()`, and an early-return would spin that loop
+  // through resolved promises — an endless microtask chain that starves
+  // the macrotask queue, so the in-flight response could never land.
+  let loadMoreInFlight: Promise<void> | null = null;
+  // Coalesces concurrent `ensureAllThreads` callers into one drain.
+  let ensureAllInFlight: Promise<void> | null = null;
+
   return create<ThreadsStoreState>((set, get) => ({
     threadId: "",
     threads: [],
+    hasMoreThreads: false,
+    isLoadingMoreThreads: false,
 
     initThreads: async (entityId) => {
-      const threads = await api.threads.list(entityId);
-      set({ threads });
+      loadedEntityId = entityId;
+      if (!paginated()) {
+        const threads = await api.threads.list(entityId);
+        set({ threads, hasMoreThreads: false });
+        return;
+      }
+      const page = await api.threads.list(entityId, PAGE_SIZE);
+      set({
+        threads: page,
+        // A full page means storage may hold more; a longer page means a
+        // legacy backend ignored `count` and returned everything.
+        hasMoreThreads: page.length === PAGE_SIZE,
+      });
+    },
+
+    loadMoreThreads: () => {
+      if (loadMoreInFlight) return loadMoreInFlight;
+      const { threads, hasMoreThreads } = get();
+      if (!paginated() || !hasMoreThreads) return Promise.resolve();
+      const last = threads[threads.length - 1];
+      if (!last) return Promise.resolve();
+      loadMoreInFlight = (async () => {
+        set({ isLoadingMoreThreads: true });
+        try {
+          const page = await api.threads.list(
+            loadedEntityId,
+            PAGE_SIZE,
+            threadsCursorOf(last)
+          );
+          const known = new Set(get().threads.map((t) => t.threadId));
+          const fresh = page.filter((t) => !known.has(t.threadId));
+          set((state) => ({
+            threads: [...state.threads, ...fresh],
+            // Stop when the page came short OR contributed nothing new (a
+            // backend that ignores the cursor must not loop forever).
+            hasMoreThreads: page.length === PAGE_SIZE && fresh.length > 0,
+          }));
+        } finally {
+          set({ isLoadingMoreThreads: false });
+          loadMoreInFlight = null;
+        }
+      })();
+      return loadMoreInFlight;
+    },
+
+    ensureAllThreads: async () => {
+      if (!paginated() || !get().hasMoreThreads) return;
+      if (ensureAllInFlight) return ensureAllInFlight;
+      ensureAllInFlight = (async () => {
+        try {
+          while (get().hasMoreThreads) {
+            await get().loadMoreThreads();
+          }
+        } finally {
+          ensureAllInFlight = null;
+        }
+      })();
+      return ensureAllInFlight;
     },
 
     insertThread: async (threadId, title, opts) => {
@@ -158,6 +281,19 @@ export function createThreadsStore(deps: {
       const previousThreadId = get().threadId;
       const thread = get().threads.find((t) => t.threadId === id);
       applyThreadContextFromThread(thread);
+      // With a partially loaded list (pagination) the target thread may
+      // not be in memory yet — recover its profile binding from storage
+      // so the session model still switches to the thread's own model.
+      if (!thread && paginated()) {
+        void api.threads
+          .getById(id)
+          .then((stored) => {
+            if (stored && get().threadId === id) {
+              applyThreadContextFromThread(stored);
+            }
+          })
+          .catch(() => undefined);
+      }
       set({ threadId: id });
       // Load the thread's messages directly. The `useMessages` effect
       // also reacts to `threadId` changes, but it only runs when the
@@ -176,7 +312,7 @@ export function createThreadsStore(deps: {
     },
 
     onDownloadThread: async (id, title) => {
-      const messages = await api.threads.readMessages(id);
+      const messages = await readAllMessages(id);
       const fileName = removeSpecialCharacter(title || "Chat Export");
       const content = convertMessagesToMd(messages);
       platform.file?.saveAsFile?.(content, `${fileName}.docx`);
@@ -186,7 +322,7 @@ export function createThreadsStore(deps: {
       const formats = platform.file?.getExportFormats?.() ?? [];
       const extension =
         formats.find((f) => f.id === formatId)?.extension || "docx";
-      const messages = await api.threads.readMessages(id);
+      const messages = await readAllMessages(id);
       const fileName = removeSpecialCharacter(title || "Chat Export");
       const content = convertMessagesToMd(messages);
       platform.file?.saveAsFile?.(

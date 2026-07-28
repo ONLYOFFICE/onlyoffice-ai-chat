@@ -75,9 +75,13 @@ const config: ServerAPIConfig = {
 };
 ```
 
-Each route is a `RouteSpec` `{ method: HttpMethod, path: string }`.
-You can override individual routes (e.g. to nest under
-`/api/chat/`):
+Each route is a `RouteSpec` `{ method: HttpMethod, path: string,
+params?: string[] }`. For `GET` routes, `params` names the method's
+positional arguments in order; the transport serializes them into
+the query string (`undefined`/`null` args are omitted, non-string
+values are `JSON.stringify`-ed — e.g. a pagination `cursor` object
+travels as a JSON query value). You can override individual routes
+(e.g. to nest under `/api/chat/`):
 
 ```ts
 import {
@@ -126,6 +130,51 @@ const config: ServerAPIConfig = {
 Every method call now becomes `fetch(${origin}${baseUrl}${path})`
 with the configured headers. Implement those routes on the server
 by mounting the same engines against your storage.
+
+### Cursor pagination on the server (Express)
+
+With `enablePagination` on, `threads/list` and
+`threads/read-messages` receive two extra query params: `count`
+(number) and `cursor` (a JSON-encoded keyset object). An Express
+route parses them and passes them positionally into the engine
+method:
+
+```ts
+app.get("/v1/ai-chat/threads/list", async (req, res) => {
+  const { entityId, count, cursor } = req.query;
+  res.json(
+    await threadsEngine.list(
+      entityId as string | undefined,
+      count ? Number(count) : undefined,
+      cursor ? JSON.parse(cursor as string) : undefined
+    )
+  );
+});
+```
+
+The storage behind the engine implements the keyset query. SQL
+sketch for threads (cursor = `{ lastEditDate, threadId }` of the
+last row the client already has; `NULL` dates sort last):
+
+```sql
+SELECT * FROM threads
+WHERE entity_id <=> :entityId
+  AND (last_edit_date, thread_id) < (:cursorDate, :cursorThreadId)
+ORDER BY last_edit_date DESC, thread_id DESC
+LIMIT :count;
+```
+
+Messages page ascending with cursor `{ createdAt, id }` (`createdAt`
+arrives as an ISO string): `WHERE thread_id = :threadId AND
+(created_at, id) > (:cursorCreatedAt, :cursorId) ORDER BY
+created_at ASC, id ASC LIMIT :count`.
+
+Recommended composite indexes: `threads(last_edit_date, thread_id)`
+and `messages(thread_id, created_at, id)`.
+
+A request without `count`/`cursor` must return the full list — that
+is what the widget sends when `enablePagination` is off, and it
+keeps old widget versions working against a new server.
 
 ### Streaming routes (NDJSON)
 
