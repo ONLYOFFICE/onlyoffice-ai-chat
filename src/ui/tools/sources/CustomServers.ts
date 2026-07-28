@@ -39,6 +39,16 @@ const isHttpServer = (config: Record<string, unknown>): boolean => {
   return typeof config.url === "string";
 };
 
+// A config is startable when it names a transport: `url` (HTTP) or
+// `command` (stdio). Hosts may store marker entries with an empty config —
+// e.g. DocSpace agent whitelist markers for server-executed system MCP
+// servers, whose real config never leaves the backend. Those must not
+// reach the start path: there is nothing to spawn or fetch, and they are
+// not this runtime's servers to run.
+const isStartable = (config: Record<string, unknown>): boolean => {
+  return isHttpServer(config) || typeof config.command === "string";
+};
+
 /**
  * Parse SSE-formatted response text to extract JSON-RPC messages.
  * SSE format: "event: message\ndata: {...json...}\n\n"
@@ -218,15 +228,28 @@ class CustomServers {
   setCustomServers = (servers: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => {
+    // Keep only startable entries; non-startable markers are dropped here
+    // so every consumer of the map (start, ready-wait, settings cards)
+    // sees the same filtered set.
+    const startable: Record<string, Record<string, unknown>> = {};
+    const skipped: string[] = [];
+    for (const [type, config] of Object.entries(servers?.mcpServers ?? {})) {
+      if (isStartable(config)) {
+        startable[type] = config;
+      } else {
+        skipped.push(type);
+      }
+    }
     logger.info("[mcp] setCustomServers", {
       receivedKeys: servers ? Object.keys(servers) : null,
       mcpServersType: typeof servers?.mcpServers,
       mcpServersKeys: servers?.mcpServers
         ? Object.keys(servers.mcpServers)
         : null,
+      skippedNonStartable: skipped,
       raw: servers,
     });
-    this.customServers = servers.mcpServers;
+    this.customServers = startable;
   };
 
   getServerType = (name: string) => {
