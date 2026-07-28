@@ -43,8 +43,14 @@ export function createThreadsApi(
         [threadId, profile],
         engines
       ),
-    list: (entityId, count, cursor) =>
-      callRoute(config, "threads", "list", [entityId, count, cursor], engines),
+    list: (entityId, count, cursor, query) =>
+      callRoute(
+        config,
+        "threads",
+        "list",
+        [entityId, count, cursor, query],
+        engines
+      ),
     readMessages: (threadId, count, cursor) =>
       callRoute(
         config,

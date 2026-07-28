@@ -53,15 +53,27 @@ export interface ThreadsStorage {
    * parameters and return everything — callers detect that and stop
    * paging.
    *
+   * Server-side search:
+   *
+   * - `query` — when set, return only threads whose `title` contains
+   *   the string, **case-insensitive substring match**, applied BEFORE
+   *   pagination (so `count`/`cursor` page through the matches). The
+   *   exact substring semantics are part of the contract: the widget
+   *   detects an implementation that ignored `query` by spotting a
+   *   non-matching title in the result and falls back to client-side
+   *   filtering over the full collection.
+   *
    * @param entityId - Optional opaque scope token (entity / "room").
    * @param count - Optional page size.
    * @param cursor - Optional keyset cursor of the last received thread.
+   * @param query - Optional case-insensitive title substring filter.
    * @returns An array of persisted threads in scope.
    */
   readAll(
     entityId?: string,
     count?: number,
-    cursor?: ThreadsCursor
+    cursor?: ThreadsCursor,
+    query?: string
   ): Promise<Thread[]>;
 
   /**

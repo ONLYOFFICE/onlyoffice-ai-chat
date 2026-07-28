@@ -5,8 +5,9 @@
 ### Added
 
 - **Cursor (keyset) pagination for threads and messages, behind the global `enablePagination` flag** (default `false` — without it no pagination parameters are ever sent, behavior is identical to 0.4.x).
-  - `threads.readAll(entityId?, count?, cursor?)` and `messages.readByThread(threadId, count?, cursor?)` — same methods, optional keyset params; page size is 100. Cursor types (`ThreadsCursor`, `MessagesCursor`), `PAGE_SIZE`, cursor builders, and the `drainPages` page walker are exported for hosts.
-  - With the flag on: the sidebar loads 100 threads and infinite-scrolls (typing into search drains the remaining pages in the background so the filter stays complete); every full-history read (opening a thread, building the model's request history, tool-call resume, download/export) fetches in pages of 100 — same complete result, bounded requests.
+  - `threads.readAll(entityId?, count?, cursor?, query?)` and `messages.readByThread(threadId, count?, cursor?)` — same methods, optional keyset params; page size is 100. Cursor types (`ThreadsCursor`, `MessagesCursor`), `PAGE_SIZE`, cursor builders, and the `drainPages` page walker are exported for hosts.
+  - With the flag on: the sidebar loads 100 threads and infinite-scrolls; every full-history read (opening a thread, building the model's request history, tool-call resume, download/export) fetches in pages of 100 — same complete result, bounded requests.
+  - **Sidebar search goes to storage**: typing (debounced 300ms) sends `query` — a case-insensitive title substring, applied server-side BEFORE pagination — and the result pages through matches with the same cursor scheme. A backend that ignores `query` is detected by a non-matching title in the response; the widget then permanently falls back to draining all pages and filtering client-side, so search stays complete either way.
   - Engines accept `pagination?: boolean | (() => boolean)` in deps (`ThreadsEngine`, `AIEngine`) for headless/Express hosts; `createStores` takes `enablePagination`.
   - Adapters/backends that ignore the new params keep working: the widget detects a full dump (or a cursor-ignoring backend) and stops paging.
 

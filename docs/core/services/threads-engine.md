@@ -267,7 +267,8 @@ need to also reach for `storage.threads` / `storage.messages`.
 async list(
   entityId?: string,
   count?: number,                    // optional page size
-  cursor?: ThreadsCursor             // keyset cursor of the last received thread
+  cursor?: ThreadsCursor,            // keyset cursor of the last received thread
+  query?: string                     // case-insensitive title substring (server-side search)
 ): Promise<Thread[]>;                // scope-filtered, sorted by lastEditDate desc
 async readMessages(
   threadId: string,

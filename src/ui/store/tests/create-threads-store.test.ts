@@ -408,6 +408,141 @@ describe("createThreadsStore pagination", () => {
     expect(store.getState().hasMoreThreads).toBe(false);
   });
 
+  it("searchThreads sends the query to storage and pages the matches", async () => {
+    const all = dataset(300).map((t, i) =>
+      i % 2 === 0 ? { ...t, title: `Report ${i}` } : t
+    );
+    const deps = makeDeps();
+    deps.api.threads.list = vi.fn(
+      async (
+        _entityId?: string,
+        count?: number,
+        cursor?: { threadId: string },
+        query?: string
+      ) => {
+        const matches = query
+          ? all.filter((t) =>
+              t.title!.toLowerCase().includes(query.toLowerCase())
+            )
+          : all;
+        const from = cursor
+          ? matches.findIndex((t) => t.threadId === cursor.threadId) + 1
+          : 0;
+        return matches.slice(from, count ? from + count : undefined);
+      }
+    ) as never;
+    const store = createThreadsStore({ ...deps, getPagination: () => true });
+    await store.getState().initThreads("e1");
+
+    await store.getState().searchThreads("report");
+    expect(deps.api.threads.list).toHaveBeenLastCalledWith(
+      "e1",
+      100,
+      undefined,
+      "report"
+    );
+    expect(store.getState().searchResults).toHaveLength(100);
+    expect(store.getState().hasMoreSearchResults).toBe(true);
+
+    await store.getState().loadMoreSearchResults();
+    // 150 matches total → 100 + 50.
+    expect(store.getState().searchResults).toHaveLength(150);
+    expect(store.getState().hasMoreSearchResults).toBe(false);
+    const lastCall = (
+      deps.api.threads.list as ReturnType<typeof vi.fn>
+    ).mock.calls.at(-1)!;
+    expect(lastCall[3]).toBe("report");
+    expect(lastCall[2]).toMatchObject({ threadId: expect.any(String) });
+  });
+
+  it("an empty query resets the search state", async () => {
+    const { store } = buildPaged(dataset(150));
+    await store.getState().initThreads();
+    store.setState({ searchResults: [dataset(1)[0]] });
+    await store.getState().searchThreads("");
+    expect(store.getState().searchResults).toBeNull();
+    expect(store.getState().hasMoreSearchResults).toBe(false);
+  });
+
+  it("falls back to the full drain when the backend ignores the query", async () => {
+    const all = dataset(150);
+    const deps = makeDeps();
+    // A legacy backend: returns plain pages regardless of `query`.
+    deps.api.threads.list = pagedList(all) as never;
+    const store = createThreadsStore({ ...deps, getPagination: () => true });
+    await store.getState().initThreads();
+
+    await store.getState().searchThreads("zzz-no-match");
+    // The response contained non-matching titles ⇒ query unsupported:
+    // no server results, and the whole collection was drained for the
+    // client-side filter instead.
+    expect(store.getState().searchResults).toBeNull();
+    expect(store.getState().threads).toHaveLength(150);
+    expect(store.getState().hasMoreThreads).toBe(false);
+
+    // Later searches skip the probe — no more `query` on the wire.
+    const callsBefore = (deps.api.threads.list as ReturnType<typeof vi.fn>).mock
+      .calls.length;
+    await store.getState().searchThreads("another");
+    const newCalls = (
+      deps.api.threads.list as ReturnType<typeof vi.fn>
+    ).mock.calls.slice(callsBefore);
+    expect(newCalls.every((c) => c[3] === undefined)).toBe(true);
+  });
+
+  it("a stale search response never overwrites a newer query", async () => {
+    const deps = makeDeps();
+    const resolvers: ((v: Thread[]) => void)[] = [];
+    deps.api.threads.list = vi.fn(async (..._args: unknown[]) => {
+      if (
+        (deps.api.threads.list as ReturnType<typeof vi.fn>).mock.calls
+          .length === 1
+      ) {
+        return []; // initThreads
+      }
+      return new Promise<Thread[]>((r) => resolvers.push(r));
+    }) as never;
+    const store = createThreadsStore({ ...deps, getPagination: () => true });
+    await store.getState().initThreads();
+
+    const first = store.getState().searchThreads("alp");
+    const second = store.getState().searchThreads("alpha");
+    // The SECOND (current) query resolves first…
+    resolvers[1]([{ threadId: "m2", title: "alpha match" }]);
+    await second;
+    // …then the stale first response lands and must be discarded.
+    resolvers[0]([{ threadId: "m1", title: "alp stale" }]);
+    await first;
+    expect(store.getState().searchResults).toEqual([
+      { threadId: "m2", title: "alpha match" },
+    ]);
+  });
+
+  it("searchThreads is a no-op when pagination is off", async () => {
+    const deps = makeDeps([mkThread("a")]);
+    const store = createThreadsStore({ ...deps, getPagination: () => false });
+    await store.getState().searchThreads("anything");
+    expect(deps.api.threads.list).not.toHaveBeenCalled();
+    expect(store.getState().searchResults).toBeNull();
+  });
+
+  it("delete and rename keep an active search view in step", async () => {
+    const { store } = buildPaged(dataset(150));
+    await store.getState().initThreads();
+    store.setState({
+      searchResults: [
+        { threadId: "t1", title: "One" },
+        { threadId: "t2", title: "Two" },
+      ],
+    });
+    await store.getState().onRenameThread("t1", "Renamed");
+    expect(store.getState().searchResults?.[0].title).toBe("Renamed");
+    await store.getState().onDeleteThread("t2");
+    expect(store.getState().searchResults).toEqual([
+      { threadId: "t1", title: "Renamed" },
+    ]);
+  });
+
   it("a failing page aborts the drain instead of hammering the backend", async () => {
     const all = dataset(300);
     const deps = makeDeps();

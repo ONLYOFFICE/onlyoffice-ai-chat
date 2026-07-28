@@ -49,11 +49,34 @@ export interface ThreadsStoreState {
    */
   loadMoreThreads: () => Promise<void>;
   /**
-   * Drain every remaining page into the store — used by the sidebar
-   * search so the client-side filter covers the whole collection, not
-   * just the loaded pages. Concurrent callers share one drain.
+   * Drain every remaining page into the store — the fallback for
+   * backends that don't implement server-side search, so the sidebar's
+   * client-side filter covers the whole collection. Concurrent callers
+   * share one drain.
    */
   ensureAllThreads: () => Promise<void>;
+  /**
+   * Server-side title search results (pagination mode), or `null` when
+   * no server search is active — the sidebar then falls back to
+   * client-side filtering over the loaded list.
+   */
+  searchResults: Thread[] | null;
+  /** True when the last search page was full — more matches may exist. */
+  hasMoreSearchResults: boolean;
+  /** True while a search request (first page or next page) is on the wire. */
+  isSearchLoading: boolean;
+  /**
+   * Run a server-side title search: sends `query` to storage
+   * (`threads.readAll(entityId, count, cursor, query)`) and pages
+   * through the matches. An empty `query` resets the search state.
+   * Backends that ignore `query` are detected by a non-matching title
+   * in the response — the store then falls back to draining all pages
+   * for the client-side filter and stops asking. No-op (client-side
+   * filtering keeps working over the full list) when pagination is off.
+   */
+  searchThreads: (query: string) => Promise<void>;
+  /** Fetch the next page of search matches (cursor + same query). */
+  loadMoreSearchResults: () => Promise<void>;
   /**
    * Register a thread that the core engine has already persisted (for
    * example, a fresh thread created by `AIEngine.sendWithThread`):
@@ -149,12 +172,31 @@ export function createThreadsStore(deps: {
   let loadMoreInFlight: Promise<void> | null = null;
   // Coalesces concurrent `ensureAllThreads` callers into one drain.
   let ensureAllInFlight: Promise<void> | null = null;
+  // The query behind the current `searchResults` — `loadMoreSearchResults`
+  // pages with it. Closure-held: display-side input state lives in the UI.
+  let activeSearchQuery = "";
+  // Monotonic sequence guarding against out-of-order search responses
+  // (fast typing): only the latest request may write results.
+  let searchSeq = 0;
+  // Flips to false once the backend demonstrably ignored `query`
+  // (returned a non-matching title) — from then on every search goes
+  // straight to the drain fallback instead of re-probing per keystroke.
+  let searchSupported = true;
+  // Coalesces concurrent `loadMoreSearchResults` callers (same rationale
+  // as `loadMoreInFlight`).
+  let searchLoadMoreInFlight: Promise<void> | null = null;
+
+  const matchesQuery = (thread: Thread, query: string): boolean =>
+    (thread.title ?? "").toLowerCase().includes(query.toLowerCase());
 
   return create<ThreadsStoreState>((set, get) => ({
     threadId: "",
     threads: [],
     hasMoreThreads: false,
     isLoadingMoreThreads: false,
+    searchResults: null,
+    hasMoreSearchResults: false,
+    isSearchLoading: false,
 
     initThreads: async (entityId) => {
       loadedEntityId = entityId;
@@ -215,6 +257,89 @@ export function createThreadsStore(deps: {
         }
       })();
       return ensureAllInFlight;
+    },
+
+    searchThreads: async (query) => {
+      activeSearchQuery = query;
+      const seq = ++searchSeq;
+      if (!paginated() || !query) {
+        set({
+          searchResults: null,
+          hasMoreSearchResults: false,
+          isSearchLoading: false,
+        });
+        return;
+      }
+      // The backend already proved it ignores `query` — go straight to
+      // the full-drain fallback; the sidebar filters client-side.
+      if (!searchSupported) {
+        set({ isSearchLoading: true });
+        try {
+          await get().ensureAllThreads();
+        } finally {
+          if (seq === searchSeq) set({ isSearchLoading: false });
+        }
+        return;
+      }
+      set({ isSearchLoading: true });
+      try {
+        const page = await api.threads.list(
+          loadedEntityId,
+          PAGE_SIZE,
+          undefined,
+          query
+        );
+        if (seq !== searchSeq) return; // a newer query superseded this one
+        if (page.some((t) => !matchesQuery(t, query))) {
+          // Contract violation ⇒ the backend ignored `query`. Fall back
+          // to the drain + client-side filter, permanently for this
+          // session.
+          searchSupported = false;
+          set({ searchResults: null, hasMoreSearchResults: false });
+          await get().ensureAllThreads();
+          return;
+        }
+        set({
+          searchResults: page,
+          hasMoreSearchResults: page.length === PAGE_SIZE,
+        });
+      } finally {
+        if (seq === searchSeq) set({ isSearchLoading: false });
+      }
+    },
+
+    loadMoreSearchResults: () => {
+      if (searchLoadMoreInFlight) return searchLoadMoreInFlight;
+      const { searchResults, hasMoreSearchResults } = get();
+      if (!paginated() || !searchResults || !hasMoreSearchResults) {
+        return Promise.resolve();
+      }
+      const last = searchResults[searchResults.length - 1];
+      if (!last) return Promise.resolve();
+      const seq = searchSeq;
+      const query = activeSearchQuery;
+      searchLoadMoreInFlight = (async () => {
+        set({ isSearchLoading: true });
+        try {
+          const page = await api.threads.list(
+            loadedEntityId,
+            PAGE_SIZE,
+            threadsCursorOf(last),
+            query
+          );
+          if (seq !== searchSeq) return; // the query changed mid-flight
+          const known = new Set(get().searchResults?.map((t) => t.threadId));
+          const fresh = page.filter((t) => !known.has(t.threadId));
+          set((state) => ({
+            searchResults: [...(state.searchResults ?? []), ...fresh],
+            hasMoreSearchResults: page.length === PAGE_SIZE && fresh.length > 0,
+          }));
+        } finally {
+          if (seq === searchSeq) set({ isSearchLoading: false });
+          searchLoadMoreInFlight = null;
+        }
+      })();
+      return searchLoadMoreInFlight;
     },
 
     insertThread: async (threadId, title, opts) => {
@@ -333,11 +458,13 @@ export function createThreadsStore(deps: {
     },
 
     onRenameThread: async (id, title) => {
-      set({
-        threads: get().threads.map((thread) =>
-          thread.threadId === id ? { ...thread, title } : thread
-        ),
-      });
+      const rename = (thread: Thread) =>
+        thread.threadId === id ? { ...thread, title } : thread;
+      set((state) => ({
+        threads: state.threads.map(rename),
+        // Keep an active server-search view in step with the rename.
+        searchResults: state.searchResults?.map(rename) ?? null,
+      }));
       await api.threads.rename(id, title);
       callbacksManager.emit("onThreadsUpdated", {
         kind: "renamed",
@@ -352,9 +479,12 @@ export function createThreadsStore(deps: {
       if (thisStore.threadId === id) {
         thisStore.onSwitchToNewThread();
       }
-      set({
-        threads: thisStore.threads.filter((t) => t.threadId !== id),
-      });
+      set((state) => ({
+        threads: state.threads.filter((t) => t.threadId !== id),
+        // A deleted thread must also leave an active server-search view.
+        searchResults:
+          state.searchResults?.filter((t) => t.threadId !== id) ?? null,
+      }));
       await api.threads.delete(id);
       callbacksManager.emit("onThreadsUpdated", {
         kind: "deleted",

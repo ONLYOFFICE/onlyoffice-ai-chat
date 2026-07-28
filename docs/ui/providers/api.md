@@ -134,19 +134,21 @@ by mounting the same engines against your storage.
 ### Cursor pagination on the server (Express)
 
 With `enablePagination` on, `threads/list` and
-`threads/read-messages` receive two extra query params: `count`
-(number) and `cursor` (a JSON-encoded keyset object). An Express
-route parses them and passes them positionally into the engine
-method:
+`threads/read-messages` receive extra query params: `count` (number),
+`cursor` (a JSON-encoded keyset object) and — for `threads/list` when
+the user searches the sidebar — `query` (a case-insensitive title
+substring). An Express route parses them and passes them positionally
+into the engine method:
 
 ```ts
 app.get("/v1/ai-chat/threads/list", async (req, res) => {
-  const { entityId, count, cursor } = req.query;
+  const { entityId, count, cursor, query } = req.query;
   res.json(
     await threadsEngine.list(
       entityId as string | undefined,
       count ? Number(count) : undefined,
-      cursor ? JSON.parse(cursor as string) : undefined
+      cursor ? JSON.parse(cursor as string) : undefined,
+      (query as string | undefined) || undefined
     )
   );
 });
@@ -160,9 +162,14 @@ last row the client already has; `NULL` dates sort last):
 SELECT * FROM threads
 WHERE entity_id <=> :entityId
   AND (last_edit_date, thread_id) < (:cursorDate, :cursorThreadId)
+  AND (:query IS NULL OR LOWER(title) LIKE CONCAT('%', LOWER(:query), '%'))
 ORDER BY last_edit_date DESC, thread_id DESC
 LIMIT :count;
 ```
+
+`query` MUST be a case-insensitive substring match on `title` — the
+widget verifies returned titles against that contract and falls back
+to client-side filtering if the parameter was ignored.
 
 Messages page ascending with cursor `{ createdAt, id }` (`createdAt`
 arrives as an ISO string): `WHERE thread_id = :threadId AND

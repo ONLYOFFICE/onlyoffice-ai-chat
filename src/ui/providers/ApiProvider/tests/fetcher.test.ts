@@ -156,13 +156,19 @@ describe("callRoute", () => {
         json: () => Promise.resolve([]),
       });
       const cursor = { lastEditDate: 123, threadId: "t9" };
-      await callRoute(config, "threads", "list", ["e1", 100, cursor] as never);
+      await callRoute(config, "threads", "list", [
+        "e1",
+        100,
+        cursor,
+        "report",
+      ] as never);
       const [url] = fetchMock.mock.calls[0];
       const parsed = new URL(url as string);
       expect(parsed.pathname).toBe("/v1/threads/list");
       expect(parsed.searchParams.get("entityId")).toBe("e1");
       expect(parsed.searchParams.get("count")).toBe("100");
       expect(JSON.parse(parsed.searchParams.get("cursor")!)).toEqual(cursor);
+      expect(parsed.searchParams.get("query")).toBe("report");
     });
 
     it("omits undefined pagination params from the GET query", async () => {

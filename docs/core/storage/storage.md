@@ -119,7 +119,8 @@ readById(threadId: string): Promise<Thread | null>;
 readAll(
   entityId?: string,
   count?: number,                                // optional page size
-  cursor?: ThreadsCursor                         // { lastEditDate, threadId } of the last received thread
+  cursor?: ThreadsCursor,                        // { lastEditDate, threadId } of the last received thread
+  query?: string                                 // case-insensitive title substring, applied BEFORE pagination
 ): Promise<Thread[]>;                            // scope-filtered, sorted by lastEditDate desc, threadId desc
 update(threadId: string, title?: string): Promise<void>;
 touch(
@@ -144,6 +145,13 @@ delete(threadId: string): Promise<void>;           // cascading: also drops mess
   anchor thread without a timestamp (undated threads sort last).
   Implementations that don't support pagination may ignore both
   parameters — the widget detects a full dump and stops paging.
+- **`query` is a server-side title search** — a **case-insensitive
+  substring match** on `title`, applied BEFORE pagination so
+  `count`/`cursor` page through the matches. The exact substring
+  semantics are contractual: the widget detects an implementation
+  that ignored `query` by spotting a non-matching title in the
+  response, and for the rest of the session falls back to draining
+  all pages and filtering client-side.
 - **The caller owns the clock.** `touch` takes the timestamp as
   an argument; storage never reads `Date.now()`. This makes
   deterministic tests trivial.

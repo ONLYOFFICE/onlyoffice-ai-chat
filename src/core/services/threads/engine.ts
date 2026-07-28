@@ -200,15 +200,17 @@ export class ThreadsEngine {
   /**
    * List threads in scope, sorted by `lastEditDate` desc — passthrough.
    * `entityId` is opaque to the engine and forwarded to storage; see
-   * {@link ThreadsStorage.readAll} for the scoping and cursor-pagination
-   * semantics. Omit `count`/`cursor` for the full list.
+   * {@link ThreadsStorage.readAll} for the scoping, cursor-pagination
+   * and title-search semantics. Omit `count`/`cursor` for the full
+   * list; pass `query` for a server-side case-insensitive title search.
    */
   async list(
     entityId?: string,
     count?: number,
-    cursor?: ThreadsCursor
+    cursor?: ThreadsCursor,
+    query?: string
   ): Promise<Thread[]> {
-    return this.deps.storage.threads.readAll(entityId, count, cursor);
+    return this.deps.storage.threads.readAll(entityId, count, cursor, query);
   }
 
   /** Read messages from a thread — passthrough with same pagination. */

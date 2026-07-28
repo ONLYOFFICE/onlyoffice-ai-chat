@@ -3,6 +3,7 @@ import { cn } from "../../../../shared/utils";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useStores } from "../../../store/context";
+import { useDebouncedCallback } from "../../../hooks/useDebouncedCallback";
 import { useWidgetConfig } from "../../../../widget-config";
 import { IconButton } from "../../icon-button";
 import { Input } from "../../input";
@@ -43,7 +44,11 @@ const ChatList = ({
   const hasMoreThreads = useThreadsStore((s) => s.hasMoreThreads);
   const isLoadingMoreThreads = useThreadsStore((s) => s.isLoadingMoreThreads);
   const loadMoreThreads = useThreadsStore((s) => s.loadMoreThreads);
-  const ensureAllThreads = useThreadsStore((s) => s.ensureAllThreads);
+  const searchResults = useThreadsStore((s) => s.searchResults);
+  const hasMoreSearchResults = useThreadsStore((s) => s.hasMoreSearchResults);
+  const isSearchLoading = useThreadsStore((s) => s.isSearchLoading);
+  const searchThreads = useThreadsStore((s) => s.searchThreads);
+  const loadMoreSearchResults = useThreadsStore((s) => s.loadMoreSearchResults);
   const onSwitchToThread = useThreadsStore((s) => s.onSwitchToThread);
   const onRenameThread = useThreadsStore((s) => s.onRenameThread);
   const onDownloadThread = useThreadsStore((s) => s.onDownloadThread);
@@ -70,37 +75,51 @@ const ChatList = ({
 
   const { t, locale } = useI18n();
 
+  // Server-side search: the query is forwarded to storage
+  // (`threads.readAll(..., query)`), debounced so fast typing produces
+  // one request instead of one per keystroke. The store no-ops with
+  // pagination off (the full list is already client-side) and falls
+  // back to draining all pages when the backend ignores `query`.
+  // Failures leave the search scoped to what is loaded — never an
+  // unhandled rejection.
+  const debouncedSearchThreads = useDebouncedCallback((value: string) => {
+    void searchThreads(value).catch(() => undefined);
+  }, 300);
+
   const onChangeSearchValue = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setSearchValue(value);
+      debouncedSearchThreads(value);
     },
-    []
+    [debouncedSearchThreads]
   );
 
-  const showingThreads = useMemo(
-    () =>
-      threads.filter((thread) =>
-        thread.title?.toLowerCase().includes(searchValue.toLowerCase())
-      ),
-    [threads, searchValue]
-  );
+  const onClearSearch = useCallback(() => {
+    setSearchValue("");
+    debouncedSearchThreads.cancel();
+    void searchThreads("").catch(() => undefined);
+  }, [debouncedSearchThreads, searchThreads]);
 
-  // The search filter is client-side over the LOADED threads. With
-  // pagination on and pages still remaining, drain the rest in the
-  // background as soon as the user starts searching, so the filter
-  // covers the whole collection — not just the loaded pages.
-  useEffect(() => {
-    if (!searchValue) return;
-    // A drain failure (network) just leaves the search scoped to the
-    // loaded pages — never an unhandled rejection.
-    void ensureAllThreads().catch(() => undefined);
-  }, [searchValue, ensureAllThreads]);
+  // Display source: server-search matches when a search is active and
+  // the backend supports it; the loaded list otherwise. Both are run
+  // through the same client-side title filter — for the loaded list it
+  // IS the search, for server results it bridges the debounce gap
+  // (results of the previous query never flash for the current input).
+  const showingThreads = useMemo(() => {
+    const source = searchValue && searchResults ? searchResults : threads;
+    return source.filter((thread) =>
+      thread.title?.toLowerCase().includes(searchValue.toLowerCase())
+    );
+  }, [threads, searchResults, searchValue]);
 
-  // While the background drain is still running, an empty match list is
-  // inconclusive — show a loader instead of a premature "no chats found".
-  const isSearchDraining =
-    !!searchValue && (hasMoreThreads || isLoadingMoreThreads);
+  // While a search request or the drain fallback is still running, an
+  // empty match list is inconclusive — show a loader instead of a
+  // premature "no chats found".
+  const isSearchPending =
+    !!searchValue &&
+    (isSearchLoading ||
+      (searchResults === null && (hasMoreThreads || isLoadingMoreThreads)));
 
   // Infinite scroll: when the sentinel below the list enters the scroll
   // viewport, pull the next page. The observer is rooted in the list's
@@ -111,22 +130,28 @@ const ChatList = ({
   // next page loads without requiring another scroll gesture.
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const showSentinel = hasMoreThreads && !searchValue;
-  const threadsCount = threads.length;
+  // Search mode pages through the server-side matches; list mode pages
+  // through the plain list.
+  const searchMode = !!searchValue && searchResults !== null;
+  const showSentinel = searchMode
+    ? hasMoreSearchResults
+    : hasMoreThreads && !searchValue;
+  const loadNextPage = searchMode ? loadMoreSearchResults : loadMoreThreads;
+  const visibleCount = showingThreads.length;
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!showSentinel || !sentinel) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          void loadMoreThreads().catch(() => undefined);
+          void loadNextPage().catch(() => undefined);
         }
       },
       { root: scrollRootRef.current, rootMargin: "120px" }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [showSentinel, loadMoreThreads, threadsCount]);
+  }, [showSentinel, loadNextPage, visibleCount]);
 
   // Bucket the (already date-sorted) threads into Today / Yesterday /
   // Previous 7 Days / Previous 30 Days / by month. Recomputed when the
@@ -181,7 +206,7 @@ const ChatList = ({
               icon="btn-menu-search"
               value={searchValue}
               onChange={onChangeSearchValue}
-              onClear={() => setSearchValue("")}
+              onClear={onClearSearch}
             />
           </div>
         )}
@@ -217,7 +242,7 @@ const ChatList = ({
                   ))}
                 </div>
               ))
-            ) : isSearchDraining ? (
+            ) : isSearchPending ? (
               <div
                 data-testid="chat-list-search-loading"
                 className="flex items-center justify-center py-[8px]"
@@ -235,7 +260,9 @@ const ChatList = ({
                 data-testid="chat-list-sentinel"
                 className="flex items-center justify-center py-[8px]"
               >
-                {isLoadingMoreThreads ? <Loader size={16} /> : null}
+                {(searchMode ? isSearchLoading : isLoadingMoreThreads) ? (
+                  <Loader size={16} />
+                ) : null}
               </div>
             ) : null}
           </div>

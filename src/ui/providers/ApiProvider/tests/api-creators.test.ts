@@ -182,7 +182,12 @@ describe("createThreadsApi", () => {
     expectCall(6, "threads", "delete", ["t1"]);
     expectCall(7, "threads", "clearMessages", ["t1"]);
     expectCall(8, "threads", "regenerateTitle", ["t1", { id: "p1" }]);
-    expectCall(9, "threads", "list", [undefined, undefined, undefined]);
+    expectCall(9, "threads", "list", [
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
     expectCall(10, "threads", "readMessages", [
       "t1",
       10,

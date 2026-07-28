@@ -404,6 +404,7 @@ describe("ThreadsEngine entity scope", () => {
     expect(storage.threads.readAll).toHaveBeenCalledWith(
       "e1",
       undefined,
+      undefined,
       undefined
     );
   });
@@ -447,12 +448,17 @@ describe("ThreadsEngine pass-through readers", () => {
     expect(storage.messages.readByThread).toHaveBeenCalledWith("t1", 5, cursor);
   });
 
-  it("list() forwards count and cursor to storage.threads.readAll", async () => {
+  it("list() forwards count, cursor and query to storage.threads.readAll", async () => {
     const { storage } = makeStorage();
     const engine = new ThreadsEngine({ storage });
     const cursor = { lastEditDate: 500, threadId: "t9" };
-    await engine.list("e1", 100, cursor);
-    expect(storage.threads.readAll).toHaveBeenCalledWith("e1", 100, cursor);
+    await engine.list("e1", 100, cursor, "report");
+    expect(storage.threads.readAll).toHaveBeenCalledWith(
+      "e1",
+      100,
+      cursor,
+      "report"
+    );
   });
 });
 
