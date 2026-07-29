@@ -262,6 +262,12 @@ export interface AIChatWidgetProps {
    */
   onDeleteProfile?: WidgetConfig["onDeleteProfile"];
   /**
+   * Custom confirmation for deleting a chat (thread). When provided, the
+   * built-in confirmation dialog is skipped and the host owns the confirmation
+   * UI. See {@link WidgetConfig.onDeleteThread}.
+   */
+  onDeleteThread?: WidgetConfig["onDeleteThread"];
+  /**
    * Custom UI for creating a new prompt folder. When provided, the built-in
    * "New prompt folder" dialog is skipped and the host owns the input UI.
    * See {@link WidgetConfig.onCreatePromptFolder}.
@@ -371,6 +377,7 @@ export const AIChatWidget = React.forwardRef<
       onProfileImportClick,
       onDownloadTemplate,
       onDeleteProfile,
+      onDeleteThread,
       onCreatePromptFolder,
       onRenamePromptFolder,
       onDeletePromptFolder,
@@ -411,6 +418,7 @@ export const AIChatWidget = React.forwardRef<
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
+        onDeleteThread,
         onCreatePromptFolder,
         onRenamePromptFolder,
         onDeletePromptFolder,
@@ -448,6 +456,7 @@ export const AIChatWidget = React.forwardRef<
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
+        onDeleteThread,
         onCreatePromptFolder,
         onRenamePromptFolder,
         onDeletePromptFolder,

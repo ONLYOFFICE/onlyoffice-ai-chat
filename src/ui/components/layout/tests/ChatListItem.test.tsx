@@ -107,6 +107,20 @@ vi.mock("../sub-components/DeleteChatDialog", () => ({
   ),
 }));
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let mockWidgetConfig: Record<string, any> = {};
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => mockWidgetConfig,
+}));
+
+const mockStoreDeleteThread = vi.fn();
+vi.mock("../../../store/context", () => ({
+  useStores: () => ({
+    useThreadsStore: (selector: (s: { onDeleteThread: unknown }) => unknown) =>
+      selector({ onDeleteThread: mockStoreDeleteThread }),
+  }),
+}));
+
 import { ChatListItem } from "../sub-components/ChatListItem";
 import type { Thread } from "../../../../types";
 
@@ -135,6 +149,7 @@ const defaultProps = {
 describe("ChatListItem", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockWidgetConfig = {};
   });
 
   it("renders thread title", () => {
@@ -324,6 +339,37 @@ describe("ChatListItem", () => {
 
     fireEvent.click(screen.getByTestId("delete-dialog-close"));
 
+    expect(screen.queryByTestId("delete-dialog")).not.toBeInTheDocument();
+  });
+
+  it("uses the onDeleteThread host callback instead of the built-in dialog, deleting on confirm", async () => {
+    const onDeleteThread = vi.fn().mockResolvedValue(true);
+    mockWidgetConfig = { onDeleteThread };
+    render(<ChatListItem {...defaultProps} />);
+    const container = screen.getByText("Test Thread").closest("div")!;
+    fireEvent.mouseEnter(container);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("menu-Delete"));
+    });
+
+    expect(onDeleteThread).toHaveBeenCalledWith(defaultProps.thread);
+    expect(mockStoreDeleteThread).toHaveBeenCalledWith("thread-1");
+    // The built-in confirm dialog is not shown when the host owns it.
+    expect(screen.queryByTestId("delete-dialog")).not.toBeInTheDocument();
+  });
+
+  it("does not delete when the onDeleteThread host callback resolves falsy", async () => {
+    const onDeleteThread = vi.fn().mockResolvedValue(false);
+    mockWidgetConfig = { onDeleteThread };
+    render(<ChatListItem {...defaultProps} />);
+    const container = screen.getByText("Test Thread").closest("div")!;
+    fireEvent.mouseEnter(container);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("menu-Delete"));
+    });
+
+    expect(onDeleteThread).toHaveBeenCalledWith(defaultProps.thread);
+    expect(mockStoreDeleteThread).not.toHaveBeenCalled();
     expect(screen.queryByTestId("delete-dialog")).not.toBeInTheDocument();
   });
 

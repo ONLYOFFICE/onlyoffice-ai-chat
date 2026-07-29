@@ -5,7 +5,7 @@ import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
 import type { Suggestion } from "./ui/pages/chat/suggestions";
 import type { ModelFormValues } from "./ui/components/model-config-cards/sub-components/ModelConfigForm";
-import type { Profile } from "./types";
+import type { Profile, Thread } from "./types";
 
 export interface WidgetConfig {
   /**
@@ -291,6 +291,21 @@ export interface WidgetConfig {
    */
   onDeleteProfile?: (
     profile: Profile
+  ) => boolean | void | Promise<boolean | void>;
+  /**
+   * Custom confirmation for deleting a chat (thread). When provided, the
+   * widget's built-in confirmation dialog is NOT shown — the host owns the
+   * confirmation UI (e.g. its own modal) and resolves the result:
+   * - `true` — the widget proceeds with the deletion
+   * - `false` / `undefined` / no return (or a rejected promise) — cancelled,
+   *   nothing is deleted
+   *
+   * The widget always performs the actual deletion itself on confirm; the
+   * host only owns the confirmation step. When omitted, the built-in
+   * confirmation dialog is used.
+   */
+  onDeleteThread?: (
+    thread: Thread
   ) => boolean | void | Promise<boolean | void>;
   /**
    * Custom UI for creating a new prompt folder. When provided, the widget's

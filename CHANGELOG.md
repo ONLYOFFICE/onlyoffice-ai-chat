@@ -4,6 +4,7 @@
 
 ### Added
 
+- `onDeleteThread` widget config — custom confirmation for deleting a chat. When provided, the built-in confirm dialog is skipped and the host owns the confirmation UI (its own modal); the widget performs the deletion once the host resolves `true`. Mirrors `onDeleteProfile` / `onDeletePromptFolder`.
 - Suggestion chip height and paddings are now themable: `--chat-suggestion-height`, `--chat-suggestion-padding-x`, `--chat-suggestion-padding-y`.
 - Suggestions block bottom margin is now themable: `--chat-suggestions-margin-bottom`.
 - User message bubble corner radius is now themable: `--chat-user-message-border-radius`.
