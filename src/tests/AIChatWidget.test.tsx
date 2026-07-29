@@ -26,10 +26,11 @@ vi.mock("../shared/logger", () => ({
   default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }));
 
-// Servers class - needs hostToolSource.setGroups
+// Servers class - needs hostToolSource.setGroups and dispose (called on unmount)
 vi.mock("../ui/tools/servers", () => ({
   default: class MockServers {
     hostToolSource = { setGroups: vi.fn() };
+    dispose = vi.fn();
   },
 }));
 

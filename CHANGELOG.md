@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.4
+
+### Fixed
+
+- **MCP HTTP sessions are now terminated instead of orphaned.** The custom-server client captures `Mcp-Session-Id` from `initialize`, echoes it on every follow-up request, and closes the session with an `HTTP DELETE` on server delete/restart. Stateless servers (no session id) are unaffected.
+- **Widget teardown cleans up MCP servers.** On unmount the widget disposes all custom servers — stdio child processes are terminated, HTTP sessions closed, and in-flight tool calls rejected instead of leaking until their 30s timeout. Previously nothing ran on unmount, so stdio processes and sessions were left orphaned.
+
+```ts
+// on server delete / restart / widget unmount
+DELETE <server-url>   // header: Mcp-Session-Id: <id>
+```
+
 ## 0.5.3
 
 ### Changed

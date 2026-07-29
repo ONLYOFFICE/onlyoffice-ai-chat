@@ -7,6 +7,13 @@ type THttpServer = {
   url: string;
   headers?: Record<string, string>;
   abortController?: AbortController;
+  /**
+   * `Mcp-Session-Id` captured from the `initialize` response for stateful
+   * (Streamable HTTP session) servers. Echoed on every subsequent request
+   * and used to terminate the session (`DELETE`) on teardown. Absent for
+   * stateless servers.
+   */
+  sessionId?: string;
 };
 
 const getParams = (config: Record<string, unknown>) => {
@@ -139,6 +146,45 @@ class CustomServers {
   ): Promise<Response> => {
     const proxy = this.platform.fetchProxy;
     return proxy ? proxy(url, init) : fetch(url, init);
+  };
+
+  /**
+   * JSON-RPC request headers for an HTTP server, echoing the captured
+   * `Mcp-Session-Id` when the server issued one so stateful sessions keep
+   * routing to the same session. Stateless servers carry no session id and
+   * the header is simply omitted.
+   */
+  private httpHeaders = (server: THttpServer): Record<string, string> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...server.headers,
+    };
+    if (server.sessionId) headers["Mcp-Session-Id"] = server.sessionId;
+    return headers;
+  };
+
+  /**
+   * Terminate a stateful MCP session (Streamable HTTP `DELETE` with the
+   * `Mcp-Session-Id` header). Best-effort and never throws: stateless
+   * servers issue no session id (nothing to close), and a server that does
+   * not support client-initiated termination answers `405` — both are fine.
+   */
+  private closeHttpSession = async (server: THttpServer): Promise<void> => {
+    if (!server.sessionId) return;
+    try {
+      await this.platformFetch(server.url, {
+        method: "DELETE",
+        headers: {
+          ...server.headers,
+          "Mcp-Session-Id": server.sessionId,
+        },
+      });
+    } catch (error) {
+      logger.info("[mcp] closeHttpSession failed (best-effort)", {
+        url: server.url,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   };
 
   private _appendLog(type: string, line: string) {
@@ -329,9 +375,11 @@ class CustomServers {
       return;
     }
 
-    // Stop existing HTTP server if running
-    if (this.httpServers[type]?.abortController) {
-      this.httpServers[type].abortController.abort();
+    // Stop existing HTTP server if running — close its MCP session first.
+    const existing = this.httpServers[type];
+    if (existing) {
+      void this.closeHttpSession(existing);
+      existing.abortController?.abort();
     }
 
     this.customServersLogs[type] = [
@@ -411,9 +459,11 @@ class CustomServers {
   };
 
   restartHttpServer = (type: string, config: Record<string, unknown>) => {
-    // Stop existing connection
-    if (this.httpServers[type]?.abortController) {
-      this.httpServers[type].abortController.abort();
+    // Stop existing connection — close its MCP session first.
+    const existing = this.httpServers[type];
+    if (existing) {
+      void this.closeHttpSession(existing);
+      existing.abortController?.abort();
     }
 
     const { url, headers } = getHttpParams(config);
@@ -465,11 +515,12 @@ class CustomServers {
       this.customServersProcesses[type].end();
       delete this.customServersProcesses[type];
     }
-    // Stop HTTP connection if exists
-    if (this.httpServers[type]) {
-      if (this.httpServers[type].abortController) {
-        this.httpServers[type].abortController.abort();
-      }
+    // Stop HTTP connection if exists — terminate the MCP session (best-effort
+    // DELETE) before dropping the connection so it is not orphaned server-side.
+    const httpServer = this.httpServers[type];
+    if (httpServer) {
+      void this.closeHttpSession(httpServer);
+      httpServer.abortController?.abort();
       delete this.httpServers[type];
     }
     if (this.customServersLogs[type]) {
@@ -485,6 +536,27 @@ class CustomServers {
       delete this.tools[type];
     }
     this.eventBus.emit("tools-changed");
+  };
+
+  /**
+   * Tear down every running server: terminate stdio child processes and
+   * close HTTP MCP sessions (best-effort `DELETE`). Meant to be called on
+   * widget unmount — otherwise child processes and stateful sessions are
+   * orphaned for the lifetime of the host page. Also fails any in-flight
+   * stdio tool calls so their promises settle instead of hanging until the
+   * 30s timeout.
+   */
+  dispose = () => {
+    const types = new Set([
+      ...Object.keys(this.customServersProcesses),
+      ...Object.keys(this.httpServers),
+    ]);
+    types.forEach((type) => this.deleteCustomServer(type));
+
+    this._pendingRequests.forEach((pending) =>
+      pending.reject(new Error("MCP client disposed"))
+    );
+    this._pendingRequests.clear();
   };
 
   initHttpServer = async (type: string) => {
@@ -508,15 +580,19 @@ class CustomServers {
 
       const response = await this.platformFetch(server.url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...server.headers,
-        },
+        headers: this.httpHeaders(server),
         body: JSON.stringify(initRequest),
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
+      }
+
+      // Capture the session id for stateful (Streamable HTTP) servers so
+      // later requests echo it and teardown can close the session.
+      const sessionId = response.headers?.get?.("Mcp-Session-Id");
+      if (sessionId) {
+        server.sessionId = sessionId;
       }
 
       const text = await response.text();
@@ -625,10 +701,7 @@ class CustomServers {
 
       const response = await this.platformFetch(server.url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...server.headers,
-        },
+        headers: this.httpHeaders(server),
         body: JSON.stringify(request),
       });
 
@@ -716,10 +789,7 @@ class CustomServers {
 
       const response = await this.platformFetch(server.url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...server.headers,
-        },
+        headers: this.httpHeaders(server),
         body: JSON.stringify(request),
       });
 
