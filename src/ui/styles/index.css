@@ -45,7 +45,7 @@
   --dropdown-menu-min-width: 150px; /* min width when matchTriggerWidth is on */
   --dropdown-item-height: 26px; /* row height */
   --dropdown-item-gap: 10px; /* gap between the row's leading group and trailing control */
-  --dropdown-item-content-gap: 4px; /* gap inside the leading group (icon ↔ label) */
+  --dropdown-item-content-gap: 4px; /* gap inside the leading group (icon to label) */
   --dropdown-item-label-space: 28px; /* label indent when the icon column is reserved but empty */
   --dropdown-separator-margin-y: 4px; /* vertical margin of a separator row */
 

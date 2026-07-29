@@ -32,7 +32,7 @@ export type ComboBoxProps = {
   /**
    * Size of the arrow glyph. When omitted, falls back to the
    * `--combo-box-arrow-width` / `--combo-box-arrow-height` tokens (default
-   * `7` × `4`). The model selector passes its own token pair.
+   * `7` x `4`). The model selector passes its own token pair.
    */
   arrowWidth?: number | string;
   arrowHeight?: number | string;

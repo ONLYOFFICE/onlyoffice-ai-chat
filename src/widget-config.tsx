@@ -147,7 +147,7 @@ export interface WidgetConfig {
    * The arrow *size* is set separately via CSS tokens — `--combo-box-arrow-
    * width` / `--combo-box-arrow-height` for the form comboboxes and
    * `--model-selector-arrow-width` / `--model-selector-arrow-height` for the
-   * model selector (both default `7` × `4`).
+   * model selector (both default `7` x `4`).
    */
   modelSelectorArrowIcon?: string;
   /**
