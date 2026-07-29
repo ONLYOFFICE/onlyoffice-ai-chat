@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 
 const mockChangeToolStatus = vi.fn();
 const mockChangeAllToolStatus = vi.fn();
 const mockGetCustomServersStoped = vi.fn().mockReturnValue([]);
+const mockGetCustomServersLogs = vi.fn().mockReturnValue({});
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -18,6 +19,7 @@ vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     servers: {
       getCustomServersStoped: mockGetCustomServersStoped,
+      getCustomServersLogs: mockGetCustomServersLogs,
     },
   }),
 }));
@@ -90,6 +92,7 @@ describe("AvailableToolsItem", () => {
     mockChangeToolStatus.mockClear();
     mockChangeAllToolStatus.mockClear();
     mockGetCustomServersStoped.mockReturnValue([]);
+    mockGetCustomServersLogs.mockReturnValue({});
   });
 
   afterEach(() => {
@@ -233,7 +236,52 @@ describe("AvailableToolsItem", () => {
       />
     );
     // isStoped is set via interval, advance timer
-    vi.advanceTimersByTime(1000);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByTestId("icon-btn-status.error")).toBeInTheDocument();
+  });
+
+  it("opens the crash log (not tools) when a stopped server is clicked, even with no tools", () => {
+    mockGetCustomServersStoped.mockReturnValue(["my-server"]);
+    mockGetCustomServersLogs.mockReturnValue({
+      "my-server": ["boom-line-one\n", "boom-line-two\n"],
+    });
+    render(
+      <AvailableToolsItem
+        name="my-server"
+        mcpItems={[]}
+        isLoading={true}
+        disableEnable={false}
+      />
+    );
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    // Collapsed by default — the log stays hidden until clicked.
+    expect(screen.queryByText(/boom-line-one/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("my-server"));
+    expect(screen.getByText(/boom-line-one/)).toBeInTheDocument();
+    expect(screen.getByText(/boom-line-two/)).toBeInTheDocument();
+  });
+
+  it("opens the crash log when the error icon itself is clicked", () => {
+    mockGetCustomServersStoped.mockReturnValue(["my-server"]);
+    mockGetCustomServersLogs.mockReturnValue({ "my-server": ["crashed\n"] });
+    render(
+      <AvailableToolsItem
+        name="my-server"
+        mcpItems={[]}
+        isLoading={true}
+        disableEnable={false}
+      />
+    );
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    fireEvent.click(screen.getByTestId("icon-btn-status.error"));
+    expect(screen.getByText(/crashed/)).toBeInTheDocument();
   });
 
   it("collapses when isLoading changes to true", () => {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3
+
+### Changed
+
+- **MCP crash logs moved into the server row.** When a custom MCP server stops, its error icon is now clickable: clicking the row (or the icon) expands a dropdown — same affordance as the tools list — showing that server's log instead. The panel is capped at 300px height and scrolls. Replaces the previous separate "show logs" button. Stopped-state and logs are read synchronously on mount, so an already-stopped server opens its log on the first click without waiting for the status poll.
+
 ## 0.5.1
 
 ### Changed
