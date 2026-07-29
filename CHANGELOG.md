@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.1
+
+### Changed
+
+- `ThreadsCursor` now carries an `id` field mirroring `threadId`, so a backend whose keyset tiebreak column is named `id` can read it straight from the cursor. The widget always sets `id === threadId`, so the threads keyset (`lastEditDate DESC, threadId DESC`) and the SQL sketch in `docs/` are unchanged — the field is additive and old servers keep working.
+
+```ts
+// cursor sent to threads/list
+{ lastEditDate, threadId, id } // id === threadId
+```
+
 ## 0.5.0
 
 ### Added

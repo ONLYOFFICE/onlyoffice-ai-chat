@@ -451,7 +451,7 @@ describe("ThreadsEngine pass-through readers", () => {
   it("list() forwards count, cursor and query to storage.threads.readAll", async () => {
     const { storage } = makeStorage();
     const engine = new ThreadsEngine({ storage });
-    const cursor = { lastEditDate: 500, threadId: "t9" };
+    const cursor = { lastEditDate: 500, threadId: "t9", id: "t9" };
     await engine.list("e1", 100, cursor, "report");
     expect(storage.threads.readAll).toHaveBeenCalledWith(
       "e1",

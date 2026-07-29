@@ -336,6 +336,7 @@ describe("createThreadsStore pagination", () => {
     expect(deps.api.threads.list).toHaveBeenLastCalledWith("e1", 100, {
       lastEditDate: 100000 - 99,
       threadId: "t99",
+      id: "t99",
     });
     expect(store.getState().threads).toHaveLength(200);
     expect(store.getState().hasMoreThreads).toBe(true);
