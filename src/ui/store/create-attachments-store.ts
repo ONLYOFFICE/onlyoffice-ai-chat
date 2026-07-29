@@ -1,6 +1,7 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { TAttachmentRef } from "../../types";
 import type { AttachmentsApi } from "../providers/ApiProvider/attachments";
+import type { Attachment } from "../../core";
 
 /**
  * Zustand state for file and image attachment refs on the current
@@ -55,7 +56,7 @@ export interface AttachmentsStoreState {
    */
   addAttachmentFile: (
     input: FileAttachmentInput | FileAttachmentInput[]
-  ) => Promise<void>;
+  ) => Promise<Attachment[] | undefined>;
 
   /** Remove a file ref by id and delete the underlying storage record. */
   deleteAttachmentFile: (id: string) => Promise<void>;
@@ -152,7 +153,10 @@ export function createAttachmentsStore(
           path: record.path,
           type: record.type,
         }));
+
         set((s) => ({ attachmentFiles: [...s.attachmentFiles, ...refs] }));
+
+        return records;
       }),
 
     deleteAttachmentFile: async (id) => {
