@@ -26,11 +26,17 @@ export const DEFAULT_THREADS_ROUTES: Record<ThreadsEngineMethod, RouteSpec> = {
   delete: { method: "DELETE", path: "threads/delete" },
   clearMessages: { method: "DELETE", path: "threads/clear-messages" },
   regenerateTitle: { method: "POST", path: "threads/regenerate-title" },
-  list: { method: "GET", path: "threads/list", params: ["entityId"] },
+  // `cursor` is an object — the transport JSON-stringifies it into the
+  // query value; servers `JSON.parse(req.query.cursor)` it back.
+  list: {
+    method: "GET",
+    path: "threads/list",
+    params: ["entityId", "count", "cursor", "query"],
+  },
   readMessages: {
     method: "GET",
     path: "threads/read-messages",
-    params: ["threadId", "limit", "startIndex"],
+    params: ["threadId", "count", "cursor"],
   },
   getById: {
     method: "GET",
@@ -49,6 +55,16 @@ export const DEFAULT_THREADS_ROUTES: Record<ThreadsEngineMethod, RouteSpec> = {
 /** Dependencies injected into a {@link ThreadsEngine} instance. */
 export type ThreadsEngineDeps = {
   storage: StorageAdapter;
+
+  /**
+   * Global cursor-pagination switch. When enabled, the engine's own
+   * full-history reads (`openOrCreate`) fetch messages in pages of
+   * {@link PAGE_SIZE} instead of one unbounded call. Does not change
+   * what `list` / `readMessages` do — those only forward the caller's
+   * `count` / `cursor`. Default false. Pass a function to resolve
+   * lazily at request time.
+   */
+  pagination?: boolean | (() => boolean);
 };
 
 /**

@@ -42,6 +42,11 @@ function makeStores() {
   const serversState = {
     reload: vi.fn().mockResolvedValue(undefined),
   };
+  const api = {
+    threads: {
+      getById: vi.fn().mockResolvedValue(null),
+    },
+  };
 
   return {
     states: {
@@ -50,6 +55,7 @@ function makeStores() {
       routerState,
       profilesState,
       serversState,
+      api,
     },
     stores: {
       useMessageStore: { getState: () => messageState },
@@ -57,9 +63,13 @@ function makeStores() {
       useRouter: { getState: () => routerState },
       useProfilesStore: { getState: () => profilesState },
       useServersStore: { getState: () => serversState },
+      api,
     } as unknown as Stores,
   };
 }
+
+/** Drain the async title-resolution chain inside download/export. */
+const flush = () => new Promise((r) => setTimeout(r, 0));
 
 describe("createWidgetRef", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -79,8 +89,9 @@ describe("createWidgetRef", () => {
         >
     ) as unknown as Parameters<typeof createWidgetRef>[1];
     const eventBus = { emit: vi.fn() } as unknown as ChatEventBus;
-    const composerBridgeRef: { current: { setText: ((text: string) => void) | null } } =
-      { current: { setText: vi.fn() } };
+    const composerBridgeRef: {
+      current: { setText: ((text: string) => void) | null };
+    } = { current: { setText: vi.fn() } };
     const ref = createWidgetRef(
       stores,
       select,
@@ -143,18 +154,20 @@ describe("createWidgetRef", () => {
     expect(states.threadsState.onClearThreadHistory).toHaveBeenCalledWith("t1");
   });
 
-  it("downloadThread looks up title from threads", () => {
+  it("downloadThread looks up title from threads", async () => {
     const { ref, states } = build();
     ref.downloadThread("t1");
+    await flush();
     expect(states.threadsState.onDownloadThread).toHaveBeenCalledWith(
       "t1",
       "Title 1"
     );
   });
 
-  it("exportThread looks up title and forwards the format id", () => {
+  it("exportThread looks up title and forwards the format id", async () => {
     const { ref, states } = build();
     ref.exportThread("t1", "pdf");
+    await flush();
     expect(states.threadsState.onExportThread).toHaveBeenCalledWith(
       "t1",
       "pdf",
@@ -162,12 +175,29 @@ describe("createWidgetRef", () => {
     );
   });
 
-  it("downloadThread passes undefined title for unknown thread", () => {
+  it("downloadThread passes undefined title for unknown thread", async () => {
     const { ref, states } = build();
     ref.downloadThread("missing");
+    await flush();
+    // The in-memory list misses the thread — the storage fallback ran.
+    expect(states.api.threads.getById).toHaveBeenCalledWith("missing");
     expect(states.threadsState.onDownloadThread).toHaveBeenCalledWith(
       "missing",
       undefined
+    );
+  });
+
+  it("downloadThread recovers the title from storage when not loaded", async () => {
+    const { ref, states } = build();
+    states.api.threads.getById.mockResolvedValueOnce({
+      threadId: "t9",
+      title: "Stored Title",
+    });
+    ref.downloadThread("t9");
+    await flush();
+    expect(states.threadsState.onDownloadThread).toHaveBeenCalledWith(
+      "t9",
+      "Stored Title"
     );
   });
 

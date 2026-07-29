@@ -130,6 +130,7 @@ function makeStorage() {
       ),
       create: vi.fn(),
       readById: vi.fn(async () => null),
+      updateManyByIds: vi.fn(),
     },
   } as unknown as StorageAdapter;
   return {
@@ -185,9 +186,14 @@ describe("AIEngine.sendWithStream", () => {
       title: "New chat",
     });
     expect(yielded[1].type).toBe("user-message-stored");
-    expect(yielded[2].type).toBe("message-end");
-    expect(yielded[3]).toMatchObject({
-      type: "thread-title",
+    // The generated title is multiplexed into the stream and races the
+    // reply — both tail events arrive, in either order.
+    const tail = yielded.slice(2);
+    expect(tail.map((e) => e.type).sort()).toEqual([
+      "message-end",
+      "thread-title",
+    ]);
+    expect(tail.find((e) => e.type === "thread-title")).toMatchObject({
       title: "My Title",
     });
     expect(threads).toHaveLength(1);
@@ -197,6 +203,199 @@ describe("AIEngine.sendWithStream", () => {
         expect.objectContaining(final),
       ])
     );
+  });
+
+  it("yields the title mid-stream when it resolves before the reply ends", async () => {
+    // Gate the provider stream so the (instant) title must win the race.
+    let openGate!: () => void;
+    const gate = new Promise<void>((r) => (openGate = r));
+    sendMessageSyncMock.mockResolvedValueOnce("Fast Title");
+    const final: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "ok" }],
+    };
+    sendMessageMock.mockReturnValueOnce(
+      (async function* () {
+        await gate;
+        yield { isEnd: true, responseMessage: final };
+      })()
+    );
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const iter = engine.sendWithStream({ userMessage });
+
+    expect((await iter.next()).value).toMatchObject({
+      type: "thread-title",
+      title: "New chat",
+    });
+    expect((await iter.next()).value.type).toBe("user-message-stored");
+    // Reply still streaming (gated) — the title arrives anyway.
+    expect((await iter.next()).value).toMatchObject({
+      type: "thread-title",
+      title: "Fast Title",
+    });
+    expect(storage.threads.update).toHaveBeenCalledWith(
+      expect.any(String),
+      "Fast Title"
+    );
+
+    openGate();
+    expect((await iter.next()).value.type).toBe("message-end");
+    expect((await iter.next()).done).toBe(true);
+  });
+
+  it("closes immediately and keeps the default title when the title outlives the reply", async () => {
+    let resolveTitle!: (t: string) => void;
+    sendMessageSyncMock.mockReturnValueOnce(
+      new Promise<string>((r) => (resolveTitle = r))
+    );
+    const final: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "ok" }],
+    };
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([{ isEnd: true, responseMessage: final }])
+    );
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const iter = engine.sendWithStream({ userMessage });
+
+    expect((await iter.next()).value).toMatchObject({
+      type: "thread-title",
+      title: "New chat",
+    });
+    expect((await iter.next()).value.type).toBe("user-message-stored");
+    expect((await iter.next()).value.type).toBe("message-end");
+    // The round is over — no waiting for the title, the generator ends.
+    expect((await iter.next()).done).toBe(true);
+
+    // A late resolution is discarded: the placeholder name is final.
+    resolveTitle("Late Title");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(storage.threads.update).not.toHaveBeenCalled();
+  });
+
+  it("still delivers a late title when the round pauses on a tool call", async () => {
+    let resolveTitle!: (t: string) => void;
+    sendMessageSyncMock.mockReturnValueOnce(
+      new Promise<string>((r) => (resolveTitle = r))
+    );
+    // Terminal message with an unresolved tool call — the engine pauses
+    // the round with `tool-call-pending` instead of `message-end`.
+    const paused: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        {
+          type: "tool-call",
+          toolName: "host_tool",
+          toolCallId: "tc1",
+          args: {},
+        },
+      ] as unknown as Exclude<ThreadMessageLike["content"], string>,
+    };
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([{ isEnd: true, responseMessage: paused }])
+    );
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const iter = engine.sendWithStream({ userMessage });
+
+    expect((await iter.next()).value.type).toBe("thread-title");
+    expect((await iter.next()).value.type).toBe("user-message-stored");
+    expect((await iter.next()).value.type).toBe("tool-call-pending");
+
+    // The round isn't over (approval dialog) — the generator stays open
+    // and the title still lands as a trailing event.
+    const tail = iter.next();
+    resolveTitle("Tool Title");
+    expect((await tail).value).toMatchObject({
+      type: "thread-title",
+      title: "Tool Title",
+    });
+    expect((await iter.next()).done).toBe(true);
+  });
+
+  it("hydrates image refs before the first-message title request", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Titled");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const imageRefMessage: ThreadMessageLike = {
+      role: "user",
+      content: [
+        {
+          type: "image",
+          image: JSON.stringify({
+            ref: "att-1",
+            title: "img",
+            kind: "image",
+          }),
+          name: "img",
+        } as unknown as Extract<
+          Exclude<ThreadMessageLike["content"], string>[number],
+          { type: "image" }
+        >,
+        { type: "text", text: "what is this?" },
+      ],
+    };
+    for await (const _ of engine.sendWithStream({
+      userMessage: imageRefMessage,
+    })) {
+      // drain
+    }
+    const sent = sendMessageSyncMock.mock.calls[0][0]
+      .messages as ThreadMessageLike[];
+    const part = (
+      sent[0].content as Array<{ type: string; image?: string }>
+    )[0];
+    expect(part.image).toBe("data:image/png;base64,AAAA");
+  });
+
+  it("reads existing-thread history in pages when pagination is on", async () => {
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const history: ThreadMessageLike[] = Array.from(
+      { length: 150 },
+      (_, i) => ({
+        role: "user",
+        content: [{ type: "text", text: `m${i}` }],
+        id: `m${i}`,
+        createdAt: new Date(1000 + i),
+      })
+    );
+    const readByThread = vi.fn(
+      async (_t: string, count?: number, cursor?: { id: string }) => {
+        const from = cursor
+          ? history.findIndex((m) => m.id === cursor.id) + 1
+          : 0;
+        return history.slice(from, count ? from + count : undefined);
+      }
+    );
+    (storage.messages as unknown as { readByThread: unknown }).readByThread =
+      readByThread;
+    const engine = new AIEngine({ storage, pagination: true });
+    for await (const _ of engine.sendWithStream({
+      threadId: "t1",
+      userMessage,
+    })) {
+      // drain
+    }
+    // 150 messages → 100 + 50, two paged reads.
+    expect(readByThread).toHaveBeenNthCalledWith(1, "t1", 100, undefined);
+    expect(readByThread).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the single unbounded history read when pagination is off", async () => {
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      threadId: "t1",
+      userMessage,
+    })) {
+      // drain
+    }
+    expect(storage.messages.readByThread).toHaveBeenCalledWith("t1");
   });
 
   it("uses an injected ThreadsEngine when provided", async () => {
@@ -289,6 +488,64 @@ describe("AIEngine.sendWithStream entity scope", () => {
       "p1",
       undefined
     );
+  });
+
+  it("contextEntityId scopes the context, entityId keeps the thread", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      entityId: "local-folder",
+      contextEntityId: "agent-room",
+    })) {
+      // drain
+    }
+    // Context (assignment fallback, tool prefs) resolves against the agent…
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Chat,
+      "agent-room"
+    );
+    // …while the thread itself stays placed under the caller's entity.
+    expect(storage.threads.create).toHaveBeenCalledWith(
+      "New chat",
+      "p1",
+      "local-folder"
+    );
+  });
+
+  it("stamps contextEntityId into the persisted user message", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage, messages } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      entityId: "local-folder",
+      contextEntityId: "agent-room",
+    })) {
+      // drain
+    }
+    const storedUser = messages.find((m) => m.role === "user");
+    expect(storedUser?.metadata?.custom?.["contextEntityId"]).toBe(
+      "agent-room"
+    );
+  });
+
+  it("does not stamp the user message without contextEntityId", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage, messages } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      entityId: "e1",
+    })) {
+      // drain
+    }
+    const storedUser = messages.find((m) => m.role === "user");
+    expect(storedUser?.metadata).toBeUndefined();
   });
 });
 

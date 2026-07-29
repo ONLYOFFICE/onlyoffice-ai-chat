@@ -48,4 +48,22 @@ describe("IconButton", () => {
     render(<IconButton iconName="x" size={20} className="extra" />);
     expect(screen.getByRole("button")).toHaveClass("extra");
   });
+
+  it("defaults to type=button and does not submit an enclosing form", () => {
+    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <IconButton iconName="btn-attach.small" size={20} />
+      </form>
+    );
+    const btn = screen.getByRole("button");
+    expect(btn).toHaveAttribute("type", "button");
+    fireEvent.click(btn);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("an explicit type prop overrides the default", () => {
+    render(<IconButton iconName="send" size={20} type="submit" />);
+    expect(screen.getByRole("button")).toHaveAttribute("type", "submit");
+  });
 });

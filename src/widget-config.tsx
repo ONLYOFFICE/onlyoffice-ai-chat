@@ -3,6 +3,7 @@ import { setLogLevel, type LogLevel } from "./shared/logger";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
+import type { ProfilePickerAction } from "./ui/pages/chat/profile-picker-actions";
 import type { Suggestion } from "./ui/pages/chat/suggestions";
 import type { ModelFormValues } from "./ui/components/model-config-cards/sub-components/ModelConfigForm";
 import type { Profile } from "./types";
@@ -19,9 +20,39 @@ export interface WidgetConfig {
    * passes it through to storage methods — entity lifecycle and the
    * "which profile per entity" mapping live entirely on the host side.
    *
-   * Fixed at mount; live switching is not supported.
+   * Live switching is supported since 0.4.170: config consumers (threads
+   * hydration, sends) pick the new value up on the next render, and the
+   * host must mirror the change into the store bundle via
+   * `Stores.setEntityId` plus the re-scoping steps documented there.
    */
   entityId?: string;
+  /**
+   * Secondary scope for the *context* of chat rounds, when the
+   * conversation itself lives under {@link WidgetConfig.entityId} but the
+   * request should run against another workspace's context — its tool
+   * list / execution scope, allow-always tool preferences, and assignment
+   * fallback. Threads (history placement and listing) keep following
+   * `entityId`. Hosts use this to talk to an AI agent from outside its
+   * room while the chat history stays where the user is. Forwarded on
+   * send / regenerate / tool-call resume; omitted → requests behave as
+   * before (everything scopes by `entityId`).
+   */
+  contextEntityId?: string;
+  /**
+   * Global cursor-pagination switch (default `false`). When enabled:
+   *
+   * - the sidebar loads threads in pages of 100 and infinite-scrolls;
+   * - every full-history read (opening a thread, building the model's
+   *   request history, download/export) fetches messages in pages of
+   *   100 instead of one unbounded request.
+   *
+   * Requires a `StorageAdapter` / backend that honors the `count` /
+   * `cursor` parameters on `threads.readAll` and
+   * `messages.readByThread` (see the storage contract docs). With the
+   * flag off, no pagination parameters are ever sent — the behavior is
+   * identical to previous releases.
+   */
+  enablePagination?: boolean;
   /**
    * Controls the composer's model (profile) picker. Tri-state:
    *
@@ -145,6 +176,25 @@ export interface WidgetConfig {
    * item is an onClick-only entry; toggles and submenus are not supported.
    */
   composerActions?: ComposerAction[];
+  /**
+   * Extra items appended to the composer's model (profile) picker dropdown,
+   * rendered after a separator below the profile list. Each entry is either
+   * an onClick item or, when `items` is set, a row opening a nested submenu
+   * (presented per {@link WidgetConfig.dropdownNavigation}). Not rendered
+   * when the picker itself is hidden — see
+   * {@link WidgetConfig.hideProfilePicker}.
+   */
+  profilePickerActions?: ProfilePickerAction[];
+  /**
+   * Fired when the user explicitly picks an entry in the composer's model
+   * picker — a plain profile row (`actionId` undefined) or a
+   * {@link ProfilePickerAction} row carrying a `profileId` (`actionId` is
+   * that action's id, and `profile` is the aliased profile as selected,
+   * i.e. named after the action's `text`). NOT fired by programmatic
+   * changes: the initial auto-select, thread-switch profile restores, or
+   * host calls to the profiles store.
+   */
+  onProfilePickerSelect?: (profile: Profile, actionId?: string) => void;
   /**
    * Show the built-in "Add local image" item in the composer's "+"
    * (attachments) dropdown. Opt-in: the item appears only when this is `true`.

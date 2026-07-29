@@ -93,6 +93,42 @@ describe("AnthropicProvider", () => {
       );
     });
 
+    it("raises max_tokens above the plain cap when thinking is enabled", async () => {
+      messagesCreateMock.mockResolvedValueOnce(
+        iter([makeEv({ type: "message_stop" })])
+      );
+      messagesCreateMock.mockResolvedValueOnce(
+        iter([makeEv({ type: "message_stop" })])
+      );
+      const p = new AnthropicProvider({
+        baseUrl: "https://api.anthropic.com",
+        apiKey: "sk",
+      });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "claude-sonnet-4-5",
+          systemPrompt: "",
+        })
+      );
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "claude-sonnet-4-5",
+          systemPrompt: "",
+          withReasoning: true,
+        })
+      );
+      const plain = messagesCreateMock.mock.calls[0]?.[0];
+      const thinking = messagesCreateMock.mock.calls[1]?.[0];
+      // Thinking consumes max_tokens, so the cap must GROW when it's on
+      // and keep the visible reply's headroom above the thinking budget.
+      expect(thinking.max_tokens).toBeGreaterThan(plain.max_tokens);
+      expect(thinking.max_tokens - thinking.thinking.budget_tokens).toBe(
+        22000
+      );
+    });
+
     it("attaches tools with auto tool_choice", async () => {
       messagesCreateMock.mockResolvedValueOnce(
         iter([makeEv({ type: "message_stop" })])
@@ -210,6 +246,33 @@ describe("AnthropicProvider", () => {
       expect(messagesCreateMock.mock.calls[0]?.[0]?.thinking?.type).toBe(
         "enabled"
       );
+    });
+
+    it("raises max_tokens above the plain cap when thinking is enabled", async () => {
+      messagesCreateMock.mockResolvedValue({
+        content: [{ type: "text", text: "hi" }],
+      });
+      const p = new AnthropicProvider({
+        baseUrl: "https://api.anthropic.com",
+        apiKey: "sk",
+      });
+      await p.sendMessageSync({
+        messages: [],
+        model: "claude",
+        systemPrompt: "",
+      });
+      await p.sendMessageSync({
+        messages: [],
+        model: "claude",
+        systemPrompt: "",
+        withReasoning: true,
+      });
+      const plain = messagesCreateMock.mock.calls[0]?.[0];
+      const thinking = messagesCreateMock.mock.calls[1]?.[0];
+      expect(thinking.max_tokens).toBeGreaterThan(plain.max_tokens);
+      expect(
+        thinking.max_tokens - thinking.thinking.budget_tokens
+      ).toBeGreaterThan(plain.max_tokens);
     });
   });
 

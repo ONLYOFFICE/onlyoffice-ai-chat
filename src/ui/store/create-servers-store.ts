@@ -93,9 +93,10 @@ export function createServersStore(deps: {
   ctx: AppContext;
   api: ServerAPI;
   callbacksManager: CallbacksManager;
-  entityId?: string;
+  getEntityId?: () => string | undefined;
 }): UseBoundStore<StoreApi<ServersStoreState>> {
-  const { ctx, api, callbacksManager, entityId } = deps;
+  const { ctx, api, callbacksManager, getEntityId } = deps;
+  const entity = () => getEntityId?.();
 
   const buildToolsList = async () => {
     const [grouped, systemTools, disabled, webSearchEnabled] =
@@ -104,10 +105,10 @@ export function createServersStore(deps: {
         // Single fetch — the server already connected + listed these.
         // Tolerate hosts that haven't wired the route yet.
         api.tools
-          .listSystemTools(entityId)
+          .listSystemTools(entity())
           .catch(() => ({}) as Record<string, TMCPItem[]>),
-        api.tools.getDisabled(entityId),
-        api.webSearch.isConfigured(entityId),
+        api.tools.getDisabled(entity()),
+        api.webSearch.isConfigured(entity()),
       ]);
 
     // System tools join the same grouping so they get the disabled-flag
@@ -190,7 +191,7 @@ export function createServersStore(deps: {
       // would run `startCustomServers` over an empty map and never spawn
       // anything. Re-reading from storage covers the cross-instance and
       // cold-start cases uniformly.
-      const mcpServers = (await api.tools.listCustomServers(entityId)) ?? {};
+      const mcpServers = (await api.tools.listCustomServers(entity())) ?? {};
       ctx.servers.setCustomServers({ mcpServers });
       ctx.servers.startCustomServers();
     },
@@ -215,7 +216,7 @@ export function createServersStore(deps: {
     },
 
     reload: async () => {
-      const mcpServers = (await api.tools.listCustomServers(entityId)) ?? {};
+      const mcpServers = (await api.tools.listCustomServers(entity())) ?? {};
       ctx.servers.setCustomServers({ mcpServers });
       ctx.servers.startCustomServers();
       const result = await buildToolsList();
@@ -229,7 +230,7 @@ export function createServersStore(deps: {
       const next = enabled
         ? current.filter((n) => !names.includes(n))
         : Array.from(new Set([...current, ...names]));
-      await api.tools.setDisabled(type, next, entityId);
+      await api.tools.setDisabled(type, next, entity());
 
       // Optimistic local flip: just toggle `enabled` on the matching tools.
       // Avoids re-running `buildToolsList` (host getTools + getDisabled +
@@ -249,9 +250,7 @@ export function createServersStore(deps: {
       const systemTypes = new Set(Object.keys(state.systemTools));
       const nextTools = Object.entries(nextServers)
         .filter(([t]) => !systemTypes.has(t))
-        .flatMap(([, items]) =>
-          items.filter((tool) => tool.enabled !== false)
-        );
+        .flatMap(([, items]) => items.filter((tool) => tool.enabled !== false));
 
       set({
         servers: nextServers,
@@ -277,7 +276,7 @@ export function createServersStore(deps: {
       // The persisted disabled list for this type is empty when enabling
       // all, or every tool name when disabling all.
       const next = enabled ? [] : items.map((tool) => tool.name);
-      await api.tools.setDisabled(type, next, entityId);
+      await api.tools.setDisabled(type, next, entity());
 
       const systemTypes = new Set(Object.keys(state.systemTools));
       const nextServers = {
@@ -286,9 +285,7 @@ export function createServersStore(deps: {
       };
       const nextTools = Object.entries(nextServers)
         .filter(([t]) => !systemTypes.has(t))
-        .flatMap(([, list]) =>
-          list.filter((tool) => tool.enabled !== false)
-        );
+        .flatMap(([, list]) => list.filter((tool) => tool.enabled !== false));
 
       set({
         servers: nextServers,
@@ -312,17 +309,17 @@ export function createServersStore(deps: {
     setManageToolData: (data) => set({ manageToolData: data }),
     setIsApprovingTool: (value) => set({ isApprovingTool: value }),
 
-    getConfig: async () => api.tools.listCustomServers(entityId),
+    getConfig: async () => api.tools.listCustomServers(entity()),
 
     saveConfig: async (config) => {
-      await api.tools.replaceAllCustomServers(config.mcpServers, entityId);
+      await api.tools.replaceAllCustomServers(config.mcpServers, entity());
       ctx.servers.setCustomServers(config);
       ctx.servers.startCustomServers();
       callbacksManager.emit("onServersUpdated", { kind: "config-saved" });
     },
 
     deleteCustomServer: async (name) => {
-      await api.tools.removeCustomServer(name, entityId);
+      await api.tools.removeCustomServer(name, entity());
       ctx.servers.deleteCustomServer(name);
       callbacksManager.emit("onServersUpdated", {
         kind: "server-deleted",
@@ -332,6 +329,6 @@ export function createServersStore(deps: {
 
     getCustomServersLogs: () => ctx.servers.getCustomServersLogs(),
 
-    getWebSearchEnabled: () => api.webSearch.isConfigured(entityId),
+    getWebSearchEnabled: () => api.webSearch.isConfigured(entity()),
   }));
 }

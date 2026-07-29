@@ -22,6 +22,17 @@ import {
 } from "./stream";
 import { convertTools } from "./tools";
 
+/**
+ * Output caps. Extended thinking consumes `max_tokens` (the thinking
+ * budget is carved out of it), so a thinking request needs MORE headroom
+ * than a plain one — not less. 32000 is the smallest max-output limit
+ * among thinking-capable Claude models (Opus 4/4.1); the Sonnet and
+ * Haiku 4.x families allow 64k, so this value is safe everywhere while
+ * leaving 22k tokens for the visible reply.
+ */
+const THINKING_MAX_TOKENS = 32000;
+const THINKING_BUDGET_TOKENS = 10000;
+
 class AnthropicProvider extends AbstractBaseProvider {
   protected client: Anthropic;
 
@@ -44,12 +55,15 @@ class AnthropicProvider extends AbstractBaseProvider {
           system: systemPrompt,
           tools: convertedTools.length > 0 ? convertedTools : undefined,
           stream: true,
-          max_tokens: withReasoning ? 16000 : 30000,
+          max_tokens: withReasoning ? THINKING_MAX_TOKENS : 30000,
           ...(convertedTools.length > 0 && {
             tool_choice: { disable_parallel_tool_use: true, type: "auto" },
           }),
           ...(withReasoning && {
-            thinking: { type: "enabled", budget_tokens: 10000 },
+            thinking: {
+              type: "enabled",
+              budget_tokens: THINKING_BUDGET_TOKENS,
+            },
           }),
         },
         { signal }
@@ -74,10 +88,13 @@ class AnthropicProvider extends AbstractBaseProvider {
         system: systemPrompt,
         messages: convertMessages(messages),
         // Thinking needs headroom above its own budget for the visible reply.
-        max_tokens: withReasoning ? 16000 : 4096,
+        max_tokens: withReasoning ? THINKING_MAX_TOKENS : 4096,
         stream: false,
         ...(withReasoning && {
-          thinking: { type: "enabled", budget_tokens: 10000 },
+          thinking: {
+            type: "enabled",
+            budget_tokens: THINKING_BUDGET_TOKENS,
+          },
         }),
       },
       { signal }

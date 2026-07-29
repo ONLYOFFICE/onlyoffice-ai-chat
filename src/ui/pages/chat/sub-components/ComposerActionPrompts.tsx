@@ -12,6 +12,13 @@ import logger from "../../../../shared/logger";
 export const PROMPT_DIALOG_CLASS =
   "!w-[480px] [&>div:last-child]:!px-[24px] [&>div:nth-child(2)]:!h-[52px] [&>div:nth-child(2)]:!ps-[24px] [&>div:nth-child(2)]:!pe-[8px] [&>div:nth-child(2)]:!py-[12px]";
 
+/**
+ * Name of the virtual folder that mirrors the host-configured
+ * `suggestions` inside the prompts dropdown. A fixed identifier by
+ * contract — deliberately NOT translated.
+ */
+export const BUILT_IN_PROMPTS_FOLDER = "built-in-prompts";
+
 type EditPromptDialogProps = {
   promptId: string;
   initialName: string;
@@ -208,8 +215,12 @@ const ComposerActionPrompts = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
   const { usePromptsStore } = useStores();
-  const { onEditPrompt, onRenamePromptFolder, onDeletePromptFolder } =
-    useWidgetConfig();
+  const {
+    onEditPrompt,
+    onRenamePromptFolder,
+    onDeletePromptFolder,
+    suggestions,
+  } = useWidgetConfig();
   const prompts = usePromptsStore((s) => s.prompts);
   const folders = usePromptsStore((s) => s.folders);
   const editPrompt = usePromptsStore((s) => s.editPrompt);
@@ -249,6 +260,13 @@ const ComposerActionPrompts = () => {
       composerRuntime.setText(text);
     },
     [composerRuntime]
+  );
+
+  // Host-configured suggestions mirrored into the dropdown as a virtual
+  // read-only folder (see below). Malformed entries are skipped.
+  const builtInPrompts = useMemo(
+    () => (suggestions ?? []).filter((s) => !!s?.name && !!s?.prompt),
+    [suggestions]
   );
 
   // When the host supplies `onRenamePromptFolder`, it owns the input UI
@@ -402,7 +420,10 @@ const ComposerActionPrompts = () => {
       });
     }
 
-    if (rootPrompts.length > 0 && folders.length > 0) {
+    if (
+      rootPrompts.length > 0 &&
+      (folders.length > 0 || builtInPrompts.length > 0)
+    ) {
       result.push({
         text: "",
         isSeparator: true,
@@ -440,10 +461,28 @@ const ComposerActionPrompts = () => {
       });
     }
 
+    // Host-configured suggestions surface as a virtual folder with the
+    // fixed name "built-in-prompts". Everything inside is read-only by
+    // construction: the rows only insert their prompt text — no per-row
+    // context menu (edit / move / delete), and the folder itself has no
+    // rename/delete entries. None of it exists in `storage.prompts`, so
+    // regular prompts can't be moved into it either.
+    if (builtInPrompts.length > 0) {
+      result.push({
+        text: BUILT_IN_PROMPTS_FOLDER,
+        onClick: () => undefined,
+        subMenu: builtInPrompts.map((s) => ({
+          text: s.name,
+          onClick: () => applyPrompt(s.prompt),
+        })),
+      });
+    }
+
     return result;
   }, [
     prompts,
     folders,
+    builtInPrompts,
     applyPrompt,
     buildPromptContextMenu,
     requestRenameFolder,
@@ -451,7 +490,12 @@ const ComposerActionPrompts = () => {
     t,
   ]);
 
-  if (prompts.length === 0 && folders.length === 0) return null;
+  if (
+    prompts.length === 0 &&
+    folders.length === 0 &&
+    builtInPrompts.length === 0
+  )
+    return null;
 
   return (
     <>

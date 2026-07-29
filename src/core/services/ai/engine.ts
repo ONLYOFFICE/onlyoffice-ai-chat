@@ -6,6 +6,11 @@ import {
   extractRefIdsFromMessage,
   resolveAttachmentRefs,
 } from "../../actions/attachment-resolution";
+import {
+  drainPages,
+  isPaginationEnabled,
+  messagesCursorOf,
+} from "../../storage";
 import { AttachmentsEngine } from "../attachments";
 import { chat } from "../../actions/chat";
 import { generateTitle } from "../../actions/title";
@@ -76,6 +81,25 @@ import type {
  *   system prompt against the `Default` profile. Mode (stream vs
  *   one-shot) chosen at call time via `isStream`.
  */
+// Stamp the round's context scope into the user message before it is
+// persisted: the message blob is the only per-thread storage that needs no
+// backend schema change, so the conversation's context survives on the
+// thread itself. The message store derives the thread's context back from
+// the last user message when a thread is re-opened.
+function stampThreadContext(
+  message: ThreadMessageLike,
+  contextEntityId: string | undefined
+): ThreadMessageLike {
+  if (!contextEntityId) return message;
+  return {
+    ...message,
+    metadata: {
+      ...message.metadata,
+      custom: { ...message.metadata?.custom, contextEntityId },
+    },
+  };
+}
+
 export class AIEngine {
   private readonly deps: AIEngineDeps;
   private readonly assignments: AssignmentsEngine;
@@ -87,8 +111,31 @@ export class AIEngine {
     this.deps = deps;
     this.assignments =
       deps.assignments ?? new AssignmentsEngine({ storage: deps.storage });
-    this.threads = deps.threads ?? new ThreadsEngine({ storage: deps.storage });
+    this.threads =
+      deps.threads ??
+      new ThreadsEngine({
+        storage: deps.storage,
+        pagination: deps.pagination,
+      });
     this.attachments = new AttachmentsEngine({ storage: deps.storage });
+  }
+
+  /**
+   * Read a thread's complete history for the provider request. With
+   * {@link AIEngineDeps.pagination} enabled the read walks the thread in
+   * cursor pages (bounded requests, same complete result); otherwise it
+   * is the single unbounded call — the pre-pagination behavior.
+   */
+  private readAllMessages(threadId: string): Promise<ThreadMessageLike[]> {
+    if (!isPaginationEnabled(this.deps.pagination)) {
+      return this.deps.storage.messages.readByThread(threadId);
+    }
+    return drainPages(
+      (count, cursor) =>
+        this.deps.storage.messages.readByThread(threadId, count, cursor),
+      messagesCursorOf,
+      (m) => m.id ?? ""
+    );
   }
 
   /** Resolve the configured system-source server types (lazy or static). */
@@ -179,9 +226,14 @@ export class AIEngine {
   }
 
   async *sendWithStream(input: SendStreamInput): AsyncGenerator<ChatEvent> {
+    const contextScope = input.contextEntityId ?? input.entityId;
+    const userMessage = stampThreadContext(
+      input.userMessage,
+      input.contextEntityId
+    );
     const { profileId, profile } = await this.resolveChatProfile(
       input.profileId,
-      input.entityId
+      contextScope
     );
 
     let threadId = input.threadId ?? "";
@@ -193,16 +245,16 @@ export class AIEngine {
 
     if (!isNewThread) {
       priorMessages = stripUnresolvedToolCalls(
-        await this.deps.storage.messages.readByThread(threadId)
+        await this.readAllMessages(threadId)
       ).filter(hasSendableContent);
       storedUserMessage = await this.threads.appendUserMessage(
         threadId,
-        input.userMessage,
+        userMessage,
         profileId
       );
       const messageId = storedUserMessage.id!;
       await this.attachments.linkToMessage(
-        extractRefIdsFromMessage(input.userMessage),
+        extractRefIdsFromMessage(userMessage),
         messageId,
         threadId
       );
@@ -224,12 +276,12 @@ export class AIEngine {
       threadId = placeholder.threadId;
       const stored = await this.deps.storage.messages.create(
         threadId,
-        input.userMessage
+        userMessage
       );
       storedUserMessage = stored;
       if (stored.id) {
         await this.attachments.linkToMessage(
-          extractRefIdsFromMessage(input.userMessage),
+          extractRefIdsFromMessage(userMessage),
           stored.id,
           threadId
         );
@@ -254,22 +306,18 @@ export class AIEngine {
         };
       }
 
-      titlePromise = generateTitle({
-        profile,
-        messages: [input.userMessage],
-        fetch: this.pickFetch(profile),
-      })
-        .then((t) => t || "New chat")
-        .catch(() => "New chat");
+      // The real-title request is kicked off below, after attachment
+      // refs are hydrated — it shares the resolved messages with the
+      // chat request instead of paying a second attachments read.
     }
 
     const toolCtx = await buildToolContext(
       this.deps.storage,
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
-      input.entityId,
+      contextScope,
       {
-        attachmentId: collectRefIds([...priorMessages, input.userMessage]),
+        attachmentId: collectRefIds([...priorMessages, userMessage]),
       },
       this.getSystemServerTypes(),
       this.isBuiltinImageToolDisabled()
@@ -277,13 +325,33 @@ export class AIEngine {
 
     const proxiedFetch = this.pickFetch(profile);
 
+    // Single hydration point for the round: image/file refs become inline
+    // base64 here, and BOTH provider-bound requests below (title + chat)
+    // consume the resolved list. Title generation is the only request
+    // built from the bare user message, and it fires exactly once per
+    // thread — on the first message — so without this it would ship the
+    // ref JSON instead of the image.
+    const resolvedMessages = await resolveAttachmentRefs(
+      [...priorMessages, userMessage],
+      this.deps.storage.attachments
+    );
+
+    if (isNewThread) {
+      // priorMessages is empty on a new thread — the last (only) element
+      // is the hydrated user message.
+      titlePromise = generateTitle({
+        profile,
+        messages: [resolvedMessages[resolvedMessages.length - 1]],
+        fetch: proxiedFetch,
+      })
+        .then((t) => t || "New chat")
+        .catch(() => "New chat");
+    }
+
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
       profile,
-      messages: await resolveAttachmentRefs(
-        [...priorMessages, input.userMessage],
-        this.deps.storage.attachments
-      ),
+      messages: resolvedMessages,
       tools: toolCtx.mergedTools,
       fetch: proxiedFetch,
     };
@@ -296,26 +364,108 @@ export class AIEngine {
       tools: toolCtx.mergedTools,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
     });
 
-    yield* this.runChatStream(stream, toolCtx, {
+    const chatEvents = this.runChatStream(stream, toolCtx, {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
       prompt: input.actionArgs?.prompt,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
+      pagination: this.deps.pagination,
     });
 
     if (titlePromise) {
-      const title = await titlePromise;
+      yield* this.mergeTitleEvents(
+        chatEvents,
+        titlePromise,
+        threadId,
+        profileId
+      );
+    } else {
+      yield* chatEvents;
+    }
+  }
+
+  /**
+   * Multiplex the async title generation into the chat event stream.
+   *
+   * The `thread-title` event is yielded the moment the title resolves —
+   * interleaved between chunks while the reply is still streaming (the
+   * common case, since the title request starts before the chat
+   * request). Previously the generator awaited the title only AFTER the
+   * stream, so a slow/hung title request kept the whole round (and the
+   * UI busy state) open with nothing left to say.
+   *
+   * When the reply ends first, the round closes IMMEDIATELY and the
+   * thread keeps its placeholder title ("New chat") for good — a late
+   * title is deliberately discarded rather than applied out-of-band, so
+   * nothing ever holds the round open just to rename a thread. The one
+   * exception is a round paused on a tool call: it isn't over (the
+   * consumer is in the approval dialog and the continuation runs as a
+   * separate stream), so the generator stays open and the title still
+   * lands as a trailing event.
+   */
+  private async *mergeTitleEvents(
+    events: AsyncGenerator<ChatEvent>,
+    titlePromise: Promise<string>,
+    threadId: string,
+    profileId: string
+  ): AsyncGenerator<ChatEvent> {
+    // Tagged so the race below can tell a resolved title apart from a
+    // stream IteratorResult.
+    let pendingTitle: Promise<{ __title: string }> | null = titlePromise.then(
+      (title) => ({ __title: title })
+    );
+    let pendingEvent: Promise<IteratorResult<ChatEvent>> | null = null;
+
+    const emitTitle = async (title: string): Promise<ChatEvent> => {
       await this.deps.storage.threads.update(threadId, title);
-      yield { type: "thread-title", threadId, title, profileId };
+      return { type: "thread-title", threadId, title, profileId };
+    };
+
+    let pausedForToolCall = false;
+
+    try {
+      while (true) {
+        pendingEvent ??= events.next();
+        const winner = pendingTitle
+          ? await Promise.race([pendingEvent, pendingTitle])
+          : await pendingEvent;
+
+        if ("__title" in winner) {
+          pendingTitle = null;
+          yield await emitTitle(winner.__title);
+          // `pendingEvent` is still in flight — loop back and await it.
+          continue;
+        }
+
+        pendingEvent = null;
+        if (winner.done) break;
+        pausedForToolCall = winner.value.type === "tool-call-pending";
+        yield winner.value;
+      }
+
+      // Stream exhausted with the title still pending. A round paused on
+      // a tool call isn't over — hold the generator so the title still
+      // lands as a trailing event while the approval dialog is open.
+      // Otherwise (reply terminal) fall through: the round closes now and
+      // the placeholder title stays for good.
+      if (pendingTitle && pausedForToolCall) {
+        const { __title } = await pendingTitle;
+        yield await emitTitle(__title);
+      }
+    } finally {
+      // Forward early termination (consumer `return`/`throw`) to the
+      // inner stream so the provider request is torn down — `yield*`
+      // would have done this automatically; a manual pump must not leak.
+      await events.return(undefined).catch(() => undefined);
     }
   }
 
@@ -332,9 +482,10 @@ export class AIEngine {
   async *sendWithStreamOpenAI(
     input: SendStreamInput
   ): AsyncGenerator<OpenAIStreamChunk> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     const { profile } = await this.resolveChatProfile(
       input.profileId,
-      input.entityId
+      contextScope
     );
     yield* toOpenAIChatCompletionStream(this.sendWithStream(input), {
       model: profile.modelId,
@@ -351,14 +502,13 @@ export class AIEngine {
   async *regenerateStream(
     input: RegenerateStreamInput
   ): AsyncGenerator<ChatEvent> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     const { profileId, profile } = await this.resolveChatProfile(
       input.profileId,
-      input.entityId
+      contextScope
     );
 
-    const stored = await this.deps.storage.messages.readByThread(
-      input.threadId
-    );
+    const stored = await this.readAllMessages(input.threadId);
 
     let lastUserIdx = -1;
     for (let i = stored.length - 1; i >= 0; i--) {
@@ -382,7 +532,7 @@ export class AIEngine {
       this.deps.storage,
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
-      input.entityId,
+      contextScope,
       { attachmentId: collectRefIds(priorMessages) },
       this.getSystemServerTypes(),
       this.isBuiltinImageToolDisabled()
@@ -409,7 +559,7 @@ export class AIEngine {
       tools: toolCtx.mergedTools,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
     });
 
     yield* this.runChatStream(stream, toolCtx, {
@@ -419,10 +569,11 @@ export class AIEngine {
       prompt: input.actionArgs?.prompt,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
+      pagination: this.deps.pagination,
     });
   }
 
@@ -437,16 +588,16 @@ export class AIEngine {
   async *approveToolCall(
     input: ApproveToolCallInput
   ): AsyncGenerator<ChatEvent> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     if (input.allowAlways) {
       const toolCall = readToolCall(input.message, input.idx);
       if (toolCall) {
-        const current = await this.deps.storage.toolPrefs.readAllowAlways(
-          input.entityId
-        );
+        const current =
+          await this.deps.storage.toolPrefs.readAllowAlways(contextScope);
         if (!current.includes(toolCall.toolName)) {
           await this.deps.storage.toolPrefs.upsertAllowAlways(
             [...current, toolCall.toolName],
-            input.entityId
+            contextScope
           );
         }
       }
@@ -461,14 +612,14 @@ export class AIEngine {
       if (toolCall) {
         const { profile, profileId } = await this.resolveChatProfile(
           input.profileId,
-          input.entityId,
+          contextScope,
           input.threadId
         );
         const toolCtx = await buildToolContext(
           this.deps.storage,
           this.deps.toolsAdapter,
           input.actionArgs?.tools ?? [],
-          input.entityId,
+          contextScope,
           undefined,
           systemServerTypes,
           this.isBuiltinImageToolDisabled()
@@ -482,10 +633,11 @@ export class AIEngine {
             prompt: input.actionArgs?.prompt,
             isReasoning: input.actionArgs?.isReasoning,
             signal: input.actionArgs?.signal,
-            entityId: input.entityId,
+            entityId: contextScope,
             fetch: proxiedFetch,
             webSearchFetch: this.deps.fetchProxy,
             pickFetch: (p) => this.pickFetch(p),
+            pagination: this.deps.pagination,
           };
           const resumed = executeAdapterTool(
             this.deps.storage,
@@ -528,9 +680,10 @@ export class AIEngine {
     input: DenyToolCallInput,
     result: unknown
   ): AsyncGenerator<ChatEvent> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     const { profile, profileId } = await this.resolveChatProfile(
       input.profileId,
-      input.entityId,
+      contextScope,
       input.threadId
     );
 
@@ -538,7 +691,7 @@ export class AIEngine {
       this.deps.storage,
       this.deps.toolsAdapter,
       input.actionArgs?.tools ?? [],
-      input.entityId,
+      contextScope,
       undefined,
       this.getSystemServerTypes(),
       this.isBuiltinImageToolDisabled()
@@ -551,14 +704,15 @@ export class AIEngine {
       prompt: input.actionArgs?.prompt,
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
-      entityId: input.entityId,
+      entityId: contextScope,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
+      pagination: this.deps.pagination,
     };
 
     const resumed = resumeChat(
-      { storage: this.deps.storage },
+      { storage: this.deps.storage, pagination: this.deps.pagination },
       {
         threadId: input.threadId,
         messageId: input.messageId,
@@ -571,7 +725,7 @@ export class AIEngine {
         signal: input.actionArgs?.signal,
         tools: toolCtx.mergedTools,
         prompt: input.actionArgs?.prompt,
-        entityId: input.entityId,
+        entityId: contextScope,
         fetch: proxiedFetch,
       }
     );
@@ -633,9 +787,10 @@ export class AIEngine {
   }
 
   async send(input: SendInput): Promise<ThreadMessageLike> {
+    const contextScope = input.contextEntityId ?? input.entityId;
     const { profile } = await this.assignments.resolveForAction(
       input.actionType,
-      input.entityId
+      contextScope
     );
     // Hydrate image/file refs into inline data before the provider sees
     // them — mirrors the streaming paths. Without this a Vision/OCR/etc.

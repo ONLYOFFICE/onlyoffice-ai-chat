@@ -48,6 +48,9 @@ function makeDeps(initialProfiles: Profile[] = []) {
   return { ctx, api, keys, emit };
 }
 
+/** Drain the fire-and-forget persistence chain inside setSessionChatProfile. */
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
 describe("createProfilesStore", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -81,7 +84,7 @@ describe("createProfilesStore", () => {
     const deps = makeDeps([profile("1")]);
     const getAll = vi.fn().mockResolvedValue({ Chat: "1" });
     deps.api.assignments.getAllAssignments = getAll;
-    const s = createProfilesStore({ ...deps, entityId: "agent-7" });
+    const s = createProfilesStore({ ...deps, getEntityId: () => "agent-7" });
     await s.getState().init();
     expect(getAll).toHaveBeenCalledWith("agent-7");
     expect(s.getState().chatProfile?.id).toBe("1");
@@ -206,6 +209,52 @@ describe("createProfilesStore", () => {
     const result = await s.getState().addProfile(profile("1"));
     expect(result).toEqual(error);
     expect(s.getState().profiles).toEqual([]);
+  });
+
+  it("addProfile returns TErrorData instead of throwing when the transport rejects", async () => {
+    const deps = makeDeps();
+    deps.api.profiles.create = vi
+      .fn()
+      .mockRejectedValue(new Error("HTTP 502: Bad Gateway"));
+    const s = createProfilesStore(deps);
+    const result = await s.getState().addProfile(profile("1"));
+    expect(result).toEqual({
+      field: "name",
+      message: "HTTP 502: Bad Gateway",
+    });
+  });
+
+  it("addProfile returns TErrorData on a malformed response", async () => {
+    const deps = makeDeps();
+    // A host route that answers with a bare object instead of the
+    // { success, profile } envelope.
+    deps.api.profiles.create = vi.fn().mockResolvedValue({ id: "1" });
+    const s = createProfilesStore(deps);
+    const result = await s.getState().addProfile(profile("1"));
+    expect(result).toMatchObject({ field: "name" });
+    expect(s.getState().profiles).toEqual([]);
+  });
+
+  it("addProfile resyncs from storage when success carries no profile body", async () => {
+    const p1 = profile("1");
+    const deps = makeDeps([p1]);
+    deps.api.profiles.create = vi.fn().mockResolvedValue({ success: true });
+    const s = createProfilesStore(deps);
+    const result = await s.getState().addProfile(p1);
+    expect(result).toBe(true);
+    // The persisted profile was recovered via reloadProfiles.
+    expect(deps.api.profiles.list).toHaveBeenCalled();
+    expect(s.getState().profiles).toEqual([p1]);
+  });
+
+  it("editProfile returns TErrorData instead of throwing when the transport rejects", async () => {
+    const orig = profile("1");
+    const deps = makeDeps();
+    deps.api.profiles.update = vi.fn().mockRejectedValue(new Error("boom"));
+    const s = createProfilesStore(deps);
+    s.setState({ profiles: [orig] });
+    const result = await s.getState().editProfile(orig);
+    expect(result).toEqual({ field: "name", message: "boom" });
   });
 
   it("editProfile updates list and refs across all role slots", async () => {
@@ -362,6 +411,44 @@ describe("createProfilesStore", () => {
       "onCurrentChatProfileUpdated",
       expect.objectContaining({ scope: "session", profileId: "1" })
     );
+  });
+
+  it("setSessionChatProfile does not touch the Chat assignment by default", async () => {
+    const deps = makeDeps();
+    const s = createProfilesStore(deps);
+    s.getState().setSessionChatProfile(profile("1"));
+    await flush();
+    expect(deps.api.assignments.assign).not.toHaveBeenCalled();
+    expect(s.getState().chatProfile).toBeNull();
+  });
+
+  it("setSessionChatProfile persists the Chat assignment on explicit pick without entityId", async () => {
+    const deps = makeDeps();
+    const s = createProfilesStore(deps);
+    const p = profile("1");
+    s.getState().setSessionChatProfile(p, { persistAssignment: true });
+    await flush();
+    expect(deps.api.assignments.assign).toHaveBeenCalledWith("Chat", "1");
+    expect(s.getState().chatProfile).toEqual(p);
+    expect(deps.emit).toHaveBeenCalledWith(
+      "onModelAssignmentUpdated",
+      expect.objectContaining({ task: "chat", profileId: "1" })
+    );
+    expect(deps.emit).toHaveBeenCalledWith(
+      "onCurrentChatProfileUpdated",
+      expect.objectContaining({ scope: "persisted", profileId: "1" })
+    );
+  });
+
+  it("setSessionChatProfile keeps the pick session-local when entityId is set", async () => {
+    const deps = makeDeps();
+    const s = createProfilesStore({ ...deps, getEntityId: () => "agent-7" });
+    const p = profile("1");
+    s.getState().setSessionChatProfile(p, { persistAssignment: true });
+    await flush();
+    expect(deps.api.assignments.assign).not.toHaveBeenCalled();
+    expect(s.getState().chatProfile).toBeNull();
+    expect(s.getState().sessionChatProfile).toEqual(p);
   });
 
   it("toggleExtendedThinking flips and persists", async () => {

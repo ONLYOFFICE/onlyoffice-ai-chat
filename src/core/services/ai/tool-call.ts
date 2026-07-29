@@ -2,6 +2,11 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { ReadonlyJSONObject } from "assistant-stream/utils";
 import logger from "../../../shared/logger";
 import { resolveAttachmentRefs } from "../../actions/attachment-resolution";
+import {
+  drainPages,
+  isPaginationEnabled,
+  messagesCursorOf,
+} from "../../storage";
 import { chat } from "../../actions/chat";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
@@ -20,6 +25,8 @@ import type { ChatEvent } from "./types";
  */
 export type ToolCallContext = {
   storage: StorageAdapter;
+  /** Mirrors {@link AIEngineDeps.pagination} for the resume-history read. */
+  pagination?: boolean | (() => boolean);
 };
 
 /**
@@ -221,7 +228,14 @@ export async function* resumeChat(
   await ctx.storage.messages.update(input.messageId, updatedMessage);
 
   const history = stripUnresolvedToolCalls(
-    await ctx.storage.messages.readByThread(input.threadId)
+    isPaginationEnabled(ctx.pagination)
+      ? await drainPages(
+          (count, cursor) =>
+            ctx.storage.messages.readByThread(input.threadId, count, cursor),
+          messagesCursorOf,
+          (m) => m.id ?? ""
+        )
+      : await ctx.storage.messages.readByThread(input.threadId)
   ).filter(hasSendableContent);
 
   const actionArgs: ActionArgs = {

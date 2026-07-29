@@ -1,4 +1,5 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
+import type { MessagesCursor } from "./pagination";
 
 /**
  * Storage interface for managing individual chat messages within threads.
@@ -31,19 +32,32 @@ export interface MessagesStorage {
   readById(messageId: string): Promise<ThreadMessageLike | null>;
 
   /**
-   * Get messages for a thread sorted by timestamp ascending (oldest first),
-   * with standard offset/limit pagination.
+   * Get messages for a thread sorted by `createdAt` ascending (oldest
+   * first), with `id` ascending as the tiebreaker.
+   *
+   * Cursor pagination (both parameters optional — omitting them returns
+   * the full thread, the pre-pagination behavior):
+   *
+   * - `count` — max messages to return.
+   * - `cursor` — sort key of the last message the caller already has
+   *   (`createdAt` as an ISO string); return messages strictly AFTER it
+   *   in the sort order above. A "before" direction (for lazy
+   *   tail-loading) is deliberately reserved for a future revision —
+   *   implementations only need the forward semantics today.
+   *
+   * Implementations that don't support pagination may ignore both
+   * parameters and return everything — callers detect that and stop
+   * paging.
    *
    * @param threadId - The thread whose messages to retrieve.
-   * @param limit - Max messages to return. Omit for no cap.
-   * @param startIndex - Zero-based index from the oldest message to start
-   *   from. Omit for `0`.
+   * @param count - Optional page size.
+   * @param cursor - Optional keyset cursor of the last received message.
    * @returns An array of messages in chronological order.
    */
   readByThread(
     threadId: string,
-    limit?: number,
-    startIndex?: number
+    count?: number,
+    cursor?: MessagesCursor
   ): Promise<ThreadMessageLike[]>;
 
   /**

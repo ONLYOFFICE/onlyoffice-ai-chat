@@ -120,4 +120,18 @@ describe("createStores", () => {
       } as never)
     ).toBeNull();
   });
+
+  it("threads paginate when enablePagination is set", async () => {
+    const config = makeConfig();
+    const stores = createStores({ ...config, enablePagination: true });
+    await stores.useThreadsStore.getState().initThreads("e1");
+    expect(config.api.threads.list).toHaveBeenCalledWith("e1", 100);
+  });
+
+  it("threads load unbounded without the flag", async () => {
+    const config = makeConfig();
+    const stores = createStores(config);
+    await stores.useThreadsStore.getState().initThreads("e1");
+    expect(config.api.threads.list).toHaveBeenCalledWith("e1");
+  });
 });

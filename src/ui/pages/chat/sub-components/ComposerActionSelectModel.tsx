@@ -3,15 +3,20 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { CapabilitiesUI } from "../../../../capabilities";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
+import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
+import type { ProfilePickerAction } from "../profile-picker-actions";
 import type { Profile } from "../../../../types";
 
 const SelectModel = () => {
-  const { ComboBox } = useComponents();
+  const { ComboBox, IconButton } = useComponents();
+  const { profilePickerActions, onProfilePickerSelect } = useWidgetConfig();
   const { useProfilesStore, selectCurrentChatProfile } = useStores();
   const profiles = useProfilesStore((s) => s.profiles);
   const setSessionChatProfile = useProfilesStore(
     (s) => s.setSessionChatProfile
   );
+  const getProfileById = useProfilesStore((s) => s.getProfileById);
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const { t } = useI18n();
 
@@ -24,9 +29,16 @@ const SelectModel = () => {
   );
 
   const onSelectProfile = React.useCallback(
-    (profile: Profile) => {
-      if (currentProfile?.id === profile.id) return;
-      setSessionChatProfile(profile);
+    (profile: Profile, opts?: { persistAssignment?: boolean }) => {
+      // Compare the name too: the same profile can be active under an
+      // action's alias (e.g. an agent name), and re-picking the plain
+      // profile row must restore its own name.
+      if (
+        currentProfile?.id === profile.id &&
+        currentProfile?.name === profile.name
+      )
+        return;
+      setSessionChatProfile(profile, opts);
     },
     [currentProfile, setSessionChatProfile]
   );
@@ -37,16 +49,78 @@ const SelectModel = () => {
     }
   }, [currentProfile, chatProfiles, onSelectProfile]);
 
-  const items = React.useMemo(
-    () =>
-      chatProfiles.map((p) => ({
-        text: p.name,
-        id: p.id,
-        onClick: () => onSelectProfile(p),
-        checked: p.id === currentProfile?.id,
-      })),
-    [chatProfiles, currentProfile, onSelectProfile]
-  );
+  const items = React.useMemo(() => {
+    const profileItems: DropDownItemProps[] = chatProfiles.map((p) => ({
+      text: p.name,
+      id: p.id,
+      onClick: () => {
+        // Explicit user pick only — the auto-select effect above goes
+        // through onSelectProfile directly and must neither notify the
+        // host nor touch the persisted Chat assignment. The store skips
+        // the persist when the widget is entity-scoped.
+        onSelectProfile(p, { persistAssignment: true });
+        onProfilePickerSelect?.(p);
+      },
+      // Name is compared too so the plain profile row is not marked while
+      // the profile is active under an action's alias.
+      checked: p.id === currentProfile?.id && p.name === currentProfile?.name,
+    }));
+
+    if (!profilePickerActions?.length) return profileItems;
+
+    const toItem = (action: ProfilePickerAction): DropDownItemProps => ({
+      id: action.id,
+      text: action.text,
+      icon:
+        typeof action.icon === "string" ? (
+          <IconButton iconName={action.icon} size={24} disableHover />
+        ) : (
+          action.icon
+        ),
+      checked:
+        !!action.profileId &&
+        currentProfile?.id === action.profileId &&
+        currentProfile?.name === action.text,
+      onClick: () => {
+        // A row with a submenu only navigates; it never fires handlers.
+        if (action.items?.length) return;
+        if (action.profileId) {
+          const profile = getProfileById(action.profileId);
+          // Select the underlying profile but display the action's own
+          // label (e.g. an agent name) as the picker value; the profile id
+          // is what every request carries.
+          if (profile) {
+            const aliased = { ...profile, name: action.text };
+            setSessionChatProfile(aliased);
+            onProfilePickerSelect?.(aliased, action.id);
+          }
+        }
+        void action.onClick?.();
+      },
+      subMenu: action.items?.length ? action.items.map(toItem) : undefined,
+    });
+
+    return [
+      ...profileItems,
+      {
+        text: "",
+        onClick: () => {
+          // ignore
+        },
+        isSeparator: true,
+      },
+      ...profilePickerActions.map(toItem),
+    ];
+  }, [
+    chatProfiles,
+    currentProfile,
+    onSelectProfile,
+    onProfilePickerSelect,
+    profilePickerActions,
+    getProfileById,
+    setSessionChatProfile,
+    IconButton,
+  ]);
 
   return (
     <ComboBox

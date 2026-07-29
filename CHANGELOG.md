@@ -1,5 +1,92 @@
 # Changelog
 
+## 0.5.0
+
+### Added
+
+- **Cursor (keyset) pagination for threads and messages, behind the global `enablePagination` flag** (default `false` — without it no pagination parameters are ever sent, behavior is identical to 0.4.x).
+  - `threads.readAll(entityId?, count?, cursor?, query?)` and `messages.readByThread(threadId, count?, cursor?)` — same methods, optional keyset params; page size is 100. Cursor types (`ThreadsCursor`, `MessagesCursor`), `PAGE_SIZE`, cursor builders, and the `drainPages` page walker are exported for hosts.
+  - With the flag on: the sidebar loads 100 threads and infinite-scrolls; every full-history read (opening a thread, building the model's request history, tool-call resume, download/export) fetches in pages of 100 — same complete result, bounded requests.
+  - **Sidebar search goes to storage**: typing (debounced 300ms) sends `query` — a case-insensitive title substring, applied server-side BEFORE pagination — and the result pages through matches with the same cursor scheme. A backend that ignores `query` is detected by a non-matching title in the response; the widget then permanently falls back to draining all pages and filtering client-side, so search stays complete either way.
+  - Engines accept `pagination?: boolean | (() => boolean)` in deps (`ThreadsEngine`, `AIEngine`) for headless/Express hosts; `createStores` takes `enablePagination`.
+  - Adapters/backends that ignore the new params keep working: the widget detects a full dump (or a cursor-ignoring backend) and stops paging.
+
+```tsx
+<AIChatWidget enablePagination />
+```
+
+### Breaking (only when enabling the flag)
+
+- `threads/read-messages` route query params renamed: `limit`/`startIndex` → `count`/`cursor` (`cursor` is a JSON-encoded keyset object). Backends must honor `count`/`cursor` on `threads/list` and `threads/read-messages` before turning the flag on — see the "Cursor pagination on the server (Express)" section in `docs/ui/providers/api.md` for query parsing, SQL keyset patterns, and recommended indexes.
+- `MessagesStorage.readByThread`'s third parameter changed type: `startIndex: number` → `cursor: MessagesCursor`. With the flag off the parameter is never passed.
+
+## 0.4.183
+
+### Changed
+
+- Attached images are now sent with an explicit `detail: "high"` on both OpenAI transports — chat completions (`image_url.detail`, previously omitted) and the Responses API (previously `"auto"`). This guarantees the tiled high-detail pipeline (input capped at 2048px on the longest side) and prevents OpenAI-compatible backends from falling back to processing the original-size image. Applies to every OpenAI-family provider; Anthropic/Gemini/Mistral have no such parameter.
+
+## 0.4.182
+
+### Added
+
+- Host-configured `suggestions` now also appear in the composer's prompts dropdown as a virtual folder named `built-in-prompts` (fixed identifier, not translated; exported as `BUILT_IN_PROMPTS_FOLDER`). Clicking an entry inserts its prompt into the composer. The folder and its entries are read-only: no edit/move/delete on the rows, no rename/delete on the folder, and regular prompts can't be moved into it. The prompts button is shown even when only suggestions exist.
+
+## 0.4.181
+
+### Fixed
+
+- Adding a model no longer leaves the save button spinning forever when the profile was actually created (e.g. adding an Ollama profile — persisted server-side, but the widget list only showed it after a page refresh). Any failure escaping the create/update round trip (non-JSON or empty response body, non-2xx status, a response without the `profile` field) threw between the form's `isSubmitting(true/false)` calls, so the spinner never reset and the new profile was never inserted into the store.
+  - `addProfile` / `editProfile` never throw anymore: transport and response-shape failures are normalized to a form error.
+  - A `success` response without a profile body now resyncs the list from storage, so the model appears immediately.
+  - The Add/Edit forms reset their spinner in a `finally` and surface unexpected errors in the form instead of an unhandled rejection.
+
+## 0.4.180
+
+### Fixed
+
+- The loader no longer reappears (and the composer no longer stays locked) after the reply finishes while the auto-generated thread title is still pending. The engine used to await the title only after the chat stream, so a slow or hung title request held the whole round open; the title request has no timeout, so this could hang indefinitely (most visible with single-slot local providers like Ollama/LM Studio, or SDK retry backoff).
+  - The title is now multiplexed into the stream: `thread-title` is yielded between chunks the moment it resolves (the common case — the title request starts before the chat request).
+  - If the reply ends first, the round closes immediately and the thread keeps the default "New chat" title for good — a late title is discarded rather than applied out-of-band. A round paused on a tool call isn't over, so there the title still arrives as a trailing event.
+  - The UI releases its busy state on the terminal event (`message-end` / `message-incomplete`) instead of the generator's end, and keeps draining the stream tail in the background.
+
+## 0.4.179
+
+### Fixed
+
+- Anthropic replies are no longer truncated when Extended Thinking is on. The thinking budget (10k) is carved out of `max_tokens`, but the cap was set to 16000 — leaving only ~6k tokens for the visible reply (vs 30000 without thinking). Thinking requests now use `max_tokens: 32000` (the smallest max-output limit among thinking-capable Claude models, safe everywhere), giving the reply 22k tokens of headroom. Applies to both streaming chat and one-shot actions; non-thinking requests are unchanged.
+
+## 0.4.178
+
+### Fixed
+
+- Clicking "+" (attachments), the prompts button, or an attachment's remove cross in the composer no longer sends the typed message. The composer is a `<form>`, and `IconButton`/`Button` rendered a bare `<button>` without a `type` — which defaults to `type="submit"` inside a form. Both components now default to `type="button"` (an explicit `type` prop still wins; `asChild` buttons are untouched). Send/Stop and Enter-to-send are unaffected — they don't rely on implicit form submission.
+
+## 0.4.177
+
+### Changed
+
+- Picking a model in the chat composer now also updates the persisted Chat model assignment ("AI chat" in model settings) — only when the widget runs without an `entityId`; an entity-scoped widget keeps composer picks session-local. The initial auto-select, restoring a thread's model on open, and host-defined profile-picker actions (agent aliases) remain session-only. The host receives the usual `onModelAssignmentUpdated` (`task: "chat"`) and `onCurrentChatProfileUpdated` (`scope: "persisted"`) events.
+
+## 0.4.176
+
+### Fixed
+
+- The first message of a new thread no longer reaches the provider with the image as a raw ref marker instead of inline base64. The thread-title request (`generateTitle`) was the only provider-bound call built from the un-hydrated user message — and it fires exactly once per thread, on the first message (built-in providers' safety guard then dropped the image, so the title model never saw it; a host-registered provider received the ref JSON verbatim). All three title paths now resolve attachment refs before the provider call: `AIEngine.sendWithStream`, `ThreadsEngine.openOrCreate`, and `ThreadsEngine.regenerateTitle` (which reads the stored first message — persisted in ref form).
+- `sendWithStream` shares a single hydration pass between the title and chat requests, so a remote storage adapter pays one `readManyByIds` round trip per send instead of two.
+
+## 0.4.173
+
+### Fixed
+
+- LaTeX written with `\(...\)` (inline) and `\[...\]` (display) delimiters now renders. Many models emit these instead of `$...$` / `$$...$$`, and `remark-math` only recognizes the dollar forms, so the formulas showed as raw text. Both markdown renderers now normalize `\(...\)` → `$...$` and `\[...\]` → a display `$$...$$` block before parsing (code spans are left untouched); the assistant-streaming path uses `MarkdownTextPrimitive`'s `preprocess` hook.
+
+## 0.4.172
+
+### Fixed
+
+- Sending a message or opening a chat from history no longer crashes the host with `Unable to preload CSS for .../dot.css` (404). The Markdown/KaTeX peer-dep stylesheets were imported dynamically inside the lazy markdown boundary, so a consumer's bundler shipped them as `__vitePreload`-guarded chunks that reject and tear down the markdown Suspense tree when the CSS asset 404s. They are now imported statically (bundled into the host's main stylesheet, loaded via a plain `<link>`); the heavy markdown JS stays lazy.
+
 ## 0.4.165
 
 ### Fixed

@@ -113,6 +113,18 @@ export type AIEngineDeps = {
    * function to resolve lazily at request time.
    */
   disableBuiltinImageTool?: boolean | (() => boolean);
+
+  /**
+   * Global cursor-pagination switch. When enabled, every full-history
+   * read the engine performs (`sendWithStream` / `regenerateStream` /
+   * tool-call resume) fetches `storage.messages.readByThread` in pages
+   * of {@link PAGE_SIZE} instead of one unbounded call. The model still
+   * receives the complete history — only the size of each storage
+   * request is capped. Default false (unbounded reads, the
+   * pre-pagination behavior). Pass a function to resolve lazily at
+   * request time.
+   */
+  pagination?: boolean | (() => boolean);
 };
 
 /**
@@ -139,6 +151,17 @@ export type SendStreamInput = {
    * freshly created thread. The engine never inspects the value.
    */
   entityId?: string;
+
+  /**
+   * Optional secondary scope for the round's *context*, used when the
+   * conversation itself lives elsewhere: the tool list / execution scope,
+   * the allow-always tool preferences, and the assignment fallback resolve
+   * against this value, while the thread stays placed under `entityId`.
+   * Hosts use it to talk to an agent (its tools, workspace and model
+   * fallback) from a conversation stored outside the agent — e.g. the
+   * global history. Falls back to `entityId` when omitted.
+   */
+  contextEntityId?: string;
 
   /**
    * Session-level profile override. When set, the engine uses this
@@ -171,6 +194,9 @@ export type RegenerateStreamInput = {
    */
   entityId?: string;
 
+  /** Secondary context scope — see {@link SendStreamInput.contextEntityId}. */
+  contextEntityId?: string;
+
   /**
    * Session-level profile override — see {@link SendStreamInput.profileId}.
    */
@@ -202,6 +228,9 @@ export type SendInput = {
    * to apply it (typically only for `ActionType.Chat`).
    */
   entityId?: string;
+
+  /** Secondary context scope — see {@link SendStreamInput.contextEntityId}. */
+  contextEntityId?: string;
 };
 
 /**
@@ -228,7 +257,7 @@ export type SendCustomInput = {
  */
 export type ToolCallData = Pick<
   SendStreamInput,
-  "actionArgs" | "entityId" | "profileId"
+  "actionArgs" | "entityId" | "contextEntityId" | "profileId"
 > & {
   /** Thread the assistant message belongs to. */
   threadId: string;

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 const mockSetCurrentPage = vi.fn();
@@ -8,6 +8,14 @@ const mockOnRenameThread = vi.fn();
 const mockOnDownloadThread = vi.fn();
 const mockOnExportThread = vi.fn();
 const mockOnClearThreadHistory = vi.fn();
+const mockLoadMoreThreads = vi.fn().mockResolvedValue(undefined);
+const mockEnsureAllThreads = vi.fn().mockResolvedValue(undefined);
+const mockSearchThreads = vi.fn().mockResolvedValue(undefined);
+const mockLoadMoreSearchResults = vi.fn().mockResolvedValue(undefined);
+let mockHasMoreThreads = false;
+let mockSearchResults: { threadId: string; title: string }[] | null = null;
+let mockHasMoreSearchResults = false;
+let mockIsSearchLoading = false;
 
 let mockExportFormats: { id: string; label: string; extension: string }[] = [];
 
@@ -29,6 +37,15 @@ vi.mock("../../../store/context", () => ({
       const state = {
         threads: currentThreads,
         threadId: "t1",
+        hasMoreThreads: mockHasMoreThreads,
+        isLoadingMoreThreads: false,
+        loadMoreThreads: mockLoadMoreThreads,
+        ensureAllThreads: mockEnsureAllThreads,
+        searchResults: mockSearchResults,
+        hasMoreSearchResults: mockHasMoreSearchResults,
+        isSearchLoading: mockIsSearchLoading,
+        searchThreads: mockSearchThreads,
+        loadMoreSearchResults: mockLoadMoreSearchResults,
         onSwitchToThread: mockOnSwitchToThread,
         onRenameThread: mockOnRenameThread,
         onDownloadThread: mockOnDownloadThread,
@@ -266,5 +283,132 @@ describe("ChatList", () => {
     const input = screen.getByTestId("search-input");
     fireEvent.change(input, { target: { value: "first" } });
     expect(screen.getByTestId("chat-item-t1")).toBeInTheDocument();
+  });
+});
+
+describe("ChatList pagination", () => {
+  class ObserverStub {
+    static instances: ObserverStub[] = [];
+    callback: IntersectionObserverCallback;
+    observed: Element[] = [];
+    disconnect = vi.fn();
+    constructor(cb: IntersectionObserverCallback) {
+      this.callback = cb;
+      ObserverStub.instances.push(this);
+    }
+    observe(el: Element) {
+      this.observed.push(el);
+    }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockWidgetConfig = {};
+    currentThreads = mockThreads;
+    mockHasMoreThreads = true;
+    mockSearchResults = null;
+    mockHasMoreSearchResults = false;
+    mockIsSearchLoading = false;
+    ObserverStub.instances = [];
+    vi.stubGlobal("IntersectionObserver", ObserverStub as never);
+  });
+
+  afterEach(() => {
+    mockHasMoreThreads = false;
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("renders the sentinel while more pages exist", () => {
+    render(<ChatList />);
+    expect(screen.getByTestId("chat-list-sentinel")).toBeInTheDocument();
+  });
+
+  it("does not render the sentinel when everything is loaded", () => {
+    mockHasMoreThreads = false;
+    render(<ChatList />);
+    expect(screen.queryByTestId("chat-list-sentinel")).not.toBeInTheDocument();
+  });
+
+  it("loads the next page when the sentinel intersects", () => {
+    render(<ChatList />);
+    const observer = ObserverStub.instances[0];
+    expect(observer).toBeDefined();
+    observer.callback(
+      [{ isIntersecting: true } as IntersectionObserverEntry],
+      observer as unknown as IntersectionObserver
+    );
+    expect(mockLoadMoreThreads).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides the sentinel and dispatches a debounced server search", () => {
+    vi.useFakeTimers();
+    render(<ChatList />);
+    const input = screen.getByTestId("search-input");
+    fireEvent.change(input, { target: { value: "First" } });
+    expect(screen.queryByTestId("chat-list-sentinel")).not.toBeInTheDocument();
+    // One request per pause, not per keystroke.
+    expect(mockSearchThreads).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(300);
+    expect(mockSearchThreads).toHaveBeenCalledWith("First");
+  });
+
+  it("renders server search results instead of the loaded list", () => {
+    mockSearchResults = [{ threadId: "s1", title: "First Server Match" }];
+    render(<ChatList />);
+    fireEvent.change(screen.getByTestId("search-input"), {
+      target: { value: "First" },
+    });
+    expect(screen.getByTestId("chat-item-s1")).toBeInTheDocument();
+    // Loaded-list items are not mixed into the server results view.
+    expect(screen.queryByTestId("chat-item-t2")).not.toBeInTheDocument();
+  });
+
+  it("filters stale server results against the current input", () => {
+    // Results for a previous query must not flash for the new one.
+    mockSearchResults = [{ threadId: "s1", title: "Old Query Match" }];
+    render(<ChatList />);
+    fireEvent.change(screen.getByTestId("search-input"), {
+      target: { value: "zzz" },
+    });
+    expect(screen.queryByTestId("chat-item-s1")).not.toBeInTheDocument();
+  });
+
+  it("pages through search matches via the sentinel in search mode", () => {
+    mockSearchResults = [{ threadId: "s1", title: "First Server Match" }];
+    mockHasMoreSearchResults = true;
+    render(<ChatList />);
+    fireEvent.change(screen.getByTestId("search-input"), {
+      target: { value: "First" },
+    });
+    expect(screen.getByTestId("chat-list-sentinel")).toBeInTheDocument();
+    const observer = ObserverStub.instances.at(-1)!;
+    observer.callback(
+      [{ isIntersecting: true } as IntersectionObserverEntry],
+      observer as unknown as IntersectionObserver
+    );
+    expect(mockLoadMoreSearchResults).toHaveBeenCalledTimes(1);
+    expect(mockLoadMoreThreads).not.toHaveBeenCalled();
+  });
+
+  it("shows a loader instead of NoChatsFound while the search drain runs", () => {
+    render(<ChatList />);
+    const input = screen.getByTestId("search-input");
+    fireEvent.change(input, { target: { value: "zzzzzzz" } });
+    // No matches among loaded threads, but pages are still coming — the
+    // verdict is inconclusive, so no premature "nothing found".
+    expect(screen.getByTestId("chat-list-search-loading")).toBeInTheDocument();
+    expect(screen.queryByText("NoChatsFound")).not.toBeInTheDocument();
+  });
+
+  it("shows NoChatsFound for an empty match once everything is loaded", () => {
+    mockHasMoreThreads = false;
+    render(<ChatList />);
+    const input = screen.getByTestId("search-input");
+    fireEvent.change(input, { target: { value: "zzzzzzz" } });
+    expect(
+      screen.queryByTestId("chat-list-search-loading")
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("NoChatsFound")).toBeInTheDocument();
   });
 });

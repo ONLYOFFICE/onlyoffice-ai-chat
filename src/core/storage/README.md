@@ -14,6 +14,7 @@ into a single object that gets passed through React context:
 | ------------------------------------------------------- | ------------------------------------------------- |
 | [`ThreadsStorage`](./threads.ts)                        | Chat sessions and their `lastEditDate` timestamps |
 | [`MessagesStorage`](./messages.ts)                      | Messages scoped to a thread                       |
+| [`pagination`](./pagination.ts)                         | Keyset-cursor types + `drainPages` page walker    |
 | [`ProfilesStorage`](./profiles.ts)                      | AI provider profiles                              |
 | [`PromptsStorage`](./prompts.ts)                        | Saved prompt templates                            |
 | [`PromptFoldersStorage`](./prompt-folders.ts)           | One-level grouping for prompts                    |

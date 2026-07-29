@@ -61,7 +61,12 @@ const convertUserContent = (
       }
       return {
         type: "image_url",
-        image_url: { url: part.image },
+        // Explicit `detail` on every attached image: without it some
+        // OpenAI-compatible backends fall back to processing the
+        // original-size image. "high" caps the input at the tiled
+        // high-detail pipeline (longest side 2048px) while keeping
+        // small text readable.
+        image_url: { url: part.image, detail: "high" },
       };
     }
 
