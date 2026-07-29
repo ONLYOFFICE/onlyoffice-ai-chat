@@ -251,6 +251,10 @@
   --button-border-radius: 4px;
   --button-loader-size: 16px;
 
+  /* Size of the "about"/info icon buttons (the tooltip trigger next to the
+     model form's "Import" link and each dropdown item's about button). */
+  --about-button-size: 20px;
+
   /* Initial setup screen (the no-profiles fallback on the chat surface).
      `--initial-setup-max-width` caps the content column; `--initial-setup-
      justify` places it within the surface (any `justify-content` value —

@@ -121,7 +121,7 @@ export const AddModelCard = ({
                 <IconButton
                   className="cursor-pointer"
                   iconName="btn-menu-about"
-                  size={20}
+                  size="var(--about-button-size)"
                   disableHover
                   noColor
                   onClick={() => setIsTooltipOpen((val) => !val)}

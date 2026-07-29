@@ -303,7 +303,7 @@ const DropDownItem = ({
             <TooltipTrigger asChild>
               <IconButton
                 iconName="btn-menu-about"
-                size={20}
+                size="var(--about-button-size)"
                 disableHover
                 noColor
                 onClick={() => setIsAboutOpen((val) => !val)}
