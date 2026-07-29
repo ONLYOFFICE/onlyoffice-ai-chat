@@ -160,6 +160,39 @@ describe("createMessageStore", () => {
       expect(store.getState().messages).toEqual(msgs);
     });
 
+    it("drains the thread in pages when pagination is on", async () => {
+      const history = Array.from({ length: 150 }, (_, i) => ({
+        ...makeMsg("user", `m${i}`),
+        id: `m${i}`,
+        createdAt: new Date(1000 + i),
+      }));
+      const readMessages = vi.fn(
+        async (_t: string, count?: number, cursor?: { id: string }) => {
+          const from = cursor
+            ? history.findIndex((m) => m.id === cursor.id) + 1
+            : 0;
+          return history.slice(from, count ? from + count : undefined);
+        }
+      );
+      api = makeApi(readMessages as never);
+      const store = createMessageStore({
+        ctx,
+        api,
+        getPagination: () => true,
+      });
+
+      await store.getState().fetchPrevMessages("thread-1");
+
+      expect(readMessages).toHaveBeenCalledTimes(2);
+      expect(readMessages).toHaveBeenNthCalledWith(
+        1,
+        "thread-1",
+        100,
+        undefined
+      );
+      expect(store.getState().messages).toHaveLength(150);
+    });
+
     it("discards stale results if thread changed", async () => {
       const slowMsgs = [makeMsg("user", "old")];
       const readMessages = vi.fn().mockImplementation((threadId: string) => {

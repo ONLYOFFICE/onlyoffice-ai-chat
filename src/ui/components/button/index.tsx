@@ -31,6 +31,12 @@ const Button = ({
   return (
     <Comp
       data-slot="button"
+      // A bare <button> inside a <form> defaults to type="submit"; none of
+      // the library's buttons rely on implicit submission (DialogFooter
+      // passes an explicit type), so default to a non-submitting button.
+      // An explicit `type` in props still wins. Skipped for asChild — the
+      // consumer's element owns its own attributes.
+      {...(asChild ? {} : { type: "button" as const })}
       disabled={disabled || (showLoader ? true : undefined)}
       aria-busy={showLoader || undefined}
       className={cn(

@@ -165,7 +165,7 @@ describe("createThreadsApi", () => {
     api.clearMessages("t1");
     api.regenerateTitle("t1", { id: "p1" } as never);
     api.list();
-    api.readMessages("t1", 10, 0);
+    api.readMessages("t1", 10, { createdAt: null, id: "m0" });
     api.getById("t1");
     api.getMessageById("m1");
     api.updateMessage("m1", { role: "user" } as never);
@@ -182,8 +182,17 @@ describe("createThreadsApi", () => {
     expectCall(6, "threads", "delete", ["t1"]);
     expectCall(7, "threads", "clearMessages", ["t1"]);
     expectCall(8, "threads", "regenerateTitle", ["t1", { id: "p1" }]);
-    expectCall(9, "threads", "list", [undefined]);
-    expectCall(10, "threads", "readMessages", ["t1", 10, 0]);
+    expectCall(9, "threads", "list", [
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    expectCall(10, "threads", "readMessages", [
+      "t1",
+      10,
+      { createdAt: null, id: "m0" },
+    ]);
     expectCall(11, "threads", "getById", ["t1"]);
     expectCall(12, "threads", "getMessageById", ["m1"]);
     expectCall(13, "threads", "updateMessage", ["m1", { role: "user" }]);

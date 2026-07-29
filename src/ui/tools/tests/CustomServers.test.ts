@@ -116,6 +116,21 @@ describe("CustomServers", () => {
 
       expect(customServers.customServers).toEqual(config.mcpServers);
     });
+
+    it("should drop entries with neither url nor command (marker configs)", () => {
+      customServers.setCustomServers({
+        mcpServers: {
+          docspace: {},
+          filesystem: { command: "npx", args: ["-y", "mcp-fs"] },
+          remote: { url: "http://localhost:9000/mcp" },
+        },
+      });
+
+      expect(Object.keys(customServers.customServers)).toEqual([
+        "filesystem",
+        "remote",
+      ]);
+    });
   });
 
   // ==========================================================================
@@ -125,7 +140,10 @@ describe("CustomServers", () => {
   describe("getServerType", () => {
     it("should return server type from tool name", () => {
       customServers.setCustomServers({
-        mcpServers: { filesystem: {}, github: {} },
+        mcpServers: {
+          filesystem: { command: "npx" },
+          github: { command: "npx" },
+        },
       });
 
       expect(customServers.getServerType("filesystem_read")).toBe("filesystem");

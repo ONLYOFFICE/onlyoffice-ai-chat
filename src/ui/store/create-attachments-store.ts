@@ -94,7 +94,7 @@ export interface CreateAttachmentsStoreConfig {
    * drafts. Mirrors the `entityId` plumbing on threads / assignments /
    * web-search.
    */
-  entityId?: string;
+  getEntityId?: () => string | undefined;
 }
 
 const ATTACHMENT_LIMIT = 5;
@@ -112,7 +112,8 @@ export const selectImageBase64 =
 export function createAttachmentsStore(
   config: CreateAttachmentsStoreConfig
 ): UseBoundStore<StoreApi<AttachmentsStoreState>> {
-  const { attachments, entityId } = config;
+  const { attachments, getEntityId } = config;
+  const entity = () => getEntityId?.();
 
   // Per-store mutex — every `add*` call queues onto this chain so
   // limit-check + storage-write + state-update cannot interleave with
@@ -143,7 +144,7 @@ export function createAttachmentsStore(
         // Single batch call — lands on the backend as one HTTP POST
         // regardless of how many files the user dropped. Storage owns
         // id/createdAt; we just stash the lightweight refs.
-        const records = await attachments.saveFilesMany(inputs, entityId);
+        const records = await attachments.saveFilesMany(inputs, entity());
         const refs: TAttachmentRef[] = records.map((record) => ({
           id: record.id,
           title: record.title,
@@ -184,7 +185,7 @@ export function createAttachmentsStore(
         );
         if (inputs.length === 0) return;
         // One batch call — see addAttachmentFile for rationale.
-        const records = await attachments.saveImagesMany(inputs, entityId);
+        const records = await attachments.saveImagesMany(inputs, entity());
         const refs: TAttachmentRef[] = records.map((record) => ({
           id: record.id,
           title: record.title,

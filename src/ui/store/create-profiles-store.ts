@@ -1,6 +1,7 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../../app-context";
 import { ActionType } from "../../shared/action-type";
+import logger from "../../shared/logger";
 import { inferCapabilities } from "../../capabilities";
 import type { StoreKeys } from "../../config";
 import type { TErrorData } from "../../shared/error-data";
@@ -49,7 +50,17 @@ export interface ProfilesStoreState {
   setImageGenerationProfile: (profile: Profile | null) => Promise<void>;
   setOcrProfile: (profile: Profile | null) => Promise<void>;
   setVisionProfile: (profile: Profile | null) => Promise<void>;
-  setSessionChatProfile: (profile: Profile | null) => void;
+  /**
+   * Session-scoped chat profile pick (composer model picker, thread
+   * open). `persistAssignment: true` — used by the composer's explicit
+   * pick — additionally mirrors the pick into the persisted Chat
+   * assignment, but only when the widget runs in the global scope (no
+   * `entityId`); an entity-scoped widget keeps picks session-local.
+   */
+  setSessionChatProfile: (
+    profile: Profile | null,
+    opts?: { persistAssignment?: boolean }
+  ) => void;
   toggleExtendedThinking: () => Promise<void>;
   reloadExtendedThinking: () => Promise<void>;
 }
@@ -73,9 +84,10 @@ export function createProfilesStore(deps: {
   keys: StoreKeys;
   ctx: AppContext;
   api: ServerAPI;
-  entityId?: string;
+  getEntityId?: () => string | undefined;
 }): UseBoundStore<StoreApi<ProfilesStoreState>> {
-  const { ctx, api, entityId } = deps;
+  const { ctx, api, getEntityId } = deps;
+  const entity = () => getEntityId?.();
 
   const backfillCapabilities = (profiles: Profile[]) => {
     for (const p of profiles) {
@@ -109,7 +121,7 @@ export function createProfilesStore(deps: {
   const loadAssignmentsState = async (
     profiles: Profile[]
   ): Promise<Partial<ProfilesStoreState>> => {
-    const assignments = await api.assignments.getAllAssignments(entityId);
+    const assignments = await api.assignments.getAllAssignments(entity());
     return buildAssignmentsState(profiles, assignments);
   };
 
@@ -168,8 +180,8 @@ export function createProfilesStore(deps: {
             // so the widget can hydrate in a single network/storage trip.
             const [rawProfiles, deepMode, assignments] = await Promise.all([
               api.profiles.list(),
-              api.preferences.getDeepMode(entityId),
-              api.assignments.getAllAssignments(entityId),
+              api.preferences.getDeepMode(entity()),
+              api.assignments.getAllAssignments(entity()),
             ]);
             const profiles = backfillCapabilities(rawProfiles);
             const assignmentsState = buildAssignmentsState(
@@ -196,7 +208,7 @@ export function createProfilesStore(deps: {
 
       reloadCurrentChat: async () => {
         const profiles = get().profiles;
-        const assignments = await api.assignments.getAllAssignments(entityId);
+        const assignments = await api.assignments.getAllAssignments(entity());
         const byId = new Map(profiles.map((p) => [p.id, p]));
         const chatId = assignments[ActionType.Chat];
         const defaultId = assignments[ActionType.Default];
@@ -212,8 +224,35 @@ export function createProfilesStore(deps: {
       },
 
       addProfile: async (data) => {
-        const result = await api.profiles.create(data);
-        if (!result.success) return result.error;
+        // Never let a transport / response-shape failure escape as a
+        // rejection: the caller's `await` sits between the form's
+        // isSubmitting(true/false) calls, and an escaped throw leaves the
+        // save button spinning forever — while the profile may already be
+        // persisted server-side. Normalize every failure to TErrorData.
+        let result: Awaited<ReturnType<typeof api.profiles.create>>;
+        try {
+          result = await api.profiles.create(data);
+        } catch (e) {
+          return {
+            field: "name",
+            message: e instanceof Error ? e.message : String(e),
+          };
+        }
+        if (!result || result.success !== true) {
+          return (
+            result?.error ?? {
+              field: "name",
+              message: "Profile create failed: unexpected response",
+            }
+          );
+        }
+        if (!result.profile) {
+          // Persisted server-side, but the host's route returned no
+          // profile body — resync from storage so the list still shows it.
+          await get().reloadProfiles();
+          await get().reloadModelAssignment();
+          return true;
+        }
         const profile = backfillCapabilities([result.profile])[0];
         const wasFirst = get().profiles.length === 0;
         set((state) => ({
@@ -228,8 +267,25 @@ export function createProfilesStore(deps: {
       },
 
       editProfile: async (profile) => {
-        const result = await api.profiles.update(profile);
-        if (!result.success) return result.error;
+        // Same containment as addProfile — a rejection here would strand
+        // the edit form's spinner.
+        let result: Awaited<ReturnType<typeof api.profiles.update>>;
+        try {
+          result = await api.profiles.update(profile);
+        } catch (e) {
+          return {
+            field: "name",
+            message: e instanceof Error ? e.message : String(e),
+          };
+        }
+        if (!result || result.success !== true) {
+          return (
+            result?.error ?? {
+              field: "name",
+              message: "Profile update failed: unexpected response",
+            }
+          );
+        }
         backfillCapabilities([profile]);
         set((state) => {
           const update = (p: Profile | null) =>
@@ -350,7 +406,7 @@ export function createProfilesStore(deps: {
       setOcrProfile: makeTaskSetter("ocrProfile", "ocr"),
       setVisionProfile: makeTaskSetter("visionProfile", "vision"),
 
-      setSessionChatProfile: (profile) => {
+      setSessionChatProfile: (profile, opts) => {
         set({ sessionChatProfile: profile });
         ctx.callbacksManager.emit("onCurrentChatProfileUpdated", {
           profileId: profile?.id ?? null,
@@ -358,11 +414,24 @@ export function createProfilesStore(deps: {
           providerType: profile?.providerType,
           modelId: profile?.modelId,
         });
+        // Mirror an explicit composer pick into the persisted Chat
+        // assignment — global scope only: with an `entityId` the pick
+        // stays session-local so an entity-scoped widget never rewrites
+        // the global assignment. Fire-and-forget: the session switch
+        // above is already applied and must not wait on (or be undone
+        // by) the persistence write.
+        if (opts?.persistAssignment && profile && !entity()) {
+          void get()
+            .setChatProfile(profile)
+            .catch((e) =>
+              logger.error("Failed to persist chat model assignment:", e)
+            );
+        }
       },
 
       toggleExtendedThinking: async () => {
         const next = !get().extendedThinking;
-        await api.preferences.setDeepMode(next, entityId);
+        await api.preferences.setDeepMode(next, entity());
         set({ extendedThinking: next });
         ctx.callbacksManager.emit("onExtendedThinkingUpdated", {
           enabled: next,
@@ -370,7 +439,7 @@ export function createProfilesStore(deps: {
       },
 
       reloadExtendedThinking: async () => {
-        const next = !!(await api.preferences.getDeepMode(entityId));
+        const next = !!(await api.preferences.getDeepMode(entity()));
         if (get().extendedThinking === next) return;
         set({ extendedThinking: next });
         ctx.callbacksManager.emit("onExtendedThinkingUpdated", {

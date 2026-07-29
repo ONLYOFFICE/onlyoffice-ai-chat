@@ -116,14 +116,29 @@ function makeStorage(
           return stored;
         }
       ),
-      readByThread: vi.fn(async (tid: string, limit?: number, start = 0) => {
-        const list = messages.get(tid) ?? [];
-        const sliced = list.slice(start, limit ? start + limit : undefined);
-        return sliced;
-      }),
+      readByThread: vi.fn(
+        async (tid: string, count?: number, cursor?: { id: string }) => {
+          const list = messages.get(tid) ?? [];
+          const from = cursor
+            ? list.findIndex((m) => m.id === cursor.id) + 1
+            : 0;
+          return list.slice(from, count ? from + count : undefined);
+        }
+      ),
       deleteByThread: vi.fn(async (tid: string) => {
         messages.delete(tid);
       }),
+    },
+    attachments: {
+      // Resolves any ref id to an inlined base64 data URL — the host
+      // adapter's job in production.
+      readManyByIds: vi.fn(async (ids: string[]) =>
+        ids.map((id) => ({
+          id,
+          title: "img",
+          base64: "data:image/png;base64,AAAA",
+        }))
+      ),
     },
   } as unknown as StorageAdapter;
 
@@ -153,6 +168,30 @@ afterEach(() => {
 const userMessage: ThreadMessageLike = {
   role: "user",
   content: [{ type: "text", text: "hi" }],
+};
+
+/** User message whose image is a persisted ref marker, not inline base64. */
+const imageRefMessage: ThreadMessageLike = {
+  role: "user",
+  content: [
+    {
+      type: "image",
+      image: JSON.stringify({ ref: "att-1", title: "img", kind: "image" }),
+      name: "img",
+    } as unknown as Extract<
+      Exclude<ThreadMessageLike["content"], string>[number],
+      { type: "image" }
+    >,
+    { type: "text", text: "what is this?" },
+  ],
+};
+
+/** Read the image value the provider actually received for the title call. */
+const sentImage = (): string | undefined => {
+  const sent = sendMessageSyncMock.mock.calls[0][0]
+    .messages as ThreadMessageLike[];
+  const part = (sent[0].content as Array<{ type: string; image?: string }>)[0];
+  return part.image;
 };
 
 describe("ThreadsEngine.create", () => {
@@ -215,6 +254,18 @@ describe("ThreadsEngine.openOrCreate", () => {
       firstMessage: userMessage,
     });
     expect(result.title).toBe("New chat");
+  });
+
+  it("hydrates image refs before the title call", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Auto Title");
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    await engine.openOrCreate({
+      profile,
+      profileId: "p1",
+      firstMessage: imageRefMessage,
+    });
+    expect(sentImage()).toBe("data:image/png;base64,AAAA");
   });
 });
 
@@ -295,6 +346,17 @@ describe("ThreadsEngine.regenerateTitle", () => {
     expect(title).toBe("New chat");
   });
 
+  it("hydrates image refs from the stored first message", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Regenerated");
+    const { storage } = makeStorage({
+      threads: [{ threadId: "t1", title: "Old" }],
+      messagesByThread: { t1: [imageRefMessage] },
+    });
+    const engine = new ThreadsEngine({ storage });
+    await engine.regenerateTitle("t1", profile);
+    expect(sentImage()).toBe("data:image/png;base64,AAAA");
+  });
+
   it("throws when the thread has no user messages", async () => {
     const { storage } = makeStorage({
       threads: [{ threadId: "t1", title: "Old" }],
@@ -339,7 +401,12 @@ describe("ThreadsEngine entity scope", () => {
     const { storage } = makeStorage();
     const engine = new ThreadsEngine({ storage });
     await engine.list("e1");
-    expect(storage.threads.readAll).toHaveBeenCalledWith("e1");
+    expect(storage.threads.readAll).toHaveBeenCalledWith(
+      "e1",
+      undefined,
+      undefined,
+      undefined
+    );
   });
 
   it("list() returns only threads bound to the requested scope", async () => {
@@ -375,8 +442,71 @@ describe("ThreadsEngine pass-through readers", () => {
       messagesByThread: { t1: [userMessage] },
     });
     const engine = new ThreadsEngine({ storage });
-    const msgs = await engine.readMessages("t1", 5, 0);
+    const cursor = { createdAt: "2026-01-01T00:00:00.000Z", id: "m0" };
+    const msgs = await engine.readMessages("t1", 5, cursor);
     expect(msgs).toEqual([userMessage]);
-    expect(storage.messages.readByThread).toHaveBeenCalledWith("t1", 5, 0);
+    expect(storage.messages.readByThread).toHaveBeenCalledWith("t1", 5, cursor);
+  });
+
+  it("list() forwards count, cursor and query to storage.threads.readAll", async () => {
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    const cursor = { lastEditDate: 500, threadId: "t9" };
+    await engine.list("e1", 100, cursor, "report");
+    expect(storage.threads.readAll).toHaveBeenCalledWith(
+      "e1",
+      100,
+      cursor,
+      "report"
+    );
+  });
+});
+
+describe("ThreadsEngine pagination flag", () => {
+  const msg = (id: number): ThreadMessageLike => ({
+    role: "user",
+    content: [{ type: "text", text: `m${id}` }],
+    id: `m${id}`,
+    createdAt: new Date(1000 + id),
+  });
+
+  it("openOrCreate reads history in pages when pagination is on", async () => {
+    const history = Array.from({ length: 150 }, (_, i) => msg(i));
+    const { storage } = makeStorage({
+      threads: [{ threadId: "t1", title: "X" }],
+      messagesByThread: { t1: history },
+    });
+    const engine = new ThreadsEngine({ storage, pagination: true });
+    const result = await engine.openOrCreate({
+      threadId: "t1",
+      profile,
+      profileId: "p1",
+      firstMessage: userMessage,
+    });
+    expect(result.priorMessages).toHaveLength(150);
+    // 100 + 50 → two pages.
+    expect(storage.messages.readByThread).toHaveBeenCalledTimes(2);
+    expect(storage.messages.readByThread).toHaveBeenNthCalledWith(
+      1,
+      "t1",
+      100,
+      undefined
+    );
+  });
+
+  it("openOrCreate keeps the single unbounded read when pagination is off", async () => {
+    const { storage } = makeStorage({
+      threads: [{ threadId: "t1", title: "X" }],
+      messagesByThread: { t1: [userMessage] },
+    });
+    const engine = new ThreadsEngine({ storage });
+    await engine.openOrCreate({
+      threadId: "t1",
+      profile,
+      profileId: "p1",
+      firstMessage: userMessage,
+    });
+    expect(storage.messages.readByThread).toHaveBeenCalledTimes(1);
+    expect(storage.messages.readByThread).toHaveBeenCalledWith("t1");
   });
 });

@@ -264,18 +264,30 @@ the engine so callers that already have a `ThreadsEngine` don't
 need to also reach for `storage.threads` / `storage.messages`.
 
 ```ts
-async list(entityId?: string): Promise<Thread[]>;  // scope-filtered, sorted by lastEditDate desc
+async list(
+  entityId?: string,
+  count?: number,                    // optional page size
+  cursor?: ThreadsCursor,            // keyset cursor of the last received thread
+  query?: string                     // case-insensitive title substring (server-side search)
+): Promise<Thread[]>;                // scope-filtered, sorted by lastEditDate desc
 async readMessages(
   threadId: string,
-  limit?: number,
-  startIndex?: number
-): Promise<ThreadMessageLike[]>;     // sorted by timestamp asc
+  count?: number,
+  cursor?: MessagesCursor
+): Promise<ThreadMessageLike[]>;     // sorted by createdAt asc
 ```
 
 `list(entityId)` filters threads by the entity scope they were
 created in: `undefined` returns only threads bound to no entity,
-a string id returns only threads bound to that entity. See
+a string id returns only threads bound to that entity. The optional
+`count`/`cursor` pair enables keyset pagination — omit both for the
+full list. See
 [`StorageAdapter.threads.readAll`](../../../src/core/storage/threads.ts).
+
+The engine also accepts a `pagination?: boolean | (() => boolean)`
+dep (default false): when enabled, its own full-history read in
+`openOrCreate` walks the thread in pages of 100 instead of one
+unbounded call.
 
 ---
 

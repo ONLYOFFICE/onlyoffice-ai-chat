@@ -89,6 +89,12 @@ interface StorageAdapter {
 | `webSearch` | Singleton web-search provider config |
 | `attachments` | User-message attachments (files + images) |
 
+`threads.readAll` and `messages.readByThread` accept optional
+keyset-pagination parameters (`count`, `cursor`), used only when the
+widget runs with `enablePagination` — see
+[the storage contract](./core/storage/storage.md) for the exact
+semantics. Adapters that ignore them keep working (full-list reads).
+
 `init()` runs once before any other method (open DB, run
 migrations). `close()` runs on widget unmount.
 

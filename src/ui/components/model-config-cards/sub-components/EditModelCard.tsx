@@ -104,19 +104,28 @@ export const EditModelCard = ({
 
     const selectedModel = models.find((m) => m.id === values.model);
 
-    const result = await editProfile({
-      ...profile,
-      name: values.profileName,
-      providerType: values.provider as ProviderType,
-      baseUrl: values.baseUrl,
-      key: values.apiKey || undefined,
-      modelId: values.model,
-      capabilities: selectedModel?.capabilities ?? profile.capabilities,
-      isCloudProvider: values.isCloudProvider,
-    });
-
-    setIsLoading(false);
-    setIsSubmitting(false);
+    // The store normalizes failures to TErrorData, but keep a hard
+    // guarantee here regardless: whatever happens inside the await, the
+    // spinner must never be left running.
+    let result: Awaited<ReturnType<typeof editProfile>>;
+    try {
+      result = await editProfile({
+        ...profile,
+        name: values.profileName,
+        providerType: values.provider as ProviderType,
+        baseUrl: values.baseUrl,
+        key: values.apiKey || undefined,
+        modelId: values.model,
+        capabilities: selectedModel?.capabilities ?? profile.capabilities,
+        isCloudProvider: values.isCloudProvider,
+      });
+    } catch (e) {
+      setErrors({ name: e instanceof Error ? e.message : String(e) });
+      return;
+    } finally {
+      setIsLoading(false);
+      setIsSubmitting(false);
+    }
 
     if (result === true) {
       onClose();

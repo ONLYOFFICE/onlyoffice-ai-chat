@@ -3,6 +3,14 @@ export type { AssignmentsStorage } from "./assignments";
 export type { Attachment, AttachmentsStorage } from "./attachments";
 export type { McpServerConfig, McpServersStorage } from "./mcp-servers";
 export type { MessagesStorage } from "./messages";
+export {
+  PAGE_SIZE,
+  drainPages,
+  isPaginationEnabled,
+  messagesCursorOf,
+  threadsCursorOf,
+} from "./pagination";
+export type { MessagesCursor, ThreadsCursor } from "./pagination";
 export type { PreferencesStorage } from "./preferences";
 export type { ProfilesStorage } from "./profiles";
 export type { PromptFoldersStorage } from "./prompt-folders";

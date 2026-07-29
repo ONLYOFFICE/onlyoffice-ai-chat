@@ -81,18 +81,27 @@ export const AddModelCard = ({
 
     const selectedModel = models.find((m) => m.id === values.model);
 
-    const result = await addProfile({
-      name: values.profileName,
-      providerType: values.provider as ProviderType,
-      baseUrl: values.baseUrl,
-      key: values.apiKey || undefined,
-      modelId: values.model,
-      capabilities: selectedModel?.capabilities,
-      isCloudProvider: values.isCloudProvider,
-    });
-
-    setIsLoading(false);
-    setIsSubmitting(false);
+    // The store normalizes failures to TErrorData, but keep a hard
+    // guarantee here regardless: whatever happens inside the await, the
+    // spinner must never be left running.
+    let result: Awaited<ReturnType<typeof addProfile>>;
+    try {
+      result = await addProfile({
+        name: values.profileName,
+        providerType: values.provider as ProviderType,
+        baseUrl: values.baseUrl,
+        key: values.apiKey || undefined,
+        modelId: values.model,
+        capabilities: selectedModel?.capabilities,
+        isCloudProvider: values.isCloudProvider,
+      });
+    } catch (e) {
+      setErrors({ name: e instanceof Error ? e.message : String(e) });
+      return;
+    } finally {
+      setIsLoading(false);
+      setIsSubmitting(false);
+    }
 
     if (result === true) {
       setValues(INITIAL_VALUES);

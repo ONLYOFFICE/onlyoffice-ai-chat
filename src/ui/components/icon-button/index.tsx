@@ -52,6 +52,12 @@ const IconButtonComponent = ({
 
   return (
     <button
+      // Icon buttons render inside forms (the chat composer is a <form>,
+      // so are the dialog bodies) where a bare <button> defaults to
+      // type="submit" — a click on "+"/prompts/remove-attachment would
+      // submit the form and send the message. Default to a non-submitting
+      // button; callers can still override via an explicit `type` prop.
+      type="button"
       className={cn(
         baseStyles,
         layoutStyles,

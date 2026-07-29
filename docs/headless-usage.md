@@ -44,7 +44,11 @@ import type { StorageAdapter } from "@onlyoffice/ai-chat/storage";
 const storage: StorageAdapter = /* host-supplied */;
 
 const assignments = new AssignmentsEngine({ storage });
-const threads     = new ThreadsEngine({ storage });
+// `pagination: true` makes the engine's own full-history reads walk
+// storage in cursor pages of 100 (requires a storage that honors the
+// count/cursor params on threads.readAll / messages.readByThread).
+// Mirror the widget's `enablePagination` prop here.
+const threads     = new ThreadsEngine({ storage /*, pagination: true */ });
 const profiles    = new ProfilesEngine({ storage, assignments });
 const tools       = new ToolsEngine({ storage });
 const prompts     = new PromptsEngine({ storage });
@@ -57,6 +61,7 @@ const ai = new AIEngine({
   assignments,
   threads,
   // toolsAdapter: optional — pluggable runtime tool source
+  // pagination: true — paged full-history reads, see ThreadsEngine above
 });
 ```
 

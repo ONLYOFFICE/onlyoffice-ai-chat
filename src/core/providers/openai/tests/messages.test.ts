@@ -49,7 +49,7 @@ describe("openai/messages/convertMessages", () => {
       expect(out[0].content).toEqual([
         {
           type: "image_url",
-          image_url: { url: "data:image/png;base64,AAA" },
+          image_url: { url: "data:image/png;base64,AAA", detail: "high" },
         },
       ]);
     });

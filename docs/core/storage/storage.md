@@ -116,7 +116,12 @@ create(
   entityId?: string                              // binds the thread to an entity scope
 ): Promise<Thread>;                              // storage assigns threadId + lastEditDate
 readById(threadId: string): Promise<Thread | null>;
-readAll(entityId?: string): Promise<Thread[]>;   // scope-filtered, sorted by lastEditDate desc
+readAll(
+  entityId?: string,
+  count?: number,                                // optional page size
+  cursor?: ThreadsCursor,                        // { lastEditDate, threadId } of the last received thread
+  query?: string                                 // case-insensitive title substring, applied BEFORE pagination
+): Promise<Thread[]>;                            // scope-filtered, sorted by lastEditDate desc, threadId desc
 update(threadId: string, title?: string): Promise<void>;
 touch(
   threadId: string,
@@ -132,6 +137,21 @@ delete(threadId: string): Promise<void>;           // cascading: also drops mess
   to resurface in the sidebar after a rename, follow up with
   `touch`. The split keeps "show me history changes" decoupled
   from "the user is just fixing a typo".
+- **Cursor pagination is optional and keyset-based.** Both `count`
+  and `cursor` may be omitted — that returns the full list, exactly
+  the pre-pagination behavior. When supplied, return up to `count`
+  threads strictly AFTER the cursor in `lastEditDate` desc,
+  `threadId` desc order; `lastEditDate: null` in the cursor marks an
+  anchor thread without a timestamp (undated threads sort last).
+  Implementations that don't support pagination may ignore both
+  parameters — the widget detects a full dump and stops paging.
+- **`query` is a server-side title search** — a **case-insensitive
+  substring match** on `title`, applied BEFORE pagination so
+  `count`/`cursor` page through the matches. The exact substring
+  semantics are contractual: the widget detects an implementation
+  that ignored `query` by spotting a non-matching title in the
+  response, and for the rest of the session falls back to draining
+  all pages and filtering client-side.
 - **The caller owns the clock.** `touch` takes the timestamp as
   an argument; storage never reads `Date.now()`. This makes
   deterministic tests trivial.
@@ -163,9 +183,9 @@ create(
 readById(messageId: string): Promise<ThreadMessageLike | null>;
 readByThread(
   threadId: string,
-  limit?: number,
-  startIndex?: number
-): Promise<ThreadMessageLike[]>;     // sorted by timestamp asc
+  count?: number,                    // optional page size
+  cursor?: MessagesCursor            // { createdAt: ISO string, id } of the last received message
+): Promise<ThreadMessageLike[]>;     // sorted by createdAt asc, id asc
 update(messageId: string, message: ThreadMessageLike): Promise<void>;
 delete(messageId: string): Promise<void>;
 deleteByThread(threadId: string): Promise<void>;
@@ -173,9 +193,15 @@ deleteByThread(threadId: string): Promise<void>;
 
 ### Semantics
 
-- **Pagination is offset/limit on a chronologically ascending
-  list.** `startIndex: 0` returns the oldest messages first; omit
-  both args to read the full thread.
+- **Pagination is keyset (cursor), not offset.** Omit both args to
+  read the full thread — the pre-pagination behavior. When supplied,
+  return up to `count` messages strictly AFTER the cursor in
+  `createdAt` asc, `id` asc order (`createdAt` travels as an ISO
+  string so it survives a JSON round trip through a query param). A
+  "before" direction for lazy tail-loading is reserved for a future
+  revision — only forward paging is required today. Implementations
+  that don't support pagination may ignore both parameters — the
+  widget detects a full dump and stops paging.
 - **`update` overwrites the entire `ThreadMessageLike`.** No
   partial diff — the assistant-ui shape is too entangled to
   patch reliably. Engines pass the full new value.

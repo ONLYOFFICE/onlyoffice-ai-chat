@@ -25,6 +25,24 @@ export function createWidgetRef(
   eventBus: ChatEventBus,
   composerBridgeRef: { current: ComposerBridge }
 ): AIChatWidgetRef {
+  // Resolve a thread's title for download/export. Prefers the in-memory
+  // list; falls back to a storage read — with pagination the target may
+  // not be in the loaded pages.
+  const resolveThreadTitle = async (
+    threadId: string
+  ): Promise<string | undefined> => {
+    const loaded = stores.useThreadsStore
+      .getState()
+      .threads.find((t) => t.threadId === threadId);
+    if (loaded) return loaded.title;
+    try {
+      const stored = await stores.api.threads.getById(threadId);
+      return stored?.title;
+    } catch {
+      return undefined;
+    }
+  };
+
   return {
     // --- Messages ---
 
@@ -68,23 +86,26 @@ export function createWidgetRef(
     },
 
     downloadThread(threadId) {
-      const thread = stores.useThreadsStore
-        .getState()
-        .threads.find((t) => t.threadId === threadId);
-      void stores.useThreadsStore
-        .getState()
-        .onDownloadThread(threadId, thread?.title);
+      // With pagination the target thread may not be in the loaded pages
+      // yet — recover its title from storage before exporting.
+      void resolveThreadTitle(threadId).then((title) =>
+        stores.useThreadsStore.getState().onDownloadThread(threadId, title)
+      );
     },
 
     exportThread(threadId, formatId) {
-      const thread = stores.useThreadsStore
-        .getState()
-        .threads.find((t) => t.threadId === threadId);
-      void stores.useThreadsStore
-        .getState()
-        .onExportThread(threadId, formatId, thread?.title);
+      void resolveThreadTitle(threadId).then((title) =>
+        stores.useThreadsStore
+          .getState()
+          .onExportThread(threadId, formatId, title)
+      );
     },
 
+    /**
+     * Returns the threads currently loaded into the store. With
+     * `enablePagination` this is the loaded pages, not necessarily the
+     * whole collection.
+     */
     getThreads() {
       return stores.useThreadsStore.getState().threads;
     },
