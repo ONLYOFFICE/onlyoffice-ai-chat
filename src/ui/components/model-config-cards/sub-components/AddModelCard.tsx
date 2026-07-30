@@ -113,74 +113,76 @@ export const AddModelCard = ({
     }
   };
 
-  const footer = (
-    <div className="flex flex-row justify-between items-center mt-[var(--add-model-card-footer-margin-top)]">
-      <div className="flex flex-row items-center gap-[var(--add-model-card-import-gap)]">
-        {onProfileImportClick && (
-          <>
-            <Link
-              href="#"
-              onClick={handleImportClick}
-              className="!text-[var(--link-secondary-color)] no-underline"
-            >
-              {t("Import")}
-            </Link>
-            <Tooltip open={isTooltipOpen}>
-              <TooltipTrigger asChild>
-                <IconButton
-                  className="cursor-pointer"
-                  iconName="btn-menu-about"
-                  size="var(--about-button-size)"
-                  disableHover
-                  noColor
-                  onClick={() => setIsTooltipOpen((val) => !val)}
-                />
-              </TooltipTrigger>
-              <TooltipContent
-                className="p-[var(--add-model-card-tooltip-padding)]"
-                side="bottom"
-                isAbout
-                align="start"
-              >
-                <div className="flex flex-col gap-[var(--add-model-card-tooltip-gap)] max-w-[var(--add-model-card-tooltip-max-width)]">
-                  <p className="leading-[var(--lh-16)] select-none">
-                    {t("EnterModelConfigTooltip")}
-                  </p>
-                  <Link
-                    variant="primary"
-                    href="#"
-                    className="leading-[var(--lh-16)]"
-                    onClick={
-                      onDownloadTemplate
-                        ? (e) => {
-                            e.preventDefault();
-                            onDownloadTemplate();
-                          }
-                        : undefined
-                    }
-                  >
-                    {t("DownloadTemplate")}
-                  </Link>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </>
-        )}
-      </div>
-      <div className="flex flex-row gap-[var(--add-model-card-footer-gap)]">
-        {variant === "card" && (
-          <Button variant="default" onClick={onClose}>
-            {t("Cancel")}
-          </Button>
-        )}
-        <Button
-          disabled={!isFormValid}
-          isLoading={isSubmitting}
-          onClick={handleAdd}
+  // The import link + hint tooltip used to sit in the footer; they now live
+  // in the Provider field's action slot (mirroring "Get API key"), threaded
+  // into ModelConfigForm. Rendered only when the host supplies an import
+  // handler; inside the form the ONLYOFFICE AI Settings link takes
+  // precedence over it. Behaviour is unchanged.
+  const importAction = onProfileImportClick ? (
+    <div className="flex flex-row items-center gap-[var(--add-model-card-import-gap)]">
+      <Link
+        href="#"
+        onClick={handleImportClick}
+        className="!text-[var(--link-secondary-color)] no-underline"
+      >
+        {t("Import")}
+      </Link>
+      <Tooltip open={isTooltipOpen}>
+        <TooltipTrigger asChild>
+          <IconButton
+            className="cursor-pointer"
+            iconName="btn-menu-about"
+            size="var(--about-button-size)"
+            disableHover
+            noColor
+            onClick={() => setIsTooltipOpen((val) => !val)}
+          />
+        </TooltipTrigger>
+        <TooltipContent
+          className="p-[var(--add-model-card-tooltip-padding)]"
+          side="bottom"
+          isAbout
+          align="start"
         >
-          {t("AddModel")}
+          <div className="flex flex-col gap-[var(--add-model-card-tooltip-gap)] max-w-[var(--add-model-card-tooltip-max-width)]">
+            <p className="leading-[var(--lh-16)] select-none">
+              {t("EnterModelConfigTooltip")}
+            </p>
+            <Link
+              variant="primary"
+              href="#"
+              className="leading-[var(--lh-16)]"
+              onClick={
+                onDownloadTemplate
+                  ? (e) => {
+                      e.preventDefault();
+                      onDownloadTemplate();
+                    }
+                  : undefined
+              }
+            >
+              {t("DownloadTemplate")}
+            </Link>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  ) : undefined;
+
+  const footer = (
+    <div className="flex flex-row justify-end items-center gap-[var(--add-model-card-footer-gap)] mt-[var(--add-model-card-footer-margin-top)]">
+      {variant === "card" && (
+        <Button variant="default" onClick={onClose}>
+          {t("Cancel")}
         </Button>
-      </div>
+      )}
+      <Button
+        disabled={!isFormValid}
+        isLoading={isSubmitting}
+        onClick={handleAdd}
+      >
+        {t("AddModel")}
+      </Button>
     </div>
   );
 
@@ -198,6 +200,7 @@ export const AddModelCard = ({
           errors={errors}
           isHorizontal={isHorizontal}
           isOnlyofficeAISetupIncomplete={isOnlyofficeAISetupIncomplete}
+          importAction={importAction}
         />
 
         {footer}
@@ -218,6 +221,7 @@ export const AddModelCard = ({
         errors={errors}
         isHorizontal={isHorizontal}
         isOnlyofficeAISetupIncomplete={isOnlyofficeAISetupIncomplete}
+        importAction={importAction}
       />
 
       {footer}

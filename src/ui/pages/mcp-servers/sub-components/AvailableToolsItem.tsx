@@ -28,7 +28,17 @@ const AvailableToolsItem = ({
 
   const [opened, setOpened] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
-  const [isStoped, setIsStoped] = React.useState(false);
+  // Seed from the servers instance synchronously so a server that is
+  // already stopped when the page mounts shows its error icon and opens
+  // its log on the very first click — without waiting for the 1s poll.
+  const [isStoped, setIsStoped] = React.useState(() =>
+    serversInstance.getCustomServersStoped().includes(name)
+  );
+  const [logs, setLogs] = React.useState<string[]>(() =>
+    serversInstance.getCustomServersStoped().includes(name)
+      ? (serversInstance.getCustomServersLogs()[name] ?? [])
+      : []
+  );
 
   const { useServersStore } = useStores();
   const changeToolStatus = useServersStore((s) => s.changeToolStatus);
@@ -42,13 +52,26 @@ const AvailableToolsItem = ({
     changeAllToolStatus(name, false);
   }, [name, changeAllToolStatus]);
 
+  // Collapse a loading server, but never a stopped one — its expanded
+  // panel shows the crash log, which must stay open even though a
+  // crashed custom server reports `isLoading` (it has no tools).
   React.useEffect(() => {
-    if (isLoading) setOpened(false);
-  }, [isLoading]);
+    if (isLoading && !isStoped) setOpened(false);
+  }, [isLoading, isStoped]);
 
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setIsStoped(serversInstance.getCustomServersStoped().includes(name));
+      const stopped = serversInstance.getCustomServersStoped().includes(name);
+      setIsStoped(stopped);
+      // Snapshot the crash log while stopped. Logs are mutated in place,
+      // so only replace state when the line count changed — otherwise the
+      // same reference would either churn re-renders or go stale.
+      if (stopped) {
+        setLogs((prev) => {
+          const next = serversInstance.getCustomServersLogs()[name] ?? [];
+          return prev.length === next.length ? prev : next.slice();
+        });
+      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -83,12 +106,15 @@ const AvailableToolsItem = ({
           isLoadingAction ? "" : "cursor-pointer",
           "bg-[var(--servers-available-tools-item-background-color)]",
           "active:bg-[var(--servers-available-tools-item-active-background-color)]",
-          !isLoading
+          !isLoadingAction
             ? "hover:bg-[var(--servers-available-tools-item-hover-background-color)]"
             : ""
         )}
         onClick={() => {
-          if (isLoading || dropdownOpen || mcpItems.length === 0) return;
+          if (isLoadingAction || dropdownOpen) return;
+          // A stopped server opens its crash log even with no tools;
+          // a healthy server only opens when it has tools to show.
+          if (!isStoped && mcpItems.length === 0) return;
           setOpened((val) => !val);
         }}
       >
@@ -137,7 +163,21 @@ const AvailableToolsItem = ({
           ) : null}
         </div>
       </div>
-      {opened ? (
+      {opened && isStoped ? (
+        <div
+          className={cn(
+            "mt-[4px] max-h-[300px] overflow-y-auto select-text",
+            "rounded-[var(--servers-available-tools-item-border-radius)]",
+            "bg-[var(--servers-available-tools-item-background-color)]",
+            "px-[8px] py-[8px]"
+          )}
+        >
+          <pre className="m-0 whitespace-pre-wrap break-words font-mono text-[12px] leading-[16px] text-[var(--servers-available-tools-item-name-color)]">
+            {logs.join("")}
+          </pre>
+        </div>
+      ) : null}
+      {opened && !isStoped ? (
         <div className="flex flex-col gap-[var(--servers-available-tools-sublist-gap)] mt-[var(--servers-available-tools-sublist-margin-top)]">
           {mcpItems.map((tool) => {
             return (

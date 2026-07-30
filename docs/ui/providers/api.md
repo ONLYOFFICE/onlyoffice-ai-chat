@@ -155,8 +155,9 @@ app.get("/v1/ai-chat/threads/list", async (req, res) => {
 ```
 
 The storage behind the engine implements the keyset query. SQL
-sketch for threads (cursor = `{ lastEditDate, threadId }` of the
-last row the client already has; `NULL` dates sort last):
+sketch for threads (cursor = `{ lastEditDate, threadId, id }` of the
+last row the client already has — `id` mirrors `threadId` for backends
+whose tiebreak column is named `id`; `NULL` dates sort last):
 
 ```sql
 SELECT * FROM threads

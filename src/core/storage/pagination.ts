@@ -10,10 +10,16 @@ export const PAGE_SIZE = 100;
  * threads strictly AFTER it in `lastEditDate` DESC, `threadId` DESC
  * order. `lastEditDate` is `null` for threads that never got a
  * timestamp — those sort after every dated thread.
+ *
+ * `id` mirrors `threadId` — it lets a backend whose keyset tiebreak
+ * column is literally named `id` read the cursor field directly. The
+ * widget always sets it equal to `threadId`, so implementations may key
+ * off either.
  */
 export type ThreadsCursor = {
   lastEditDate: number | null;
   threadId: string;
+  id: string;
 };
 
 /**
@@ -33,6 +39,7 @@ export function threadsCursorOf(thread: Thread): ThreadsCursor {
   return {
     lastEditDate: thread.lastEditDate ?? null,
     threadId: thread.threadId,
+    id: thread.threadId,
   };
 }
 

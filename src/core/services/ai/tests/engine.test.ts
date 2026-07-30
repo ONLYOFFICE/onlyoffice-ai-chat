@@ -281,7 +281,9 @@ describe("AIEngine.sendWithStream", () => {
       new Promise<string>((r) => (resolveTitle = r))
     );
     // Terminal message with an unresolved tool call — the engine pauses
-    // the round with `tool-call-pending` instead of `message-end`.
+    // the round with `tool-call-pending` instead of `message-end`. The tool
+    // is caller-supplied (a "user" tool), so it surfaces for UI approval
+    // rather than being auto-resolved as an unavailable/unknown name.
     const paused: ThreadMessageLike = {
       role: "assistant",
       content: [
@@ -298,7 +300,12 @@ describe("AIEngine.sendWithStream", () => {
     );
     const { storage } = makeStorage();
     const engine = new AIEngine({ storage });
-    const iter = engine.sendWithStream({ userMessage });
+    const iter = engine.sendWithStream({
+      userMessage,
+      actionArgs: {
+        tools: [{ name: "host_tool", description: "", inputSchema: {} }],
+      },
+    });
 
     expect((await iter.next()).value.type).toBe("thread-title");
     expect((await iter.next()).value.type).toBe("user-message-stored");
@@ -313,6 +320,71 @@ describe("AIEngine.sendWithStream", () => {
       title: "Tool Title",
     });
     expect((await iter.next()).done).toBe(true);
+  });
+
+  it("auto-resolves a call to an unavailable tool and resumes instead of surfacing a phantom approval", async () => {
+    // The model calls a tool that is in no list — a name it invented, or one
+    // switched off mid-thread (e.g. Web search toggled off). The engine must
+    // NOT surface a `tool-call-pending` (approving a phantom tool throws and
+    // hangs the turn); it feeds back a "not available" result and resumes.
+    const toolCallReply: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        {
+          type: "tool-call",
+          toolCallId: "c1",
+          toolName: "web_search",
+          args: { q: "cats" },
+        },
+      ] as unknown as Exclude<ThreadMessageLike["content"], string>,
+    };
+    const followUp: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        { type: "text", text: "I can't search, but here's what I know" },
+      ],
+    };
+    sendMessageSyncMock.mockResolvedValue("Title");
+    sendMessageMock
+      .mockReturnValueOnce(
+        arrayToStream([{ isEnd: true, responseMessage: toolCallReply }])
+      )
+      .mockReturnValueOnce(
+        arrayToStream([{ isEnd: true, responseMessage: followUp }])
+      );
+
+    const { storage } = makeStorage();
+    // Web search is not configured → `web_search` is not in the tools list.
+    const persisted: ThreadMessageLike[] = [];
+    (storage.messages.update as ReturnType<typeof vi.fn>).mockImplementation(
+      async (_id: string, m: ThreadMessageLike) => {
+        persisted.push(m);
+      }
+    );
+    const engine = new AIEngine({ storage });
+
+    const events = [];
+    for await (const e of engine.sendWithStream({ userMessage })) {
+      events.push(e);
+    }
+
+    // No phantom approval surfaced, and the round completed via a resume.
+    expect(events.map((e) => e.type)).not.toContain("tool-call-pending");
+    expect(events.map((e) => e.type)).toContain("message-end");
+    expect(sendMessageMock).toHaveBeenCalledTimes(2);
+
+    // The tool call was resolved in-engine with a "not available" error.
+    const errored = persisted.find(
+      (m) =>
+        Array.isArray(m.content) &&
+        m.content.some(
+          (c) =>
+            (c as { type?: string }).type === "tool-call" &&
+            typeof (c as { result?: unknown }).result === "string" &&
+            (c as { result: string }).result.includes("is not available")
+        )
+    );
+    expect(errored).toBeDefined();
   });
 
   it("hydrates image refs before the first-message title request", async () => {

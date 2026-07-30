@@ -738,9 +738,15 @@ export class AIEngine {
    * tool was contributed by the {@link ToolsAdapter}: those tools are
    * executed in-engine via {@link executeAdapterTool}, and the chat is
    * resumed with the result without going through the UI approve / deny
-   * round-trip. Tools sourced from `actionArgs.tools` (or unrecognized
-   * names) are forwarded untouched so the UI can run its
-   * `beforeToolCall` middleware.
+   * round-trip. Tools sourced from `actionArgs.tools` are forwarded
+   * untouched so the UI can run its `beforeToolCall` middleware.
+   *
+   * A call to a tool that is in neither list — a name the model invented,
+   * or one switched off mid-thread (Web search toggled off, an MCP server
+   * removed) — is resolved in-engine with a "not available" error result
+   * and the chat resumes, instead of surfacing a phantom approval dialog
+   * (which would throw and hang the turn if approved). This is the single
+   * chokepoint every send / regenerate / resume round funnels through.
    */
   private async *runChatStream(
     stream: AsyncGenerator<ChatEvent>,
@@ -780,6 +786,35 @@ export class AIEngine {
           // approveToolCall (no result) — the engine runs the tool.
           yield { ...event, serverExecuted: true };
           continue;
+        }
+
+        if (source === "unknown" && toolCall) {
+          // The model asked for a tool that isn't offered this turn.
+          // Resolve it with a "not available" result and resume so the
+          // model recovers on the same turn — never surface it for
+          // approval (dispatching a phantom tool throws and hangs).
+          const resumed = resumeChat(
+            { storage: this.deps.storage, pagination: runCtx.pagination },
+            {
+              threadId: event.threadId,
+              messageId: event.messageId,
+              idx: event.idx,
+              message: event.message,
+              result: JSON.stringify({
+                error: `Tool "${toolCall.toolName}" is not available.`,
+              }),
+              profile: runCtx.profile,
+              profileId: runCtx.profileId,
+              isReasoning: runCtx.isReasoning,
+              signal: runCtx.signal,
+              tools: runCtx.tools,
+              prompt: runCtx.prompt,
+              entityId: runCtx.entityId,
+              fetch: runCtx.fetch,
+            }
+          );
+          yield* this.runChatStream(resumed, toolCtx, runCtx);
+          return;
         }
       }
       yield event;

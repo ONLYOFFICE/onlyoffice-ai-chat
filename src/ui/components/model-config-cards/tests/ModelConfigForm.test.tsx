@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -39,9 +39,8 @@ vi.mock("../../../store/context", () => {
           name: type === "openai" ? "OpenAI" : "Anthropic",
         }),
       },
-      useCloudsStore: (
-        selector?: (s: typeof cloudsState) => unknown
-      ) => (selector ? selector(cloudsState) : cloudsState),
+      useCloudsStore: (selector?: (s: typeof cloudsState) => unknown) =>
+        selector ? selector(cloudsState) : cloudsState,
     }),
   };
 });
@@ -343,5 +342,36 @@ describe("ModelConfigForm", () => {
       />
     );
     expect(screen.getByText("GetAPIKey")).toBeInTheDocument();
+  });
+
+  it("renders importAction in the Provider field's action slot", () => {
+    const onChange = vi.fn();
+    render(
+      <ModelConfigForm
+        values={defaultValues}
+        onChange={onChange}
+        models={models}
+        importAction={<a data-testid="import-action">Import</a>}
+      />
+    );
+    const providerField = screen.getByTestId("field-Provider");
+    expect(
+      within(providerField).getByTestId("import-action")
+    ).toBeInTheDocument();
+  });
+
+  it("prefers the ONLYOFFICE AI Settings link over importAction", () => {
+    const onChange = vi.fn();
+    render(
+      <ModelConfigForm
+        values={defaultValues}
+        onChange={onChange}
+        models={models}
+        isOnlyofficeAISetupIncomplete
+        importAction={<a data-testid="import-action">Import</a>}
+      />
+    );
+    expect(screen.getByText("OnlyofficeAISettings")).toBeInTheDocument();
+    expect(screen.queryByTestId("import-action")).not.toBeInTheDocument();
   });
 });

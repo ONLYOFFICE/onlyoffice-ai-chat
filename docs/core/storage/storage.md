@@ -119,7 +119,7 @@ readById(threadId: string): Promise<Thread | null>;
 readAll(
   entityId?: string,
   count?: number,                                // optional page size
-  cursor?: ThreadsCursor,                        // { lastEditDate, threadId } of the last received thread
+  cursor?: ThreadsCursor,                        // { lastEditDate, threadId, id } of the last received thread (id == threadId)
   query?: string                                 // case-insensitive title substring, applied BEFORE pagination
 ): Promise<Thread[]>;                            // scope-filtered, sorted by lastEditDate desc, threadId desc
 update(threadId: string, title?: string): Promise<void>;
