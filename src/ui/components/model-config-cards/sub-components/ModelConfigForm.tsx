@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { getApiKeyLink } from "../../../../shared/api-key-links";
 import { useStores } from "../../../store/context";
@@ -69,6 +69,12 @@ interface ModelConfigFormProps {
    * Provider field — both stay hidden until the probe has actually run.
    */
   isOnlyofficeAISetupIncomplete?: boolean;
+  /**
+   * Optional element rendered in the Provider field's action slot (the
+   * import link + hint icon supplied by the Add flow). The ONLYOFFICE AI
+   * Settings link takes precedence: when it is shown, `importAction` is not.
+   */
+  importAction?: ReactNode;
 }
 
 export const ModelConfigForm = ({
@@ -78,6 +84,7 @@ export const ModelConfigForm = ({
   errors,
   isHorizontal,
   isOnlyofficeAISetupIncomplete,
+  importAction,
 }: ModelConfigFormProps) => {
   const { Button, ComboBox, FieldContainer, Input, Link } = useComponents();
   const [isSetupTooltipOpen, setIsSetupTooltipOpen] = useState(false);
@@ -249,7 +256,9 @@ export const ModelConfigForm = ({
                 </div>
               </TooltipContent>
             </Tooltip>
-          ) : undefined
+          ) : (
+            importAction
+          )
         }
       >
         <ComboBox
