@@ -99,11 +99,12 @@ describe("drainPages", () => {
 });
 
 describe("cursor builders", () => {
-  it("threadsCursorOf carries lastEditDate and threadId", () => {
+  it("threadsCursorOf carries lastEditDate, threadId and id (== threadId)", () => {
     const thread: Thread = { threadId: "t1", lastEditDate: 1234 };
     expect(threadsCursorOf(thread)).toEqual({
       lastEditDate: 1234,
       threadId: "t1",
+      id: "t1",
     });
   });
 
@@ -112,6 +113,7 @@ describe("cursor builders", () => {
     expect(threadsCursorOf(thread)).toEqual({
       lastEditDate: null,
       threadId: "t2",
+      id: "t2",
     });
   });
 

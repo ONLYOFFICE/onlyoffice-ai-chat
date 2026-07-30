@@ -1364,4 +1364,145 @@ describe("CustomServers", () => {
       expect(customServers.httpServers.httpServer).toBeUndefined();
     });
   });
+
+  // ==========================================================================
+  // MCP session lifecycle (Streamable HTTP)
+  // ==========================================================================
+
+  describe("HTTP session lifecycle", () => {
+    // Response carrying an `Mcp-Session-Id` header (stateful server).
+    const createSessionResponse = (data: unknown, sessionId: string) => ({
+      ok: true,
+      status: 200,
+      headers: {
+        get: (name: string) =>
+          name === "Mcp-Session-Id" ? sessionId : null,
+      },
+      text: () => Promise.resolve(JSON.stringify(data)),
+    });
+
+    it("should capture Mcp-Session-Id from the initialize response", async () => {
+      mockFetch
+        .mockResolvedValueOnce(
+          createSessionResponse(
+            { jsonrpc: "2.0", id: "init-httpTest", result: { capabilities: {} } },
+            "sess-abc"
+          )
+        )
+        .mockResolvedValueOnce(
+          createSessionResponse(
+            { jsonrpc: "2.0", id: "tools-httpTest-1", result: { tools: [] } },
+            "sess-abc"
+          )
+        );
+
+      customServers.httpServers.httpTest = { url: "https://example.com/mcp" };
+      customServers.customServersLogs.httpTest = [];
+
+      await customServers.initHttpServer("httpTest");
+
+      expect(customServers.httpServers.httpTest.sessionId).toBe("sess-abc");
+    });
+
+    it("should echo the session id on subsequent requests", async () => {
+      customServers.httpServers.httpTest = {
+        url: "https://example.com/mcp",
+        sessionId: "sess-xyz",
+      };
+      customServers.tools.httpTest = [
+        { name: "search", description: "", inputSchema: {} },
+      ];
+      customServers.customServersLogs.httpTest = [];
+
+      mockFetch.mockResolvedValue(
+        createMockResponse({
+          jsonrpc: "2.0",
+          id: "call-httpTest-search-1",
+          result: { ok: true },
+        })
+      );
+
+      await customServers.callToolFromMCP("httpTest", "search", {});
+
+      expect(mockFetch.mock.calls[0][1].headers).toMatchObject({
+        "Mcp-Session-Id": "sess-xyz",
+      });
+    });
+
+    it("should send a DELETE to terminate the session on delete", () => {
+      customServers.httpServers.httpTest = {
+        url: "https://example.com/mcp",
+        sessionId: "sess-123",
+        headers: { Authorization: "Bearer token" },
+      };
+
+      customServers.deleteCustomServer("httpTest");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://example.com/mcp",
+        expect.objectContaining({
+          method: "DELETE",
+          headers: expect.objectContaining({
+            "Mcp-Session-Id": "sess-123",
+            Authorization: "Bearer token",
+          }),
+        })
+      );
+    });
+
+    it("should not send DELETE for a stateless server (no session id)", () => {
+      customServers.httpServers.httpTest = {
+        url: "https://example.com/mcp",
+      };
+
+      customServers.deleteCustomServer("httpTest");
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
+
+  // ==========================================================================
+  // dispose
+  // ==========================================================================
+
+  describe("dispose", () => {
+    it("should end stdio processes and close HTTP sessions", () => {
+      customServers.setCustomServers({
+        mcpServers: { stdioServer: { command: "npx" } },
+      });
+      customServers.startCustomServers();
+      const proc = customServers.customServersProcesses.stdioServer;
+
+      customServers.httpServers.httpServer = {
+        url: "https://example.com/mcp",
+        sessionId: "sess-9",
+      };
+
+      customServers.dispose();
+
+      expect(proc.end).toHaveBeenCalled();
+      expect(customServers.customServersProcesses.stdioServer).toBeUndefined();
+      expect(customServers.httpServers.httpServer).toBeUndefined();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://example.com/mcp",
+        expect.objectContaining({ method: "DELETE" })
+      );
+    });
+
+    it("should reject in-flight stdio tool calls", async () => {
+      customServers.setCustomServers({
+        mcpServers: { test: { command: "npx" } },
+      });
+      customServers.startCustomServers();
+      customServers.tools.test = [
+        { name: "read_file", description: "", inputSchema: {} },
+      ];
+
+      const promise = customServers.callToolFromStdioMCP("test", "read_file", {});
+
+      customServers.dispose();
+
+      await expect(promise).rejects.toThrow("MCP client disposed");
+    });
+  });
 });

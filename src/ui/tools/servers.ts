@@ -80,6 +80,15 @@ class Servers {
     this.customServers.deleteCustomServer(type);
   };
 
+  /**
+   * Tear down all custom MCP servers — terminate stdio child processes and
+   * close HTTP MCP sessions. Call on widget unmount to avoid orphaning
+   * processes and stateful sessions. Host tools require no teardown.
+   */
+  dispose = () => {
+    this.customServers.dispose();
+  };
+
   getHostToolGroupIds = (): string[] => {
     return this.hostToolSource.getGroupIds();
   };

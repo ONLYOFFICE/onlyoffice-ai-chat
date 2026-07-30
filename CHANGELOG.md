@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.5.6
+
+### Changed
+
+- **Custom-provider import link moved into the Provider field.** The "Import" link — and its hint tooltip with "Download template" — now sits in the Provider field's action row (mirroring "Get API key"), instead of the Add-model card footer. The ONLYOFFICE AI Settings link keeps priority in that slot when shown. Behaviour is unchanged.
+
+## 0.5.5
+
+### Fixed
+
+- **A call to an unavailable tool no longer hangs the turn.** When the model calls a tool that is not in the current list — a hallucinated name, or one switched off mid-thread (Web search toggled off, an MCP server removed) — the engine resolves it in-engine with a "not available" error and continues the chat. Previously it surfaced a phantom approval whose approval threw and left the turn stuck (spinner never cleared, no resume). Single chokepoint, so it covers the browser UI and the OpenAI-compatible endpoint alike.
+
+```jsonc
+// fed back as the tool result, then the model recovers on the same turn
+{ "error": "Tool \"web_search\" is not available." }
+```
+
+## 0.5.4
+
+### Fixed
+
+- **MCP HTTP sessions are now terminated instead of orphaned.** The custom-server client captures `Mcp-Session-Id` from `initialize`, echoes it on every follow-up request, and closes the session with an `HTTP DELETE` on server delete/restart. Stateless servers (no session id) are unaffected.
+- **Widget teardown cleans up MCP servers.** On unmount the widget disposes all custom servers — stdio child processes are terminated, HTTP sessions closed, and in-flight tool calls rejected instead of leaking until their 30s timeout. Previously nothing ran on unmount, so stdio processes and sessions were left orphaned.
+
+```ts
+// on server delete / restart / widget unmount
+DELETE <server-url>   // header: Mcp-Session-Id: <id>
+```
+
+## 0.5.3
+
+### Changed
+
+- **MCP crash logs moved into the server row.** When a custom MCP server stops, its error icon is now clickable: clicking the row (or the icon) expands a dropdown — same affordance as the tools list — showing that server's log instead. The panel is capped at 300px height and scrolls. Replaces the previous separate "show logs" button. Stopped-state and logs are read synchronously on mount, so an already-stopped server opens its log on the first click without waiting for the status poll.
+
+## 0.5.1
+
+### Changed
+
+- `ThreadsCursor` now carries an `id` field mirroring `threadId`, so a backend whose keyset tiebreak column is named `id` can read it straight from the cursor. The widget always sets `id === threadId`, so the threads keyset (`lastEditDate DESC, threadId DESC`) and the SQL sketch in `docs/` are unchanged — the field is additive and old servers keep working.
+
+```ts
+// cursor sent to threads/list
+{ lastEditDate, threadId, id } // id === threadId
+```
+
 ## 0.5.0
 
 ### Added

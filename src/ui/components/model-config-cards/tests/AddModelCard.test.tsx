@@ -63,7 +63,11 @@ vi.mock("../sub-components/ModelCardShell", () => ({
 }));
 
 vi.mock("../sub-components/ModelConfigForm", () => ({
-  ModelConfigForm: () => <div data-testid="config-form" />,
+  // The import link + hint icon are threaded in via the `importAction` prop
+  // (they render in the Provider field's action slot), so surface it here.
+  ModelConfigForm: ({ importAction }: { importAction?: React.ReactNode }) => (
+    <div data-testid="config-form">{importAction}</div>
+  ),
 }));
 
 vi.mock("../../button", () => ({

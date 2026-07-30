@@ -566,6 +566,16 @@ export const AIChatWidget = React.forwardRef<
       enablePagination,
     ]);
 
+    // Tear down MCP servers when this widget instance is replaced (ctx
+    // rebuilt) or unmounts — otherwise stdio child processes and stateful
+    // HTTP sessions are orphaned for the lifetime of the host page.
+    useEffect(() => {
+      const { servers } = ctx;
+      return () => {
+        servers.dispose();
+      };
+    }, [ctx]);
+
     return (
       <EventsProvider
         callbacksManager={ctx.callbacksManager}
