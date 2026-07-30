@@ -166,13 +166,22 @@ const AvailableToolsItem = ({
       {opened && isStoped ? (
         <div
           className={cn(
-            "mt-[4px] max-h-[300px] overflow-y-auto select-text",
+            "mt-[var(--servers-available-tools-logs-margin-top)]",
+            "max-h-[var(--servers-available-tools-logs-max-height)]",
+            "overflow-y-auto select-text",
             "rounded-[var(--servers-available-tools-item-border-radius)]",
             "bg-[var(--servers-available-tools-item-background-color)]",
-            "px-[8px] py-[8px]"
+            "p-[var(--servers-available-tools-logs-padding)]"
           )}
         >
-          <pre className="m-0 whitespace-pre-wrap break-words font-mono text-[12px] leading-[16px] text-[var(--servers-available-tools-item-name-color)]">
+          <pre
+            className={cn(
+              "m-[var(--servers-available-tools-logs-text-margin)]",
+              "whitespace-pre-wrap break-words font-mono",
+              "text-[length:var(--fs-12)] leading-[var(--lh-16)]",
+              "text-[var(--servers-available-tools-item-name-color)]"
+            )}
+          >
             {logs.join("")}
           </pre>
         </div>

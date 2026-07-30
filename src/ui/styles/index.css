@@ -181,6 +181,15 @@
   --servers-available-tools-tool-height: 26px;
   --servers-available-tools-tool-padding-start: 28px;
   --servers-available-tools-tool-padding-end: 8px;
+  /* Stopped-server log block shown in place of the expanded tool list —
+     `--..-logs-margin-top` matches the sublist gap above, `--..-logs-max-height`
+     caps it before it starts scrolling, `--..-logs-padding` insets the text, and
+     `--..-logs-text-margin` resets the `pre` margin. The log lines themselves use
+     the shared `--fs-12` / `--lh-16` type primitives. */
+  --servers-available-tools-logs-margin-top: 4px;
+  --servers-available-tools-logs-max-height: 300px;
+  --servers-available-tools-logs-padding: 8px;
+  --servers-available-tools-logs-text-margin: 0;
   /* MCP config editor panel — outer framing only (the JSON editor body keeps
      its own spacing). `--config-editor-padding-y` / `--config-editor-margin-
      bottom` frame the panel; the header tokens size its title row; `--config-
