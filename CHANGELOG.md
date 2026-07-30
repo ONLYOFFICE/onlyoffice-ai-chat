@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.6
+
+### Changed
+
+- **Custom-provider import link moved into the Provider field.** The "Import" link — and its hint tooltip with "Download template" — now sits in the Provider field's action row (mirroring "Get API key"), instead of the Add-model card footer. The ONLYOFFICE AI Settings link keeps priority in that slot when shown. Behaviour is unchanged.
+
+## 0.5.5
+
+### Fixed
+
+- **A call to an unavailable tool no longer hangs the turn.** When the model calls a tool that is not in the current list — a hallucinated name, or one switched off mid-thread (Web search toggled off, an MCP server removed) — the engine resolves it in-engine with a "not available" error and continues the chat. Previously it surfaced a phantom approval whose approval threw and left the turn stuck (spinner never cleared, no resume). Single chokepoint, so it covers the browser UI and the OpenAI-compatible endpoint alike.
+
+```jsonc
+// fed back as the tool result, then the model recovers on the same turn
+{ "error": "Tool \"web_search\" is not available." }
+```
+
 ## 0.5.4
 
 ### Fixed
