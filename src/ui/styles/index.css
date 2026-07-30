@@ -233,7 +233,8 @@
      label from the control (the two values are the same relationship in the
      side-by-side vs stacked layout); `--..-header-gap` separates the header
      icon from its label; `--..-header-margin-bottom` sits under the vertical
-     header; `--..-icon-size` is the header icon; `--..-label-width` is the
+     header and `--..-header-height` can pin its height (`auto` by default, so
+     the label and any inline action size it); `--..-icon-size` is the header icon; `--..-label-width` is the
      horizontal label column; `--..-error-height` reserves the error row;
      `--..-error-max-width` caps the error tooltip. The horizontal error text is
      indented to line up under the control (label width + control gap). */
@@ -242,6 +243,7 @@
   --field-container-control-gap-vertical: 4px;
   --field-container-header-gap: 8px;
   --field-container-header-margin-bottom: 2px;
+  --field-container-header-height: auto;
   --field-container-icon-size: 20px;
   --field-container-label-width: 160px;
   --field-container-error-height: 20px;

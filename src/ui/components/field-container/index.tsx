@@ -66,11 +66,13 @@ const FieldContainer = ({
           action row is rendered only when an `action` is actually present. */}
       {isHorizontal &&
         (reserveActionSpace ? (
-          <div className="flex justify-end w-full h-[var(--field-container-action-height)]">
+          <div className="flex items-center justify-end w-full h-[var(--field-container-action-height)]">
             {action}
           </div>
         ) : (
-          action && <div className="flex justify-end w-full">{action}</div>
+          action && (
+            <div className="flex items-center justify-end w-full">{action}</div>
+          )
         ))}
       <div
         className={cn(
@@ -81,7 +83,7 @@ const FieldContainer = ({
         )}
       >
         {!isHorizontal ? (
-          <div className="flex justify-between items-center w-full mb-[var(--field-container-header-margin-bottom)]">
+          <div className="flex justify-between items-center w-full h-[var(--field-container-header-height,auto)] mb-[var(--field-container-header-margin-bottom)]">
             <div className="flex items-center gap-[var(--field-container-header-gap)]">
               {icon && (
                 <Icon
