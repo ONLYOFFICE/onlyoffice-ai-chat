@@ -116,8 +116,8 @@ export interface AttachmentsStoreState {
    * {@link addAttachmentFile} / {@link addAttachmentImage} via
    * `options.pendingIds` so the slot is not counted twice and the swap
    * placeholder → ref happens in a single `set`. A lease that is gone by
-   * the time the payload lands (user hit ✕, thread switched) makes the
-   * settle a no-op and the storage record is deleted.
+   * the time the payload lands (user hit the close button, thread
+   * switched) makes the settle a no-op and the storage record is deleted.
    *
    * Deliberately not queued on the mutex: it is pure synchronous state,
    * and waiting behind an in-flight upload would defeat its whole point.
@@ -351,9 +351,9 @@ export function createAttachmentsStore(
           // id/createdAt; we just stash the lightweight refs.
           const records = await attachments.saveFilesMany(live, entity());
 
-          // Re-check leases after the round trip: an ✕ press or a thread
-          // switch during the upload revokes them, and the refs must not
-          // leak into a draft that no longer wants them.
+          // Re-check leases after the round trip: a close-button press or
+          // a thread switch during the upload revokes them, and the refs
+          // must not leak into a draft that no longer wants them.
           const still = new Set(get().pendingAttachments.map((p) => p.id));
           const keep: TAttachmentRef[] = [];
           const orphans: string[] = [];

@@ -15,7 +15,8 @@ import { chipClassName } from "./chip";
  * payload does not exist yet, and a grey box that later becomes a
  * thumbnail reads as a glitch, whereas the file icon + name is honest.
  *
- * Hovering swaps the spinner for a ✕. Dismissing only revokes the lease —
+ * Hovering swaps the spinner for a close button. Dismissing only revokes
+ * the lease —
  * the attachment never joins the draft — it does not abort the underlying
  * production (a portal upload still completes and the file stays in the
  * user's folder).
