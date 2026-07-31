@@ -55,6 +55,19 @@
 - The Add/Edit model form now keeps uniform spacing in the horizontal layout regardless of whether a field has an action link. `FieldContainer` gained an opt-in `reserveActionSpace` prop (used by the model form) that reserves a fixed-height action zone (`--field-container-action-height`) above each field, so a link like "Get API key" appears/disappears inside it without shifting the layout — previously only the API-key field reserved that space (via a spacer), making the Provider→API-key gap larger than the rest. Other horizontal `FieldContainer` usages (e.g. Model Assignment, Web Search) are unaffected. In the vertical layout that spacer only made the API-key header taller than the other fields (the label already sets the row height), so it was dropped and the headers now line up.
 
 
+## 0.5.13
+
+### Changed
+
+- **The model now narrates each tool call in natural language.** The chat system prompt instructs the model to write one short sentence — in the conversation's language — describing what it is about to do before every tool call. The line arrives as ordinary assistant text (a text part before the tool-call part). The same rule is mirrored into the text-protocol fallback path (`profile.canUseTool === false`).
+
+```text
+Whenever you call a tool, first write exactly one short sentence … then make the tool call.
+```
+
+- **Tool-call cards are hidden when the model narrated the call.** In the transcript, a tool-call card is suppressed when a non-empty text part precedes it in the same message — the narration replaces the redundant card. Calls with no preceding text still show the card (fallback for models that don't narrate), and a generated image is always kept even when its card is hidden.
+- **Image generation shows an animated halftone placeholder.** While `generate_image` runs (or its stored image is still hydrating), a full-width card is shown: a static "Creating image" label in a clean strip on top, and below it a halftone field of three dot layers (small/medium/large dots, denser the larger). Colours are theme-driven — dots paint in the message text colour at rising opacity over a themed surface — so it adapts to light/dark with no hardcoded values. Each layer is revealed only through a soft radial "blob" mask, and the three blobs slowly wander along Lissajous paths with per-axis periods in the 7–13s range, deliberately not integer multiples of one another, so the motion never resolves into a visible loop. Dots stay a fixed pixel size at any card width (a `ResizeObserver` feeds the live size to one rAF loop). Then swapped for the finished image; respects `prefers-reduced-motion`; skipped on failure.
+
 ## 0.5.6
 
 ### Changed
