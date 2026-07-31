@@ -35,7 +35,11 @@ export const AddModelCard = ({
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const addProfile = useProfilesStore((s) => s.addProfile);
-  const { onProfileImportClick, onDownloadTemplate } = useWidgetConfig();
+  const {
+    onProfileImportClick,
+    onDownloadTemplate,
+    aboutButtonSize = 20,
+  } = useWidgetConfig();
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -132,7 +136,7 @@ export const AddModelCard = ({
           <IconButton
             className="cursor-pointer"
             iconName="btn-menu-about"
-            size="var(--about-button-size,20px)"
+            size={aboutButtonSize}
             disableHover
             noColor
             onClick={() => setIsTooltipOpen((val) => !val)}

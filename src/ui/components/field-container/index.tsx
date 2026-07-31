@@ -1,4 +1,5 @@
 import { cn } from "../../../shared/utils";
+import { useWidgetConfig } from "../../../widget-config";
 import { Icon } from "../icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
 
@@ -52,6 +53,8 @@ const FieldContainer = ({
   className,
   headerClassName,
 }: FieldContainerProps) => {
+  const { fieldContainerIconSize = 20 } = useWidgetConfig();
+
   return (
     <div
       className={cn(
@@ -88,7 +91,7 @@ const FieldContainer = ({
               {icon && (
                 <Icon
                   name={icon}
-                  size="var(--field-container-icon-size, 20px)"
+                  size={fieldContainerIconSize}
                   isStroke={iconIsStroke}
                 />
               )}
@@ -108,7 +111,7 @@ const FieldContainer = ({
             {icon && (
               <Icon
                 name={icon}
-                size="var(--field-container-icon-size, 20px)"
+                size={fieldContainerIconSize}
                 isStroke={iconIsStroke}
               />
             )}

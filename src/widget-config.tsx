@@ -144,10 +144,7 @@ export interface WidgetConfig {
    * Defaults to `"arrow"` (same as the regular comboboxes). Set it to give the
    * model selector a distinct arrow without affecting the form comboboxes.
    *
-   * The arrow *size* is set separately via CSS tokens — `--combo-box-arrow-
-   * width` / `--combo-box-arrow-height` for the form comboboxes and
-   * `--model-selector-arrow-width` / `--model-selector-arrow-height` for the
-   * model selector (both default `7` x `4`).
+   * Only the glyph is configurable — both arrows render at a fixed `7` x `4`.
    */
   modelSelectorArrowIcon?: string;
   /**
@@ -237,6 +234,28 @@ export interface WidgetConfig {
    * larger or smaller send control to match a custom composer height.
    */
   composerActionSendSize?: number;
+  /**
+   * Pixel size of the action buttons below assistant and user messages —
+   * copy, regenerate, edit, save, "more" — covering both the icon and its
+   * square button box. Defaults to `20`.
+   *
+   * Numeric on purpose: the size is handed to the icon component, so a host
+   * that shadows one of these glyphs through the `images` override keeps
+   * control of how big it draws itself.
+   */
+  chatMessageActionsIconSize?: number;
+  /**
+   * Pixel size of the leading icon of a labeled form field (the optional
+   * glyph before the field header). Defaults to `20`.
+   */
+  fieldContainerIconSize?: number;
+  /**
+   * Pixel size of the "about"/info icon buttons — the model form's Import
+   * help trigger and each dropdown item's about button. Defaults to `20`.
+   * The glyph itself can be swapped via the `images` override of
+   * `btn-menu-about`.
+   */
+  aboutButtonSize?: number;
   /**
    * Disable the composer entirely. The input becomes non-editable (no
    * typing, no Enter-to-send) and every composer control — attachments,
@@ -354,9 +373,7 @@ export interface WidgetConfig {
    * host only owns the confirmation step. When omitted, the built-in
    * confirmation dialog is used.
    */
-  onDeleteThread?: (
-    thread: Thread
-  ) => boolean | void | Promise<boolean | void>;
+  onDeleteThread?: (thread: Thread) => boolean | void | Promise<boolean | void>;
   /**
    * Custom UI for creating a new prompt folder. When provided, the widget's
    * built-in "New prompt folder" dialog is NOT shown — the host owns the

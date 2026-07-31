@@ -29,13 +29,6 @@ export type ComboBoxProps = {
    * `comboBoxArrowIcon` widget config and then to the bundled `"arrow"`.
    */
   arrowIcon?: string;
-  /**
-   * Size of the arrow glyph. When omitted, falls back to the
-   * `--combo-box-arrow-width` / `--combo-box-arrow-height` tokens (default
-   * `7` x `4`). The model selector passes its own token pair.
-   */
-  arrowWidth?: number | string;
-  arrowHeight?: number | string;
   "data-testid"?: string;
 };
 
@@ -53,20 +46,14 @@ const ComboBox = ({
   contentClassName,
   maxWidth,
   arrowIcon,
-  arrowWidth,
-  arrowHeight,
   "data-testid": dataTestId,
 }: ComboBoxProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const { comboBoxArrowIcon } = useWidgetConfig();
-  // Explicit prop wins (e.g. the model selector passes its own icon/size),
-  // then the host's combobox-wide config, then the bundled default.
+  // Explicit prop wins (e.g. the model selector passes its own icon), then
+  // the host's combobox-wide config, then the bundled default.
   const resolvedArrowIcon = arrowIcon ?? comboBoxArrowIcon ?? "arrow";
-  // Size is token-driven so the two combobox flavors can differ purely in CSS.
-  const resolvedArrowWidth = arrowWidth ?? "var(--combo-box-arrow-width, 7px)";
-  const resolvedArrowHeight =
-    arrowHeight ?? "var(--combo-box-arrow-height, 4px)";
 
   const handleOpenChange = (next: boolean) => {
     if (!next) setSearchQuery("");
@@ -138,8 +125,8 @@ const ComboBox = ({
             <Icon
               name={resolvedArrowIcon}
               color="var(--icon-normal)"
-              width={resolvedArrowWidth}
-              height={resolvedArrowHeight}
+              width={7}
+              height={4}
               isStroke
               className={cn("transition-transform", {
                 "rotate-180": isOpen,

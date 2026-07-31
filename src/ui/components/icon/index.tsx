@@ -7,24 +7,23 @@ import { useTheme } from "../../providers/ThemeProvider";
 type IconProps = {
   name: string;
   /**
-   * Icon size. A `number` is pixels; a string is a verbatim CSS length, so a
-   * theme token works — e.g. `"var(--chat-message-actions-icon-size, 20px)"`.
+   * Icon size in pixels. Kept numeric on purpose: a host override component
+   * receives it as its `size` prop, so it can decide how big to draw itself.
+   * A CSS length here would leave the host with no size at all.
    */
-  size?: number | string;
-  /** Overrides `size` on one axis. Same `number` (px) / CSS-length string rules. */
-  width?: number | string;
-  /** Overrides `size` on one axis. Same `number` (px) / CSS-length string rules. */
-  height?: number | string;
+  size?: number;
+  /** Overrides `size` on one axis, in pixels. */
+  width?: number;
+  /** Overrides `size` on one axis, in pixels. */
+  height?: number;
   isStroke?: boolean;
   color?: string;
   noColor?: boolean;
   className?: string;
 };
 
-// A number becomes pixels; a string (e.g. a `var(--token)`) passes through as
-// a CSS length so the value can be theme-driven.
-const toDim = (v: number | string | undefined) =>
-  typeof v === "number" ? `${v}px` : v;
+const toDim = (v: number | undefined) =>
+  v === undefined ? undefined : `${v}px`;
 
 const SHAPE_SELECTOR = "path, circle, rect, line, polygon, polyline, ellipse";
 
@@ -68,12 +67,6 @@ const IconComponent = ({
 }: IconProps) => {
   const w = width ?? size;
   const h = height ?? size;
-  // When the size is a CSS length (string), numeric SVG width/height
-  // attributes can't carry it — so the bundled svg fills its wrapper (100%)
-  // and the wrapper's inline style (the resolved token) defines the box.
-  const isCssSize = typeof w === "string" || typeof h === "string";
-  const numericSize =
-    typeof w === "number" ? w : typeof h === "number" ? h : undefined;
   const { themeType, scale } = useTheme();
   const { getImageSrc, getIconComponent, getBundledIcon, iconFormat } =
     useImages();
@@ -102,9 +95,10 @@ const IconComponent = ({
         )}
         style={{ width: toDim(w), height: toDim(h) }}
       >
-        {/* Host components take a numeric `size`; with a CSS-length size we
-            leave it unset and let the wrapper box above constrain the icon. */}
-        <CustomIcon size={numericSize} />
+        {/* The host component owns its own rendered size — it gets the px we
+            asked for and may draw smaller (or ignore it entirely); the wrapper
+            above only reserves the box. */}
+        <CustomIcon size={w ?? h} />
       </span>
     );
   }
@@ -138,10 +132,7 @@ const IconComponent = ({
         )}
         style={{ width: toDim(w), height: toDim(h) }}
       >
-        <BundledIcon
-          width={isCssSize ? "100%" : w}
-          height={isCssSize ? "100%" : h}
-        />
+        <BundledIcon width={w} height={h} />
       </span>
     );
   }

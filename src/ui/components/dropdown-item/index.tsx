@@ -7,6 +7,7 @@ import { DropdownMenu } from "../dropdown";
 import { IconButton } from "../icon-button";
 import { ToggleButton } from "../toggle-button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
+import { useWidgetConfig } from "../../../widget-config";
 import type { DropDownItemProps } from "./DropDownItem.types";
 
 const SUBMENU_WIDTH = 300;
@@ -56,6 +57,7 @@ const DropDownItem = ({
 }: DropDownItemProps) => {
   const { isRTL } = useI18n();
   const { portalContainer } = useTheme();
+  const { aboutButtonSize = 20 } = useWidgetConfig();
 
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
   const [submenuSide, setSubmenuSide] = useState<"left" | "right" | "top">(
@@ -303,7 +305,7 @@ const DropDownItem = ({
             <TooltipTrigger asChild>
               <IconButton
                 iconName="btn-menu-about"
-                size="var(--about-button-size,20px)"
+                size={aboutButtonSize}
                 disableHover
                 noColor
                 onClick={() => setIsAboutOpen((val) => !val)}

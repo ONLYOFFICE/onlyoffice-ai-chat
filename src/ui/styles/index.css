@@ -234,7 +234,7 @@
      side-by-side vs stacked layout); `--..-header-gap` separates the header
      icon from its label; `--..-header-margin-bottom` sits under the vertical
      header and `--..-header-height` can pin its height (`auto` by default, so
-     the label and any inline action size it); `--..-icon-size` is the header icon; `--..-label-width` is the
+     the label and any inline action size it); `--..-label-width` is the
      horizontal label column; `--..-error-height` reserves the error row;
      `--..-error-max-width` caps the error tooltip. The horizontal error text is
      indented to line up under the control (label width + control gap). */
@@ -244,7 +244,6 @@
   --field-container-header-gap: 8px;
   --field-container-header-margin-bottom: 2px;
   --field-container-header-height: auto;
-  --field-container-icon-size: 20px;
   --field-container-label-width: 160px;
   --field-container-error-height: 20px;
   --field-container-error-max-width: 350px;
@@ -261,10 +260,6 @@
   --button-padding-x: 8px;
   --button-border-radius: 4px;
   --button-loader-size: 16px;
-
-  /* Size of the "about"/info icon buttons (the tooltip trigger next to the
-     model form's "Import" link and each dropdown item's about button). */
-  --about-button-size: 20px;
 
   /* Initial setup screen (the no-profiles fallback on the chat surface).
      `--initial-setup-max-width` caps the content column; `--initial-setup-
@@ -395,9 +390,6 @@
   /* Gap between the action buttons (copy, save, …) below both assistant and
      user messages. */
   --chat-message-actions-gap: 2px;
-
-  /* Icon (and button box) size of those same action buttons. */
-  --chat-message-actions-icon-size: 20px;
 
   /* Top margin of the chat-history search field (gap below the header). */
   --chat-list-search-margin-top: 8px;

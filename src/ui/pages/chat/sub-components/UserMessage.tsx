@@ -86,7 +86,11 @@ const UserActionBar = () => {
   const message = useMessage();
   const { usePromptsStore } = useStores();
   const { copyToClipboard: platformCopy } = usePlatform();
-  const { onCreatePromptFolder, onCreatePrompt } = useWidgetConfig();
+  const {
+    onCreatePromptFolder,
+    onCreatePrompt,
+    chatMessageActionsIconSize = 20,
+  } = useWidgetConfig();
   const addPrompt = usePromptsStore((s) => s.addPrompt);
   const addFolder = usePromptsStore((s) => s.addFolder);
   const folders = usePromptsStore((s) => s.folders);
@@ -193,7 +197,7 @@ const UserActionBar = () => {
           {copied ? (
             <IconButton
               iconName="checked"
-              size="var(--chat-message-actions-icon-size, 20px)"
+              size={chatMessageActionsIconSize}
               isStroke
               color="var(--icon-gray-secondary)"
               disabled
@@ -201,7 +205,7 @@ const UserActionBar = () => {
           ) : (
             <IconButton
               iconName="btn-copy"
-              size="var(--chat-message-actions-icon-size, 20px)"
+              size={chatMessageActionsIconSize}
               isStroke
               color="var(--icon-gray-secondary)"
             />
@@ -213,7 +217,7 @@ const UserActionBar = () => {
           trigger={
             <IconButton
               iconName="btn-more.small"
-              size="var(--chat-message-actions-icon-size, 20px)"
+              size={chatMessageActionsIconSize}
               isActive={isOpen}
               insideElement
               color="var(--icon-gray-secondary)"

@@ -197,6 +197,7 @@ const CustomActionButton = ({
 const PlatformCopyButton = ({ text }: { text: string }) => {
   const { IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
+  const { chatMessageActionsIconSize = 20 } = useWidgetConfig();
   const platform = usePlatform();
   const [copied, setCopied] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -224,7 +225,7 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
       {copied ? (
         <IconButton
           iconName="checked"
-          size="var(--chat-message-actions-icon-size, 20px)"
+          size={chatMessageActionsIconSize}
           isStroke
           color="var(--icon-gray-secondary)"
           disabled
@@ -232,7 +233,7 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
       ) : (
         <IconButton
           iconName="btn-copy"
-          size="var(--chat-message-actions-icon-size, 20px)"
+          size={chatMessageActionsIconSize}
           isStroke
           color="var(--icon-gray-secondary)"
         />
@@ -247,7 +248,8 @@ const AssistantActionBar = () => {
   const { useMessageStore } = useStores();
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const platform = usePlatform();
-  const { assistantActions } = useWidgetConfig();
+  const { assistantActions, chatMessageActionsIconSize = 20 } =
+    useWidgetConfig();
 
   const message = useMessage();
 
@@ -286,7 +288,7 @@ const AssistantActionBar = () => {
             <MessagePrimitive.If copied>
               <IconButton
                 iconName="checked"
-                size="var(--chat-message-actions-icon-size, 20px)"
+                size={chatMessageActionsIconSize}
                 isStroke
                 color="var(--icon-gray-secondary)"
                 disabled
@@ -295,7 +297,7 @@ const AssistantActionBar = () => {
             <MessagePrimitive.If copied={false}>
               <IconButton
                 iconName="btn-copy"
-                size="var(--chat-message-actions-icon-size, 20px)"
+                size={chatMessageActionsIconSize}
                 isStroke
                 color="var(--icon-gray-secondary)"
               />
@@ -307,7 +309,7 @@ const AssistantActionBar = () => {
         <TooltipIconButton tooltip={t("Regenerate")}>
           <IconButton
             iconName="btn-reset"
-            size="var(--chat-message-actions-icon-size, 20px)"
+            size={chatMessageActionsIconSize}
             isStroke
             color="var(--icon-gray-secondary)"
           />
@@ -318,7 +320,7 @@ const AssistantActionBar = () => {
           <TooltipIconButton tooltip={t("Save")}>
             <IconButton
               iconName="btn-save.small"
-              size="var(--chat-message-actions-icon-size, 20px)"
+              size={chatMessageActionsIconSize}
               onClick={onDownload}
               isStroke
               color="var(--icon-gray-secondary)"
