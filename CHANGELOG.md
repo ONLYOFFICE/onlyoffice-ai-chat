@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Attachments appear in the composer the moment they are picked, as loading chips.** New `pendingAttachments` state in the attachments store, driven by a lease model: `beginPendingAttachments(inputs)` synchronously reserves placeholder chips (and their slots in the 5-item cap — a pending file can no longer let a 6th one through) and returns lease ids; `addAttachmentFile` / `addAttachmentImage` accept `options.pendingIds` to consume those leases, swapping placeholder → real chip in a single state update. Without `pendingIds`, the add actions self-reserve, so every caller gets the loading state for the storage round trip for free. `failPendingAttachments(ids)` drops leases whose production failed; `cancelPendingAttachment(id)` backs the ✕ on a loading chip (revokes the lease — the settle then discards the ref and deletes the orphan storage record; the underlying production is not aborted). `clearAttachmentFiles` / `clearAttachmentImages` revoke their bucket's leases, so a thread switch mid-upload no longer lands a chip in the newly opened draft.
+- **`PendingFileItem` component** — the loading chip: same box as `FileItem` (shared `chipClassName`, so the swap is visually seamless), file icon + name, an indeterminate `Loader` (host-overridable slot) where the close button sits, ✕ on hover, `role="status"`/`aria-busy`. Exported for hosts. New i18n key `Uploading`.
+- **The library's own attach paths reserve before the slow part.** Local/recent file pickers reserve before `convertFileToText`, the image picker and drag-and-drop before the `FileReader` read — the reservation also replaces the hardcoded slice-to-5 as the cap check, so payloads past the cap are no longer produced at all. Zero-byte files are filtered before reserving and never flash a chip.
+- **Send is blocked while an attachment is uploading** (button disabled with an "Uploading…" title, Enter guarded in the composer) — sending mid-upload would have silently dropped the attachment the user just watched appear.
+
 ## 0.5.13
 
 ### Changed
