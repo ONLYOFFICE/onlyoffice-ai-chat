@@ -26,7 +26,7 @@ const ModelCapabilityIcons = ({ model }: { model: Model }) => {
   if (model.reasoning) icons.push("btn-extended-thinking");
   if (!icons.length) return null;
   return (
-    <div className="flex items-center gap-[var(--model-config-form-capability-gap)] shrink-0 opacity-60">
+    <div className="flex items-center gap-[var(--model-config-form-capability-gap,2px)] shrink-0 opacity-60">
       {icons.map((name) => (
         <Icon key={name} name={name} size={14} />
       ))}
@@ -202,14 +202,14 @@ export const ModelConfigForm = ({
       : undefined;
 
   return (
-    <div className="flex flex-col gap-[var(--model-config-form-gap)]">
+    <div className="flex flex-col gap-[var(--model-config-form-gap,8px)]">
       <FieldContainer
         header={t("Provider")}
         isHorizontal={isHorizontal}
         reserveActionSpace
         className={
           isHorizontal
-            ? "mb-[var(--model-config-form-field-margin-bottom)]"
+            ? "mb-[var(--model-config-form-field-margin-bottom,10px)]"
             : ""
         }
         error={providerError}
@@ -233,12 +233,12 @@ export const ModelConfigForm = ({
                 </Link>
               </TooltipTrigger>
               <TooltipContent
-                className="p-[var(--model-config-form-tooltip-padding)]"
+                className="p-[var(--model-config-form-tooltip-padding,16px)]"
                 side="bottom"
                 align="end"
                 isAbout
               >
-                <div className="flex flex-col gap-[var(--model-config-form-tooltip-gap)] max-w-[var(--model-config-form-tooltip-max-width)]">
+                <div className="flex flex-col gap-[var(--model-config-form-tooltip-gap,8px)] max-w-[var(--model-config-form-tooltip-max-width,280px)]">
                   <p className="font-bold text-[var(--text-normal)] select-none">
                     {t("FinishAISetup")}
                   </p>
@@ -278,7 +278,7 @@ export const ModelConfigForm = ({
         <FieldContainer
           className={
             isHorizontal
-              ? "mb-[var(--model-config-form-field-margin-bottom)]"
+              ? "mb-[var(--model-config-form-field-margin-bottom,10px)]"
               : ""
           }
           header={t("APIKey")}
@@ -313,7 +313,7 @@ export const ModelConfigForm = ({
         <FieldContainer
           className={
             isHorizontal
-              ? "mb-[var(--model-config-form-field-margin-bottom)]"
+              ? "mb-[var(--model-config-form-field-margin-bottom,10px)]"
               : ""
           }
           header={t("BaseURL")}
@@ -359,7 +359,7 @@ export const ModelConfigForm = ({
         className={
           isHorizontal
             ? undefined
-            : "mb-[var(--model-config-form-last-field-margin-bottom)]"
+            : "mb-[var(--model-config-form-last-field-margin-bottom,8px)]"
         }
         header={t("ProfileName")}
         isHorizontal={isHorizontal}

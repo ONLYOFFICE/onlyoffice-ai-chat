@@ -306,7 +306,7 @@ export const UserMessage = memo(() => {
 
         <div
           className={cn(
-            "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[var(--chat-user-message-border-radius)] px-[12px] py-[8px] select-text",
+            "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[var(--chat-user-message-border-radius,16px)] px-[12px] py-[8px] select-text",
             isRTL ? "rounded-bl-[0px]" : "rounded-br-[0px]"
           )}
         >

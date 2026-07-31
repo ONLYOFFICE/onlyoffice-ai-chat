@@ -94,8 +94,12 @@ describe("DropdownMenu", () => {
       />
     );
     // Icon-less row gets the reserved-space indent; the icon row does not.
-    expect(screen.getByText("Open").className).toContain("ms-[var(--dropdown-item-label-space)]");
-    expect(screen.getByText("Save").className).not.toContain("ms-[var(--dropdown-item-label-space)]");
+    expect(screen.getByText("Open").className).toContain(
+      "ms-[var(--dropdown-item-label-space,28px)]"
+    );
+    expect(screen.getByText("Save").className).not.toContain(
+      "ms-[var(--dropdown-item-label-space,28px)]"
+    );
   });
 
   it("does not indent rows when no item has an icon", () => {
@@ -109,8 +113,12 @@ describe("DropdownMenu", () => {
         open={true}
       />
     );
-    expect(screen.getByText("First").className).not.toContain("ms-[var(--dropdown-item-label-space)]");
-    expect(screen.getByText("Second").className).not.toContain("ms-[var(--dropdown-item-label-space)]");
+    expect(screen.getByText("First").className).not.toContain(
+      "ms-[var(--dropdown-item-label-space,28px)]"
+    );
+    expect(screen.getByText("Second").className).not.toContain(
+      "ms-[var(--dropdown-item-label-space,28px)]"
+    );
   });
 
   it("honors an explicit withSpace override over auto-detection", () => {
@@ -125,8 +133,12 @@ describe("DropdownMenu", () => {
       />
     );
     // No item has an icon, but the explicit flag still applies.
-    expect(screen.getByText("NoIcons").className).toContain("ms-[var(--dropdown-item-label-space)]");
-    expect(screen.getByText("Other").className).not.toContain("ms-[var(--dropdown-item-label-space)]");
+    expect(screen.getByText("NoIcons").className).toContain(
+      "ms-[var(--dropdown-item-label-space,28px)]"
+    );
+    expect(screen.getByText("Other").className).not.toContain(
+      "ms-[var(--dropdown-item-label-space,28px)]"
+    );
   });
 
   it("passes onOpenChange prop", () => {

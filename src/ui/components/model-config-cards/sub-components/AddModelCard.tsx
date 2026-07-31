@@ -119,7 +119,7 @@ export const AddModelCard = ({
   // handler; inside the form the ONLYOFFICE AI Settings link takes
   // precedence over it. Behaviour is unchanged.
   const importAction = onProfileImportClick ? (
-    <div className="flex flex-row items-center gap-[var(--add-model-card-import-gap)]">
+    <div className="flex flex-row items-center gap-[var(--add-model-card-import-gap,4px)]">
       <Link
         href="#"
         onClick={handleImportClick}
@@ -132,19 +132,19 @@ export const AddModelCard = ({
           <IconButton
             className="cursor-pointer"
             iconName="btn-menu-about"
-            size="var(--about-button-size)"
+            size="var(--about-button-size,20px)"
             disableHover
             noColor
             onClick={() => setIsTooltipOpen((val) => !val)}
           />
         </TooltipTrigger>
         <TooltipContent
-          className="p-[var(--add-model-card-tooltip-padding)]"
+          className="p-[var(--add-model-card-tooltip-padding,12px)]"
           side="bottom"
           isAbout
           align="start"
         >
-          <div className="flex flex-col gap-[var(--add-model-card-tooltip-gap)] max-w-[var(--add-model-card-tooltip-max-width)]">
+          <div className="flex flex-col gap-[var(--add-model-card-tooltip-gap,6px)] max-w-[var(--add-model-card-tooltip-max-width,221px)]">
             <p className="leading-[var(--lh-16)] select-none">
               {t("EnterModelConfigTooltip")}
             </p>
@@ -170,7 +170,7 @@ export const AddModelCard = ({
   ) : undefined;
 
   const footer = (
-    <div className="flex flex-row justify-end items-center gap-[var(--add-model-card-footer-gap)] mt-[var(--add-model-card-footer-margin-top)]">
+    <div className="flex flex-row justify-end items-center gap-[var(--add-model-card-footer-gap,12px)] mt-[var(--add-model-card-footer-margin-top,0px)]">
       {variant === "card" && (
         <Button variant="default" onClick={onClose}>
           {t("Cancel")}
@@ -188,8 +188,8 @@ export const AddModelCard = ({
 
   if (variant === "standalone") {
     return (
-      <div className="flex flex-col gap-[var(--add-model-card-gap)]">
-        <h3 className="select-none text-[length:var(--add-model-card-title-font-size-standalone)] font-bold leading-[var(--lh-16)] text-[var(--text-normal)] [text-align:var(--add-model-card-title-align-standalone)]">
+      <div className="flex flex-col gap-[var(--add-model-card-gap,8px)]">
+        <h3 className="select-none text-[length:var(--add-model-card-title-font-size-standalone,var(--fs-13,13px))] font-bold leading-[var(--lh-16)] text-[var(--text-normal)] [text-align:var(--add-model-card-title-align-standalone,start)]">
           {t("ConnectAIModelToEnableChat")}
         </h3>
 
@@ -210,7 +210,7 @@ export const AddModelCard = ({
 
   return (
     <ModelCardShell>
-      <h3 className="select-none font-bold text-[length:var(--add-model-card-title-font-size-card)] text-[var(--text-normal)] mb-[var(--add-model-card-title-margin-bottom)] [text-align:var(--add-model-card-title-align-card)]">
+      <h3 className="select-none font-bold text-[length:var(--add-model-card-title-font-size-card,var(--fs-12,12px))] text-[var(--text-normal)] mb-[var(--add-model-card-title-margin-bottom,8px)] [text-align:var(--add-model-card-title-align-card,start)]">
         {t("ConnectNewAIModel")}
       </h3>
 

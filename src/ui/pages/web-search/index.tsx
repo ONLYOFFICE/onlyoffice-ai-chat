@@ -23,13 +23,13 @@ const WebSearchPage = ({
   return (
     <div
       className={cn(
-        "aui-root select-text flex min-h-full w-full px-[var(--web-search-padding-x)] py-[var(--web-search-padding-y)] [justify-content:var(--web-search-justify)] bg-[var(--layout-background-color)]",
+        "aui-root select-text flex min-h-full w-full px-[var(--web-search-padding-x,0px)] py-[var(--web-search-padding-y,0px)] [justify-content:var(--web-search-justify,flex-start)] bg-[var(--layout-background-color)]",
         className
       )}
     >
-      <div className="w-full max-w-[var(--web-search-max-width)] min-w-0 select-none">
+      <div className="w-full max-w-[var(--web-search-max-width,560px)] min-w-0 select-none">
         {!hideHeader && (
-          <h1 className="select-none font-bold text-[length:var(--web-search-title-font-size)] leading-[var(--web-search-title-line-height)] text-[var(--settings-header-color)] mb-[var(--web-search-title-margin-bottom)]">
+          <h1 className="select-none font-bold text-[length:var(--web-search-title-font-size,var(--fs-20,20px))] leading-[var(--web-search-title-line-height,var(--lh-28,28px))] text-[var(--settings-header-color)] mb-[var(--web-search-title-margin-bottom,24px)]">
             {t("WebSearch")}
           </h1>
         )}

@@ -23,8 +23,8 @@ describe("ProviderLogo", () => {
   it("sizes the image via the logo image-size token", () => {
     render(<ProviderLogo providerType="anthropic" />);
     const img = screen.getByRole("img");
-    expect(img).toHaveClass("w-[var(--model-card-logo-image-size)]");
-    expect(img).toHaveClass("h-[var(--model-card-logo-image-size)]");
+    expect(img).toHaveClass("w-[var(--model-card-logo-image-size,18px)]");
+    expect(img).toHaveClass("h-[var(--model-card-logo-image-size,18px)]");
   });
 
   it("applies custom className", () => {

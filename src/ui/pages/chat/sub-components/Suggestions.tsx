@@ -11,7 +11,7 @@ const Suggestions = () => {
   const items = suggestions.slice(0, MAX_SUGGESTIONS);
 
   return (
-    <div className="mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[6px] px-[12px] mb-[var(--chat-suggestions-margin-bottom)]">
+    <div className="mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[6px] px-[12px] mb-[var(--chat-suggestions-margin-bottom,16px)]">
       <div className="flex flex-wrap justify-center gap-[6px]">
         {items.map((suggestion, index) => (
           <button
@@ -19,7 +19,7 @@ const Suggestions = () => {
             type="button"
             title={suggestion.name}
             onClick={() => composerRuntime.setText(suggestion.prompt)}
-            className="inline-flex h-[var(--chat-suggestion-height)] max-w-full min-w-0 items-center gap-[6px] rounded-full border border-[var(--chat-suggestion-border-color)] px-[var(--chat-suggestion-padding-x)] py-[var(--chat-suggestion-padding-y)] text-[var(--text-normal)] hover:bg-[var(--highlight-button-hover)]"
+            className="inline-flex h-[var(--chat-suggestion-height,25px)] max-w-full min-w-0 items-center gap-[6px] rounded-full border border-[var(--chat-suggestion-border-color)] px-[var(--chat-suggestion-padding-x,10px)] py-[var(--chat-suggestion-padding-y,3px)] text-[var(--text-normal)] hover:bg-[var(--highlight-button-hover)]"
           >
             <span className="truncate font-normal text-fs-12 leading-[var(--lh-18)] tracking-[0px]">
               {suggestion.name}

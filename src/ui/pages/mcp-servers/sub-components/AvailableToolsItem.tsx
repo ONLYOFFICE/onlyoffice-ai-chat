@@ -102,7 +102,7 @@ const AvailableToolsItem = ({
     <div dir={isRTL ? "rtl" : "ltr"} className="flex flex-col">
       <div
         className={cn(
-          "h-[var(--servers-available-tools-item-height)] px-[var(--servers-available-tools-item-padding-x)] rounded-[var(--servers-available-tools-item-border-radius)] flex items-center justify-between",
+          "h-[var(--servers-available-tools-item-height,32px)] px-[var(--servers-available-tools-item-padding-x,8px)] rounded-[var(--servers-available-tools-item-border-radius)] flex items-center justify-between",
           isLoadingAction ? "" : "cursor-pointer",
           "bg-[var(--servers-available-tools-item-background-color)]",
           "active:bg-[var(--servers-available-tools-item-active-background-color)]",
@@ -118,9 +118,9 @@ const AvailableToolsItem = ({
           setOpened((val) => !val);
         }}
       >
-        <div className="flex items-center gap-[var(--servers-available-tools-item-content-gap)]">
+        <div className="flex items-center gap-[var(--servers-available-tools-item-content-gap,8px)]">
           <div
-            className="flex items-center justify-center w-[var(--servers-available-tools-item-chevron-width)] h-full"
+            className="flex items-center justify-center w-[var(--servers-available-tools-item-chevron-width,12px)] h-full"
             style={{
               transform: isRTL
                 ? `rotate(${opened ? 0 : 90}deg)`
@@ -166,19 +166,19 @@ const AvailableToolsItem = ({
       {opened && isStoped ? (
         <div
           className={cn(
-            "mt-[var(--servers-available-tools-logs-margin-top)]",
-            "max-h-[var(--servers-available-tools-logs-max-height)]",
+            "mt-[var(--servers-available-tools-logs-margin-top,4px)]",
+            "max-h-[var(--servers-available-tools-logs-max-height,300px)]",
             "overflow-y-auto select-text",
             "rounded-[var(--servers-available-tools-item-border-radius)]",
             "bg-[var(--servers-available-tools-item-background-color)]",
-            "p-[var(--servers-available-tools-logs-padding)]"
+            "p-[var(--servers-available-tools-logs-padding,8px)]"
           )}
         >
           <pre
             className={cn(
-              "m-[var(--servers-available-tools-logs-text-margin)]",
+              "m-[var(--servers-available-tools-logs-text-margin,0)]",
               "whitespace-pre-wrap break-words font-mono",
-              "text-[length:var(--fs-12)] leading-[var(--lh-16)]",
+              "text-[length:var(--fs-12,12px)] leading-[var(--lh-16,16px)]",
               "text-[var(--servers-available-tools-item-name-color)]"
             )}
           >
@@ -187,13 +187,13 @@ const AvailableToolsItem = ({
         </div>
       ) : null}
       {opened && !isStoped ? (
-        <div className="flex flex-col gap-[var(--servers-available-tools-sublist-gap)] mt-[var(--servers-available-tools-sublist-margin-top)]">
+        <div className="flex flex-col gap-[var(--servers-available-tools-sublist-gap,8px)] mt-[var(--servers-available-tools-sublist-margin-top,4px)]">
           {mcpItems.map((tool) => {
             return (
               <div
                 key={tool.name}
                 className={cn(
-                  "rounded-[var(--servers-available-tools-item-border-radius)] cursor-pointer flex flex-col hover:bg-[var(--servers-available-tools-item-hover-background-color)] ps-[var(--servers-available-tools-tool-padding-start)] pe-[var(--servers-available-tools-tool-padding-end)] h-[var(--servers-available-tools-tool-height)]"
+                  "rounded-[var(--servers-available-tools-item-border-radius)] cursor-pointer flex flex-col hover:bg-[var(--servers-available-tools-item-hover-background-color)] ps-[var(--servers-available-tools-tool-padding-start,28px)] pe-[var(--servers-available-tools-tool-padding-end,8px)] h-[var(--servers-available-tools-tool-height,26px)]"
                 )}
                 onClick={() => {
                   changeToolStatus(name, tool.name, !tool.enabled);

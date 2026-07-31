@@ -254,8 +254,8 @@ const WebSearch = ({
       className={cn(
         "web-search-root flex flex-col w-full",
         isPage
-          ? "gap-[var(--web-search-gap)]"
-          : "gap-[var(--web-search-tab-gap)]"
+          ? "gap-[var(--web-search-gap,8px)]"
+          : "gap-[var(--web-search-tab-gap,16px)]"
       )}
     >
       <p
@@ -265,7 +265,7 @@ const WebSearch = ({
       >
         {t("WebSearchDescription")}
       </p>
-      <div className="web-search-fields flex flex-col gap-[var(--web-search-fields-gap)]">
+      <div className="web-search-fields flex flex-col gap-[var(--web-search-fields-gap,8px)]">
         <FieldContainer
           header={t("WebSearchEngine")}
           headerClassName="web-search-field-header"
@@ -326,7 +326,7 @@ const WebSearch = ({
         )}
       </div>
       {isButtonMode && (
-        <div className="web-search-actions flex gap-[var(--web-search-actions-gap)]">
+        <div className="web-search-actions flex gap-[var(--web-search-actions-gap,8px)]">
           <Button
             className="web-search-save-button"
             onClick={() => void handleSave()}

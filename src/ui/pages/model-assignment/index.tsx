@@ -26,13 +26,13 @@ const ModelAssignmentPage = ({
   return (
     <div
       className={cn(
-        "aui-root select-text flex min-h-full w-full px-[var(--model-assignment-padding-x)] py-[var(--model-assignment-padding-y)] [justify-content:var(--model-assignment-justify)] bg-[var(--layout-background-color)]",
+        "aui-root select-text flex min-h-full w-full px-[var(--model-assignment-padding-x,0px)] py-[var(--model-assignment-padding-y,0px)] [justify-content:var(--model-assignment-justify,flex-start)] bg-[var(--layout-background-color)]",
         className
       )}
     >
-      <div className="w-full max-w-[var(--model-assignment-max-width)] min-w-0 select-none">
+      <div className="w-full max-w-[var(--model-assignment-max-width,560px)] min-w-0 select-none">
         {!hideHeader && (
-          <h1 className="select-none font-bold text-[length:var(--model-assignment-title-font-size)] leading-[var(--model-assignment-title-line-height)] text-[var(--settings-header-color)] mb-[var(--model-assignment-title-margin-bottom)]">
+          <h1 className="select-none font-bold text-[length:var(--model-assignment-title-font-size,var(--fs-20,20px))] leading-[var(--model-assignment-title-line-height,var(--lh-28,28px))] text-[var(--settings-header-color)] mb-[var(--model-assignment-title-margin-bottom,24px)]">
             {t("ModelAssignment")}
           </h1>
         )}

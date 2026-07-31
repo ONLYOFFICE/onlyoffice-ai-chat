@@ -84,12 +84,12 @@ const ModelCard = ({
   return (
     <div
       className={cn(
-        "flex justify-between gap-[var(--model-card-gap)] p-[var(--model-card-padding)] w-full rounded-[var(--model-card-border-radius)] bg-[var(--model-card-background-color)] border border-[var(--model-card-border-color)]"
+        "flex justify-between gap-[var(--model-card-gap,8px)] p-[var(--model-card-padding,8px)] w-full rounded-[var(--model-card-border-radius)] bg-[var(--model-card-background-color)] border border-[var(--model-card-border-color)]"
       )}
     >
       <div
         className={cn(
-          "flex items-center gap-[var(--model-card-content-gap)] min-w-0 flex-1"
+          "flex items-center gap-[var(--model-card-content-gap,8px)] min-w-0 flex-1"
         )}
       >
         <ProviderLogo providerType={profile.providerType} />

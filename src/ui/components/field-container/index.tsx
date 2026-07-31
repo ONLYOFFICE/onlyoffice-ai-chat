@@ -30,7 +30,7 @@ const ErrorBlock = ({ error }: { error: string }) => (
       </p>
     </TooltipTrigger>
     <TooltipContent
-      className="max-w-[var(--field-container-error-max-width)] break-words"
+      className="max-w-[var(--field-container-error-max-width,350px)] break-words"
       side="bottom"
       align="start"
     >
@@ -56,7 +56,7 @@ const FieldContainer = ({
     <div
       className={cn(
         className,
-        "flex flex-col w-full min-w-0 gap-[var(--field-container-row-gap)]"
+        "flex flex-col w-full min-w-0 gap-[var(--field-container-row-gap,2px)]"
       )}
     >
       {/* Horizontal layout has no header row to hold the action. With
@@ -66,7 +66,7 @@ const FieldContainer = ({
           action row is rendered only when an `action` is actually present. */}
       {isHorizontal &&
         (reserveActionSpace ? (
-          <div className="flex items-center justify-end w-full h-[var(--field-container-action-height)]">
+          <div className="flex items-center justify-end w-full h-[var(--field-container-action-height,20px)]">
             {action}
           </div>
         ) : (
@@ -78,13 +78,13 @@ const FieldContainer = ({
         className={cn(
           "flex w-full",
           isHorizontal
-            ? "flex-row items-center gap-[var(--field-container-control-gap-horizontal)]"
-            : "flex-col gap-[var(--field-container-control-gap-vertical)]"
+            ? "flex-row items-center gap-[var(--field-container-control-gap-horizontal,8px)]"
+            : "flex-col gap-[var(--field-container-control-gap-vertical,4px)]"
         )}
       >
         {!isHorizontal ? (
-          <div className="flex justify-between items-center w-full h-[var(--field-container-header-height,auto)] mb-[var(--field-container-header-margin-bottom)]">
-            <div className="flex items-center gap-[var(--field-container-header-gap)]">
+          <div className="flex justify-between items-center w-full h-[var(--field-container-header-height,auto)] mb-[var(--field-container-header-margin-bottom,2px)]">
+            <div className="flex items-center gap-[var(--field-container-header-gap,8px)]">
               {icon && (
                 <Icon
                   name={icon}
@@ -104,7 +104,7 @@ const FieldContainer = ({
             {action}
           </div>
         ) : (
-          <div className="flex items-center gap-[var(--field-container-header-gap)] w-full max-w-[var(--field-container-label-width)] shrink-0">
+          <div className="flex items-center gap-[var(--field-container-header-gap,8px)] w-full max-w-[var(--field-container-label-width,160px)] shrink-0">
             {icon && (
               <Icon
                 name={icon}
@@ -133,9 +133,9 @@ const FieldContainer = ({
         <div
           className={cn(
             "w-full min-w-0 overflow-hidden",
-            reserveErrorSpace && "h-[var(--field-container-error-height)]",
+            reserveErrorSpace && "h-[var(--field-container-error-height,20px)]",
             isHorizontal &&
-              "ps-[calc(var(--field-container-label-width)+var(--field-container-control-gap-horizontal))]"
+              "ps-[calc(var(--field-container-label-width,160px)+var(--field-container-control-gap-horizontal,8px))]"
           )}
         >
           {error && <ErrorBlock error={error} />}
