@@ -37,6 +37,7 @@ export type TranslationKey =
   | "ConnectAIModelToEnableChat"
   | "ConnectNewAIModel"
   | "CopyToClipboard"
+  | "CreatingImage"
   | "CustomProviders"
   | "DefaultModel"
   | "Delete"

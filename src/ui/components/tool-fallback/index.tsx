@@ -1,3 +1,4 @@
+import { useMessage } from "@assistant-ui/react";
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
 import { useEffect, useState } from "react";
 import { useApi } from "../../providers/ApiProvider";
@@ -7,10 +8,12 @@ import { Icon } from "../icon";
 import { IconButton } from "../icon-button";
 import { Loader } from "../loader";
 import useCopyToClipboard from "../markdown/hooks/useCopyToClipboard";
+import { ImageGeneratingPlaceholder } from "./image-generating";
 
 const TOOL_CALL_COLOR = "var(--chat-message-tool-call-name-color)";
 export const ToolFallback: ToolCallMessagePartComponent = ({
   toolName,
+  toolCallId,
   argsText,
   result,
 }) => {
@@ -115,6 +118,49 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   }, [api, imageRef]);
 
   const imageData = imageBase64 ?? refImageBase64;
+
+  // While an image is being generated (or its stored ref is still hydrating)
+  // show a placeholder box with a loader, then swap in the finished image —
+  // ChatGPT-style. The `error` guard prevents an infinite placeholder when
+  // generation failed.
+  const isImagePending =
+    isImageGeneration &&
+    !imageData &&
+    !parsedResult?.data?.error &&
+    (isLoading || imageRef !== undefined);
+
+  const imageSlot = imageData ? (
+    <img
+      src={
+        imageData.startsWith("data:")
+          ? imageData
+          : `data:image/png;base64,${imageData}`
+      }
+      alt={t("ToolCallResult")}
+      className="block max-w-full rounded-[8px]"
+    />
+  ) : isImagePending ? (
+    <ImageGeneratingPlaceholder />
+  ) : null;
+
+  // The model narrates each tool call in natural language before making it
+  // (see the chat system prompt). When such a preamble text precedes this
+  // call in the same message, the tool-call card is redundant chrome — hide
+  // it. If the model didn't narrate (weaker models), the card still shows as
+  // a fallback. A generated image (or its loading placeholder) is always kept.
+  const messageContent = useMessage((m) => m.content);
+  const selfIndex = messageContent.findIndex(
+    (part) => part.type === "tool-call" && part.toolCallId === toolCallId
+  );
+  const hasPrecedingText =
+    selfIndex > 0 &&
+    messageContent
+      .slice(0, selfIndex)
+      .some((part) => part.type === "text" && part.text.trim().length > 0);
+
+  if (hasPrecedingText) {
+    return imageSlot;
+  }
 
   return (
     <div className="my-[8px] flex w-full flex-col gap-[8px]">
@@ -306,17 +352,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           )}
         </div>
       ) : null}
-      {isImageGeneration && imageData ? (
-        <img
-          src={
-            imageData.startsWith("data:")
-              ? imageData
-              : `data:image/png;base64,${imageData}`
-          }
-          alt={t("ToolCallResult")}
-          className="block max-w-full rounded-[8px]"
-        />
-      ) : null}
+      {imageSlot}
     </div>
   );
 };
