@@ -192,7 +192,7 @@ const UserActionBar = () => {
 
   return (
     <>
-      <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[var(--chat-message-actions-gap,2px)]">
+      <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[var(--chat-user-message-actions-gap,2px)]">
         <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onCopy}>
           {copied ? (
             <IconButton

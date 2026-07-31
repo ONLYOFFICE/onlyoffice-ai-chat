@@ -387,9 +387,11 @@
      Defaults to the --fs-10 step of the type scale. */
   --chat-composer-disclaimer-font-size: var(--fs-10);
 
-  /* Gap between the action buttons (copy, save, …) below both assistant and
-     user messages. */
-  --chat-message-actions-gap: 2px;
+  /* Gap between the action buttons (copy, save, …) below a message. Each side
+     owns its own token: the assistant's row sits inline under the reply, the
+     user's is right-aligned under the bubble, so hosts tune them separately. */
+  --chat-assistant-message-actions-gap: 2px;
+  --chat-user-message-actions-gap: 2px;
 
   /* Top margin of the chat-history search field (gap below the header). */
   --chat-list-search-margin-top: 8px;

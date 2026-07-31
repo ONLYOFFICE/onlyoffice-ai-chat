@@ -278,7 +278,7 @@ const AssistantActionBar = () => {
   return (
     <ActionBarPrimitive.Root
       hidden={isStreamRunning}
-      className="col-start-3 row-start-2 mt-[4px] flex gap-[var(--chat-message-actions-gap,2px)]"
+      className="col-start-3 row-start-2 mt-[4px] flex gap-[var(--chat-assistant-message-actions-gap,2px)]"
     >
       {platform.copyToClipboard ? (
         <PlatformCopyButton text={getMessageText(message)} />
