@@ -1,6 +1,7 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { TAttachmentRef } from "../../types";
 import type { AttachmentsApi } from "../providers/ApiProvider/attachments";
+import type { Attachment } from "../../core";
 
 /**
  * Zustand state for file and image attachment refs on the current
@@ -156,7 +157,7 @@ export interface AttachmentsStoreState {
   addAttachmentFile: (
     input: FileAttachmentInput | FileAttachmentInput[],
     options?: AddAttachmentOptions
-  ) => Promise<void>;
+  ) => Promise<Attachment[] | undefined>;
 
   /** Remove a file ref by id and delete the underlying storage record. */
   deleteAttachmentFile: (id: string) => Promise<void>;
@@ -339,12 +340,12 @@ export function createAttachmentsStore(
             }))
           );
         const inputs = all.slice(0, leases.length);
-        if (inputs.length === 0) return Promise.resolve();
+        if (inputs.length === 0) return Promise.resolve(undefined);
 
         return queue(async () => {
           // Leases may have been revoked while this call sat in the queue.
           const { live, liveLeases } = partitionByLease(inputs, leases);
-          if (live.length === 0) return;
+          if (live.length === 0) return undefined;
 
           // Single batch call — lands on the backend as one HTTP POST
           // regardless of how many files the user dropped. Storage owns
@@ -356,12 +357,14 @@ export function createAttachmentsStore(
           // must not leak into a draft that no longer wants them.
           const still = new Set(get().pendingAttachments.map((p) => p.id));
           const keep: TAttachmentRef[] = [];
+          const keptRecords: Attachment[] = [];
           const orphans: string[] = [];
           records.forEach((record, i) => {
             if (!still.has(liveLeases[i])) {
               orphans.push(record.id);
               return;
             }
+            keptRecords.push(record);
             keep.push({
               id: record.id,
               title: record.title,
@@ -384,6 +387,8 @@ export function createAttachmentsStore(
           if (orphans.length > 0) {
             await attachments.deleteMany(orphans).catch(() => undefined);
           }
+
+          return keptRecords;
         }).catch((err) => {
           // The queued body threw (storage failure) — the placeholders
           // must not outlive it. Re-throw so callers keep owning the toast.

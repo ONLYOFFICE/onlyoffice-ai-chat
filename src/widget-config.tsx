@@ -225,6 +225,27 @@ export interface WidgetConfig {
    */
   composerPlaceholder?: string;
   /**
+   * Show the welcome screen (title + description) at the top of a new (empty)
+   * chat. Opt-in: hidden by default, set to `true` to render it. The title and
+   * description come from {@link WidgetConfig.welcomeTitle} /
+   * {@link WidgetConfig.welcomeDescription} (or their built-in localized
+   * strings when those are omitted).
+   */
+  showWelcome?: boolean;
+  /**
+   * Title shown on the welcome screen of a new (empty) chat. Overrides the
+   * built-in localized "WelcomeTitle" string. Not translated — the host
+   * supplies the exact text to display. Omit to keep the built-in string.
+   */
+  welcomeTitle?: string;
+  /**
+   * Description shown under the title on the welcome screen of a new (empty)
+   * chat. Overrides the built-in localized "WelcomeDescription" string. Not
+   * translated — the host supplies the exact text to display. Omit to keep
+   * the built-in string.
+   */
+  welcomeDescription?: string;
+  /**
    * Clickable prompt suggestions shown above the composer in a new
    * (empty) chat only. Each item is `{ name, prompt }`; clicking inserts
    * its `prompt` into the composer input. Capped at 20 — extras are
