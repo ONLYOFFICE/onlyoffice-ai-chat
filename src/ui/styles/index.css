@@ -380,6 +380,7 @@
   /* Composer outer wrapper paddings (horizontal inset + bottom gap). */
   --chat-composer-wrapper-padding-x: 12px;
   --chat-composer-wrapper-padding-bottom: 4px;
+  --chat-composer-wrapper-gap: 12px;
 
   /* Composer box paddings (the bordered input container itself). */
   --chat-composer-padding-x: 8px;
