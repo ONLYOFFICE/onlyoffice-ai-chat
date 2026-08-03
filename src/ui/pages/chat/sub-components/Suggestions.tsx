@@ -11,8 +11,8 @@ const Suggestions = () => {
   const items = suggestions.slice(0, MAX_SUGGESTIONS);
 
   return (
-    <div className="suggestions mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[6px] px-[12px] mb-[var(--chat-suggestions-margin-bottom,16px)]">
-      <div className="flex flex-wrap justify-center gap-[6px]">
+    <div className="suggestions mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[6px] px-[var(--chat-suggestions-px,12px)] mb-[var(--chat-suggestions-margin-bottom,16px)]">
+      <div className="flex flex-wrap justify-center gap-[var(--chat-suggestions-gap,6px)]">
         {items.map((suggestion, index) => (
           <button
             key={`${suggestion.name}-${index}`}

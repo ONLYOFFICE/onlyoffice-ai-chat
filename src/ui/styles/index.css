@@ -370,6 +370,9 @@
   /* Bottom margin below the whole suggestions block (gap to the composer). */
   --chat-suggestions-margin-bottom: 16px;
 
+  --chat-suggestions-px: 12px;
+  --chat-suggestions-gap: 6px;
+
   /* User message bubble corner radius. The tail corner (bottom-end) stays
      flattened to 0 in the component; this token is the other three corners. */
   --chat-user-message-border-radius: 16px;
