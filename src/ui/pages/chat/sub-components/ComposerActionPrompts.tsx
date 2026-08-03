@@ -229,6 +229,13 @@ const ComposerActionPrompts = () => {
   const removePrompt = usePromptsStore((s) => s.removePrompt);
   const composerRuntime = useComposerRuntime();
   const [isOpen, setIsOpen] = useState(false);
+  // Closing the outer menu is driven from here (it's rendered controlled).
+  // Flyout submenus are independent Radix roots, so selecting an item inside
+  // one — "Edit", "Delete", a folder pick — only dismisses that inner root;
+  // the outer prompts menu has to be closed explicitly, otherwise it lingers
+  // (and, when a dialog opens on top of the still-open modal menu, stacked
+  // modal layers block outside-click dismissal). Every leaf action calls this.
+  const closeMenu = useCallback(() => setIsOpen(false), []);
   const [renamingFolder, setRenamingFolder] = useState<{
     id: string;
     name: string;
@@ -258,8 +265,9 @@ const ComposerActionPrompts = () => {
   const applyPrompt = useCallback(
     (text: string) => {
       composerRuntime.setText(text);
+      closeMenu();
     },
-    [composerRuntime]
+    [composerRuntime, closeMenu]
   );
 
   // Host-configured suggestions mirrored into the dropdown as a virtual
@@ -274,6 +282,7 @@ const ComposerActionPrompts = () => {
   // host returns a non-empty name. Otherwise fall back to the built-in dialog.
   const requestRenameFolder = useCallback(
     async (folder: { id: string; name: string }) => {
+      closeMenu();
       if (!onRenamePromptFolder) {
         setRenamingFolder({ id: folder.id, name: folder.name });
         return;
@@ -287,7 +296,7 @@ const ComposerActionPrompts = () => {
         logger.error("onRenamePromptFolder handler failed:", err);
       }
     },
-    [onRenamePromptFolder, renameFolder]
+    [onRenamePromptFolder, renameFolder, closeMenu]
   );
 
   // When the host supplies `onDeletePromptFolder`, it owns the confirmation
@@ -295,6 +304,7 @@ const ComposerActionPrompts = () => {
   // once the host returns `true`. Otherwise fall back to the built-in dialog.
   const requestDeleteFolder = useCallback(
     async (folder: { id: string; name: string }) => {
+      closeMenu();
       if (!onDeletePromptFolder) {
         setDeletingFolderId(folder.id);
         return;
@@ -307,7 +317,7 @@ const ComposerActionPrompts = () => {
         logger.error("onDeletePromptFolder handler failed:", err);
       }
     },
-    [onDeletePromptFolder, removeFolder]
+    [onDeletePromptFolder, removeFolder, closeMenu]
   );
 
   // When the host supplies `onEditPrompt`, it owns the input UI (its own
@@ -320,6 +330,7 @@ const ComposerActionPrompts = () => {
       text: string;
       folderId?: string;
     }) => {
+      closeMenu();
       if (!onEditPrompt) {
         setEditingPrompt({
           id: prompt.id,
@@ -349,7 +360,7 @@ const ComposerActionPrompts = () => {
         logger.error("onEditPrompt handler failed:", err);
       }
     },
-    [onEditPrompt, editPrompt, folders]
+    [onEditPrompt, editPrompt, folders, closeMenu]
   );
 
   const buildPromptContextMenu = useCallback(
@@ -364,7 +375,10 @@ const ComposerActionPrompts = () => {
           ? [
               {
                 text: t("SavedPrompts"),
-                onClick: () => editPrompt(prompt.id, { folderId: null }),
+                onClick: () => {
+                  closeMenu();
+                  editPrompt(prompt.id, { folderId: null });
+                },
               },
             ]
           : []),
@@ -372,7 +386,10 @@ const ComposerActionPrompts = () => {
           .filter((f) => f.id !== prompt.folderId)
           .map((folder) => ({
             text: folder.name,
-            onClick: () => editPrompt(prompt.id, { folderId: folder.id }),
+            onClick: () => {
+              closeMenu();
+              editPrompt(prompt.id, { folderId: folder.id });
+            },
           })),
       ];
 
@@ -399,11 +416,14 @@ const ComposerActionPrompts = () => {
         },
         {
           text: t("Delete"),
-          onClick: () => removePrompt(prompt.id),
+          onClick: () => {
+            closeMenu();
+            removePrompt(prompt.id);
+          },
         },
       ];
     },
-    [t, folders, editPrompt, removePrompt, requestEditPrompt]
+    [t, folders, editPrompt, removePrompt, requestEditPrompt, closeMenu]
   );
 
   const items = useMemo(() => {
@@ -502,6 +522,7 @@ const ComposerActionPrompts = () => {
       <DropdownMenu
         trigger={trigger}
         items={items}
+        open={isOpen}
         onOpenChange={setIsOpen}
         contentClassName="w-[225px]"
       />
