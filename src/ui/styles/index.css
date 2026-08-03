@@ -391,6 +391,11 @@
      Defaults to the --fs-10 step of the type scale. */
   --chat-composer-disclaimer-font-size: var(--fs-10);
 
+  /* Font size of the composer model-selector combo-box (its trigger label and
+     the dropdown rows, which inherit it). Defaults to the --fs-12 step of the
+     type scale, i.e. the widget's base size. */
+  --chat-model-selector-font-size: var(--fs-12);
+
   /* Gap between the action buttons (copy, save, …) below a message. Each side
      owns its own token: the assistant's row sits inline under the reply, the
      user's is right-aligned under the bubble, so hosts tune them separately. */

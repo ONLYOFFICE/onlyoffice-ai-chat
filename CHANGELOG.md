@@ -11,6 +11,7 @@
 - Composer outer wrapper paddings are now themable: `--chat-composer-wrapper-padding-x`, `--chat-composer-wrapper-padding-bottom`.
 - Composer box paddings are now themable: `--chat-composer-padding-x`, `--chat-composer-padding-top`, `--chat-composer-padding-bottom`.
 - Composer disclaimer text font size is now themable: `--chat-composer-disclaimer-font-size`.
+- Composer model-selector combo-box font size is now themable: `--chat-model-selector-font-size` (default `--fs-12`); the dropdown rows inherit it.
 - Gap between the action buttons below a message is now themable per side: `--chat-assistant-message-actions-gap` for the assistant's row and `--chat-user-message-actions-gap` for the user's (both default `2px`). Previously only the assistant side honored a token; the user side was hardcoded.
 - Icon (and button box) size of the action buttons below assistant and user messages is now configurable: `chatMessageActionsIconSize` widget config (default `20`). Numeric on purpose — the size is handed to the icon component, so an `images` override of one of those glyphs keeps control of how big it draws itself.
 - Chat-history title line-height is now themable: `--chat-list-title-line-height` (default `--lh-16`).
