@@ -91,6 +91,39 @@ describe("createMessageStore", () => {
     });
   });
 
+  describe("reconcileMessage", () => {
+    const withId = (m: ThreadMessageLike, id: string): ThreadMessageLike => ({
+      ...m,
+      id,
+    });
+
+    it("replaces the matching message in place, preserving position", () => {
+      const store = createMessageStore({ ctx, api });
+      store.getState().addMessage(withId(makeMsg("user", "one"), "a"));
+      store.getState().addMessage(withId(makeMsg("assistant", "two"), "b"));
+      store
+        .getState()
+        .reconcileMessage("a", withId(makeMsg("user", "one-reconciled"), "a"));
+      const messages = store.getState().messages;
+      expect(messages).toHaveLength(2);
+      expect(messages.map((m) => m.id)).toEqual(["a", "b"]);
+      expect(
+        (messages[0].content as unknown as { text: string }[])[0].text
+      ).toBe("one-reconciled");
+    });
+
+    it("no-ops when no message matches the id", () => {
+      const store = createMessageStore({ ctx, api });
+      store.getState().addMessage(withId(makeMsg("user", "one"), "a"));
+      const before = store.getState().messages;
+      store
+        .getState()
+        .reconcileMessage("missing", withId(makeMsg("user", "x"), "missing"));
+      // Same array reference back — nothing changed, no needless re-render.
+      expect(store.getState().messages).toBe(before);
+    });
+  });
+
   describe("updateLastMessage", () => {
     it("replaces the last message", () => {
       const store = createMessageStore({ ctx, api });

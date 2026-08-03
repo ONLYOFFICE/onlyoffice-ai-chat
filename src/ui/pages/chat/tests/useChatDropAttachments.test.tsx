@@ -20,6 +20,12 @@ const setupStores = (overrides?: {
       const state = {
         addAttachmentFile: overrides?.addAttachmentFile ?? vi.fn(),
         addAttachmentImage: overrides?.addAttachmentImage ?? vi.fn(),
+        // Reserve one pending id per input, aligned with the input order —
+        // the hook slices its reads to `ids.length`, so a stub returning
+        // fewer would silently drop files.
+        beginPendingAttachments: (inputs: unknown[]) =>
+          inputs.map((_, i) => `pending-${i}`),
+        failPendingAttachments: vi.fn(),
       };
       return typeof selector === "function" ? selector(state) : state;
     },

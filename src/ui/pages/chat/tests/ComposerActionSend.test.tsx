@@ -62,11 +62,18 @@ import { ComposerActionSend } from "../sub-components/ComposerActionSend";
 function setupStores(overrides: {
   isStreamRunning?: boolean;
   currentProfile?: { id: string; name: string } | null;
+  pendingAttachments?: unknown[];
 }) {
   mockUseStores.mockReturnValue({
     useMessageStore: (selector?: (s: Record<string, unknown>) => unknown) => {
       const state = {
         isStreamRunning: overrides.isStreamRunning ?? false,
+      };
+      return selector ? selector(state) : state;
+    },
+    useAttachmentsStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+      const state = {
+        pendingAttachments: overrides.pendingAttachments ?? [],
       };
       return selector ? selector(state) : state;
     },
@@ -117,5 +124,16 @@ describe("ComposerActionSend", () => {
     render(<ComposerActionSend />);
     const sendWrapper = screen.getByTestId("composer-send");
     expect(sendWrapper).not.toBeDisabled();
+  });
+
+  it("disables send button while an attachment is still pending", () => {
+    setupStores({
+      isStreamRunning: false,
+      currentProfile: { id: "1", name: "GPT" },
+      pendingAttachments: [{ id: "p1" }],
+    });
+    render(<ComposerActionSend />);
+    const sendWrapper = screen.getByTestId("composer-send");
+    expect(sendWrapper).toBeDisabled();
   });
 });

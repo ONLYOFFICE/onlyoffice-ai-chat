@@ -67,6 +67,16 @@ vi.mock("../../markdown/hooks/useCopyToClipboard", () => ({
   default: () => ({ isCopied: false, copyToClipboard: copySpy }),
 }));
 
+// ToolFallback reads the surrounding message's content via `useMessage` to
+// decide whether the model already narrated this call (in which case the
+// card is hidden). Default to empty content so the card always renders;
+// individual tests can push parts onto `mockMessage.content`.
+const mockMessage = { content: [] as unknown[] };
+vi.mock("@assistant-ui/react", () => ({
+  useMessage: (selector: (m: { content: unknown[] }) => unknown) =>
+    selector(mockMessage),
+}));
+
 import { ToolFallback } from "../index";
 
 const defaultProps = {
@@ -84,6 +94,7 @@ const defaultProps = {
 describe("ToolFallback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockMessage.content = [];
   });
 
   it("renders tool name (stripped of server type prefix)", () => {
