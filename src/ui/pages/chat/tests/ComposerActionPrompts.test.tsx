@@ -49,19 +49,27 @@ vi.mock("@assistant-ui/react", () => ({
 }));
 
 let mockDropdownItems: unknown[] = [];
+let mockOnOpenChange: ((val: boolean) => void) | undefined;
 vi.mock("../../../components/dropdown", () => ({
   DropdownMenu: ({
     trigger,
     items,
-    onOpenChange: _onOpenChange,
+    open,
+    onOpenChange,
   }: {
     trigger: React.ReactNode;
     items: unknown[];
+    open?: boolean;
     onOpenChange?: (val: boolean) => void;
   }) => {
     mockDropdownItems = items;
+    mockOnOpenChange = onOpenChange;
     return (
-      <div data-testid="dropdown-menu" data-item-count={items.length}>
+      <div
+        data-testid="dropdown-menu"
+        data-item-count={items.length}
+        data-open={String(open)}
+      >
         {trigger}
       </div>
     );
@@ -235,7 +243,14 @@ describe("ComposerActionPrompts", () => {
     mockPrompts = [];
     mockFolders = [];
     mockDropdownItems = [];
+    mockOnOpenChange = undefined;
   });
+
+  // Drive the controlled menu open the way Radix would (via onOpenChange), so
+  // "closes on action" assertions have a real open→closed transition to check.
+  const openMenu = () => act(() => mockOnOpenChange?.(true));
+  const isMenuOpen = () =>
+    screen.getByTestId("dropdown-menu").getAttribute("data-open") === "true";
 
   it("returns null when no prompts and no folders", () => {
     const { container } = render(<ComposerActionPrompts />);
@@ -296,17 +311,20 @@ describe("ComposerActionPrompts", () => {
   });
 
   describe("prompt actions", () => {
-    it("clicking a prompt applies its text via composerRuntime.setText", () => {
+    it("clicking a prompt applies its text via composerRuntime.setText and closes the menu", () => {
       mockPrompts = [
         { id: "1", name: "My Prompt", text: "Apply this text", folderId: null },
       ];
       render(<ComposerActionPrompts />);
+      openMenu();
+      expect(isMenuOpen()).toBe(true);
       const items = mockDropdownItems as {
         text: string;
         onClick: () => void;
       }[];
-      items[0].onClick();
+      act(() => items[0].onClick());
       expect(mockSetText).toHaveBeenCalledWith("Apply this text");
+      expect(isMenuOpen()).toBe(false);
     });
 
     it("prompt has context menu with Edit, Delete, and separator", () => {
@@ -384,7 +402,7 @@ describe("ComposerActionPrompts", () => {
       const moveToFolder = items[0].subMenu!.find(
         (i: { text: string }) => i.text === "MoveToFolder"
       )!;
-      moveToFolder.subMenu![0].onClick();
+      act(() => moveToFolder.subMenu![0].onClick());
       expect(mockEditPrompt).toHaveBeenCalledWith("1", { folderId: "f1" });
     });
 
@@ -412,7 +430,7 @@ describe("ComposerActionPrompts", () => {
       const savedPrompts = moveToFolder.subMenu!.find(
         (i: { text: string }) => i.text === "SavedPrompts"
       )!;
-      savedPrompts.onClick();
+      act(() => savedPrompts.onClick());
       expect(mockEditPrompt).toHaveBeenCalledWith("1", { folderId: null });
     });
 
@@ -426,8 +444,58 @@ describe("ComposerActionPrompts", () => {
       const deleteItem = items[0].subMenu!.find(
         (i: { text: string }) => i.text === "Delete"
       )!;
-      deleteItem.onClick();
+      act(() => deleteItem.onClick());
       expect(mockRemovePrompt).toHaveBeenCalledWith("1");
+    });
+  });
+
+  describe("closes the menu on leaf actions", () => {
+    it("closes when a prompt is edited (built-in dialog path)", () => {
+      mockPrompts = [{ id: "p1", name: "P", text: "T", folderId: null }];
+      render(<ComposerActionPrompts />);
+      openMenu();
+      expect(isMenuOpen()).toBe(true);
+      const items = mockDropdownItems as {
+        subMenu?: { text: string; onClick: () => void }[];
+      }[];
+      const editItem = items[0].subMenu!.find(
+        (i) => i.text === "EditAIPrompt"
+      )!;
+      act(() => editItem.onClick());
+      expect(isMenuOpen()).toBe(false);
+    });
+
+    it("closes when a prompt is deleted", () => {
+      mockPrompts = [{ id: "p1", name: "P", text: "T", folderId: null }];
+      render(<ComposerActionPrompts />);
+      openMenu();
+      const items = mockDropdownItems as {
+        subMenu?: { text: string; onClick: () => void }[];
+      }[];
+      const deleteItem = items[0].subMenu!.find((i) => i.text === "Delete")!;
+      act(() => deleteItem.onClick());
+      expect(isMenuOpen()).toBe(false);
+    });
+
+    it("closes when a folder is renamed (built-in dialog path)", () => {
+      mockFolders = [{ id: "f1", name: "My Folder" }];
+      render(<ComposerActionPrompts />);
+      openMenu();
+      const items = mockDropdownItems as {
+        text: string;
+        subMenu?: { text: string; onClick: () => void }[];
+      }[];
+      const folderItem = items.find((i) => i.text === "My Folder")!;
+      const renameItem = folderItem.subMenu!.find(
+        (i) => i.text === "RenameFolder"
+      )!;
+      // Block body: this item's onClick returns the async requestRenameFolder
+      // promise; returning it from the act callback would switch act to async
+      // mode. We only care about the synchronous state flush (closeMenu).
+      act(() => {
+        renameItem.onClick();
+      });
+      expect(isMenuOpen()).toBe(false);
     });
   });
 
@@ -722,7 +790,7 @@ describe("ComposerActionPrompts", () => {
       expect(items).toHaveLength(1);
       expect(items[0].text).toBe("built-in-prompts");
       expect(items[0].subMenu).toHaveLength(1);
-      items[0].subMenu![0].onClick();
+      act(() => items[0].subMenu![0].onClick());
       expect(mockSetText).toHaveBeenCalledWith("P1");
     });
 

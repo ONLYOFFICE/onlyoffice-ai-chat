@@ -119,6 +119,7 @@ export type TranslationKey =
   | "ToolExecuted"
   | "Tools"
   | "Translation"
+  | "Uploading"
   | "Vision"
   | "WantDeleteChat"
   | "WantDeleteFolder"
