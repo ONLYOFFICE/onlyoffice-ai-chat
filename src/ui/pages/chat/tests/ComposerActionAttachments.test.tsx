@@ -10,6 +10,15 @@ import {
 
 const mockAddAttachmentFile = vi.fn();
 const mockAddAttachmentImage = vi.fn();
+// Stable references — `selectRecentFile` (a useCallback) depends on these
+// and is itself a dep of the recent-files effect that calls setState. A
+// fresh function per render would re-run that effect every render → an
+// infinite render loop that OOMs the worker.
+const mockBeginPendingAttachments = vi.fn((inputs: unknown[]) =>
+  // One id per input, capped at the store's per-bucket ATTACHMENT_LIMIT (5).
+  inputs.slice(0, 5).map((_, i) => `pending-${i}`)
+);
+const mockFailPendingAttachments = vi.fn();
 const mockChangeToolStatus = vi.fn();
 const mockToggleExtendedThinking = vi.fn();
 const mockEmit = vi.fn();
@@ -36,6 +45,8 @@ vi.mock("../../../store/context", () => ({
       const state = {
         addAttachmentFile: mockAddAttachmentFile,
         addAttachmentImage: mockAddAttachmentImage,
+        beginPendingAttachments: mockBeginPendingAttachments,
+        failPendingAttachments: mockFailPendingAttachments,
       };
       return typeof selector === "function" ? selector(state) : state;
     },
@@ -343,9 +354,10 @@ describe("ComposerActionAttachment", () => {
           "/docs/file1.docx",
           69
         );
-        expect(mockAddAttachmentFile).toHaveBeenCalledWith([
-          { path: "/docs/file1.docx", content: "file content", type: 7 },
-        ]);
+        expect(mockAddAttachmentFile).toHaveBeenCalledWith(
+          [{ path: "/docs/file1.docx", content: "file content", type: 7 }],
+          { pendingIds: ["pending-0"] }
+        );
       });
     });
 
@@ -457,11 +469,14 @@ describe("ComposerActionAttachment", () => {
           "/docs/recent.docx",
           69
         );
-        expect(mockAddAttachmentFile).toHaveBeenCalledWith({
-          path: "/docs/recent.docx",
-          content: "recent content",
-          type: 7,
-        });
+        expect(mockAddAttachmentFile).toHaveBeenCalledWith(
+          {
+            path: "/docs/recent.docx",
+            content: "recent content",
+            type: 7,
+          },
+          { pendingIds: ["pending-0"] }
+        );
       });
     });
 
@@ -648,9 +663,10 @@ describe("ComposerActionAttachment", () => {
       });
 
       await waitFor(() => {
-        expect(mockAddAttachmentImage).toHaveBeenCalledWith([
-          { name: "photo.png", base64: "data:image/png;base64,abc123" },
-        ]);
+        expect(mockAddAttachmentImage).toHaveBeenCalledWith(
+          [{ name: "photo.png", base64: "data:image/png;base64,abc123" }],
+          { pendingIds: ["pending-0"] }
+        );
       });
 
       Object.defineProperty(window, "FileReader", {

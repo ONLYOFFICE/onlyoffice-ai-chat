@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.5.21
+
+### Fixed
+
+- **The user's message now appears in the chat instantly on send.** It's rendered optimistically with a stable client id the moment `onNew` fires, instead of waiting for the engine's `user-message-stored` event — which sat behind the tool-list refresh, profile resolution, and a full history read (visibly slow when an MCP server is connecting or the core runs on a remote host). The stored version reconciles in place, keeping the client id so assistant-ui never re-keys the message (no phantom branches). Same behaviour whether the core is in-process or on a remote Express host that assigns its own message ids.
+
+## 0.5.20
 
 ### Added
 
