@@ -88,6 +88,12 @@ export const useChatDropAttachments = () => {
   const { useAttachmentsStore } = useStores();
   const addAttachmentFile = useAttachmentsStore((s) => s.addAttachmentFile);
   const addAttachmentImage = useAttachmentsStore((s) => s.addAttachmentImage);
+  const beginPendingAttachments = useAttachmentsStore(
+    (s) => s.beginPendingAttachments
+  );
+  const failPendingAttachments = useAttachmentsStore(
+    (s) => s.failPendingAttachments
+  );
   const { onDropFiles } = useWidgetConfig();
 
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -135,44 +141,82 @@ export const useChatDropAttachments = () => {
 
     // Drop 0-byte files — an empty image yields a payload-less data URL
     // that vision providers reject, and an empty text file adds nothing.
-    const files = Array.from(e.dataTransfer.files).filter((f) => f.size > 0);
-    // Read every dropped file in parallel, then hand each batch to the
-    // store in one call. Per-file failures collapse to `null` so a single
-    // unreadable file can't sink the whole drop.
     // Unsupported binary formats (e.g. .docx, .pdf) are ignored here —
     // the attach-button flow handles those via the platform adapter.
-    const imageReads = files
-      .filter((f) => f.type.startsWith("image/"))
-      .map(async (f) => {
-        try {
-          return { name: f.name, base64: await readFile(f, "dataURL") };
-        } catch {
-          return null;
-        }
-      });
-    const textReads = files
-      .filter((f) => !f.type.startsWith("image/") && isTextFile(f))
-      .map(async (f) => {
-        try {
-          return {
-            path: "",
-            content: await readFile(f, "text"),
-            type: 0,
-            title: f.name,
-          };
-        } catch {
-          return null;
-        }
-      });
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.size > 0);
+    const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+    const textFiles = files.filter(
+      (f) => !f.type.startsWith("image/") && isTextFile(f)
+    );
 
-    const [imageInputs, fileInputs] = await Promise.all([
-      Promise.all(imageReads).then((r) => r.filter((x) => x !== null)),
-      Promise.all(textReads).then((r) => r.filter((x) => x !== null)),
+    // Reserve loading chips per bucket before the reads — a big dropped
+    // image takes a visible moment to base64. Each batch keeps its ids
+    // aligned with its files by slicing to what the reservation accepted.
+    const imageIds = beginPendingAttachments(
+      imageFiles.map((f) => ({ title: f.name, kind: "image" as const }))
+    );
+    const textIds = beginPendingAttachments(
+      textFiles.map((f) => ({ title: f.name, kind: "file" as const, type: 0 }))
+    );
+
+    // Read every dropped file in parallel, then hand each batch to the
+    // store in one call. Per-file failures collapse to `null` so a single
+    // unreadable file can't sink the whole drop — its lease is dropped in
+    // the same aligned pass.
+    const imageReads = imageFiles.slice(0, imageIds.length).map(async (f) => {
+      try {
+        return { name: f.name, base64: await readFile(f, "dataURL") };
+      } catch {
+        return null;
+      }
+    });
+    const textReads = textFiles.slice(0, textIds.length).map(async (f) => {
+      try {
+        return {
+          path: "",
+          content: await readFile(f, "text"),
+          type: 0,
+          title: f.name,
+        };
+      } catch {
+        return null;
+      }
+    });
+
+    const [imageResults, textResults] = await Promise.all([
+      Promise.all(imageReads),
+      Promise.all(textReads),
     ]);
 
+    const partition = <T>(results: (T | null)[], ids: string[]) => {
+      const inputs: T[] = [];
+      const liveIds: string[] = [];
+      const failedIds: string[] = [];
+      results.forEach((result, i) => {
+        if (result === null) {
+          failedIds.push(ids[i]);
+        } else {
+          inputs.push(result);
+          liveIds.push(ids[i]);
+        }
+      });
+      if (failedIds.length > 0) failPendingAttachments(failedIds);
+      return { inputs, liveIds };
+    };
+
+    const images = partition(imageResults, imageIds);
+    const texts = partition(textResults, textIds);
+
+    // On throw the store fails the leases itself before re-throwing.
     const work: Promise<unknown>[] = [];
-    if (imageInputs.length > 0) work.push(addAttachmentImage(imageInputs));
-    if (fileInputs.length > 0) work.push(addAttachmentFile(fileInputs));
+    if (images.inputs.length > 0) {
+      work.push(
+        addAttachmentImage(images.inputs, { pendingIds: images.liveIds })
+      );
+    }
+    if (texts.inputs.length > 0) {
+      work.push(addAttachmentFile(texts.inputs, { pendingIds: texts.liveIds }));
+    }
     await Promise.all(work);
   };
 

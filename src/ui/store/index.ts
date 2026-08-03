@@ -14,3 +14,8 @@ export type {
 } from "./create-stores";
 export { createStores } from "./create-stores";
 export { selectImageBase64 } from "./create-attachments-store";
+export type {
+  AddAttachmentOptions,
+  PendingAttachmentInput,
+  TPendingAttachment,
+} from "./create-attachments-store";

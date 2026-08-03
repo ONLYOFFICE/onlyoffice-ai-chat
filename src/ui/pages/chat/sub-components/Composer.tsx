@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { FileItem } from "../../../components/file-item";
+import { PendingFileItem } from "../../../components/file-item/PendingFileItem";
 import { useStores } from "../../../store/context";
 import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { useWidgetConfig } from "../../../../widget-config";
@@ -17,6 +18,11 @@ const Composer = () => {
   } = useStores();
   const attachmentFiles = useAttachmentsStore((s) => s.attachmentFiles);
   const attachmentImages = useAttachmentsStore((s) => s.attachmentImages);
+  const pendingAttachments = useAttachmentsStore((s) => s.pendingAttachments);
+  const cancelPendingAttachment = useAttachmentsStore(
+    (s) => s.cancelPendingAttachment
+  );
+  const hasPending = pendingAttachments.length > 0;
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const { t } = useI18n();
@@ -68,13 +74,27 @@ const Composer = () => {
             : "cursor-text"
         }`}
       >
-        {attachmentFiles.length || attachmentImages.length ? (
+        {attachmentFiles.length ||
+        attachmentImages.length ||
+        pendingAttachments.length ? (
           <div className="flex flex-row gap-[8px] overflow-x-auto">
             {attachmentFiles.map((file) => (
               <FileItem key={file.id} file={file} />
             ))}
             {attachmentImages.map((image) => (
               <FileItem key={image.id} file={image} />
+            ))}
+            {/* Loading chips last: the settled prefix of the row never
+                moves as uploads land, so only the tail reflows. Keyed by
+                the client-generated lease id — filenames collide on
+                duplicate picks, and an index would recycle DOM state onto
+                a different file after a mid-batch failure. */}
+            {pendingAttachments.map((item) => (
+              <PendingFileItem
+                key={item.id}
+                item={item}
+                onCancel={cancelPendingAttachment}
+              />
             ))}
           </div>
         ) : null}
@@ -88,7 +108,15 @@ const Composer = () => {
           disabled={!currentProfile || composerDisabled}
           data-testid="composer-input"
           onKeyDown={(e) => {
-            if (isStreamRunning && e.key === "Enter" && !e.shiftKey) {
+            // `hasPending`: sending mid-upload would silently drop the
+            // attachment the user just watched appear — `onNew` reads only
+            // the settled refs. The Enter path bypasses the Send button's
+            // disabled state, so it needs its own guard.
+            if (
+              (isStreamRunning || hasPending) &&
+              e.key === "Enter" &&
+              !e.shiftKey
+            ) {
               e.preventDefault();
             }
           }}

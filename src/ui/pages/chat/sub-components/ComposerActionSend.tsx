@@ -1,5 +1,6 @@
 import { ComposerPrimitive, ThreadPrimitive } from "@assistant-ui/react";
 import { useComponents } from "../../../providers/ComponentsProvider";
+import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 
@@ -8,10 +9,20 @@ const BUTTON_STYLES =
 
 const ComposerActionSend = () => {
   const { IconButton } = useComponents();
-  const { useMessageStore, useProfilesStore, selectCurrentChatProfile } =
-    useStores();
+  const { t } = useI18n();
+  const {
+    useAttachmentsStore,
+    useMessageStore,
+    useProfilesStore,
+    selectCurrentChatProfile,
+  } = useStores();
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
+  // Sending while an attachment is still uploading would silently drop it —
+  // `onNew` reads only the settled refs — so Send waits for the chips.
+  const hasPending = useAttachmentsStore(
+    (s) => s.pendingAttachments.length > 0
+  );
   const { composerActionSendSize = 17 } = useWidgetConfig();
 
   return isStreamRunning ? (
@@ -28,7 +39,7 @@ const ComposerActionSend = () => {
     </ComposerPrimitive.Cancel>
   ) : (
     <ThreadPrimitive.If running={false}>
-      <ComposerPrimitive.Send asChild disabled={!currentProfile}>
+      <ComposerPrimitive.Send asChild disabled={!currentProfile || hasPending}>
         <IconButton
           iconName="send"
           size={composerActionSendSize}
@@ -36,6 +47,7 @@ const ComposerActionSend = () => {
           height={composerActionSendSize}
           color="var(--chat-composer-action-send-color)"
           className={BUTTON_STYLES}
+          title={hasPending ? t("Uploading") : undefined}
           data-testid="send-button"
         />
       </ComposerPrimitive.Send>

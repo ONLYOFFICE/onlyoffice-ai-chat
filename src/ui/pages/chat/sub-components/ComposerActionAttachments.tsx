@@ -26,6 +26,12 @@ const ComposerActionAttachment = () => {
 
   const addAttachmentFile = useAttachmentsStore((s) => s.addAttachmentFile);
   const addAttachmentImage = useAttachmentsStore((s) => s.addAttachmentImage);
+  const beginPendingAttachments = useAttachmentsStore(
+    (s) => s.beginPendingAttachments
+  );
+  const failPendingAttachments = useAttachmentsStore(
+    (s) => s.failPendingAttachments
+  );
   const changeToolStatus = useServersStore((s) => s.changeToolStatus);
   const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
   const disabledTools = useServersStore((s) => s.disabledTools);
@@ -47,14 +53,33 @@ const ComposerActionAttachment = () => {
   const selectRecentFile = React.useCallback(
     async (path: string, type: number) => {
       if (!platform.file?.convertFileToText) return;
-      const isSpreadsheetFile = isSpreadsheet(type);
-      const content = await platform.file.convertFileToText(
-        path,
-        isSpreadsheetFile ? 260 : 69
-      );
-      await addAttachmentFile({ path, content, type });
+      // Reserve the loading chip before the conversion — on desktop the
+      // convert is the slow part, and the whole point is instant feedback.
+      const [pendingId] = beginPendingAttachments([
+        { title: path.split(/[\\/]/).pop() ?? path, kind: "file", type },
+      ]);
+      if (!pendingId) return; // cap reached
+      try {
+        const isSpreadsheetFile = isSpreadsheet(type);
+        const content = await platform.file.convertFileToText(
+          path,
+          isSpreadsheetFile ? 260 : 69
+        );
+        await addAttachmentFile(
+          { path, content, type },
+          { pendingIds: [pendingId] }
+        );
+      } catch (err) {
+        failPendingAttachments([pendingId]);
+        throw err;
+      }
     },
-    [platform.file, addAttachmentFile]
+    [
+      platform.file,
+      addAttachmentFile,
+      beginPendingAttachments,
+      failPendingAttachments,
+    ]
   );
 
   const selectLocalFile = async () => {
@@ -63,22 +88,41 @@ const ComposerActionAttachment = () => {
     if (!files) return;
     const fileApi = platform.file;
 
-    // Convert every picked file in parallel, then push the whole batch to
-    // the store in one call. Slicing to 5 here mirrors the store-side cap
-    // and avoids paying for converts we'd just drop.
-    const inputs = await Promise.all(
-      files.slice(0, 5).map(async (file) => {
-        const type = fileApi.getFileType?.(file.path) ?? 0;
-        const isSpreadsheetFile = isSpreadsheet(type);
-        const content =
-          (await fileApi.convertFileToText?.(
-            file.path,
-            isSpreadsheetFile ? 260 : 69
-          )) ?? "";
-        return { path: file.path, content: content || "", type };
-      })
+    // Reserve loading chips first: the reservation is the cap check
+    // (replacing the old hardcoded slice-to-5), so we never pay for a
+    // convert the store would drop, and the chips appear before the
+    // conversion — the slow part on desktop. Ids and files stay aligned
+    // by building both from the same accepted slice.
+    const pendingIds = beginPendingAttachments(
+      files.map((file) => ({
+        title: file.path.split(/[\\/]/).pop() ?? file.path,
+        kind: "file" as const,
+        type: fileApi.getFileType?.(file.path) ?? 0,
+      }))
     );
-    if (inputs.length > 0) await addAttachmentFile(inputs);
+    const accepted = files.slice(0, pendingIds.length);
+    if (accepted.length === 0) return;
+
+    try {
+      // Convert every picked file in parallel, then push the whole batch
+      // to the store in one call.
+      const inputs = await Promise.all(
+        accepted.map(async (file) => {
+          const type = fileApi.getFileType?.(file.path) ?? 0;
+          const isSpreadsheetFile = isSpreadsheet(type);
+          const content =
+            (await fileApi.convertFileToText?.(
+              file.path,
+              isSpreadsheetFile ? 260 : 69
+            )) ?? "";
+          return { path: file.path, content: content || "", type };
+        })
+      );
+      await addAttachmentFile(inputs, { pendingIds });
+    } catch (err) {
+      failPendingAttachments(pendingIds);
+      throw err;
+    }
   };
 
   const [recentFiles, setRecentFiles] = React.useState<DropDownItemProps[]>([]);
@@ -232,32 +276,51 @@ const ComposerActionAttachment = () => {
     const files = input.files;
     if (!files) return;
 
-    const inputs = (
-      await Promise.all(
-        // Skip 0-byte files — they produce an empty `data:...;base64,`
-        // URL that vision providers reject.
-        Array.from(files)
-          .filter((file) => file.size > 0)
-          .map(
-            (file) =>
-              new Promise<{ name: string; base64: string } | null>(
-                (resolve) => {
-                  const reader = new FileReader();
-                  reader.onload = (event) =>
-                    resolve({
-                      name: file.name,
-                      base64: event.target?.result as string,
-                    });
-                  reader.onerror = () => resolve(null);
-                  reader.readAsDataURL(file);
-                }
-              )
-          )
-      )
-    ).filter((x) => x !== null);
-
+    // Skip 0-byte files — they produce an empty `data:...;base64,` URL
+    // that vision providers reject — *before* reserving, so they never
+    // flash a loading chip.
+    const candidates = Array.from(files).filter((file) => file.size > 0);
+    const pendingIds = beginPendingAttachments(
+      candidates.map((file) => ({ title: file.name, kind: "image" as const }))
+    );
+    const accepted = candidates.slice(0, pendingIds.length);
     input.value = "";
-    if (inputs.length > 0) await addAttachmentImage(inputs);
+    if (accepted.length === 0) return;
+
+    const results = await Promise.all(
+      accepted.map(
+        (file) =>
+          new Promise<{ name: string; base64: string } | null>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (event) =>
+              resolve({
+                name: file.name,
+                base64: event.target?.result as string,
+              });
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+          })
+      )
+    );
+
+    // Failed reads drop their lease; survivors keep id/input alignment by
+    // being filtered in the same pass.
+    const inputs: { name: string; base64: string }[] = [];
+    const liveIds: string[] = [];
+    const failedIds: string[] = [];
+    results.forEach((result, i) => {
+      if (result === null) {
+        failedIds.push(pendingIds[i]);
+      } else {
+        inputs.push(result);
+        liveIds.push(pendingIds[i]);
+      }
+    });
+    if (failedIds.length > 0) failPendingAttachments(failedIds);
+    if (inputs.length > 0) {
+      // On throw the store fails the leases itself before re-throwing.
+      await addAttachmentImage(inputs, { pendingIds: liveIds });
+    }
   };
 
   return (
