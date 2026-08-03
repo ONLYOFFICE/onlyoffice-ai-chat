@@ -54,6 +54,15 @@ export interface MessageStoreState {
   setAbortController: (controller: AbortController | undefined) => void;
   /** Append a message to the end of the list. Never modifies existing messages. */
   addMessage: (message: ThreadMessageLike) => void;
+  /**
+   * Replace the message whose `id` matches, in place, preserving its
+   * position. No-op if none matches. Used to reconcile an optimistically
+   * rendered user message with the storage-authoritative version. The
+   * replacement MUST keep the same `id`: assistant-ui keys its message
+   * repository on `id`, so changing it would orphan the optimistic node
+   * and fork a phantom branch.
+   */
+  reconcileMessage: (id: string, message: ThreadMessageLike) => void;
   /** Replace the last message in the list (used during streaming updates). */
   updateLastMessage: (message: ThreadMessageLike) => void;
   /**
@@ -151,6 +160,19 @@ export function createMessageStore(deps: {
       // ("incomplete") turn stays in the thread untouched when the next
       // message arrives, so previous turns can't vanish.
       set((s) => ({ messages: [...s.messages, message] }));
+    },
+
+    reconcileMessage: (id, message) => {
+      set((s) => {
+        const idx = s.messages.findIndex((m) => m.id === id);
+        // Not found: the optimistic bubble was already truncated (e.g.
+        // navigated away). Leave the list untouched rather than appending
+        // a stray duplicate.
+        if (idx === -1) return s;
+        const next = s.messages.slice();
+        next[idx] = message;
+        return { messages: next };
+      });
     },
 
     updateLastMessage: (message) => {

@@ -55,6 +55,21 @@
 - The Add/Edit model form now keeps uniform spacing in the horizontal layout regardless of whether a field has an action link. `FieldContainer` gained an opt-in `reserveActionSpace` prop (used by the model form) that reserves a fixed-height action zone (`--field-container-action-height`) above each field, so a link like "Get API key" appears/disappears inside it without shifting the layout — previously only the API-key field reserved that space (via a spacer), making the Provider→API-key gap larger than the rest. Other horizontal `FieldContainer` usages (e.g. Model Assignment, Web Search) are unaffected. In the vertical layout that spacer only made the API-key header taller than the other fields (the label already sets the row height), so it was dropped and the headers now line up.
 
 
+## 0.5.21
+
+### Fixed
+
+- **The user's message now appears in the chat instantly on send.** It's rendered optimistically with a stable client id the moment `onNew` fires, instead of waiting for the engine's `user-message-stored` event — which sat behind the tool-list refresh, profile resolution, and a full history read (visibly slow when an MCP server is connecting or the core runs on a remote host). The stored version reconciles in place, keeping the client id so assistant-ui never re-keys the message (no phantom branches). Same behaviour whether the core is in-process or on a remote Express host that assigns its own message ids.
+
+## 0.5.20
+
+### Added
+
+- **Attachments appear in the composer the moment they are picked, as loading chips.** New `pendingAttachments` state in the attachments store, driven by a lease model: `beginPendingAttachments(inputs)` synchronously reserves placeholder chips (and their slots in the 5-item cap — a pending file can no longer let a 6th one through) and returns lease ids; `addAttachmentFile` / `addAttachmentImage` accept `options.pendingIds` to consume those leases, swapping placeholder → real chip in a single state update. Without `pendingIds`, the add actions self-reserve, so every caller gets the loading state for the storage round trip for free. `failPendingAttachments(ids)` drops leases whose production failed; `cancelPendingAttachment(id)` backs the ✕ on a loading chip (revokes the lease — the settle then discards the ref and deletes the orphan storage record; the underlying production is not aborted). `clearAttachmentFiles` / `clearAttachmentImages` revoke their bucket's leases, so a thread switch mid-upload no longer lands a chip in the newly opened draft.
+- **`PendingFileItem` component** — the loading chip: same box as `FileItem` (shared `chipClassName`, so the swap is visually seamless), file icon + name, an indeterminate `Loader` (host-overridable slot) where the close button sits, ✕ on hover, `role="status"`/`aria-busy`. Exported for hosts. New i18n key `Uploading`.
+- **The library's own attach paths reserve before the slow part.** Local/recent file pickers reserve before `convertFileToText`, the image picker and drag-and-drop before the `FileReader` read — the reservation also replaces the hardcoded slice-to-5 as the cap check, so payloads past the cap are no longer produced at all. Zero-byte files are filtered before reserving and never flash a chip.
+- **Send is blocked while an attachment is uploading** (button disabled with an "Uploading…" title, Enter guarded in the composer) — sending mid-upload would have silently dropped the attachment the user just watched appear.
+
 ## 0.5.13
 
 ### Changed
@@ -224,6 +239,16 @@ DELETE <server-url>   // header: Mcp-Session-Id: <id>
 - Fewer redundant requests: system MCP servers reuse their session and cached tool list, provider model lists are cached (and reused as the credential-validity signal on save), and the guaranteed-404 Responses-API capability probe is skipped for non-OpenAI providers.
 - Fewer duplicate/concurrent requests on the client: `ProfilesStore.init()` and the servers `getTools()` fetch now coalesce concurrent callers, so several page mounts share one load instead of each firing 2–3×; the redundant widget-level profile init was dropped; and the remote API transport pools in-flight identical `GET` reads.
 ### Added
+
+- `showWelcome` / `welcomeTitle` / `welcomeDescription` widget config — control the welcome screen at the top of a new (empty) chat. `showWelcome` is opt-in (hidden by default, set to `true` to render it); the `ThreadWelcome` component reads the flag itself and renders nothing when it is unset, so the same gating applies wherever it is used. `welcomeTitle` / `welcomeDescription` override the built-in localized strings (`WelcomeTitle` / `WelcomeDescription`) with host-supplied, untranslated text — omit either to keep its built-in string.
+
+```ts
+<AIChatWidget
+  showWelcome
+  welcomeTitle="How can I help?"
+  welcomeDescription="Ask me anything about your documents."
+/>
+```
 
 - `onDropFiles` widget config — takes over file drag-and-drop onto the chat surface. When provided, dropping one or more files hands the raw `File[]` to the callback and the built-in handling (reading images as data URLs / text files as text and attaching them in-memory, silently ignoring binary Office/PDF drops) is skipped entirely. Use it to route every dropped file through the same path as the composer's upload button — e.g. a host that uploads to portal storage and attaches by file id, which also lets binary formats (DOCX/PDF/XLSX) be dropped. The drag-over highlight/overlay is still driven by the widget; only the drop's payload handling is delegated. Omit to keep the built-in read-and-attach behavior.
 

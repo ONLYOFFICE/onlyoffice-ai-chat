@@ -102,6 +102,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const setIsToolPending = useMessageStore((s) => s.setIsToolPending);
   const setAbortController = useMessageStore((s) => s.setAbortController);
   const addMessage = useMessageStore((s) => s.addMessage);
+  const reconcileMessage = useMessageStore((s) => s.reconcileMessage);
   const updateLastMessage = useMessageStore((s) => s.updateLastMessage);
   const truncateMessagesAfter = useMessageStore((s) => s.truncateMessagesAfter);
   const fetchPrevMessages = useMessageStore((s) => s.fetchPrevMessages);
@@ -239,6 +240,15 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           idx: number;
           cb: (result: unknown) => void | Promise<void>;
         };
+        /**
+         * Id of a user message already rendered optimistically by `onNew`.
+         * When set, the `user-message-stored` event reconciles that bubble
+         * in place (keeping this client id) instead of appending a second
+         * copy — so the user's turn shows instantly on submit while the
+         * storage write (in-process or on a remote core) settles off the
+         * critical path.
+         */
+        optimisticUserMessageId?: string;
       }
     ) => {
       const watch = options?.watchToolResult;
@@ -394,13 +404,29 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           }
 
           if (event.type === "user-message-stored") {
-            // Storage just persisted the user message — render it now,
-            // with the storage-authoritative `id` and `createdAt`. We
-            // skip the optimistic-placeholder pattern entirely so
-            // assistant-ui's MessageRepository never sees a message
-            // without an id (which would force it onto an index-based
-            // fallback and produce phantom branches).
-            addMessage(event.message);
+            const optimisticId = options?.optimisticUserMessageId;
+            if (optimisticId) {
+              // The bubble is already on screen (added optimistically in
+              // `onNew`). Merge the storage-authoritative fields but KEEP
+              // the client id: assistant-ui keys its MessageRepository on
+              // `id`, so swapping in the server id would orphan the
+              // optimistic node and fork a phantom branch. The server
+              // message id isn't needed downstream anyway — reads,
+              // regenerate, and truncation all run off the runtime id /
+              // array position, never the storage id. This also makes the
+              // flow identical whether core is in-process or on a remote
+              // Express host that assigns its own ids.
+              reconcileMessage(optimisticId, {
+                ...event.message,
+                id: optimisticId,
+              });
+            } else {
+              // No optimistic placeholder (e.g. resume paths) — append
+              // with the storage-authoritative `id` and `createdAt`. Giving
+              // it a real id keeps assistant-ui off the index-based
+              // fallback that would otherwise produce phantom branches.
+              addMessage(event.message);
+            }
             continue;
           }
 
@@ -738,6 +764,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     },
     [
       addMessage,
+      reconcileMessage,
       updateLastMessage,
       applyMiddlewareDisplay,
       callbacksManager,
@@ -831,7 +858,18 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       api.attachments.deleteMany(excludedIds).catch(() => undefined);
     }
 
+    // Stable client id so the optimistic bubble and its storage-backed
+    // reconciliation (`user-message-stored`) share one runtime identity.
+    // `crypto.randomUUID` is unavailable in non-secure contexts, so fall
+    // back to a random string — mirrors the attachment store's placeholder
+    // id pattern.
+    const optimisticUserMessageId =
+      globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
     const userMessage: ThreadMessageLike = {
+      id: optimisticUserMessageId,
+      createdAt: new Date(),
       role: "user",
       content: [
         ...(files?.map((f) =>
@@ -849,10 +887,13 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       ],
     };
 
-    // Don't render an optimistic placeholder here — wait for the
-    // engine's `user-message-stored` event so the runtime gets a
-    // message with the storage-assigned `id` and `createdAt` from the
-    // start. The IDB write that produces it is sub-millisecond.
+    // Render the user's turn immediately — an optimistic bubble carrying a
+    // stable client id. Everything that follows (tool refresh, profile
+    // resolution, the storage write, a possibly-remote core) happens off
+    // this critical path; the matching `user-message-stored` event later
+    // reconciles this same message in place via `optimisticUserMessageId`.
+    addMessage(userMessage);
+
     callbacksManager.emit("onMessageSent", {
       threadId,
       message: userMessage,
@@ -892,7 +933,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       },
     });
 
-    await processStream(stream, threadId);
+    await processStream(stream, threadId, { optimisticUserMessageId });
   };
 
   const approveToolCall = useCallback(

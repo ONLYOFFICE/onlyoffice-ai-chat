@@ -874,6 +874,40 @@ describe("AIEngine.sendCustom", () => {
       content: [{ type: "text", text: "X" }],
     });
   });
+
+  it("resolves the supplied profileId instead of the Default slot", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("X");
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    await engine.sendCustom({
+      isStream: false,
+      systemPrompt: "P",
+      userMessage,
+      profileId: "picked",
+    });
+    expect(storage.profiles.readById).toHaveBeenCalledWith("picked");
+    // The explicit pick short-circuits the Default assignment lookup.
+    expect(storage.assignments.readByType).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the Default slot when profileId is not found", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("X");
+    const { storage } = makeStorage();
+    (storage.profiles.readById as ReturnType<typeof vi.fn>).mockImplementation(
+      async (id: string) => (id === "gone" ? null : profile)
+    );
+    const engine = new AIEngine({ storage });
+    await engine.sendCustom({
+      isStream: false,
+      systemPrompt: "P",
+      userMessage,
+      profileId: "gone",
+    });
+    expect(storage.assignments.readByType).toHaveBeenCalledWith(
+      ActionType.Default,
+      undefined
+    );
+  });
 });
 
 describe("AIEngine built-in generate_image fetch wiring", () => {

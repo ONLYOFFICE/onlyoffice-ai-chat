@@ -52,6 +52,15 @@ export interface Attachment {
 
   /** Storage-assigned creation timestamp. */
   createdAt: number;
+
+  /** Whether the attached form can be analyzed. */
+  canAnalyze?: boolean;
+
+  /**
+   * Keys of the fields inside the form. `key` is the field identifier,
+   * `text` its human-readable label.
+   */
+  formKeys?: { key: string; text: string }[];
 }
 
 /**

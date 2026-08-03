@@ -56,6 +56,7 @@ vi.mock("../../../components/file-item", () => ({
 function setupStores(overrides?: {
   attachmentFiles?: { path: string; content: string; type: number }[];
   attachmentImages?: { name: string; base64: string }[];
+  pendingAttachments?: unknown[];
   currentProfile?: { id: string; name: string } | null;
   hideProfilePicker?: boolean;
   entityId?: string;
@@ -64,6 +65,8 @@ function setupStores(overrides?: {
   const attachmentsState = {
     attachmentFiles: overrides?.attachmentFiles ?? [],
     attachmentImages: overrides?.attachmentImages ?? [],
+    pendingAttachments: overrides?.pendingAttachments ?? [],
+    cancelPendingAttachment: vi.fn(),
   };
   const messageState = {
     isStreamRunning: overrides?.isStreamRunning ?? false,

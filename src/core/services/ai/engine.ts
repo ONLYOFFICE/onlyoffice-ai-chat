@@ -78,8 +78,9 @@ import type {
  *   invoke the action on a single message, return the response. No
  *   thread, no history, no persistence.
  * - {@link sendCustom} — free-form one-turn call with a caller-supplied
- *   system prompt against the `Default` profile. Mode (stream vs
- *   one-shot) chosen at call time via `isStream`.
+ *   system prompt. Runs against the caller's `profileId` when supplied,
+ *   otherwise the `Default` profile. Mode (stream vs one-shot) chosen
+ *   at call time via `isStream`.
  */
 // Stamp the round's context scope into the user message before it is
 // persisted: the message blob is the only per-thread storage that needs no
@@ -223,6 +224,24 @@ export class AIEngine {
       }
     }
     return this.assignments.resolveForAction(ActionType.Chat, entityId);
+  }
+
+  /**
+   * Resolve the profile for a {@link sendCustom} call. When `overrideId`
+   * is supplied and live, load it directly from storage — the caller's
+   * profile pick wins over the `Default` slot for this request without
+   * mutating any assignment, mirroring {@link resolveChatProfile}.
+   * Falls back to the `Default` assignment when no override is given or
+   * the id no longer resolves to a live profile.
+   */
+  private async resolveCustomProfile(
+    overrideId: string | undefined
+  ): Promise<ResolvedAssignment> {
+    if (overrideId) {
+      const profile = await this.deps.storage.profiles.readById(overrideId);
+      if (profile) return { profileId: overrideId, profile };
+    }
+    return this.assignments.resolveForAction(ActionType.Default);
   }
 
   async *sendWithStream(input: SendStreamInput): AsyncGenerator<ChatEvent> {
@@ -850,8 +869,9 @@ export class AIEngine {
   ): AsyncGenerator<SendMessageResult> | Promise<ThreadMessageLike> {
     const pick = this.pickFetch.bind(this);
     const attachments = this.deps.storage.attachments;
+    const resolveProfile = () => this.resolveCustomProfile(input.profileId);
     return input.isStream
-      ? runCustomStream(this.assignments, input, pick, attachments)
-      : runCustomOnce(this.assignments, input, pick, attachments);
+      ? runCustomStream(resolveProfile, input, pick, attachments)
+      : runCustomOnce(resolveProfile, input, pick, attachments);
   }
 }

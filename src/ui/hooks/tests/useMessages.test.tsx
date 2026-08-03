@@ -27,6 +27,7 @@ const stores = {
       stores.messageState._abortController = controller;
     }),
     addMessage: vi.fn(),
+    reconcileMessage: vi.fn(),
     updateLastMessage: vi.fn(),
     truncateMessagesAfter: vi.fn(),
     fetchPrevMessages: vi.fn().mockResolvedValue(undefined),
@@ -250,6 +251,68 @@ describe("useMessages.onNew", () => {
       "onStreamEnd",
       expect.any(Object)
     );
+  });
+
+  it("renders the user message optimistically before the stream yields", async () => {
+    stores.profilesState.chatProfile = profile;
+    // Empty stream: nothing comes back from the engine at all. The user
+    // bubble must still appear — proving it's added by `onNew`, not gated
+    // behind a `user-message-stored` event or the tool refresh.
+    apiAi.sendWithStream.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hello" }],
+      } as never);
+    });
+    const calls = stores.messageState.addMessage.mock.calls;
+    expect(calls).toHaveLength(1);
+    const optimistic = calls[0][0] as { role: string; id: string };
+    expect(optimistic.role).toBe("user");
+    expect(optimistic.id).toBeTruthy();
+    // Never a second append; reconciliation happens in place.
+    expect(stores.messageState.reconcileMessage).not.toHaveBeenCalled();
+  });
+
+  it("reconciles the optimistic user message in place, keeping the client id", async () => {
+    stores.profilesState.chatProfile = profile;
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "user-message-stored",
+          message: {
+            role: "user",
+            id: "server-generated-id",
+            content: [{ type: "text", text: "hello" }],
+          },
+          messageId: "server-generated-id",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hello" }],
+      } as never);
+    });
+    // The stored event reconciles in place — no second append.
+    expect(stores.messageState.addMessage).toHaveBeenCalledTimes(1);
+    const optimisticId = (
+      stores.messageState.addMessage.mock.calls[0][0] as { id: string }
+    ).id;
+    const reconcileCalls = stores.messageState.reconcileMessage.mock.calls;
+    expect(reconcileCalls).toHaveLength(1);
+    const [targetId, reconciled] = reconcileCalls[0] as [
+      string,
+      { id: string },
+    ];
+    // Targets the optimistic message and forces the client id back on,
+    // discarding the storage-assigned id — so assistant-ui never sees an
+    // id change (which would fork a phantom branch). This is what keeps
+    // the flow identical for a remote core that assigns its own ids.
+    expect(targetId).toBe(optimisticId);
+    expect(reconciled.id).toBe(optimisticId);
+    expect(reconciled.id).not.toBe("server-generated-id");
   });
 
   it("stops consuming events after abort and finalizes the message as cancelled", async () => {
@@ -864,11 +927,12 @@ describe("useMessages stream branches", () => {
         content: [{ type: "text", text: "hi" }],
       } as never);
     });
-    // No assistant message lands because the only chunk was skipped.
-    // The user message is added by the engine's `user-message-stored`
-    // event, which this test does not emit — so addMessage is never
-    // called.
-    expect(stores.messageState.addMessage).not.toHaveBeenCalled();
+    // The user message is added optimistically in `onNew`. The only
+    // assistant chunk was skipped by middleware, so no assistant message
+    // lands — `addMessage` fires exactly once, for the user turn.
+    const chunkCalls = stores.messageState.addMessage.mock.calls;
+    expect(chunkCalls).toHaveLength(1);
+    expect((chunkCalls[0][0] as { role: string }).role).toBe("user");
     expect(callbacksManager.emit).not.toHaveBeenCalledWith(
       "onStreamStart",
       expect.any(Object)
@@ -925,11 +989,12 @@ describe("useMessages stream branches", () => {
         content: [{ type: "text", text: "hi" }],
       } as never);
     });
-    // No message goes through addMessage: the assistant message is
-    // skipped by middleware, and the user message would land via the
-    // engine's `user-message-stored` event which this test does not
-    // emit.
-    expect(stores.messageState.addMessage).not.toHaveBeenCalled();
+    // The user message is added optimistically in `onNew`; the assistant
+    // message is skipped by `beforeDisplay`. So `addMessage` fires exactly
+    // once, for the user turn only.
+    const displayCalls = stores.messageState.addMessage.mock.calls;
+    expect(displayCalls).toHaveLength(1);
+    expect((displayCalls[0][0] as { role: string }).role).toBe("user");
   });
 
   it("rewrites display when beforeDisplay middleware returns continue with message", async () => {
