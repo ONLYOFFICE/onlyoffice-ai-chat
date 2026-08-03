@@ -268,10 +268,12 @@ export {
 // ---------------------------------------------------------------------------
 
 export type {
+  AddAttachmentOptions,
   AttachmentsStoreState,
   CreateStoresConfig,
   MessageStoreState,
   Page,
+  PendingAttachmentInput,
   ProfilesStoreState,
   PromptsStoreState,
   RouterStoreState,
@@ -279,6 +281,7 @@ export type {
   Stores,
   ThemeStoreState,
   ThreadsStoreState,
+  TPendingAttachment,
 } from "./ui/store";
 export { createStores, StoresProvider, useStores } from "./ui/store";
 
@@ -360,6 +363,7 @@ export {
 export { ManageToolDialog } from "./ui/components/manage-tool-dialog";
 export { ToolFallback } from "./ui/components/tool-fallback";
 export { FileItem } from "./ui/components/file-item";
+export { PendingFileItem } from "./ui/components/file-item/PendingFileItem";
 
 // Markdown
 export { MarkdownText, MarkdownContent } from "./ui/components/markdown";
