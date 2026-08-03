@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SendMessageResult } from "../../../../shared/send-message-args";
 import { AbstractBaseProvider } from "../../../providers";
 import { registerProvider, unregisterProvider } from "../../../providers";
-import { AssignmentsEngine } from "../../assignments";
-import type { StorageAdapter } from "../../../storage";
+import type { Profile } from "../../../types";
+import type { ResolveProfile } from "../custom";
 import { runCustomOnce, runCustomStream } from "../custom";
 
 const sendMessageMock = vi.fn();
@@ -74,23 +74,20 @@ const imageRefMessage: ThreadMessageLike = {
   ],
 };
 
-function makeAssignments() {
+/**
+ * Stub {@link ResolveProfile} — stands in for the engine's
+ * profile-resolution step (explicit `profileId` else `Default`), which
+ * these unit tests don't exercise.
+ */
+function makeResolve(): ResolveProfile {
   const profile = {
     id: "p1",
     name: "P",
     providerType: STUB,
     baseUrl: "https://stub",
     modelId: "m",
-  };
-  const storage = {
-    profiles: {
-      readById: vi.fn(async () => profile),
-    },
-    assignments: {
-      readByType: vi.fn(async () => "p1"),
-    },
-  } as unknown as StorageAdapter;
-  return new AssignmentsEngine({ storage });
+  } as unknown as Profile;
+  return async () => ({ profileId: "p1", profile });
 }
 
 async function* arrayToStream(items: SendMessageResult[]) {
@@ -107,10 +104,10 @@ describe("runCustomStream", () => {
         },
       ])
     );
-    const assignments = makeAssignments();
+    const resolve = makeResolve();
     const collected: SendMessageResult[] = [];
     for await (const item of runCustomStream(
-      assignments,
+      resolve,
       {
         isStream: true,
         systemPrompt: "P",
@@ -129,11 +126,11 @@ describe("runCustomStream", () => {
     sendMessageMock.mockReturnValueOnce(
       arrayToStream([{ role: "assistant", content: [] }])
     );
-    const assignments = makeAssignments();
+    const resolve = makeResolve();
     const attachments = makeAttachments();
     // Drain the stream.
     for await (const _ of runCustomStream(
-      assignments,
+      resolve,
       { isStream: true, systemPrompt: "P", userMessage: imageRefMessage },
       () => undefined,
       attachments
@@ -154,9 +151,9 @@ describe("runCustomStream", () => {
 describe("runCustomOnce", () => {
   it("returns a wrapped assistant message", async () => {
     sendMessageSyncMock.mockResolvedValueOnce("text");
-    const assignments = makeAssignments();
+    const resolve = makeResolve();
     const result = await runCustomOnce(
-      assignments,
+      resolve,
       {
         isStream: false,
         systemPrompt: "P",
@@ -174,10 +171,10 @@ describe("runCustomOnce", () => {
 
   it("hydrates image refs to a data: URL before the provider", async () => {
     sendMessageSyncMock.mockResolvedValueOnce("ok");
-    const assignments = makeAssignments();
+    const resolve = makeResolve();
     const attachments = makeAttachments();
     await runCustomOnce(
-      assignments,
+      resolve,
       { isStream: false, systemPrompt: "P", userMessage: imageRefMessage },
       () => undefined,
       attachments

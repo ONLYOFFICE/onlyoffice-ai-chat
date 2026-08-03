@@ -235,8 +235,12 @@ export type SendInput = {
 
 /**
  * Payload for {@link AIEngine.sendCustom}. Free-form one-turn call with
- * a caller-supplied system prompt. The profile is resolved via the
- * `Default` assignment slot. No thread, no history, no persistence.
+ * a caller-supplied system prompt. No thread, no history, no
+ * persistence.
+ *
+ * The profile is chosen the same way as a chat round: when `profileId`
+ * is supplied and live it wins, otherwise the request falls back to the
+ * `Default` assignment slot.
  *
  * `isStream` toggles between streaming and one-shot modes; method
  * overloads narrow the return type accordingly.
@@ -246,6 +250,15 @@ export type SendCustomInput = {
   systemPrompt: string;
   userMessage: ThreadMessageLike;
   actionArgs?: Omit<ActionArgs, "profile" | "messages">;
+
+  /**
+   * Explicit profile to run this call against. Mirrors
+   * {@link SendStreamInput.profileId}: when set and resolvable it is
+   * loaded directly from storage and wins over the `Default` slot for
+   * this request only. Falls back to `Default` when omitted or when the
+   * id is not found.
+   */
+  profileId?: string;
 };
 
 /**
