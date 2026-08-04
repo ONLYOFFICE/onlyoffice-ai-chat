@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.5.26
+
+### Changed
+
+- **Described tool calls render as plain text, not a card.** When a tool call carries an `aiChatIntent` description, the chat shows just that sentence as a regular paragraph (same size/line-height as chat text) in muted `--text-tertiary`, with vertical spacing — no icon, pill, chevron, or collapsible body. The full tool-call card is kept only for calls without a description.
+
+## 0.5.24
+
+### Changed
+
+- **Tool calls now carry their own description.** Every tool schema sent to the model gains a required `aiChatIntent` argument (one short sentence describing the call). The engine strips it before executing the tool — both core-side and UI-side, covering the remote-core deployment — and the chat renders it as the tool-call label. This replaces the old "narrate before the call" system-prompt instruction, tying the description 1:1 to its call instead of detecting it from a preceding text paragraph. The previous narration / hidden-card path remains as a fallback when the field is absent.
+
+## 0.5.22
+
+### Added
+
+- `showWelcome` / `welcomeTitle` / `welcomeDescription` widget config — control the welcome screen at the top of a new (empty) chat. `showWelcome` is opt-in (hidden by default, set to `true` to render it); the `ThreadWelcome` component reads the flag itself and renders nothing when it is unset. `welcomeTitle` / `welcomeDescription` override the built-in localized strings (`WelcomeTitle` / `WelcomeDescription`) with host-supplied, untranslated text — omit either to keep its built-in string.
+
+```ts
+<AIChatWidget
+  showWelcome
+  welcomeTitle="How can I help?"
+  welcomeDescription="Ask me anything about your documents."
+/>
+```
+
+- **Attachments carry optional form-analysis metadata.** The `Attachment` interface gains `canAnalyze` and `formKeys` (analyzable forms and their field keys), and `addAttachmentFile` now returns the created records so callers can read that metadata.
+
 ## 0.5.21
 
 ### Fixed
@@ -184,16 +212,6 @@ DELETE <server-url>   // header: Mcp-Session-Id: <id>
 - Fewer redundant requests: system MCP servers reuse their session and cached tool list, provider model lists are cached (and reused as the credential-validity signal on save), and the guaranteed-404 Responses-API capability probe is skipped for non-OpenAI providers.
 - Fewer duplicate/concurrent requests on the client: `ProfilesStore.init()` and the servers `getTools()` fetch now coalesce concurrent callers, so several page mounts share one load instead of each firing 2–3×; the redundant widget-level profile init was dropped; and the remote API transport pools in-flight identical `GET` reads.
 ### Added
-
-- `showWelcome` / `welcomeTitle` / `welcomeDescription` widget config — control the welcome screen at the top of a new (empty) chat. `showWelcome` is opt-in (hidden by default, set to `true` to render it); the `ThreadWelcome` component reads the flag itself and renders nothing when it is unset, so the same gating applies wherever it is used. `welcomeTitle` / `welcomeDescription` override the built-in localized strings (`WelcomeTitle` / `WelcomeDescription`) with host-supplied, untranslated text — omit either to keep its built-in string.
-
-```ts
-<AIChatWidget
-  showWelcome
-  welcomeTitle="How can I help?"
-  welcomeDescription="Ask me anything about your documents."
-/>
-```
 
 - `onDropFiles` widget config — takes over file drag-and-drop onto the chat surface. When provided, dropping one or more files hands the raw `File[]` to the callback and the built-in handling (reading images as data URLs / text files as text and attaching them in-memory, silently ignoring binary Office/PDF drops) is skipped entirely. Use it to route every dropped file through the same path as the composer's upload button — e.g. a host that uploads to portal storage and attaches by file id, which also lets binary formats (DOCX/PDF/XLSX) be dropped. The drag-over highlight/overlay is still driven by the widget; only the drop's payload handling is delegated. Omit to keep the built-in read-and-attach behavior.
 

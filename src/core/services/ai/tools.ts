@@ -1,4 +1,5 @@
 import type { TMCPItem } from "../../../shared/mcp-item";
+import { stripToolIntent } from "../../../shared/tool-intent";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { ToolsAdapter } from "../../tools-adapter";
@@ -267,14 +268,25 @@ async function dispatchAdapterTool(
   webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch,
   pickFetch?: ProfileFetchResolver
 ): Promise<unknown> {
+  // Drop the synthetic `aiChatIntent` arg (injected into every tool schema
+  // for the UI label) before the real tool ever sees it. Idempotent — the
+  // UI-side dispatcher strips it too, covering the separate-server deployment
+  // where host tools execute in the browser instead of here.
+  const cleanArgs = stripToolIntent(args);
   if (toolName === "web_search" || toolName === "web_crawling") {
-    return callWebSearchTool(storage, toolName, args, entityId, webSearchFetch);
+    return callWebSearchTool(
+      storage,
+      toolName,
+      cleanArgs,
+      entityId,
+      webSearchFetch
+    );
   }
   if (toolName === "generate_image") {
-    return callImageGenerationTool(storage, toolName, args, pickFetch);
+    return callImageGenerationTool(storage, toolName, cleanArgs, pickFetch);
   }
   if (adapter) {
-    return adapter.callTool(toolName, args, entityId);
+    return adapter.callTool(toolName, cleanArgs, entityId);
   }
   return JSON.stringify({ error: `No dispatcher for tool: ${toolName}` });
 }

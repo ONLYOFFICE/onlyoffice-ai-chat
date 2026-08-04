@@ -1,6 +1,7 @@
 import type { ChatEventBus } from "../providers/EventsProvider";
 import type { PlatformAdapter } from "../providers/PlatformProvider/types";
 import type { TMCPItem } from "../../types";
+import { stripToolIntent } from "../../shared/tool-intent";
 import { CustomServers } from "./sources/CustomServers";
 import { HostToolSource } from "./sources/HostToolSource";
 
@@ -42,10 +43,12 @@ class Servers {
     name: string,
     args: Record<string, unknown>
   ) => {
+    // Strip the synthetic `aiChatIntent` arg before it reaches the real tool.
+    const cleanArgs = stripToolIntent(args);
     if (this.hostToolSource.getGroupIds().includes(type)) {
-      return this.hostToolSource.callTool(name, args);
+      return this.hostToolSource.callTool(name, cleanArgs);
     }
-    return await this.customServers.callToolFromMCP(type, name, args);
+    return await this.customServers.callToolFromMCP(type, name, cleanArgs);
   };
 
   getServerType = (name: string) => {

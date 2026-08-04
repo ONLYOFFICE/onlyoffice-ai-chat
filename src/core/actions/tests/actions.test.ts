@@ -1,6 +1,7 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import { augmentToolsWithIntent } from "../../../shared/tool-intent";
 import { AbstractBaseProvider } from "../../providers";
 import { registerProvider, unregisterProvider } from "../../providers";
 import { chat } from "../chat";
@@ -96,15 +97,20 @@ describe("chat action", () => {
       // drain
     }
 
+    // The chat action injects the synthetic `aiChatIntent` argument into every
+    // tool schema before handing tools to the provider.
     expect(sendMessageMock).toHaveBeenCalledWith({
       messages: args.messages,
       model: profile.modelId,
       systemPrompt: chatSystemPrompt,
-      tools,
+      tools: augmentToolsWithIntent(tools),
       withReasoning: true,
       useResponsesApi: false,
       signal,
     });
+    expect(
+      sendMessageMock.mock.calls[0][0].tools[0].inputSchema.required
+    ).toContain("aiChatIntent");
   });
 
   it("respects the system-prompt 'replace' override", async () => {
