@@ -1,9 +1,9 @@
 import { useMessage } from "@assistant-ui/react";
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useApi } from "../../providers/ApiProvider";
 import { useI18n } from "../../providers/LocalesProvider";
-import { useStores } from "../../store/context";
 import { useToolsContext } from "../../tools/context";
 import { readToolIntent, stripToolIntent } from "../../../shared/tool-intent";
 import { Icon } from "../icon";
@@ -13,6 +13,29 @@ import useCopyToClipboard from "../markdown/hooks/useCopyToClipboard";
 import { ImageGeneratingPlaceholder } from "./image-generating";
 
 const TOOL_CALL_COLOR = "var(--chat-message-tool-call-name-color)";
+
+// Three dots trailing a running tool call's intent line, each fading out and
+// back on a staggered loop — a lightweight "still working" cue. Decorative,
+// so it's hidden from assistive tech.
+const LoadingDots = () => (
+  <span aria-hidden="true">
+    {[0, 0.2, 0.4].map((delay) => (
+      <motion.span
+        key={delay}
+        animate={{ opacity: [1, 0.3, 1] }}
+        transition={{
+          duration: 1.2,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay,
+        }}
+      >
+        .
+      </motion.span>
+    ))}
+  </span>
+);
+
 export const ToolFallback: ToolCallMessagePartComponent = ({
   toolName,
   toolCallId,
@@ -21,12 +44,8 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
 }) => {
   const { t, isRTL } = useI18n();
   const api = useApi();
-  const { useMessageStore } = useStores();
   const { servers: serversInstance } = useToolsContext();
 
-  // True while awaiting the approval dialog — the tool isn't running yet, so
-  // suppress the "Analyzing…" loader in that window.
-  const isToolPending = useMessageStore((s) => s.isToolPending);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const { isCopied: isArgsCopied, copyToClipboard: copyArgs } =
     useCopyToClipboard({ copiedDuration: 2000 });
@@ -165,57 +184,72 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   // which lives outside any message runtime — read the content optionally so
   // the hook returns null there instead of throwing "MessageRuntime is not
   // available". No runtime → no preceding text → the full card shows.
-  const messageContent =
-    useMessage({
-      optional: true,
-      selector: (m: {
-        content: ReadonlyArray<{
-          type: string;
-          text?: string;
-          toolCallId?: string;
-        }>;
-      }) => m.content,
-    }) ?? [];
-  const selfIndex = messageContent.findIndex(
+  const messageContent = useMessage({
+    optional: true,
+    selector: (m: {
+      content: ReadonlyArray<{
+        type: string;
+        text?: string;
+        toolCallId?: string;
+      }>;
+    }) => m.content,
+  });
+  // `null` only when rendered outside a message runtime — i.e. the approval
+  // dialog (manage-tool-dialog). There the reviewer must see the real tool
+  // name and arguments, so always fall through to the full card and skip the
+  // chat-only views (hidden narration / the intent status line).
+  const inMessageRuntime = messageContent !== null;
+  const parts = messageContent ?? [];
+  const selfIndex = parts.findIndex(
     (part) => part.type === "tool-call" && part.toolCallId === toolCallId
   );
   const hasPrecedingText =
     selfIndex > 0 &&
-    messageContent
+    parts
       .slice(0, selfIndex)
       .some(
         (part) =>
           part.type === "text" && !!part.text && part.text.trim().length > 0
       );
 
-  if (hasPrecedingText) {
-    // While the (hidden) tool is still running, keep a lightweight loader so
-    // it's clear the model is working — the narration above says what, this
-    // says it's in progress. Image generation keeps its own placeholder.
-    if (isLoading && !isImagePending && !isToolPending) {
-      return (
-        <div className="my-[8px] flex items-center gap-[8px] text-[var(--chat-message-tool-call-name-color)]">
-          <Loader size={16} />
-          <span>{t("Analyzing")}</span>
-        </div>
-      );
+  // If the model described the call via `aiChatIntent`, that's the canonical
+  // intent line — show it (a muted tertiary sentence + animated dots) while the
+  // call is in flight, even when the model also wrote a preceding text part.
+  // It's a live cue: once the call resolves (or a history-loaded call arrives
+  // already resolved) nothing renders (keep a generated image, if any). Image
+  // generation has its own placeholder. Strip a trailing ellipsis the model
+  // wrote so the dots don't double up.
+  if (inMessageRuntime && toolIntent) {
+    const showDots = isLoading && !isImagePending;
+    if (!showDots) {
+      return imageSlot;
     }
-    return imageSlot;
-  }
-
-  // When the model described the call via `aiChatIntent`, drop all tool-call
-  // chrome (icon, pill, chevron, collapsible body) and render it as a plain,
-  // muted status line — just the sentence in tertiary text.
-  if (toolIntent) {
     return (
       <div className="my-[8px] flex w-full flex-col gap-[8px]">
         {/* Mirror the chat paragraph (`p` in Markdown.utils): inherited base
             font-size + `leading-7` from the message container, `font-normal`.
             Only the color differs — tertiary instead of the message color. */}
-        <p className="font-normal text-[var(--text-tertiary)]">{toolIntent}</p>
+        <p className="font-normal text-[var(--text-tertiary)]">
+          {toolIntent.replace(/[.…\s]+$/, "")}
+          <LoadingDots />
+        </p>
         {imageSlot}
       </div>
     );
+  }
+
+  // No intent field, but the model narrated in a preceding text part (already
+  // visible on its own). While the call runs, trail it with animated dots so
+  // the wait reads as "working"; hide otherwise (keep a generated image).
+  if (inMessageRuntime && hasPrecedingText) {
+    if (isLoading && !isImagePending) {
+      return (
+        <div className="my-[8px] text-[var(--text-tertiary)]">
+          <LoadingDots />
+        </div>
+      );
+    }
+    return imageSlot;
   }
 
   return (

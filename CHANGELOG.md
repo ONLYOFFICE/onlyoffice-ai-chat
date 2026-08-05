@@ -1,6 +1,42 @@
 # Changelog
 
-## 0.5.26
+## 0.5.35
+
+### Changed
+
+- **The `aiChatIntent` line shows whenever it's present, even next to a lead-in text part.** It now takes precedence over the "model narrated in text" hide, so a described call always renders its intent sentence + animated dots while it runs (not just bare dots).
+
+## 0.5.34
+
+### Fixed
+
+- **Animated progress now shows during a narrated tool call.** When the model writes a lead-in sentence before a tool call (common with server-side tools), the call trails animated dots while it runs instead of rendering nothing — the wait no longer looks frozen.
+
+## 0.5.32
+
+### Fixed
+
+- **The tool-call intent line is now visible while the call runs.** It was gated on a "tool pending" flag that stays set through execution, so it never surfaced before the answer arrived. It now animates across the whole in-flight window (arg streaming, approval, execution) and hides once the result is in.
+
+## 0.5.31
+
+### Changed
+
+- **The tool-call intent line appears only while animating.** It shows during the live in-flight window with the progress dots and nothing otherwise (completed calls, loaded history, approval, image generation). The confirmation dialog still renders the full tool-call card.
+
+## 0.5.30
+
+### Fixed
+
+- **The approval dialog shows the full tool-call card again.** Outside a chat message runtime (the confirmation dialog), a described tool call now renders its tool name and arguments for review instead of the one-line `aiChatIntent` status — the intent view is reserved for the message list.
+
+## 0.5.29
+
+### Changed
+
+- **A described tool call shows only while it runs.** The `aiChatIntent` line now trails animated dots as a "still working" cue and hides once the call completes (the model's answer follows). Approval and image generation keep their own indicators.
+
+## 0.5.28
 
 ### Changed
 
