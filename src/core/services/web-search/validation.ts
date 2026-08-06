@@ -2,7 +2,11 @@ import type { TErrorData } from "../../../shared/error-data";
 import type { ProviderFetch } from "../../../shared/provider-credentials";
 import { ProviderErrors } from "../../providers/errors";
 import type { WebSearchConfig } from "../../storage";
-import { normalizeBaseUrl } from "./source";
+import {
+  isExaProvider,
+  isOnlyofficeProvider,
+  normalizeBaseUrl,
+} from "./source";
 
 const TEST_EXA_QUERY = { query: "test", numResults: 1 };
 const TEST_ONLYOFFICE_QUERY = { engine: "exa", query: "test", numResults: 1 };
@@ -20,7 +24,7 @@ export function validateConfigShape(
 
   // Cloud / ONLYOFFICE-style providers route by baseUrl, so it must be
   // present and parseable.
-  if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
+  if (config.isCloudProvider || isOnlyofficeProvider(config.provider)) {
     if (!config.baseUrl) {
       return {
         field: "url",
@@ -63,7 +67,7 @@ export async function testWebSearchConnection(
   const doFetch = fetchImpl ?? fetch;
 
   try {
-    if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
+    if (config.isCloudProvider || isOnlyofficeProvider(config.provider)) {
       const url = new URL("search", normalizeBaseUrl(config.baseUrl ?? ""));
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -78,7 +82,7 @@ export async function testWebSearchConnection(
       return mapResponse(response, !!config.key);
     }
 
-    if (config.provider === "Exa") {
+    if (isExaProvider(config.provider)) {
       const response = await doFetch("https://api.exa.ai/search", {
         method: "POST",
         headers: {

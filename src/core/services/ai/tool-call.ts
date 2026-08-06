@@ -168,6 +168,24 @@ export async function persistGeneratedImage(
 }
 
 /**
+ * Coerce a tool result to the string form the provider requires: a tool
+ * result becomes the `content` of an OpenAI `tool` message, which must be a
+ * string. Library tools already return JSON strings, but a consumer that
+ * approves a structured (object) result via `approveToolCall` would persist a
+ * raw object that the provider gateway rejects with a deserialization error
+ * (Bug 82862). Strings pass through unchanged; everything else is
+ * JSON-serialized.
+ */
+function normalizeToolResult(result: unknown): unknown {
+  if (typeof result === "string") return result;
+  try {
+    return JSON.stringify(result);
+  } catch {
+    return String(result);
+  }
+}
+
+/**
  * Persist `result` onto the assistant message and resume the chat
  * stream with the augmented history.
  *
@@ -205,7 +223,7 @@ export async function* resumeChat(
   // every tool-result path — engine auto-exec (`executeAdapterTool`),
   // UI approve, and deny all funnel through here — so the megabyte-scale
   // base64 never lands in the message and is never re-sent to the model.
-  const result = await persistGeneratedImage(
+  const persisted = await persistGeneratedImage(
     ctx.storage,
     toolCall.toolName,
     input.result,
@@ -215,6 +233,12 @@ export async function* resumeChat(
       entityId: input.entityId,
     }
   );
+
+  // A tool result must reach the provider as a string; a raw object is
+  // rejected by the gateway when it deserializes messages.content (Bug
+  // 82862). Serialize any non-string result before it is persisted and
+  // replayed into the resumed history.
+  const result = normalizeToolResult(persisted);
 
   // Persist the tool result onto the assistant message that issued the
   // call. The UI has already displayed it locally — see the post-

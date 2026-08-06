@@ -79,11 +79,18 @@ vi.mock("../../markdown/hooks/useCopyToClipboard", () => ({
 // card is hidden). Default to empty content so the card always renders;
 // individual tests can push parts onto `mockMessage.content`.
 const mockMessage = { content: [] as unknown[] };
+// Flip on to simulate rendering outside a message runtime (the approval
+// dialog): an optional `useMessage` then resolves to null, like Radix's hook
+// with no runtime present.
+let mockNoRuntime = false;
 vi.mock("@assistant-ui/react", () => ({
   // Supports both call forms the component uses: a bare selector, and the
   // `{ optional, selector }` options object (used so the hook tolerates being
   // rendered outside a message runtime, e.g. the approval dialog).
   useMessage: (param: unknown) => {
+    const isOptions = !!param && typeof param === "object";
+    if (mockNoRuntime && isOptions && (param as { optional?: boolean }).optional)
+      return null;
     const selector =
       typeof param === "function"
         ? (param as (m: { content: unknown[] }) => unknown)
@@ -111,6 +118,7 @@ describe("ToolFallback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMessage.content = [];
+    mockNoRuntime = false;
   });
 
   it("renders tool name (stripped of server type prefix)", () => {
@@ -118,20 +126,97 @@ describe("ToolFallback", () => {
     expect(screen.getByText("my_tool")).toBeInTheDocument();
   });
 
-  it("renders aiChatIntent as plain text without tool-call chrome", () => {
-    render(
+  it("renders a running aiChatIntent as plain text without tool-call chrome", () => {
+    const { container } = render(
       <ToolFallback
         {...defaultProps}
-        argsText={'{"query":"hello","aiChatIntent":"Searching the web…"}'}
-        result="done"
+        argsText={'{"query":"hello","aiChatIntent":"Reading the file"}'}
       />
     );
-    // The intent sentence shows...
-    expect(screen.getByText("Searching the web…")).toBeInTheDocument();
-    // ...and none of the tool-call chrome does (no tool name, no card icons).
+    // running (result undefined) → plain tertiary paragraph, no card chrome.
+    expect(container.querySelector("p")?.textContent).toBe(
+      "Reading the file..."
+    );
     expect(screen.queryByText("my_tool")).not.toBeInTheDocument();
     expect(screen.queryByTestId("icon-tool.called")).not.toBeInTheDocument();
     expect(screen.queryByTestId("icon-code")).not.toBeInTheDocument();
+  });
+
+  it("hides the intent once the call completes (shown only while animating)", () => {
+    const { container } = render(
+      <ToolFallback
+        {...defaultProps}
+        argsText={'{"aiChatIntent":"Searching the web…"}'}
+        result="done"
+      />
+    );
+    // done → nothing animating → the intent line is not rendered at all.
+    expect(container.querySelector("p")).toBeNull();
+    expect(screen.queryByText(/Searching the web/)).not.toBeInTheDocument();
+  });
+
+  it("always renders the full card outside a message runtime (approval dialog)", () => {
+    mockNoRuntime = true;
+    render(
+      <ToolFallback
+        {...defaultProps}
+        argsText={'{"aiChatIntent":"Getting your files"}'}
+      />
+    );
+    // No message runtime (the approval dialog) → show the real tool name/card,
+    // not the model's one-line intent.
+    expect(screen.getByText("my_tool")).toBeInTheDocument();
+    expect(screen.queryByText(/Getting your files/)).not.toBeInTheDocument();
+  });
+
+  it("trails a running intent with dots and strips the model's ellipsis", () => {
+    // `result` is undefined in defaultProps → still running → animated dots are
+    // appended, and the trailing ellipsis the model wrote is stripped so they
+    // don't double up ("Searching the web…" → "Searching the web" + "...").
+    const { container } = render(
+      <ToolFallback
+        {...defaultProps}
+        argsText={'{"aiChatIntent":"Searching the web…"}'}
+      />
+    );
+    expect(container.querySelector("p")?.textContent).toBe(
+      "Searching the web..."
+    );
+  });
+
+  it("shows the intent (before dots) even when the model wrote a preceding text part", () => {
+    // Model wrote a lead-in text part AND filled `aiChatIntent`. The intent
+    // takes precedence over the preceding-text hide → its sentence + dots.
+    mockMessage.content = [
+      { type: "text", text: "Получаю файлы" },
+      { type: "tool-call", toolCallId: "tc-1" },
+    ];
+    const { container } = render(
+      <ToolFallback
+        {...defaultProps}
+        toolCallId="tc-1"
+        argsText={'{"aiChatIntent":"Reading files"}'}
+      />
+    );
+    expect(container.querySelector("p")?.textContent).toBe("Reading files...");
+  });
+
+  it("shows only dots for a narrated call with no intent field", () => {
+    // Preceding text but no `aiChatIntent` → the narration text carries the
+    // description; the tool-call renders just the animated dots while running.
+    mockMessage.content = [
+      { type: "text", text: "Получаю файлы" },
+      { type: "tool-call", toolCallId: "tc-1" },
+    ];
+    const { container } = render(
+      <ToolFallback
+        {...defaultProps}
+        toolCallId="tc-1"
+        argsText={'{"query":"x"}'}
+      />
+    );
+    expect(container.textContent).toBe("...");
+    expect(screen.queryByText("my_tool")).not.toBeInTheDocument();
   });
 
   it("shows loader when result is undefined", () => {

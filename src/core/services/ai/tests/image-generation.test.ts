@@ -125,6 +125,26 @@ describe("image-generation source", () => {
       });
     });
 
+    it("forwards the abort signal to provider.imageGeneration (Bug 82861)", async () => {
+      const imageGeneration = vi.fn().mockResolvedValue("base64-data");
+      providerForMock.mockReturnValue({ imageGeneration });
+      const storage = makeStorage({
+        profileId: "p1",
+        profile: { id: "p1", modelId: "dall-e-3" },
+      });
+      const controller = new AbortController();
+      await callImageGenerationTool(
+        storage,
+        "generate_image",
+        { prompt: "cat" },
+        undefined,
+        controller.signal
+      );
+      expect(imageGeneration).toHaveBeenCalledWith(
+        expect.objectContaining({ signal: controller.signal })
+      );
+    });
+
     it("resolves fetch for its OWN profile via pickFetch and wires it into providerFor", async () => {
       const imageGeneration = vi.fn().mockResolvedValue("base64-data");
       providerForMock.mockReturnValue({ imageGeneration });

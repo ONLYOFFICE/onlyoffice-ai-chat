@@ -227,7 +227,8 @@ export async function* executeAdapterTool(
     args,
     ctx.entityId,
     ctx.webSearchFetch,
-    ctx.pickFetch
+    ctx.pickFetch,
+    ctx.signal
   );
 
   // Note: `generate_image` base64 → attachment-ref swap happens centrally
@@ -266,7 +267,8 @@ async function dispatchAdapterTool(
   args: Record<string, unknown>,
   entityId?: string,
   webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch,
-  pickFetch?: ProfileFetchResolver
+  pickFetch?: ProfileFetchResolver,
+  signal?: AbortSignal
 ): Promise<unknown> {
   // Drop the synthetic `aiChatIntent` arg (injected into every tool schema
   // for the UI label) before the real tool ever sees it. Idempotent — the
@@ -283,7 +285,7 @@ async function dispatchAdapterTool(
     );
   }
   if (toolName === "generate_image") {
-    return callImageGenerationTool(storage, toolName, cleanArgs, pickFetch);
+    return callImageGenerationTool(storage, toolName, cleanArgs, pickFetch, signal);
   }
   if (adapter) {
     return adapter.callTool(toolName, cleanArgs, entityId);

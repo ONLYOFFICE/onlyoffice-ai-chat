@@ -272,5 +272,41 @@ describe("tool-call helpers", () => {
         })
       );
     });
+
+    it("serializes an object tool result to a JSON string before persisting (Bug 82862)", async () => {
+      processStreamMock.mockImplementation(async function* () {
+        yield { type: "message-end" };
+      });
+      const update = vi.fn().mockResolvedValue(undefined);
+      const readByThread = vi.fn().mockResolvedValue([]);
+      const ctx = {
+        storage: { messages: { update, readByThread } },
+      } as never;
+
+      const gen = resumeChat(ctx, {
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: message([toolCallPart()]),
+        result: { temperature: "21C", conditions: "sunny" },
+        profile: { id: "p" } as never,
+        profileId: "p",
+      });
+      for await (const _ of gen) void _;
+
+      expect(update).toHaveBeenCalledWith(
+        "m",
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            expect.objectContaining({
+              result: JSON.stringify({
+                temperature: "21C",
+                conditions: "sunny",
+              }),
+            }),
+          ]),
+        })
+      );
+    });
   });
 });

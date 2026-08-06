@@ -316,6 +316,7 @@ describe("executeAdapterTool", () => {
     callImageGenerationToolMock.mockResolvedValue("image-result");
     resumeChatMock.mockImplementation(async function* () {});
     const pickFetch = vi.fn();
+    const controller = new AbortController();
     const gen = executeAdapterTool(
       makeStorage(),
       undefined,
@@ -336,6 +337,7 @@ describe("executeAdapterTool", () => {
         profileId: "p",
         tools: [],
         pickFetch: pickFetch as never,
+        signal: controller.signal,
       }
     );
     for await (const _ of gen) {
@@ -343,12 +345,14 @@ describe("executeAdapterTool", () => {
     }
     // `pickFetch` reaches the tool so it can resolve `externalFetch` /
     // `fetchProxy` for the image-generation profile (distinct from the
-    // chat profile that issued the call).
+    // chat profile that issued the call), and the chat's abort `signal` is
+    // threaded through so a slow provider call can be cancelled (Bug 82861).
     expect(callImageGenerationToolMock).toHaveBeenCalledWith(
       expect.anything(),
       "generate_image",
       {},
-      pickFetch
+      pickFetch,
+      controller.signal
     );
     // The base64 → attachment-ref swap is centralized in `resumeChat`
     // (covered by tool-call.test.ts), so `executeAdapterTool` forwards the
