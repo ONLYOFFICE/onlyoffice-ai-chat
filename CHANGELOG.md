@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.37
+
+### Added
+
+- `profilePickerReadOnly` widget config — the composer shows the current profile as a plain read-only label (secondary color, combobox text metrics, no dropdown arrow) instead of the interactive picker. Implies the picker area is visible, so the `entityId` default-hide heuristic does not apply; an explicit `hideProfilePicker: true` still hides everything.
+
+```tsx
+<AIChatWidget profilePickerReadOnly ... />
+```
+
+### Fixed
+
+- **i18n sweep across all 41 locales.** Added the missing `CreatingImage` / `Uploading` translations; localized previously hardcoded UI strings (Model field label, "All tools" toggle, MCP config JSON errors, profile create/update errors, default `Chat Export` filename, composer / scroll-to-bottom / logo / dialog a11y labels); removed 5 dead keys (`Ask`, `AskAI`, `Close`, `Name`, `ToolExecuted`).
+
 ## 0.5.35
 
 ### Changed
