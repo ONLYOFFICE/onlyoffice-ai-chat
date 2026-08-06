@@ -1,4 +1,5 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
+import i18n from "i18next";
 import type { AppContext } from "../../app-context";
 import { ActionType } from "../../shared/action-type";
 import logger from "../../shared/logger";
@@ -242,7 +243,7 @@ export function createProfilesStore(deps: {
           return (
             result?.error ?? {
               field: "name",
-              message: "Profile create failed: unexpected response",
+              message: i18n.t("ProfileCreateFailed"),
             }
           );
         }
@@ -282,7 +283,7 @@ export function createProfilesStore(deps: {
           return (
             result?.error ?? {
               field: "name",
-              message: "Profile update failed: unexpected response",
+              message: i18n.t("ProfileUpdateFailed"),
             }
           );
         }

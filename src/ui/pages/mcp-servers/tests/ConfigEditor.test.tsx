@@ -218,7 +218,7 @@ describe("ConfigEditor", () => {
       });
     }
 
-    expect(screen.getByText(/Invalid JSON format/)).toBeInTheDocument();
+    expect(screen.getByText(/InvalidJsonFormat/)).toBeInTheDocument();
   });
 
   it("shows error when valid JSON but no mcpServers key", async () => {

@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CallbacksManager } from "../../providers/EventsProvider";
+
+// The store reads the default export filename from the i18next singleton,
+// which is never initialized in unit tests — resolve the key manually.
+vi.mock("i18next", () => ({
+  default: {
+    t: (key: string) => (key === "ChatExport" ? "Chat Export" : key),
+  },
+}));
 import type { PlatformAdapter } from "../../providers/PlatformProvider/types";
 import type { ServerAPI } from "../../providers/ApiProvider";
 import { createThreadsStore } from "../create-threads-store";

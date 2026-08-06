@@ -1,4 +1,5 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
+import i18n from "i18next";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { CallbacksManager } from "../providers/EventsProvider";
 import type { PlatformAdapter } from "../providers/PlatformProvider/types";
@@ -438,7 +439,7 @@ export function createThreadsStore(deps: {
 
     onDownloadThread: async (id, title) => {
       const messages = await readAllMessages(id);
-      const fileName = removeSpecialCharacter(title || "Chat Export");
+      const fileName = removeSpecialCharacter(title || i18n.t("ChatExport"));
       const content = convertMessagesToMd(messages);
       platform.file?.saveAsFile?.(content, `${fileName}.docx`);
     },
@@ -448,7 +449,7 @@ export function createThreadsStore(deps: {
       const extension =
         formats.find((f) => f.id === formatId)?.extension || "docx";
       const messages = await readAllMessages(id);
-      const fileName = removeSpecialCharacter(title || "Chat Export");
+      const fileName = removeSpecialCharacter(title || i18n.t("ChatExport"));
       const content = convertMessagesToMd(messages);
       platform.file?.saveAsFile?.(
         content,

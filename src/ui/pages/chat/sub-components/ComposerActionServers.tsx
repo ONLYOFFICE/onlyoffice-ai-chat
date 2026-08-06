@@ -116,7 +116,7 @@ const ServersSettings = () => {
             },
             subMenu: [
               {
-                text: "All tools",
+                text: t("AllTools"),
                 onClick: () => {
                   // ignore
                 },

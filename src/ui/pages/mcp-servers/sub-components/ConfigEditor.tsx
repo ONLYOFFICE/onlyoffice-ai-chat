@@ -66,8 +66,8 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
         return false;
       } catch (err) {
         setError(
-          `Invalid JSON format\n ${
-            err instanceof Error ? err.message : "Unknown error"
+          `${t("InvalidJsonFormat")}\n ${
+            err instanceof Error ? err.message : t("UnknownError")
           }`
         );
         setIsValidJson(false);

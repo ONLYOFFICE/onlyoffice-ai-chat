@@ -17,7 +17,8 @@ describe("ProviderLogo", () => {
     render(<ProviderLogo providerType="openai" />);
     const img = screen.getByRole("img");
     expect(img).toHaveAttribute("src", "/img/openai.png");
-    expect(img).toHaveAttribute("alt", "model logo");
+    // The global test setup mocks useI18n's t to return the key itself.
+    expect(img).toHaveAttribute("alt", "ModelLogo");
   });
 
   it("sets image dimensions", () => {
