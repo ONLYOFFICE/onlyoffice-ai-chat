@@ -132,6 +132,60 @@ describe("SelectModel", () => {
   });
 });
 
+describe("SelectModel profilePickerReadOnly", () => {
+  beforeEach(() => {
+    mockSetSessionChatProfile.mockClear();
+  });
+
+  const renderReadOnly = () =>
+    render(
+      <WidgetConfigProvider config={{ profilePickerReadOnly: true }}>
+        <SelectModel />
+      </WidgetConfigProvider>
+    );
+
+  it("renders the profile name as static text instead of the combobox", () => {
+    setupStores({
+      profiles: [{ id: "1", name: "GPT-4" }],
+      currentProfile: { id: "1", name: "GPT-4" },
+    });
+    renderReadOnly();
+    const label = screen.getByTestId("model-selector-readonly");
+    expect(label.textContent).toBe("GPT-4");
+    expect(screen.queryByTestId("combo-box")).not.toBeInTheDocument();
+  });
+
+  it("uses the secondary text color and the combobox text metrics", () => {
+    setupStores({
+      profiles: [{ id: "1", name: "GPT-4" }],
+      currentProfile: { id: "1", name: "GPT-4" },
+    });
+    renderReadOnly();
+    const label = screen.getByTestId("model-selector-readonly");
+    expect(label.className).toContain("text-[var(--text-secondary)]");
+    expect(label.className).toContain("leading-[var(--lh-16)]");
+    expect(label.className).toContain("truncate");
+  });
+
+  it("renders nothing when no profile is selected", () => {
+    setupStores({ profiles: [], currentProfile: null });
+    const { container } = renderReadOnly();
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("still auto-selects the first chat profile", () => {
+    setupStores({
+      profiles: [{ id: "1", name: "GPT-4" }],
+      currentProfile: null,
+    });
+    renderReadOnly();
+    expect(mockSetSessionChatProfile).toHaveBeenCalledWith(
+      { id: "1", name: "GPT-4" },
+      undefined
+    );
+  });
+});
+
 describe("SelectModel profilePickerActions", () => {
   beforeEach(() => {
     mockSetSessionChatProfile.mockClear();

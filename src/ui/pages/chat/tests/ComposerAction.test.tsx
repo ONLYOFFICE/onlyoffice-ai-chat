@@ -30,6 +30,7 @@ import { ComposerAction } from "../sub-components/ComposerAction";
 
 function setupWidgetConfig(overrides?: {
   hideProfilePicker?: boolean;
+  profilePickerReadOnly?: boolean;
   entityId?: string;
 }) {
   // `hideProfilePicker` is tri-state: an omitted flag must reach the
@@ -37,6 +38,7 @@ function setupWidgetConfig(overrides?: {
   // don't coerce it to `false` (which means "force-show") here.
   mockUseWidgetConfig.mockReturnValue({
     hideProfilePicker: overrides?.hideProfilePicker,
+    profilePickerReadOnly: overrides?.profilePickerReadOnly,
     entityId: overrides?.entityId,
   });
 }
@@ -121,5 +123,23 @@ describe("ComposerAction", () => {
     expect(
       screen.getByTestId("composer-action-select-model")
     ).toBeInTheDocument();
+  });
+
+  it("shows the selector in entity mode when profilePickerReadOnly is true", () => {
+    // Read-only mode means "display the profile", so it overrides the
+    // entity default-hide heuristic.
+    setupWidgetConfig({ entityId: "e1", profilePickerReadOnly: true });
+    render(<ComposerAction />);
+    expect(
+      screen.getByTestId("composer-action-select-model")
+    ).toBeInTheDocument();
+  });
+
+  it("hides the selector when hideProfilePicker is true despite profilePickerReadOnly", () => {
+    setupWidgetConfig({ hideProfilePicker: true, profilePickerReadOnly: true });
+    render(<ComposerAction />);
+    expect(
+      screen.queryByTestId("composer-action-select-model")
+    ).not.toBeInTheDocument();
   });
 });

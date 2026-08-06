@@ -63,6 +63,18 @@ export interface WidgetConfig {
    */
   hideProfilePicker?: boolean;
   /**
+   * Render the composer's model (profile) picker as read-only: the current
+   * profile's name is shown as plain static text (secondary color, no
+   * dropdown arrow) and cannot be changed from the UI. The profile is still
+   * resolved from the profiles store, so hosts that fix the profile
+   * programmatically can surface which model answers without letting the
+   * user switch it. Implies the picker area is visible, so the
+   * {@link WidgetConfig.entityId} default-hide heuristic does not apply;
+   * an explicit {@link WidgetConfig.hideProfilePicker} `true` still hides
+   * everything.
+   */
+  profilePickerReadOnly?: boolean;
+  /**
    * Hide the floating "scroll to bottom" button in the chat thread. The
    * button sits just above the composer and appears only while the thread is
    * scrolled up, hiding itself once the user is back at the latest message.
