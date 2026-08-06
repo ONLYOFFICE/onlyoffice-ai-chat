@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.38
+
+- Package re-release of 0.5.37, no source changes — an earlier 0.5.37 tarball predated the i18n sweep, so the version is bumped to guarantee hosts pick up the final package.
+
 ## 0.5.37
 
 ### Added
