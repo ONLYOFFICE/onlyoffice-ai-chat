@@ -82,6 +82,7 @@ function makeStorage() {
         return thread;
       }),
       readAll: vi.fn(async () => [...threads]),
+      readById: vi.fn(async () => null),
       update: vi.fn(),
       touch: vi.fn(),
       delete: vi.fn(),
@@ -748,6 +749,42 @@ describe("AIEngine.regenerateStream", () => {
     expect(storage.assignments.readByType).toHaveBeenCalledWith(
       ActionType.Chat,
       "e1"
+    );
+  });
+});
+
+describe("AIEngine profile persistence (Bug 82860)", () => {
+  it("keeps the thread's stored profile when sendWithStream omits profileId", async () => {
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    (
+      storage.threads.readById as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce({
+      threadId: "t1",
+      title: "x",
+      lastEditDate: 0,
+      profileId: "thread-profile",
+    });
+    (
+      storage.messages.readByThread as ReturnType<typeof vi.fn>
+    ).mockResolvedValueOnce([]);
+
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      threadId: "t1",
+      userMessage,
+    })) {
+      // drain
+    }
+
+    // The thread's own profile is recovered and used for the round — not the
+    // Chat assignment, which would overwrite the thread's model. (readByType
+    // is still consulted for the ImageGeneration tool slot, so assert only
+    // that the Chat slot was never resolved.)
+    expect(storage.profiles.readById).toHaveBeenCalledWith("thread-profile");
+    expect(storage.assignments.readByType).not.toHaveBeenCalledWith(
+      ActionType.Chat,
+      undefined
     );
   });
 });

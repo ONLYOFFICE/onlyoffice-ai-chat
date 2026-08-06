@@ -252,7 +252,12 @@ export class AIEngine {
     );
     const { profileId, profile } = await this.resolveChatProfile(
       input.profileId,
-      contextScope
+      contextScope,
+      // Recover the thread's own model when the caller omits profileId, so a
+      // message sent without an explicit pick keeps the thread's stored
+      // profile instead of overwriting it with the Chat/Default assignment
+      // (Bug 82860). Undefined for a brand-new thread — the assignment wins.
+      input.threadId
     );
 
     let threadId = input.threadId ?? "";
@@ -504,7 +509,8 @@ export class AIEngine {
     const contextScope = input.contextEntityId ?? input.entityId;
     const { profile } = await this.resolveChatProfile(
       input.profileId,
-      contextScope
+      contextScope,
+      input.threadId
     );
     yield* toOpenAIChatCompletionStream(this.sendWithStream(input), {
       model: profile.modelId,
@@ -524,7 +530,12 @@ export class AIEngine {
     const contextScope = input.contextEntityId ?? input.entityId;
     const { profileId, profile } = await this.resolveChatProfile(
       input.profileId,
-      contextScope
+      contextScope,
+      // Recover the thread's own model when the caller omits profileId, so a
+      // message sent without an explicit pick keeps the thread's stored
+      // profile instead of overwriting it with the Chat/Default assignment
+      // (Bug 82860). Undefined for a brand-new thread — the assignment wins.
+      input.threadId
     );
 
     const stored = await this.readAllMessages(input.threadId);
