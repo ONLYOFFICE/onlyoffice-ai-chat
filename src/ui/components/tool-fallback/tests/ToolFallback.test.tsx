@@ -89,7 +89,11 @@ vi.mock("@assistant-ui/react", () => ({
   // rendered outside a message runtime, e.g. the approval dialog).
   useMessage: (param: unknown) => {
     const isOptions = !!param && typeof param === "object";
-    if (mockNoRuntime && isOptions && (param as { optional?: boolean }).optional)
+    if (
+      mockNoRuntime &&
+      isOptions &&
+      (param as { optional?: boolean }).optional
+    )
       return null;
     const selector =
       typeof param === "function"
@@ -217,6 +221,48 @@ describe("ToolFallback", () => {
     );
     expect(container.textContent).toBe("...");
     expect(screen.queryByText("my_tool")).not.toBeInTheDocument();
+  });
+
+  it("shows only dots while the args are still streaming (unparsable prefix)", () => {
+    // Providers stream tool-call arguments fragment by fragment, so mid-call
+    // `argsText` is an unparsable JSON prefix and the intent isn't readable
+    // yet. The card must not flash during that window — just the dots.
+    const { container } = render(
+      <ToolFallback
+        {...defaultProps}
+        argsText='{"query":"hel'
+        result={undefined}
+      />
+    );
+    expect(container.textContent).toBe("...");
+    expect(screen.queryByText("my_tool")).not.toBeInTheDocument();
+  });
+
+  it("shows the image placeholder while generate_image args are streaming", () => {
+    render(
+      <ToolFallback
+        {...defaultProps}
+        toolName="custom_generate_image"
+        argsText='{"prompt":"a ca'
+        result={undefined}
+      />
+    );
+    expect(screen.getByText("CreatingImage")).toBeInTheDocument();
+    expect(screen.queryByText("generate_image")).not.toBeInTheDocument();
+  });
+
+  it("still renders the card outside a message runtime while args stream", () => {
+    // The approval dialog renders ToolFallback with no message runtime — the
+    // reviewer must always see the real tool name, streaming or not.
+    mockNoRuntime = true;
+    render(
+      <ToolFallback
+        {...defaultProps}
+        argsText='{"query":"hel'
+        result={undefined}
+      />
+    );
+    expect(screen.getByText("my_tool")).toBeInTheDocument();
   });
 
   it("shows loader when result is undefined", () => {
