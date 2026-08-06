@@ -16,6 +16,20 @@ export function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
 }
 
+/**
+ * Provider ids reach the engine with inconsistent casing — the DocSpace API
+ * sends lowercase ("exa", "onlyoffice") while the widget UI uses "Exa" /
+ * "ONLYOFFICE". Match case-insensitively so a documented provider is never
+ * rejected as unknown (Bug 82811).
+ */
+export function isExaProvider(provider: string): boolean {
+  return provider.trim().toLowerCase() === "exa";
+}
+
+export function isOnlyofficeProvider(provider: string): boolean {
+  return provider.trim().toLowerCase() === "onlyoffice";
+}
+
 /** Abort a hung request instead of waiting on the provider indefinitely. */
 const REQUEST_TIMEOUT_MS = 15_000;
 /** Total attempts (1 initial + retries) on transient network failures. */
@@ -156,7 +170,7 @@ async function webSearch(
   fetchImpl?: ProviderFetch
 ): Promise<string> {
   const doFetch = fetchImpl ?? fetch;
-  if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
+  if (config.isCloudProvider || isOnlyofficeProvider(config.provider)) {
     try {
       const baseUrl =
         config.baseUrl || (config.isCloudProvider ? config.provider : "");
@@ -181,7 +195,7 @@ async function webSearch(
       return JSON.stringify({ error: errorMessage(e) });
     }
   }
-  if (config.provider === "Exa") {
+  if (isExaProvider(config.provider)) {
     try {
       const response = await fetchWithRetry(doFetch, "https://api.exa.ai/search", {
         method: "POST",
@@ -211,7 +225,7 @@ async function webCrawling(
   fetchImpl?: ProviderFetch
 ): Promise<string> {
   const doFetch = fetchImpl ?? fetch;
-  if (config.isCloudProvider || config.provider === "ONLYOFFICE") {
+  if (config.isCloudProvider || isOnlyofficeProvider(config.provider)) {
     try {
       const baseUrl =
         config.baseUrl || (config.isCloudProvider ? config.provider : "");
@@ -232,7 +246,7 @@ async function webCrawling(
       return JSON.stringify({ error: errorMessage(e) });
     }
   }
-  if (config.provider === "Exa") {
+  if (isExaProvider(config.provider)) {
     try {
       const response = await fetchWithRetry(
         doFetch,

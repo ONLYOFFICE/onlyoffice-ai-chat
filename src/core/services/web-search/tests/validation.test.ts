@@ -152,3 +152,30 @@ describe("testWebSearchConnection unknown provider", () => {
     expect(r.message).toMatch(/Unknown web-search provider/);
   });
 });
+
+describe("provider name is case-insensitive (Bug 82811)", () => {
+  it("recognizes a lowercase 'exa' provider", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("{}", { status: 200 }));
+    expect(await testWebSearchConnection({ provider: "exa", key: "k" })).toBe(
+      true
+    );
+    expect(String(fetchMock.mock.calls[0][0])).toContain("api.exa.ai");
+  });
+
+  it("recognizes a lowercase 'onlyoffice' provider", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("", { status: 200 }));
+    const r = await testWebSearchConnection({
+      provider: "onlyoffice",
+      baseUrl: "https://o.example",
+      key: "tok",
+    });
+    expect(r).toBe(true);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/search");
+  });
+
+  it("validateConfigShape treats lowercase 'onlyoffice' as a cloud provider", () => {
+    expect(validateConfigShape({ provider: "onlyoffice" })?.message).toBe(
+      "Base URL is required for cloud provider"
+    );
+  });
+});
