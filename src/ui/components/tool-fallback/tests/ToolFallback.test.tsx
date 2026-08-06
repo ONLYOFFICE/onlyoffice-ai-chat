@@ -24,6 +24,13 @@ vi.mock("../../../tools/context", () => ({
   }),
 }));
 
+vi.mock("../../../store/context", () => ({
+  useStores: () => ({
+    useMessageStore: (selector: (s: { isToolPending: boolean }) => unknown) =>
+      selector({ isToolPending: false }),
+  }),
+}));
+
 vi.mock("../../icon", () => ({
   Icon: ({
     name,
@@ -73,8 +80,17 @@ vi.mock("../../markdown/hooks/useCopyToClipboard", () => ({
 // individual tests can push parts onto `mockMessage.content`.
 const mockMessage = { content: [] as unknown[] };
 vi.mock("@assistant-ui/react", () => ({
-  useMessage: (selector: (m: { content: unknown[] }) => unknown) =>
-    selector(mockMessage),
+  // Supports both call forms the component uses: a bare selector, and the
+  // `{ optional, selector }` options object (used so the hook tolerates being
+  // rendered outside a message runtime, e.g. the approval dialog).
+  useMessage: (param: unknown) => {
+    const selector =
+      typeof param === "function"
+        ? (param as (m: { content: unknown[] }) => unknown)
+        : (param as { selector?: (m: { content: unknown[] }) => unknown })
+            ?.selector;
+    return selector ? selector(mockMessage) : mockMessage;
+  },
 }));
 
 import { ToolFallback } from "../index";
@@ -100,6 +116,22 @@ describe("ToolFallback", () => {
   it("renders tool name (stripped of server type prefix)", () => {
     render(<ToolFallback {...defaultProps} />);
     expect(screen.getByText("my_tool")).toBeInTheDocument();
+  });
+
+  it("renders aiChatIntent as plain text without tool-call chrome", () => {
+    render(
+      <ToolFallback
+        {...defaultProps}
+        argsText={'{"query":"hello","aiChatIntent":"Searching the web…"}'}
+        result="done"
+      />
+    );
+    // The intent sentence shows...
+    expect(screen.getByText("Searching the web…")).toBeInTheDocument();
+    // ...and none of the tool-call chrome does (no tool name, no card icons).
+    expect(screen.queryByText("my_tool")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("icon-tool.called")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("icon-code")).not.toBeInTheDocument();
   });
 
   it("shows loader when result is undefined", () => {

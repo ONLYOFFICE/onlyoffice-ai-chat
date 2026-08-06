@@ -3,7 +3,9 @@ import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
 import { useEffect, useState } from "react";
 import { useApi } from "../../providers/ApiProvider";
 import { useI18n } from "../../providers/LocalesProvider";
+import { useStores } from "../../store/context";
 import { useToolsContext } from "../../tools/context";
+import { readToolIntent, stripToolIntent } from "../../../shared/tool-intent";
 import { Icon } from "../icon";
 import { IconButton } from "../icon-button";
 import { Loader } from "../loader";
@@ -19,7 +21,12 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
 }) => {
   const { t, isRTL } = useI18n();
   const api = useApi();
+  const { useMessageStore } = useStores();
   const { servers: serversInstance } = useToolsContext();
+
+  // True while awaiting the approval dialog — the tool isn't running yet, so
+  // suppress the "Analyzing…" loader in that window.
+  const isToolPending = useMessageStore((s) => s.isToolPending);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const { isCopied: isArgsCopied, copyToClipboard: copyArgs } =
     useCopyToClipboard({ copiedDuration: 2000 });
@@ -38,13 +45,19 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   let webSearchName = "";
 
   let argsTextFinal = argsText;
+  let toolIntent: string | undefined;
 
   try {
     const parsedArgs = JSON.parse(argsTextFinal);
 
-    if (parsedArgs.args) {
-      argsTextFinal = JSON.stringify(parsedArgs.args);
-    }
+    // Some providers wrap the real arguments in an `args` envelope.
+    const inner = parsedArgs?.args ? parsedArgs.args : parsedArgs;
+
+    // The synthetic `aiChatIntent` field (injected into every tool schema)
+    // carries the model's one-line description of the call. Use it as the
+    // label, then strip it so it never leaks into the raw arguments view.
+    toolIntent = readToolIntent(inner);
+    argsTextFinal = JSON.stringify(stripToolIntent(inner));
 
     webSearchName = argsTextFinal
       ? isWebSearch
@@ -148,7 +161,21 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   // call in the same message, the tool-call card is redundant chrome — hide
   // it. If the model didn't narrate (weaker models), the card still shows as
   // a fallback. A generated image (or its loading placeholder) is always kept.
-  const messageContent = useMessage((m) => m.content);
+  // `ToolFallback` also renders in the approval dialog (manage-tool-dialog),
+  // which lives outside any message runtime — read the content optionally so
+  // the hook returns null there instead of throwing "MessageRuntime is not
+  // available". No runtime → no preceding text → the full card shows.
+  const messageContent =
+    useMessage({
+      optional: true,
+      selector: (m: {
+        content: ReadonlyArray<{
+          type: string;
+          text?: string;
+          toolCallId?: string;
+        }>;
+      }) => m.content,
+    }) ?? [];
   const selfIndex = messageContent.findIndex(
     (part) => part.type === "tool-call" && part.toolCallId === toolCallId
   );
@@ -156,10 +183,39 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
     selfIndex > 0 &&
     messageContent
       .slice(0, selfIndex)
-      .some((part) => part.type === "text" && part.text.trim().length > 0);
+      .some(
+        (part) =>
+          part.type === "text" && !!part.text && part.text.trim().length > 0
+      );
 
   if (hasPrecedingText) {
+    // While the (hidden) tool is still running, keep a lightweight loader so
+    // it's clear the model is working — the narration above says what, this
+    // says it's in progress. Image generation keeps its own placeholder.
+    if (isLoading && !isImagePending && !isToolPending) {
+      return (
+        <div className="my-[8px] flex items-center gap-[8px] text-[var(--chat-message-tool-call-name-color)]">
+          <Loader size={16} />
+          <span>{t("Analyzing")}</span>
+        </div>
+      );
+    }
     return imageSlot;
+  }
+
+  // When the model described the call via `aiChatIntent`, drop all tool-call
+  // chrome (icon, pill, chevron, collapsible body) and render it as a plain,
+  // muted status line — just the sentence in tertiary text.
+  if (toolIntent) {
+    return (
+      <div className="my-[8px] flex w-full flex-col gap-[8px]">
+        {/* Mirror the chat paragraph (`p` in Markdown.utils): inherited base
+            font-size + `leading-7` from the message container, `font-normal`.
+            Only the color differs — tertiary instead of the message color. */}
+        <p className="font-normal text-[var(--text-tertiary)]">{toolIntent}</p>
+        {imageSlot}
+      </div>
+    );
   }
 
   return (

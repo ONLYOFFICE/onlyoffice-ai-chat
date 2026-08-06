@@ -1,4 +1,5 @@
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import { augmentToolsWithIntent } from "../../../shared/tool-intent";
 import { providerFor } from "../provider";
 import { resolveSystemPrompt } from "../system-prompt";
 import type { ActionArgs } from "../types";
@@ -30,7 +31,7 @@ export async function* chat(
     messages: args.messages,
     model: args.profile.modelId,
     systemPrompt: baseSystem,
-    tools: args.tools,
+    tools: args.tools ? augmentToolsWithIntent(args.tools) : args.tools,
     withReasoning: args.isReasoning,
     useResponsesApi: args.profile.useResponsesApi === true,
     signal: args.signal,
