@@ -75,7 +75,8 @@ export async function callImageGenerationTool(
   storage: StorageAdapter,
   bareName: string,
   args: Record<string, unknown>,
-  pickFetch?: ProfileFetchResolver
+  pickFetch?: ProfileFetchResolver,
+  signal?: AbortSignal
 ): Promise<string> {
   logger.info("[generate_image] tool called", { bareName, args });
 
@@ -121,9 +122,14 @@ export async function callImageGenerationTool(
         error: "Image generation provider is not configured.",
       });
     }
+    // Forward the chat's abort signal so a slow or unresponsive image
+    // provider is cancelled when the client disconnects or the stream times
+    // out — otherwise the awaited call never settles and the whole stream
+    // hangs on an unprocessed tool call (Bug 82861).
     const base64 = await provider.imageGeneration({
       model: profile.modelId,
       prompt,
+      signal,
     });
     return JSON.stringify({ data: { base64 } });
   } catch (e) {
