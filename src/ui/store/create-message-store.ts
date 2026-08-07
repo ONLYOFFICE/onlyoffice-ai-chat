@@ -42,6 +42,23 @@ export interface MessageStoreState {
    * - string — the context entity the conversation last ran against.
    */
   threadContextEntityId?: string | null;
+  /**
+   * Monotonic epoch of the message list's identity. A streaming round
+   * captures it when it starts; {@link orphanStreams} bumps it whenever
+   * the active thread changes underneath the store, telling any in-flight
+   * round that it no longer owns the list and must stop writing display
+   * updates into it.
+   */
+  _streamEpoch: number;
+  /**
+   * Detach any in-flight streaming round from this store: bump
+   * {@link _streamEpoch} (rounds drop their display writes once it moves)
+   * and reset the busy flags so the newly shown thread does not inherit
+   * the orphaned round's "streaming" composer state. The orphaned round
+   * itself keeps draining in the background — its output is persisted by
+   * the engine and shows up when its thread is opened again.
+   */
+  orphanStreams: () => void;
   /** Abort controller for the in-flight streaming request, if any. */
   _abortController?: AbortController;
   /** Set the streaming flag. */
@@ -129,9 +146,25 @@ export function createMessageStore(deps: {
     isToolPending: false,
     _currentThreadId: null,
     threadContextEntityId: undefined,
+    _streamEpoch: 0,
     _abortController: undefined,
 
+    orphanStreams: () => {
+      set((s) => ({
+        _streamEpoch: s._streamEpoch + 1,
+        isStreamRunning: false,
+        isRequestRunning: false,
+        isToolPending: false,
+      }));
+    },
+
     fetchPrevMessages: async (threadId: string) => {
+      // Loading a thread from storage makes this store show that thread's
+      // authoritative state — a round still streaming into the previous
+      // list (e.g. an image generation running when the user switches
+      // threads) must detach first, or its tail would surface as orphaned
+      // messages inside the freshly loaded thread.
+      get().orphanStreams();
       set({ _currentThreadId: threadId, threadContextEntityId: undefined });
       const fetchedMessages = await readAllMessages(threadId);
       const current = get();

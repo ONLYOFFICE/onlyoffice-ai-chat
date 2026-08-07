@@ -332,7 +332,7 @@ describe("ServersSettings", () => {
       }[];
       const serverItem = items.find((i) => i.text === "my-server")!;
       expect(serverItem.subMenu).toHaveLength(4); // All tools + separator + tool-a + tool-b
-      expect(serverItem.subMenu![0].text).toBe("All tools");
+      expect(serverItem.subMenu![0].text).toBe("AllTools");
       expect(serverItem.subMenu![0].withToggle).toBe(true);
       expect(serverItem.subMenu![1].text).toBe(""); // separator
       expect(serverItem.subMenu![2].text).toBe("tool-a");

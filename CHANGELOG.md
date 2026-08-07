@@ -56,7 +56,42 @@
 - The Add/Edit model form now keeps uniform spacing in the horizontal layout regardless of whether a field has an action link. `FieldContainer` gained an opt-in `reserveActionSpace` prop (used by the model form) that reserves a fixed-height action zone (`--field-container-action-height`) above each field, so a link like "Get API key" appears/disappears inside it without shifting the layout — previously only the API-key field reserved that space (via a spacer), making the Provider→API-key gap larger than the rest. Other horizontal `FieldContainer` usages (e.g. Model Assignment, Web Search) are unaffected. In the vertical layout that spacer only made the API-key header taller than the other fields (the label already sets the row height), so it was dropped and the headers now line up.
 
 
-## 0.5.26
+## 0.5.41
+
+### Fixed
+
+- **A streaming round no longer leaks its output into another chat.** Switching the active thread mid-stream — a host re-scope via `entityId` (e.g. navigating between sections), a sidebar thread switch, or an explicit new chat — now detaches the in-flight round: it keeps draining so the engine finishes and persists the reply, but stops writing display updates. Previously an image generation started before navigating away resurfaced as a lone assistant message inside the fresh empty chat, with the prior history seemingly gone (it was intact in the original thread all along). The busy flags reset on the switch so the composer unblocks immediately, and a late `thread-title` can no longer hijack the new scope's thread list.
+
+## 0.5.40
+
+### Changed
+
+- **The image-generation placeholder is now alive under the pointer.** The static "Creating image" label is replaced with a running m:ss elapsed timer (the label moved to `aria-label`, so the placeholder still announces itself), and moving the pointer over the box spawns expanding rings in the halftone masks — the dots ripple out from the cursor. Rings are throttled by time and distance and capped, so a fast sweep can't flood the masks. Dot radii are finer and layer opacities slightly higher.
+
+## 0.5.39
+
+### Fixed
+
+- **No more raw tool-card flash while a call's arguments stream in.** Mid-stream `argsText` is an unparsable JSON prefix, so the `aiChatIntent` label wasn't readable yet and the fallback card flashed before switching to the intent line. While arguments stream, the widget now shows the pending view instead — the animated placeholder for `generate_image`, animated dots for other tools.
+
+## 0.5.38
+
+- Package re-release of 0.5.37, no source changes — an earlier 0.5.37 tarball predated the i18n sweep, so the version is bumped to guarantee hosts pick up the final package.
+
+## 0.5.37
+
+### Added
+
+- `profilePickerReadOnly` widget config — the composer shows the current profile as a plain read-only label (secondary color, combobox text metrics, no dropdown arrow) instead of the interactive picker. Implies the picker area is visible, so the `entityId` default-hide heuristic does not apply; an explicit `hideProfilePicker: true` still hides everything.
+
+```tsx
+<AIChatWidget profilePickerReadOnly ... />
+```
+
+### Fixed
+
+- **i18n sweep across all 41 locales.** Added the missing `CreatingImage` / `Uploading` translations; localized previously hardcoded UI strings (Model field label, "All tools" toggle, MCP config JSON errors, profile create/update errors, default `Chat Export` filename, composer / scroll-to-bottom / logo / dialog a11y labels); removed 5 dead keys (`Ask`, `AskAI`, `Close`, `Name`, `ToolExecuted`).
+
 ## 0.5.35
 
 ### Changed

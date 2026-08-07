@@ -146,6 +146,7 @@ const ThreadInner = () => {
                 <ThreadPrimitive.ScrollToBottom asChild>
                   <button
                     type="button"
+                    aria-label={t("ScrollToBottom")}
                     className="scroll-to-bottom-btn pointer-events-auto m-0 box-border flex items-center justify-center border p-0 leading-none transition-opacity duration-150 disabled:pointer-events-none disabled:opacity-0"
                   >
                     <Icon

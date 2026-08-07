@@ -104,7 +104,7 @@ const Composer = () => {
           className="composer-input max-h-[calc(50vh)] min-h-[var(--chat-input-min-height,20px)] w-full resize-none outline-none select-text px-[4px]"
           rows={1}
           autoFocus
-          aria-label="Message input"
+          aria-label={t("MessageInput")}
           disabled={!currentProfile || composerDisabled}
           data-testid="composer-input"
           onKeyDown={(e) => {

@@ -9,13 +9,14 @@ import { DialogOverlay } from "./DialogOverlay";
 import { DialogPortal } from "./DialogPortal";
 import { DialogTitle } from "./DialogTitle";
 
-const HiddenComponents = () => (
-  <>
+const HiddenComponents = () => {
+  const { t } = useI18n();
+  return (
     <DialogPrimitive.Description className="hidden">
-      Dialog content
+      {t("DialogContent")}
     </DialogPrimitive.Description>
-  </>
-);
+  );
+};
 
 export type DialogContentProps = React.ComponentProps<
   typeof DialogPrimitive.Content

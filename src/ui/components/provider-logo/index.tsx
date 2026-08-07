@@ -1,4 +1,5 @@
 import { useImages } from "../../providers/ImagesProvider";
+import { useI18n } from "../../providers/LocalesProvider";
 import { useTheme } from "../../providers/ThemeProvider";
 import { cn } from "../../../shared/utils";
 import type { ProviderType } from "../../../types";
@@ -14,6 +15,7 @@ export const ProviderLogo = ({
 }: ProviderLogoProps) => {
   const { getProviderImageSrc } = useImages();
   const { themeType } = useTheme();
+  const { t } = useI18n();
 
   return (
     <div
@@ -24,7 +26,7 @@ export const ProviderLogo = ({
     >
       <img
         src={getProviderImageSrc(providerType, themeType)}
-        alt="model logo"
+        alt={t("ModelLogo")}
         className="w-[var(--model-card-logo-image-size,18px)] h-[var(--model-card-logo-image-size,18px)]"
       />
     </div>

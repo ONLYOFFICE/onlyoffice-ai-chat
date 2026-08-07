@@ -1,4 +1,5 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
+import i18n from "i18next";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { CallbacksManager } from "../providers/EventsProvider";
 import type { PlatformAdapter } from "../providers/PlatformProvider/types";
@@ -393,6 +394,10 @@ export function createThreadsStore(deps: {
       // there is no `useMessages` instance subscribed between switches,
       // so the reactive effect cannot be relied on.
       const messageStore = useMessageStore.getState();
+      // A round still streaming into the previous thread (e.g. an image
+      // generation running when the host re-scopes to another entity)
+      // must not keep writing into the now-empty list — detach it first.
+      messageStore.orphanStreams();
       messageStore.claimThreadId("");
       messageStore.clearMessages();
       callbacksManager.emit("onThreadsUpdated", {
@@ -438,7 +443,7 @@ export function createThreadsStore(deps: {
 
     onDownloadThread: async (id, title) => {
       const messages = await readAllMessages(id);
-      const fileName = removeSpecialCharacter(title || "Chat Export");
+      const fileName = removeSpecialCharacter(title || i18n.t("ChatExport"));
       const content = convertMessagesToMd(messages);
       platform.file?.saveAsFile?.(content, `${fileName}.docx`);
     },
@@ -448,7 +453,7 @@ export function createThreadsStore(deps: {
       const extension =
         formats.find((f) => f.id === formatId)?.extension || "docx";
       const messages = await readAllMessages(id);
-      const fileName = removeSpecialCharacter(title || "Chat Export");
+      const fileName = removeSpecialCharacter(title || i18n.t("ChatExport"));
       const content = convertMessagesToMd(messages);
       platform.file?.saveAsFile?.(
         content,

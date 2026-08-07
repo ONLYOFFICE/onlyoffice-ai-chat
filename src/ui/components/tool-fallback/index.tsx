@@ -65,9 +65,14 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
 
   let argsTextFinal = argsText;
   let toolIntent: string | undefined;
+  // False while the provider is still streaming the call's arguments:
+  // `argsText` grows fragment by fragment and is an unparsable JSON prefix
+  // until the closing brace arrives, so `aiChatIntent` can't be read yet.
+  let argsParsed = false;
 
   try {
     const parsedArgs = JSON.parse(argsTextFinal);
+    argsParsed = true;
 
     // Some providers wrap the real arguments in an `args` envelope.
     const inner = parsedArgs?.args ? parsedArgs.args : parsedArgs;
@@ -250,6 +255,23 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
       );
     }
     return imageSlot;
+  }
+
+  // Arguments still streaming in (unparsable prefix, see `argsParsed`): the
+  // intent field isn't readable yet, so neither chat view above matched.
+  // Rendering the raw card here would flash it for a second and then swap to
+  // the intent line / image placeholder once the JSON completes — show the
+  // pending cue instead. Resolved calls with genuinely broken args (parse
+  // still failing after the result arrived) fall through to the card.
+  if (inMessageRuntime && isLoading && !argsParsed) {
+    if (isImagePending) {
+      return imageSlot;
+    }
+    return (
+      <div className="my-[8px] text-[var(--text-tertiary)]">
+        <LoadingDots />
+      </div>
+    );
   }
 
   return (

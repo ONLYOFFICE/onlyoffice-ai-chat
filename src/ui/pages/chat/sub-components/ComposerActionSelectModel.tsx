@@ -14,6 +14,7 @@ const SelectModel = () => {
     profilePickerActions,
     onProfilePickerSelect,
     modelSelectorArrowIcon,
+    profilePickerReadOnly,
   } = useWidgetConfig();
   const { useProfilesStore, selectCurrentChatProfile } = useStores();
   const profiles = useProfilesStore((s) => s.profiles);
@@ -125,6 +126,22 @@ const SelectModel = () => {
     setSessionChatProfile,
     IconButton,
   ]);
+
+  // Read-only mode: the current profile is a plain, non-interactive label
+  // (no dropdown, no arrow) for hosts that fix the profile themselves.
+  // Text metrics match the ComboBox trigger; color drops to secondary.
+  if (profilePickerReadOnly) {
+    if (!currentProfile?.name) return null;
+    return (
+      <span
+        dir="auto"
+        className="block min-w-0 truncate leading-[var(--lh-16)] text-[var(--text-secondary)]"
+        data-testid="model-selector-readonly"
+      >
+        {currentProfile.name}
+      </span>
+    );
+  }
 
   return (
     <ComboBox
