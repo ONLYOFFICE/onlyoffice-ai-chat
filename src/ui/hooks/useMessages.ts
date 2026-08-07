@@ -249,6 +249,14 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
          * critical path.
          */
         optimisticUserMessageId?: string;
+        /**
+         * Epoch inherited from the round this continuation belongs to.
+         * Nested `processStream` calls (tool approve/deny resumes) MUST
+         * pass the parent's epoch: capturing a fresh one after the store
+         * was re-scoped would make an orphaned round's continuation think
+         * it owns the list again and write into the new thread's view.
+         */
+        epoch?: number;
       }
     ) => {
       const watch = options?.watchToolResult;
@@ -314,9 +322,19 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           clearTimeout(idleTimer);
           idleTimer = null;
         }
-        setIsStreamRunning(false);
-        setIsRequestRunning(false);
-        setAbortController(undefined);
+        // An orphaned round must not touch the busy flags: `orphanStreams`
+        // already reset them at the switch, and a newer round may own
+        // them by now.
+        if (!isOrphaned()) {
+          setIsStreamRunning(false);
+          setIsRequestRunning(false);
+        }
+        // Clear only our own controller — a newer round may have armed
+        // its own since, and wiping it would break that round's Stop.
+        const current = useMessageStore.getState()._abortController;
+        if (current && current.signal === abortSignal) {
+          setAbortController(undefined);
+        }
       };
 
       let assistantPlaceholderAdded = options?.hasAssistantPlaceholder ?? false;
@@ -327,6 +345,18 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       // clears `_abortController` from the store right after aborting, so
       // reading it lazily inside the loop would miss the abort.
       const abortSignal = useMessageStore.getState()._abortController?.signal;
+      // Epoch captured at round start (or inherited from the parent round
+      // for continuations). `orphanStreams` (thread switch, host re-scope
+      // via `onSwitchToNewThread`, `fetchPrevMessages`) bumps it, telling
+      // this round the message list no longer belongs to it: keep
+      // draining the stream — the engine must finish and persist the
+      // round — but stop touching the display store, or the round's tail
+      // would surface as an orphaned assistant message inside the newly
+      // shown (e.g. empty) chat.
+      const streamEpoch =
+        options?.epoch ?? useMessageStore.getState()._streamEpoch;
+      const isOrphaned = () =>
+        useMessageStore.getState()._streamEpoch !== streamEpoch;
 
       try {
         for await (const event of stream) {
@@ -336,6 +366,16 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           // drop them and finalize as "stopped" below instead of letting
           // the message keep growing.
           if (abortSignal?.aborted) break;
+          // The active thread changed underneath this round (scope
+          // switch, thread switch, explicit new chat). Release the busy
+          // state early and keep consuming silently: every event —
+          // display chunks, `thread-title` (its claim/insert would hijack
+          // the new scope's thread list), `user-message-stored` — belongs
+          // to a thread the user is no longer looking at.
+          if (isOrphaned()) {
+            releaseBusy();
+            continue;
+          }
           // A malformed / out-of-contract event (e.g. a server `{ type:
           // "error", message }` envelope) must never reach the message-chunk
           // path below — otherwise its `message` (a plain string) is pushed
@@ -544,7 +584,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         // mode the provider usually yields `message-incomplete` /
         // `cancelled` first). Stamp the partial message as user-cancelled
         // — not an error — unless a terminal status already arrived.
+        // Never on an orphaned round: the list holds another thread now,
+        // and `updateLastMessage` on it would append a stray message.
         if (
+          !isOrphaned() &&
           abortSignal?.aborted &&
           lastDisplayedMessage &&
           lastDisplayedMessage.status?.type !== "incomplete"
@@ -626,6 +669,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             });
             await processStream(next, resolvedThreadId, {
               hasAssistantPlaceholder: true,
+              epoch: streamEpoch,
             });
             return;
           }
@@ -651,7 +695,10 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         }
 
         // Surface the dialog to the user. Approve / deny will arrive
-        // via `approveToolCall` / `denyToolCall` below.
+        // via `approveToolCall` / `denyToolCall` below. Not for a round
+        // that got orphaned while middleware ran — its thread is no
+        // longer on screen; the round stays paused in storage instead.
+        if (isOrphaned()) return;
         setManageToolData({
           threadId: event.threadId,
           message: dialogMessage,
@@ -668,7 +715,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         message: ThreadMessageLike
       ) {
         setIsToolPending(false);
-        if (!useMessageStore.getState().isStreamRunning) return;
+        // No resume after Stop — or after the round was orphaned (the
+        // flags were reset by `orphanStreams`, but a newer round may have
+        // set them again, so the flag alone can't be trusted).
+        if (!useMessageStore.getState().isStreamRunning || isOrphaned())
+          return;
         const next = api.ai.approveToolCall({
           threadId: event.threadId,
           messageId: event.messageId,
@@ -679,6 +730,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         });
         await processStream(next, event.threadId, {
           hasAssistantPlaceholder: true,
+          epoch: streamEpoch,
         });
       }
 
@@ -721,9 +773,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
         // Patch the result onto the local assistant message so the UI
         // shows the tool-call as completed immediately. The engine
-        // mirrors this write to storage inside `resumeChat`.
+        // mirrors this write to storage inside `resumeChat`. Skipped when
+        // the active thread changed while the tool ran — the list no
+        // longer ends with this round's message.
         const patched = patchToolCallResult(event.message, event.idx, result);
-        updateLastMessage(patched);
+        if (!isOrphaned()) updateLastMessage(patched);
 
         // Tool finished — give the UI a 300ms grace window before we
         // allow the "Analyzing" indicator to surface, so the indicator
@@ -740,7 +794,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         // `resumeChat` (which normally mirrors it to storage) never runs on
         // this path, so without this the tool-call stays result-less in
         // storage and shows as "running" when the thread is reopened.
-        if (!useMessageStore.getState().isStreamRunning) {
+        // Orphaned rounds pause the same way (the flag alone can't be
+        // trusted: a newer round may have set it again).
+        if (!useMessageStore.getState().isStreamRunning || isOrphaned()) {
           try {
             await api.threads.updateMessage(event.messageId, patched);
           } catch (err) {
@@ -759,6 +815,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         });
         await processStream(next, event.threadId, {
           hasAssistantPlaceholder: true,
+          epoch: streamEpoch,
         });
       }
     },

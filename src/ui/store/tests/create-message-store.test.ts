@@ -272,4 +272,42 @@ describe("createMessageStore", () => {
       expect(store.getState().messages).toEqual([]);
     });
   });
+
+  describe("orphanStreams", () => {
+    it("bumps the epoch and resets the busy flags", () => {
+      const store = createMessageStore({ ctx, api });
+      store.getState().setIsStreamRunning(true);
+      store.getState().setIsRequestRunning(true);
+      store.getState().setIsToolPending(true);
+      const epoch = store.getState()._streamEpoch;
+
+      store.getState().orphanStreams();
+
+      expect(store.getState()._streamEpoch).toBe(epoch + 1);
+      expect(store.getState().isStreamRunning).toBe(false);
+      expect(store.getState().isRequestRunning).toBe(false);
+      expect(store.getState().isToolPending).toBe(false);
+    });
+
+    it("does not abort the in-flight round — it keeps draining", () => {
+      const store = createMessageStore({ ctx, api });
+      const abort = new AbortController();
+      store.getState().setAbortController(abort);
+
+      store.getState().orphanStreams();
+
+      expect(abort.signal.aborted).toBe(false);
+    });
+
+    it("fetchPrevMessages detaches any round streaming into the store", async () => {
+      const store = createMessageStore({ ctx, api });
+      store.getState().setIsStreamRunning(true);
+      const epoch = store.getState()._streamEpoch;
+
+      await store.getState().fetchPrevMessages("thread-1");
+
+      expect(store.getState()._streamEpoch).toBe(epoch + 1);
+      expect(store.getState().isStreamRunning).toBe(false);
+    });
+  });
 });

@@ -31,8 +31,14 @@ function makeDeps(initialThreads: Thread[] = []) {
   const clearMessages = vi.fn();
   const claimThreadId = vi.fn();
   const fetchPrevMessages = vi.fn().mockResolvedValue(undefined);
+  const orphanStreams = vi.fn();
   const useMessageStore = {
-    getState: () => ({ clearMessages, claimThreadId, fetchPrevMessages }),
+    getState: () => ({
+      clearMessages,
+      claimThreadId,
+      fetchPrevMessages,
+      orphanStreams,
+    }),
   } as unknown as MessageStore;
 
   const api = {
@@ -67,6 +73,7 @@ function makeDeps(initialThreads: Thread[] = []) {
     clearMessages,
     claimThreadId,
     fetchPrevMessages,
+    orphanStreams,
     saveAsFile,
     getExportFormats,
   };
@@ -161,6 +168,9 @@ describe("createThreadsStore", () => {
     s.setState({ threadId: "a" });
     s.getState().onSwitchToNewThread();
     expect(s.getState().threadId).toBe("");
+    // In-flight rounds must be detached BEFORE the list is reset, so
+    // they can't write their tail into the fresh (empty) chat.
+    expect(deps.orphanStreams).toHaveBeenCalled();
     expect(deps.claimThreadId).toHaveBeenCalledWith("");
     expect(deps.clearMessages).toHaveBeenCalled();
     expect(deps.callbacksManager.emit).toHaveBeenCalledWith(

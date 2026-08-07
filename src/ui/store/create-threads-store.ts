@@ -394,6 +394,10 @@ export function createThreadsStore(deps: {
       // there is no `useMessages` instance subscribed between switches,
       // so the reactive effect cannot be relied on.
       const messageStore = useMessageStore.getState();
+      // A round still streaming into the previous thread (e.g. an image
+      // generation running when the host re-scopes to another entity)
+      // must not keep writing into the now-empty list — detach it first.
+      messageStore.orphanStreams();
       messageStore.claimThreadId("");
       messageStore.clearMessages();
       callbacksManager.emit("onThreadsUpdated", {

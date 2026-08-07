@@ -33,6 +33,7 @@ const stores = {
     fetchPrevMessages: vi.fn().mockResolvedValue(undefined),
     claimThreadId: vi.fn(),
     _currentThreadId: "" as string | null,
+    _streamEpoch: 0,
   },
   threadsState: {
     threadId: "",
@@ -183,6 +184,7 @@ beforeEach(() => {
   stores.profilesState.extendedThinking = false;
   middlewareRunner.isEmpty = true;
   stores.messageState.isStreamRunning = false;
+  stores.messageState._streamEpoch = 0;
   apiAi.sendWithStream.mockReset();
   apiAi.regenerateStream.mockReset();
   apiAi.approveToolCall.mockReset();
@@ -1331,5 +1333,110 @@ describe("useMessages thread sync effect", () => {
     expect(stores.attachmentsState.clearAttachmentFiles).toHaveBeenCalledTimes(
       1
     );
+  });
+});
+
+describe("useMessages orphaned rounds", () => {
+  // The active thread changing mid-stream (host re-scope on navigation,
+  // sidebar thread switch, explicit new chat) bumps `_streamEpoch` via
+  // `orphanStreams`. From that point the round must go silent: keep
+  // draining so the engine finishes and persists, but never write into
+  // the message list the new thread now owns. Regression: starting an
+  // image generation, navigating away and back left the generated
+  // assistant message alone inside the fresh empty chat.
+  it("stops display writes once the epoch moves, but keeps draining", async () => {
+    stores.profilesState.chatProfile = profile;
+    let drainedToEnd = false;
+    async function* stream() {
+      yield {
+        type: "message-start",
+        message: { role: "assistant", content: "generating…" },
+        messageId: "m1",
+      };
+      // Host re-scopes (e.g. Files → Agents): onSwitchToNewThread runs
+      // orphanStreams + claim("") + clearMessages.
+      stores.messageState._streamEpoch += 1;
+      stores.messageState.isStreamRunning = false;
+      stores.messageState.messages = [];
+      yield {
+        type: "message-delta",
+        message: { role: "assistant", content: "the image" },
+        messageId: "m1",
+      };
+      yield {
+        type: "message-end",
+        message: { role: "assistant", content: "the image, done" },
+        messageId: "m1",
+      };
+      yield {
+        type: "thread-title",
+        threadId: "t-new",
+        title: "Generated image",
+      };
+      drainedToEnd = true;
+    }
+    apiAi.sendWithStream.mockReturnValue(stream());
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "draw a cat" }],
+      } as never);
+    });
+
+    // Only the optimistic user bubble and the pre-switch assistant start
+    // ever reached the store — nothing after the epoch moved.
+    expect(stores.messageState.addMessage).toHaveBeenCalledTimes(2);
+    expect(stores.messageState.updateLastMessage).not.toHaveBeenCalled();
+    // The late thread-title must not hijack the new scope's thread list.
+    expect(stores.messageState.claimThreadId).not.toHaveBeenCalledWith(
+      "t-new"
+    );
+    expect(stores.threadsState.insertThread).not.toHaveBeenCalled();
+    // The stream was still consumed to completion (persistence path).
+    expect(drainedToEnd).toBe(true);
+  });
+
+  it("does not clobber the busy flags a newer round owns", async () => {
+    stores.profilesState.chatProfile = profile;
+    async function* stream() {
+      yield {
+        type: "message-start",
+        message: { role: "assistant", content: "old round" },
+        messageId: "m1",
+      };
+      // Orphaned…
+      stores.messageState._streamEpoch += 1;
+      stores.messageState.isStreamRunning = false;
+      // …and a newer round starts and arms its own state.
+      stores.messageState.isStreamRunning = true;
+      stores.messageState._abortController = new AbortController();
+      stores.messageState.setIsStreamRunning.mockClear();
+      stores.messageState.setIsRequestRunning.mockClear();
+      stores.messageState.setAbortController.mockClear();
+      yield {
+        type: "message-end",
+        message: { role: "assistant", content: "old round done" },
+        messageId: "m1",
+      };
+    }
+    apiAi.sendWithStream.mockReturnValue(stream());
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hello" }],
+      } as never);
+    });
+
+    // The orphaned round's release must not reset the newer round's
+    // flags, nor clear a controller it does not own.
+    expect(stores.messageState.setIsStreamRunning).not.toHaveBeenCalledWith(
+      false
+    );
+    expect(stores.messageState.setAbortController).not.toHaveBeenCalledWith(
+      undefined
+    );
+    expect(stores.messageState._abortController).toBeDefined();
   });
 });
