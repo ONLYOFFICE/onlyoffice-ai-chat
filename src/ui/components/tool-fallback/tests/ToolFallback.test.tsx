@@ -247,7 +247,9 @@ describe("ToolFallback", () => {
         result={undefined}
       />
     );
-    expect(screen.getByText("CreatingImage")).toBeInTheDocument();
+    // The placeholder is a decorative canvas — its label lives in
+    // `aria-label`, not in visible text.
+    expect(screen.getByLabelText("CreatingImage")).toBeInTheDocument();
     expect(screen.queryByText("generate_image")).not.toBeInTheDocument();
   });
 
