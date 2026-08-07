@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.41
+
+### Fixed
+
+- **A streaming round no longer leaks its output into another chat.** Switching the active thread mid-stream — a host re-scope via `entityId` (e.g. navigating between sections), a sidebar thread switch, or an explicit new chat — now detaches the in-flight round: it keeps draining so the engine finishes and persists the reply, but stops writing display updates. Previously an image generation started before navigating away resurfaced as a lone assistant message inside the fresh empty chat, with the prior history seemingly gone (it was intact in the original thread all along). The busy flags reset on the switch so the composer unblocks immediately, and a late `thread-title` can no longer hijack the new scope's thread list.
+
 ## 0.5.40
 
 ### Changed
