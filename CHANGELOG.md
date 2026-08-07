@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.39
+
+### Fixed
+
+- **No more raw tool-card flash while a call's arguments stream in.** Mid-stream `argsText` is an unparsable JSON prefix, so the `aiChatIntent` label wasn't readable yet and the fallback card flashed before switching to the intent line. While arguments stream, the widget now shows the pending view instead — the animated placeholder for `generate_image`, animated dots for other tools.
+
 ## 0.5.38
 
 - Package re-release of 0.5.37, no source changes — an earlier 0.5.37 tarball predated the i18n sweep, so the version is bumped to guarantee hosts pick up the final package.
