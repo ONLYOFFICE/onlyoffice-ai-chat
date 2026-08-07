@@ -118,6 +118,41 @@ describe("createProfilesStore", () => {
     expect(callOrder).toEqual(["profiles", "deepMode", "assignments"]);
   });
 
+  it("init reports a failed load on onError instead of rejecting", async () => {
+    const deps = makeDeps();
+    const failure = new Error("offline");
+    deps.api.profiles.list = vi.fn().mockRejectedValue(failure);
+    const s = createProfilesStore(deps);
+
+    await expect(s.getState().init()).resolves.toBeUndefined();
+
+    expect(deps.emit).toHaveBeenCalledWith("onError", {
+      type: "storage",
+      error: failure,
+      context: "profiles:init",
+    });
+    // Left unhydrated on purpose, so the next mount retries the load.
+    expect(s.getState().initialized).toBe(false);
+    expect(s.getState().profiles).toEqual([]);
+  });
+
+  it("init retries after a failed load", async () => {
+    const deps = makeDeps();
+    const list = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce([profile("1")]);
+    deps.api.profiles.list = list;
+    const s = createProfilesStore(deps);
+
+    await s.getState().init();
+    await s.getState().init();
+
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(s.getState().initialized).toBe(true);
+    expect(s.getState().profiles).toEqual([profile("1")]);
+  });
+
   it("init backfills missing capabilities", async () => {
     const broken = profile("1");
     (broken as unknown as { capabilities: unknown }).capabilities = undefined;

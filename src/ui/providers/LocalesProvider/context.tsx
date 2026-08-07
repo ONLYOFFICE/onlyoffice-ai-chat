@@ -54,6 +54,29 @@ export interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+/**
+ * Locale switches are fired from effects (and from platform environment
+ * callbacks) that cannot await them, and `loadLocale` dynamically imports the
+ * locale chunk — a request that fails when the host is offline or serves a
+ * stale build. Log those failures instead of letting them escape as unhandled
+ * rejections; the widget keeps rendering in the language it already has.
+ *
+ * The host is not notified through `ChatCallbacks.onError` here: this provider
+ * is mounted independently of `EventsProvider`, so the callbacks manager isn't
+ * guaranteed to exist at this point in the tree.
+ */
+const reportLocaleFailure = (loading: Promise<unknown> | undefined): void => {
+  // `Promise.resolve` wrapping on purpose: `i18n.changeLanguage` is typed as
+  // returning a promise, but a stubbed/patched i18next instance may hand back
+  // nothing at all.
+  void Promise.resolve(loading).catch((err) => {
+    logger.error("locale:load failed:", err);
+  });
+};
+
+const applyLocale = (locale: string): void =>
+  reportLocaleFailure(loadLocale(locale));
+
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
@@ -101,7 +124,7 @@ export const I18nProvider = ({
   // 2. React to locale prop changes after init
   useEffect(() => {
     if (!ready) return;
-    void loadLocale(locale);
+    applyLocale(locale);
   }, [ready, locale]);
 
   // 3. Inject translations overrides
@@ -115,7 +138,7 @@ export const I18nProvider = ({
       true
     );
     // Force react-i18next to pick up the new resources
-    void i18n.changeLanguage(i18n.language);
+    reportLocaleFailure(i18n.changeLanguage(i18n.language));
   }, [ready, translations]);
 
   // 4. Inject custom languages
@@ -146,7 +169,7 @@ const I18nBridge = ({
   const platform = usePlatform();
 
   const changeLocale = useCallback((newLocale: string) => {
-    void loadLocale(newLocale);
+    applyLocale(newLocale);
   }, []);
 
   // Track current language via i18next events
@@ -163,19 +186,19 @@ const I18nBridge = ({
   // Keep i18next in sync with the `locale` prop
   useEffect(() => {
     if (locale !== i18nInstance.language) {
-      void loadLocale(locale);
+      applyLocale(locale);
     }
   }, [locale, i18nInstance]);
 
   // Subscribe to platform environment changes for language switching
   useLayoutEffect(() => {
     if (platform?.env?.locale) {
-      void loadLocale(platform.env.locale);
+      applyLocale(platform.env.locale);
     }
 
     const unsubscribe = platform?.env?.onEnvironmentChange?.((info) => {
       if (info.lang) {
-        void loadLocale(info.lang);
+        applyLocale(info.lang);
       }
     });
 

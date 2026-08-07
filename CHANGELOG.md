@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Failed hydration no longer escapes as an unhandled promise rejection. Every hydration path is fired from a mount effect that cannot await it, so a rejected read (offline, 401, 5xx) surfaced only in the console while the UI showed an empty list — indistinguishable from a host that genuinely has nothing configured. All of them now catch, log, and report to the host through `ChatCallbacks.onError` (previously declared but never emitted) as `{ type: "storage", context, error }`, keeping whatever data they already had so the next mount / navigation retries: `profiles:init`, `threads:init`, `prompts:init`, `servers:init`, `tools:list`, and `messages:load` — the last one being the worst of the set, since a failed history read used to blank the open conversation. `clouds:fetch` (a read of the host's own `platform.clouds` adapter) reports as `{ type: "network" }`.
+- Locale switches (`I18nProvider`'s effects, `changeLocale`, platform environment changes) no longer reject unhandled when the lazily imported locale chunk fails to load — e.g. a stale build after a deploy. The failure is logged and the widget keeps rendering in its current language. Not routed through `onError`: this provider is mounted independently of `EventsProvider`.
+
 ## 0.5.41
 
 ### Fixed

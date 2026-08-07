@@ -1,6 +1,8 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { ServerAPI } from "../providers/ApiProvider";
+import type { CallbacksManager } from "../providers/EventsProvider";
 import type { Prompt, PromptFolder } from "../../types";
+import { reportStoreError } from "./report-error";
 
 /**
  * Zustand state for saved prompt templates and prompt folders.
@@ -29,19 +31,27 @@ export interface PromptsStoreState {
 
 export function createPromptsStore(deps: {
   api: ServerAPI;
+  callbacksManager: CallbacksManager;
 }): UseBoundStore<StoreApi<PromptsStoreState>> {
-  const { api } = deps;
+  const { api, callbacksManager } = deps;
 
   return create<PromptsStoreState>((set, get) => ({
     prompts: [],
     folders: [],
 
     initPrompts: async () => {
-      const [prompts, folders] = await Promise.all([
-        api.prompts.list(undefined),
-        api.prompts.listFolders(),
-      ]);
-      set({ prompts, folders });
+      // Called without an await from the mount effects (`useThreads`,
+      // `useEnsurePrompts`) — see `reportStoreError`. The current lists are
+      // kept, so a failed refresh doesn't read as "no saved prompts".
+      try {
+        const [prompts, folders] = await Promise.all([
+          api.prompts.list(undefined),
+          api.prompts.listFolders(),
+        ]);
+        set({ prompts, folders });
+      } catch (error) {
+        reportStoreError(callbacksManager, "prompts:init", error);
+      }
     },
 
     addPrompt: async (input) => {
