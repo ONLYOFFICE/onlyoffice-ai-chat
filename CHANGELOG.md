@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.40
+
+### Changed
+
+- **The image-generation placeholder is now alive under the pointer.** The static "Creating image" label is replaced with a running m:ss elapsed timer (the label moved to `aria-label`, so the placeholder still announces itself), and moving the pointer over the box spawns expanding rings in the halftone masks — the dots ripple out from the cursor. Rings are throttled by time and distance and capped, so a fast sweep can't flood the masks. Dot radii are finer and layer opacities slightly higher.
+
 ## 0.5.39
 
 ### Fixed
