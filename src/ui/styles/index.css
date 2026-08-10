@@ -39,6 +39,16 @@
   --dropdown-item-padding-start-combobox: 8px; /* combobox rows — start edge */
   --dropdown-item-padding-end-combobox: 8px; /* combobox rows — end edge */
 
+  /* Dropdown menu sizing shared by both navigation modes (flyout + drilldown),
+     since both render the same container Shell and the same DropDownItem rows. */
+  --dropdown-menu-padding-y: 5px; /* container vertical padding */
+  --dropdown-menu-min-width: 150px; /* min width when matchTriggerWidth is on */
+  --dropdown-item-height: 26px; /* row height */
+  --dropdown-item-gap: 10px; /* gap between the row's leading group and trailing control */
+  --dropdown-item-content-gap: 4px; /* gap inside the leading group (icon to label) */
+  --dropdown-item-label-space: 28px; /* label indent when the icon column is reserved but empty */
+  --dropdown-separator-margin-y: 4px; /* vertical margin of a separator row */
+
   /* Drill-down "back" row (only shown in `dropdownNavigation: "drilldown"`
      menus when not at the root level). */
   --dropdown-back-row-height: 20px;
@@ -73,6 +83,261 @@
   --ai-settings-margin-y: 32px;
   --ai-settings-max-width: 640px;
 
+  /* AI Models settings page (`<AiModelsPage />`). `--ai-models-max-width` caps
+     the content column; `--ai-models-justify` places that column within the
+     page (any `justify-content` value — `flex-start` default, `center`,
+     `flex-end`); the title tokens size the "AI Models" heading and its bottom
+     gap; the description token is the gap below the sub-header. */
+  --ai-models-max-width: 560px;
+  --ai-models-justify: flex-start;
+  /* Outer padding of the page, for standalone (non-Settings) mounting; inside
+     the Settings tabs the framing comes from `--ai-settings-margin-*` instead,
+     so these stay 0 by default. */
+  --ai-models-padding-x: 0px;
+  --ai-models-padding-y: 0px;
+  --ai-models-title-font-size: var(--fs-20);
+  --ai-models-title-line-height: var(--lh-28);
+  --ai-models-title-margin-bottom: 8px;
+  --ai-models-description-margin-bottom: 8px;
+  /* Gaps inside the models list: `--ai-models-content-gap` between the
+     add/actions block and the card list; `--ai-models-actions-gap` between the
+     "Add model" / "Custom providers" buttons; `--ai-models-list-gap` between
+     the model cards. */
+  --ai-models-content-gap: 8px;
+  --ai-models-actions-gap: 8px;
+  --ai-models-list-gap: 8px;
+
+  /* Model Assignment settings page (`<ModelAssignmentPage />`).
+     `--model-assignment-max-width` caps the content column;
+     `--model-assignment-justify` places it within the page (any
+     `justify-content` value — `flex-start` default, `center`, `flex-end`); the
+     title tokens size the "Model assignment" heading and its bottom gap. */
+  --model-assignment-max-width: 560px;
+  --model-assignment-justify: flex-start;
+  /* Outer padding for standalone mounting (0 inside Settings). */
+  --model-assignment-padding-x: 0px;
+  --model-assignment-padding-y: 0px;
+  --model-assignment-title-font-size: var(--fs-20);
+  --model-assignment-title-line-height: var(--lh-28);
+  --model-assignment-title-margin-bottom: 24px;
+  /* Vertical rhythm inside the assignment list: `--..-description-margin-bottom`
+     under the intro text; `--..-default-margin-bottom` after the default-model
+     block; `--..-tasks-header-margin-bottom` under the "Override for tasks"
+     header; `--..-task-margin-bottom` between each task field. */
+  --model-assignment-description-margin-bottom: 24px;
+  --model-assignment-default-margin-bottom: 20px;
+  --model-assignment-tasks-header-margin-bottom: 8px;
+  --model-assignment-task-margin-bottom: 12px;
+
+  /* MCP Servers settings page (`<McpServersPage />`). `--mcp-servers-max-width`
+     caps the content column; `--mcp-servers-justify` places it within the page
+     (any `justify-content` value — `flex-start` default, `center`, `flex-end`);
+     the title tokens size the "MCP servers" heading and its bottom gap. */
+  --mcp-servers-max-width: 560px;
+  --mcp-servers-justify: flex-start;
+  /* Outer padding for standalone mounting (0 inside Settings). */
+  --mcp-servers-padding-x: 0px;
+  --mcp-servers-padding-y: 0px;
+  --mcp-servers-title-font-size: var(--fs-20);
+  --mcp-servers-title-line-height: var(--lh-28);
+  --mcp-servers-title-margin-bottom: 24px;
+  /* Servers list body: `--mcp-servers-content-padding-bottom` is the bottom
+     padding of the whole block; `--mcp-servers-description-margin-bottom` is
+     the gap under the intro text; `--mcp-servers-actions-margin-bottom` is the
+     gap under the "Edit configuration" button. */
+  --mcp-servers-content-padding-bottom: 32px;
+  --mcp-servers-description-margin-bottom: 8px;
+  --mcp-servers-actions-margin-bottom: 8px;
+  /* Permissions panel (its border color / bg live in the theme files).
+     `--servers-permissions-margin-top` is the gap above the panel;
+     `--servers-permissions-padding-y` is its vertical padding; the header
+     tokens size the "Permissions" title row's horizontal padding and its gap
+     to the tools list. */
+  --servers-permissions-margin-top: 8px;
+  --servers-permissions-padding-y: 8px;
+  --servers-permissions-header-padding-x: 16px;
+  --servers-permissions-header-margin-bottom: 8px;
+  /* Available-tools list (its border tokens live in the theme files as
+     `--servers-available-tools-*`). Header row height / horizontal padding,
+     the list gap, and the list's paddings (top differs when a header shows). */
+  --servers-available-tools-header-height: 40px;
+  --servers-available-tools-header-padding-x: 16px;
+  --servers-available-tools-list-gap: 8px;
+  --servers-available-tools-list-padding-x: 8px;
+  --servers-available-tools-list-padding-bottom: 8px;
+  --servers-available-tools-list-padding-top: 8px;
+  --servers-available-tools-list-padding-top-with-header: 4px;
+  /* A tool group row and its expanded tool list. `--..-item-*` size the group
+     header (height, horizontal padding, its content gap, and the chevron
+     column width); `--..-sublist-*` size the expanded list (gap between tools,
+     gap above it); `--..-tool-*` size each tool row (height + logical
+     paddings — start is indented to line up under the group name). */
+  --servers-available-tools-item-height: 32px;
+  --servers-available-tools-item-padding-x: 8px;
+  --servers-available-tools-item-content-gap: 8px;
+  --servers-available-tools-item-chevron-width: 12px;
+  --servers-available-tools-sublist-gap: 8px;
+  --servers-available-tools-sublist-margin-top: 4px;
+  --servers-available-tools-tool-height: 26px;
+  --servers-available-tools-tool-padding-start: 28px;
+  --servers-available-tools-tool-padding-end: 8px;
+  /* Stopped-server log block shown in place of the expanded tool list —
+     `--..-logs-margin-top` matches the sublist gap above, `--..-logs-max-height`
+     caps it before it starts scrolling, `--..-logs-padding` insets the text, and
+     `--..-logs-text-margin` resets the `pre` margin. The log lines themselves use
+     the shared `--fs-12` / `--lh-16` type primitives. */
+  --servers-available-tools-logs-margin-top: 4px;
+  --servers-available-tools-logs-max-height: 300px;
+  --servers-available-tools-logs-padding: 8px;
+  --servers-available-tools-logs-text-margin: 0;
+  /* MCP config editor panel — outer framing only (the JSON editor body keeps
+     its own spacing). `--config-editor-padding-y` / `--config-editor-margin-
+     bottom` frame the panel; the header tokens size its title row; `--config-
+     editor-content-padding-x` is the horizontal inset shared by the content and
+     the full-bleed footer; the footer tokens size the Cancel / Save row. */
+  --config-editor-padding-y: 8px;
+  --config-editor-margin-bottom: 8px;
+  --config-editor-header-padding-start: 16px;
+  --config-editor-header-padding-end: 8px;
+  --config-editor-header-margin-bottom: 8px;
+  --config-editor-content-padding-x: 16px;
+  --config-editor-body-padding-bottom: 8px;
+  --config-editor-footer-gap: 8px;
+  --config-editor-footer-height: 24px;
+
+  /* Web Search settings page (`<WebSearchPage />`). `--web-search-max-width`
+     caps the content column; `--web-search-justify` places it within the page
+     (any `justify-content` value — `flex-start` default, `center`, `flex-end`);
+     the title tokens size the "Web search" heading and its bottom gap. */
+  --web-search-max-width: 560px;
+  --web-search-justify: flex-start;
+  /* Outer padding for standalone mounting (0 inside Settings). */
+  --web-search-padding-x: 0px;
+  --web-search-padding-y: 0px;
+  --web-search-title-font-size: var(--fs-20);
+  --web-search-title-line-height: var(--lh-28);
+  --web-search-title-margin-bottom: 24px;
+  /* Web-search form gaps. `--web-search-gap` is the root gap in the page
+     variant; `--web-search-tab-gap` in the tab variant; `--web-search-fields-
+     gap` between fields; `--web-search-actions-gap` between the Save / Reset
+     buttons. (These can also be overridden via the `web-search-*` classes.) */
+  --web-search-gap: 8px;
+  --web-search-tab-gap: 16px;
+  --web-search-fields-gap: 8px;
+  --web-search-actions-gap: 8px;
+
+  /* Field container (label + control + error) — shared across settings forms;
+     its header / error colors live in the theme files. `--..-row-gap` is the
+     gap between the container's stacked rows (action / field / error);
+     `--..-control-gap-horizontal` / `--..-control-gap-vertical` separate the
+     label from the control (the two values are the same relationship in the
+     side-by-side vs stacked layout); `--..-header-gap` separates the header
+     icon from its label; `--..-header-margin-bottom` sits under the vertical
+     header and `--..-header-height` can pin its height (`auto` by default, so
+     the label and any inline action size it); `--..-label-width` is the
+     horizontal label column; `--..-error-height` reserves the error row;
+     `--..-error-max-width` caps the error tooltip. The horizontal error text is
+     indented to line up under the control (label width + control gap). */
+  --field-container-row-gap: 2px;
+  --field-container-control-gap-horizontal: 8px;
+  --field-container-control-gap-vertical: 4px;
+  --field-container-header-gap: 8px;
+  --field-container-header-margin-bottom: 2px;
+  --field-container-header-height: auto;
+  --field-container-label-width: 160px;
+  --field-container-error-height: 20px;
+  --field-container-error-max-width: 350px;
+  /* Fixed action zone reserved above every field in the horizontal layout, so
+     the action (e.g. "Get API key") toggles inside it without shifting the
+     field spacing. Vertical layout keeps the action inline in the header. */
+  --field-container-action-height: 20px;
+
+  /* Button geometry (its colors live in the theme files as `--button-*`).
+     Height, minimum width, horizontal padding, corner radius, and the size of
+     the inline loading spinner. */
+  --button-height: 24px;
+  --button-min-width: 40px;
+  --button-padding-x: 8px;
+  --button-border-radius: 4px;
+  --button-loader-size: 16px;
+
+  /* Initial setup screen (the no-profiles fallback on the chat surface).
+     `--initial-setup-max-width` caps the content column; `--initial-setup-
+     justify` places it within the surface (any `justify-content` value —
+     `flex-start` default, `center`, `flex-end`); `--initial-setup-margin`
+     insets it; `--initial-setup-list-gap` separates the existing model cards
+     below the add form. */
+  --initial-setup-max-width: 560px;
+  --initial-setup-justify: flex-start;
+  --initial-setup-margin: 12px;
+  --initial-setup-list-gap: 8px;
+
+  /* Model card spacing (its colors / border-radius live in the theme files as
+     `--model-card-*`). `--model-card-padding` is the card's inner padding;
+     `--model-card-gap` separates the content block from the actions menu;
+     `--model-card-content-gap` separates the provider logo from the labels. */
+  --model-card-padding: 8px;
+  --model-card-gap: 8px;
+  --model-card-content-gap: 8px;
+
+  /* Provider logo (its background / border / radius live in the theme files as
+     `--model-card-logo-*`). `--model-card-logo-size` is the square box;
+     `--model-card-logo-image-size` is the logo image inside it. */
+  --model-card-logo-size: 32px;
+  --model-card-logo-image-size: 18px;
+
+  /* Inner padding of the add/edit model card shell (its colors / border /
+     radius live in the theme files as `--model-config-card-*`). */
+  --model-config-card-padding: 8px;
+
+  /* Add/Edit model card spacing. `--add-model-card-gap` is the vertical gap in
+     the standalone layout; `--add-model-card-title-margin-bottom` is the gap
+     under the card heading; `--add-model-card-footer-gap` separates the footer
+     action buttons; `--add-model-card-import-gap` separates the "Import" link
+     from its help icon. The tooltip tokens style the "Import" help popover. */
+  --add-model-card-gap: 8px;
+  --add-model-card-title-margin-bottom: 8px;
+  /* Add-model heading — separate knobs per variant: `-card` is the "Connect
+     new AI model" heading (card variant, in the model shell); `-standalone` is
+     the "Connect an AI Model…" heading (standalone variant, initial setup).
+     Each takes a `text-align` value (`start` default, `center`, `end`) and a
+     font size. */
+  --add-model-card-title-align-card: start;
+  --add-model-card-title-font-size-card: var(--fs-12);
+  --add-model-card-title-align-standalone: start;
+  --add-model-card-title-font-size-standalone: var(--fs-13);
+  --add-model-card-footer-gap: 12px;
+  --add-model-card-footer-margin-top: 0px;
+  --add-model-card-import-gap: 4px;
+  --add-model-card-tooltip-padding: 12px;
+  --add-model-card-tooltip-gap: 6px;
+  --add-model-card-tooltip-max-width: 221px;
+
+  /* Model config form (provider / key / url / model / name fields).
+     `--model-config-form-gap` is the vertical gap between fields;
+     `--model-config-form-field-margin-bottom` is the extra bottom margin fields
+     get in the horizontal layout; `--model-config-form-last-field-margin-bottom`
+     is the last field's bottom margin in the vertical layout;
+     `--model-config-form-capability-gap` spaces the model capability badges.
+     The tooltip tokens style the "Finish AI setup" popover. */
+  --model-config-form-gap: 8px;
+  --model-config-form-field-margin-bottom: 10px;
+  --model-config-form-last-field-margin-bottom: 8px;
+  --model-config-form-capability-gap: 2px;
+  --model-config-form-tooltip-padding: 16px;
+  --model-config-form-tooltip-gap: 8px;
+  --model-config-form-tooltip-max-width: 280px;
+
+  /* Edit model card spacing. `--edit-model-card-title-margin-bottom` is the gap
+     under the "Edit AI model" heading; `--edit-model-card-provider-gap` and
+     `--edit-model-card-provider-margin-bottom` size the provider logo/name row;
+     `--edit-model-card-footer-gap` separates the footer action buttons. */
+  --edit-model-card-title-margin-bottom: 12px;
+  --edit-model-card-provider-gap: 12px;
+  --edit-model-card-provider-margin-bottom: 8px;
+  --edit-model-card-footer-gap: 12px;
+  --edit-model-card-footer-margin-top: 0px;
+
   /* Optional inner padding for the settings page's tabs (passed only to that
      Tabs instance, so other tabs in the library are unaffected). Default 0, so
      the tab row and its content sit flush. Raise `--ai-settings-tabs-content-
@@ -93,6 +358,75 @@
   --chat-scroll-to-bottom-border-radius: 4px;
   --chat-scroll-to-bottom-gap: 12px;
   --chat-scroll-to-bottom-edge-inset: 12px;
+
+  /* Suggestion chip paddings. Colors and border live in the theme files
+     (`--chat-suggestion-border-color`, `--text-normal`, …); these are the
+     structural insets of each chip button. Integrators can override either on
+     `.aui-root` without touching the component. */
+  --chat-suggestion-height: 25px;
+  --chat-suggestion-padding-x: 10px;
+  --chat-suggestion-padding-y: 3px;
+
+  /* Bottom margin below the whole suggestions block (gap to the composer). */
+  --chat-suggestions-margin-bottom: 16px;
+
+  --chat-suggestions-px: 12px;
+  --chat-suggestions-gap: 6px;
+
+  /* User message bubble corner radius. The tail corner (bottom-end) stays
+     flattened to 0 in the component; this token is the other three corners. */
+  --chat-user-message-border-radius: 16px;
+
+  /* Composer outer wrapper paddings (horizontal inset + bottom gap). */
+  --chat-composer-wrapper-padding-x: 12px;
+  --chat-composer-wrapper-padding-bottom: 4px;
+  --chat-composer-wrapper-gap: 12px;
+
+  /* Composer box paddings (the bordered input container itself). */
+  --chat-composer-padding-x: 8px;
+  --chat-composer-padding-top: 10px;
+  --chat-composer-padding-bottom: 6px;
+
+  /* Font size of the composer disclaimer line ("AI Chat can make mistakes…").
+     Defaults to the --fs-10 step of the type scale. */
+  --chat-composer-disclaimer-font-size: var(--fs-10);
+
+  /* Font size of the composer model-selector combo-box (its trigger label and
+     the dropdown rows, which inherit it). Defaults to the --fs-12 step of the
+     type scale, i.e. the widget's base size. */
+  --chat-model-selector-font-size: var(--fs-12);
+
+  /* Gap between the action buttons (copy, save, …) below a message. Each side
+     owns its own token: the assistant's row sits inline under the reply, the
+     user's is right-aligned under the bubble, so hosts tune them separately. */
+  --chat-assistant-message-actions-gap: 2px;
+  --chat-user-message-actions-gap: 2px;
+
+  /* Top margin of the chat-history search field (gap below the header). */
+  --chat-list-search-margin-top: 8px;
+
+  /* Top margin of the thread list (gap below the search field). */
+  --chat-list-items-margin-top: 8px;
+
+  /* Horizontal padding of the date-group header ("Today", "Yesterday", …). */
+  --chat-list-group-header-padding-x: 8px;
+
+  /* Bottom margin of each date group block (header + its thread rows). */
+  --chat-list-group-margin-bottom: 8px;
+
+  /* Thread row (chat list item) height and horizontal padding. The rename
+     state flattens the padding to 0 in the component so the input spans the
+     full row width. */
+  --chat-list-item-height: 28px;
+  --chat-list-item-padding-x: 8px;
+
+  /* Chat-history column paddings. `--chat-list-padding-x` is the shared
+     horizontal inset of both the sticky header and the scrolling list (they
+     form one continuous column); the top/bottom tokens are the header's top
+     inset and the list's bottom inset. */
+  --chat-list-padding-x: 12px;
+  --chat-list-header-padding-top: 8px;
+  --chat-list-content-padding-bottom: 8px;
 
   /* Heights of the fade overlays at the top and bottom of the message thread.
      The overlay color is the panel background (`--background-normal-rgb`, set

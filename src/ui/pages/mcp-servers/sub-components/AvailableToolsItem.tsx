@@ -102,7 +102,7 @@ const AvailableToolsItem = ({
     <div dir={isRTL ? "rtl" : "ltr"} className="flex flex-col">
       <div
         className={cn(
-          "h-[32px] px-[8px] rounded-[var(--servers-available-tools-item-border-radius)] flex items-center justify-between",
+          "h-[var(--servers-available-tools-item-height,32px)] px-[var(--servers-available-tools-item-padding-x,8px)] rounded-[var(--servers-available-tools-item-border-radius)] flex items-center justify-between",
           isLoadingAction ? "" : "cursor-pointer",
           "bg-[var(--servers-available-tools-item-background-color)]",
           "active:bg-[var(--servers-available-tools-item-active-background-color)]",
@@ -118,9 +118,9 @@ const AvailableToolsItem = ({
           setOpened((val) => !val);
         }}
       >
-        <div className="flex items-center gap-[8px]">
+        <div className="flex items-center gap-[var(--servers-available-tools-item-content-gap,8px)]">
           <div
-            className="flex items-center justify-center w-[12px] h-full"
+            className="flex items-center justify-center w-[var(--servers-available-tools-item-chevron-width,12px)] h-full"
             style={{
               transform: isRTL
                 ? `rotate(${opened ? 0 : 90}deg)`
@@ -166,25 +166,34 @@ const AvailableToolsItem = ({
       {opened && isStoped ? (
         <div
           className={cn(
-            "mt-[4px] max-h-[300px] overflow-y-auto select-text",
+            "mt-[var(--servers-available-tools-logs-margin-top,4px)]",
+            "max-h-[var(--servers-available-tools-logs-max-height,300px)]",
+            "overflow-y-auto select-text",
             "rounded-[var(--servers-available-tools-item-border-radius)]",
             "bg-[var(--servers-available-tools-item-background-color)]",
-            "px-[8px] py-[8px]"
+            "p-[var(--servers-available-tools-logs-padding,8px)]"
           )}
         >
-          <pre className="m-0 whitespace-pre-wrap break-words font-mono text-[12px] leading-[16px] text-[var(--servers-available-tools-item-name-color)]">
+          <pre
+            className={cn(
+              "m-[var(--servers-available-tools-logs-text-margin,0)]",
+              "whitespace-pre-wrap break-words font-mono",
+              "text-[length:var(--fs-12,12px)] leading-[var(--lh-16,16px)]",
+              "text-[var(--servers-available-tools-item-name-color)]"
+            )}
+          >
             {logs.join("")}
           </pre>
         </div>
       ) : null}
       {opened && !isStoped ? (
-        <div className="flex flex-col gap-[8px] mt-[4px]">
+        <div className="flex flex-col gap-[var(--servers-available-tools-sublist-gap,8px)] mt-[var(--servers-available-tools-sublist-margin-top,4px)]">
           {mcpItems.map((tool) => {
             return (
               <div
                 key={tool.name}
                 className={cn(
-                  "rounded-[var(--servers-available-tools-item-border-radius)] cursor-pointer flex flex-col hover:bg-[var(--servers-available-tools-item-hover-background-color)] ps-[28px] pe-[8px] h-[26px]"
+                  "rounded-[var(--servers-available-tools-item-border-radius)] cursor-pointer flex flex-col hover:bg-[var(--servers-available-tools-item-hover-background-color)] ps-[var(--servers-available-tools-tool-padding-start,28px)] pe-[var(--servers-available-tools-tool-padding-end,8px)] h-[var(--servers-available-tools-tool-height,26px)]"
                 )}
                 onClick={() => {
                   changeToolStatus(name, tool.name, !tool.enabled);

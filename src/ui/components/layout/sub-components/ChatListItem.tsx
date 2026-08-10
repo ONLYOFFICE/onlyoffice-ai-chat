@@ -9,6 +9,9 @@ import { Icon } from "../../icon";
 import { IconButton } from "../../icon-button";
 import { Input } from "../../input";
 import { DeleteChatDialog } from "./DeleteChatDialog";
+import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
+import logger from "../../../../shared/logger";
 
 type ChatListItemProps = {
   thread: Thread;
@@ -61,6 +64,9 @@ const ChatListItemComponent = ({
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const { t } = useI18n();
+  const { onDeleteThread } = useWidgetConfig();
+  const { useThreadsStore } = useStores();
+  const deleteThread = useThreadsStore((s) => s.onDeleteThread);
 
   // Handle keyboard events for rename input
   React.useEffect(() => {
@@ -99,9 +105,22 @@ const ChatListItemComponent = ({
     setCurrentPage("chat");
   };
 
-  const onDeleteClick = () => {
-    setIsDeleteDialogVisible(true);
+  // When the host supplies `onDeleteThread`, it owns the confirmation step
+  // (its own modal); the widget performs the deletion once the host resolves
+  // truthy. Otherwise fall back to the built-in confirm dialog.
+  const onDeleteClick = async () => {
     setIsOpen(false);
+    if (!onDeleteThread) {
+      setIsDeleteDialogVisible(true);
+      return;
+    }
+    try {
+      const confirmed = await onDeleteThread(thread);
+      if (!confirmed) return;
+      await deleteThread(thread.threadId);
+    } catch (err) {
+      logger.error("onDeleteThread handler failed:", err);
+    }
   };
 
   const onRenameClick = () => {
@@ -185,7 +204,7 @@ const ChatListItemComponent = ({
   return (
     <div
       key={thread.threadId}
-      className={`cursor-pointer rounded-[4px] h-[28px] min-h-[28px] px-[8px] flex items-center justify-between hover:bg-[var(--chat-list-item-hover-background-color)] ${
+      className={`cursor-pointer rounded-[4px] h-[var(--chat-list-item-height,28px)] min-h-[var(--chat-list-item-height,28px)] px-[var(--chat-list-item-padding-x,8px)] flex items-center justify-between hover:bg-[var(--chat-list-item-hover-background-color)] ${
         isRenameInputVisible
           ? "px-[0px]"
           : isOpen

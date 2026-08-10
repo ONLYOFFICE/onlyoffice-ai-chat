@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "../../../shared/utils";
+import { useWidgetConfig } from "../../../widget-config";
 import { DropdownMenu } from "../dropdown";
 import type { DropDownItemProps } from "../dropdown-item/DropDownItem.types";
 import { Icon } from "../icon";
@@ -23,6 +24,11 @@ export type ComboBoxProps = {
   contentClassName?: string;
   /** Caps the dropdown panel width (px number or CSS length). */
   maxWidth?: number | string;
+  /**
+   * Icon name for the trigger's chevron/arrow. When omitted, falls back to the
+   * `comboBoxArrowIcon` widget config and then to the bundled `"arrow"`.
+   */
+  arrowIcon?: string;
   "data-testid"?: string;
 };
 
@@ -39,10 +45,15 @@ const ComboBox = ({
   matchTriggerWidth = true,
   contentClassName,
   maxWidth,
+  arrowIcon,
   "data-testid": dataTestId,
 }: ComboBoxProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const { comboBoxArrowIcon } = useWidgetConfig();
+  // Explicit prop wins (e.g. the model selector passes its own icon), then
+  // the host's combobox-wide config, then the bundled default.
+  const resolvedArrowIcon = arrowIcon ?? comboBoxArrowIcon ?? "arrow";
 
   const handleOpenChange = (next: boolean) => {
     if (!next) setSearchQuery("");
@@ -57,7 +68,7 @@ const ComboBox = ({
       : items;
 
   const searchHeader = searchable ? (
-    <div className="px-[8px] pb-[4px]">
+    <div className="px-[var(--combo-box-search-padding-x,8px)] pb-[var(--combo-box-search-padding-bottom,4px)]">
       <input
         autoFocus
         value={searchQuery}
@@ -65,7 +76,7 @@ const ComboBox = ({
         onKeyDown={(e) => e.stopPropagation()}
         placeholder={searchPlaceholder}
         className={cn(
-          "w-full h-[24px] px-[4px] rounded-[4px]",
+          "w-full h-[var(--combo-box-search-input-height,24px)] px-[var(--combo-box-search-input-padding-x,4px)] rounded-[4px]",
           "leading-[var(--lh-16)] text-[var(--input-color)]",
           "bg-[var(--input-background-color)] border border-[var(--input-border-color)]",
           "placeholder:text-[var(--input-placeholder-color)]",
@@ -110,9 +121,9 @@ const ComboBox = ({
           >
             {value || placeholder}
           </span>
-          <div className="flex items-center justify-center h-[var(--combo-box-height,24px)] w-[16px] shrink-0">
+          <div className="flex items-center justify-center h-[var(--combo-box-height,24px)] w-[var(--combo-box-arrow-container-width,16px)] shrink-0">
             <Icon
-              name="arrow"
+              name={resolvedArrowIcon}
               color="var(--icon-normal)"
               width={7}
               height={4}

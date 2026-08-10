@@ -191,16 +191,16 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
       id="config-editor"
       data-testid="config-editor"
       dir={isRTL ? "rtl" : "ltr"}
-      className="flex flex-col w-full py-[8px] mb-[8px] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)] select-text"
+      className="flex flex-col w-full py-[var(--config-editor-padding-y,8px)] mb-[var(--config-editor-margin-bottom,8px)] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)] select-text"
     >
-      <div className="flex items-center justify-between ps-[16px] pe-[8px] mb-[8px]">
+      <div className="flex items-center justify-between ps-[var(--config-editor-header-padding-start,16px)] pe-[var(--config-editor-header-padding-end,8px)] mb-[var(--config-editor-header-margin-bottom,8px)]">
         <p className="font-bold text-fs-12 leading-[var(--lh-18)] text-[var(--settings-header-color)]">
           {t("EditConfiguration")}
         </p>
         {/* <IconButton iconName="btn-close" size={24} onClick={onClose} /> */}
       </div>
-      <div className="px-[16px]">
-        <div className="flex flex-col gap-[8px] pb-[8px]">
+      <div className="px-[var(--config-editor-content-padding-x,16px)]">
+        <div className="flex flex-col gap-[8px] pb-[var(--config-editor-body-padding-bottom,8px)]">
           <div className="flex flex-col gap-[8px] min-h-[256px] p-[8px] bg-[var(--servers-edit-config-json-background-color)] rounded-[4px]">
             <div className="flex flex-row justify-between">
               <p className=" text-[var(--servers-edit-config-json-header-color)]">
@@ -222,7 +222,7 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
             ) : null}
           </div>
         </div>
-        <div className="flex flex-row items-center justify-end gap-[8px] h-[24px]  mx-[-16px] px-[16px]">
+        <div className="flex flex-row items-center justify-end gap-[var(--config-editor-footer-gap,8px)] h-[var(--config-editor-footer-height,24px)] mx-[calc(-1*var(--config-editor-content-padding-x,16px))] px-[var(--config-editor-content-padding-x,16px)]">
           <Button onClick={onClose} variant="default">
             {t("Cancel")}
           </Button>

@@ -86,7 +86,11 @@ const UserActionBar = () => {
   const message = useMessage();
   const { usePromptsStore } = useStores();
   const { copyToClipboard: platformCopy } = usePlatform();
-  const { onCreatePromptFolder, onCreatePrompt } = useWidgetConfig();
+  const {
+    onCreatePromptFolder,
+    onCreatePrompt,
+    chatMessageActionsIconSize = 20,
+  } = useWidgetConfig();
   const addPrompt = usePromptsStore((s) => s.addPrompt);
   const addFolder = usePromptsStore((s) => s.addFolder);
   const folders = usePromptsStore((s) => s.folders);
@@ -188,12 +192,12 @@ const UserActionBar = () => {
 
   return (
     <>
-      <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[2px]">
+      <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[var(--chat-user-message-actions-gap,2px)]">
         <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onCopy}>
           {copied ? (
             <IconButton
               iconName="checked"
-              size={20}
+              size={chatMessageActionsIconSize}
               isStroke
               color="var(--icon-gray-secondary)"
               disabled
@@ -201,7 +205,7 @@ const UserActionBar = () => {
           ) : (
             <IconButton
               iconName="btn-copy"
-              size={20}
+              size={chatMessageActionsIconSize}
               isStroke
               color="var(--icon-gray-secondary)"
             />
@@ -213,7 +217,7 @@ const UserActionBar = () => {
           trigger={
             <IconButton
               iconName="btn-more.small"
-              size={20}
+              size={chatMessageActionsIconSize}
               isActive={isOpen}
               insideElement
               color="var(--icon-gray-secondary)"
@@ -306,7 +310,7 @@ export const UserMessage = memo(() => {
 
         <div
           className={cn(
-            "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[16px] px-[12px] py-[8px] select-text",
+            "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[var(--chat-user-message-border-radius,16px)] px-[12px] py-[8px] select-text",
             isRTL ? "rounded-bl-[0px]" : "rounded-br-[0px]"
           )}
         >

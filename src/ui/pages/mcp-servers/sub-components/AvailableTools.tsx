@@ -75,7 +75,7 @@ const AvailableTools = ({
       {withHeader ? (
         <div
           className={cn(
-            "min-h-[40px] h-[40px] flex items-center justify-between px-[16px]",
+            "min-h-[var(--servers-available-tools-header-height,40px)] h-[var(--servers-available-tools-header-height,40px)] flex items-center justify-between px-[var(--servers-available-tools-header-padding-x,16px)]",
             isRTL ? "flex-row-reverse" : ""
           )}
         >
@@ -88,8 +88,10 @@ const AvailableTools = ({
       <div
         dir={isRTL ? "rtl" : "ltr"}
         className={cn(
-          "flex flex-col gap-[8px] pb-[8px] px-[8px]",
-          withHeader ? "pt-[4px]" : "pt-[8px]"
+          "flex flex-col gap-[var(--servers-available-tools-list-gap,8px)] pb-[var(--servers-available-tools-list-padding-bottom,8px)] px-[var(--servers-available-tools-list-padding-x,8px)]",
+          withHeader
+            ? "pt-[var(--servers-available-tools-list-padding-top-with-header,4px)]"
+            : "pt-[var(--servers-available-tools-list-padding-top,8px)]"
         )}
       >
         {serversInstance
