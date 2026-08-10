@@ -62,13 +62,13 @@ const Composer = () => {
   }, [composerBridge, composerRuntime]);
 
   return (
-    <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[8px] px-[12px] pb-[4px]">
+    <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[var(--chat-composer-wrapper-gap,8px)] px-[var(--chat-composer-wrapper-padding-x,12px)] pb-[var(--chat-composer-wrapper-padding-bottom,4px)]">
       <ComposerPrimitive.Root
         ref={rootRef}
         onClick={focusInputOnClick}
         inert={composerDisabled}
         aria-disabled={composerDisabled || undefined}
-        className={`composer-root relative flex w-full flex-col gap-[6px] rounded-[4px] border px-[8px] pt-[10px] pb-[6px] box-border ${
+        className={`composer-root relative flex w-full flex-col gap-[6px] rounded-[4px] border px-[var(--chat-composer-padding-x,8px)] pt-[var(--chat-composer-padding-top,10px)] pb-[var(--chat-composer-padding-bottom,6px)] box-border ${
           composerDisabled
             ? "composer-disabled pointer-events-none cursor-not-allowed opacity-60"
             : "cursor-text"
@@ -123,7 +123,7 @@ const Composer = () => {
         />
         <ComposerAction />
       </ComposerPrimitive.Root>
-      <p className="text-center font-normal text-fs-10 leading-[var(--lh-16)] text-[var(--text-tertiary)]">
+      <p className="text-center font-normal text-[length:var(--chat-composer-disclaimer-font-size,var(--fs-10,10px))] leading-[var(--lh-16)] text-[var(--text-tertiary)]">
         {t("CheckInfo")}
       </p>
     </div>

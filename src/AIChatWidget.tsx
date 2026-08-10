@@ -136,6 +136,12 @@ export interface AIChatWidgetProps {
    */
   chatHistoryCloseIcon?: WidgetConfig["chatHistoryCloseIcon"];
   /**
+   * Which edge the search input's magnifier icon sits on (currently the
+   * chat-history search field). Defaults to `"end"`; set to `"start"` to keep
+   * it visible while typing. See {@link WidgetConfig.inputIconPosition}.
+   */
+  inputIconPosition?: WidgetConfig["inputIconPosition"];
+  /**
    * Hide the chat-history panel's header row (title + close button), keeping
    * the search field and thread list. See
    * {@link WidgetConfig.hideChatHistoryHeader}.
@@ -146,6 +152,17 @@ export interface AIChatWidgetProps {
    * of only on hover. See {@link WidgetConfig.chatHistoryAlwaysShowActions}.
    */
   chatHistoryAlwaysShowActions?: boolean;
+  /**
+   * Chevron icon for the regular (settings-form) comboboxes. Defaults to
+   * `"arrow"`. See {@link WidgetConfig.comboBoxArrowIcon}.
+   */
+  comboBoxArrowIcon?: WidgetConfig["comboBoxArrowIcon"];
+  /**
+   * Chevron icon for the composer's model selector. Defaults to `"arrow"`;
+   * set it to differ from the form comboboxes. See
+   * {@link WidgetConfig.modelSelectorArrowIcon}.
+   */
+  modelSelectorArrowIcon?: WidgetConfig["modelSelectorArrowIcon"];
   hideToolAllowAlways?: WidgetConfig["hideToolAllowAlways"];
   /**
    * Render the "Add model" form in a two-row (horizontal) layout
@@ -254,6 +271,12 @@ export interface AIChatWidgetProps {
    */
   onDeleteProfile?: WidgetConfig["onDeleteProfile"];
   /**
+   * Custom confirmation for deleting a chat (thread). When provided, the
+   * built-in confirmation dialog is skipped and the host owns the confirmation
+   * UI. See {@link WidgetConfig.onDeleteThread}.
+   */
+  onDeleteThread?: WidgetConfig["onDeleteThread"];
+  /**
    * Custom UI for creating a new prompt folder. When provided, the built-in
    * "New prompt folder" dialog is skipped and the host owns the input UI.
    * See {@link WidgetConfig.onCreatePromptFolder}.
@@ -339,8 +362,11 @@ export const AIChatWidget = React.forwardRef<
       hideThreadFade,
       hideSettingsButton,
       chatHistoryCloseIcon,
+      inputIconPosition,
       hideChatHistoryHeader,
       chatHistoryAlwaysShowActions,
+      comboBoxArrowIcon,
+      modelSelectorArrowIcon,
       hideToolAllowAlways,
       isAddModelCardHorizontal,
       onSettingsClick,
@@ -361,6 +387,7 @@ export const AIChatWidget = React.forwardRef<
       onProfileImportClick,
       onDownloadTemplate,
       onDeleteProfile,
+      onDeleteThread,
       onCreatePromptFolder,
       onRenamePromptFolder,
       onDeletePromptFolder,
@@ -380,8 +407,11 @@ export const AIChatWidget = React.forwardRef<
         hideThreadFade,
         hideSettingsButton,
         chatHistoryCloseIcon,
+        inputIconPosition,
         hideChatHistoryHeader,
         chatHistoryAlwaysShowActions,
+        comboBoxArrowIcon,
+        modelSelectorArrowIcon,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
@@ -399,6 +429,7 @@ export const AIChatWidget = React.forwardRef<
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
+        onDeleteThread,
         onCreatePromptFolder,
         onRenamePromptFolder,
         onDeletePromptFolder,
@@ -415,8 +446,11 @@ export const AIChatWidget = React.forwardRef<
         hideThreadFade,
         hideSettingsButton,
         chatHistoryCloseIcon,
+        inputIconPosition,
         hideChatHistoryHeader,
         chatHistoryAlwaysShowActions,
+        comboBoxArrowIcon,
+        modelSelectorArrowIcon,
         hideToolAllowAlways,
         isAddModelCardHorizontal,
         onSettingsClick,
@@ -434,6 +468,7 @@ export const AIChatWidget = React.forwardRef<
         onProfileImportClick,
         onDownloadTemplate,
         onDeleteProfile,
+        onDeleteThread,
         onCreatePromptFolder,
         onRenamePromptFolder,
         onDeletePromptFolder,

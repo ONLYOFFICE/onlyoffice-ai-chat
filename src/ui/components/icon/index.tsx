@@ -6,14 +6,24 @@ import { useTheme } from "../../providers/ThemeProvider";
 
 type IconProps = {
   name: string;
+  /**
+   * Icon size in pixels. Kept numeric on purpose: a host override component
+   * receives it as its `size` prop, so it can decide how big to draw itself.
+   * A CSS length here would leave the host with no size at all.
+   */
   size?: number;
+  /** Overrides `size` on one axis, in pixels. */
   width?: number;
+  /** Overrides `size` on one axis, in pixels. */
   height?: number;
   isStroke?: boolean;
   color?: string;
   noColor?: boolean;
   className?: string;
 };
+
+const toDim = (v: number | undefined) =>
+  v === undefined ? undefined : `${v}px`;
 
 const SHAPE_SELECTOR = "path, circle, rect, line, polygon, polyline, ellipse";
 
@@ -83,8 +93,11 @@ const IconComponent = ({
           "flex items-center justify-center select-none",
           className
         )}
-        style={{ width: w, height: h }}
+        style={{ width: toDim(w), height: toDim(h) }}
       >
+        {/* The host component owns its own rendered size — it gets the px we
+            asked for and may draw smaller (or ignore it entirely); the wrapper
+            above only reserves the box. */}
         <CustomIcon size={w ?? h} />
       </span>
     );
@@ -117,7 +130,7 @@ const IconComponent = ({
           "select-none flex items-center justify-center",
           className
         )}
-        style={{ width: w, height: h }}
+        style={{ width: toDim(w), height: toDim(h) }}
       >
         <BundledIcon width={w} height={h} />
       </span>
@@ -140,7 +153,7 @@ const IconComponent = ({
           className
         )}
         beforeInjection={(svg) => applySvgColor(svg, isStroke, color, noColor)}
-        style={{ width: w, height: h }}
+        style={{ width: toDim(w), height: toDim(h) }}
       />
     );
   }
@@ -151,7 +164,7 @@ const IconComponent = ({
       alt={name}
       draggable={false}
       className={cn("select-none", className)}
-      style={{ width: w, height: h }}
+      style={{ width: toDim(w), height: toDim(h) }}
     />
   );
 };

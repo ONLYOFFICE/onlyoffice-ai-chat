@@ -45,6 +45,8 @@ const IconButtonComponent = ({
       ? undefined
       : "[&_svg_path]:fill-current [&_svg_path[stroke]]:fill-none [&_svg_path[stroke]]:stroke-current";
 
+  const dim = `${size}px`;
+
   return (
     <button
       // Icon buttons render inside forms (the chat composer is a <form>,
@@ -64,9 +66,9 @@ const IconButtonComponent = ({
         className
       )}
       style={{
-        width: `${size}px`,
-        minWidth: `${size}px`,
-        height: `${size}px`,
+        width: dim,
+        minWidth: dim,
+        height: dim,
         ...(isActive
           ? {
               backgroundColor: "var(--icon-button-pressed-background-color)",

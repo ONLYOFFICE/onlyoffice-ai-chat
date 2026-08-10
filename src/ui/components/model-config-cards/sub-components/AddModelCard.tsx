@@ -35,7 +35,11 @@ export const AddModelCard = ({
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const addProfile = useProfilesStore((s) => s.addProfile);
-  const { onProfileImportClick, onDownloadTemplate } = useWidgetConfig();
+  const {
+    onProfileImportClick,
+    onDownloadTemplate,
+    aboutButtonSize = 20,
+  } = useWidgetConfig();
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -119,7 +123,7 @@ export const AddModelCard = ({
   // handler; inside the form the ONLYOFFICE AI Settings link takes
   // precedence over it. Behaviour is unchanged.
   const importAction = onProfileImportClick ? (
-    <div className="flex flex-row items-center gap-[4px]">
+    <div className="flex flex-row items-center gap-[var(--add-model-card-import-gap,4px)]">
       <Link
         href="#"
         onClick={handleImportClick}
@@ -132,19 +136,19 @@ export const AddModelCard = ({
           <IconButton
             className="cursor-pointer"
             iconName="btn-menu-about"
-            size={20}
+            size={aboutButtonSize}
             disableHover
             noColor
             onClick={() => setIsTooltipOpen((val) => !val)}
           />
         </TooltipTrigger>
         <TooltipContent
-          className="p-[12px]"
+          className="p-[var(--add-model-card-tooltip-padding,12px)]"
           side="bottom"
           isAbout
           align="start"
         >
-          <div className="flex flex-col gap-[6px] max-w-[221px]">
+          <div className="flex flex-col gap-[var(--add-model-card-tooltip-gap,6px)] max-w-[var(--add-model-card-tooltip-max-width,221px)]">
             <p className="leading-[var(--lh-16)] select-none">
               {t("EnterModelConfigTooltip")}
             </p>
@@ -170,7 +174,7 @@ export const AddModelCard = ({
   ) : undefined;
 
   const footer = (
-    <div className="flex flex-row justify-end items-center gap-[12px]">
+    <div className="flex flex-row justify-end items-center gap-[var(--add-model-card-footer-gap,12px)] mt-[var(--add-model-card-footer-margin-top,0px)]">
       {variant === "card" && (
         <Button variant="default" onClick={onClose}>
           {t("Cancel")}
@@ -188,8 +192,8 @@ export const AddModelCard = ({
 
   if (variant === "standalone") {
     return (
-      <div className="flex flex-col gap-[8px]">
-        <h3 className="select-none text-fs-13 font-bold leading-[var(--lh-16)] text-[var(--text-normal)]">
+      <div className="flex flex-col gap-[var(--add-model-card-gap,8px)]">
+        <h3 className="select-none text-[length:var(--add-model-card-title-font-size-standalone,var(--fs-13,13px))] font-bold leading-[var(--lh-16)] text-[var(--text-normal)] [text-align:var(--add-model-card-title-align-standalone,start)]">
           {t("ConnectAIModelToEnableChat")}
         </h3>
 
@@ -210,7 +214,7 @@ export const AddModelCard = ({
 
   return (
     <ModelCardShell>
-      <h3 className="select-none font-bold text-[var(--text-normal)] mb-[8px]">
+      <h3 className="select-none font-bold text-[length:var(--add-model-card-title-font-size-card,var(--fs-12,12px))] text-[var(--text-normal)] mb-[var(--add-model-card-title-margin-bottom,8px)] [text-align:var(--add-model-card-title-align-card,start)]">
         {t("ConnectNewAIModel")}
       </h3>
 

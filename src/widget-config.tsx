@@ -6,7 +6,7 @@ import type { ComposerAction } from "./ui/pages/chat/composer-actions";
 import type { ProfilePickerAction } from "./ui/pages/chat/profile-picker-actions";
 import type { Suggestion } from "./ui/pages/chat/suggestions";
 import type { ModelFormValues } from "./ui/components/model-config-cards/sub-components/ModelConfigForm";
-import type { Profile } from "./types";
+import type { Profile, Thread } from "./types";
 
 export interface WidgetConfig {
   /**
@@ -101,6 +101,15 @@ export interface WidgetConfig {
    */
   chatHistoryCloseIcon?: "btn-close" | "btn-arrow-up";
   /**
+   * Which edge the search input's magnifier icon sits on (currently the
+   * chat-history search field). `"end"` (default) keeps the icon at the
+   * trailing edge, where it is replaced by the clear ("X") button while
+   * typing. `"start"` moves the magnifier to the leading edge, where it stays
+   * visible during input, and the clear button always stays at the trailing
+   * edge.
+   */
+  inputIconPosition?: "start" | "end";
+  /**
    * Hide the chat-history panel's header row (the "Chat history" title and its
    * close button). The search field and the thread list stay visible. Use this
    * when the widget is embedded in a host panel that already provides its own
@@ -134,6 +143,22 @@ export interface WidgetConfig {
    * Can be overridden per menu via `DropdownMenu`'s `navigation` prop.
    */
   dropdownNavigation?: "flyout" | "drilldown";
+  /**
+   * Icon name for the chevron/arrow of the regular comboboxes (the select
+   * fields in settings forms). Defaults to `"arrow"`. Provide the icon itself
+   * via the `images` override if it isn't a bundled name. The composer's model
+   * selector is configured separately via
+   * {@link WidgetConfig.modelSelectorArrowIcon}, so the two can differ.
+   */
+  comboBoxArrowIcon?: string;
+  /**
+   * Icon name for the chevron/arrow of the composer's model selector combobox.
+   * Defaults to `"arrow"` (same as the regular comboboxes). Set it to give the
+   * model selector a distinct arrow without affecting the form comboboxes.
+   *
+   * Only the glyph is configurable — both arrows render at a fixed `7` x `4`.
+   */
+  modelSelectorArrowIcon?: string;
   /**
    * Hide the "Always allow" checkbox in the tool-call confirmation dialog.
    * When hidden, the host can only approve/deny a single call at a time and
@@ -221,6 +246,28 @@ export interface WidgetConfig {
    * larger or smaller send control to match a custom composer height.
    */
   composerActionSendSize?: number;
+  /**
+   * Pixel size of the action buttons below assistant and user messages —
+   * copy, regenerate, edit, save, "more" — covering both the icon and its
+   * square button box. Defaults to `20`.
+   *
+   * Numeric on purpose: the size is handed to the icon component, so a host
+   * that shadows one of these glyphs through the `images` override keeps
+   * control of how big it draws itself.
+   */
+  chatMessageActionsIconSize?: number;
+  /**
+   * Pixel size of the leading icon of a labeled form field (the optional
+   * glyph before the field header). Defaults to `20`.
+   */
+  fieldContainerIconSize?: number;
+  /**
+   * Pixel size of the "about"/info icon buttons — the model form's Import
+   * help trigger and each dropdown item's about button. Defaults to `20`.
+   * The glyph itself can be swapped via the `images` override of
+   * `btn-menu-about`.
+   */
+  aboutButtonSize?: number;
   /**
    * Disable the composer entirely. The input becomes non-editable (no
    * typing, no Enter-to-send) and every composer control — attachments,
@@ -347,6 +394,19 @@ export interface WidgetConfig {
   onDeleteProfile?: (
     profile: Profile
   ) => boolean | void | Promise<boolean | void>;
+  /**
+   * Custom confirmation for deleting a chat (thread). When provided, the
+   * widget's built-in confirmation dialog is NOT shown — the host owns the
+   * confirmation UI (e.g. its own modal) and resolves the result:
+   * - `true` — the widget proceeds with the deletion
+   * - `false` / `undefined` / no return (or a rejected promise) — cancelled,
+   *   nothing is deleted
+   *
+   * The widget always performs the actual deletion itself on confirm; the
+   * host only owns the confirmation step. When omitted, the built-in
+   * confirmation dialog is used.
+   */
+  onDeleteThread?: (thread: Thread) => boolean | void | Promise<boolean | void>;
   /**
    * Custom UI for creating a new prompt folder. When provided, the widget's
    * built-in "New prompt folder" dialog is NOT shown — the host owns the

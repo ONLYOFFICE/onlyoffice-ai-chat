@@ -81,7 +81,11 @@ const ModelAssignment = ({
       header={defaultModelLabel ?? t("DefaultModel")}
       isHorizontal={!hasDefaultSetup}
       reserveErrorSpace={false}
-      className={hasDefaultSetup ? undefined : "mb-[20px]"}
+      className={
+        hasDefaultSetup
+          ? undefined
+          : "mb-[var(--model-assignment-default-margin-bottom,20px)]"
+      }
       headerClassName="font-bold"
     >
       <ComboBox
@@ -95,12 +99,12 @@ const ModelAssignment = ({
 
   return (
     <div className="w-full">
-      <p className="font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[24px]">
+      <p className="font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[var(--model-assignment-description-margin-bottom,24px)]">
         {t("ModelAssignmentDescription")}
       </p>
       <div className="flex flex-col">
         {hasDefaultSetup ? (
-          <div className="default-ai-setup flex flex-col mb-[20px]">
+          <div className="default-ai-setup flex flex-col mb-[var(--model-assignment-default-margin-bottom,20px)]">
             {defaultSetupHeader}
             {defaultModelField}
           </div>
@@ -108,7 +112,7 @@ const ModelAssignment = ({
           defaultModelField
         )}
 
-        <p className="select-none font-bold leading-[var(--lh-18)] text-[var(--settings-header-color)] mb-[8px]">
+        <p className="select-none font-bold leading-[var(--lh-18)] text-[var(--settings-header-color)] mb-[var(--model-assignment-tasks-header-margin-bottom,8px)]">
           {t("OverrideForTasks")}
         </p>
 
@@ -116,7 +120,7 @@ const ModelAssignment = ({
           header={t("AIChat")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[12px]"
+          className="mb-[var(--model-assignment-task-margin-bottom,12px)]"
           icon="ask-ai"
           iconIsStroke
         >
@@ -131,7 +135,7 @@ const ModelAssignment = ({
           header={t("Code")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[12px]"
+          className="mb-[var(--model-assignment-task-margin-bottom,12px)]"
           icon="code.small"
           iconIsStroke
         >
@@ -146,7 +150,7 @@ const ModelAssignment = ({
           header={t("Summarization")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[12px]"
+          className="mb-[var(--model-assignment-task-margin-bottom,12px)]"
           icon="summarization"
           iconIsStroke
         >
@@ -161,7 +165,7 @@ const ModelAssignment = ({
           header={t("Translation")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[12px]"
+          className="mb-[var(--model-assignment-task-margin-bottom,12px)]"
           icon="translation"
         >
           <ComboBox
@@ -175,7 +179,7 @@ const ModelAssignment = ({
           header={t("TextAnalysis")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[12px]"
+          className="mb-[var(--model-assignment-task-margin-bottom,12px)]"
           icon="text-analysis-ai"
         >
           <ComboBox
@@ -189,7 +193,7 @@ const ModelAssignment = ({
           header={t("ImageGeneration")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[12px]"
+          className="mb-[var(--model-assignment-task-margin-bottom,12px)]"
           icon="image-generation"
         >
           <ComboBox
@@ -203,7 +207,7 @@ const ModelAssignment = ({
           header={t("OCR")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[12px]"
+          className="mb-[var(--model-assignment-task-margin-bottom,12px)]"
           icon="ocr"
         >
           <ComboBox
@@ -217,7 +221,7 @@ const ModelAssignment = ({
           header={t("Vision")}
           isHorizontal
           reserveErrorSpace={false}
-          className="mb-[12px]"
+          className="mb-[var(--model-assignment-task-margin-bottom,12px)]"
           icon="vision-ai"
         >
           <ComboBox
