@@ -246,4 +246,35 @@ describe("generateTitle action", () => {
       `${titleSystemPrompt}\n\nMORE`
     );
   });
+
+  // The prompt asks for a short single-line title; a weak model ignores it
+  // and the result still has to fit a bounded, one-line-rendered field.
+  it("collapses a multi-line answer into one line", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce(
+      "Here is a title:\n\n  Workspace   capabilities\toverview\n"
+    );
+    expect(await generateTitle(baseArgs)).toBe(
+      "Here is a title: Workspace capabilities overview"
+    );
+  });
+
+  it("keeps a title that only slightly overshoots the prompted 60 chars", async () => {
+    const long = "a".repeat(119);
+    sendMessageSyncMock.mockResolvedValueOnce(long);
+    expect(await generateTitle(baseArgs)).toBe(long);
+  });
+
+  it("truncates prose on a word boundary and marks it with an ellipsis", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce(`${"word ".repeat(80)}tail`);
+    const title = await generateTitle(baseArgs);
+    expect(title.length).toBeLessThanOrEqual(120);
+    // Cut landed on the last space that fits, so no partial word survives.
+    expect(title).toBe(`${"word ".repeat(22)}word…`);
+  });
+
+  it("truncates mid-token when there is no usable word boundary", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("b".repeat(400));
+    const title = await generateTitle(baseArgs);
+    expect(title).toBe(`${"b".repeat(119)}…`);
+  });
 });
