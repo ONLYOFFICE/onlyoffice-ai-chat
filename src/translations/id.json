@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Hubungkan Model AI baru",
   "AddModel": "Tambah Model",
   "CustomProviders": "Penyedia Kustom",
-  "Import": "Impor",
+  "Import": "Impor Penyedia Kustom",
   "BaseURL": "URL Dasar",
   "InvalidUrl": "URL tidak valid",
   "EnterModelConfigTooltip": "Masukkan konfigurasi untuk API Model AI dalam format JS. Berikan nama model, URL endpoint, dan header.",

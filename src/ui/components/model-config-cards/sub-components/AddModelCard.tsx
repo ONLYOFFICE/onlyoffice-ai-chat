@@ -127,7 +127,7 @@ export const AddModelCard = ({
       <Link
         href="#"
         onClick={handleImportClick}
-        className="!text-[var(--link-secondary-color)] no-underline"
+        className="!text-[var(--link-secondary-color)]"
       >
         {t("Import")}
       </Link>

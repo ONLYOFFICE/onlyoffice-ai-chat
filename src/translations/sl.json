@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Poveži nov AI model",
   "AddModel": "Dodaj model",
   "CustomProviders": "Ponudniki po meri",
-  "Import": "Uvozi",
+  "Import": "Uvozi ponudnika po meri",
   "BaseURL": "Osnovni URL",
   "InvalidUrl": "Neveljaven URL",
   "EnterModelConfigTooltip": "Vnesite konfiguracijo za API AI modela v obliki JS. Navedite ime modela, URL-je končnih točk in glave.",

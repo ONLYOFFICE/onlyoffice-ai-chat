@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "新しい AI モデルを接続",
   "AddModel": "モデルを追加",
   "CustomProviders": "カスタムプロバイダー",
-  "Import": "インポート",
+  "Import": "カスタムプロバイダーをインポート",
   "BaseURL": "ベース URL",
   "InvalidUrl": "URL が無効です",
   "EnterModelConfigTooltip": "AI モデル API の設定を JS 形式で入力してください。モデル名、エンドポイント URL、ヘッダーを指定します。",

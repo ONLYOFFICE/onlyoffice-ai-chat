@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "새 AI 모델 연결",
   "AddModel": "모델 추가",
   "CustomProviders": "사용자 정의 공급자",
-  "Import": "가져오기",
+  "Import": "사용자 정의 공급자 가져오기",
   "BaseURL": "Base URL",
   "InvalidUrl": "잘못된 URL",
   "EnterModelConfigTooltip": "AI 모델 API 구성을 JS 형식으로 입력하세요. 모델 이름, 엔드포인트 URL 및 헤더를 제공하세요.",

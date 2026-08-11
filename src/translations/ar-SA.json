@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "ربط نموذج ذكاء اصطناعي جديد",
   "AddModel": "إضافة نموذج",
   "CustomProviders": "مزودون مخصصون",
-  "Import": "استيراد",
+  "Import": "استيراد مزود مخصص",
   "BaseURL": "عنوان URL الأساسي",
   "InvalidUrl": "عنوان URL غير صالح",
   "EnterModelConfigTooltip": "أدخل تكوين API لنموذج الذكاء الاصطناعي بصيغة JS. قدّم اسم النموذج وعناوين URL للنقاط النهائية والترويسات.",

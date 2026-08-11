@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Kết nối mô hình AI mới",
   "AddModel": "Thêm mô hình",
   "CustomProviders": "Nhà cung cấp tùy chỉnh",
-  "Import": "Nhập",
+  "Import": "Nhập nhà cung cấp tùy chỉnh",
   "BaseURL": "Base URL",
   "InvalidUrl": "URL không hợp lệ",
   "EnterModelConfigTooltip": "Nhập cấu hình cho API mô hình AI theo định dạng JS. Cung cấp tên mô hình, URL endpoint và header.",

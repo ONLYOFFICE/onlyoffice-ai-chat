@@ -8,7 +8,14 @@
 - Generated thread titles are now capped in code instead of by request. The title system prompt asks for "under 60 characters" on a single line; a weak model returns a preamble, a multi-line list, or the whole answer, and the host then has to store it — DocSpace backs the column with `varchar(255)`, so an oversized title failed the write outright. `generateTitle` now collapses whitespace to one line and truncates at 120 characters (on a word boundary when one is close to the limit, marked with an ellipsis), so what reaches storage is always a plausible title.
 - Failed hydration no longer escapes as an unhandled promise rejection. Every hydration path is fired from a mount effect that cannot await it, so a rejected read (offline, 401, 5xx) surfaced only in the console while the UI showed an empty list — indistinguishable from a host that genuinely has nothing configured. All of them now catch, log, and report to the host through `ChatCallbacks.onError` (previously declared but never emitted) as `{ type: "storage", context, error }`, keeping whatever data they already had so the next mount / navigation retries: `profiles:init`, `threads:init`, `prompts:init`, `servers:init`, `tools:list`, and `messages:load` — the last one being the worst of the set, since a failed history read used to blank the open conversation. `clouds:fetch` (a read of the host's own `platform.clouds` adapter) reports as `{ type: "network" }`.
 - Locale switches (`I18nProvider`'s effects, `changeLocale`, platform environment changes) no longer reject unhandled when the lazily imported locale chunk fails to load — e.g. a stale build after a deploy. The failure is logged and the widget keeps rendering in its current language. Not routed through `onError`: this provider is mounted independently of `EventsProvider`.
-## [Desktop plugin changes]
+
+## 0.5.43
+
+### Changed
+
+- The add-profile card's import link is now labeled "Import Custom Provider" instead of the generic "Import" (translated in all 41 locales) and is underlined, matching the other field action links like "Get API key".
+
+## 0.5.42 (Desktop plugin changes)
 
 ### Added
 

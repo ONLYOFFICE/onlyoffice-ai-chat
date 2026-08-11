@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Lidh model të ri AI",
   "AddModel": "Shto model",
   "CustomProviders": "Ofrues të personalizuar",
-  "Import": "Importo",
+  "Import": "Importo ofrues të personalizuar",
   "BaseURL": "URL bazë",
   "InvalidUrl": "URL e pavlefshme",
   "EnterModelConfigTooltip": "Vendos konfigurimin për API-n e modelit AI në format JS. Jep emrin e modelit, URL-të e pikave fundore dhe kokëzat.",

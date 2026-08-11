@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Свържи нов AI модел",
   "AddModel": "Добави модел",
   "CustomProviders": "Персонализирани доставчици",
-  "Import": "Импортирай",
+  "Import": "Импортирай персонализиран доставчик",
   "BaseURL": "Базов URL",
   "InvalidUrl": "Невалиден URL",
   "EnterModelConfigTooltip": "Въведете конфигурацията за AI Model API в JS формат. Посочете името на модела, крайните URL адреси и хедърите.",

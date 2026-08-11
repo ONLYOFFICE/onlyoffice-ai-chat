@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "連接新 AI 模型",
   "AddModel": "新增模型",
   "CustomProviders": "自訂提供商",
-  "Import": "匯入",
+  "Import": "匯入自訂提供商",
   "BaseURL": "基礎 URL",
   "InvalidUrl": "無效的 URL",
   "EnterModelConfigTooltip": "以 JS 格式輸入 AI 模型 API 的設定，包含模型名稱、端點 URL 及標頭。",

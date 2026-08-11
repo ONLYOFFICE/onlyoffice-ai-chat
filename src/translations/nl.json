@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Nieuw AI-model verbinden",
   "AddModel": "Model toevoegen",
   "CustomProviders": "Aangepaste providers",
-  "Import": "Importeren",
+  "Import": "Aangepaste provider importeren",
   "BaseURL": "Basis-URL",
   "InvalidUrl": "Ongeldige URL",
   "EnterModelConfigTooltip": "Voer de configuratie voor de AI Model API in JS-indeling in. Geef de modelnaam, eindpunt-URL's en headers op.",

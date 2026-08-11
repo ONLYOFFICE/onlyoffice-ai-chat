@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Կապել նոր AI մոդել",
   "AddModel": "Ավելացնել մոդել",
   "CustomProviders": "Հատուկ մատակարարներ",
-  "Import": "Ներմուծել",
+  "Import": "Ներմուծել հատուկ մատակարար",
   "BaseURL": "Բազային URL",
   "InvalidUrl": "Անվավեր URL",
   "EnterModelConfigTooltip": "Մուտքագրեք AI Model API-ի կարգավորումը JS ձևաչափով։ Նշեք մոդելի անվանումը, endpoint URL-ները և headers-ը։",
