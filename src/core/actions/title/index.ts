@@ -18,32 +18,41 @@ import { systemPrompt } from "./prompt";
  */
 const MAX_TITLE_LENGTH = 120;
 
-/**
- * Shortest prefix that may end a truncated title on a word boundary. Below
- * it the last space sits too far from the limit to be worth honoring (a
- * title with no spaces at all, or one long leading token), so the cut lands
- * mid-word instead of throwing most of the title away.
- */
-const WORD_BOUNDARY_FLOOR = Math.floor(MAX_TITLE_LENGTH * 0.6);
+const isHighSurrogate = (code: number): boolean =>
+  code >= 0xd800 && code <= 0xdbff;
 
 /**
  * Collapse model output into something usable as a title: a single line, no
- * longer than {@link MAX_TITLE_LENGTH}. An over-long value is truncated on
- * a word boundary where one is close enough to the limit, and marked with an
- * ellipsis; the result never exceeds the limit, ellipsis included.
+ * longer than {@link MAX_TITLE_LENGTH}. An over-long value is cut on the last
+ * word boundary that fits and marked with an ellipsis; the result never
+ * exceeds the limit, ellipsis included.
  */
 export const normalizeTitle = (raw: string): string => {
   // Also folds newlines: a title renders on one line, and the leading
-  // "Here is a title:\n…" preamble the prompt forbids arrives as one.
+  // "Here is a title:\n..." preamble the prompt forbids arrives as one.
   const collapsed = raw.replace(/\s+/g, " ").trim();
   if (collapsed.length <= MAX_TITLE_LENGTH) {
     return collapsed;
   }
+
   // One character is reserved for the ellipsis.
   const cut = collapsed.slice(0, MAX_TITLE_LENGTH - 1);
   const lastSpace = cut.lastIndexOf(" ");
-  const body = lastSpace >= WORD_BOUNDARY_FLOOR ? cut.slice(0, lastSpace) : cut;
-  return `${body.trimEnd()}…`;
+  if (lastSpace > 0) {
+    // Stops on the character before the space, so no trailing space is left
+    // (whitespace above is already collapsed to single spaces).
+    return `${cut.slice(0, lastSpace)}…`;
+  }
+
+  // Spaceless text — CJK, a URL, a base64 blob — offers no boundary, so the
+  // cut lands mid-token. Back off one code unit when it would split a
+  // surrogate pair: a lone surrogate is not valid UTF-8 and gets rejected or
+  // mangled on the way into storage.
+  const end = isHighSurrogate(cut.charCodeAt(cut.length - 1))
+    ? cut.length - 1
+    : cut.length;
+
+  return `${cut.slice(0, end)}…`;
 };
 
 /**

@@ -272,9 +272,26 @@ describe("generateTitle action", () => {
     expect(title).toBe(`${"word ".repeat(22)}word…`);
   });
 
-  it("truncates mid-token when there is no usable word boundary", async () => {
+  it("cuts on the last space even when it sits early in the title", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce(`Hi ${"z".repeat(400)}`);
+    expect(await generateTitle(baseArgs)).toBe("Hi…");
+  });
+
+  it("truncates mid-token when the title has no space at all", async () => {
     sendMessageSyncMock.mockResolvedValueOnce("b".repeat(400));
     const title = await generateTitle(baseArgs);
     expect(title).toBe(`${"b".repeat(119)}…`);
+  });
+
+  // Spaceless text is cut by code unit, and an emoji occupies two of them —
+  // a cut between the halves leaves a lone surrogate, which is not valid
+  // UTF-8 and is rejected or mangled on its way into storage.
+  it("never cuts a surrogate pair in half", async () => {
+    // 59 emoji = 118 code units, so the 119-unit cut would land mid-pair.
+    sendMessageSyncMock.mockResolvedValueOnce("🙂".repeat(80));
+    const title = await generateTitle(baseArgs);
+    expect(title).toBe(`${"🙂".repeat(59)}…`);
+    // No lone surrogate survived: re-encoding is lossless.
+    expect(Array.from(title)).toHaveLength(60);
   });
 });
