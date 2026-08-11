@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Anslut ny AI-modell",
   "AddModel": "Lägg till modell",
   "CustomProviders": "Anpassade leverantörer",
-  "Import": "Importera",
+  "Import": "Importera anpassad leverantör",
   "BaseURL": "Bas-URL",
   "InvalidUrl": "Ogiltig URL",
   "EnterModelConfigTooltip": "Ange konfigurationen för AI-modellens API i JS-format. Ange modellnamn, slutpunkts-URL:er och rubriker.",

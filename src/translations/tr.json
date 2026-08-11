@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Yeni AI Modeli bağla",
   "AddModel": "Model Ekle",
   "CustomProviders": "Özel Sağlayıcılar",
-  "Import": "İçe aktar",
+  "Import": "Özel Sağlayıcıyı İçe Aktar",
   "BaseURL": "Temel URL",
   "InvalidUrl": "Geçersiz URL",
   "EnterModelConfigTooltip": "AI Model API yapılandırmasını JS formatında girin. Model adını, uç nokta URL'lerini ve başlıkları belirtin.",

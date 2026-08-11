@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Connecter un nouveau modèle IA",
   "AddModel": "Ajouter un modèle",
   "CustomProviders": "Fournisseurs personnalisés",
-  "Import": "Importer",
+  "Import": "Importer un fournisseur personnalisé",
   "BaseURL": "URL de base",
   "InvalidUrl": "URL invalide",
   "EnterModelConfigTooltip": "Saisissez la configuration de l'API du modèle IA au format JS. Indiquez le nom du modèle, les URL des points de terminaison et les en-têtes.",

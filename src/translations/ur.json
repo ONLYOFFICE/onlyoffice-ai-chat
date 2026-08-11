@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "نیا AI ماڈل جوڑیں",
   "AddModel": "ماڈل شامل کریں",
   "CustomProviders": "کسٹم فراہم کنندگان",
-  "Import": "درآمد کریں",
+  "Import": "کسٹم فراہم کنندہ درآمد کریں",
   "BaseURL": "Base URL",
   "InvalidUrl": "غلط URL",
   "EnterModelConfigTooltip": "AI ماڈل API کی ترتیب JS فارمیٹ میں درج کریں۔ ماڈل کا نام، endpoint URLs اور headers فراہم کریں۔",

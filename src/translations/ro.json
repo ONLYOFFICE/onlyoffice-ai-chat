@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Conectați un nou model AI",
   "AddModel": "Adaugă model",
   "CustomProviders": "Furnizori personalizați",
-  "Import": "Import",
+  "Import": "Import furnizor personalizat",
   "BaseURL": "URL de bază",
   "InvalidUrl": "URL invalid",
   "EnterModelConfigTooltip": "Introduceți configurația pentru API-ul modelului AI în format JS. Furnizați numele modelului, URL-urile endpoint și antetele.",

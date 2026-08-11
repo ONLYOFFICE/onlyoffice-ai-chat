@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Yhdistä uusi AI-malli",
   "AddModel": "Lisää malli",
   "CustomProviders": "Mukautetut palveluntarjoajat",
-  "Import": "Tuo",
+  "Import": "Tuo mukautettu palveluntarjoaja",
   "BaseURL": "Perus-URL",
   "InvalidUrl": "Virheellinen URL",
   "EnterModelConfigTooltip": "Syötä AI-mallin API-määritykset JS-muodossa. Anna mallin nimi, päätepisteen URL-osoitteet ja otsikot.",

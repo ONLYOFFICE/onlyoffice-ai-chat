@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Új AI modell csatolása",
   "AddModel": "Modell hozzáadása",
   "CustomProviders": "Egyéni szolgáltatók",
-  "Import": "Importálás",
+  "Import": "Egyéni szolgáltató importálása",
   "BaseURL": "Alap URL",
   "InvalidUrl": "Érvénytelen URL",
   "EnterModelConfigTooltip": "Adja meg az AI modell API konfigurációját JS formátumban. Adja meg a modell nevét, végponti URL-eket és fejléceket.",

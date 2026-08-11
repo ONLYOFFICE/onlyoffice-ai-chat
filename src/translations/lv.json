@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Pievienot jaunu AI modeli",
   "AddModel": "Pievienot modeli",
   "CustomProviders": "Pielāgoti nodrošinātāji",
-  "Import": "Importēt",
+  "Import": "Importēt pielāgotu nodrošinātāju",
   "BaseURL": "Bāzes URL",
   "InvalidUrl": "Nederīgs URL",
   "EnterModelConfigTooltip": "Ievadiet AI modeļa API konfigurāciju JS formātā. Norādiet modeļa nosaukumu, galapunktu URL un galvenes.",

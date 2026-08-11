@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Pripojiť nový AI model",
   "AddModel": "Pridať model",
   "CustomProviders": "Vlastní poskytovatelia",
-  "Import": "Importovať",
+  "Import": "Importovať vlastného poskytovateľa",
   "BaseURL": "Základná URL",
   "InvalidUrl": "Neplatná URL",
   "EnterModelConfigTooltip": "Zadajte konfiguráciu API rozhrania AI modelu vo formáte JS. Uveďte názov modelu, URL adresy endpointov a hlavičky.",

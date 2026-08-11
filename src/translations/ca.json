@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Connecta un model d'IA nou",
   "AddModel": "Afegeix un model",
   "CustomProviders": "Proveïdors personalitzats",
-  "Import": "Importa",
+  "Import": "Importa un proveïdor personalitzat",
   "BaseURL": "URL base",
   "InvalidUrl": "URL no vàlid",
   "EnterModelConfigTooltip": "Introduïu la configuració per a l'API del model d'IA en format JS. Proporcioneu el nom del model, les URL dels punts d'accés i les capçaleres.",

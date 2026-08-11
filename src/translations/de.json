@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Neues KI-Modell verbinden",
   "AddModel": "Modell hinzufügen",
   "CustomProviders": "Benutzerdefinierte Anbieter",
-  "Import": "Importieren",
+  "Import": "Benutzerdefinierten Anbieter importieren",
   "BaseURL": "Basis-URL",
   "InvalidUrl": "Ungültige URL",
   "EnterModelConfigTooltip": "Geben Sie die Konfiguration für die KI-Modell-API im JS-Format ein. Stellen Sie den Modellnamen, Endpunkt-URLs und Header bereit.",

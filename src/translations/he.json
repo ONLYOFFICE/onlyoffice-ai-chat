@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "חבר מודל AI חדש",
   "AddModel": "הוסף מודל",
   "CustomProviders": "ספקים מותאמים אישית",
-  "Import": "ייבא",
+  "Import": "ייבא ספק מותאם אישית",
   "BaseURL": "כתובת URL בסיסית",
   "InvalidUrl": "כתובת URL לא תקינה",
   "EnterModelConfigTooltip": "הזן את התצורה עבור API של מודל ה-AI בפורמט JS. ספק את שם המודל, כתובות ה-URL של נקודות הקצה והכותרות.",

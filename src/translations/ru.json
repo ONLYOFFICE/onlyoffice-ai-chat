@@ -127,7 +127,7 @@
   "ConnectNewAIModel": "Подключить новую AI-модель",
   "AddModel": "Добавить модель",
   "CustomProviders": "Пользовательские провайдеры",
-  "Import": "Импорт",
+  "Import": "Импорт пользовательского провайдера",
   "BaseURL": "Базовый URL",
   "InvalidUrl": "Неверный URL",
   "EnterModelConfigTooltip": "Введите конфигурацию AI Model API в формате JS. Укажите название модели, URL-адреса конечных точек и заголовки.",
