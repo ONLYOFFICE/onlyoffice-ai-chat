@@ -1,6 +1,12 @@
 # Changelog
 
-## [Desktop plugin changes]
+## 0.5.43
+
+### Changed
+
+- The add-profile card's import link is now labeled "Import Custom Provider" instead of the generic "Import" (translated in all 41 locales) and is underlined, matching the other field action links like "Get API key".
+
+## 0.5.42 (Desktop plugin changes)
 
 ### Added
 
