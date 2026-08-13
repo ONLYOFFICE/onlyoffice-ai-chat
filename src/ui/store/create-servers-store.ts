@@ -4,6 +4,7 @@ import type { AppContext } from "../../app-context";
 import type { CallbacksManager } from "../providers/EventsProvider";
 import type { ServerAPI } from "../providers/ApiProvider";
 import type { TMCPItem } from "../../types";
+import { reportStoreError } from "./report-error";
 
 /**
  * Zustand state for MCP servers, tools, and web search integration.
@@ -98,6 +99,18 @@ export function createServersStore(deps: {
   const { ctx, api, callbacksManager, getEntityId } = deps;
   const entity = () => getEntityId?.();
 
+  // Reload the persisted MCP config from storage before starting — otherwise
+  // a widget instance that didn't see the in-memory `setCustomServers` (e.g. a
+  // chat mount created after the settings dialog saved a new config in a
+  // different instance) would run `startCustomServers` over an empty map and
+  // never spawn anything. Re-reading from storage covers the cross-instance
+  // and cold-start cases uniformly.
+  const loadAndStartCustomServers = async () => {
+    const mcpServers = (await api.tools.listCustomServers(entity())) ?? {};
+    ctx.servers.setCustomServers({ mcpServers });
+    ctx.servers.startCustomServers();
+  };
+
   const buildToolsList = async () => {
     const [grouped, systemTools, disabled, webSearchEnabled] =
       await Promise.all([
@@ -184,16 +197,13 @@ export function createServersStore(deps: {
     setMcpConfigDirty: (dirty) => set({ mcpConfigDirty: dirty }),
 
     initServers: async () => {
-      // Reload the persisted MCP config from storage before starting —
-      // otherwise a widget instance that didn't see the in-memory
-      // `setCustomServers` (e.g. a chat mount that was created after the
-      // settings dialog saved a new config in a different instance)
-      // would run `startCustomServers` over an empty map and never spawn
-      // anything. Re-reading from storage covers the cross-instance and
-      // cold-start cases uniformly.
-      const mcpServers = (await api.tools.listCustomServers(entity())) ?? {};
-      ctx.servers.setCustomServers({ mcpServers });
-      ctx.servers.startCustomServers();
+      // Called without an await from the mount effects (`useServers`,
+      // `useEnsureTools`) — see `reportStoreError`.
+      try {
+        await loadAndStartCustomServers();
+      } catch (error) {
+        reportStoreError(callbacksManager, "servers:init", error);
+      }
     },
 
     getTools: () => {
@@ -208,6 +218,11 @@ export function createServersStore(deps: {
             const result = await buildToolsList();
             set(result);
           } while (toolsDirty);
+        } catch (error) {
+          // Called without an await from the mount effects and from the
+          // `tools-changed` bus handler — see `reportStoreError`. The last
+          // known tool list stays in place.
+          reportStoreError(callbacksManager, "tools:list", error);
         } finally {
           toolsInFlight = null;
         }
@@ -216,9 +231,7 @@ export function createServersStore(deps: {
     },
 
     reload: async () => {
-      const mcpServers = (await api.tools.listCustomServers(entity())) ?? {};
-      ctx.servers.setCustomServers({ mcpServers });
-      ctx.servers.startCustomServers();
+      await loadAndStartCustomServers();
       const result = await buildToolsList();
       set(result);
     },

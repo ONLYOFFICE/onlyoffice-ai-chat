@@ -193,6 +193,27 @@ describe("createMessageStore", () => {
       expect(store.getState().messages).toEqual(msgs);
     });
 
+    it("reports a failed read on onError and keeps the current messages", async () => {
+      const failure = new Error("offline");
+      const loaded = [makeMsg("user", "already here")];
+      api = makeApi(vi.fn().mockResolvedValue(loaded));
+      const store = createMessageStore({ ctx, api });
+      await store.getState().fetchPrevMessages("thread-1");
+
+      api.threads.readMessages = vi.fn().mockRejectedValue(failure);
+      await expect(
+        store.getState().fetchPrevMessages("thread-2")
+      ).resolves.toBeUndefined();
+
+      expect(ctx.callbacksManager.emit).toHaveBeenCalledWith("onError", {
+        type: "storage",
+        error: failure,
+        context: "messages:load",
+      });
+      // Not wiped — an empty list would read as a lost history.
+      expect(store.getState().messages).toEqual(loaded);
+    });
+
     it("drains the thread in pages when pagination is on", async () => {
       const history = Array.from({ length: 150 }, (_, i) => ({
         ...makeMsg("user", `m${i}`),

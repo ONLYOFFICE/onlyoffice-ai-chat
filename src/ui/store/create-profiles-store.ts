@@ -9,6 +9,7 @@ import type { TErrorData } from "../../shared/error-data";
 import type { ServerAPI } from "../providers/ApiProvider";
 import type { ModelAssignmentTask } from "../providers/EventsProvider";
 import type { Profile } from "../../types";
+import { reportStoreError } from "./report-error";
 
 /**
  * Zustand state for AI provider profiles.
@@ -195,6 +196,11 @@ export function createProfilesStore(deps: {
               initialized: true,
               ...assignmentsState,
             } as Partial<ProfilesStoreState>);
+          } catch (error) {
+            // Fired from mount effects (`useProfiles`, `useEnsureProfiles`)
+            // that cannot await it — see `reportError`. `initialized` stays
+            // false, so the next mount retries.
+            reportStoreError(ctx.callbacksManager, "profiles:init", error);
           } finally {
             initInFlight = null;
           }

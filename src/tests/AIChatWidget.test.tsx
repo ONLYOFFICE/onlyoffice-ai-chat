@@ -69,7 +69,8 @@ vi.mock("../core/services", () => ({
 let mockCurrentPage = "chat";
 let mockProfiles: unknown[] = [];
 let mockMessages: unknown[] = [];
-const mockFetchClouds = vi.fn();
+// Resolves like the real store action — the widget attaches a `catch` to it.
+const mockFetchClouds = vi.fn().mockResolvedValue(undefined);
 const mockSetManageToolData = vi.fn();
 let mockManageToolData: unknown = undefined;
 

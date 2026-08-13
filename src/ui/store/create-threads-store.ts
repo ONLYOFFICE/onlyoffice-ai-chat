@@ -14,6 +14,7 @@ import {
 import { convertMessagesToMd, removeSpecialCharacter } from "../../utils";
 import type { MessageStoreState } from "./create-message-store";
 import type { ProfilesStoreState } from "./create-profiles-store";
+import { reportStoreError } from "./report-error";
 
 /**
  * Zustand state for conversation threads.
@@ -201,18 +202,26 @@ export function createThreadsStore(deps: {
 
     initThreads: async (entityId) => {
       loadedEntityId = entityId;
-      if (!paginated()) {
-        const threads = await api.threads.list(entityId);
-        set({ threads, hasMoreThreads: false });
-        return;
+      // Called without an await from the mount effects (`useThreads`,
+      // `useEnsureThreads`) — see `reportStoreError`. The previously loaded
+      // list is kept rather than cleared, so a failed refresh doesn't read
+      // as "this scope has no chats".
+      try {
+        if (!paginated()) {
+          const threads = await api.threads.list(entityId);
+          set({ threads, hasMoreThreads: false });
+          return;
+        }
+        const page = await api.threads.list(entityId, PAGE_SIZE);
+        set({
+          threads: page,
+          // A full page means storage may hold more; a longer page means a
+          // legacy backend ignored `count` and returned everything.
+          hasMoreThreads: page.length === PAGE_SIZE,
+        });
+      } catch (error) {
+        reportStoreError(callbacksManager, "threads:init", error);
       }
-      const page = await api.threads.list(entityId, PAGE_SIZE);
-      set({
-        threads: page,
-        // A full page means storage may hold more; a longer page means a
-        // legacy backend ignored `count` and returned everything.
-        hasMoreThreads: page.length === PAGE_SIZE,
-      });
     },
 
     loadMoreThreads: () => {

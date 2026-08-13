@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- A failed thread rename no longer kills the reply it rides along with. The generated title is persisted from inside `mergeTitleEvents`, i.e. from the generator that is streaming the assistant's answer, and the write was unguarded — so any storage rejection escaped, aborted the round mid-sentence, and (in server-API mode, where the response has already begun) reached the user as a generic in-stream error frame with the partial answer stranded above it. The write is now wrapped: the failure is logged, no `thread-title` event is emitted (showing a name a reload would discard is worse than keeping the placeholder), and the reply streams to its normal terminal event. `ThreadsEngine.regenerateTitle` still throws — there the rename *is* the operation the user asked for.
+- Generated thread titles are now capped in code instead of by request. The title system prompt asks for "under 60 characters" on a single line; a weak model returns a preamble, a multi-line list, or the whole answer, and the host then has to store it — DocSpace backs the column with `varchar(255)`, so an oversized title failed the write outright. `generateTitle` now collapses whitespace to one line and truncates at 120 characters, marked with an ellipsis — on the last word boundary that fits, or mid-token for spaceless text (CJK, a URL, a base64 blob), where the cut steps back off a surrogate pair rather than leaving a lone surrogate for storage to reject. What reaches storage is always a plausible title.
+- Failed hydration no longer escapes as an unhandled promise rejection. Every hydration path is fired from a mount effect that cannot await it, so a rejected read (offline, 401, 5xx) surfaced only in the console while the UI showed an empty list — indistinguishable from a host that genuinely has nothing configured. All of them now catch, log, and report to the host through `ChatCallbacks.onError` (previously declared but never emitted) as `{ type: "storage", context, error }`, keeping whatever data they already had so the next mount / navigation retries: `profiles:init`, `threads:init`, `prompts:init`, `servers:init`, `tools:list`, and `messages:load` — the last one being the worst of the set, since a failed history read used to blank the open conversation. `clouds:fetch` (a read of the host's own `platform.clouds` adapter) reports as `{ type: "network" }`.
+- Locale switches (`I18nProvider`'s effects, `changeLocale`, platform environment changes) no longer reject unhandled when the lazily imported locale chunk fails to load — e.g. a stale build after a deploy. The failure is logged and the widget keeps rendering in its current language. Not routed through `onError`: this provider is mounted independently of `EventsProvider`.
+
 ## 0.5.43
 
 ### Changed

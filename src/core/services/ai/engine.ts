@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { ActionType } from "../../../shared/action-type";
+import logger from "../../../shared/logger";
 import type { SendMessageResult } from "../../../shared/send-message-args";
 import {
   collectRefIds,
@@ -435,6 +436,10 @@ export class AIEngine {
    * consumer is in the approval dialog and the continuation runs as a
    * separate stream), so the generator stays open and the title still
    * lands as a trailing event.
+   *
+   * A title whose write to storage fails is dropped (logged, no event) —
+   * never propagated, since that would abort the reply this generator is
+   * carrying.
    */
   private async *mergeTitleEvents(
     events: AsyncGenerator<ChatEvent>,
@@ -449,8 +454,24 @@ export class AIEngine {
     );
     let pendingEvent: Promise<IteratorResult<ChatEvent>> | null = null;
 
-    const emitTitle = async (title: string): Promise<ChatEvent> => {
-      await this.deps.storage.threads.update(threadId, title);
+    // Persisting the title is a cosmetic rename, so it must never take the
+    // reply down with it. The write can fail for reasons the engine cannot
+    // predict — host storage offline, a bounded title column rejecting the
+    // value — and this generator is carrying the assistant's reply: an
+    // escaping rejection aborts the stream mid-sentence and the user loses
+    // an answer that had already arrived. Log it, keep the placeholder
+    // title, and let the reply finish. No `thread-title` event is emitted on
+    // failure: the UI would otherwise show a name a reload throws away.
+    const emitTitle = async (title: string): Promise<ChatEvent | null> => {
+      try {
+        await this.deps.storage.threads.update(threadId, title);
+      } catch (e) {
+        logger.error(
+          `[title] failed to persist title of thread ${threadId}`,
+          e
+        );
+        return null;
+      }
       return { type: "thread-title", threadId, title, profileId };
     };
 
@@ -465,7 +486,10 @@ export class AIEngine {
 
         if ("__title" in winner) {
           pendingTitle = null;
-          yield await emitTitle(winner.__title);
+          const titleEvent = await emitTitle(winner.__title);
+          if (titleEvent) {
+            yield titleEvent;
+          }
           // `pendingEvent` is still in flight — loop back and await it.
           continue;
         }
@@ -483,7 +507,10 @@ export class AIEngine {
       // the placeholder title stays for good.
       if (pendingTitle && pausedForToolCall) {
         const { __title } = await pendingTitle;
-        yield await emitTitle(__title);
+        const titleEvent = await emitTitle(__title);
+        if (titleEvent) {
+          yield titleEvent;
+        }
       }
     } finally {
       // Forward early termination (consumer `return`/`throw`) to the

@@ -245,6 +245,53 @@ describe("AIEngine.sendWithStream", () => {
     expect((await iter.next()).done).toBe(true);
   });
 
+  // Regression: the title write ran unguarded inside the reply generator, so
+  // a rejected rename (host storage down, an over-long title hitting a
+  // bounded column) escaped and aborted the stream — the user lost an answer
+  // that had already streamed in, and saw a generic stream error instead.
+  it("keeps the reply streaming when persisting the title fails", async () => {
+    let openGate!: () => void;
+    const gate = new Promise<void>((r) => (openGate = r));
+    sendMessageSyncMock.mockResolvedValueOnce("Doomed Title");
+    const final: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "ok" }],
+    };
+    sendMessageMock.mockReturnValueOnce(
+      (async function* () {
+        await gate;
+        yield { isEnd: true, responseMessage: final };
+      })()
+    );
+    const { storage, messages } = makeStorage();
+    vi.spyOn(storage.threads, "update").mockRejectedValue(
+      new Error("Data too long for column 'title'")
+    );
+    const engine = new AIEngine({ storage });
+    const iter = engine.sendWithStream({ userMessage });
+
+    expect((await iter.next()).value).toMatchObject({
+      type: "thread-title",
+      title: "New chat",
+    });
+    expect((await iter.next()).value.type).toBe("user-message-stored");
+
+    // The failed rename yields no `thread-title` — showing a name that a
+    // reload discards would be worse than keeping the placeholder — and the
+    // reply carries on to its normal terminal event.
+    openGate();
+    expect((await iter.next()).value.type).toBe("message-end");
+    expect((await iter.next()).done).toBe(true);
+    expect(storage.threads.update).toHaveBeenCalledWith(
+      expect.any(String),
+      "Doomed Title"
+    );
+    // The assistant reply was still persisted.
+    expect(messages).toEqual(
+      expect.arrayContaining([expect.objectContaining(final)])
+    );
+  });
+
   it("closes immediately and keeps the default title when the title outlives the reply", async () => {
     let resolveTitle!: (t: string) => void;
     sendMessageSyncMock.mockReturnValueOnce(
