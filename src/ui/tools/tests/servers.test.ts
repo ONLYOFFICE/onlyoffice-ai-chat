@@ -28,6 +28,8 @@ const mockHostToolSource = {
   callTool: vi.fn().mockResolvedValue("host-result"),
   setGroups: vi.fn(),
   getGroupDisplayName: vi.fn().mockReturnValue("Display"),
+  getGroupIdForEmittedName: vi.fn().mockReturnValue(undefined),
+  emitsBareNames: vi.fn().mockReturnValue(false),
 };
 
 const mockCustomServers = {

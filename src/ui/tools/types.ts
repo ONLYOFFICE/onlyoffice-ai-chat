@@ -104,6 +104,16 @@ export interface HostToolGroup {
 
   /** Tools in this group */
   tools: HostTool[];
+
+  /**
+   * When `false`, tool names are emitted to the model as-is instead of
+   * being qualified with the `${id}_` prefix. For hosts that mirror an
+   * external tool catalog (e.g. the DocSpace server tools inside the
+   * editor plugin) where the model must see the exact upstream names.
+   * The host is then responsible for name uniqueness across sources.
+   * Default `true` (qualified).
+   */
+  qualifyNames?: boolean;
 }
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "@onlyoffice/ai-chat",
-  "version": "0.5.44",
+  "version": "0.5.45",
   "description": "Headless AI chat widget with 16 providers, MCP tools, and pluggable adapters",
   "type": "module",
   "license": "MIT",

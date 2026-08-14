@@ -740,7 +740,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         toolArgs: Record<string, unknown>
       ) {
         const serverType = servers.getServerType(toolName);
-        const bareName = toolName.replace(`${serverType}_`, "");
+        const bareName = servers.toBareName(serverType, toolName);
         let result: unknown = await servers.callTools(
           serverType,
           bareName,
@@ -1081,7 +1081,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       }
 
       const serverType = servers.getServerType(toolCall.toolName);
-      const bareName = toolCall.toolName.replace(`${serverType}_`, "");
+      const bareName = servers.toBareName(serverType, toolCall.toolName);
       const toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
 
       let result: unknown = await servers.callTools(

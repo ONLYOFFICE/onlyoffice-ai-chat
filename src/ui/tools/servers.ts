@@ -51,7 +51,25 @@ class Servers {
     return await this.customServers.callToolFromMCP(type, name, cleanArgs);
   };
 
+  /**
+   * Convert a model-emitted tool name to the bare name its source expects:
+   * strips the `${type}_` qualifier, except for host groups that emit bare
+   * names (`qualifyNames: false`), where the emitted name IS the bare name.
+   */
+  toBareName = (type: string, name: string) => {
+    if (this.hostToolSource.emitsBareNames(type)) {
+      return name;
+    }
+    return name.replace(`${type}_`, "");
+  };
+
   getServerType = (name: string) => {
+    // Exact emitted-name lookup first: covers `qualifyNames: false` groups,
+    // whose tool names carry no group prefix.
+    const owner = this.hostToolSource.getGroupIdForEmittedName(name);
+    if (owner) {
+      return owner;
+    }
     for (const groupId of this.hostToolSource.getGroupIds()) {
       if (name.startsWith(`${groupId}_`)) {
         return groupId;

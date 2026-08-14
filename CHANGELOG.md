@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.45
+
+### Added
+
+- `HostToolGroup.qualifyNames`: when `false`, the group's tool names are emitted to the model as-is instead of `${group.id}_${name}`. For hosts that mirror an external tool catalog (e.g. DocSpace server tools inside the editor plugin) where the model must see the exact upstream names; the host then owns name uniqueness. Dispatch resolves such groups by exact emitted name (`Servers.getServerType`) and skips the prefix strip (`Servers.toBareName`).
+
 ## 0.5.44
 
 ### Added

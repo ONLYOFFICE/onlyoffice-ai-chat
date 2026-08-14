@@ -92,6 +92,7 @@ const apiAttachments = {
 
 const servers = {
   getServerType: vi.fn((n: string) => `type_${n}`),
+  toBareName: vi.fn((type: string, n: string) => n.replace(`${type}_`, "")),
   callTools: vi.fn().mockResolvedValue("tool-result"),
 };
 
