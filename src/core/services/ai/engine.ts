@@ -400,7 +400,7 @@ export class AIEngine {
       signal: input.actionArgs?.signal,
       entityId: contextScope,
       fetch: proxiedFetch,
-      webSearchFetch: this.deps.fetchProxy,
+      webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
       pagination: this.deps.pagination,
     });
@@ -601,7 +601,7 @@ export class AIEngine {
       signal: input.actionArgs?.signal,
       entityId: contextScope,
       fetch: proxiedFetch,
-      webSearchFetch: this.deps.fetchProxy,
+      webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
       pagination: this.deps.pagination,
     });
@@ -665,7 +665,7 @@ export class AIEngine {
             signal: input.actionArgs?.signal,
             entityId: contextScope,
             fetch: proxiedFetch,
-            webSearchFetch: this.deps.fetchProxy,
+            webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
             pickFetch: (p) => this.pickFetch(p),
             pagination: this.deps.pagination,
           };
@@ -736,7 +736,7 @@ export class AIEngine {
       signal: input.actionArgs?.signal,
       entityId: contextScope,
       fetch: proxiedFetch,
-      webSearchFetch: this.deps.fetchProxy,
+      webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
       pagination: this.deps.pagination,
     };

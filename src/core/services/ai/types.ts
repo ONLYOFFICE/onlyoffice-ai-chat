@@ -104,6 +104,17 @@ export type AIEngineDeps = {
   externalFetch?: import("../../../shared/provider-credentials").ProviderFetch;
 
   /**
+   * Transport override for the built-in `web_search` / `web_crawling`
+   * tools. When omitted the engine keeps its historical behavior and
+   * routes them through {@link fetchProxy}. Hosts whose web-search
+   * provider lives behind their own bridge (e.g. the editor plugin's
+   * `externalFetch` connector transport) pass that fetch here — web
+   * search is not profile-scoped, so it never goes through the
+   * per-profile `pickFetch` selection.
+   */
+  webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch;
+
+  /**
    * Host opt-out for the built-in `generate_image` chat tool. When true,
    * the tool is never exposed to the model, so a host that ships its own
    * image-generation tool isn't forced to surface two same-purpose tools.

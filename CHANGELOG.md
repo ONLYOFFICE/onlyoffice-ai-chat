@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.44
+
+### Added
+
+- `AIEngineDeps.webSearchFetch`: optional transport override for the built-in `web_search` / `web_crawling` tools. When omitted the engine keeps routing them through `fetchProxy` (unchanged default). Hosts whose web-search provider sits behind their own bridge (e.g. the editor plugin's `externalFetch` connector transport) can now direct web-search traffic there — web search is not profile-scoped, so it never participates in the per-profile `pickFetch` selection.
+
 ## 0.5.43
 
 ### Changed
