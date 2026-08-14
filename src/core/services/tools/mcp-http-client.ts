@@ -149,15 +149,33 @@ export async function openSession(
 }
 
 /**
- * Enumerate the tools a server exposes: `initialize` handshake (with
- * session capture) followed by `tools/list`. Returns the tool
- * descriptors, or an empty list on any failure (logged, never thrown —
- * a broken system server must not break the whole tool context).
+ * Terminate a session: `DELETE` on the MCP endpoint with the session id
+ * (Streamable HTTP session termination). Strictly best-effort — a server
+ * MAY answer 405 when it does not support client-initiated termination,
+ * and an already-expired session is not an error either way.
  */
+export async function closeSession(
+  fetchImpl: FetchLike,
+  server: McpHttpServerConfig,
+  sessionId: string
+): Promise<void> {
+  try {
+    await fetchImpl(server.url, {
+      method: "DELETE",
+      headers: {
+        ...server.headers,
+        Accept: ACCEPT,
+        "Mcp-Session-Id": sessionId,
+      },
+    });
+  } catch {
+    // Fire-and-forget: the server reaps abandoned sessions on its own.
+  }
+}
+
 /**
  * `tools/list` over an already-open session (no handshake). Throws on
- * transport failure so a caller managing a session cache can re-open and
- * retry. Returns `[]` when the response carries no tool array.
+ * transport failure. Returns `[]` when the response carries no tool array.
  */
 export async function requestTools(
   fetchImpl: FetchLike,

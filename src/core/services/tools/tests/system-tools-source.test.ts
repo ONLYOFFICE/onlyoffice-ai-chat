@@ -73,18 +73,36 @@ describe("SystemToolsSource", () => {
     expect(await src.callTool("nope", {})).toContain("Unknown system tool");
   });
 
-  it("reuses the Mcp-Session-Id across list and call (one initialize)", async () => {
+  it("opens a fresh session per operation and terminates it after", async () => {
+    // Sessions must never be shared across operations: a stateful MCP
+    // server binds the caller's credentials and target portal to the
+    // session at initialize, so reuse would run every caller's tools under
+    // whoever initialized first. Expect: one initialize per operation, a
+    // DELETE termination after each, and every in-session request echoing
+    // that operation's own session id.
     const tools = [{ name: "t", description: "", inputSchema: {} }];
-    const withSession = (obj: unknown) =>
-      new Response(JSON.stringify(obj), {
-        headers: { "Mcp-Session-Id": "sess-1" },
-      });
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValueOnce(withSession({ result: {} })) // initialize → session
-      .mockResolvedValueOnce(new Response("", { status: 202 })) // initialized
-      .mockResolvedValueOnce(json({ result: { tools } })) // tools/list
-      .mockResolvedValueOnce(json({ result: { done: true } })); // tools/call
+    let sessionSeq = 0;
+    const fetchImpl = vi.fn((_url: string, init?: RequestInit) => {
+      if ((init?.method ?? "POST").toUpperCase() === "DELETE") {
+        return Promise.resolve(new Response("", { status: 200 }));
+      }
+      const body = JSON.parse((init?.body as string) ?? "{}");
+      if (body.method === "initialize") {
+        sessionSeq += 1;
+        return Promise.resolve(
+          new Response(JSON.stringify({ result: {} }), {
+            headers: { "Mcp-Session-Id": `sess-${sessionSeq}` },
+          })
+        );
+      }
+      if (body.method === "notifications/initialized") {
+        return Promise.resolve(new Response("", { status: 202 }));
+      }
+      if (body.method === "tools/list") {
+        return Promise.resolve(json({ result: { tools } }));
+      }
+      return Promise.resolve(json({ result: { done: true } }));
+    });
 
     const src = new SystemToolsSource({
       servers: { s: { url: "http://x" } },
@@ -94,18 +112,32 @@ describe("SystemToolsSource", () => {
     await src.getTools();
     expect(await src.callTool("t", {})).toBe(JSON.stringify({ done: true }));
 
-    // No second handshake: initialize ran exactly once, tools/call reused it.
-    expect(fetchImpl).toHaveBeenCalledTimes(4);
-    const initCalls = fetchImpl.mock.calls.filter(
-      ([, init]) =>
-        JSON.parse((init as RequestInit).body as string).method === "initialize"
-    );
-    expect(initCalls).toHaveLength(1);
-    const callInit = fetchImpl.mock.calls[3][1] as RequestInit;
-    expect(JSON.parse(callInit.body as string).method).toBe("tools/call");
-    expect((callInit.headers as Record<string, string>)["Mcp-Session-Id"]).toBe(
-      "sess-1"
-    );
+    const calls = fetchImpl.mock.calls.map(([, init]) => {
+      const req = init as RequestInit;
+      if ((req.method ?? "POST").toUpperCase() === "DELETE") {
+        return {
+          method: "DELETE",
+          session: (req.headers as Record<string, string>)["Mcp-Session-Id"],
+        };
+      }
+      return {
+        method: JSON.parse(req.body as string).method as string,
+        session: (req.headers as Record<string, string>)["Mcp-Session-Id"],
+      };
+    });
+
+    // getTools: initialize → initialized → tools/list → DELETE (sess-1);
+    // callTool: initialize → initialized → tools/call → DELETE (sess-2).
+    expect(calls).toEqual([
+      { method: "initialize", session: undefined },
+      { method: "notifications/initialized", session: "sess-1" },
+      { method: "tools/list", session: "sess-1" },
+      { method: "DELETE", session: "sess-1" },
+      { method: "initialize", session: undefined },
+      { method: "notifications/initialized", session: "sess-2" },
+      { method: "tools/call", session: "sess-2" },
+      { method: "DELETE", session: "sess-2" },
+    ]);
   });
 
   it("routes callTool via the cached index without re-listing other servers", async () => {

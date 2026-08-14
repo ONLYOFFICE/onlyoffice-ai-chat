@@ -2,6 +2,7 @@ import logger from "../../../shared/logger";
 import type { TMCPItem } from "../../../shared/mcp-item";
 import type { ToolsAdapter } from "../../tools-adapter";
 import {
+  closeSession,
   openSession,
   requestTools,
   requestToolCall,
@@ -29,17 +30,20 @@ import {
  *   longer re-enumerates every server each time.
  * - A `toolName → serverType` index built from that list lets
  *   {@link callTool} route directly instead of re-listing every server.
- * - The `Mcp-Session-Id` per stateful server is reused across `tools/list`
- *   and `tools/call` instead of a fresh `initialize` handshake per call,
- *   re-opened once if the server later rejects it (HTTP 4xx).
+ *
+ * Sessions are deliberately NOT cached: every `tools/list` / `tools/call`
+ * opens its own MCP session and closes it right after. An MCP server may
+ * bind per-request credentials (auth token, target portal) to the session
+ * at `initialize` — docspace-mcp does — so a session shared across calls
+ * would execute every user's tools under whoever initialized it first,
+ * against that user's portal. The extra handshake round-trip per call is
+ * the price of per-caller identity.
  */
 export class SystemToolsSource implements ToolsAdapter {
   private static readonly TOOLS_TTL_MS = 30_000;
 
   private readonly servers: Record<string, McpHttpServerConfig>;
   private readonly fetchImpl: FetchLike;
-  /** `serverType → Mcp-Session-Id` for stateful servers. */
-  private readonly sessions = new Map<string, string>();
   private toolsCache?: { at: number; grouped: Record<string, TMCPItem[]> };
   /** `toolName → serverType`, rebuilt whenever the tool cache refreshes. */
   private routeIndex = new Map<string, string>();
@@ -135,34 +139,25 @@ export class SystemToolsSource implements ToolsAdapter {
   }
 
   /**
-   * Run `op` with this server's cached session, opening one on first use.
-   * If the server rejects the request with an HTTP 4xx (a session it no
-   * longer recognises), re-open the session once and retry — but never on
-   * tool-level JSON-RPC errors or 5xx, so a `tools/call` is not executed
-   * twice.
+   * Run `op` inside a fresh MCP session: `initialize` handshake before,
+   * session termination after (best-effort, even when `op` throws). Never
+   * reuses a session across calls — see the class doc: the server may bind
+   * the caller's credentials and target portal to the session, so sharing
+   * one would cross-wire users. Stateless servers (no session id issued)
+   * just run `op` bare.
    */
   private async withSession<T>(
     type: string,
     op: (sessionId?: string) => Promise<T>
   ): Promise<T> {
     const server = this.servers[type];
-    let sessionId = this.sessions.get(type);
-    if (sessionId === undefined) {
-      sessionId = await openSession(this.fetchImpl, type, server);
-      if (sessionId) this.sessions.set(type, sessionId);
-    }
+    const sessionId = await openSession(this.fetchImpl, type, server);
     try {
       return await op(sessionId);
-    } catch (error) {
-      const staleSession =
-        !!sessionId &&
-        error instanceof Error &&
-        /^HTTP 4\d\d$/.test(error.message);
-      if (!staleSession) throw error;
-      this.sessions.delete(type);
-      const fresh = await openSession(this.fetchImpl, type, server);
-      if (fresh) this.sessions.set(type, fresh);
-      return op(fresh);
+    } finally {
+      if (sessionId) {
+        await closeSession(this.fetchImpl, server, sessionId);
+      }
     }
   }
 }
