@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ActionType } from "../../../../shared/action-type";
 import { ProfilesEngine } from "../engine";
-import { clearModelCache } from "../model-cache";
 import {
   checkProviderMock,
   dummyModel,
@@ -16,7 +15,6 @@ import {
 
 beforeEach(() => {
   registerStubProvider();
-  clearModelCache();
   checkProviderMock.mockReset();
   getProviderModelsMock.mockReset();
   sendMessageProbeMock.mockReset();

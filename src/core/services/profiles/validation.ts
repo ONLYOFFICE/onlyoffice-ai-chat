@@ -2,7 +2,6 @@ import type { TErrorData } from "../../../shared/error-data";
 import type { Profile } from "../../types";
 import { loadProvider } from "../../providers";
 import { credsOf } from "./lookup";
-import { hasFreshProviderModels } from "./model-cache";
 
 const NAME_EXISTS_ERROR: TErrorData = {
   field: "name",
@@ -49,18 +48,9 @@ export async function checkCredentials(
       message: `Unknown provider type: ${input.providerType}`,
     };
   }
-  // A successful, non-empty model list for these exact creds (fetched moments
-  // ago to populate the add/edit form's model dropdown) already proves the
-  // credentials work — skip the duplicate `checkProvider` round-trip.
-  if (
-    hasFreshProviderModels({
-      providerType: input.providerType,
-      baseUrl: input.baseUrl,
-      apiKey: input.key,
-    })
-  ) {
-    return true;
-  }
+  // Always validated live (the model-list cache that used to prove creds
+  // here is gone — shared-server instances must not keep cross-caller
+  // state, see listProviderModels).
   const result = await Provider.checkProvider(credsOf(input));
   if (result === true) return true;
   if (result && typeof result === "object") return result;

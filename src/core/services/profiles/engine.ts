@@ -4,7 +4,6 @@ import type { Model } from "../../../shared/model";
 import type { Profile, ProviderType } from "../../types";
 import { AssignmentsEngine } from "../assignments";
 import { credsOf, loadProfile, providerFor } from "./lookup";
-import { loadProviderModelsCached } from "./model-cache";
 import { probeCapabilities } from "./probe-capabilities";
 import type {
   CreateProfileInput,
@@ -107,14 +106,14 @@ export class ProfilesEngine {
     baseUrl: string;
     apiKey: string;
   }): Promise<Model[]> {
-    // Reuse a fresh cached list for identical creds so switching provider
-    // A→B→A (or remounting the form) doesn't re-hit the provider each time.
-    return loadProviderModelsCached(input, async () => {
-      const Provider = await providerFor(input.providerType);
-      return Provider.getProviderModels({
-        baseUrl: input.baseUrl,
-        apiKey: input.apiKey,
-      });
+    // Always fetched live. This used to be cached by creds, but the engine
+    // may run on a server shared across users and tenants, and forwarded-
+    // header providers (the ONLYOFFICE gateway) make the key collide across
+    // tenants — one tenant's list could answer another's lookup.
+    const Provider = await providerFor(input.providerType);
+    return Provider.getProviderModels({
+      baseUrl: input.baseUrl,
+      apiKey: input.apiKey,
     });
   }
 
