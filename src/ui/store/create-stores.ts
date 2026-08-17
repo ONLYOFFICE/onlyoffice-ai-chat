@@ -142,7 +142,10 @@ export function createStores(config: CreateStoresConfig): Stores {
     callbacksManager: ctx.callbacksManager,
     getEntityId,
   });
-  const usePromptsStore = createPromptsStore({ api });
+  const usePromptsStore = createPromptsStore({
+    api,
+    callbacksManager: ctx.callbacksManager,
+  });
   const useAttachmentsStore = createAttachmentsStore({
     attachments: api.attachments,
     getEntityId,

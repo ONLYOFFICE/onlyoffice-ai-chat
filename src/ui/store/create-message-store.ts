@@ -3,6 +3,7 @@ import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../../app-context";
 import { drainPages, messagesCursorOf } from "../../core/storage";
 import type { ServerAPI } from "../providers/ApiProvider";
+import { reportStoreError } from "./report-error";
 
 /**
  * Zustand state for the message list of the currently active thread.
@@ -166,7 +167,17 @@ export function createMessageStore(deps: {
       // messages inside the freshly loaded thread.
       get().orphanStreams();
       set({ _currentThreadId: threadId, threadContextEntityId: undefined });
-      const fetchedMessages = await readAllMessages(threadId);
+      let fetchedMessages: ThreadMessageLike[];
+      try {
+        fetchedMessages = await readAllMessages(threadId);
+      } catch (error) {
+        // Called without an await both from the thread switch and from the
+        // `useMessages` effect — see `reportStoreError`. The previous
+        // thread's messages are left in place rather than replaced by an
+        // empty list, which would read as a lost history.
+        reportStoreError(ctx.callbacksManager, "messages:load", error);
+        return;
+      }
       const current = get();
       if (current._currentThreadId !== threadId) {
         return;

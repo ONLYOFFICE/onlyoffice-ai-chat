@@ -778,9 +778,19 @@ const AppInner = ({
     [stores, selectCurrentChatProfile, servers, eventBus]
   );
 
+  // Reads the host's `platform.clouds` adapter, so a host-side failure would
+  // otherwise surface as an unhandled rejection inside the widget. Report it
+  // to the host and keep going with no cloud providers.
   useEffect(() => {
-    fetchClouds();
-  }, [fetchClouds]);
+    void fetchClouds().catch((error) => {
+      logger.error("clouds:fetch failed:", error);
+      callbacksManager.emit("onError", {
+        type: "network",
+        error,
+        context: "clouds:fetch",
+      });
+    });
+  }, [fetchClouds, callbacksManager]);
 
   useEffect(() => {
     if (onMigrate) {

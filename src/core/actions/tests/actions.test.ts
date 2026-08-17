@@ -246,4 +246,52 @@ describe("generateTitle action", () => {
       `${titleSystemPrompt}\n\nMORE`
     );
   });
+
+  // The prompt asks for a short single-line title; a weak model ignores it
+  // and the result still has to fit a bounded, one-line-rendered field.
+  it("collapses a multi-line answer into one line", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce(
+      "Here is a title:\n\n  Workspace   capabilities\toverview\n"
+    );
+    expect(await generateTitle(baseArgs)).toBe(
+      "Here is a title: Workspace capabilities overview"
+    );
+  });
+
+  it("keeps a title that only slightly overshoots the prompted 60 chars", async () => {
+    const long = "a".repeat(119);
+    sendMessageSyncMock.mockResolvedValueOnce(long);
+    expect(await generateTitle(baseArgs)).toBe(long);
+  });
+
+  it("truncates prose on a word boundary and marks it with an ellipsis", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce(`${"word ".repeat(80)}tail`);
+    const title = await generateTitle(baseArgs);
+    expect(title.length).toBeLessThanOrEqual(120);
+    // Cut landed on the last space that fits, so no partial word survives.
+    expect(title).toBe(`${"word ".repeat(22)}word…`);
+  });
+
+  it("cuts on the last space even when it sits early in the title", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce(`Hi ${"z".repeat(400)}`);
+    expect(await generateTitle(baseArgs)).toBe("Hi…");
+  });
+
+  it("truncates mid-token when the title has no space at all", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("b".repeat(400));
+    const title = await generateTitle(baseArgs);
+    expect(title).toBe(`${"b".repeat(119)}…`);
+  });
+
+  // Spaceless text is cut by code unit, and an emoji occupies two of them —
+  // a cut between the halves leaves a lone surrogate, which is not valid
+  // UTF-8 and is rejected or mangled on its way into storage.
+  it("never cuts a surrogate pair in half", async () => {
+    // 59 emoji = 118 code units, so the 119-unit cut would land mid-pair.
+    sendMessageSyncMock.mockResolvedValueOnce("🙂".repeat(80));
+    const title = await generateTitle(baseArgs);
+    expect(title).toBe(`${"🙂".repeat(59)}…`);
+    // No lone surrogate survived: re-encoding is lossless.
+    expect(Array.from(title)).toHaveLength(60);
+  });
 });

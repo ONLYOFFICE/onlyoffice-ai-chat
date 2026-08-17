@@ -99,6 +99,23 @@ describe("createThreadsStore", () => {
     expect(s.getState().threads).toHaveLength(2);
   });
 
+  it("initThreads reports a failed load on onError and keeps the list", async () => {
+    const deps = makeDeps([mkThread("a")]);
+    const s = createThreadsStore(deps);
+    await s.getState().initThreads();
+
+    const failure = new Error("offline");
+    deps.api.threads.list = vi.fn().mockRejectedValue(failure);
+    await expect(s.getState().initThreads()).resolves.toBeUndefined();
+
+    expect(deps.callbacksManager.emit).toHaveBeenCalledWith("onError", {
+      type: "storage",
+      error: failure,
+      context: "threads:init",
+    });
+    expect(s.getState().threads).toHaveLength(1);
+  });
+
   it("initThreads forwards entityId to api.threads.list", async () => {
     const deps = makeDeps([mkThread("a")]);
     const s = createThreadsStore(deps);

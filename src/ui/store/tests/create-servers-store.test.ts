@@ -66,6 +66,38 @@ describe("createServersStore", () => {
     expect(deps.servers.startCustomServers).toHaveBeenCalled();
   });
 
+  it("initServers reports a failed config read on onError", async () => {
+    const deps = makeDeps();
+    const failure = new Error("offline");
+    deps.api.tools.listCustomServers = vi.fn().mockRejectedValue(failure);
+    const s = createServersStore(deps);
+
+    await expect(s.getState().initServers()).resolves.toBeUndefined();
+
+    expect(deps.callbacksManager.emit).toHaveBeenCalledWith("onError", {
+      type: "storage",
+      error: failure,
+      context: "servers:init",
+    });
+    expect(deps.servers.startCustomServers).not.toHaveBeenCalled();
+  });
+
+  it("getTools reports a failed tool fetch on onError", async () => {
+    const deps = makeDeps();
+    const failure = new Error("offline");
+    deps.servers.getTools = vi.fn().mockRejectedValue(failure);
+    const s = createServersStore(deps);
+
+    await expect(s.getState().getTools()).resolves.toBeUndefined();
+
+    expect(deps.callbacksManager.emit).toHaveBeenCalledWith("onError", {
+      type: "storage",
+      error: failure,
+      context: "tools:list",
+    });
+    expect(s.getState().tools).toEqual([]);
+  });
+
   it("getTools annotates servers with enabled flag and filters disabled out of the model payload", async () => {
     const deps = makeDeps({
       grouped: { mcp: [{ name: "a" }, { name: "b" }] },
