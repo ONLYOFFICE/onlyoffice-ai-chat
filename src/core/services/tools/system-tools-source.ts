@@ -22,31 +22,18 @@ import {
  * `headers` never reach the browser. Compose this with a host's own
  * adapter via {@link composeToolsAdapters}.
  *
- * Caching (all keyed to this instance, so the host controls the scope — a
- * per-tenant instance yields a per-tenant cache):
- *
- * - The enumerated tool list is cached for {@link TOOLS_TTL_MS}, so
- *   `buildToolContext` calling {@link getTools} on every chat round no
- *   longer re-enumerates every server each time.
- * - A `toolName → serverType` index built from that list lets
- *   {@link callTool} route directly instead of re-listing every server.
- *
- * Sessions are deliberately NOT cached: every `tools/list` / `tools/call`
- * opens its own MCP session and closes it right after. An MCP server may
- * bind per-request credentials (auth token, target portal) to the session
- * at `initialize` — docspace-mcp does — so a session shared across calls
- * would execute every user's tools under whoever initialized it first,
- * against that user's portal. The extra handshake round-trip per call is
- * the price of per-caller identity.
+ * NOTHING is cached — neither sessions nor the tool catalog. An MCP
+ * server may bind per-request credentials (auth token, target portal) to
+ * the session at `initialize` — docspace-mcp does — so every
+ * `tools/list` / `tools/call` opens its own session and closes it right
+ * after, and every enumeration hits the servers live: an instance is
+ * shared across users and portals, so any state kept here would leak one
+ * caller's view (or identity) into another's. The extra round-trips per
+ * operation are the price of per-caller correctness.
  */
 export class SystemToolsSource implements ToolsAdapter {
-  private static readonly TOOLS_TTL_MS = 30_000;
-
   private readonly servers: Record<string, McpHttpServerConfig>;
   private readonly fetchImpl: FetchLike;
-  private toolsCache?: { at: number; grouped: Record<string, TMCPItem[]> };
-  /** `toolName → serverType`, rebuilt whenever the tool cache refreshes. */
-  private routeIndex = new Map<string, string>();
 
   constructor(opts: {
     servers: Record<string, McpHttpServerConfig>;
@@ -58,32 +45,19 @@ export class SystemToolsSource implements ToolsAdapter {
   }
 
   async getTools(): Promise<Record<string, TMCPItem[]>> {
-    const now = Date.now();
-    if (
-      this.toolsCache &&
-      now - this.toolsCache.at < SystemToolsSource.TOOLS_TTL_MS
-    ) {
-      return this.toolsCache.grouped;
-    }
-    const grouped = await this.listAll();
-    this.toolsCache = { at: now, grouped };
-    this.routeIndex = new Map();
-    for (const [type, tools] of Object.entries(grouped)) {
-      for (const tool of tools) this.routeIndex.set(tool.name, type);
-    }
-    return grouped;
+    return this.listAll();
   }
 
   async callTool(
     toolName: string,
     args: Record<string, unknown>
   ): Promise<unknown> {
-    let type = this.routeIndex.get(toolName);
-    if (!type) {
-      // Cold cache (or a tool we haven't indexed) — enumerate once to route.
-      await this.getTools();
-      type = this.routeIndex.get(toolName);
-    }
+    // Fresh enumeration per call — no routing index is kept (see the class
+    // doc). The owning server is resolved from a live listing every time.
+    const grouped = await this.listAll();
+    const type = Object.entries(grouped).find(([, tools]) =>
+      tools.some((tool) => tool.name === toolName)
+    )?.[0];
     if (!type || !this.servers[type]) {
       return JSON.stringify({ error: `Unknown system tool: ${toolName}` });
     }

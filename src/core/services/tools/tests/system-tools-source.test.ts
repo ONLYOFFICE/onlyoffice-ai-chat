@@ -21,9 +21,14 @@ describe("SystemToolsSource", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
-  it("getTools serves a cached list within its TTL (no re-enumeration)", async () => {
+  it("getTools re-enumerates on every call (no caching)", async () => {
+    // Nothing may be cached: the instance is shared across users/portals,
+    // so a stored listing would leak one caller's view into another's.
     const tools = [{ name: "sys_a", description: "", inputSchema: {} }];
-    const fetchImpl = vi.fn().mockResolvedValue(json({ result: { tools } }));
+    // A fresh Response per call — a Response body is single-use.
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(json({ result: { tools } }))
+    );
 
     const src = new SystemToolsSource({
       servers: { sysA: { url: "http://x" } },
@@ -33,8 +38,7 @@ describe("SystemToolsSource", () => {
     const first = await src.getTools();
     const callsAfterFirst = fetchImpl.mock.calls.length;
     const second = await src.getTools();
-    // Second call within the TTL is served from cache — no extra requests.
-    expect(fetchImpl.mock.calls.length).toBe(callsAfterFirst);
+    expect(fetchImpl.mock.calls.length).toBe(callsAfterFirst * 2);
     expect(second).toEqual(first);
   });
 
@@ -126,8 +130,9 @@ describe("SystemToolsSource", () => {
       };
     });
 
-    // getTools: initialize → initialized → tools/list → DELETE (sess-1);
-    // callTool: initialize → initialized → tools/call → DELETE (sess-2).
+    // getTools: one session for the listing; callTool: one session for its
+    // own routing enumeration, then another for the call itself — each
+    // opened fresh and terminated right after.
     expect(calls).toEqual([
       { method: "initialize", session: undefined },
       { method: "notifications/initialized", session: "sess-1" },
@@ -135,12 +140,16 @@ describe("SystemToolsSource", () => {
       { method: "DELETE", session: "sess-1" },
       { method: "initialize", session: undefined },
       { method: "notifications/initialized", session: "sess-2" },
-      { method: "tools/call", session: "sess-2" },
+      { method: "tools/list", session: "sess-2" },
       { method: "DELETE", session: "sess-2" },
+      { method: "initialize", session: undefined },
+      { method: "notifications/initialized", session: "sess-3" },
+      { method: "tools/call", session: "sess-3" },
+      { method: "DELETE", session: "sess-3" },
     ]);
   });
 
-  it("routes callTool via the cached index without re-listing other servers", async () => {
+  it("routes callTool to the owning server via a fresh enumeration", async () => {
     const fetchImpl = vi.fn((url: string, init?: RequestInit) => {
       const method = JSON.parse((init?.body as string) ?? "{}").method;
       if (method === "tools/list") {
@@ -161,14 +170,17 @@ describe("SystemToolsSource", () => {
       fetch: fetchImpl,
     });
 
-    await src.getTools();
-    const callsBefore = fetchImpl.mock.calls.length;
     const res = await src.callTool("toolB", {});
-    const afterCalls = fetchImpl.mock.calls.slice(callsBefore);
 
-    // callTool touched only server b — server a is not re-enumerated.
-    expect(afterCalls.length).toBeGreaterThan(0);
-    expect(afterCalls.every(([url]) => url === "http://b")).toBe(true);
+    // Routing re-enumerates live (both servers listed), but the call itself
+    // lands only on the owning server.
+    const callBodies = fetchImpl.mock.calls.filter(
+      ([, init]) =>
+        JSON.parse(((init as RequestInit)?.body as string) ?? "{}").method ===
+        "tools/call"
+    );
+    expect(callBodies).toHaveLength(1);
+    expect(callBodies[0][0]).toBe("http://b");
     expect(JSON.parse(res as string)).toEqual({ ran: "http://b" });
   });
 
