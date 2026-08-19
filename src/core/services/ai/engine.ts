@@ -378,6 +378,7 @@ export class AIEngine {
       profile,
       messages: resolvedMessages,
       tools: toolCtx.mergedTools,
+      threadId,
       fetch: proxiedFetch,
     };
 
@@ -605,6 +606,7 @@ export class AIEngine {
         this.deps.storage.attachments
       ),
       tools: toolCtx.mergedTools,
+      threadId: input.threadId,
       fetch: proxiedFetch,
     };
 

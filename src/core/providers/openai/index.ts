@@ -119,9 +119,7 @@ class OpenAIProvider extends AbstractBaseProvider {
           input,
           tools: responsesTools.length > 0 ? responsesTools : undefined,
           // Force one tool call per turn. Only valid when tools are present.
-          ...(responsesTools.length > 0
-            ? { parallel_tool_calls: false }
-            : {}),
+          ...(responsesTools.length > 0 ? { parallel_tool_calls: false } : {}),
           reasoning: ((): { effort: string } | undefined => {
             const effort = resolveReasoningEffort(model, withReasoning);
             return effort ? { effort } : undefined;

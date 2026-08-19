@@ -27,6 +27,14 @@ export type ProviderCredentials = {
    */
   basedOn?: import("./builtin-provider-type").BuiltinProviderType;
   /**
+   * Identifier of the conversation the request belongs to (the thread
+   * id), sent as the `x-session-id` header so the backend can correlate
+   * the turns of one chat. Forwarded from {@link ActionArgs.threadId} and
+   * currently honoured only by the ONLYOFFICE provider — every other
+   * provider ignores it, so no thread id leaks to a third-party endpoint.
+   */
+  sessionId?: string;
+  /**
    * Extra HTTP headers attached to every request the provider's SDK
    * client makes. Forwarded from `Profile.headers`. A header set here
    * overrides what the SDK would derive on its own (e.g. an explicit

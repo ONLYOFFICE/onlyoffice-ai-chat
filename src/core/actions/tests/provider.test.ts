@@ -5,6 +5,10 @@ import { providerFor } from "../provider";
 import type { ActionArgs } from "../types";
 
 class StubProvider extends AbstractBaseProvider {
+  /** Test-only view of the credentials the factory built. */
+  get seenCreds() {
+    return this.creds;
+  }
   // eslint-disable-next-line require-yield
   async *sendMessage(): AsyncGenerator<never> {
     throw new Error("not used");
@@ -49,6 +53,21 @@ describe("providerFor", () => {
       profile: { ...baseArgs.profile, providerType: "openai" },
     });
     expect(instance).toBeInstanceOf(AbstractBaseProvider);
+  });
+
+  it("forwards the thread id as the credential session id", async () => {
+    registerProvider("stub-provider", StubProvider);
+    const instance = (await providerFor({
+      ...baseArgs,
+      threadId: "thread-42",
+    })) as StubProvider;
+    expect(instance.seenCreds.sessionId).toBe("thread-42");
+  });
+
+  it("omits the session id when the round has no thread", async () => {
+    registerProvider("stub-provider", StubProvider);
+    const instance = (await providerFor(baseArgs)) as StubProvider;
+    expect(instance.seenCreds).not.toHaveProperty("sessionId");
   });
 
   it("throws when the provider type is unknown", async () => {

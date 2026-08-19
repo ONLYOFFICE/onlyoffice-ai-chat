@@ -35,6 +35,14 @@ export type ActionArgs = {
   signal?: AbortSignal;
   prompt?: SystemPromptOverride;
   /**
+   * Thread the round belongs to. Threaded into
+   * {@link ProviderCredentials.sessionId} by {@link providerFor}, which
+   * turns it into an `x-session-id` header on the ONLYOFFICE provider.
+   * Absent on the thread-less paths (`send`, `sendCustom`), where there is
+   * no conversation to correlate.
+   */
+  threadId?: string;
+  /**
    * Custom fetch routed through the host's `fetchProxy`. Set by the
    * engine when {@link ActionArgs.profile.useProxy} is true and the
    * engine was constructed with a `fetchProxy` dep. Threaded into

@@ -264,6 +264,7 @@ export async function* resumeChat(
 
   const actionArgs: ActionArgs = {
     profile: input.profile,
+    threadId: input.threadId,
     messages: await resolveAttachmentRefs(history, ctx.storage.attachments),
     tools: input.tools,
     prompt: input.prompt,

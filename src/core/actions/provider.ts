@@ -14,6 +14,7 @@ export async function providerFor(
     baseUrl: args.profile.baseUrl,
     apiKey: args.profile.key,
     ...(args.fetch ? { fetch: args.fetch } : {}),
+    ...(args.threadId ? { sessionId: args.threadId } : {}),
     ...(args.profile.basedOn ? { basedOn: args.profile.basedOn } : {}),
     ...(args.profile.headers ? { headers: args.profile.headers } : {}),
   });
