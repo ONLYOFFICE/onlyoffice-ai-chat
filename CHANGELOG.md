@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.50
+
+### Added
+
+- The ONLYOFFICE provider now marks its streaming chat requests for Anthropic-style prompt caching — `cache_control: {type: "ephemeral"}` on the system prompt and on the last message of the history — so the Claude backend behind the route reuses the static prefix instead of re-reading it every turn. Purely additive: a backend that ignores the field sees an unchanged request.
+- The current thread id travels to the ONLYOFFICE route as the `x-session-id` header (`ActionArgs.threadId` → `ProviderCredentials.sessionId`). Merged into the client headers, so `profile.headers` survives; an explicit `x-session-id` there still wins. No other provider receives it.
+- Every ONLYOFFICE request — streaming chat, both Responses paths, one-shot actions, image generation — now carries a `metadata` object describing the host entity behind the round. Hosts supply the pair through `actionArgs`; keys they leave out are omitted, and with no entity at all the field is absent. Also threaded through tool-call resumes, so continuation rounds describe the same entity.
+
+  ```ts
+  engine.sendWithStream({
+    threadId,
+    userMessage,
+    actionArgs: { entityId: agent.id, entityTitle: agent.title },
+  });
+  // → body: { metadata: { agent_id: "...", agent_title: "..." }, ... }
+  ```
+
+### Changed
+
+- `OpenAIProvider` gained a protected `extraBody()` hook, merged into every request it builds. Empty in the base class, so all other OpenAI-family providers are unaffected; subclasses targeting a backend with its own body parameters override it instead of reimplementing the request builders.
+
 ## 0.5.49
 
 ### Fixed
