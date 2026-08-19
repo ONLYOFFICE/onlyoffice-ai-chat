@@ -35,6 +35,15 @@ export type ProviderCredentials = {
    */
   sessionId?: string;
   /**
+   * Host entity the round runs for — typically the agent: its id and
+   * human-readable title. Forwarded from {@link ActionArgs.entityId} /
+   * {@link ActionArgs.entityTitle} and sent by the ONLYOFFICE provider as
+   * the request's `metadata` (`agent_id` / `agent_title`); every other
+   * provider ignores both.
+   */
+  entityId?: string;
+  entityTitle?: string;
+  /**
    * Extra HTTP headers attached to every request the provider's SDK
    * client makes. Forwarded from `Profile.headers`. A header set here
    * overrides what the SDK would derive on its own (e.g. an explicit

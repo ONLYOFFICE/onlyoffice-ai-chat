@@ -210,6 +210,8 @@ export async function* resumeChat(
     prompt?: ActionArgs["prompt"];
     /** Opaque scope token forwarded to scoped storage reads. */
     entityId?: string;
+    /** Host entity pair — mirrors {@link AdapterRunContext.entityMeta}. */
+    entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle">;
     /** Proxy fetch — mirrors {@link ActionArgs.fetch}. */
     fetch?: ActionArgs["fetch"];
   }
@@ -263,6 +265,7 @@ export async function* resumeChat(
   ).filter(hasSendableContent);
 
   const actionArgs: ActionArgs = {
+    ...input.entityMeta,
     profile: input.profile,
     threadId: input.threadId,
     messages: await resolveAttachmentRefs(history, ctx.storage.attachments),

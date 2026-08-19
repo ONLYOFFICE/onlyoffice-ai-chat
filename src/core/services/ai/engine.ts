@@ -102,6 +102,21 @@ function stampThreadContext(
   };
 }
 
+/**
+ * Pull the host-supplied entity pair out of an `actionArgs` envelope so
+ * resume rounds can carry it forward. Returns `undefined` when the host
+ * described no entity, keeping the run context free of empty objects.
+ */
+function entityMetaOf(
+  actionArgs: Omit<ActionArgs, "profile" | "messages"> | undefined
+): Pick<ActionArgs, "entityId" | "entityTitle"> | undefined {
+  if (!actionArgs?.entityId && !actionArgs?.entityTitle) return undefined;
+  return {
+    entityId: actionArgs.entityId,
+    entityTitle: actionArgs.entityTitle,
+  };
+}
+
 export class AIEngine {
   private readonly deps: AIEngineDeps;
   private readonly assignments: AssignmentsEngine;
@@ -401,6 +416,7 @@ export class AIEngine {
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
       entityId: contextScope,
+      entityMeta: entityMetaOf(input.actionArgs),
       fetch: proxiedFetch,
       webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
@@ -629,6 +645,7 @@ export class AIEngine {
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
       entityId: contextScope,
+      entityMeta: entityMetaOf(input.actionArgs),
       fetch: proxiedFetch,
       webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
@@ -693,6 +710,7 @@ export class AIEngine {
             isReasoning: input.actionArgs?.isReasoning,
             signal: input.actionArgs?.signal,
             entityId: contextScope,
+            entityMeta: entityMetaOf(input.actionArgs),
             fetch: proxiedFetch,
             webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
             pickFetch: (p) => this.pickFetch(p),
@@ -764,6 +782,7 @@ export class AIEngine {
       isReasoning: input.actionArgs?.isReasoning,
       signal: input.actionArgs?.signal,
       entityId: contextScope,
+      entityMeta: entityMetaOf(input.actionArgs),
       fetch: proxiedFetch,
       webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
@@ -785,6 +804,7 @@ export class AIEngine {
         tools: toolCtx.mergedTools,
         prompt: input.actionArgs?.prompt,
         entityId: contextScope,
+        entityMeta: entityMetaOf(input.actionArgs),
         fetch: proxiedFetch,
       }
     );
@@ -869,6 +889,7 @@ export class AIEngine {
               tools: runCtx.tools,
               prompt: runCtx.prompt,
               entityId: runCtx.entityId,
+              entityMeta: runCtx.entityMeta,
               fetch: runCtx.fetch,
             }
           );

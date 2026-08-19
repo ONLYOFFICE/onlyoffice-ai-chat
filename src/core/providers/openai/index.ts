@@ -64,6 +64,22 @@ class OpenAIProvider extends AbstractBaseProvider {
     this.client = createOpenAIClient(creds);
   }
 
+  /**
+   * Extra body fields merged into every request this provider sends —
+   * chat completions, Responses API, and image generation alike. Empty in
+   * the base class; subclasses talking to a backend with its own
+   * parameters (e.g. ONLYOFFICE `metadata`) override it instead of
+   * reimplementing the request builders.
+   *
+   * The values are not part of the OpenAI wire format, so each call site
+   * casts the assembled params back to the SDK's type.
+   *
+   * @returns Fields to spread into the request body.
+   */
+  protected extraBody(): Record<string, unknown> {
+    return {};
+  }
+
   async *sendMessage(args: SendMessageArgs): AsyncGenerator<SendMessageResult> {
     if (args.useResponsesApi) {
       yield* this.sendMessageResponses(args);
@@ -125,7 +141,8 @@ class OpenAIProvider extends AbstractBaseProvider {
             return effort ? { effort } : undefined;
           })() as OpenAI.Reasoning | undefined,
           stream: true,
-        },
+          ...this.extraBody(),
+        } as OpenAI.Responses.ResponseCreateParamsStreaming,
         { signal }
       );
 
@@ -164,7 +181,8 @@ class OpenAIProvider extends AbstractBaseProvider {
           params.model,
           params.withReasoning
         ) as OpenAI.Chat.ChatCompletionCreateParams["reasoning_effort"],
-      },
+        ...this.extraBody(),
+      } as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
       { signal: params.signal }
     );
   }
@@ -223,7 +241,8 @@ class OpenAIProvider extends AbstractBaseProvider {
             return effort ? { effort } : undefined;
           })() as OpenAI.Reasoning | undefined,
           stream: false,
-        },
+          ...this.extraBody(),
+        } as OpenAI.Responses.ResponseCreateParamsNonStreaming,
         { signal }
       );
       return response.output_text ?? "";
@@ -241,7 +260,8 @@ class OpenAIProvider extends AbstractBaseProvider {
           withReasoning
         ) as OpenAI.Chat.ChatCompletionCreateParams["reasoning_effort"],
         stream: false,
-      },
+        ...this.extraBody(),
+      } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
       { signal }
     );
     return response.choices[0]?.message?.content ?? "";
@@ -268,7 +288,8 @@ class OpenAIProvider extends AbstractBaseProvider {
           n: 1,
           size,
           ...(isGptImage ? {} : { response_format: "b64_json" }),
-        },
+          ...this.extraBody(),
+        } as OpenAI.Images.ImageGenerateParamsNonStreaming,
         { signal }
       );
       return response.data?.[0]?.b64_json ?? "";

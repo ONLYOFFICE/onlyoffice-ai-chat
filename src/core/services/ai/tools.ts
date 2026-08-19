@@ -178,6 +178,12 @@ export type AdapterRunContext = {
   /** Opaque scope token forwarded to scoped storage reads in resume rounds. */
   entityId?: string;
   /**
+   * Host entity pair (id + title) the round was started for. Threaded so
+   * resume rounds keep describing the same entity to the provider —
+   * see {@link ActionArgs.entityId}.
+   */
+  entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle">;
+  /**
    * Proxy fetch wired into resume rounds when the profile opts into
    * `useProxy`. Mirrors {@link ActionArgs.fetch}.
    */
@@ -248,6 +254,7 @@ export async function* executeAdapterTool(
       tools: ctx.tools,
       prompt: ctx.prompt,
       entityId: ctx.entityId,
+      entityMeta: ctx.entityMeta,
       fetch: ctx.fetch,
     }
   );

@@ -70,6 +70,19 @@ describe("providerFor", () => {
     expect(instance.seenCreds).not.toHaveProperty("sessionId");
   });
 
+  it("forwards the host entity pair into the credentials", async () => {
+    registerProvider("stub-provider", StubProvider);
+    const instance = (await providerFor({
+      ...baseArgs,
+      entityId: "agent-7",
+      entityTitle: "Support agent",
+    })) as StubProvider;
+    expect(instance.seenCreds).toMatchObject({
+      entityId: "agent-7",
+      entityTitle: "Support agent",
+    });
+  });
+
   it("throws when the provider type is unknown", async () => {
     await expect(
       providerFor({

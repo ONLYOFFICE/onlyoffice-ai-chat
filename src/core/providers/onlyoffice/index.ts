@@ -9,6 +9,12 @@ import { listModels } from "./models";
 /** Header carrying the current thread id to the ONLYOFFICE AI route. */
 const SESSION_HEADER = "x-session-id";
 
+/** Wire keys of the `metadata` object the ONLYOFFICE AI route reads. */
+const METADATA_KEYS = {
+  entityId: "agent_id",
+  entityTitle: "agent_title",
+} as const;
+
 /**
  * Fold {@link ProviderCredentials.sessionId} into the credential's
  * headers as `x-session-id`. A no-op when no session id is supplied or
@@ -55,6 +61,24 @@ class OnlyOfficeProvider extends OpenAIProvider {
    */
   constructor(creds: ProviderCredentials) {
     super(sessionHeaderCreds(creds));
+  }
+
+  /**
+   * Describe the host entity behind the round — the agent's id and title —
+   * as the `metadata` object on every request: streaming chat, Responses
+   * API, one-shot actions, and image generation. Keys the backend reads
+   * are `agent_id` / `agent_title`; absent credentials drop the whole
+   * object rather than sending empty strings.
+   */
+  protected override extraBody(): Record<string, unknown> {
+    const metadata: Record<string, string> = {};
+    if (this.creds.entityId) {
+      metadata[METADATA_KEYS.entityId] = this.creds.entityId;
+    }
+    if (this.creds.entityTitle) {
+      metadata[METADATA_KEYS.entityTitle] = this.creds.entityTitle;
+    }
+    return Object.keys(metadata).length > 0 ? { metadata } : {};
   }
 
   /**

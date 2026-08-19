@@ -43,6 +43,16 @@ export type ActionArgs = {
    */
   threadId?: string;
   /**
+   * Host entity the round runs for — typically the agent whose chat this
+   * is: `entityId` its identifier, `entityTitle` its display name. Both
+   * are supplied by the host through `actionArgs` and travel into
+   * {@link ProviderCredentials}, where the ONLYOFFICE provider turns them
+   * into the request's `metadata` object. Unrelated to the engine's
+   * `entityId` scope token, which never leaves storage.
+   */
+  entityId?: string;
+  entityTitle?: string;
+  /**
    * Custom fetch routed through the host's `fetchProxy`. Set by the
    * engine when {@link ActionArgs.profile.useProxy} is true and the
    * engine was constructed with a `fetchProxy` dep. Threaded into
