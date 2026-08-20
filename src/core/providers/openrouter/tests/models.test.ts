@@ -14,6 +14,38 @@ describe("openrouter/models/inferCapabilities", () => {
       })
     ).toBe(CapabilitiesUI.Embeddings);
   });
+  it("adds Tools when supported_parameters lists tools", () => {
+    expect(
+      inferCapabilities({
+        id: "x",
+        architecture: { modality: "text->text" },
+        supported_parameters: ["temperature", "tools", "tool_choice"],
+      })
+    ).toBe(CapabilitiesUI.Chat | CapabilitiesUI.Tools);
+  });
+  it("omits Tools when supported_parameters lacks tools", () => {
+    expect(
+      inferCapabilities({
+        id: "x",
+        architecture: { modality: "text->text" },
+        supported_parameters: ["temperature", "top_p"],
+      })
+    ).toBe(CapabilitiesUI.Chat);
+  });
+  it("applies Tools even without any modality metadata", () => {
+    expect(
+      inferCapabilities({ id: "x", supported_parameters: ["tools"] })
+    ).toBe(CapabilitiesUI.Chat | CapabilitiesUI.Tools);
+  });
+  it("keeps Embeddings exclusive of Tools", () => {
+    expect(
+      inferCapabilities({
+        id: "x",
+        architecture: { modality: "text->embedding" },
+        supported_parameters: ["tools"],
+      })
+    ).toBe(CapabilitiesUI.Embeddings);
+  });
   it("adds Vision for image input + text output", () => {
     expect(
       inferCapabilities({

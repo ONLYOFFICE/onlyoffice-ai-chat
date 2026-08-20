@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.52
+
+### Changed
+
+- Model capability icons in the provider's model dropdown are now shown for OpenRouter only. Everywhere else `Model.capabilities` is inferred from the model id — frequently a blanket `Chat | Vision | Tools` default applied to every entry — so the icons said nothing reliable and are hidden.
+- The icon set dropped `vision-ai`; image generation stays, and the `Tools` flag is drawn with the chat icon (`ask-ai`) instead of a separate wrench. Reasoning (`btn-extended-thinking`) is unchanged.
+
+### Fixed
+
+- OpenRouter now derives the `Tools` capability from the catalogue's `supported_parameters` instead of never setting it. Real per-model metadata, so it applies even when the modality fields are absent; `Embeddings` stays exclusive.
+
+  ```ts
+  // supported_parameters: ["temperature", "tools"] → Chat | Tools
+  ```
+
 ## 0.5.51
 
 ### Fixed

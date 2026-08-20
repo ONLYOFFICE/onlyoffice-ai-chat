@@ -54,7 +54,12 @@ vi.mock("../../combo-box", () => ({
   }: {
     placeholder: string;
     value?: string;
-    items: { text: string; id: string; onClick: () => void }[];
+    items: {
+      text: string;
+      id: string;
+      onClick: () => void;
+      trailingIcon?: React.ReactNode;
+    }[];
     disabled?: boolean;
   }) => (
     <div data-testid={`combo-${placeholder}`}>
@@ -67,10 +72,15 @@ vi.mock("../../combo-box", () => ({
             onClick={item.onClick}
           >
             {item.text}
+            {item.trailingIcon}
           </button>
         ))}
     </div>
   ),
+}));
+
+vi.mock("../../icon", () => ({
+  Icon: ({ name }: { name: string }) => <span data-testid={`icon-${name}`} />,
 }));
 
 vi.mock("../../field-container", () => ({
@@ -146,6 +156,7 @@ import {
   type ModelFormValues,
 } from "../sub-components/ModelConfigForm";
 import type { Model } from "../../../../types";
+import { CapabilitiesUI } from "../../../../capabilities";
 
 const defaultValues: ModelFormValues = {
   provider: "openai",
@@ -373,5 +384,87 @@ describe("ModelConfigForm", () => {
     );
     expect(screen.getByText("OnlyofficeAISettings")).toBeInTheDocument();
     expect(screen.queryByTestId("import-action")).not.toBeInTheDocument();
+  });
+  describe("model capability icons", () => {
+    const capModels: Model[] = [
+      {
+        id: "tools-model",
+        name: "Tools Model",
+        provider: "openrouter",
+        capabilities: CapabilitiesUI.Chat | CapabilitiesUI.Tools,
+      },
+      {
+        id: "image-model",
+        name: "Image Model",
+        provider: "openrouter",
+        capabilities: CapabilitiesUI.Image,
+      },
+      {
+        id: "plain-model",
+        name: "Plain Model",
+        provider: "openrouter",
+        capabilities: CapabilitiesUI.Chat,
+        reasoning: true,
+      },
+    ];
+
+    it("draws the chat icon for a tool-calling OpenRouter model", () => {
+      render(
+        <ModelConfigForm
+          values={{ ...defaultValues, provider: "openrouter" }}
+          onChange={vi.fn()}
+          models={capModels}
+        />
+      );
+      const row = screen.getByTestId("item-tools-model");
+      expect(within(row).getByTestId("icon-ask-ai")).toBeInTheDocument();
+    });
+
+    it("draws the image icon for an image-generation model", () => {
+      render(
+        <ModelConfigForm
+          values={{ ...defaultValues, provider: "openrouter" }}
+          onChange={vi.fn()}
+          models={capModels}
+        />
+      );
+      const row = screen.getByTestId("item-image-model");
+      expect(
+        within(row).getByTestId("icon-image-generation")
+      ).toBeInTheDocument();
+      expect(within(row).queryByTestId("icon-ask-ai")).not.toBeInTheDocument();
+    });
+
+    it("keeps the reasoning icon and draws no chat icon without Tools", () => {
+      render(
+        <ModelConfigForm
+          values={{ ...defaultValues, provider: "openrouter" }}
+          onChange={vi.fn()}
+          models={capModels}
+        />
+      );
+      const row = screen.getByTestId("item-plain-model");
+      expect(
+        within(row).getByTestId("icon-btn-extended-thinking")
+      ).toBeInTheDocument();
+      expect(within(row).queryByTestId("icon-ask-ai")).not.toBeInTheDocument();
+    });
+
+    it("hides every capability icon for non-OpenRouter providers", () => {
+      render(
+        <ModelConfigForm
+          values={defaultValues}
+          onChange={vi.fn()}
+          models={capModels}
+        />
+      );
+      expect(screen.queryByTestId("icon-ask-ai")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("icon-image-generation")
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("icon-btn-extended-thinking")
+      ).not.toBeInTheDocument();
+    });
   });
 });

@@ -14,6 +14,12 @@ type OpenRouterModel = {
     output_modalities?: string[];
   };
   context_length?: number;
+  /**
+   * Request parameters the model actually accepts. The only per-model
+   * tool-calling signal any provider in this repo exposes — presence of
+   * `"tools"` here is authoritative, its absence means no tool support.
+   */
+  supported_parameters?: string[];
 };
 
 /**
@@ -31,12 +37,20 @@ type OpenRouterModel = {
  * | image or video in        | Vision                         |
  * | audio in                 | Audio                          |
  * | image out + image in     | Image                          |
+ * | `supported_parameters` has `tools` | Tools                |
  *
  * If nothing matches, defaults to `Chat` so the model is still usable.
  */
 export const inferCapabilities = (model: OpenRouterModel): number => {
+  // Read off `supported_parameters` rather than guessed from the id: this
+  // is real per-model metadata, so it is applied even when the modality
+  // fields are missing entirely.
+  const toolsCap = model.supported_parameters?.includes("tools")
+    ? CapabilitiesUI.Tools
+    : 0;
+
   const arch = model.architecture;
-  if (!arch) return CapabilitiesUI.Chat;
+  if (!arch) return CapabilitiesUI.Chat | toolsCap;
 
   let modIn: string[];
   let modOut: string[];
@@ -46,12 +60,13 @@ export const inferCapabilities = (model: OpenRouterModel): number => {
     modOut = arch.output_modalities ?? [];
   } else {
     const modality = arch.modality ?? "";
-    if (!modality) return CapabilitiesUI.Chat;
+    if (!modality) return CapabilitiesUI.Chat | toolsCap;
     const [input, output] = modality.split("->");
     modIn = input?.split("+") ?? [];
     modOut = output?.split("+") ?? [];
   }
 
+  // Embeddings is exclusive — an embedding endpoint takes no tools.
   if (modIn.includes("embedding") || modOut.includes("embedding")) {
     return CapabilitiesUI.Embeddings;
   }
@@ -76,6 +91,7 @@ export const inferCapabilities = (model: OpenRouterModel): number => {
   if (modOut.includes("image")) {
     caps |= CapabilitiesUI.Image;
   }
+  caps |= toolsCap;
   return caps || CapabilitiesUI.Chat;
 };
 

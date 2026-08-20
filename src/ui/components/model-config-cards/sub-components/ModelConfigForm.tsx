@@ -12,10 +12,22 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../../tooltip";
 import { CapabilitiesUI } from "../../../../capabilities";
 import { Icon } from "../../icon";
 
+/**
+ * The only provider whose catalogue carries real per-model capability
+ * metadata: OpenRouter reports modalities and `supported_parameters`,
+ * so both the image and the tool-calling flag mean what they say.
+ * Everywhere else `Model.capabilities` is guessed from the model id —
+ * often a blanket default applied to every entry — so the icons would
+ * be decoration at best and wrong at worst. They stay hidden there.
+ */
+const CAPABILITY_ICONS_PROVIDER = "openrouter";
+
+// Tool-calling is what makes a model usable as a chat model here (the
+// chat round is the only place tools are dispatched), so the Tools flag
+// is drawn with the chat icon rather than a separate wrench.
 const MODEL_CAPABILITY_ICONS: Array<{ flag: number; name: string }> = [
   { flag: CapabilitiesUI.Image, name: "image-generation" },
-  { flag: CapabilitiesUI.Vision, name: "vision-ai" },
-  { flag: CapabilitiesUI.Tools, name: "tools" },
+  { flag: CapabilitiesUI.Tools, name: "ask-ai" },
 ];
 
 const ModelCapabilityIcons = ({ model }: { model: Model }) => {
@@ -158,6 +170,8 @@ export const ModelConfigForm = ({
       : undefined) ??
     providersInfo.find((p) => p.type === values.provider)?.name;
 
+  const showCapabilityIcons = values.provider === CAPABILITY_ICONS_PROVIDER;
+
   const modelItems = [...models]
     .sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
@@ -166,7 +180,9 @@ export const ModelConfigForm = ({
       text: m.name,
       id: m.id,
       onClick: () => onChange("model", m.id),
-      trailingIcon: <ModelCapabilityIcons model={m} />,
+      trailingIcon: showCapabilityIcons ? (
+        <ModelCapabilityIcons model={m} />
+      ) : undefined,
     }));
 
   const isExternalOnlyoffice =
