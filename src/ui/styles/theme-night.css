@@ -307,8 +307,8 @@
   --chat-message-code-block-header-color: var(--text-secondary);
   --chat-message-code-block-pre-background-color: var(--background-normal);
   --chat-message-error-color: var(--text-normal);
-  --chat-message-error-background-color: transparent;
-  --chat-message-error-border-color: #e0714c;
+  --chat-message-error-background-color: #ffbdbd47;
+  --chat-message-error-border-color: transparent;
   --chat-message-tool-call-header-color: var(--text-normal);
   --chat-message-tool-call-name-color: var(--text-normal);
   --chat-message-tool-call-name-background-color: var(

@@ -158,9 +158,9 @@ const MessageError = () => {
   }
 
   return (
-    // Both the fill and the border are always painted; each theme sets one
-    // of them to `transparent` (light themes fill, dark themes outline), so
-    // the markup stays theme-agnostic.
+    // Every built-in theme fills the block and leaves the border
+    // transparent. The border is still painted so a host can outline the box
+    // through `customTheme` without the widget needing a second layout.
     <div
       role="alert"
       className="bg-[var(--chat-message-error-background-color)] border border-[var(--chat-message-error-border-color)] rounded-[4px] px-[12px] py-[8px]"
