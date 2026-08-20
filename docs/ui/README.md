@@ -112,6 +112,14 @@ node.
   and a throw is caught and logged so a broken hook can never break the
   chat.
 
+By default the box renders the localized text, the code, and a **Retry**
+button. Retry replays the errored turn through the regenerate path: the
+failed assistant message is dropped and the last user message is re-run
+from stored history, so nothing is appended to the thread and the error
+box disappears. (Sending from the composer is unaffected — a new message
+still lands after the error.) Returning content from `renderChatError`
+suppresses Retry, since the host is expected to supply its own action.
+
 Branch on `payload.code`, never on the provider's message text. The
 codes are the canonical set `toChatError` produces — `"auth"`,
 `"model_not_found"`, `"rate_limit"`, `"timeout"`, `"network"`,

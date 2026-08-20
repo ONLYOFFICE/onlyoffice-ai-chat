@@ -100,6 +100,7 @@ const LOCALIZED_ERROR_CODES = new Set([
 
 const MessageError = () => {
   const { t } = useI18n();
+  const { Button } = useComponents();
   const { renderChatError } = useWidgetConfig();
   const { useThreadsStore } = useStores();
   const threadId = useThreadsStore((s) => s.threadId);
@@ -163,14 +164,30 @@ const MessageError = () => {
     // through `customTheme` without the widget needing a second layout.
     <div
       role="alert"
-      className="bg-[var(--chat-message-error-background-color)] border border-[var(--chat-message-error-border-color)] rounded-[4px] px-[12px] py-[8px]"
+      className="bg-[var(--chat-message-error-background-color)] border border-[var(--chat-message-error-border-color)] rounded-[4px] px-[12px] py-[8px] flex items-center gap-[12px]"
     >
-      <div className="text-[var(--chat-message-error-color)] font-semibold">
-        {hostContent ?? defaultText}
+      <div className="min-w-0 flex-1">
+        <div className="text-[var(--chat-message-error-color)] font-semibold">
+          {hostContent ?? defaultText}
+        </div>
+        <div className="text-[var(--chat-message-error-color)] leading-[var(--lh-16)] font-normal opacity-60 mt-[2px]">
+          {code}
+        </div>
       </div>
-      <div className="text-[var(--chat-message-error-color)] leading-[var(--lh-16)] font-normal opacity-60 mt-[2px]">
-        {code}
-      </div>
+      {/* Retry re-runs the errored turn through the regenerate path, which
+          drops the failed assistant message and replays the last user
+          message from stored history — so nothing is appended and the error
+          box disappears. Sending from the composer is untouched and still
+          queues after the error. Suppressed when the host owns the content:
+          it supplies its own action (a "Top up" link for `insufficient_funds`,
+          where a retry would only fail again). */}
+      {!hostContent && (
+        <ActionBarPrimitive.Reload asChild>
+          <Button variant="default" className="shrink-0">
+            {t("Retry")}
+          </Button>
+        </ActionBarPrimitive.Reload>
+      )}
     </div>
   );
 };

@@ -32,6 +32,7 @@
   "EnterKey": "API 키 입력",
   "Cancel": "취소",
   "Regenerate": "재생성",
+  "Retry": "다시 시도",
   "Save": "저장",
   "ResetSettings": "설정 초기화",
   "ExportTo": "내보내기…",

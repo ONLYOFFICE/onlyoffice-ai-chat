@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.56
+
+### Added
+
+- The in-chat error box now carries a **Retry** button. It replays the errored turn through the existing regenerate path, so the failed assistant message is dropped and the last user message is re-run from stored history — nothing is appended to the thread and the error box disappears. Sending from the composer is unchanged: a new message still lands after the error.
+
+  The engine persists the thread and the user message before calling the provider, so Retry also works for a failure on the very first message of a new chat.
+
+- Returning content from `renderChatError` suppresses Retry, on the assumption that the host supplies its own action — a retry is the wrong affordance for the codes worth overriding, since `insufficient_funds` would only fail again. Return `null` for unhandled codes and the default text plus Retry come back.
+
 ## 0.5.55
 
 ### Changed

@@ -1370,6 +1370,40 @@ describe("useMessages.regenerate", () => {
     expect(arg.actionArgs.signal).toBeInstanceOf(AbortSignal);
   });
 
+  it("retrying an errored turn drops the failed reply and appends nothing", async () => {
+    // What the error box's Retry button does: the failed assistant turn is
+    // truncated away and the round replays from the stored user message, so
+    // no second copy of it is sent.
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.messageState.messages = [
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
+      {
+        id: "a1",
+        role: "assistant",
+        content: [],
+        status: {
+          type: "incomplete",
+          reason: "error",
+          error: { code: "network", message: "fetch failed" },
+        },
+      },
+    ];
+    apiAi.regenerateStream.mockReturnValue(arr([]));
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate("u1");
+    });
+
+    // Index 0 keeps the user message and discards the errored reply.
+    expect(stores.messageState.truncateMessagesAfter).toHaveBeenCalledWith(0);
+    expect(apiAi.regenerateStream).toHaveBeenCalledTimes(1);
+    // The composer path is what appends; retry must not go through it.
+    expect(apiAi.sendWithStream).not.toHaveBeenCalled();
+    expect(stores.messageState.addMessage).not.toHaveBeenCalled();
+  });
+
   it("forwards extendedThinking, tools, and systemPrompt via actionArgs", async () => {
     stores.profilesState.chatProfile = profile;
     stores.threadsState.threadId = "t1";

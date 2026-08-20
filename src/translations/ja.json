@@ -32,6 +32,7 @@
   "EnterKey": "APIキーを入力",
   "Cancel": "キャンセル",
   "Regenerate": "再生成",
+  "Retry": "再試行",
   "Save": "保存",
   "ResetSettings": "設定をリセット",
   "ExportTo": "エクスポート先…",

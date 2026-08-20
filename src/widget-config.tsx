@@ -558,6 +558,12 @@ export interface WidgetConfig {
    * The box container and its `role="alert"` stay library-owned, as does
    * the code chip below the text. A throw is caught and logged, and the
    * default rendering is used — a broken host hook never breaks the chat.
+   *
+   * Returning content also suppresses the box's built-in "Retry" button, on
+   * the assumption that the host supplies its own action: a retry is the
+   * wrong affordance for the codes worth overriding (`insufficient_funds`
+   * would just fail again). Return `null` for the codes you don't handle and
+   * the default text plus Retry come back.
    */
   renderChatError?: (
     payload: ChatErrorPayload,

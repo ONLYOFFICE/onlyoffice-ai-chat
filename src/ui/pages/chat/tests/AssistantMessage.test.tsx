@@ -11,6 +11,7 @@ let mockMessageParentId = "0";
 let mockMessageContent: unknown[] = [{ type: "text", text: "Hello" }];
 let mockAssistantActions: unknown[] | undefined = undefined;
 let mockRenderChatError: unknown = undefined;
+const mockReload = vi.fn();
 let mockThreadId = "thread-1";
 
 vi.mock("react-i18next", () => ({
@@ -162,7 +163,11 @@ vi.mock("@assistant-ui/react", () => ({
     }: {
       children: React.ReactNode;
       asChild?: boolean;
-    }) => <div data-testid="action-reload">{children}</div>,
+    }) => (
+      <div data-testid="action-reload" onClick={mockReload}>
+        {children}
+      </div>
+    ),
   },
   ErrorPrimitive: {
     Root: ({
@@ -397,6 +402,73 @@ describe("AssistantMessage", () => {
     expect(alert.textContent).toContain("ChatError.insufficient_funds");
     // The raw provider text must not leak into the box.
     expect(alert.textContent).not.toContain("402 — insufficient funds");
+  });
+
+  describe("error box Retry button", () => {
+    const errStatus = {
+      type: "incomplete",
+      reason: "error",
+      error: { code: "network", message: "fetch failed" },
+    };
+
+    it("renders a Retry button inside the error box", () => {
+      mockMessageStatus = errStatus;
+      render(<AssistantMessage />);
+      const retry = screen.getByRole("button", { name: "Retry" });
+      expect(screen.getByRole("alert")).toContainElement(retry);
+    });
+
+    it("wires Retry through the Reload primitive, not a local handler", () => {
+      // The primitive owns the regenerate wiring (it injects onClick and
+      // disables itself while the thread runs), so the contract worth
+      // asserting is that our button is its child.
+      mockMessageStatus = errStatus;
+      render(<AssistantMessage />);
+      const retry = screen.getByRole("button", { name: "Retry" });
+      expect(screen.getByTestId("action-reload")).toContainElement(retry);
+    });
+
+    it("reaches the reload handler when clicked", () => {
+      mockMessageStatus = errStatus;
+      render(<AssistantMessage />);
+      fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+      expect(mockReload).toHaveBeenCalledTimes(1);
+    });
+
+    it("is not rendered for a healthy message", () => {
+      render(<AssistantMessage />);
+      expect(
+        screen.queryByRole("button", { name: "Retry" })
+      ).not.toBeInTheDocument();
+    });
+
+    it("is suppressed when the host supplies its own content", () => {
+      mockMessageStatus = errStatus;
+      mockRenderChatError = () => <button type="button">Top up</button>;
+      render(<AssistantMessage />);
+      expect(
+        screen.queryByRole("button", { name: "Retry" })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Top up" })
+      ).toBeInTheDocument();
+    });
+
+    it("is kept when the host declines to override", () => {
+      mockMessageStatus = errStatus;
+      mockRenderChatError = () => null;
+      render(<AssistantMessage />);
+      expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    });
+
+    it("is kept when the host hook throws", () => {
+      mockMessageStatus = errStatus;
+      mockRenderChatError = () => {
+        throw new Error("host blew up");
+      };
+      render(<AssistantMessage />);
+      expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    });
   });
 
   describe("renderChatError override", () => {
