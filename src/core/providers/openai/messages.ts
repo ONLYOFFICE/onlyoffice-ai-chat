@@ -16,6 +16,31 @@ import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 const generateFallbackToolCallId = (): string => crypto.randomUUID();
 
 /**
+ * Collapse a text-only content-part array into a plain string.
+ *
+ * The OpenAI schema accepts `content` as either a string or an array of
+ * parts, but not every OpenAI-compatible upstream does: Cloudflare Workers
+ * AI (reachable through OpenRouter) rejects an array outright with
+ * `Type mismatch of '/messages/N/content', 'string' not in 'array'`.
+ * Sending a string whenever there is nothing multimodal to express keeps
+ * those backends working without changing what the model receives.
+ *
+ * Arrays holding an image (or any non-text part) are left untouched — there
+ * is no lossless string form for them.
+ *
+ * @param parts - Already-converted OpenAI content parts.
+ * @returns The joined text, or the original array when it isn't text-only.
+ */
+const flattenTextParts = <T extends { type: string }>(
+  parts: T[]
+): string | T[] => {
+  if (!parts.every((part) => part.type === "text")) return parts;
+  return parts
+    .map((part) => (part as unknown as { text: string }).text)
+    .join("\n");
+};
+
+/**
  * Convert a user-message `content` payload into OpenAI's chat-completion
  * content parts.
  *
@@ -35,7 +60,7 @@ const convertUserContent = (
 ): string | ChatCompletionContentPart[] => {
   if (typeof content === "string") return content;
 
-  return content.map((part): ChatCompletionContentPart => {
+  const parts = content.map((part): ChatCompletionContentPart => {
     if (part.type === "text") {
       return { type: "text", text: part.text };
     }
@@ -72,6 +97,8 @@ const convertUserContent = (
 
     return { type: "text", text: "" };
   });
+
+  return flattenTextParts(parts);
 };
 
 /** Intermediate shape used when translating an assistant message. */
@@ -140,7 +167,12 @@ const processAssistantParts = (
     });
   }
 
-  return { content, reasoningContent, toolCalls, toolResults };
+  return {
+    content: flattenTextParts(content),
+    reasoningContent,
+    toolCalls,
+    toolResults,
+  };
 };
 
 /** Assistant message with optional DeepSeek/thinking `reasoning_content`. */

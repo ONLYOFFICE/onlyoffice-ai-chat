@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.51
+
+### Fixed
+
+- OpenAI-family requests now send `content` as a plain string whenever a message holds only text parts, instead of always wrapping it in a content-part array. Strict upstreams rejected the array outright — a text chat routed to Cloudflare Workers AI through OpenRouter failed with `Type mismatch of '/messages/N/content', 'string' not in 'array'`. Arrays are still used when an image is attached; there is no string form for those.
+
+  ```ts
+  // before: content: [{ type: "text", text: "hi" }]
+  // after:  content: "hi"
+  ```
+
 ## 0.5.50
 
 ### Added

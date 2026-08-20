@@ -9,12 +9,42 @@ describe("openai/messages/convertMessages", () => {
       expect(out).toEqual([{ role: "user", content: "hello" }]);
     });
 
-    it("maps text parts into OpenAI text content parts", () => {
+    it("flattens a text-only part array into a plain string", () => {
       const out = convertMessages([
         { role: "user", content: [{ type: "text", text: "hi" }] },
       ]);
-      expect(out).toEqual([
-        { role: "user", content: [{ type: "text", text: "hi" }] },
+      expect(out).toEqual([{ role: "user", content: "hi" }]);
+    });
+
+    it("joins several text parts with newlines", () => {
+      const out = convertMessages([
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "first" },
+            { type: "text", text: "second" },
+          ],
+        },
+      ]);
+      expect(out).toEqual([{ role: "user", content: "first\nsecond" }]);
+    });
+
+    it("keeps the part array when an image is present", () => {
+      const out = convertMessages([
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "look" },
+            { type: "image", image: "data:image/png;base64,AAA" },
+          ],
+        } as ThreadMessageLike,
+      ]);
+      expect(out[0].content).toEqual([
+        { type: "text", text: "look" },
+        {
+          type: "image_url",
+          image_url: { url: "data:image/png;base64,AAA", detail: "high" },
+        },
       ]);
     });
 
@@ -31,8 +61,8 @@ describe("openai/messages/convertMessages", () => {
           ],
         } as ThreadMessageLike,
       ]);
-      const first = (out[0] as { content: Array<{ text: string }> }).content[0];
-      expect(JSON.parse(first.text)).toEqual({
+      const first = (out[0] as { content: string }).content;
+      expect(JSON.parse(first)).toEqual({
         file_data: "file-content",
         filename: "/tmp/a.txt",
         file_id: "/tmp/a.txt",
@@ -66,7 +96,7 @@ describe("openai/messages/convertMessages", () => {
           ],
         } as ThreadMessageLike,
       ]);
-      expect(out[0].content).toEqual([{ type: "text", text: "" }]);
+      expect(out[0].content).toBe("");
     });
 
     it("drops an http(s) URL image to empty text", () => {
@@ -78,7 +108,7 @@ describe("openai/messages/convertMessages", () => {
           ],
         } as ThreadMessageLike,
       ]);
-      expect(out[0].content).toEqual([{ type: "text", text: "" }]);
+      expect(out[0].content).toBe("");
     });
 
     it("degrades unknown parts into empty text", () => {
@@ -88,7 +118,7 @@ describe("openai/messages/convertMessages", () => {
           content: [{ type: "unknown" } as unknown as never],
         } as ThreadMessageLike,
       ]);
-      expect(out[0].content).toEqual([{ type: "text", text: "" }]);
+      expect(out[0].content).toBe("");
     });
   });
 
@@ -131,12 +161,12 @@ describe("openai/messages/convertMessages", () => {
 
       const assistant = out[0] as {
         role: "assistant";
-        content: { type: string; text?: string }[];
+        content: string;
         reasoning_content?: string;
         tool_calls?: Array<{ id: string; function: { name: string } }>;
       };
       expect(assistant.role).toBe("assistant");
-      expect(assistant.content).toEqual([{ type: "text", text: "hello" }]);
+      expect(assistant.content).toBe("hello");
       expect(assistant.reasoning_content).toBe("thinking...");
       expect(assistant.tool_calls?.[0]?.function?.name).toBe("search");
 
