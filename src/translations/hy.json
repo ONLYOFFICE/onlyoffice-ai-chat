@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Հարցումների սահմանը հատված է, փորձեք կրկին մի փոքր հետո",
   "ChatError.timeout": "Հարցման ժամկետը լրացել է",
   "ChatError.network": "Ցանցի սխալ, ստուգեք կապը",
+  "ChatError.insufficient_funds": "Այս հարցումը կատարելու համար միջոցները բավարար չեն։",
   "ChatError.aborted": "Հարցումը չեղարկվեց",
   "ConfigurationError": "Կոնֆիգուրացիան պետք է գտնվի 'mcpServers' հատկության մեջ",
   "InvalidJsonFormat": "JSON-ի անվավեր ձևաչափ",

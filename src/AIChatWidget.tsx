@@ -324,6 +324,12 @@ export interface AIChatWidgetProps {
    */
   onToolCallApproveResult?: WidgetConfig["onToolCallApproveResult"];
   /**
+   * Takes over the content of the in-chat assistant error box — branch on
+   * the normalized payload's `code` and return a node, or `null` to keep
+   * the default text. See {@link WidgetConfig.renderChatError}.
+   */
+  renderChatError?: WidgetConfig["renderChatError"];
+  /**
    * Minimum log severity that reaches the console. Raise it to quiet the
    * library's `info`/`debug` tracing (`"warn"`, `"error"`, or `"silent"`);
    * defaults to logging everything. See {@link WidgetConfig.logLevel}.
@@ -396,6 +402,7 @@ export const AIChatWidget = React.forwardRef<
       onOpenCustomProvider,
       onDiscardMcpChanges,
       onToolCallApproveResult,
+      renderChatError,
       logLevel,
     },
     ref
@@ -438,6 +445,7 @@ export const AIChatWidget = React.forwardRef<
         onOpenCustomProvider,
         onDiscardMcpChanges,
         onToolCallApproveResult,
+        renderChatError,
         logLevel,
       }),
       [
@@ -477,6 +485,7 @@ export const AIChatWidget = React.forwardRef<
         onOpenCustomProvider,
         onDiscardMcpChanges,
         onToolCallApproveResult,
+        renderChatError,
         logLevel,
       ]
     );

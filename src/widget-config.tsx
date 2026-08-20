@@ -6,6 +6,7 @@ import type { ComposerAction } from "./ui/pages/chat/composer-actions";
 import type { ProfilePickerAction } from "./ui/pages/chat/profile-picker-actions";
 import type { Suggestion } from "./ui/pages/chat/suggestions";
 import type { ModelFormValues } from "./ui/components/model-config-cards/sub-components/ModelConfigForm";
+import type { ChatErrorPayload } from "./core/services";
 import type { Profile, Thread } from "./types";
 
 export interface WidgetConfig {
@@ -541,6 +542,28 @@ export interface WidgetConfig {
     ctx: ToolCallApproveContext
   ) => void | Promise<void>;
   /**
+   * Takes over the *content* of the in-chat assistant error box. Called
+   * before the widget renders its default text, with the normalized
+   * {@link ChatErrorPayload} — branch on `payload.code` (e.g.
+   * `"insufficient_funds"`, `"auth"`, `"rate_limit"`), never on the
+   * provider's message text — and the {@link ChatErrorContext} the error
+   * belongs to.
+   *
+   * Return any node to replace the default text, so the host can render a
+   * localized message with an action (a "Top up" link, a retry button).
+   * `ctx.defaultText` carries the text the widget would have shown, so a
+   * host can decorate rather than fully replace it. Return `null` /
+   * `undefined` to fall back to the default rendering.
+   *
+   * The box container and its `role="alert"` stay library-owned, as does
+   * the code chip below the text. A throw is caught and logged, and the
+   * default rendering is used — a broken host hook never breaks the chat.
+   */
+  renderChatError?: (
+    payload: ChatErrorPayload,
+    ctx: ChatErrorContext
+  ) => React.ReactNode | null | undefined;
+  /**
    * Takes over file drag-and-drop onto the chat surface. When provided, a
    * drop of one or more files hands the raw {@link File} list to this
    * callback and the widget's built-in handling (reading images as data
@@ -590,6 +613,18 @@ export interface PromptFolderInfo {
  */
 export interface PromptResult extends PromptDraft {
   folderId?: string | null;
+}
+
+/** Context passed to {@link WidgetConfig.renderChatError} alongside the payload. */
+export interface ChatErrorContext {
+  /** Thread the errored turn belongs to; empty for a not-yet-persisted chat. */
+  threadId?: string;
+  /**
+   * Text the widget would render by default — the localized
+   * `ChatError.<code>` string for a known code, otherwise the provider's
+   * `payload.message`. Use it to decorate instead of replacing.
+   */
+  defaultText: string;
 }
 
 /** Context for the tool call whose result is passed to {@link WidgetConfig.onToolCallApproveResult}. */

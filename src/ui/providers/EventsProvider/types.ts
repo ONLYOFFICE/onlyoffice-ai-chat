@@ -55,6 +55,14 @@ export interface StreamErrorEvent {
   error: {
     reason: string;
     message?: string;
+    /**
+     * Stable machine-readable code from the normalized
+     * `ChatErrorPayload` (`"auth"`, `"rate_limit"`,
+     * `"insufficient_funds"`, …, `"unknown"`). Prefer branching on this
+     * over matching `message` text. Absent only when the errored status
+     * carried no payload at all.
+     */
+    code?: string;
   };
 }
 

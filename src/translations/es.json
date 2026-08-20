@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Límite de solicitudes alcanzado, inténtelo de nuevo en breve",
   "ChatError.timeout": "La solicitud ha agotado el tiempo de espera",
   "ChatError.network": "Error de red, compruebe su conexión",
+  "ChatError.insufficient_funds": "Fondos insuficientes para completar esta solicitud.",
   "ChatError.aborted": "La solicitud fue cancelada",
   "ConfigurationError": "La configuración debe colocarse dentro de la propiedad «mcpServers»",
   "InvalidJsonFormat": "Formato JSON no válido",

@@ -434,6 +434,100 @@ describe("useMessages.onNew", () => {
     );
   });
 
+  it("carries the structured error code on onStreamError", async () => {
+    stores.profilesState.chatProfile = profile;
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "message-incomplete",
+          message: {
+            role: "assistant",
+            content: "",
+            status: {
+              type: "incomplete",
+              reason: "error",
+              error: {
+                code: "insufficient_funds",
+                message: "402 — insufficient funds",
+              },
+            },
+          },
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hello" }],
+      } as never);
+    });
+    expect(callbacksManager.emit).toHaveBeenCalledWith(
+      "onStreamError",
+      expect.objectContaining({
+        error: {
+          reason: "error",
+          message: "402 — insufficient funds",
+          code: "insufficient_funds",
+        },
+      })
+    );
+  });
+
+  it("omits the code when the errored status carries an un-normalized payload", async () => {
+    stores.profilesState.chatProfile = profile;
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "message-incomplete",
+          message: {
+            role: "assistant",
+            content: "",
+            status: { type: "incomplete", reason: "error", error: "oops" },
+          },
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hello" }],
+      } as never);
+    });
+    expect(callbacksManager.emit).toHaveBeenCalledWith(
+      "onStreamError",
+      expect.objectContaining({
+        error: { reason: "error", message: "oops", code: undefined },
+      })
+    );
+  });
+
+  it("classifies a bare stream error envelope by its message text", async () => {
+    stores.profilesState.chatProfile = profile;
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "error",
+          message: "402 — insufficient funds to complete this request",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hello" }],
+      } as never);
+    });
+    expect(callbacksManager.emit).toHaveBeenCalledWith(
+      "onStreamError",
+      expect.objectContaining({
+        error: expect.objectContaining({
+          reason: "error",
+          code: "insufficient_funds",
+        }),
+      })
+    );
+  });
+
   it("yields tool-call-pending and surfaces dialog data when not auto-allowed", async () => {
     stores.profilesState.chatProfile = profile;
     readToolCallMock.mockReturnValue({
@@ -1390,9 +1484,7 @@ describe("useMessages orphaned rounds", () => {
     expect(stores.messageState.addMessage).toHaveBeenCalledTimes(2);
     expect(stores.messageState.updateLastMessage).not.toHaveBeenCalled();
     // The late thread-title must not hijack the new scope's thread list.
-    expect(stores.messageState.claimThreadId).not.toHaveBeenCalledWith(
-      "t-new"
-    );
+    expect(stores.messageState.claimThreadId).not.toHaveBeenCalledWith("t-new");
     expect(stores.threadsState.insertThread).not.toHaveBeenCalled();
     // The stream was still consumed to completion (persistence path).
     expect(drainedToEnd).toBe(true);

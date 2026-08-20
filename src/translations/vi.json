@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Đã đạt giới hạn tốc độ, vui lòng thử lại sau",
   "ChatError.timeout": "Yêu cầu đã hết thời gian",
   "ChatError.network": "Lỗi mạng, vui lòng kiểm tra kết nối",
+  "ChatError.insufficient_funds": "Không đủ số dư để hoàn tất yêu cầu này.",
   "ChatError.aborted": "Yêu cầu đã bị hủy",
   "ConfigurationError": "Cấu hình phải được đặt bên trong thuộc tính 'mcpServers'",
   "InvalidJsonFormat": "Định dạng JSON không hợp lệ",

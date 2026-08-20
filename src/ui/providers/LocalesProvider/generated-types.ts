@@ -22,6 +22,7 @@ export type TranslationKey =
   | "Cancel"
   | "ChatError.aborted"
   | "ChatError.auth"
+  | "ChatError.insufficient_funds"
   | "ChatError.model_not_found"
   | "ChatError.network"
   | "ChatError.rate_limit"

@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "已达速率限制，请稍后重试",
   "ChatError.timeout": "请求超时",
   "ChatError.network": "网络错误，请检查连接",
+  "ChatError.insufficient_funds": "余额不足，无法完成此请求。",
   "ChatError.aborted": "请求已取消",
   "ConfigurationError": "配置必须放置在 'mcpServers' 属性内",
   "InvalidJsonFormat": "无效的 JSON 格式",

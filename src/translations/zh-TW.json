@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "已達速率限制，請稍後再試",
   "ChatError.timeout": "請求逾時",
   "ChatError.network": "網路錯誤，請檢查您的連線",
+  "ChatError.insufficient_funds": "餘額不足，無法完成此請求。",
   "ChatError.aborted": "請求已取消",
   "ConfigurationError": "設定必須放置於 'mcpServers' 屬性內",
   "InvalidJsonFormat": "無效的 JSON 格式",

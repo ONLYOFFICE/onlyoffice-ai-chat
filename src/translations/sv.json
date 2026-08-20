@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Hastighetsgränsen nådd, försök igen om en stund",
   "ChatError.timeout": "Förfrågan tog för lång tid",
   "ChatError.network": "Nätverksfel, kontrollera din anslutning",
+  "ChatError.insufficient_funds": "Otillräckliga medel för att slutföra denna begäran.",
   "ChatError.aborted": "Förfrågan avbröts",
   "ConfigurationError": "Konfigurationen måste placeras i egenskapen 'mcpServers'",
   "InvalidJsonFormat": "Ogiltigt JSON-format",

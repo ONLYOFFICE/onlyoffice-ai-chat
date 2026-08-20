@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Grense nådd, prøv igjen om litt",
   "ChatError.timeout": "Forespørselen ble tidsavbrutt",
   "ChatError.network": "Nettverksfeil, sjekk tilkoblingen din",
+  "ChatError.insufficient_funds": "Ikke nok midler til å fullføre denne forespørselen.",
   "ChatError.aborted": "Forespørselen ble avbrutt",
   "ConfigurationError": "Konfigurasjonen må plasseres under egenskapen 'mcpServers'",
   "InvalidJsonFormat": "Ugyldig JSON-format",

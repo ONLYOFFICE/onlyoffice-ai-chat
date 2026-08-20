@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Limita de solicitări atinsă, încercați din nou în scurt timp",
   "ChatError.timeout": "Solicitarea a expirat",
   "ChatError.network": "Eroare de rețea, verificați conexiunea",
+  "ChatError.insufficient_funds": "Fonduri insuficiente pentru a finaliza această solicitare.",
   "ChatError.aborted": "Solicitarea a fost anulată",
   "ConfigurationError": "Configurația trebuie plasată în interiorul proprietății 'mcpServers',",
   "InvalidJsonFormat": "Format JSON nevalid",

@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Hastighedsgrænse nået, prøv igen om lidt",
   "ChatError.timeout": "Anmodningen udløb",
   "ChatError.network": "Netværksfejl, kontrollér din forbindelse",
+  "ChatError.insufficient_funds": "Utilstrækkelige midler til at gennemføre denne anmodning.",
   "ChatError.aborted": "Anmodningen blev annulleret",
   "ConfigurationError": "Konfigurationer bør placeres inden for egenskaben 'mcpServers'",
   "InvalidJsonFormat": "Ugyldigt JSON-format",

@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Rate limit reached, try again shortly",
   "ChatError.timeout": "Request timed out",
   "ChatError.network": "Network error, check your connection",
+  "ChatError.insufficient_funds": "Insufficient funds to complete this request.",
   "ChatError.aborted": "Request was cancelled",
   "ConfigurationError": "Configuration must be placed inside 'mcpServers' property",
   "InvalidJsonFormat": "Invalid JSON format",

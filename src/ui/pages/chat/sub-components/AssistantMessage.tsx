@@ -13,6 +13,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
@@ -93,11 +94,15 @@ const LOCALIZED_ERROR_CODES = new Set([
   "rate_limit",
   "timeout",
   "network",
+  "insufficient_funds",
   "aborted",
 ]);
 
 const MessageError = () => {
   const { t } = useI18n();
+  const { renderChatError } = useWidgetConfig();
+  const { useThreadsStore } = useStores();
+  const threadId = useThreadsStore((s) => s.threadId);
   const message = useMessage();
   const status = message.status as
     | { type?: string; reason?: string; error?: ChatErrorPayload | unknown }
@@ -122,9 +127,35 @@ const MessageError = () => {
       : typeof payload === "string"
         ? payload
         : t("Error");
-  const text = LOCALIZED_ERROR_CODES.has(code)
+  const defaultText = LOCALIZED_ERROR_CODES.has(code)
     ? t(`ChatError.${code}`)
     : fallback;
+
+  // Host override: replaces the *content* of the box, never the box or its
+  // ARIA role. A throw must not take the chat down with it — log and fall
+  // back to the default text.
+  let hostContent: ReactNode = null;
+  if (renderChatError) {
+    // Hand over a payload that is always well-formed, even when a stale
+    // host proxied a string / code-less object: `code` and `message` are
+    // the resolved values above, so a host can branch on `payload.code`
+    // unconditionally.
+    const normalized: ChatErrorPayload = {
+      ...(payload && typeof payload === "object" ? payload : null),
+      code,
+      message: fallback,
+    };
+    try {
+      hostContent =
+        renderChatError(normalized, {
+          threadId: threadId || undefined,
+          defaultText,
+        }) ?? null;
+    } catch (err) {
+      logger.error("WidgetConfig.renderChatError failed:", err);
+      hostContent = null;
+    }
+  }
 
   return (
     <div
@@ -132,7 +163,7 @@ const MessageError = () => {
       className="border border-[var(--chat-message-error-border-color)] rounded-[4px] p-[6px]"
     >
       <div className="text-[var(--chat-message-error-color)] font-normal">
-        {text}
+        {hostContent ?? defaultText}
       </div>
       <div className="text-[var(--chat-message-error-color)] leading-[var(--lh-16)] font-normal opacity-60 mt-[2px]">
         {code}

@@ -47,7 +47,7 @@ Errors thrown from a callback are silently swallowed by
 | `onStreamStart` | `StreamStartEvent` | Provider starts streaming |
 | `onStreamDelta` | `StreamDeltaEvent` | Each incremental chunk |
 | `onStreamEnd` | `StreamEndEvent` | Stream completes successfully |
-| `onStreamError` | `StreamErrorEvent` | Stream error |
+| `onStreamError` | `StreamErrorEvent` | Stream error — `error.code` carries the machine-readable `ChatErrorPayload` code (branch on it, not on `error.message`) |
 | `onStreamStop` | `StreamStopEvent` | User cancels stream |
 
 ### Tool calls (5)

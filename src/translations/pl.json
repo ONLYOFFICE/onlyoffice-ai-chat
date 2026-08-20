@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Przekroczono limit zapytań, spróbuj ponownie za chwilę",
   "ChatError.timeout": "Przekroczono czas oczekiwania",
   "ChatError.network": "Błąd sieci, sprawdź połączenie",
+  "ChatError.insufficient_funds": "Niewystarczające środki, aby zrealizować to żądanie.",
   "ChatError.aborted": "Żądanie zostało anulowane",
   "ConfigurationError": "Konfiguracja musi być umieszczona w właściwości 'mcpServers'",
   "InvalidJsonFormat": "Nieprawidłowy format JSON",

@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Kérési korlát elérve, próbálja meg újra hamarosan",
   "ChatError.timeout": "A kérés időtúllépés miatt megszakadt",
   "ChatError.network": "Hálózati hiba, ellenőrizze a kapcsolatot",
+  "ChatError.insufficient_funds": "Nincs elég egyenleg a kérés teljesítéséhez.",
   "ChatError.aborted": "A kérés megszakítva",
   "ConfigurationError": "A konfigurációkat az 'mcpServers' belül kell megadni",
   "InvalidJsonFormat": "Érvénytelen JSON-formátum",

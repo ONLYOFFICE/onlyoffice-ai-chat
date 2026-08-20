@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Limite de pedidos atingido, tente novamente em breve",
   "ChatError.timeout": "O pedido expirou",
   "ChatError.network": "Erro de rede, verifique a sua ligação",
+  "ChatError.insufficient_funds": "Saldo insuficiente para concluir este pedido.",
   "ChatError.aborted": "O pedido foi cancelado",
   "ConfigurationError": "A configuração deve ser colocada dentro da propriedade 'mcpServers'",
   "InvalidJsonFormat": "Formato JSON inválido",

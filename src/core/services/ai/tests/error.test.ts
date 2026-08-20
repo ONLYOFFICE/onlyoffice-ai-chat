@@ -27,6 +27,46 @@ describe("toChatError", () => {
     expect(toChatError(err).code).toBe("model_not_found");
   });
 
+  it("classifies 402 as insufficient_funds", () => {
+    const err = Object.assign(
+      new Error("402 — insufficient funds to complete this request"),
+      { status: 402 }
+    );
+    expect(toChatError(err).code).toBe("insufficient_funds");
+  });
+
+  it("classifies 402 as insufficient_funds regardless of message text", () => {
+    const err = Object.assign(new Error("Payment Required"), { status: 402 });
+    expect(toChatError(err).code).toBe("insufficient_funds");
+  });
+
+  it("falls back to the message when the transport drops the 402 status", () => {
+    const err = new Error("402 — insufficient funds to complete this request");
+    expect(toChatError(err).code).toBe("insufficient_funds");
+    // Case-insensitive, and does not need the numeric prefix.
+    expect(toChatError(new Error("Insufficient Funds")).code).toBe(
+      "insufficient_funds"
+    );
+  });
+
+  it("keeps the raw provider message alongside the insufficient_funds code", () => {
+    const payload = toChatError(
+      Object.assign(new Error("402 — insufficient funds"), { status: 402 })
+    );
+    expect(payload).toEqual({
+      code: "insufficient_funds",
+      message: "402 — insufficient funds",
+    });
+  });
+
+  it("does not let the funds fallback shadow a more specific status", () => {
+    // A 429 whose body happens to mention funds stays a rate limit.
+    const err = Object.assign(new Error("insufficient funds, slow down"), {
+      status: 429,
+    });
+    expect(toChatError(err).code).toBe("rate_limit");
+  });
+
   it("classifies 429 as rate_limit", () => {
     const err = Object.assign(new Error("Too many requests"), { status: 429 });
     expect(toChatError(err).code).toBe("rate_limit");

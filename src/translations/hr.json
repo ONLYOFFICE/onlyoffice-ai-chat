@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Dostignut limit zahtjeva, pokušajte ponovo za kratko",
   "ChatError.timeout": "Vremensko ograničenje zahtjeva isteklo",
   "ChatError.network": "Mrežna pogreška, provjerite vezu",
+  "ChatError.insufficient_funds": "Nedovoljno sredstava za dovršetak ovog zahtjeva.",
   "ChatError.aborted": "Zahtjev je otkazan",
   "ConfigurationError": "Konfiguracija mora biti postavljena unutar 'mcpServers' svojstva",
   "InvalidJsonFormat": "Nevažeći JSON format",

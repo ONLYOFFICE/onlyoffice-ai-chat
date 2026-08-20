@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Batas permintaan tercapai, coba lagi sebentar lagi",
   "ChatError.timeout": "Permintaan habis waktu",
   "ChatError.network": "Kesalahan jaringan, periksa koneksi Anda",
+  "ChatError.insufficient_funds": "Dana tidak cukup untuk menyelesaikan permintaan ini.",
   "ChatError.aborted": "Permintaan dibatalkan",
   "ConfigurationError": "Konfigurasi harus ditempatkan di dalam properti 'mcpServers'",
   "InvalidJsonFormat": "Format JSON tidak valid",

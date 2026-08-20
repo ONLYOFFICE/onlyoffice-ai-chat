@@ -10,6 +10,8 @@ let mockMessageStatus: unknown = { type: "complete" };
 let mockMessageParentId = "0";
 let mockMessageContent: unknown[] = [{ type: "text", text: "Hello" }];
 let mockAssistantActions: unknown[] | undefined = undefined;
+let mockRenderChatError: unknown = undefined;
+let mockThreadId = "thread-1";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -36,6 +38,13 @@ vi.mock("../../../store/context", () => ({
           messages: mockMessages,
         }),
       }
+    ),
+    useThreadsStore: Object.assign(
+      ((selector?: (s: { threadId: string }) => unknown) => {
+        const state = { threadId: mockThreadId };
+        return typeof selector === "function" ? selector(state) : state;
+      }) as never,
+      { getState: () => ({ threadId: mockThreadId }) }
     ),
   }),
 }));
@@ -265,7 +274,10 @@ vi.mock("../../../../utils", () => ({
 }));
 
 vi.mock("../../../../widget-config", () => ({
-  useWidgetConfig: () => ({ assistantActions: mockAssistantActions }),
+  useWidgetConfig: () => ({
+    assistantActions: mockAssistantActions,
+    renderChatError: mockRenderChatError,
+  }),
 }));
 
 import { AssistantMessage } from "../sub-components/AssistantMessage";
@@ -280,6 +292,8 @@ describe("AssistantMessage", () => {
     mockMessageParentId = "0";
     mockMessageContent = [{ type: "text", text: "Hello" }];
     mockAssistantActions = undefined;
+    mockRenderChatError = undefined;
+    mockThreadId = "thread-1";
   });
 
   it("renders without crash", () => {
@@ -369,6 +383,125 @@ describe("AssistantMessage", () => {
     expect(alert.textContent).not.toContain("[object Object]");
   });
 
+  it("renders the localized text for the insufficient_funds code", () => {
+    mockMessageStatus = {
+      type: "incomplete",
+      reason: "error",
+      error: {
+        code: "insufficient_funds",
+        message: "402 — insufficient funds to complete this request",
+      },
+    };
+    render(<AssistantMessage />);
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("ChatError.insufficient_funds");
+    // The raw provider text must not leak into the box.
+    expect(alert.textContent).not.toContain("402 — insufficient funds");
+  });
+
+  describe("renderChatError override", () => {
+    const fundsStatus = {
+      type: "incomplete",
+      reason: "error",
+      error: { code: "insufficient_funds", message: "402 — no funds" },
+    };
+
+    it("replaces the default text with the host's node", () => {
+      mockMessageStatus = fundsStatus;
+      mockRenderChatError = () => <button type="button">Top up</button>;
+      render(<AssistantMessage />);
+      const alert = screen.getByRole("alert");
+      expect(
+        screen.getByRole("button", { name: "Top up" })
+      ).toBeInTheDocument();
+      expect(alert.textContent).not.toContain("ChatError.insufficient_funds");
+      // The box, its role, and the code chip stay library-owned.
+      expect(alert.textContent).toContain("insufficient_funds");
+    });
+
+    it("passes the normalized payload and the resolved defaultText", () => {
+      mockMessageStatus = fundsStatus;
+      const spy = vi.fn().mockReturnValue(<span>ok</span>);
+      mockRenderChatError = spy;
+      render(<AssistantMessage />);
+      expect(spy).toHaveBeenCalledWith(
+        { code: "insufficient_funds", message: "402 — no funds" },
+        { threadId: "thread-1", defaultText: "ChatError.insufficient_funds" }
+      );
+    });
+
+    it("passes the provider message as defaultText for an unknown code", () => {
+      mockMessageStatus = {
+        type: "incomplete",
+        reason: "error",
+        error: { code: "weirdo", message: "Something went sideways" },
+      };
+      const spy = vi.fn().mockReturnValue(null);
+      mockRenderChatError = spy;
+      render(<AssistantMessage />);
+      expect(spy).toHaveBeenCalledWith(
+        { code: "weirdo", message: "Something went sideways" },
+        expect.objectContaining({ defaultText: "Something went sideways" })
+      );
+    });
+
+    it("normalizes a legacy string payload before handing it over", () => {
+      mockMessageStatus = {
+        type: "incomplete",
+        reason: "error",
+        error: "raw provider text",
+      };
+      const spy = vi.fn().mockReturnValue(null);
+      mockRenderChatError = spy;
+      render(<AssistantMessage />);
+      expect(spy).toHaveBeenCalledWith(
+        { code: "unknown", message: "raw provider text" },
+        expect.objectContaining({ defaultText: "raw provider text" })
+      );
+    });
+
+    it("omits threadId when there is no persisted thread yet", () => {
+      mockMessageStatus = fundsStatus;
+      mockThreadId = "";
+      const spy = vi.fn().mockReturnValue(null);
+      mockRenderChatError = spy;
+      render(<AssistantMessage />);
+      expect(spy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ threadId: undefined })
+      );
+    });
+
+    it("falls back to the default text when the host returns null", () => {
+      mockMessageStatus = fundsStatus;
+      mockRenderChatError = () => null;
+      render(<AssistantMessage />);
+      expect(screen.getByRole("alert").textContent).toContain(
+        "ChatError.insufficient_funds"
+      );
+    });
+
+    it("falls back to the default text when the host returns undefined", () => {
+      mockMessageStatus = fundsStatus;
+      mockRenderChatError = () => undefined;
+      render(<AssistantMessage />);
+      expect(screen.getByRole("alert").textContent).toContain(
+        "ChatError.insufficient_funds"
+      );
+    });
+
+    it("survives a throwing host hook and renders the default text", () => {
+      mockMessageStatus = fundsStatus;
+      mockRenderChatError = () => {
+        throw new Error("host blew up");
+      };
+      render(<AssistantMessage />);
+      expect(screen.getByRole("alert").textContent).toContain(
+        "ChatError.insufficient_funds"
+      );
+    });
+  });
+
   it("renders action bar when status is complete", () => {
     render(<AssistantMessage />);
     expect(screen.getByTestId("action-bar")).toBeInTheDocument();
@@ -417,7 +550,9 @@ describe("AssistantMessage", () => {
   it("hides save button when saveAsFile is not available", () => {
     mockPlatformFile = null;
     render(<AssistantMessage />);
-    expect(screen.queryByTestId("icon-btn-btn-save.small")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("icon-btn-btn-save.small")
+    ).not.toBeInTheDocument();
   });
 
   it("renders copied and not-copied icon states", () => {
@@ -447,7 +582,9 @@ describe("AssistantMessage", () => {
     it("does not render the save button when platform.file is null", () => {
       mockPlatformFile = null;
       render(<AssistantMessage />);
-      expect(screen.queryByTestId("icon-btn-btn-save.small")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("icon-btn-btn-save.small")
+      ).not.toBeInTheDocument();
       expect(mockSaveAsFile).not.toHaveBeenCalled();
     });
 

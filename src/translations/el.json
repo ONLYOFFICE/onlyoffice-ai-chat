@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Υπέρβαση ορίου αιτημάτων, δοκιμάστε ξανά σύντομα",
   "ChatError.timeout": "Το αίτημα έληξε",
   "ChatError.network": "Σφάλμα δικτύου, ελέγξτε τη σύνδεσή σας",
+  "ChatError.insufficient_funds": "Ανεπαρκή κεφάλαια για την ολοκλήρωση αυτού του αιτήματος.",
   "ChatError.aborted": "Το αίτημα ακυρώθηκε",
   "ConfigurationError": "Η διαμόρφωση πρέπει να τοποθετηθεί μέσα στην ιδιότητα «mcpServers»",
   "InvalidJsonFormat": "Μη έγκυρη μορφή JSON",

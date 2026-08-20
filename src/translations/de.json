@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Ratenlimit erreicht, bitte erneut versuchen",
   "ChatError.timeout": "Anfrage-Timeout",
   "ChatError.network": "Netzwerkfehler, bitte Verbindung prüfen",
+  "ChatError.insufficient_funds": "Unzureichendes Guthaben, um diese Anfrage auszuführen.",
   "ChatError.aborted": "Anfrage wurde abgebrochen",
   "ConfigurationError": "Die Konfiguration muss in der Eigenschaft 'mcpServers' platziert werden",
   "InvalidJsonFormat": "Ungültiges JSON-Format",

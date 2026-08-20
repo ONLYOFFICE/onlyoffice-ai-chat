@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Достигнат е лимитът на заявките, опитайте отново след малко",
   "ChatError.timeout": "Заявката изтече",
   "ChatError.network": "Мрежова грешка, проверете връзката си",
+  "ChatError.insufficient_funds": "Недостатъчни средства за изпълнение на тази заявка.",
   "ChatError.aborted": "Заявката беше отменена",
   "ConfigurationError": "Конфигурацията трябва да се постави в собственост на 'mcpServers'",
   "InvalidJsonFormat": "Невалиден JSON формат",

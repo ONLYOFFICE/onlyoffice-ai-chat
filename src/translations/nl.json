@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Limiet bereikt, probeer het zo opnieuw",
   "ChatError.timeout": "Verzoek is verlopen",
   "ChatError.network": "Netwerkfout, controleer uw verbinding",
+  "ChatError.insufficient_funds": "Onvoldoende saldo om dit verzoek uit te voeren.",
   "ChatError.aborted": "Verzoek is geannuleerd",
   "ConfigurationError": "De configuratie dient te worden geplaatst binnen de functie 'mcpServers'",
   "InvalidJsonFormat": "Ongeldig JSON-formaat",

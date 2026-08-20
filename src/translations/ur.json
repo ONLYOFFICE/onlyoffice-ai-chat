@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "درخواستوں کی حد پہنچ گئی، تھوڑی دیر بعد دوبارہ کوشش کریں",
   "ChatError.timeout": "درخواست کا وقت ختم ہو گیا",
   "ChatError.network": "نیٹ ورک کی خرابی، اپنا کنکشن چیک کریں",
+  "ChatError.insufficient_funds": "اس درخواست کو مکمل کرنے کے لیے رقم ناکافی ہے۔",
   "ChatError.aborted": "درخواست منسوخ کر دی گئی",
   "ConfigurationError": "کنفیگریشن کو 'mcpServers' پراپرٹی کے اندر رکھا جانا چاہیے۔",
   "InvalidJsonFormat": "غلط JSON فارمیٹ",

@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "הגעת למגבלת הקצב, נסה שוב בקרוב",
   "ChatError.timeout": "הבקשה פג זמנה",
   "ChatError.network": "שגיאת רשת, בדוק את החיבור שלך",
+  "ChatError.insufficient_funds": "אין מספיק כספים להשלמת הבקשה הזו.",
   "ChatError.aborted": "הבקשה בוטלה",
   "ConfigurationError": "יש למקם את התצורה בתוך המאפיין 'mcpServers'",
   "InvalidJsonFormat": "פורמט JSON לא חוקי",

@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "レート制限に達しました。しばらくしてから再試行してください",
   "ChatError.timeout": "リクエストがタイムアウトしました",
   "ChatError.network": "ネットワークエラーです。接続を確認してください",
+  "ChatError.insufficient_funds": "このリクエストを完了するための残高が不足しています。",
   "ChatError.aborted": "リクエストがキャンセルされました",
   "ConfigurationError": "設定は'mcpServers'プロパティ内に配置する必要があります",
   "InvalidJsonFormat": "JSON形式が無効です",

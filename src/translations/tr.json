@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "İstek sınırına ulaşıldı, kısa süre sonra tekrar deneyin",
   "ChatError.timeout": "İstek zaman aşımına uğradı",
   "ChatError.network": "Ağ hatası, bağlantınızı kontrol edin",
+  "ChatError.insufficient_funds": "Bu isteği tamamlamak için yeterli bakiye yok.",
   "ChatError.aborted": "İstek iptal edildi",
   "ConfigurationError": "Yapılandırma 'mcpServers' özelliğinin içine yerleştirilmelidir",
   "InvalidJsonFormat": "Geçersiz JSON biçimi",

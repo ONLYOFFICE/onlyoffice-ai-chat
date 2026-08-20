@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Limite di richieste raggiunto, riprova tra poco",
   "ChatError.timeout": "Richiesta scaduta",
   "ChatError.network": "Errore di rete, controlla la connessione",
+  "ChatError.insufficient_funds": "Fondi insufficienti per completare questa richiesta.",
   "ChatError.aborted": "Richiesta annullata",
   "ConfigurationError": "La configurazione deve essere inserita all'interno della proprietà 'mcpServers'",
   "InvalidJsonFormat": "Formato JSON non valido",

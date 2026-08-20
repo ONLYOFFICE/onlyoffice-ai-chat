@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Pyyntöraja saavutettu, yritä hetken kuluttua uudelleen",
   "ChatError.timeout": "Pyyntö aikakatkaistiin",
   "ChatError.network": "Verkkovirhe, tarkista yhteys",
+  "ChatError.insufficient_funds": "Varat eivät riitä tämän pyynnön suorittamiseen.",
   "ChatError.aborted": "Pyyntö peruutettiin",
   "ConfigurationError": "Konfiguraatio täytyy asettaa 'mcpServers' alueelle",
   "InvalidJsonFormat": "Virheellinen JSON-muoto",

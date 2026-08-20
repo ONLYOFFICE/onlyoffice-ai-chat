@@ -13,8 +13,8 @@ export type ChatErrorPayload = {
    * Stable machine-readable code. One of a canonical set —
    * `"auth"`, `"model_not_found"`, `"rate_limit"`, `"timeout"`,
    * `"network"`, `"bad_request"`, `"server"`, `"not_found"`,
-   * `"aborted"`, `"unknown"` — or a provider-specific string when
-   * the SDK supplies one verbatim.
+   * `"insufficient_funds"`, `"aborted"`, `"unknown"` — or a
+   * provider-specific string when the SDK supplies one verbatim.
    */
   code: string;
   /** Human-readable, end-user-safe message. */
@@ -52,6 +52,7 @@ function classifyErrorCode(err: Error): string {
   if (status === 404) {
     return /model/i.test(err.message) ? "model_not_found" : "not_found";
   }
+  if (status === 402) return "insufficient_funds";
   if (status === 408) return "timeout";
   if (status === 429) return "rate_limit";
   if (status === 400) {
@@ -73,6 +74,11 @@ function classifyErrorCode(err: Error): string {
     return "network";
   }
   if (/timeout/i.test(err.message)) return "timeout";
+  // Message-based fallback for transports that drop the numeric status
+  // (proxies that re-wrap the body, NDJSON `{ type: "error", message }`
+  // envelopes). Provider text is typically "402 — insufficient funds to
+  // complete this request".
+  if (/insufficient funds/i.test(err.message)) return "insufficient_funds";
 
   return "unknown";
 }

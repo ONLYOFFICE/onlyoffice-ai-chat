@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "U arrit kufiri i kërkesave, provoni sërish pas pak",
   "ChatError.timeout": "Kërkesa ka skaduar",
   "ChatError.network": "Gabim rrjeti, kontrolloni lidhjen tuaj",
+  "ChatError.insufficient_funds": "Fonde të pamjaftueshme për të përfunduar këtë kërkesë.",
   "ChatError.aborted": "Kërkesa u anulua",
   "ConfigurationError": "Konfigurimi duhet të vendoset brenda pronës 'mcpServers",
   "InvalidJsonFormat": "Format JSON i pavlefshëm",

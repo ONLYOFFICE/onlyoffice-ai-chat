@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Límit de sol·licituds assolit, torneu-ho a provar en breu",
   "ChatError.timeout": "S'ha esgotat el temps de la sol·licitud",
   "ChatError.network": "Error de xarxa, comproveu la connexió",
+  "ChatError.insufficient_funds": "Fons insuficients per completar aquesta sol·licitud.",
   "ChatError.aborted": "La sol·licitud s'ha cancel·lat",
   "ConfigurationError": "La configuración debe colocarse dentro de la propiedad 'mcpServers'.",
   "InvalidJsonFormat": "Format JSON no vàlid",

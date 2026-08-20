@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Byl dosažen limit požadavků, zkuste to za chvíli",
   "ChatError.timeout": "Požadavek vypršel",
   "ChatError.network": "Chyba sítě, zkontrolujte připojení",
+  "ChatError.insufficient_funds": "Nedostatek prostředků k dokončení tohoto požadavku.",
   "ChatError.aborted": "Požadavek byl zrušen",
   "ConfigurationError": "Konfigurace musí být umístěna uvnitř vlastnosti 'mcpServers'",
   "InvalidJsonFormat": "Neplatný formát JSON",

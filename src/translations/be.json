@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Перавышаны ліміт запытаў, паспрабуйце крыху пазней",
   "ChatError.timeout": "Час чакання адказу скончыўся",
   "ChatError.network": "Памылка сеткі, праверце злучэнне",
+  "ChatError.insufficient_funds": "Недастаткова сродкаў для выканання гэтага запыту.",
   "ChatError.aborted": "Запыт быў адменены",
   "ConfigurationError": "Канфігурацыя павінна знаходзіцца ўнутры ўласцівасці 'mcpServers'",
   "InvalidJsonFormat": "Няправільны фармат JSON",

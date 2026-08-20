@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.53
+
+### Added
+
+- `WidgetConfig.renderChatError` lets the host take over the *content* of the in-chat assistant error box. It receives the normalized `ChatErrorPayload` and `{ threadId, defaultText }`, and returning a node replaces the default text — so a host can render a localized message with an action (a "Top up" link, a retry button) instead of the provider's raw text. Returning `null`/`undefined` keeps the default; a throw is caught and logged. The box, its `role="alert"`, and the code chip stay library-owned.
+
+  ```tsx
+  renderChatError={(payload, { defaultText }) =>
+    payload.code === "insufficient_funds" ? <TopUpLink /> : null
+  }
+  ```
+
+- `onStreamError` now carries `error.code` — the same machine-readable code as the payload — so hosts that only need to react (telemetry, a toast) can branch on it instead of matching message text. Additive and optional.
+
+### Fixed
+
+- HTTP 402 is now classified as `insufficient_funds` instead of falling through to `unknown`, which rendered the provider's raw `402 — insufficient funds to complete this request` in the error box. The code is localized in all 41 locales. A message-based fallback (`/insufficient funds/i`) covers transports that lose the numeric status, and the non-contract `{ type: "error", message }` stream envelope — the main such transport — is now classified rather than hardcoded to `unknown`.
+
 ## 0.5.52
 
 ### Changed

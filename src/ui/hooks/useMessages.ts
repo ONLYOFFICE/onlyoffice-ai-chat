@@ -5,6 +5,7 @@ import {
   buildFileRefBlock,
   buildImageRefBlock,
 } from "../../core/actions/attachment-resolution";
+import { toChatError } from "../../core/services";
 import type { ChatErrorPayload, ChatEvent } from "../../core/services";
 import {
   patchToolCallArgs,
@@ -58,6 +59,18 @@ function extractErrorMessage(error: unknown): string {
     if (typeof payload.code === "string") return payload.code;
   }
   return "";
+}
+
+/**
+ * Pull the machine-readable {@link ChatErrorPayload.code} off an errored
+ * status so `onStreamError` can carry it. Returns `undefined` for
+ * un-normalized payloads (a bare string / an object with no `code`), so
+ * the field stays absent rather than reporting a bogus `"unknown"`.
+ */
+function extractErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const code = (error as Partial<ChatErrorPayload>).code;
+  return typeof code === "string" ? code : undefined;
 }
 
 /**
@@ -388,10 +401,21 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             // status a real `message-incomplete` event carries, so the UI
             // renders its error block instead of leaving a tool call spinning
             // forever.
+            // Normalize through `toChatError` rather than hardcoding
+            // `code: "unknown"`: this envelope is exactly the transport
+            // that drops the HTTP status, so the message-based
+            // classification is the only thing that can type it.
+            // Wrapped in an `Error` on purpose: `toChatError` short-circuits
+            // a bare string to `code: "unknown"`, while the `Error` path runs
+            // the message-based classification this envelope depends on.
+            const errorPayload = toChatError(new Error(streamError));
             const errorStatus = {
               type: "incomplete" as const,
               reason: "error" as const,
-              error: { code: "unknown", message: streamError },
+              // Explicit fields, not a spread: `ChatErrorPayload`'s open index
+              // signature is not assignable to assistant-ui's
+              // `ReadonlyJSONValue`.
+              error: { code: errorPayload.code, message: errorPayload.message },
             };
             // Attach the error to the in-flight assistant turn — spread the
             // *stored* last message so its `id` / `createdAt` / content are
@@ -424,7 +448,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             callbacksManager.emit("onStreamError", {
               threadId: resolvedThreadId,
               messageUID: "",
-              error: { reason: "error", message: streamError },
+              error: {
+                reason: "error",
+                message: streamError,
+                code: errorPayload.code,
+              },
             });
             continue;
           }
@@ -512,6 +540,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               error: {
                 reason: status?.reason ?? "unknown",
                 message: extractErrorMessage(status?.error),
+                code: extractErrorCode(status?.error),
               },
             });
             // Terminal for the round — unblock the composer; the loop
@@ -609,6 +638,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             error: {
               reason: status?.reason ?? "unknown",
               message: String(status?.error ?? ""),
+              code: extractErrorCode(status?.error),
             },
           });
         }
@@ -718,8 +748,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         // No resume after Stop — or after the round was orphaned (the
         // flags were reset by `orphanStreams`, but a newer round may have
         // set them again, so the flag alone can't be trusted).
-        if (!useMessageStore.getState().isStreamRunning || isOrphaned())
-          return;
+        if (!useMessageStore.getState().isStreamRunning || isOrphaned()) return;
         const next = api.ai.approveToolCall({
           threadId: event.threadId,
           messageId: event.messageId,

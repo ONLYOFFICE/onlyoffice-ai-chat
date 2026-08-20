@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "Pieprasījumu limits sasniegts, mēģiniet vēlāk",
   "ChatError.timeout": "Pieprasījuma laiks beidzās",
   "ChatError.network": "Tīkla kļūda, pārbaudiet savienojumu",
+  "ChatError.insufficient_funds": "Nepietiek līdzekļu, lai izpildītu šo pieprasījumu.",
   "ChatError.aborted": "Pieprasījums tika atcelts",
   "ConfigurationError": "Konfigurācija jāievieto parametrā 'mcpServers'",
   "InvalidJsonFormat": "Nederīgs JSON formāts",

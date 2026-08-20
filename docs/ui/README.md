@@ -100,6 +100,57 @@ toggles (`hideProfilePicker`, `hideSettingsButton`,
 (see [`providers/images.md`](./providers/images.md)), or a React
 node.
 
+### Overriding the in-chat error box (`renderChatError`)
+
+- **`renderChatError(payload, ctx)`** — takes over the *content* of the
+  assistant error box. Called before the widget renders its default
+  text, with the normalized
+  [`ChatErrorPayload`](../core/services/README.md) and
+  `{ threadId?, defaultText }`. Return any node to replace the default
+  text; return `null` / `undefined` to keep it. The box, its
+  `role="alert"`, and the code chip below the text stay library-owned,
+  and a throw is caught and logged so a broken hook can never break the
+  chat.
+
+Branch on `payload.code`, never on the provider's message text. The
+codes are the canonical set `toChatError` produces — `"auth"`,
+`"model_not_found"`, `"rate_limit"`, `"timeout"`, `"network"`,
+`"bad_request"`, `"server"`, `"not_found"`, `"insufficient_funds"`,
+`"aborted"`, `"unknown"` — plus any provider-specific string an SDK
+supplies verbatim.
+
+```tsx
+<AIChatWidget
+  renderChatError={(payload, { defaultText }) => {
+    if (payload.code !== "insufficient_funds") return null; // default text
+    return (
+      <>
+        {t("WalletEmpty")}{" "}
+        <a href="/portal-settings/payments/wallet">{t("TopUp")}</a>
+      </>
+    );
+  }}
+/>
+```
+
+`ctx.defaultText` is the text the widget would have shown — the
+localized `ChatError.<code>` string for a known code, otherwise
+`payload.message` — so a host can decorate instead of replacing:
+
+```tsx
+renderChatError={(payload, { defaultText }) =>
+  payload.code === "rate_limit" ? (
+    <span>
+      {defaultText} <button onClick={retry}>{t("Retry")}</button>
+    </span>
+  ) : null
+}
+```
+
+The same structured code reaches the `onStreamError` callback as
+`error.code`, for hosts that only need to react (telemetry, a toast)
+rather than re-render the box.
+
 ## What is exported, and from where
 
 The public surface lives in [`src/index.ts`](../../src/index.ts).

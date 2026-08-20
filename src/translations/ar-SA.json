@@ -92,6 +92,7 @@
   "ChatError.rate_limit": "تم الوصول إلى حد الطلبات، حاول مجددًا بعد قليل",
   "ChatError.timeout": "انتهت مهلة الطلب",
   "ChatError.network": "خطأ في الشبكة، تحقق من اتصالك",
+  "ChatError.insufficient_funds": "الأموال غير كافية لإتمام هذا الطلب.",
   "ChatError.aborted": "تم إلغاء الطلب",
   "ConfigurationError": " يجب وضع التهيئة داخل ملكية'mcpServers'",
   "InvalidJsonFormat": "تنسيق JSON غير صالح",
