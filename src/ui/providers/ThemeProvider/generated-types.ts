@@ -73,6 +73,7 @@ export interface ThemeTokens {
   "--chat-message-code-block-pre-background-color"?: string;
   "--chat-message-color"?: string;
   "--chat-message-divider-color"?: string;
+  "--chat-message-error-background-color"?: string;
   "--chat-message-error-border-color"?: string;
   "--chat-message-error-color"?: string;
   "--chat-message-link-color"?: string;

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.54
+
+### Changed
+
+- The in-chat error box is now a filled block rather than a bare red outline. Light themes paint the new `--chat-message-error-background-color` and drop the border; dark themes keep an outline and leave the fill transparent — both properties are always rendered, so the markup carries no theme branches. The message is now the block's semibold title with the code as a muted second line.
+- `--chat-message-error-color` follows `--text-normal` instead of `--text-negative`. The two are byte-identical in five of the seven themes; the outliers were `white` (`#991b1b`) and `night` (`#f87171`), which rendered the error text red where the block wants a neutral title. `--text-negative` still drives form-field errors, where the red is intentional.
+
 ## 0.5.53
 
 ### Added

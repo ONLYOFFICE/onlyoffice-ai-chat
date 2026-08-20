@@ -158,11 +158,14 @@ const MessageError = () => {
   }
 
   return (
+    // Both the fill and the border are always painted; each theme sets one
+    // of them to `transparent` (light themes fill, dark themes outline), so
+    // the markup stays theme-agnostic.
     <div
       role="alert"
-      className="border border-[var(--chat-message-error-border-color)] rounded-[4px] p-[6px]"
+      className="bg-[var(--chat-message-error-background-color)] border border-[var(--chat-message-error-border-color)] rounded-[4px] px-[12px] py-[8px]"
     >
-      <div className="text-[var(--chat-message-error-color)] font-normal">
+      <div className="text-[var(--chat-message-error-color)] font-semibold">
         {hostContent ?? defaultText}
       </div>
       <div className="text-[var(--chat-message-error-color)] leading-[var(--lh-16)] font-normal opacity-60 mt-[2px]">
