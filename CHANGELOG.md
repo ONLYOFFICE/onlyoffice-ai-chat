@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.58
+
+### Changed
+
+- Reordered the built-in providers in the add-profile dropdown so the popular hosted APIs come first (OpenAI, Google-Gemini, Anthropic, xAI, Stability AI, Deepseek, Mistral, Together AI, Groq, OpenRouter), then the local runtimes (Ollama, LM Studio), then the rest. The previous order was the historical order providers were added in, which put OpenRouter above OpenAI.
+
 ## 0.5.57
 
 ### Breaking
