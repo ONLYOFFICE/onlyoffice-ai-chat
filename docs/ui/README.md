@@ -100,25 +100,28 @@ toggles (`hideProfilePicker`, `hideSettingsButton`,
 (see [`providers/images.md`](./providers/images.md)), or a React
 node.
 
-### Overriding the in-chat error box (`renderChatError`)
+### Overriding the in-chat error box (`formatChatError`)
 
-- **`renderChatError(payload, ctx)`** — takes over the *content* of the
-  assistant error box. Called before the widget renders its default
-  text, with the normalized
+The box renders a title, a description, and a **Retry** button. Retry
+replays the errored turn through the regenerate path: the failed
+assistant message is dropped and the last user message is re-run from
+stored history, so nothing is appended to the thread and the box
+disappears. (Sending from the composer is unaffected — a new message
+still lands after the error.)
+
+By default the title is the localized `ChatError.<code>` string (or the
+provider's `payload.message` for an unrecognized code) and the
+description is the error code.
+
+- **`formatChatError(payload, ctx)`** — rewrites those slots as plain
+  text. Receives the normalized
   [`ChatErrorPayload`](../core/services/README.md) and
-  `{ threadId?, defaultText }`. Return any node to replace the default
-  text; return `null` / `undefined` to keep it. The box, its
-  `role="alert"`, and the code chip below the text stay library-owned,
-  and a throw is caught and logged so a broken hook can never break the
-  chat.
-
-By default the box renders the localized text, the code, and a **Retry**
-button. Retry replays the errored turn through the regenerate path: the
-failed assistant message is dropped and the last user message is re-run
-from stored history, so nothing is appended to the thread and the error
-box disappears. (Sending from the composer is unaffected — a new message
-still lands after the error.) Returning content from `renderChatError`
-suppresses Retry, since the host is expected to supply its own action.
+  `{ threadId?, defaultTitle, defaultDescription }`. Return a
+  `ChatErrorOverride`; every field is optional and an omitted one keeps
+  the default. Return `null` / `undefined` for the codes you don't
+  handle. The box itself — layout, fill, `role="alert"` — stays
+  library-owned, so a host cannot break the chat's appearance, and a
+  throw is caught and logged.
 
 Branch on `payload.code`, never on the provider's message text. The
 codes are the canonical set `toChatError` produces — `"auth"`,
@@ -129,35 +132,41 @@ supplies verbatim.
 
 ```tsx
 <AIChatWidget
-  renderChatError={(payload, { defaultText }) => {
-    if (payload.code !== "insufficient_funds") return null; // default text
-    return (
-      <>
-        {t("WalletEmpty")}{" "}
-        <a href="/portal-settings/payments/wallet">{t("TopUp")}</a>
-      </>
-    );
-  }}
+  formatChatError={(payload) =>
+    payload.code === "insufficient_funds"
+      ? {
+          title: t("WalletEmpty"),
+          description: t("TopUpToContinue"),
+          action: { text: t("TopUp"), onClick: () => goToWallet() },
+        }
+      : null
+  }
 />
 ```
 
-`ctx.defaultText` is the text the widget would have shown — the
-localized `ChatError.<code>` string for a known code, otherwise
-`payload.message` — so a host can decorate instead of replacing:
+The `action` field carries four distinct intents:
+
+| `action` | Result |
+| --- | --- |
+| omitted | the default Retry |
+| `null` | no button — for errors a retry cannot fix |
+| `{ text }` | Retry's behavior under a different label |
+| `{ onClick }` | the host's own action instead of a retry |
+
+`ctx.defaultTitle` / `ctx.defaultDescription` carry what the widget
+would have shown, so a host can decorate instead of replacing:
 
 ```tsx
-renderChatError={(payload, { defaultText }) =>
-  payload.code === "rate_limit" ? (
-    <span>
-      {defaultText} <button onClick={retry}>{t("Retry")}</button>
-    </span>
-  ) : null
+formatChatError={(payload, { defaultTitle }) =>
+  payload.code === "rate_limit"
+    ? { title: `${defaultTitle} (${payload.code})` }
+    : null
 }
 ```
 
 The same structured code reaches the `onStreamError` callback as
 `error.code`, for hosts that only need to react (telemetry, a toast)
-rather than re-render the box.
+rather than change the box.
 
 ## What is exported, and from where
 

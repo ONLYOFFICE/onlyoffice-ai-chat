@@ -10,7 +10,7 @@ let mockMessageStatus: unknown = { type: "complete" };
 let mockMessageParentId = "0";
 let mockMessageContent: unknown[] = [{ type: "text", text: "Hello" }];
 let mockAssistantActions: unknown[] | undefined = undefined;
-let mockRenderChatError: unknown = undefined;
+let mockFormatChatError: unknown = undefined;
 const mockReload = vi.fn();
 let mockThreadId = "thread-1";
 
@@ -281,7 +281,7 @@ vi.mock("../../../../utils", () => ({
 vi.mock("../../../../widget-config", () => ({
   useWidgetConfig: () => ({
     assistantActions: mockAssistantActions,
-    renderChatError: mockRenderChatError,
+    formatChatError: mockFormatChatError,
   }),
 }));
 
@@ -297,7 +297,7 @@ describe("AssistantMessage", () => {
     mockMessageParentId = "0";
     mockMessageContent = [{ type: "text", text: "Hello" }];
     mockAssistantActions = undefined;
-    mockRenderChatError = undefined;
+    mockFormatChatError = undefined;
     mockThreadId = "thread-1";
   });
 
@@ -442,28 +442,32 @@ describe("AssistantMessage", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("is suppressed when the host supplies its own content", () => {
+    it("is removed when the host returns action: null", () => {
       mockMessageStatus = errStatus;
-      mockRenderChatError = () => <button type="button">Top up</button>;
+      mockFormatChatError = () => ({ action: null });
       render(<AssistantMessage />);
       expect(
         screen.queryByRole("button", { name: "Retry" })
       ).not.toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Top up" })
-      ).toBeInTheDocument();
+    });
+
+    it("is kept when the host overrides only the text", () => {
+      mockMessageStatus = errStatus;
+      mockFormatChatError = () => ({ title: "Custom", description: "Detail" });
+      render(<AssistantMessage />);
+      expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
     });
 
     it("is kept when the host declines to override", () => {
       mockMessageStatus = errStatus;
-      mockRenderChatError = () => null;
+      mockFormatChatError = () => null;
       render(<AssistantMessage />);
       expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
     });
 
     it("is kept when the host hook throws", () => {
       mockMessageStatus = errStatus;
-      mockRenderChatError = () => {
+      mockFormatChatError = () => {
         throw new Error("host blew up");
       };
       render(<AssistantMessage />);
@@ -471,49 +475,112 @@ describe("AssistantMessage", () => {
     });
   });
 
-  describe("renderChatError override", () => {
+  describe("formatChatError override", () => {
     const fundsStatus = {
       type: "incomplete",
       reason: "error",
       error: { code: "insufficient_funds", message: "402 — no funds" },
     };
 
-    it("replaces the default text with the host's node", () => {
+    it("replaces the title and the description as text", () => {
       mockMessageStatus = fundsStatus;
-      mockRenderChatError = () => <button type="button">Top up</button>;
+      mockFormatChatError = () => ({
+        title: "Wallet is empty",
+        description: "Top up to keep chatting",
+      });
       render(<AssistantMessage />);
       const alert = screen.getByRole("alert");
-      expect(
-        screen.getByRole("button", { name: "Top up" })
-      ).toBeInTheDocument();
+      expect(alert.textContent).toContain("Wallet is empty");
+      expect(alert.textContent).toContain("Top up to keep chatting");
+      // Both defaults are gone: the localized title and the code line.
       expect(alert.textContent).not.toContain("ChatError.insufficient_funds");
-      // The box, its role, and the code chip stay library-owned.
-      expect(alert.textContent).toContain("insufficient_funds");
+      expect(alert.textContent).not.toContain("insufficient_funds");
     });
 
-    it("passes the normalized payload and the resolved defaultText", () => {
+    it("keeps the default for whichever slot is omitted", () => {
       mockMessageStatus = fundsStatus;
-      const spy = vi.fn().mockReturnValue(<span>ok</span>);
-      mockRenderChatError = spy;
+      mockFormatChatError = () => ({ description: "Only the detail" });
       render(<AssistantMessage />);
-      expect(spy).toHaveBeenCalledWith(
-        { code: "insufficient_funds", message: "402 — no funds" },
-        { threadId: "thread-1", defaultText: "ChatError.insufficient_funds" }
+      // Pin the whole composition: the default title survives, the code line
+      // is gone (replaced by the host's description), Retry is untouched.
+      expect(screen.getByRole("alert").textContent).toBe(
+        "ChatError.insufficient_fundsOnly the detailRetry"
       );
     });
 
-    it("passes the provider message as defaultText for an unknown code", () => {
+    it("relabels Retry while keeping its regenerate wiring", () => {
+      mockMessageStatus = fundsStatus;
+      mockFormatChatError = () => ({ action: { text: "Try again" } });
+      render(<AssistantMessage />);
+      const btn = screen.getByRole("button", { name: "Try again" });
+      expect(screen.getByTestId("action-reload")).toContainElement(btn);
+      fireEvent.click(btn);
+      expect(mockReload).toHaveBeenCalledTimes(1);
+    });
+
+    it("takes over the click and bypasses regenerate when onClick is given", () => {
+      mockMessageStatus = fundsStatus;
+      const onClick = vi.fn();
+      mockFormatChatError = () => ({ action: { text: "Top up", onClick } });
+      render(<AssistantMessage />);
+      // A host action must not sit inside the Reload primitive, or the click
+      // would trigger a regenerate as well.
+      expect(screen.queryByTestId("action-reload")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Top up" }));
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(mockReload).not.toHaveBeenCalled();
+    });
+
+    it("uses the localized Retry label when the host gives onClick only", () => {
+      mockMessageStatus = fundsStatus;
+      mockFormatChatError = () => ({ action: { onClick: vi.fn() } });
+      render(<AssistantMessage />);
+      expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    });
+
+    it("survives a throwing host onClick", () => {
+      mockMessageStatus = fundsStatus;
+      mockFormatChatError = () => ({
+        action: {
+          text: "Boom",
+          onClick: () => {
+            throw new Error("host blew up");
+          },
+        },
+      });
+      render(<AssistantMessage />);
+      expect(() =>
+        fireEvent.click(screen.getByRole("button", { name: "Boom" }))
+      ).not.toThrow();
+    });
+
+    it("passes the normalized payload and both resolved defaults", () => {
+      mockMessageStatus = fundsStatus;
+      const spy = vi.fn().mockReturnValue(null);
+      mockFormatChatError = spy;
+      render(<AssistantMessage />);
+      expect(spy).toHaveBeenCalledWith(
+        { code: "insufficient_funds", message: "402 — no funds" },
+        {
+          threadId: "thread-1",
+          defaultTitle: "ChatError.insufficient_funds",
+          defaultDescription: "insufficient_funds",
+        }
+      );
+    });
+
+    it("passes the provider message as defaultTitle for an unknown code", () => {
       mockMessageStatus = {
         type: "incomplete",
         reason: "error",
         error: { code: "weirdo", message: "Something went sideways" },
       };
       const spy = vi.fn().mockReturnValue(null);
-      mockRenderChatError = spy;
+      mockFormatChatError = spy;
       render(<AssistantMessage />);
       expect(spy).toHaveBeenCalledWith(
         { code: "weirdo", message: "Something went sideways" },
-        expect.objectContaining({ defaultText: "Something went sideways" })
+        expect.objectContaining({ defaultTitle: "Something went sideways" })
       );
     });
 
@@ -524,11 +591,11 @@ describe("AssistantMessage", () => {
         error: "raw provider text",
       };
       const spy = vi.fn().mockReturnValue(null);
-      mockRenderChatError = spy;
+      mockFormatChatError = spy;
       render(<AssistantMessage />);
       expect(spy).toHaveBeenCalledWith(
         { code: "unknown", message: "raw provider text" },
-        expect.objectContaining({ defaultText: "raw provider text" })
+        expect.objectContaining({ defaultTitle: "raw provider text" })
       );
     });
 
@@ -536,7 +603,7 @@ describe("AssistantMessage", () => {
       mockMessageStatus = fundsStatus;
       mockThreadId = "";
       const spy = vi.fn().mockReturnValue(null);
-      mockRenderChatError = spy;
+      mockFormatChatError = spy;
       render(<AssistantMessage />);
       expect(spy).toHaveBeenCalledWith(
         expect.anything(),
@@ -544,33 +611,22 @@ describe("AssistantMessage", () => {
       );
     });
 
-    it("falls back to the default text when the host returns null", () => {
-      mockMessageStatus = fundsStatus;
-      mockRenderChatError = () => null;
-      render(<AssistantMessage />);
-      expect(screen.getByRole("alert").textContent).toContain(
-        "ChatError.insufficient_funds"
-      );
-    });
-
-    it("falls back to the default text when the host returns undefined", () => {
-      mockMessageStatus = fundsStatus;
-      mockRenderChatError = () => undefined;
-      render(<AssistantMessage />);
-      expect(screen.getByRole("alert").textContent).toContain(
-        "ChatError.insufficient_funds"
-      );
-    });
-
-    it("survives a throwing host hook and renders the default text", () => {
-      mockMessageStatus = fundsStatus;
-      mockRenderChatError = () => {
-        throw new Error("host blew up");
-      };
-      render(<AssistantMessage />);
-      expect(screen.getByRole("alert").textContent).toContain(
-        "ChatError.insufficient_funds"
-      );
+    it("falls back to the defaults on null, undefined, and a throw", () => {
+      for (const hook of [
+        () => null,
+        () => undefined,
+        () => {
+          throw new Error("host blew up");
+        },
+      ]) {
+        mockMessageStatus = fundsStatus;
+        mockFormatChatError = hook;
+        const { unmount } = render(<AssistantMessage />);
+        expect(screen.getByRole("alert").textContent).toContain(
+          "ChatError.insufficient_funds"
+        );
+        unmount();
+      }
     });
   });
 

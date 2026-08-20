@@ -542,33 +542,37 @@ export interface WidgetConfig {
     ctx: ToolCallApproveContext
   ) => void | Promise<void>;
   /**
-   * Takes over the *content* of the in-chat assistant error box. Called
-   * before the widget renders its default text, with the normalized
+   * Rewrites the text and the action of the in-chat assistant error box.
+   * Called before the widget renders, with the normalized
    * {@link ChatErrorPayload} — branch on `payload.code` (e.g.
    * `"insufficient_funds"`, `"auth"`, `"rate_limit"`), never on the
    * provider's message text — and the {@link ChatErrorContext} the error
    * belongs to.
    *
-   * Return any node to replace the default text, so the host can render a
-   * localized message with an action (a "Top up" link, a retry button).
-   * `ctx.defaultText` carries the text the widget would have shown, so a
-   * host can decorate rather than fully replace it. Return `null` /
-   * `undefined` to fall back to the default rendering.
+   * Return a {@link ChatErrorOverride} to replace the title, the
+   * description, or the button; every field is optional and an omitted one
+   * keeps the widget's default. Return `null` / `undefined` for the codes
+   * you don't handle. The box itself — layout, fill, `role="alert"` — stays
+   * library-owned, so a host cannot break the chat's appearance; a throw is
+   * caught and logged and the defaults are used.
    *
-   * The box container and its `role="alert"` stay library-owned, as does
-   * the code chip below the text. A throw is caught and logged, and the
-   * default rendering is used — a broken host hook never breaks the chat.
-   *
-   * Returning content also suppresses the box's built-in "Retry" button, on
-   * the assumption that the host supplies its own action: a retry is the
-   * wrong affordance for the codes worth overriding (`insufficient_funds`
-   * would just fail again). Return `null` for the codes you don't handle and
-   * the default text plus Retry come back.
+   * @example
+   * ```tsx
+   * formatChatError={(payload) =>
+   *   payload.code === "insufficient_funds"
+   *     ? {
+   *         title: t("WalletEmpty"),
+   *         description: t("TopUpToContinue"),
+   *         action: { text: t("TopUp"), onClick: () => goToWallet() },
+   *       }
+   *     : null
+   * }
+   * ```
    */
-  renderChatError?: (
+  formatChatError?: (
     payload: ChatErrorPayload,
     ctx: ChatErrorContext
-  ) => React.ReactNode | null | undefined;
+  ) => ChatErrorOverride | null | undefined;
   /**
    * Takes over file drag-and-drop onto the chat surface. When provided, a
    * drop of one or more files hands the raw {@link File} list to this
@@ -621,16 +625,48 @@ export interface PromptResult extends PromptDraft {
   folderId?: string | null;
 }
 
-/** Context passed to {@link WidgetConfig.renderChatError} alongside the payload. */
+/** Context passed to {@link WidgetConfig.formatChatError} alongside the payload. */
 export interface ChatErrorContext {
   /** Thread the errored turn belongs to; empty for a not-yet-persisted chat. */
   threadId?: string;
   /**
-   * Text the widget would render by default — the localized
+   * Title the widget would render by default — the localized
    * `ChatError.<code>` string for a known code, otherwise the provider's
    * `payload.message`. Use it to decorate instead of replacing.
    */
-  defaultText: string;
+  defaultTitle: string;
+  /** Description the widget would render by default: the error code. */
+  defaultDescription: string;
+}
+
+/**
+ * Host replacement for the error box's text and action, returned from
+ * {@link WidgetConfig.formatChatError}. Every field is optional — omit one
+ * to keep the widget's default for that slot.
+ */
+export interface ChatErrorOverride {
+  /** Replaces the box's title line. */
+  title?: string;
+  /** Replaces the line below the title, which defaults to the error code. */
+  description?: string;
+  /**
+   * Replaces the built-in "Retry" button:
+   * - omitted — the default Retry, which replays the errored turn
+   * - `null` — no button at all, for errors that retrying cannot fix
+   * - `{ text }` — Retry's behavior under a different label
+   * - `{ onClick }` — the host's own action instead of a retry
+   *
+   * A throw from `onClick` is caught and logged.
+   */
+  action?: ChatErrorAction | null;
+}
+
+/** Button descriptor for {@link ChatErrorOverride.action}. */
+export interface ChatErrorAction {
+  /** Button label; defaults to the localized "Retry". */
+  text?: string;
+  /** Runs instead of the built-in retry when provided. */
+  onClick?: () => void;
 }
 
 /** Context for the tool call whose result is passed to {@link WidgetConfig.onToolCallApproveResult}. */

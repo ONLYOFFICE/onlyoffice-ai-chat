@@ -13,7 +13,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
@@ -28,7 +27,10 @@ import {
 import { getMessageText } from "../../../../utils";
 import logger from "../../../../shared/logger";
 import { useStores } from "../../../store/context";
-import { useWidgetConfig } from "../../../../widget-config";
+import {
+  useWidgetConfig,
+  type ChatErrorOverride,
+} from "../../../../widget-config";
 import type { AssistantAction } from "../assistant-actions";
 
 const ThinkingMarkdownText = memo(
@@ -101,7 +103,7 @@ const LOCALIZED_ERROR_CODES = new Set([
 const MessageError = () => {
   const { t } = useI18n();
   const { Button } = useComponents();
-  const { renderChatError } = useWidgetConfig();
+  const { formatChatError } = useWidgetConfig();
   const { useThreadsStore } = useStores();
   const threadId = useThreadsStore((s) => s.threadId);
   const message = useMessage();
@@ -128,15 +130,16 @@ const MessageError = () => {
       : typeof payload === "string"
         ? payload
         : t("Error");
-  const defaultText = LOCALIZED_ERROR_CODES.has(code)
+  const defaultTitle = LOCALIZED_ERROR_CODES.has(code)
     ? t(`ChatError.${code}`)
     : fallback;
+  const defaultDescription = code;
 
-  // Host override: replaces the *content* of the box, never the box or its
+  // Host override: rewrites the box's text and action, never its layout or
   // ARIA role. A throw must not take the chat down with it — log and fall
-  // back to the default text.
-  let hostContent: ReactNode = null;
-  if (renderChatError) {
+  // back to the defaults.
+  let override: ChatErrorOverride | null = null;
+  if (formatChatError) {
     // Hand over a payload that is always well-formed, even when a stale
     // host proxied a string / code-less object: `code` and `message` are
     // the resolved values above, so a host can branch on `payload.code`
@@ -147,16 +150,27 @@ const MessageError = () => {
       message: fallback,
     };
     try {
-      hostContent =
-        renderChatError(normalized, {
+      override =
+        formatChatError(normalized, {
           threadId: threadId || undefined,
-          defaultText,
+          defaultTitle,
+          defaultDescription,
         }) ?? null;
     } catch (err) {
-      logger.error("WidgetConfig.renderChatError failed:", err);
-      hostContent = null;
+      logger.error("WidgetConfig.formatChatError failed:", err);
+      override = null;
     }
   }
+
+  const title = override?.title ?? defaultTitle;
+  const description = override?.description ?? defaultDescription;
+  // `action` distinguishes three host intents that `??` would collapse:
+  // absent (keep the default Retry), explicitly null (no button — the error
+  // is not retryable), or an object (relabel and/or take over the click).
+  const action = override?.action;
+  const hasButton = action !== null;
+  const actionText = action?.text ?? t("Retry");
+  const onAction = action?.onClick;
 
   return (
     // Every built-in theme fills the block and leaves the border
@@ -168,26 +182,42 @@ const MessageError = () => {
     >
       <div className="min-w-0 flex-1">
         <div className="text-[var(--chat-message-error-color)] font-semibold">
-          {hostContent ?? defaultText}
+          {title}
         </div>
         <div className="text-[var(--chat-message-error-color)] leading-[var(--lh-16)] font-normal opacity-60 mt-[2px]">
-          {code}
+          {description}
         </div>
       </div>
-      {/* Retry re-runs the errored turn through the regenerate path, which
-          drops the failed assistant message and replays the last user
-          message from stored history — so nothing is appended and the error
-          box disappears. Sending from the composer is untouched and still
-          queues after the error. Suppressed when the host owns the content:
-          it supplies its own action (a "Top up" link for `insufficient_funds`,
-          where a retry would only fail again). */}
-      {!hostContent && (
-        <ActionBarPrimitive.Reload asChild>
-          <Button variant="default" className="shrink-0">
-            {t("Retry")}
+      {/* Two button paths, because only the built-in retry needs assistant-ui:
+          the Reload primitive supplies the regenerate wiring and disables
+          itself mid-round, which a host-owned click neither has nor wants. */}
+      {hasButton &&
+        (onAction ? (
+          <Button
+            variant="default"
+            className="shrink-0"
+            onClick={() => {
+              try {
+                onAction();
+              } catch (err) {
+                logger.error("ChatErrorOverride.action.onClick failed:", err);
+              }
+            }}
+          >
+            {actionText}
           </Button>
-        </ActionBarPrimitive.Reload>
-      )}
+        ) : (
+          // Retry replays the errored turn through the regenerate path: the
+          // failed assistant message is dropped and the last user message is
+          // re-run from stored history, so nothing is appended and the box
+          // disappears. Sending from the composer is untouched and still
+          // queues after the error.
+          <ActionBarPrimitive.Reload asChild>
+            <Button variant="default" className="shrink-0">
+              {actionText}
+            </Button>
+          </ActionBarPrimitive.Reload>
+        ))}
     </div>
   );
 };

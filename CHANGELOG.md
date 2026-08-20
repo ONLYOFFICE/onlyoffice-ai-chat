@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.57
+
+### Breaking
+
+- `WidgetConfig.renderChatError` is replaced by `formatChatError`, which rewrites the error box's slots as data instead of returning a node. The old hook could only swap the whole content, which forced an all-or-nothing choice: a host that wanted its own wording also lost the Retry button. The new hook returns `{ title?, description?, action? }` — omit a field to keep the widget's default.
+
+  ```tsx
+  formatChatError={(payload) =>
+    payload.code === "insufficient_funds"
+      ? {
+          title: t("WalletEmpty"),
+          description: t("TopUpToContinue"),
+          action: { text: t("TopUp"), onClick: () => goToWallet() },
+        }
+      : null
+  }
+  ```
+
+  Renamed rather than redefined in place, so a host still returning a `ReactNode` fails to compile instead of rendering nothing. `ChatErrorContext.defaultText` splits into `defaultTitle` and `defaultDescription`; `ChatErrorOverride` and `ChatErrorAction` are exported alongside it.
+
+### Changed
+
+- `action` distinguishes four intents that a single optional field would collapse: omitted keeps the default Retry, `null` removes the button (for errors a retry cannot fix), `{ text }` relabels Retry while keeping its regenerate wiring, and `{ onClick }` takes over the click entirely. A host-owned action is rendered outside the Reload primitive, so it cannot trigger a regenerate as a side effect. A throw from `onClick` is caught and logged.
+
 ## 0.5.56
 
 ### Added
