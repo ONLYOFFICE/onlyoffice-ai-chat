@@ -405,5 +405,4 @@ const toolsAdapter: ToolsAdapter = {
 };
 ```
 
-A runnable version lives in
-[`samples/basic/src/adapters/toolsAdapter.ts`](../samples/basic/src/adapters/toolsAdapter.ts).
+The host owns this adapter; the snippet above is the whole contract.

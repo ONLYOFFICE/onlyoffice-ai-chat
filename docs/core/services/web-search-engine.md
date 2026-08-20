@@ -200,9 +200,8 @@ async setActiveConfig(
 Persists `config` directly via `storage.webSearch.upsert(config)`
 **without** running `testConnection`. Use this when the form
 already validates locally on every keystroke and a network
-round-trip per blur would be noisy. The settings page in
-[`samples/basic`](../../../samples/basic) goes through
-`setActiveConfig` for that reason.
+round-trip per blur would be noisy. The built-in web-search
+settings page goes through `setActiveConfig` for that reason.
 
 When you do want validation before persist, use
 [`configure`](#configure) instead.

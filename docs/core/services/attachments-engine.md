@@ -105,10 +105,9 @@ tracked in the project memory.
 
 ## Storage cascade
 
-The IndexedDB implementation in
-[`samples/basic/src/adapters/storage.ts`](../../../samples/basic/src/adapters/storage.ts)
-calls `attachments.deleteByMessage(messageId)` from
-`IDBMessages.delete()` and `attachments.deleteByThread(threadId)`
-from `IDBMessages.deleteByThread()`. Custom backends must do the
-same — see [`src/core/storage/messages.ts`](../../../src/core/storage/messages.ts)
+A storage backend must call `attachments.deleteByMessage(messageId)`
+from its `messages.delete()` and
+`attachments.deleteByThread(threadId)` from its
+`messages.deleteByThread()`, so attachments never outlive the
+message or thread that owns them — see [`src/core/storage/messages.ts`](../../../src/core/storage/messages.ts)
 for the contract.

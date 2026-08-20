@@ -4,10 +4,11 @@ Type-only contract for persistence. The library never imports a
 concrete storage engine — instead, each domain has its own
 `*Storage` interface, the host injects an implementation, and
 everything else (services, hooks, UI) depends on the
-interface alone. The built-in implementation lives outside this
-folder under [`src/storage/`](../../storage/) and uses IndexedDB.
+interface alone. No storage engine ships with the library — the host
+supplies an implementation of [`StorageAdapter`](./adapter.ts) (the
+built-in one used to live under `src/storage/` and was removed).
 
-[`StorageAdapter`](./adapter.ts) aggregates all 10 sub-storages
+[`StorageAdapter`](./adapter.ts) aggregates all 11 sub-storages
 into a single object that gets passed through React context:
 
 | Sub-storage                                             | Domain                                            |

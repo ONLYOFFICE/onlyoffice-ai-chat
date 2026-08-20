@@ -9,8 +9,8 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     // Pin the root explicitly. typescript-eslint v8 auto-infers
-    // `tsconfigRootDir`, which errors when multiple candidate roots exist
-    // (repo root + each `samples/*` with its own tsconfig.json).
+    // `tsconfigRootDir` and errors whenever more than one candidate root
+    // exists, so keep this pinned even if the repo is the only root today.
     languageOptions: {
       parserOptions: { tsconfigRootDir: import.meta.dirname },
     },
