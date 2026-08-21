@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.62
+
+### Fixed
+
+- Tools carrying `enabled: false` are no longer offered to the model. Caller-supplied tools passed through `send-with-stream` (and adapter/built-in tools alike) with the flag set are dropped when the tool context is built, so a disabled tool can't be called, can't produce a stored tool call, and can't pause the stream on approval - per the `TMCPItem.enabled` contract (Bug 83162).
+
 ## 0.5.61
 
 ### Fixed

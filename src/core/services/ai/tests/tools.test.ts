@@ -112,6 +112,48 @@ describe("buildToolContext", () => {
     expect(ctx.adapterToolNames.has("web_search")).toBe(true);
   });
 
+  it("drops caller tools carrying enabled: false (Bug 83162)", async () => {
+    getWebSearchToolsMock.mockResolvedValue([]);
+    getImageGenerationToolsMock.mockResolvedValue([]);
+    const userTools = [
+      { ...tool("active_tool"), enabled: true },
+      { ...tool("disabled_tool"), enabled: false },
+      tool("flagless_tool"),
+    ];
+
+    const ctx = await buildToolContext(makeStorage(), undefined, userTools);
+
+    const names = ctx.mergedTools.map((t) => t.name);
+    expect(names).toContain("active_tool");
+    expect(names).toContain("flagless_tool");
+    expect(names).not.toContain("disabled_tool");
+    // The lookup set must agree, or a call to the disabled tool would still
+    // resolve as a user tool and pause the stream on approval.
+    expect(ctx.userToolNames.has("disabled_tool")).toBe(false);
+    expect(ctx.userTools.map((t) => t.name)).not.toContain("disabled_tool");
+  });
+
+  it("drops adapter and built-in tools carrying enabled: false", async () => {
+    getWebSearchToolsMock.mockResolvedValue([
+      { ...tool("web_search"), enabled: false },
+    ]);
+    getImageGenerationToolsMock.mockResolvedValue([]);
+    const adapter: ToolsAdapter = {
+      getTools: vi.fn().mockResolvedValue({
+        custom: [{ ...tool("ad_off"), enabled: false }, tool("ad_on")],
+      }),
+      callTool: vi.fn(),
+    };
+
+    const ctx = await buildToolContext(makeStorage(), adapter, []);
+
+    const names = ctx.mergedTools.map((t) => t.name);
+    expect(names).toContain("ad_on");
+    expect(names).not.toContain("ad_off");
+    expect(names).not.toContain("web_search");
+    expect(ctx.adapterToolNames.has("ad_off")).toBe(false);
+  });
+
   it("omits the built-in generate_image tool when disableBuiltinImageTool is true", async () => {
     getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
     getImageGenerationToolsMock.mockResolvedValue([tool("generate_image")]);

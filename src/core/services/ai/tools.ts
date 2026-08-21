@@ -60,10 +60,13 @@ export type ToolContext = {
  * `name` collision) and drops anything the user has turned off in
  * `storage.toolPrefs.readDisabled()`.
  *
- * Disabled-filter only applies to the server-side groups (built-ins +
- * adapter), where each tool's `serverType` is known from the grouping.
- * `userTools` arrive flat from the caller and pass through as-is —
- * the caller is expected to have already filtered them.
+ * The persisted disabled-map only applies to the server-side groups
+ * (built-ins + adapter), where each tool's `serverType` is known from the
+ * grouping. On top of that, every tool — caller-supplied and server-side
+ * alike — carrying its own `enabled: false` is dropped before the model
+ * ever sees it, per the `TMCPItem.enabled` contract: a tool the caller
+ * explicitly disabled must not be callable, produce a stored tool call,
+ * or pause the stream on approval.
  */
 export async function buildToolContext(
   storage: StorageAdapter,
@@ -92,8 +95,13 @@ export async function buildToolContext(
     [WEB_SEARCH_TYPE]: webSearchTools,
     [IMAGE_GENERATION_TYPE]: imageGenerationTools,
   };
+  // Filter at the entry point so every derived field (mergedTools,
+  // userToolNames) agrees: a disabled tool must not linger in the lookup
+  // sets either, or a call to it would still resolve as a user tool and
+  // pause the stream on `tool-call-pending`.
+  const enabledUserTools = userTools.filter((t) => t.enabled !== false);
   const adapterTools = flattenAndFilter(grouped, disabled);
-  const mergedTools = mergeToolsByName(adapterTools, userTools);
+  const mergedTools = mergeToolsByName(adapterTools, enabledUserTools);
 
   const systemToolNames = new Set<string>();
   for (const type of systemServerTypes) {
@@ -102,10 +110,10 @@ export async function buildToolContext(
   }
 
   return {
-    userTools,
+    userTools: enabledUserTools,
     adapterTools,
     mergedTools,
-    userToolNames: new Set(userTools.map((t) => t.name)),
+    userToolNames: new Set(enabledUserTools.map((t) => t.name)),
     adapterToolNames: new Set(adapterTools.map((t) => t.name)),
     systemToolNames,
   };
@@ -113,9 +121,10 @@ export async function buildToolContext(
 
 /**
  * Flatten a `serverType → tools` grouping into a single list, dropping
- * any tool the user has turned off via `storage.toolPrefs.disabled`.
- * Each group's `serverType` is the disabled-map key; the filter checks
- * the bare tool name against the group's disabled list.
+ * any tool the user has turned off via `storage.toolPrefs.disabled` and
+ * any tool carrying its own `enabled: false`. Each group's `serverType`
+ * is the disabled-map key; the filter checks the bare tool name against
+ * the group's disabled list.
  */
 function flattenAndFilter(
   grouped: Record<string, TMCPItem[]>,
@@ -124,12 +133,10 @@ function flattenAndFilter(
   const out: TMCPItem[] = [];
   for (const [serverType, tools] of Object.entries(grouped)) {
     const disabledForType = disabled[serverType];
-    if (!disabledForType?.length) {
-      out.push(...tools);
-      continue;
-    }
     for (const tool of tools) {
-      if (!disabledForType.includes(tool.name)) out.push(tool);
+      if (tool.enabled === false) continue;
+      if (disabledForType?.includes(tool.name)) continue;
+      out.push(tool);
     }
   }
   return out;
