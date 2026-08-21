@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.61
+
+### Fixed
+
+- The composer no longer autofocuses on coarse-pointer (touch) devices - opening a chat on a phone or tablet popped the virtual keyboard over the composer before the user asked to type. Fine-pointer devices (including touch-screen laptops) keep the autofocus.
+
 ## 0.5.60
 
 ### Added

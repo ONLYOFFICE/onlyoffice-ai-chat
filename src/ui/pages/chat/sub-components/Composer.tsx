@@ -9,6 +9,14 @@ import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { useWidgetConfig } from "../../../../widget-config";
 import { ComposerAction } from "./ComposerAction";
 
+// Coarse-pointer devices (phones, tablets) must not autofocus the input:
+// focusing on mount pops the virtual keyboard over the chat before the user
+// asked to type. Touch-screen laptops keep the autofocus — their primary
+// pointer is still fine.
+const HAS_COARSE_POINTER =
+  typeof window !== "undefined" &&
+  !!window.matchMedia?.("(pointer: coarse)").matches;
+
 const Composer = () => {
   const {
     useAttachmentsStore,
@@ -103,7 +111,7 @@ const Composer = () => {
           placeholder={composerPlaceholder ?? t("AskAnything")}
           className="composer-input max-h-[calc(50vh)] min-h-[var(--chat-input-min-height,20px)] w-full resize-none outline-none select-text px-[4px]"
           rows={1}
-          autoFocus
+          autoFocus={!HAS_COARSE_POINTER}
           aria-label={t("MessageInput")}
           disabled={!currentProfile || composerDisabled}
           data-testid="composer-input"
