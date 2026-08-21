@@ -242,11 +242,17 @@ export interface WidgetConfig {
    */
   addLocalImageEnabled?: boolean;
   /**
-   * Pixel size of the composer's send / stop action button (the icon and
-   * its square button box). Defaults to `17`. Use this in hosts that need a
-   * larger or smaller send control to match a custom composer height.
+   * Pixel size of the send / stop glyph inside the composer's action button.
+   * Defaults to `17`. Use this in hosts that need a larger or smaller send
+   * icon; the button box around it is `composerActionSendBoxSize`.
    */
   composerActionSendSize?: number;
+  /**
+   * Pixel size of the send / stop button box itself — the square that carries
+   * the accent fill. Defaults to `24`, so the glyph (`composerActionSendSize`)
+   * sits inside with padding, and the whole action row is centred on it.
+   */
+  composerActionSendBoxSize?: number;
   /**
    * Pixel size of the action buttons below assistant and user messages —
    * copy, regenerate, edit, save, "more" — covering both the icon and its

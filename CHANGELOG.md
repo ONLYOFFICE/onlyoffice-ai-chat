@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.60
+
+### Added
+
+- `composerActionSendBoxSize` widget config — the pixel size of the send / stop button box (the square carrying the accent fill), default `24`. `composerActionSendSize` now sizes only the glyph inside it, so the fill has padding instead of hugging the arrow, and the button is a proper 24x24 target.
+
+### Changed
+
+- The composer's action row is now centred on the 24x24 send button: its height comes from `min-h` on `--chat-input-actions-height` (default raised `20px` → `24px`), so the model selector and its 24px dropdown arrow no longer overflow a shorter row.
+- Tool calls now stay in the chat after they finish instead of vanishing. Previously the card was hidden whenever the model had described the call (via `aiChatIntent` or a narration text part), so a reloaded thread showed only prose — with no way to see what ran, with which arguments, or that it failed.
+- Restyled the tool-call row to match the design: the tool glyph, then the model's one-line intent as the label, then animated dots while the call runs and a collapse toggle once it resolves. The success tick and the chip background are gone; an error still shows `status.error`. The expanded arguments/result body is unchanged.
+
 ## 0.5.58
 
 ### Changed

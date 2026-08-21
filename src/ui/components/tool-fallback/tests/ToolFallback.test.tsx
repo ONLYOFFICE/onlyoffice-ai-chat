@@ -74,36 +74,6 @@ vi.mock("../../markdown/hooks/useCopyToClipboard", () => ({
   default: () => ({ isCopied: false, copyToClipboard: copySpy }),
 }));
 
-// ToolFallback reads the surrounding message's content via `useMessage` to
-// decide whether the model already narrated this call (in which case the
-// card is hidden). Default to empty content so the card always renders;
-// individual tests can push parts onto `mockMessage.content`.
-const mockMessage = { content: [] as unknown[] };
-// Flip on to simulate rendering outside a message runtime (the approval
-// dialog): an optional `useMessage` then resolves to null, like Radix's hook
-// with no runtime present.
-let mockNoRuntime = false;
-vi.mock("@assistant-ui/react", () => ({
-  // Supports both call forms the component uses: a bare selector, and the
-  // `{ optional, selector }` options object (used so the hook tolerates being
-  // rendered outside a message runtime, e.g. the approval dialog).
-  useMessage: (param: unknown) => {
-    const isOptions = !!param && typeof param === "object";
-    if (
-      mockNoRuntime &&
-      isOptions &&
-      (param as { optional?: boolean }).optional
-    )
-      return null;
-    const selector =
-      typeof param === "function"
-        ? (param as (m: { content: unknown[] }) => unknown)
-        : (param as { selector?: (m: { content: unknown[] }) => unknown })
-            ?.selector;
-    return selector ? selector(mockMessage) : mockMessage;
-  },
-}));
-
 import { ToolFallback } from "../index";
 
 const defaultProps = {
@@ -121,8 +91,6 @@ const defaultProps = {
 describe("ToolFallback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockMessage.content = [];
-    mockNoRuntime = false;
   });
 
   it("renders tool name (stripped of server type prefix)", () => {
@@ -130,103 +98,47 @@ describe("ToolFallback", () => {
     expect(screen.getByText("my_tool")).toBeInTheDocument();
   });
 
-  it("renders a running aiChatIntent as plain text without tool-call chrome", () => {
-    const { container } = render(
+  it("uses a running aiChatIntent as the chip label, keeping the card", () => {
+    render(
       <ToolFallback
         {...defaultProps}
         argsText={'{"query":"hello","aiChatIntent":"Reading the file"}'}
       />
     );
-    // running (result undefined) → plain tertiary paragraph, no card chrome.
-    expect(container.querySelector("p")?.textContent).toBe(
-      "Reading the file..."
-    );
+    // The model's one-line description labels the chip instead of the raw
+    // tool id; the card chrome itself is unchanged.
+    expect(screen.getByText("Reading the file")).toBeInTheDocument();
     expect(screen.queryByText("my_tool")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("icon-tool.called")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("icon-code")).not.toBeInTheDocument();
+    expect(screen.getByTestId("icon-code")).toBeInTheDocument();
   });
 
-  it("hides the intent once the call completes (shown only while animating)", () => {
-    const { container } = render(
+  it("keeps the intent label once the call completes", () => {
+    render(
       <ToolFallback
         {...defaultProps}
         argsText={'{"aiChatIntent":"Searching the web…"}'}
         result="done"
       />
     );
-    // done → nothing animating → the intent line is not rendered at all.
-    expect(container.querySelector("p")).toBeNull();
-    expect(screen.queryByText(/Searching the web/)).not.toBeInTheDocument();
+    // Done → the same label stays, the running dots give way to the toggle
+    // chevron, and the ellipsis the model wrote is stripped.
+    expect(screen.getByText("Searching the web")).toBeInTheDocument();
+    expect(screen.getByTestId("icon-arrow.right")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-tool.called")).not.toBeInTheDocument();
   });
 
-  it("always renders the full card outside a message runtime (approval dialog)", () => {
-    mockNoRuntime = true;
-    render(
-      <ToolFallback
-        {...defaultProps}
-        argsText={'{"aiChatIntent":"Getting your files"}'}
-      />
+  it("renders the card for a call with no intent field", () => {
+    const { container } = render(
+      <ToolFallback {...defaultProps} argsText={'{"query":"x"}'} />
     );
-    // No message runtime (the approval dialog) → show the real tool name/card,
-    // not the model's one-line intent.
     expect(screen.getByText("my_tool")).toBeInTheDocument();
-    expect(screen.queryByText(/Getting your files/)).not.toBeInTheDocument();
+    expect(container.querySelector("p")).toBeNull();
   });
 
-  it("trails a running intent with dots and strips the model's ellipsis", () => {
-    // `result` is undefined in defaultProps → still running → animated dots are
-    // appended, and the trailing ellipsis the model wrote is stripped so they
-    // don't double up ("Searching the web…" → "Searching the web" + "...").
-    const { container } = render(
-      <ToolFallback
-        {...defaultProps}
-        argsText={'{"aiChatIntent":"Searching the web…"}'}
-      />
-    );
-    expect(container.querySelector("p")?.textContent).toBe(
-      "Searching the web..."
-    );
-  });
-
-  it("shows the intent (before dots) even when the model wrote a preceding text part", () => {
-    // Model wrote a lead-in text part AND filled `aiChatIntent`. The intent
-    // takes precedence over the preceding-text hide → its sentence + dots.
-    mockMessage.content = [
-      { type: "text", text: "Получаю файлы" },
-      { type: "tool-call", toolCallId: "tc-1" },
-    ];
-    const { container } = render(
-      <ToolFallback
-        {...defaultProps}
-        toolCallId="tc-1"
-        argsText={'{"aiChatIntent":"Reading files"}'}
-      />
-    );
-    expect(container.querySelector("p")?.textContent).toBe("Reading files...");
-  });
-
-  it("shows only dots for a narrated call with no intent field", () => {
-    // Preceding text but no `aiChatIntent` → the narration text carries the
-    // description; the tool-call renders just the animated dots while running.
-    mockMessage.content = [
-      { type: "text", text: "Получаю файлы" },
-      { type: "tool-call", toolCallId: "tc-1" },
-    ];
-    const { container } = render(
-      <ToolFallback
-        {...defaultProps}
-        toolCallId="tc-1"
-        argsText={'{"query":"x"}'}
-      />
-    );
-    expect(container.textContent).toBe("...");
-    expect(screen.queryByText("my_tool")).not.toBeInTheDocument();
-  });
-
-  it("shows only dots while the args are still streaming (unparsable prefix)", () => {
+  it("renders the card while the args are still streaming", () => {
     // Providers stream tool-call arguments fragment by fragment, so mid-call
-    // `argsText` is an unparsable JSON prefix and the intent isn't readable
-    // yet. The card must not flash during that window — just the dots.
+    // `argsText` is an unparsable JSON prefix. The row shows regardless — the
+    // intent label just replaces the tool name once the closing brace arrives.
     const { container } = render(
       <ToolFallback
         {...defaultProps}
@@ -234,8 +146,8 @@ describe("ToolFallback", () => {
         result={undefined}
       />
     );
-    expect(container.textContent).toBe("...");
-    expect(screen.queryByText("my_tool")).not.toBeInTheDocument();
+    expect(screen.getByText(/my_tool/)).toBeInTheDocument();
+    expect(container.textContent).toContain("...");
   });
 
   it("shows the image placeholder while generate_image args are streaming", () => {
@@ -248,34 +160,25 @@ describe("ToolFallback", () => {
       />
     );
     // The placeholder is a decorative canvas — its label lives in
-    // `aria-label`, not in visible text.
+    // `aria-label`, not in visible text — and it sits below the card.
     expect(screen.getByLabelText("CreatingImage")).toBeInTheDocument();
-    expect(screen.queryByText("generate_image")).not.toBeInTheDocument();
+    expect(screen.getByText("generate_image")).toBeInTheDocument();
   });
 
-  it("still renders the card outside a message runtime while args stream", () => {
-    // The approval dialog renders ToolFallback with no message runtime — the
-    // reviewer must always see the real tool name, streaming or not.
-    mockNoRuntime = true;
-    render(
-      <ToolFallback
-        {...defaultProps}
-        argsText='{"query":"hel'
-        result={undefined}
-      />
+  it("shows running dots and no toggle while the call is in flight", () => {
+    const { container } = render(<ToolFallback {...defaultProps} />);
+    expect(container.textContent).toContain("...");
+    expect(screen.queryByTestId("icon-arrow.right")).not.toBeInTheDocument();
+  });
+
+  it("swaps the dots for the toggle once the result arrives", () => {
+    const { container } = render(
+      <ToolFallback {...defaultProps} result="done" />
     );
-    expect(screen.getByText("my_tool")).toBeInTheDocument();
-  });
-
-  it("shows loader when result is undefined", () => {
-    render(<ToolFallback {...defaultProps} />);
-    expect(screen.getByTestId("loader")).toBeInTheDocument();
-  });
-
-  it("shows tool.called icon when result is provided", () => {
-    render(<ToolFallback {...defaultProps} result="done" />);
-    expect(screen.getByTestId("icon-tool.called")).toBeInTheDocument();
-    expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
+    expect(screen.getByTestId("icon-arrow.right")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("...");
+    // No success tick — the chevron is the only "finished" signal.
+    expect(screen.queryByTestId("icon-tool.called")).not.toBeInTheDocument();
   });
 
   it("toggles collapse on click", () => {
@@ -509,15 +412,6 @@ describe("ToolFallback", () => {
     expect(copyIcons).toHaveLength(2);
   });
 
-  it("shows only args copy button when result is not yet available", () => {
-    render(<ToolFallback {...defaultProps} result={undefined} />);
-    fireEvent.click(
-      screen.getByText("my_tool").closest("[class*='cursor-pointer']")!
-    );
-    const copyIcons = screen.getAllByTestId("icon-btn-copy");
-    expect(copyIcons).toHaveLength(1);
-  });
-
   it("shows web search with arrow when result is loaded", () => {
     const searchResult = JSON.stringify({ data: [] });
     render(
@@ -633,10 +527,8 @@ describe("ToolFallback", () => {
         result={undefined}
       />
     );
-    fireEvent.click(
-      screen.getByText("test").closest("[class*='cursor-pointer']")!
-    );
-    // Should stay collapsed since web_search with no result blocks toggle
+    fireEvent.click(screen.getByText("test").parentElement!);
+    // Should stay collapsed — a running call shows no toggle at all
     expect(screen.queryByText("ToolCallArguments")).not.toBeInTheDocument();
   });
 

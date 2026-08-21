@@ -4,8 +4,12 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 
+// The button box is sized from `size` (24x24 by default) while the glyph keeps
+// `composerActionSendSize` via the width/height overrides — so the accent fill
+// has padding around the arrow instead of hugging it. `disabled:opacity` comes
+// from IconButton itself.
 const BUTTON_STYLES =
-  "rounded-[4px] cursor-pointer disabled:cursor-not-allowed flex items-center justify-center bg-[var(--chat-composer-action-send-background-color)] hover:enabled:bg-[var(--chat-composer-action-send-background-hover-color)] active:enabled:bg-[var(--chat-composer-action-send-background-pressed-color)] disabled:opacity-[0.5]";
+  "rounded-[4px] cursor-pointer disabled:cursor-not-allowed flex items-center justify-center shrink-0 bg-[var(--chat-composer-action-send-background-color)] hover:enabled:bg-[var(--chat-composer-action-send-background-hover-color)] active:enabled:bg-[var(--chat-composer-action-send-background-pressed-color)]";
 
 const ComposerActionSend = () => {
   const { IconButton } = useComponents();
@@ -23,13 +27,14 @@ const ComposerActionSend = () => {
   const hasPending = useAttachmentsStore(
     (s) => s.pendingAttachments.length > 0
   );
-  const { composerActionSendSize = 17 } = useWidgetConfig();
+  const { composerActionSendSize = 17, composerActionSendBoxSize = 24 } =
+    useWidgetConfig();
 
   return isStreamRunning ? (
     <ComposerPrimitive.Cancel asChild>
       <IconButton
         iconName="stop"
-        size={composerActionSendSize}
+        size={composerActionSendBoxSize}
         className={BUTTON_STYLES}
         width={composerActionSendSize}
         height={composerActionSendSize}
@@ -42,7 +47,7 @@ const ComposerActionSend = () => {
       <ComposerPrimitive.Send asChild disabled={!currentProfile || hasPending}>
         <IconButton
           iconName="send"
-          size={composerActionSendSize}
+          size={composerActionSendBoxSize}
           width={composerActionSendSize}
           height={composerActionSendSize}
           color="var(--chat-composer-action-send-color)"

@@ -1,4 +1,3 @@
-import { useMessage } from "@assistant-ui/react";
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -8,11 +7,13 @@ import { useToolsContext } from "../../tools/context";
 import { readToolIntent, stripToolIntent } from "../../../shared/tool-intent";
 import { Icon } from "../icon";
 import { IconButton } from "../icon-button";
-import { Loader } from "../loader";
 import useCopyToClipboard from "../markdown/hooks/useCopyToClipboard";
 import { ImageGeneratingPlaceholder } from "./image-generating";
 
 const TOOL_CALL_COLOR = "var(--chat-message-tool-call-name-color)";
+// The header row (tool glyph + intent + chevron) reads as a muted aside, not
+// as a labelled chip — see the tool-call mockups.
+const INTENT_COLOR = "var(--text-tertiary)";
 
 // Three dots trailing a running tool call's intent line, each fading out and
 // back on a staggered loop — a lightweight "still working" cue. Decorative,
@@ -38,7 +39,6 @@ const LoadingDots = () => (
 
 export const ToolFallback: ToolCallMessagePartComponent = ({
   toolName,
-  toolCallId,
   argsText,
   result,
 }) => {
@@ -65,15 +65,8 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
 
   let argsTextFinal = argsText;
   let toolIntent: string | undefined;
-  // False while the provider is still streaming the call's arguments:
-  // `argsText` grows fragment by fragment and is an unparsable JSON prefix
-  // until the closing brace arrives, so `aiChatIntent` can't be read yet.
-  let argsParsed = false;
-
   try {
     const parsedArgs = JSON.parse(argsTextFinal);
-    argsParsed = true;
-
     // Some providers wrap the real arguments in an `args` envelope.
     const inner = parsedArgs?.args ? parsedArgs.args : parsedArgs;
 
@@ -166,6 +159,14 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
     !parsedResult?.data?.error &&
     (isLoading || imageRef !== undefined);
 
+  // The model describes each call in one line via the synthetic `aiChatIntent`
+  // field. When it did, that sentence is a better chip label than the raw tool
+  // id — same treatment `web_search` already gets with its query. The real tool
+  // name then moves into the expanded body so it stays available (the approval
+  // dialog and debugging both need it). A trailing ellipsis the model wrote is
+  // dropped: the running dots already carry the "still working" cue.
+  const chipLabel = toolIntent?.replace(/[.…\s]+$/, "") || undefined;
+
   const imageSlot = imageData ? (
     <img
       src={
@@ -180,155 +181,54 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
     <ImageGeneratingPlaceholder />
   ) : null;
 
-  // The model narrates each tool call in natural language before making it
-  // (see the chat system prompt). When such a preamble text precedes this
-  // call in the same message, the tool-call card is redundant chrome — hide
-  // it. If the model didn't narrate (weaker models), the card still shows as
-  // a fallback. A generated image (or its loading placeholder) is always kept.
-  // `ToolFallback` also renders in the approval dialog (manage-tool-dialog),
-  // which lives outside any message runtime — read the content optionally so
-  // the hook returns null there instead of throwing "MessageRuntime is not
-  // available". No runtime → no preceding text → the full card shows.
-  const messageContent = useMessage({
-    optional: true,
-    selector: (m: {
-      content: ReadonlyArray<{
-        type: string;
-        text?: string;
-        toolCallId?: string;
-      }>;
-    }) => m.content,
-  });
-  // `null` only when rendered outside a message runtime — i.e. the approval
-  // dialog (manage-tool-dialog). There the reviewer must see the real tool
-  // name and arguments, so always fall through to the full card and skip the
-  // chat-only views (hidden narration / the intent status line).
-  const inMessageRuntime = messageContent !== null;
-  const parts = messageContent ?? [];
-  const selfIndex = parts.findIndex(
-    (part) => part.type === "tool-call" && part.toolCallId === toolCallId
-  );
-  const hasPrecedingText =
-    selfIndex > 0 &&
-    parts
-      .slice(0, selfIndex)
-      .some(
-        (part) =>
-          part.type === "text" && !!part.text && part.text.trim().length > 0
-      );
-
-  // If the model described the call via `aiChatIntent`, that's the canonical
-  // intent line — show it (a muted tertiary sentence + animated dots) while the
-  // call is in flight, even when the model also wrote a preceding text part.
-  // It's a live cue: once the call resolves (or a history-loaded call arrives
-  // already resolved) nothing renders (keep a generated image, if any). Image
-  // generation has its own placeholder. Strip a trailing ellipsis the model
-  // wrote so the dots don't double up.
-  if (inMessageRuntime && toolIntent) {
-    const showDots = isLoading && !isImagePending;
-    if (!showDots) {
-      return imageSlot;
-    }
-    return (
-      <div className="my-[8px] flex w-full flex-col gap-[8px]">
-        {/* Mirror the chat paragraph (`p` in Markdown.utils): inherited base
-            font-size + `leading-7` from the message container, `font-normal`.
-            Only the color differs — tertiary instead of the message color. */}
-        <p className="font-normal text-[var(--text-tertiary)]">
-          {toolIntent.replace(/[.…\s]+$/, "")}
-          <LoadingDots />
-        </p>
-        {imageSlot}
-      </div>
-    );
-  }
-
-  // No intent field, but the model narrated in a preceding text part (already
-  // visible on its own). While the call runs, trail it with animated dots so
-  // the wait reads as "working"; hide otherwise (keep a generated image).
-  if (inMessageRuntime && hasPrecedingText) {
-    if (isLoading && !isImagePending) {
-      return (
-        <div className="my-[8px] text-[var(--text-tertiary)]">
-          <LoadingDots />
-        </div>
-      );
-    }
-    return imageSlot;
-  }
-
-  // Arguments still streaming in (unparsable prefix, see `argsParsed`): the
-  // intent field isn't readable yet, so neither chat view above matched.
-  // Rendering the raw card here would flash it for a second and then swap to
-  // the intent line / image placeholder once the JSON completes — show the
-  // pending cue instead. Resolved calls with genuinely broken args (parse
-  // still failing after the result arrived) fall through to the card.
-  if (inMessageRuntime && isLoading && !argsParsed) {
-    if (isImagePending) {
-      return imageSlot;
-    }
-    return (
-      <div className="my-[8px] text-[var(--text-tertiary)]">
-        <LoadingDots />
-      </div>
-    );
-  }
-
   return (
     <div className="my-[8px] flex w-full flex-col gap-[8px]">
       <div
-        className="flex items-center gap-[10px] cursor-pointer"
+        className={`flex items-center gap-[10px] ${isLoading && !isWebCrawling ? "" : "cursor-pointer"}`}
         onClick={() => {
           if (isWebCrawling) {
             window.open(webSearchName, "_blank");
             return;
           }
 
-          if (isWebSearch && result === undefined) {
+          // Still running: no toggle is shown, so the row isn't interactive.
+          if (isLoading) {
             return;
           }
 
           setIsCollapsed(!isCollapsed);
         }}
       >
-        {!isLoading ? (
-          <Icon
-            name={parsedResult?.data?.error ? "status.error" : "tool.called"}
-            size={16}
-            noColor
-          />
+        {/* Icon slot: the tool glyph, swapped for the error mark when the call
+            came back with one. No success tick — a resolved call is signalled
+            by the toggle chevron replacing the running dots. */}
+        {parsedResult?.data?.error ? (
+          <Icon name="status.error" size={16} noColor />
+        ) : isWebSearch ? (
+          <Icon name="btn-web-search" size={24} color={INTENT_COLOR} />
         ) : (
-          <Loader size={16} />
+          <Icon name="code" size={24} color={INTENT_COLOR} isStroke />
         )}
-        <span className="flex items-center gap-[8px] rounded-[4px] ps-[4px] pe-[8px] font-normal text-[var(--chat-message-tool-call-name-color)] bg-[var(--chat-message-tool-call-name-background-color)] min-w-0 w-fit">
-          {isWebSearch ? (
-            <Icon name="btn-web-search" size={24} color={TOOL_CALL_COLOR} />
-          ) : !isWebCrawling ? (
-            <Icon name="code" size={24} color={TOOL_CALL_COLOR} isStroke />
-          ) : null}
-          <span className="truncate">
-            {isWebSearch
-              ? webSearchName
-              : isWebCrawling
-                ? `${name} | ${webSearchName}`
-                : name}
-          </span>
+        <span className="min-w-0 truncate font-normal text-[var(--text-tertiary)]">
+          {isWebSearch
+            ? webSearchName
+            : isWebCrawling
+              ? `${name} | ${webSearchName}`
+              : (chipLabel ?? name)}
+          {/* Running: animated dots trail the intent. Resolved: they give way
+              to the chevron below. */}
+          {isLoading ? <LoadingDots /> : null}
         </span>
         {isWebCrawling ? (
-          <Icon
-            name="btn-external"
-            size={16}
-            color={TOOL_CALL_COLOR}
-            isStroke
-          />
-        ) : isWebSearch && result === undefined ? null : (
+          <Icon name="btn-external" size={16} color={INTENT_COLOR} isStroke />
+        ) : isLoading ? null : (
           <span className={isRTL && isCollapsed ? "rotate-180" : ""}>
             <Icon
               name={!isCollapsed ? "arrow.bottom" : "arrow.right"}
               size={16}
               width={8}
               height={8}
-              color={TOOL_CALL_COLOR}
+              color={INTENT_COLOR}
               isStroke
             />
           </span>
