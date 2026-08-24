@@ -278,7 +278,7 @@ const CustomActionButton = ({
 const PlatformCopyButton = ({ text }: { text: string }) => {
   const { IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
-  const { chatMessageActionsIconSize = 20 } = useWidgetConfig();
+  const { chatMessageActionsIconSize = 24 } = useWidgetConfig();
   const platform = usePlatform();
   const [copied, setCopied] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -329,7 +329,7 @@ const AssistantActionBar = () => {
   const { useMessageStore } = useStores();
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const platform = usePlatform();
-  const { assistantActions, chatMessageActionsIconSize = 20 } =
+  const { assistantActions, chatMessageActionsIconSize = 24 } =
     useWidgetConfig();
 
   const message = useMessage();
