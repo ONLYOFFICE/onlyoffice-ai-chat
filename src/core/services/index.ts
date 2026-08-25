@@ -70,6 +70,7 @@ export type {
   FetchLike,
   McpHttpServerConfig,
   McpTransportConfig,
+  ServersResolver,
   ToolsBulkResult,
   ToolsEngineDeps,
   ToolsEngineMethod,

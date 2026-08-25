@@ -190,4 +190,48 @@ describe("SystemToolsSource", () => {
     });
     expect(src.getServerTypes().sort()).toEqual(["a", "b"]);
   });
+
+  it("resolves servers per call through an async resolver", async () => {
+    // Registry-backed shape: the map is a function of the active entityId,
+    // fetched live on every operation — never cached (shared instance).
+    const tools = [{ name: "custom_a", description: "", inputSchema: {} }];
+    const fetchImpl = vi.fn(() => Promise.resolve(json({ result: { tools } })));
+    const resolver = vi.fn(
+      async (entityId?: string): Promise<Record<string, { url: string }>> =>
+        entityId === "agent-1" ? { reg: { url: "http://reg" } } : {}
+    );
+
+    const src = new SystemToolsSource({ servers: resolver, fetch: fetchImpl });
+
+    expect(await src.getTools("agent-1")).toEqual({ reg: tools });
+    expect(resolver).toHaveBeenLastCalledWith("agent-1");
+    expect(await src.getTools()).toEqual({});
+    expect(resolver).toHaveBeenCalledTimes(2);
+  });
+
+  it("callTool threads entityId into the resolver", async () => {
+    const tools = [{ name: "custom_a", description: "", inputSchema: {} }];
+    const fetchImpl = vi.fn((_url: unknown, init?: unknown) => {
+      const body = JSON.parse(((init as RequestInit)?.body as string) ?? "{}");
+      if (body.method === "tools/call") {
+        return Promise.resolve(json({ result: { ok: true } }));
+      }
+      if (body.method === "tools/list") {
+        return Promise.resolve(json({ result: { tools } }));
+      }
+      return Promise.resolve(json({ result: {} }));
+    });
+    const resolver = vi.fn(async () => ({ reg: { url: "http://reg" } }));
+
+    const src = new SystemToolsSource({ servers: resolver, fetch: fetchImpl });
+
+    const res = await src.callTool("custom_a", {}, "agent-1");
+    expect(resolver).toHaveBeenCalledWith("agent-1");
+    expect(JSON.parse(res as string)).toEqual({ ok: true });
+  });
+
+  it("getServerTypes is empty for a resolver-backed source", () => {
+    const src = new SystemToolsSource({ servers: async () => ({}) });
+    expect(src.getServerTypes()).toEqual([]);
+  });
 });

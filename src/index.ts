@@ -160,6 +160,7 @@ export type {
   ImportResult,
   FetchLike,
   McpHttpServerConfig,
+  ServersResolver,
   McpTransportConfig,
   OpenAIChatCompletionChunk,
   OpenAIChoiceDelta,
