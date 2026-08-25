@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.65
+
+### Fixed
+
+- The thinking block is rendered again for profiles on the Responses transport. The request asked for a reasoning effort but never for a summary, and `response.reasoning_summary_text.delta` — the only reasoning text that transport emits — is sent solely when the request asks for one, so the stream parser's reasoning branch was unreachable and the model thought silently. The summary is requested only while extended thinking is on (models that ignore `effort: "none"` keep reasoning internally, and an unconditional summary would show a block the user switched off) and only on the streaming path (one-shot callers read `output_text` alone).
+
+  ```ts
+  reasoning: { effort: "medium", summary: "auto" }
+  ```
+
+- Streaming chat completions now also read the thinking fragment from `delta.reasoning`, the OpenRouter spelling, alongside `delta.reasoning_content`. A non-string value there is ignored rather than stringified into the transcript.
+
 ## 0.5.64
 
 ### Fixed

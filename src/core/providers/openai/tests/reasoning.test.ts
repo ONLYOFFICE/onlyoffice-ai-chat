@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveReasoningEffort,
+  resolveReasoningParam,
   supportsNoneReasoning,
 } from "../reasoning";
 
@@ -46,5 +47,31 @@ describe("resolveReasoningEffort", () => {
     expect(resolveReasoningEffort("gpt-5", false)).toBeUndefined();
     expect(resolveReasoningEffort("gpt-5.5-pro", false)).toBeUndefined();
     expect(resolveReasoningEffort("o3", undefined)).toBeUndefined();
+  });
+});
+
+describe("resolveReasoningParam", () => {
+  it("asks for a summary only when reasoning is on and the caller wants it", () => {
+    expect(resolveReasoningParam("gpt-5.1", true, { summary: true })).toEqual({
+      effort: "medium",
+      summary: "auto",
+    });
+  });
+
+  it("omits the summary for callers that read only the final text", () => {
+    expect(resolveReasoningParam("gpt-5.1", true)).toEqual({
+      effort: "medium",
+    });
+  });
+
+  it("never asks for a summary with reasoning off", () => {
+    // gpt-5.0 / o-series still reason internally with no effort field, so a
+    // summary here would surface a thinking block the user switched off.
+    expect(resolveReasoningParam("gpt-5.1", false, { summary: true })).toEqual({
+      effort: "none",
+    });
+    expect(
+      resolveReasoningParam("gpt-5", false, { summary: true })
+    ).toBeUndefined();
   });
 });
