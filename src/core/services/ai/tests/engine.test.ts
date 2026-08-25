@@ -17,6 +17,9 @@ const sendMessageSyncMock = vi.fn();
 /** Credentials the most recently constructed StubProvider received. */
 let capturedCreds: ProviderCredentials | undefined;
 
+/** Credentials of the provider that served a `sendMessageSync` call. */
+let syncCreds: ProviderCredentials | undefined;
+
 class StubProvider extends AbstractBaseProvider {
   constructor(creds: ProviderCredentials) {
     super(creds);
@@ -26,6 +29,10 @@ class StubProvider extends AbstractBaseProvider {
     yield* sendMessageMock(args);
   }
   async sendMessageSync(args: unknown): Promise<string> {
+    // The title action is the only `sendMessageSync` caller here — record
+    // its own credentials so a later chat-provider construction can't
+    // overwrite what the assertion looks at.
+    syncCreds = this.creds;
     return sendMessageSyncMock(args);
   }
   static getName(): string {
@@ -150,6 +157,7 @@ beforeEach(() => {
   sendMessageMock.mockReset();
   sendMessageSyncMock.mockReset();
   capturedCreds = undefined;
+  syncCreds = undefined;
   vi.spyOn(crypto, "randomUUID").mockReturnValue(
     "00000000-0000-0000-0000-000000000001"
   );
@@ -569,6 +577,35 @@ describe("AIEngine proxy selection", () => {
     });
     await drain(engine);
     expect(capturedCreds?.fetch).toBe(fetchProxy);
+  });
+});
+
+describe("AIEngine.sendWithStream entity metadata", () => {
+  it("carries the host entity pair into the auto-title request", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      actionArgs: { entityId: "agent-7", entityTitle: "Support agent" },
+    })) {
+      // drain
+    }
+    expect(syncCreds?.entityId).toBe("agent-7");
+    expect(syncCreds?.entityTitle).toBe("Support agent");
+  });
+
+  it("sends no entity pair on the title request when the host described none", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({ userMessage })) {
+      // drain
+    }
+    expect(syncCreds?.entityId).toBeUndefined();
+    expect(syncCreds?.entityTitle).toBeUndefined();
   });
 });
 

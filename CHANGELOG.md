@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.64
+
+### Fixed
+
+- The thread-title request now carries the host entity pair (`entityId` / `entityTitle`) that the chat round already sends, so the ONLYOFFICE provider describes the same agent in its `metadata` on both. `AIEngine.sendWithStream` picks the pair up from `actionArgs` on its own; `ThreadsEngine.openOrCreate` takes it as a new optional `entityMeta` input and `regenerateTitle` as a new optional third argument — a host proxying `threads/regenerate-title` over HTTP must forward that third body element.
+- `ToolsEngine.replaceAllCustomServers` now rejects a map whose keys differ only by case. Name lookups are case-insensitive downstream (the DocSpace backend resolves names on a CI collation), so such a pair collided on every read/update/delete while both rows persisted — the second entry was unreachable except by another full replace (Bug 82984).
+
+### Added
+
+- `SystemToolsSource` accepts `servers` as an async resolver `(entityId?) => Promise<Record<string, McpHttpServerConfig>>` in addition to the static map, and threads the active `entityId` into it on every `getTools`/`callTool`. Lets a host back a source with a persisted registry (e.g. per-agent custom MCP servers) instead of a map fixed at construction; nothing is cached, per the class's per-caller correctness rule. `getServerTypes()` returns `[]` for a resolver-backed source. New exported type: `ServersResolver`.
+
 ## 0.5.63
 
 ### Changed

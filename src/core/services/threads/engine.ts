@@ -2,6 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Profile, Thread } from "../../types";
 import { resolveAttachmentRefs } from "../../actions/attachment-resolution";
 import { generateTitle } from "../../actions/title";
+import type { ActionArgs } from "../../actions/types";
 import {
   drainPages,
   isPaginationEnabled,
@@ -95,6 +96,7 @@ export class ThreadsEngine {
     // arrives in its persisted form, where attachments are lightweight
     // ref markers rather than inline base64.
     const generated = await generateTitle({
+      ...input.entityMeta,
       profile: input.profile,
       messages: await resolveAttachmentRefs(
         [input.firstMessage],
@@ -173,8 +175,16 @@ export class ThreadsEngine {
    * Re-run {@link generateTitle} against the thread's first user
    * message and persist the result. Returns the new title. Throws if
    * the thread has no user messages yet.
+   *
+   * `entityMeta` is the host entity pair the round runs for; it reaches
+   * the provider as the request's `metadata`, matching what a chat round
+   * sends. Omit it and the title request carries no entity description.
    */
-  async regenerateTitle(threadId: string, profile: Profile): Promise<string> {
+  async regenerateTitle(
+    threadId: string,
+    profile: Profile,
+    entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle">
+  ): Promise<string> {
     const messages = await this.deps.storage.messages.readByThread(threadId, 1);
     const first = messages[0];
     if (!first) {
@@ -185,6 +195,7 @@ export class ThreadsEngine {
     // Stored messages carry attachments as ref markers — hydrate them
     // into inline base64 before the provider call.
     const generated = await generateTitle({
+      ...entityMeta,
       profile,
       messages: await resolveAttachmentRefs(
         [first],
