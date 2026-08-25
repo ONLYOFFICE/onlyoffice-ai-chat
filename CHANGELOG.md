@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.63
+
+### Changed
+
+- The prompt-suggestion chips now show the widget's styled tooltip instead of the native browser `title` tooltip, so the hover text for a truncated chip matches the host's look (Bug 83350).
+
 ## 0.5.62
 
 ### Fixed
