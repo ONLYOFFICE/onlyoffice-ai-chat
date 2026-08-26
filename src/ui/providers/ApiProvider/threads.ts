@@ -35,12 +35,19 @@ export function createThreadsApi(
       callRoute(config, "threads", "delete", [threadId], engines),
     clearMessages: (threadId) =>
       callRoute(config, "threads", "clearMessages", [threadId], engines),
-    regenerateTitle: (threadId, profile) =>
+    // The third element is dropped when the caller passes no entity pair,
+    // so the request body stays the two-element array servers already
+    // destructure (an explicit `undefined` would serialise as `null`).
+    regenerateTitle: (threadId, profile, entityMeta) =>
       callRoute(
         config,
         "threads",
         "regenerateTitle",
-        [threadId, profile],
+        entityMeta
+          ? [threadId, profile, entityMeta]
+          : ([threadId, profile] as Parameters<
+              ThreadsEngine["regenerateTitle"]
+            >),
         engines
       ),
     list: (entityId, count, cursor, query) =>

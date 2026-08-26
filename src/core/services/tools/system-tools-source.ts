@@ -11,6 +11,16 @@ import {
 } from "./mcp-http-client";
 
 /**
+ * Async provider of the `name → config` server map for a
+ * {@link SystemToolsSource}, called with the active `entityId` on every
+ * operation. Lets a host back the source with a persisted registry (e.g.
+ * `storage.mcpServers`) instead of a map fixed at construction.
+ */
+export type ServersResolver = (
+  entityId?: string
+) => Promise<Record<string, McpHttpServerConfig>>;
+
+/**
  * Server-side {@link ToolsAdapter} backed by host-configured "system"
  * MCP servers (HTTP transport). These servers are wired on the server,
  * never persisted to `storage.mcpServers`, and never returned by
@@ -32,41 +42,63 @@ import {
  * operation are the price of per-caller correctness.
  */
 export class SystemToolsSource implements ToolsAdapter {
-  private readonly servers: Record<string, McpHttpServerConfig>;
+  private readonly serversInput:
+    | Record<string, McpHttpServerConfig>
+    | ServersResolver;
   private readonly fetchImpl: FetchLike;
 
   constructor(opts: {
-    servers: Record<string, McpHttpServerConfig>;
+    /**
+     * Either a static `name → config` map (host-configured system servers,
+     * fixed for the process lifetime) or an async resolver called with the
+     * active `entityId` on every operation — the shape a registry-backed
+     * source needs (e.g. custom MCP servers stored per agent scope). The
+     * resolver result is never cached, in line with the class's no-cache
+     * rule: a shared instance must not leak one caller's server set into
+     * another's.
+     */
+    servers: Record<string, McpHttpServerConfig> | ServersResolver;
     /** Defaults to the global `fetch`. Pass a proxy to control egress. */
     fetch?: FetchLike;
   }) {
-    this.servers = opts.servers;
+    this.serversInput = opts.servers;
     this.fetchImpl = opts.fetch ?? ((url, init) => fetch(url, init));
   }
 
-  async getTools(): Promise<Record<string, TMCPItem[]>> {
-    return this.listAll();
+  private async resolveServers(
+    entityId?: string
+  ): Promise<Record<string, McpHttpServerConfig>> {
+    if (typeof this.serversInput === "function") {
+      return (await this.serversInput(entityId)) ?? {};
+    }
+    return this.serversInput;
+  }
+
+  async getTools(entityId?: string): Promise<Record<string, TMCPItem[]>> {
+    return this.listAll(await this.resolveServers(entityId));
   }
 
   async callTool(
     toolName: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
+    entityId?: string
   ): Promise<unknown> {
     // Fresh enumeration per call — no routing index is kept (see the class
     // doc). The owning server is resolved from a live listing every time.
-    const grouped = await this.listAll();
+    const servers = await this.resolveServers(entityId);
+    const grouped = await this.listAll(servers);
     const type = Object.entries(grouped).find(([, tools]) =>
       tools.some((tool) => tool.name === toolName)
     )?.[0];
-    if (!type || !this.servers[type]) {
+    if (!type || !servers[type]) {
       return JSON.stringify({ error: `Unknown system tool: ${toolName}` });
     }
     try {
-      return await this.withSession(type, (sessionId) =>
+      return await this.withSession(servers[type], type, (sessionId) =>
         requestToolCall(
           this.fetchImpl,
-          type as string,
-          this.servers[type as string],
+          type,
+          servers[type],
           toolName,
           args,
           sessionId
@@ -79,16 +111,25 @@ export class SystemToolsSource implements ToolsAdapter {
     }
   }
 
-  /** Configured system server names — used to protect them on compose. */
+  /**
+   * Configured system server names — used to protect them on compose.
+   * Only meaningful for a static map; a resolver-backed source has no
+   * fixed name set, so this returns `[]` there (the host knows its own
+   * registry and can compute the names itself).
+   */
   getServerTypes(): string[] {
-    return Object.keys(this.servers);
+    return typeof this.serversInput === "function"
+      ? []
+      : Object.keys(this.serversInput);
   }
 
-  private async listAll(): Promise<Record<string, TMCPItem[]>> {
+  private async listAll(
+    servers: Record<string, McpHttpServerConfig>
+  ): Promise<Record<string, TMCPItem[]>> {
     const entries = await Promise.all(
-      Object.entries(this.servers).map(async ([type, server]) => {
+      Object.entries(servers).map(async ([type, server]) => {
         try {
-          const tools = await this.withSession(type, (sessionId) =>
+          const tools = await this.withSession(server, type, (sessionId) =>
             requestTools(this.fetchImpl, type, server, sessionId)
           );
           return [type, tools] as const;
@@ -121,10 +162,10 @@ export class SystemToolsSource implements ToolsAdapter {
    * just run `op` bare.
    */
   private async withSession<T>(
+    server: McpHttpServerConfig,
     type: string,
     op: (sessionId?: string) => Promise<T>
   ): Promise<T> {
-    const server = this.servers[type];
     const sessionId = await openSession(this.fetchImpl, type, server);
     try {
       return await op(sessionId);

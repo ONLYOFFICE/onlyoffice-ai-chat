@@ -55,4 +55,17 @@ describe("anthropic/models/listModels", () => {
     });
     expect(out[1].capabilities).toBe(CapabilitiesUI.Chat);
   });
+
+  it("falls back to the id when display_name is missing (Bug 83119)", async () => {
+    // OpenAI-compatible proxies / test doubles serving /v1/models omit
+    // Anthropic's display_name.
+    modelsListMock.mockResolvedValueOnce({
+      data: [{ id: "claude-sonnet-4-5" }],
+    });
+    const out = await listModels({
+      baseUrl: "https://proxy.example.com",
+      apiKey: "sk",
+    });
+    expect(out[0].name).toBe("claude-sonnet-4-5");
+  });
 });

@@ -23,6 +23,7 @@ function makeDeps(overrides?: {
     setCustomServers: vi.fn(),
     deleteCustomServer: vi.fn(),
     getCustomServersLogs: vi.fn(() => ({ a: ["log"] })),
+    waitUntilCustomServersReady: vi.fn().mockResolvedValue(undefined),
   };
 
   const ctx = { servers } as unknown as AppContext;
@@ -98,7 +99,7 @@ describe("createServersStore", () => {
     expect(s.getState().tools).toEqual([]);
   });
 
-  it("getTools annotates servers with enabled flag and filters disabled out of the model payload", async () => {
+  it("getTools annotates servers with serverType and the enabled flag", async () => {
     const deps = makeDeps({
       grouped: { mcp: [{ name: "a" }, { name: "b" }] },
       disabled: { mcp: ["b"] },
@@ -108,17 +109,17 @@ describe("createServersStore", () => {
     await s.getState().getTools();
     // Cards show every tool with its flag...
     expect(s.getState().servers.mcp).toEqual([
-      { name: "a", enabled: true },
-      { name: "b", enabled: false },
+      { name: "a", serverType: "mcp", enabled: true },
+      { name: "b", serverType: "mcp", enabled: false },
     ]);
-    // ...but `tools` (sent to the engine as actionArgs.tools) excludes the
-    // disabled "b" — the engine does not re-filter user tools.
+    // ...while `tools` — the counter's enabled-only view, also shipped by
+    // the resume rounds — excludes the disabled "b".
     expect(s.getState().tools.map((t) => t.name)).toEqual(["a"]);
     expect(s.getState().disabledTools).toEqual({ mcp: ["b"] });
     expect(s.getState().webSearchEnabled).toBe(true);
   });
 
-  it("getTools keeps system tools in servers/systemTools but out of the model payload (tools)", async () => {
+  it("getTools keeps system tools in servers/systemTools but out of tools", async () => {
     const deps = makeDeps({
       grouped: { mcp: [{ name: "client_tool" }] },
       systemTools: { docspace: [{ name: "getmy_folder" }] },
@@ -129,8 +130,8 @@ describe("createServersStore", () => {
     // Cards see the system server...
     expect(st.servers.docspace.map((t) => t.name)).toEqual(["getmy_folder"]);
     expect(st.systemTools.docspace.map((t) => t.name)).toEqual(["getmy_folder"]);
-    // ...but `tools` (sent to the engine as actionArgs.tools) must NOT — the
-    // engine injects/executes system tools server-side.
+    // ...but `tools` must NOT list it — the engine injects and executes
+    // system tools server-side.
     expect(st.tools.map((t) => t.name)).toEqual(["client_tool"]);
   });
 
@@ -142,6 +143,54 @@ describe("createServersStore", () => {
     const s = createServersStore(deps);
     await s.getState().getTools();
     expect(s.getState().servers.mcp[0].enabled).toBe(false);
+  });
+
+  it("getUserTools tags every tool with its serverType and hits no API", async () => {
+    const deps = makeDeps({
+      grouped: { mcp: [{ name: "a" }], editor: [{ name: "insert_text" }] },
+      disabled: { mcp: ["a"] },
+    });
+    const s = createServersStore(deps);
+
+    const tools = await s.getState().getUserTools();
+
+    expect(tools).toEqual([
+      { name: "a", serverType: "mcp" },
+      { name: "insert_text", serverType: "editor" },
+    ]);
+    // The disabled map is deliberately NOT applied here — `buildToolContext`
+    // does it engine-side, so a toggle flipped elsewhere lands immediately.
+    expect(deps.api.tools.getDisabled).not.toHaveBeenCalled();
+    expect(deps.api.tools.listSystemTools).not.toHaveBeenCalled();
+    expect(deps.api.webSearch.isConfigured).not.toHaveBeenCalled();
+  });
+
+  it("getUserTools waits for still-connecting MCP servers", async () => {
+    const deps = makeDeps({ grouped: { mcp: [{ name: "a" }] } });
+    const order: string[] = [];
+    deps.servers.waitUntilCustomServersReady = vi.fn(async () => {
+      order.push("wait");
+    });
+    deps.servers.getTools = vi.fn(async () => {
+      order.push("getTools");
+      return { mcp: [{ name: "a" }] };
+    });
+    const s = createServersStore(deps);
+
+    await s.getState().getUserTools();
+
+    expect(order).toEqual(["wait", "getTools"]);
+  });
+
+  it("getUserTools preserves an explicit enabled: false for the engine to drop", async () => {
+    const deps = makeDeps({
+      grouped: { mcp: [{ name: "a", enabled: false }] },
+    });
+    const s = createServersStore(deps);
+
+    expect(await s.getState().getUserTools()).toEqual([
+      { name: "a", enabled: false, serverType: "mcp" },
+    ]);
   });
 
   it("reload restarts custom servers and refreshes tools", async () => {
@@ -262,8 +311,8 @@ describe("createServersStore", () => {
       const st = s.getState();
       expect(st.disabledTools).toEqual({ mcp: ["a"] });
       expect(st.servers.mcp).toEqual([
-        { name: "a", enabled: false },
-        { name: "b", enabled: true },
+        { name: "a", serverType: "mcp", enabled: false },
+        { name: "b", serverType: "mcp", enabled: true },
       ]);
       // The disabled tool is dropped from the model payload; "b" stays.
       expect(st.tools.map((t) => t.name)).toEqual(["b"]);
@@ -296,8 +345,8 @@ describe("createServersStore", () => {
       const st = s.getState();
       expect(st.disabledTools).toEqual({ mcp: [] });
       expect(st.servers.mcp.find((t) => t.name === "a")?.enabled).toBe(true);
-      // Re-enabling adds it back into the model payload (it was filtered
-      // out at build time while disabled).
+      // Re-enabling adds it back into the enabled-only view (it was
+      // filtered out at build time while disabled).
       expect(st.tools.map((t) => t.name)).toEqual(["a", "b"]);
     });
 
@@ -328,10 +377,10 @@ describe("createServersStore", () => {
       const st = s.getState();
       expect(st.disabledTools).toEqual({ mcp: ["a", "b"] });
       expect(st.servers.mcp).toEqual([
-        { name: "a", enabled: false },
-        { name: "b", enabled: false },
+        { name: "a", serverType: "mcp", enabled: false },
+        { name: "b", serverType: "mcp", enabled: false },
       ]);
-      // All disabled → nothing in the model payload.
+      // All disabled → the enabled-only view is empty.
       expect(st.tools).toEqual([]);
     });
 

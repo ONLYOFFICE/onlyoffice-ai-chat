@@ -380,6 +380,7 @@ export class AIEngine {
       // priorMessages is empty on a new thread — the last (only) element
       // is the hydrated user message.
       titlePromise = generateTitle({
+        ...entityMetaOf(input.actionArgs),
         profile,
         messages: [resolvedMessages[resolvedMessages.length - 1]],
         fetch: proxiedFetch,

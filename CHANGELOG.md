@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.5.66
+
+### Fixed
+
+- `PromptsEngine.update` re-validates the prompt name whenever the folder changes, not only when the name itself does — moving a prompt (via `move` or a `folderId`-only `update`) into a folder that already holds a prompt with the same name now fails with `Prompt name already exists in this folder` instead of creating a duplicate pair (Bug 83122).
+- `PromptsEngine.importBundle` in `merge` mode no longer overwrites an existing prompt matched by `(name, folderId)`. Merge is now add-only: folders are still matched by name (case-insensitive) and reused, but any prompt-name collision — with existing prompts or between two bundle entries landing in the same folder — fails the whole import with a per-entry `errors` report before anything is written, so a conflicting bundle imports nothing at all (Bug 83130).
+- The GPT4All provider's `listModels` no longer swallows connection errors into an empty list. An unreachable server now throws like the other keyless local providers (Ollama, LM Studio), so hosts can answer 502 and the widget shows the failure on the Base URL field instead of a silently empty catalog (Bug 83118).
+- Anthropic models listed through an OpenAI-compatible proxy or a test double that omits `display_name` fall back to the model id for `name` instead of returning an unnamed entry (Bug 83119).
+
+## 0.5.65
+
+### Fixed
+
+- The thinking block is rendered again for profiles on the Responses transport. The request asked for a reasoning effort but never for a summary, and `response.reasoning_summary_text.delta` — the only reasoning text that transport emits — is sent solely when the request asks for one, so the stream parser's reasoning branch was unreachable and the model thought silently. The summary is requested only while extended thinking is on (models that ignore `effort: "none"` keep reasoning internally, and an unconditional summary would show a block the user switched off) and only on the streaming path (one-shot callers read `output_text` alone).
+
+  ```ts
+  reasoning: { effort: "medium", summary: "auto" }
+  ```
+
+- Streaming chat completions now also read the thinking fragment from `delta.reasoning`, the OpenRouter spelling, alongside `delta.reasoning_content`. A non-string value there is ignored rather than stringified into the transcript.
+
+## 0.5.64
+
+### Fixed
+
+- The thread-title request now carries the host entity pair (`entityId` / `entityTitle`) that the chat round already sends, so the ONLYOFFICE provider describes the same agent in its `metadata` on both. `AIEngine.sendWithStream` picks the pair up from `actionArgs` on its own; `ThreadsEngine.openOrCreate` takes it as a new optional `entityMeta` input and `regenerateTitle` as a new optional third argument — a host proxying `threads/regenerate-title` over HTTP must forward that third body element.
+- `ToolsEngine.replaceAllCustomServers` now rejects a map whose keys differ only by case. Name lookups are case-insensitive downstream (the DocSpace backend resolves names on a CI collation), so such a pair collided on every read/update/delete while both rows persisted — the second entry was unreachable except by another full replace (Bug 82984).
+
+### Added
+
+- `SystemToolsSource` accepts `servers` as an async resolver `(entityId?) => Promise<Record<string, McpHttpServerConfig>>` in addition to the static map, and threads the active `entityId` into it on every `getTools`/`callTool`. Lets a host back a source with a persisted registry (e.g. per-agent custom MCP servers) instead of a map fixed at construction; nothing is cached, per the class's per-caller correctness rule. `getServerTypes()` returns `[]` for a resolver-backed source. New exported type: `ServersResolver`.
+
 ## 0.5.63
 
 ### Changed

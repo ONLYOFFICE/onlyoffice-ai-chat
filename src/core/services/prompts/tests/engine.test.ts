@@ -253,6 +253,55 @@ describe("PromptsEngine.update", () => {
     expect(r.success).toBe(false);
   });
 
+  it("rejects a folderId-only change into a folder holding the same name (Bug 83122)", async () => {
+    const inFolder: Prompt = {
+      id: "a",
+      name: "Autotest clash",
+      text: "",
+      folderId: "f1",
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const atRoot: Prompt = {
+      id: "b",
+      name: "Autotest clash",
+      text: "",
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const { storage, snapshot } = makeStorage({
+      prompts: [inFolder, atRoot],
+      folders: [{ id: "f1", name: "F", createdAt: 1, updatedAt: 1 }],
+    });
+    const engine = new PromptsEngine({ storage });
+    const r = await engine.update("b", { folderId: "f1" });
+    expect(r.success).toBe(false);
+    if (r.success) throw new Error("unreachable");
+    expect(r.error.message).toBe("Prompt name already exists in this folder");
+    // The prompt stayed at root.
+    expect(storage.prompts.update).not.toHaveBeenCalled();
+    expect(snapshot().prompts.find((p) => p.id === "b")?.folderId).toBe(
+      undefined
+    );
+  });
+
+  it("allows a folderId-only change into a clean folder", async () => {
+    const a: Prompt = {
+      id: "a",
+      name: "X",
+      text: "",
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const { storage } = makeStorage({
+      prompts: [a],
+      folders: [{ id: "f1", name: "F", createdAt: 1, updatedAt: 1 }],
+    });
+    const engine = new PromptsEngine({ storage });
+    const r = await engine.update("a", { folderId: "f1" });
+    expect(r.success).toBe(true);
+  });
+
   it("returns the updated prompt on success", async () => {
     const { storage } = makeStorage({ prompts: [existing] });
     const engine = new PromptsEngine({ storage });
@@ -291,6 +340,52 @@ describe("PromptsEngine.move", () => {
     });
     const engine = new PromptsEngine({ storage });
     const r = await engine.move("p1", "f1");
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects moving into a folder that already holds the name (Bug 83122)", async () => {
+    const inFolder: Prompt = {
+      id: "a",
+      name: "Autotest clash",
+      text: "",
+      folderId: "f1",
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const atRoot: Prompt = {
+      id: "b",
+      name: "autotest CLASH",
+      text: "",
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const { storage } = makeStorage({
+      prompts: [inFolder, atRoot],
+      folders: [{ id: "f1", name: "F", createdAt: 1, updatedAt: 1 }],
+    });
+    const engine = new PromptsEngine({ storage });
+    const r = await engine.move("b", "f1");
+    expect(r.success).toBe(false);
+    if (r.success) throw new Error("unreachable");
+    expect(r.error.message).toBe("Prompt name already exists in this folder");
+    expect(storage.prompts.update).not.toHaveBeenCalled();
+  });
+
+  it("allows moving a prompt to the root when the root is clean", async () => {
+    const inFolder: Prompt = {
+      id: "a",
+      name: "X",
+      text: "",
+      folderId: "f1",
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const { storage } = makeStorage({
+      prompts: [inFolder],
+      folders: [{ id: "f1", name: "F", createdAt: 1, updatedAt: 1 }],
+    });
+    const engine = new PromptsEngine({ storage });
+    const r = await engine.move("a", null);
     expect(r.success).toBe(true);
   });
 });
@@ -533,22 +628,14 @@ describe("PromptsEngine import / export", () => {
     expect(storage.prompts.createMany).not.toHaveBeenCalled();
   });
 
-  it("merge mode matches folders by name and prompts by (name, folderId)", async () => {
+  it("merge mode reuses folders by name and adds new prompts", async () => {
     const existingFolder: PromptFolder = {
       id: "f1",
       name: "Existing",
       createdAt: 1,
       updatedAt: 1,
     };
-    const existingPrompt: Prompt = {
-      id: "p1",
-      name: "Same",
-      text: "old",
-      createdAt: 1,
-      updatedAt: 1,
-    };
     const { storage, snapshot } = makeStorage({
-      prompts: [existingPrompt],
       folders: [existingFolder],
     });
     const engine = new PromptsEngine({ storage });
@@ -556,21 +643,20 @@ describe("PromptsEngine import / export", () => {
       {
         version: 1,
         folders: [
-          // Same name → matches existing folder, no insert
-          { id: "bundle-f1", name: "Existing", createdAt: 1, updatedAt: 1 },
+          // Same name (different case) → matches existing folder, no insert
+          { id: "bundle-f1", name: "existing", createdAt: 1, updatedAt: 1 },
           // New name → fresh folder
           { id: "bundle-f2", name: "Brand New", createdAt: 1, updatedAt: 1 },
         ],
         prompts: [
-          // (name=Same, folderId=null) → updates existingPrompt.text
           {
             id: "bundle-p1",
-            name: "Same",
-            text: "fresh",
+            name: "Inside",
+            text: "A",
+            folderId: "bundle-f1",
             createdAt: 1,
             updatedAt: 1,
           },
-          // New prompt under the brand-new folder
           {
             id: "bundle-p2",
             name: "Other",
@@ -586,47 +672,148 @@ describe("PromptsEngine import / export", () => {
     expect(result.success).toBe(true);
 
     const snap = snapshot();
-    // Folder "Existing" not duplicated.
-    expect(snap.folders.filter((f) => f.name === "Existing")).toHaveLength(1);
-    // "Brand New" created.
+    // Folder "Existing" not duplicated (case-insensitive match).
+    expect(
+      snap.folders.filter((f) => f.name.toLowerCase() === "existing")
+    ).toHaveLength(1);
     const brandNew = snap.folders.find((f) => f.name === "Brand New");
     expect(brandNew).toBeDefined();
 
-    // Existing prompt updated in place (id preserved, text replaced).
-    const same = snap.prompts.find((p) => p.name === "Same");
-    expect(same?.id).toBe("p1");
-    expect(same?.text).toBe("fresh");
-
+    // Prompt remapped into the pre-existing folder's real id.
+    const inside = snap.prompts.find((p) => p.name === "Inside");
+    expect(inside?.folderId).toBe("f1");
     // New prompt created under the freshly-minted folder id.
     const other = snap.prompts.find((p) => p.name === "Other");
     expect(other?.folderId).toBe(brandNew!.id);
   });
 
-  it("merge mode without new entries skips createMany calls", async () => {
+  it("merge mode rejects a bundle colliding with an existing prompt and writes nothing (Bug 83130)", async () => {
     const existing: Prompt = {
       id: "p1",
-      name: "X",
-      text: "",
+      name: "Autotest collision",
+      text: "Existing body",
       createdAt: 1,
       updatedAt: 1,
     };
-    const { storage } = makeStorage({ prompts: [existing] });
+    const { storage, snapshot } = makeStorage({ prompts: [existing] });
     const engine = new PromptsEngine({ storage });
     const result = await engine.importBundle(
       {
         version: 1,
-        folders: [],
-        // Bundle id differs from existing.id but (name, folderId)
-        // matches → update path, no createMany.
-        prompts: [{ ...existing, id: "different-id", text: "updated" }],
+        folders: [
+          { id: "bundle-f1", name: "Fresh folder", createdAt: 1, updatedAt: 1 },
+        ],
+        prompts: [
+          // Case differs — the uniqueness rule is case-insensitive.
+          {
+            id: "bundle-p1",
+            name: "AUTOTEST Collision",
+            text: "Bundle body",
+            createdAt: 1,
+            updatedAt: 1,
+          },
+          {
+            id: "bundle-p2",
+            name: "Autotest fresh",
+            text: "Fresh body",
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+      },
+      { mode: "merge" }
+    );
+    expect(result.success).toBe(false);
+    if (result.success) throw new Error("unreachable");
+    expect(result.errors).toEqual([
+      {
+        kind: "prompt",
+        ref: "AUTOTEST Collision",
+        error: {
+          field: "name",
+          message: "Prompt name already exists in this folder",
+        },
+      },
+    ]);
+
+    // All-or-nothing: nothing was written, existing prompt untouched.
+    expect(storage.prompts.createMany).not.toHaveBeenCalled();
+    expect(storage.prompts.update).not.toHaveBeenCalled();
+    expect(storage.promptFolders.createMany).not.toHaveBeenCalled();
+    const snap = snapshot();
+    expect(snap.prompts).toEqual([existing]);
+    expect(snap.folders).toHaveLength(0);
+  });
+
+  it("merge mode rejects intra-bundle duplicate names in the same folder", async () => {
+    const { storage } = makeStorage();
+    const engine = new PromptsEngine({ storage });
+    const result = await engine.importBundle(
+      {
+        version: 1,
+        folders: [
+          { id: "bundle-f1", name: "New folder", createdAt: 1, updatedAt: 1 },
+        ],
+        prompts: [
+          {
+            id: "bundle-p1",
+            name: "Twin",
+            text: "A",
+            folderId: "bundle-f1",
+            createdAt: 1,
+            updatedAt: 1,
+          },
+          {
+            id: "bundle-p2",
+            name: "twin",
+            text: "B",
+            folderId: "bundle-f1",
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+      },
+      { mode: "merge" }
+    );
+    expect(result.success).toBe(false);
+    if (result.success) throw new Error("unreachable");
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].ref).toBe("twin");
+    expect(storage.prompts.createMany).not.toHaveBeenCalled();
+    expect(storage.promptFolders.createMany).not.toHaveBeenCalled();
+  });
+
+  it("merge mode allows the same name in different folders", async () => {
+    const existing: Prompt = {
+      id: "p1",
+      name: "Shared",
+      text: "",
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const { storage, snapshot } = makeStorage({ prompts: [existing] });
+    const engine = new PromptsEngine({ storage });
+    const result = await engine.importBundle(
+      {
+        version: 1,
+        folders: [
+          { id: "bundle-f1", name: "Folder", createdAt: 1, updatedAt: 1 },
+        ],
+        // Same name as the root prompt, but scoped to a folder → ok.
+        prompts: [
+          {
+            id: "bundle-p1",
+            name: "Shared",
+            text: "scoped",
+            folderId: "bundle-f1",
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
       },
       { mode: "merge" }
     );
     expect(result.success).toBe(true);
-    expect(storage.prompts.createMany).not.toHaveBeenCalled();
-    expect(storage.prompts.update).toHaveBeenCalledWith("p1", {
-      text: "updated",
-      folderId: null,
-    });
+    expect(snapshot().prompts).toHaveLength(2);
   });
 });

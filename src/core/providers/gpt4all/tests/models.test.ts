@@ -19,10 +19,11 @@ describe("gpt4all/models", () => {
       expect(out[0].provider).toBe("gpt4all");
     });
 
-    it("returns [] when the SDK throws", async () => {
+    it("propagates SDK errors so an unreachable server is not an empty catalog (Bug 83118)", async () => {
       modelsListMock.mockRejectedValueOnce(new Error("stopped"));
-      const out = await listModels({ baseUrl: "http://localhost:4891/v1" });
-      expect(out).toEqual([]);
+      await expect(
+        listModels({ baseUrl: "http://localhost:4891/v1" })
+      ).rejects.toThrow("stopped");
     });
   });
 

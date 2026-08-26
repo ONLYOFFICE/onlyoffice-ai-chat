@@ -16,6 +16,7 @@ import {
   handleText,
   handleToolCall,
   processStream,
+  readReasoningDelta,
 } from "../stream";
 
 const emptyMsg = (): ThreadMessageLike => createEmptyResponse();
@@ -348,5 +349,51 @@ describe("openai/stream/processStream", () => {
       responseMessage: { status: { reason: string } };
     };
     expect(last.responseMessage.status.reason).toBe("cancelled");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reasoning delta field
+// ---------------------------------------------------------------------------
+
+describe("openai/stream/readReasoningDelta", () => {
+  it("reads the OpenRouter-style `reasoning` field", () => {
+    expect(readReasoningDelta({ reasoning: "hmm" })).toBe("hmm");
+  });
+
+  it("prefers reasoning_content when a backend sends both", () => {
+    expect(readReasoningDelta({ reasoning_content: "a", reasoning: "b" })).toBe(
+      "a"
+    );
+  });
+
+  it("ignores a non-string `reasoning` instead of stringifying it", () => {
+    expect(
+      readReasoningDelta({ reasoning: { effort: "medium" } })
+    ).toBeUndefined();
+    expect(readReasoningDelta({})).toBeUndefined();
+  });
+
+  it("streams a `reasoning`-only delta into a reasoning part", async () => {
+    const chunk = {
+      ...createReasoningChunk("x"),
+      choices: [
+        {
+          index: 0,
+          delta: { reasoning: "thought" },
+          finish_reason: null,
+        },
+      ],
+    } as unknown as ChatCompletionChunk;
+    const out = await collect(
+      processStream(toStream([chunk, createFinishChunk()]))
+    );
+    const last = out[out.length - 1] as unknown as {
+      responseMessage: { content: Array<{ type: string; text: string }> };
+    };
+    expect(last.responseMessage.content[0]).toMatchObject({
+      type: "reasoning",
+      text: "thought",
+    });
   });
 });

@@ -997,13 +997,13 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     const controller = new AbortController();
     setAbortController(controller);
 
-    // Refresh the tool list from the store before sending — by this
-    // point the `tools-changed` event handler may have run with newly-
-    // arrived MCP tools, but our render-time `tools` snapshot is
-    // stale. Reading via `getState()` avoids waiting for React's
-    // commit and ships whatever the store currently has.
-    await useServersStore.getState().getTools();
-    const freshTools = useServersStore.getState().tools;
+    // Build the tool list locally instead of refreshing the store: the
+    // render-time `tools` snapshot can be stale (an MCP server that
+    // connected since the last commit), but a pre-send `getTools()` would
+    // pay three API round trips for it. `getUserTools()` reads the live
+    // aggregator, waits out any still-connecting MCP server, and leaves
+    // the disabled filtering to the engine.
+    const freshTools = await useServersStore.getState().getUserTools();
 
     const stream = api.ai.sendWithStream({
       threadId: inputThreadId,
@@ -1241,8 +1241,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       const controller = new AbortController();
       setAbortController(controller);
 
-      await useServersStore.getState().getTools();
-      const freshTools = useServersStore.getState().tools;
+      // Local build, no API round trip — see the send path above.
+      const freshTools = await useServersStore.getState().getUserTools();
 
       const stream = api.ai.regenerateStream({
         threadId,

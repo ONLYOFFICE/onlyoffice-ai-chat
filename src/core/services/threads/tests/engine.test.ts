@@ -3,12 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Profile, Thread } from "../../../types";
 import { AbstractBaseProvider } from "../../../providers";
 import { registerProvider, unregisterProvider } from "../../../providers";
+import type { ProviderCredentials } from "../../../../shared/provider-credentials";
 import type { StorageAdapter } from "../../../storage";
 import { ThreadsEngine } from "../engine";
 
 const sendMessageSyncMock = vi.fn();
 
+/** Credentials the last constructed stub provider was handed. */
+let lastCreds: ProviderCredentials | undefined;
+
 class TitleStubProvider extends AbstractBaseProvider {
+  constructor(creds: ProviderCredentials) {
+    super(creds);
+    lastCreds = creds;
+  }
   // eslint-disable-next-line require-yield
   async *sendMessage(): AsyncGenerator<never> {
     throw new Error("not used");
@@ -267,6 +275,20 @@ describe("ThreadsEngine.openOrCreate", () => {
     });
     expect(sentImage()).toBe("data:image/png;base64,AAAA");
   });
+
+  it("forwards entityMeta to the title request's credentials", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Auto Title");
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    await engine.openOrCreate({
+      profile,
+      profileId: "p1",
+      firstMessage: userMessage,
+      entityMeta: { entityId: "agent-7", entityTitle: "Support agent" },
+    });
+    expect(lastCreds?.entityId).toBe("agent-7");
+    expect(lastCreds?.entityTitle).toBe("Support agent");
+  });
 });
 
 describe("ThreadsEngine.appendUserMessage", () => {
@@ -355,6 +377,21 @@ describe("ThreadsEngine.regenerateTitle", () => {
     const engine = new ThreadsEngine({ storage });
     await engine.regenerateTitle("t1", profile);
     expect(sentImage()).toBe("data:image/png;base64,AAAA");
+  });
+
+  it("forwards entityMeta to the title request's credentials", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Regenerated");
+    const { storage } = makeStorage({
+      threads: [{ threadId: "t1", title: "Old" }],
+      messagesByThread: { t1: [userMessage] },
+    });
+    const engine = new ThreadsEngine({ storage });
+    await engine.regenerateTitle("t1", profile, {
+      entityId: "agent-7",
+      entityTitle: "Support agent",
+    });
+    expect(lastCreds?.entityId).toBe("agent-7");
+    expect(lastCreds?.entityTitle).toBe("Support agent");
   });
 
   it("throws when the thread has no user messages", async () => {

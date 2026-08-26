@@ -195,6 +195,32 @@ describe("ToolsEngine custom server CRUD", () => {
     expect(snapshot().servers).toEqual({ existing: { url: "http://x" } });
   });
 
+  it("replaceAllCustomServers rejects keys differing only by case (Bug 82984)", async () => {
+    // Name lookups are case-insensitive downstream, so such a pair would
+    // collide on every read while both rows persist — reject up front.
+    const { storage, snapshot } = makeStorage({
+      servers: { existing: { url: "http://x" } },
+    });
+    const engine = new ToolsEngine({ storage });
+    const r = await engine.replaceAllCustomServers({
+      "Autotest-Dup": { url: "http://a" },
+      "autotest-dup": { url: "http://b" },
+    });
+    expect(r.success).toBe(false);
+    if (r.success) throw new Error();
+    expect(r.errors).toEqual([
+      {
+        name: "autotest-dup",
+        error: {
+          field: "name",
+          message:
+            "Duplicate server name (names are case-insensitive): autotest-dup",
+        },
+      },
+    ]);
+    expect(snapshot().servers).toEqual({ existing: { url: "http://x" } });
+  });
+
   it("replaceAllCustomServers replaces atomically when all valid", async () => {
     const { storage, snapshot } = makeStorage({
       servers: { existing: { url: "http://x" } },

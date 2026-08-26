@@ -114,6 +114,25 @@ export class ToolsEngine {
       name: string;
       error: ReturnType<typeof validateServerName>;
     }> = [];
+    // Name lookups are case-insensitive downstream (the DocSpace backend
+    // resolves names on a CI collation), so two keys differing only by case
+    // would collide on every read/update/delete while both rows persist —
+    // the second one becomes unreachable. Mirror addCustomServer's
+    // uniqueness rule and reject the batch up front (Bug 82984).
+    const seen = new Set<string>();
+    for (const name of Object.keys(map)) {
+      const folded = name.toLowerCase();
+      if (seen.has(folded)) {
+        errors.push({
+          name,
+          error: {
+            field: "name",
+            message: `Duplicate server name (names are case-insensitive): ${name}`,
+          },
+        });
+      }
+      seen.add(folded);
+    }
     for (const [name, config] of Object.entries(map)) {
       const error = validateServerName(name) ?? validateTransportConfig(config);
       if (error) errors.push({ name, error });

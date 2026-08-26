@@ -16,7 +16,7 @@ import { createOpenAIClient } from "./client";
 import { openaiInfo } from "./info";
 import { convertMessages } from "./messages";
 import { listModels } from "./models";
-import { resolveReasoningEffort } from "./reasoning";
+import { resolveReasoningEffort, resolveReasoningParam } from "./reasoning";
 import {
   convertMessagesToResponses,
   convertToolsToResponses,
@@ -136,10 +136,9 @@ class OpenAIProvider extends AbstractBaseProvider {
           tools: responsesTools.length > 0 ? responsesTools : undefined,
           // Force one tool call per turn. Only valid when tools are present.
           ...(responsesTools.length > 0 ? { parallel_tool_calls: false } : {}),
-          reasoning: ((): { effort: string } | undefined => {
-            const effort = resolveReasoningEffort(model, withReasoning);
-            return effort ? { effort } : undefined;
-          })() as OpenAI.Reasoning | undefined,
+          reasoning: resolveReasoningParam(model, withReasoning, {
+            summary: true,
+          }) as OpenAI.Reasoning | undefined,
           stream: true,
           ...this.extraBody(),
         } as OpenAI.Responses.ResponseCreateParamsStreaming,
@@ -194,9 +193,11 @@ class OpenAIProvider extends AbstractBaseProvider {
    * backends, 400 = model unsupported there, etc.) returns `false` so the
    * profile keeps using Chat Completions.
    *
-   * Subclasses targeting non-OpenAI endpoints don't override this (the
-   * base class returns `false`), so the probe never hits Together / xAI /
-   * etc. — only the genuine `api.openai.com` endpoint pays the cost.
+   * Providers that don't extend this class inherit `AbstractBaseProvider`'s
+   * `false` and never pay for the probe (Together, xAI, …). Subclasses of
+   * *this* provider do inherit the live probe — ONLYOFFICE included — so a
+   * gateway that answers `/v1/responses` switches its profiles onto the
+   * Responses transport.
    */
   async checkResponsesApi(
     modelId: string,
@@ -236,10 +237,12 @@ class OpenAIProvider extends AbstractBaseProvider {
           model,
           instructions: systemPrompt,
           input: convertMessagesToResponses(messages, this.downgradeSystem),
-          reasoning: ((): { effort: string } | undefined => {
-            const effort = resolveReasoningEffort(model, withReasoning);
-            return effort ? { effort } : undefined;
-          })() as OpenAI.Reasoning | undefined,
+          // No `summary` here — this path returns `output_text` only, so
+          // the summary tokens would be billed and discarded.
+          reasoning: resolveReasoningParam(
+            model,
+            withReasoning
+          ) as OpenAI.Reasoning | undefined,
           stream: false,
           ...this.extraBody(),
         } as OpenAI.Responses.ResponseCreateParamsNonStreaming,

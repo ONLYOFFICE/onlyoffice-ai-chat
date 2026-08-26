@@ -60,13 +60,21 @@ export type ToolContext = {
  * `name` collision) and drops anything the user has turned off in
  * `storage.toolPrefs.readDisabled()`.
  *
- * The persisted disabled-map only applies to the server-side groups
- * (built-ins + adapter), where each tool's `serverType` is known from the
- * grouping. On top of that, every tool — caller-supplied and server-side
- * alike — carrying its own `enabled: false` is dropped before the model
- * ever sees it, per the `TMCPItem.enabled` contract: a tool the caller
- * explicitly disabled must not be callable, produce a stored tool call,
- * or pause the stream on approval.
+ * The persisted disabled-map applies to every tool whose group is known:
+ * the server-side ones (built-ins + adapter), where `serverType` comes
+ * from the grouping, and any caller-supplied one carrying its own
+ * {@link TMCPItem.serverType}. The engine is therefore the single
+ * authority on the disabled map — a caller need not (and should not)
+ * pre-filter, so a toggle flipped elsewhere takes effect on the next
+ * round in both directions. Caller-supplied tools with no `serverType`
+ * (clients older than the field) stay unfiltered here and rely on the
+ * caller's own pre-filtering, as before.
+ *
+ * On top of that, every tool — caller-supplied and server-side alike —
+ * carrying its own `enabled: false` is dropped before the model ever sees
+ * it, per the `TMCPItem.enabled` contract: a tool the caller explicitly
+ * disabled must not be callable, produce a stored tool call, or pause the
+ * stream on approval.
  */
 export async function buildToolContext(
   storage: StorageAdapter,
@@ -99,7 +107,9 @@ export async function buildToolContext(
   // userToolNames) agrees: a disabled tool must not linger in the lookup
   // sets either, or a call to it would still resolve as a user tool and
   // pause the stream on `tool-call-pending`.
-  const enabledUserTools = userTools.filter((t) => t.enabled !== false);
+  const enabledUserTools = userTools.filter(
+    (t) => t.enabled !== false && !isDisabledByPrefs(t, disabled)
+  );
   const adapterTools = flattenAndFilter(grouped, disabled);
   const mergedTools = mergeToolsByName(adapterTools, enabledUserTools);
 
@@ -117,6 +127,20 @@ export async function buildToolContext(
     adapterToolNames: new Set(adapterTools.map((t) => t.name)),
     systemToolNames,
   };
+}
+
+/**
+ * Whether the persisted disabled map turns `tool` off. Decidable only for
+ * a tool that carries its own {@link TMCPItem.serverType} — the map is
+ * keyed by server type, so a caller-supplied tool without one cannot be
+ * attributed to a group and is left to the caller's own filtering.
+ */
+function isDisabledByPrefs(
+  tool: TMCPItem,
+  disabled: Record<string, string[]>
+): boolean {
+  if (!tool.serverType) return false;
+  return disabled[tool.serverType]?.includes(tool.name) ?? false;
 }
 
 /**

@@ -257,6 +257,23 @@ describe("OpenAIProvider", () => {
       expect(payload.stream).toBe(true);
     });
 
+    it("omits the reasoning summary on the one-shot Responses path", async () => {
+      // Only `output_text` is read back here, so summary tokens would be
+      // billed and discarded.
+      responsesCreateMock.mockResolvedValueOnce({ output_text: "titled" });
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await p.sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "gpt-5.5",
+        systemPrompt: "s",
+        useResponsesApi: true,
+        withReasoning: true,
+      });
+      expect(responsesCreateMock.mock.calls[0]?.[0]?.reasoning).toEqual({
+        effort: "medium",
+      });
+    });
+
     it("stays on chat.completions when useResponsesApi is undefined", async () => {
       chatCreateMock.mockResolvedValueOnce(
         createMockStream([createFinishChunk()])
@@ -273,7 +290,7 @@ describe("OpenAIProvider", () => {
       expect(responsesCreateMock).not.toHaveBeenCalled();
     });
 
-    it("maps withReasoning to reasoning.effort=medium on the Responses payload", async () => {
+    it("maps withReasoning to effort=medium plus a summary request on the Responses payload", async () => {
       responsesCreateMock.mockResolvedValueOnce(
         responsesIter([minimalCompletion()])
       );
@@ -287,8 +304,11 @@ describe("OpenAIProvider", () => {
           withReasoning: true,
         })
       );
+      // `summary` is what makes the thinking transcript observable — the
+      // Responses API streams no reasoning text without it.
       expect(responsesCreateMock.mock.calls[0]?.[0]?.reasoning).toEqual({
         effort: "medium",
+        summary: "auto",
       });
     });
 

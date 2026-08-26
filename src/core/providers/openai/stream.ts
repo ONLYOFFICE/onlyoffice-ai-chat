@@ -9,11 +9,33 @@ import { toChatError } from "../../services/ai/error";
 
 /**
  * Extension of OpenAI's streaming delta that adds the non-standard
- * `reasoning_content` field, used by reasoning-capable models
- * (DeepSeek R1, OpenAI reasoning models, ONLYOFFICE `-thinking` variants).
+ * thinking fields. Two spellings are in the wild and a backend picks one:
+ * `reasoning_content` (DeepSeek R1, ONLYOFFICE `-thinking` variants) and
+ * `reasoning` (OpenRouter and the gateways that copy it). `reasoning` is
+ * also where some backends put a structured object rather than a string,
+ * so read it through {@link readReasoningDelta} instead of directly.
  */
 export type DeltaWithReasoning = ChatCompletionChunk.Choice["delta"] & {
   reasoning_content?: string;
+  reasoning?: unknown;
+};
+
+/**
+ * Pull the thinking fragment out of a delta, whichever field carries it.
+ * `reasoning_content` wins when a backend sends both. A non-string
+ * `reasoning` (an object, as some gateways send) is ignored rather than
+ * stringified into the transcript.
+ *
+ * @param delta - One streaming delta.
+ * @returns The fragment, or `undefined` when the delta carries none.
+ */
+export const readReasoningDelta = (
+  delta: DeltaWithReasoning
+): string | undefined => {
+  if (delta.reasoning_content) return delta.reasoning_content;
+  return typeof delta.reasoning === "string" && delta.reasoning
+    ? delta.reasoning
+    : undefined;
 };
 
 // ---------------------------------------------------------------------------
@@ -306,12 +328,10 @@ export async function* processStream(
         break;
       }
 
-      if (delta.reasoning_content) {
+      const reasoningDelta = readReasoningDelta(delta);
+      if (reasoningDelta) {
         hasUnfinalizedReasoning = true;
-        responseMessage = handleReasoning(
-          responseMessage,
-          delta.reasoning_content
-        );
+        responseMessage = handleReasoning(responseMessage, reasoningDelta);
       }
 
       if (delta.content) {

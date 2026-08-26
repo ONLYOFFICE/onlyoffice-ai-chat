@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Profile } from "../../types";
+import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { RouteSpec } from "../types";
 import type { ThreadsEngine } from "./engine";
@@ -82,6 +83,13 @@ export type OpenOrCreateInput = {
    * when `threadId` is provided (the existing thread keeps its scope).
    */
   entityId?: string;
+  /**
+   * Host entity pair describing the agent the round runs for. Forwarded
+   * to the {@link generateTitle} action so the title request carries the
+   * same `metadata` the chat round does — see {@link ActionArgs.entityId}.
+   * Unrelated to the `entityId` scope token above.
+   */
+  entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle">;
 };
 
 /** Resolved thread state returned by {@link ThreadsEngine.openOrCreate}. */

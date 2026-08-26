@@ -36,24 +36,23 @@ export const checkCredentials = async (
 /**
  * Fetch the locally-installed GPT4All model list.
  *
- * Swallows errors and returns an empty list — the widget's UX expects a
- * silent empty state for GPT4All when the local server is stopped.
+ * Errors propagate to the caller, exactly like the other keyless local
+ * providers (Ollama, LM Studio): an unreachable server must be
+ * distinguishable from a running server with an empty catalog (Bug
+ * 83118). The widget surfaces the failure on the Base URL field, and
+ * server hosts map it to 502.
  */
 export const listModels = async (
   creds: ProviderCredentials
 ): Promise<Model[]> => {
-  try {
-    const response = (await client(creds.baseUrl).models.list()).data;
-    const defaultCaps =
-      CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
+  const response = (await client(creds.baseUrl).models.list()).data;
+  const defaultCaps =
+    CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
 
-    return response.map((m) => ({
-      id: m.id,
-      name: m.id,
-      provider: "gpt4all" as const,
-      capabilities: defaultCaps,
-    }));
-  } catch {
-    return [];
-  }
+  return response.map((m) => ({
+    id: m.id,
+    name: m.id,
+    provider: "gpt4all" as const,
+    capabilities: defaultCaps,
+  }));
 };

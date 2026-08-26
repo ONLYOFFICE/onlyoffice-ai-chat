@@ -47,6 +47,9 @@ const stores = {
     tools: [] as unknown[],
     manageToolData: undefined as unknown,
     getTools: vi.fn().mockResolvedValue(undefined),
+    // The send / regenerate paths read the round's tools from here, not
+    // from the `tools` snapshot — mirror it so both stay in step.
+    getUserTools: vi.fn(async () => stores.serversState.tools),
   },
   attachmentsState: {
     attachmentFiles: [] as unknown[],
