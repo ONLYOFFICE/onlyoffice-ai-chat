@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.66
+
+### Fixed
+
+- `PromptsEngine.update` re-validates the prompt name whenever the folder changes, not only when the name itself does — moving a prompt (via `move` or a `folderId`-only `update`) into a folder that already holds a prompt with the same name now fails with `Prompt name already exists in this folder` instead of creating a duplicate pair (Bug 83122).
+- `PromptsEngine.importBundle` in `merge` mode no longer overwrites an existing prompt matched by `(name, folderId)`. Merge is now add-only: folders are still matched by name (case-insensitive) and reused, but any prompt-name collision — with existing prompts or between two bundle entries landing in the same folder — fails the whole import with a per-entry `errors` report before anything is written, so a conflicting bundle imports nothing at all (Bug 83130).
+- The GPT4All provider's `listModels` no longer swallows connection errors into an empty list. An unreachable server now throws like the other keyless local providers (Ollama, LM Studio), so hosts can answer 502 and the widget shows the failure on the Base URL field instead of a silently empty catalog (Bug 83118).
+- Anthropic models listed through an OpenAI-compatible proxy or a test double that omits `display_name` fall back to the model id for `name` instead of returning an unnamed entry (Bug 83119).
+
 ## 0.5.65
 
 ### Fixed
