@@ -58,6 +58,14 @@ export interface ServersStoreState {
   setMcpConfigDirty: (dirty: boolean) => void;
   initServers: () => Promise<void>;
   getTools: () => Promise<void>;
+  /**
+   * The client-executed tool list for the next chat round, assembled
+   * locally with no API round trip and tagged with each tool's
+   * `serverType` so the engine can apply the persisted disabled map
+   * itself. Used by the send / regenerate paths in place of a pre-send
+   * {@link getTools} refresh.
+   */
+  getUserTools: () => Promise<TMCPItem[]>;
   reload: () => Promise<void>;
   /**
    * Enable or disable one tool — or several of the same server type in one
@@ -132,17 +140,16 @@ export function createServersStore(deps: {
       ...systemTools,
     };
 
-    // Annotate each tool with its `enabled` flag derived from the
-    // persisted disabled list — used by the permissions UI to render
-    // toggles.
+    // Annotate each tool with its `serverType` and with the `enabled` flag
+    // derived from the persisted disabled list — the permissions UI renders
+    // its toggles from both.
     //
-    // `flat` becomes `actionArgs.tools` (the client-executed "user" tools
-    // the model is offered). The engine does NOT filter these by the
-    // disabled map — it only knows the bare names, not the server grouping,
-    // so `buildToolContext` passes `userTools` through as-is and expects the
-    // caller to have pre-filtered. We therefore drop disabled tools from
-    // `flat` here; skipping this is what let disabled MCP/host tools keep
-    // working in chat.
+    // `flat` (the store's `tools`) is the enabled-only view: the tools
+    // counter sizes itself on it and the resume rounds (approve / deny)
+    // ship it as `actionArgs.tools`. The send path does NOT read it — it
+    // calls `getUserTools()`, which skips this fetch entirely and leaves
+    // the disabled filtering to the engine, the one place that always
+    // sees the current map.
     //
     // System tools are the exception: the engine injects and executes them
     // server-side via its adapter (and filters them by the same disabled
@@ -157,6 +164,7 @@ export function createServersStore(deps: {
       const disabledForType = disabled[type] ?? [];
       annotated[type] = items.map((tool) => ({
         ...tool,
+        serverType: type,
         enabled:
           tool.enabled !== undefined
             ? tool.enabled
@@ -176,9 +184,31 @@ export function createServersStore(deps: {
     };
   };
 
+  /**
+   * Assemble the client-executed tool list for one chat round without an
+   * API call — the send path must not pay a round trip for it. Waits for
+   * the configured MCP servers to finish connecting (bounded inside
+   * `waitUntilCustomServersReady`, so a hung server can't block a send)
+   * so the first message after a mount still carries their tools, then
+   * flattens the live grouping and tags every tool with its `serverType`.
+   *
+   * Deliberately NOT filtered by the persisted disabled map: the engine
+   * applies it in `buildToolContext`, which keeps one authority and makes
+   * a toggle flipped elsewhere (another tab, the settings page) take
+   * effect on the very next round — in both directions. Server-side
+   * "system" tools cannot leak in here: they only ever come from
+   * `api.tools.listSystemTools`, never from the live aggregator.
+   */
+  const buildUserTools = async (): Promise<TMCPItem[]> => {
+    await ctx.servers.waitUntilCustomServersReady();
+    const grouped = await ctx.servers.getTools();
+    return Object.entries(grouped).flatMap(([serverType, items]) =>
+      items.map((tool) => ({ ...tool, serverType }))
+    );
+  };
+
   // Coalesces concurrent `getTools()` calls (mount + `tools-changed` bursts
-  // as MCP servers connect + a refresh before every send), each of which
-  // fans out to three reads. While one run is active, extra calls flag a
+  // as MCP servers connect), each of which fans out to three reads. While one run is active, extra calls flag a
   // single trailing re-run so the final state still reflects the latest
   // tools (an MCP server that connected mid-run) without a fetch per event.
   let toolsInFlight: Promise<void> | null = null;
@@ -229,6 +259,8 @@ export function createServersStore(deps: {
       })();
       return toolsInFlight;
     },
+
+    getUserTools: () => buildUserTools(),
 
     reload: async () => {
       await loadAndStartCustomServers();

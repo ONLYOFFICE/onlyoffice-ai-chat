@@ -224,6 +224,47 @@ describe("buildToolContext", () => {
     expect(ctx.adapterTools.map((t) => t.name)).toEqual(["web_search"]);
   });
 
+  it("drops caller tools disabled in storage.toolPrefs for their serverType", async () => {
+    getWebSearchToolsMock.mockResolvedValue([]);
+    getImageGenerationToolsMock.mockResolvedValue([]);
+    const userTools = [
+      { ...tool("kept"), serverType: "mcp" },
+      { ...tool("turned_off"), serverType: "mcp" },
+      // Same bare name, different server type — must survive.
+      { ...tool("turned_off"), serverType: "editor" },
+    ];
+
+    const ctx = await buildToolContext(
+      makeStorage({ mcp: ["turned_off"] }),
+      undefined,
+      userTools
+    );
+
+    expect(ctx.userTools).toEqual([
+      { ...tool("kept"), serverType: "mcp" },
+      { ...tool("turned_off"), serverType: "editor" },
+    ]);
+    // The lookup set must agree, or a call to the disabled tool would still
+    // resolve as a user tool and pause the stream on approval.
+    expect(ctx.mergedTools.map((t) => t.name)).toEqual(["kept", "turned_off"]);
+  });
+
+  it("leaves caller tools without a serverType to the caller's own filtering", async () => {
+    getWebSearchToolsMock.mockResolvedValue([]);
+    getImageGenerationToolsMock.mockResolvedValue([]);
+
+    const ctx = await buildToolContext(
+      makeStorage({ mcp: ["legacy_tool"] }),
+      undefined,
+      [tool("legacy_tool")]
+    );
+
+    // A client older than `TMCPItem.serverType` pre-filters its own list;
+    // the engine cannot attribute the tool to a group, so it keeps it
+    // rather than guessing.
+    expect(ctx.mergedTools.map((t) => t.name)).toEqual(["legacy_tool"]);
+  });
+
   it("forwards entityId to adapter.getTools", async () => {
     getWebSearchToolsMock.mockResolvedValue([]);
     getImageGenerationToolsMock.mockResolvedValue([]);
