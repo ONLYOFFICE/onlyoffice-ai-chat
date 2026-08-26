@@ -67,7 +67,7 @@ const AvailableTools = ({
   return (
     <div
       className={cn(
-        "w-full flex flex-col",
+        "available-tools w-full flex flex-col",
         bordered &&
           "border-[length:var(--servers-available-tools-border-width)] border-[var(--servers-available-tools-border-color)] rounded-[var(--servers-available-tools-border-radius)]"
       )}
