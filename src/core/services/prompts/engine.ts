@@ -90,9 +90,13 @@ export class PromptsEngine {
       if (refError) return { success: false, error: refError };
     }
 
-    if (updates.name !== undefined) {
+    // Re-validate whenever the name OR the folder changes — a move
+    // into a folder that already holds a prompt with this name is as
+    // much a collision as a rename (Bug 83122).
+    if (updates.name !== undefined || updates.folderId !== undefined) {
+      const nextName = updates.name ?? current.name;
       const all = await this.deps.storage.prompts.readAll();
-      const nameError = validatePromptName(all, updates.name, nextFolderId, id);
+      const nameError = validatePromptName(all, nextName, nextFolderId, id);
       if (nameError) return { success: false, error: nameError };
     }
 
@@ -209,9 +213,12 @@ export class PromptsEngine {
    *
    * - `replace` (default): wipe the existing prompts and folders,
    *   then write the bundle. All-or-nothing.
-   * - `merge`: keep existing data and write entries from the bundle
-   *   on top — `update` when the id already exists, `create`
-   *   otherwise.
+   * - `merge`: keep existing data and ADD entries from the bundle.
+   *   Folders are matched by name (case-insensitive) and reused;
+   *   prompts must be new — a bundle prompt whose name collides with
+   *   an existing prompt in the same target folder (or with another
+   *   prompt in the bundle itself) fails the whole import with a
+   *   per-entry error report and nothing is written (Bug 83130).
    *
    * Both modes validate folder references inside the bundle first
    * so a corrupt bundle is rejected before any write.
@@ -244,7 +251,8 @@ export class PromptsEngine {
     if (mode === "replace") {
       await this.replaceAll(bundle);
     } else {
-      await this.mergeBundle(bundle);
+      const conflicts = await this.mergeBundle(bundle);
+      if (conflicts.length > 0) return { success: false, errors: conflicts };
     }
 
     return {
@@ -303,34 +311,79 @@ export class PromptsEngine {
   }
 
   /**
-   * Idempotent upsert per entry. Used by `importBundle({ mode: "merge" })`.
+   * Add-only merge. Used by `importBundle({ mode: "merge" })`.
    *
-   * Match keys are natural, not id-based: folders match by `name`,
-   * prompts by `(name, folderId)`. Bundle ids are not stable across
-   * storages (server-authoritative backends mint fresh ones), so id
-   * matching would never hit on a fresh import.
+   * Folders are matched by name (case-insensitive, mirroring
+   * `validateFolderName`) and reused — bundle ids are not stable
+   * across storages, so id matching would never hit. Prompts must be
+   * NEW: any bundle prompt whose name collides (case-insensitive)
+   * with an existing prompt in its target folder — or with another
+   * bundle prompt landing in the same folder — is a conflict. Every
+   * conflict is detected BEFORE any write, so a conflicting bundle
+   * imports nothing at all (Bug 83130). Returns the conflict list;
+   * empty means everything was persisted.
    */
-  private async mergeBundle(bundle: PromptBundle): Promise<void> {
+  private async mergeBundle(bundle: PromptBundle): Promise<ImportError[]> {
     const [existingFolders, existingPrompts] = await Promise.all([
       this.deps.storage.promptFolders.readAll(),
       this.deps.storage.prompts.readAll(),
     ]);
 
     const folderByName = new Map(
-      existingFolders.map((f) => [f.name, f] as const)
+      existingFolders.map((f) => [f.name.toLowerCase(), f] as const)
     );
-    const folderIdMap = new Map<string, string>();
+    // Bundle folder id → existing folder id, or null when the folder
+    // is new (it cannot hold existing prompts, so no conflict there).
+    const folderTarget = new Map<string, string | null>();
     const newFolderInputs: Array<{ name: string }> = [];
     const newFolderSources: PromptFolder[] = [];
 
     for (const f of bundle.folders) {
-      const existing = folderByName.get(f.name);
+      const existing = folderByName.get(f.name.toLowerCase());
       if (existing) {
-        folderIdMap.set(f.id, existing.id);
+        folderTarget.set(f.id, existing.id);
       } else {
+        folderTarget.set(f.id, null);
         newFolderInputs.push({ name: f.name });
         newFolderSources.push(f);
       }
+    }
+
+    // Conflict scan over the whole bundle before any write.
+    const promptKey = (name: string, folderScope: string | null) =>
+      `${name.toLowerCase()}\x00${folderScope ?? ""}`;
+    const existingKeys = new Set(
+      existingPrompts.map((p) => promptKey(p.name, p.folderId ?? null))
+    );
+    const bundleKeys = new Set<string>();
+    const conflicts: ImportError[] = [];
+
+    for (const p of bundle.prompts) {
+      // Scope for collision purposes: the existing folder id when the
+      // bundle folder maps onto one, otherwise the bundle folder id
+      // itself (new folders still get intra-bundle duplicate checks).
+      const scope = p.folderId
+        ? (folderTarget.get(p.folderId) ?? `<new>${p.folderId}`)
+        : null;
+      const key = promptKey(p.name, scope);
+      if (existingKeys.has(key) || bundleKeys.has(key)) {
+        conflicts.push({
+          kind: "prompt",
+          ref: p.name,
+          error: {
+            field: "name",
+            message: "Prompt name already exists in this folder",
+          },
+        });
+        continue;
+      }
+      bundleKeys.add(key);
+    }
+    if (conflicts.length > 0) return conflicts;
+
+    const folderIdMap = new Map<string, string>();
+    for (const [bundleId, existingId] of folderTarget) {
+      if (existingId) folderIdMap.set(bundleId, existingId);
     }
     if (newFolderInputs.length > 0) {
       const persisted =
@@ -341,49 +394,21 @@ export class PromptsEngine {
       });
     }
 
-    const promptKey = (name: string, folderId: string | null) =>
-      `${name}\x00${folderId ?? ""}`;
-    const existingPromptByKey = new Map(
-      existingPrompts.map(
-        (p) => [promptKey(p.name, p.folderId ?? null), p] as const
-      )
-    );
-
-    const newPromptInputs: Array<
-      Omit<Prompt, "id" | "createdAt" | "updatedAt">
-    > = [];
-    const updates: Array<{
-      id: string;
-      patch: { name?: string; text?: string; folderId?: string | null };
-    }> = [];
-
-    for (const p of bundle.prompts) {
-      const remappedFolderId = p.folderId
-        ? (folderIdMap.get(p.folderId) ?? null)
-        : null;
-      const key = promptKey(p.name, remappedFolderId);
-      const existing = existingPromptByKey.get(key);
-      if (existing) {
-        updates.push({
-          id: existing.id,
-          patch: { text: p.text, folderId: remappedFolderId },
-        });
-      } else {
-        const next: Omit<Prompt, "id" | "createdAt" | "updatedAt"> = {
-          name: p.name,
-          text: p.text,
-        };
-        if (remappedFolderId) next.folderId = remappedFolderId;
-        newPromptInputs.push(next);
+    const newPromptInputs = bundle.prompts.map((p) => {
+      const next: Omit<Prompt, "id" | "createdAt" | "updatedAt"> = {
+        name: p.name,
+        text: p.text,
+      };
+      if (p.folderId) {
+        const remapped = folderIdMap.get(p.folderId);
+        if (remapped) next.folderId = remapped;
       }
-    }
-
+      return next;
+    });
     if (newPromptInputs.length > 0) {
       await this.deps.storage.prompts.createMany(newPromptInputs);
     }
-    await Promise.all(
-      updates.map((u) => this.deps.storage.prompts.update(u.id, u.patch))
-    );
+    return [];
   }
 }
 
