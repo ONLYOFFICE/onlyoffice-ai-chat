@@ -157,6 +157,23 @@ class OpenAIProvider extends AbstractBaseProvider {
   }
 
   /**
+   * Request fields that turn extended thinking on or off for a Chat
+   * Completions round. Split out of {@link getStream} so a gateway that
+   * spells it differently can swap just this without restating the whole
+   * request body — OpenRouter does.
+   *
+   * Omitted entirely when {@link resolveReasoningEffort} has nothing to say,
+   * which is what non-reasoning models need (they reject the parameter).
+   */
+  protected reasoningRequestFields(
+    model: string,
+    withReasoning?: boolean
+  ): Record<string, unknown> {
+    const effort = resolveReasoningEffort(model, withReasoning);
+    return effort ? { reasoning_effort: effort } : {};
+  }
+
+  /**
    * Build the underlying streaming request. Isolated so subclasses
    * (e.g. ONLYOFFICE with raw fetch / SSE) can override transport details
    * while reusing the rest of `sendMessage`.
@@ -176,10 +193,7 @@ class OpenAIProvider extends AbstractBaseProvider {
         // Force one tool call per turn. Only valid when tools are present.
         ...(params.tools.length > 0 ? { parallel_tool_calls: false } : {}),
         stream: true,
-        reasoning_effort: resolveReasoningEffort(
-          params.model,
-          params.withReasoning
-        ) as OpenAI.Chat.ChatCompletionCreateParams["reasoning_effort"],
+        ...this.reasoningRequestFields(params.model, params.withReasoning),
         ...this.extraBody(),
       } as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
       { signal: params.signal }

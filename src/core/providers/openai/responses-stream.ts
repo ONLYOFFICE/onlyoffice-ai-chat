@@ -187,7 +187,15 @@ export async function* processResponsesStream(
         break;
       }
 
-      case "response.reasoning_summary_text.delta": {
+      // Two spellings carry the thinking text on this transport. OpenAI emits
+      // the summary event (the only reasoning text its Responses API ever
+      // exposes); OpenRouter emits the raw one — its Anthropic and Gemini
+      // routes stream `response.reasoning_text.delta`, and listening for the
+      // summary alone left a round on those models with no thinking at all.
+      // The matching `.done` events repeat the full text, so only the deltas
+      // are consumed.
+      case "response.reasoning_summary_text.delta":
+      case "response.reasoning_text.delta": {
         hasUnfinalizedReasoning = true;
         responseMessage = appendReasoning(responseMessage, event.delta);
         break;

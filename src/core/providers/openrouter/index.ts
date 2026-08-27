@@ -36,6 +36,23 @@ class OpenRouterProvider extends OpenAIProvider {
   }
 
   /**
+   * OpenRouter takes extended thinking through its own unified `reasoning`
+   * object, not OpenAI's `reasoning_effort`. That matters most for the
+   * Anthropic route: Claude reasons only when this field asks it to (the
+   * `:thinking` model variants are gone), so a Sonnet round sent with
+   * `reasoning_effort` came back with no thinking at all.
+   *
+   * Reasoning off simply omits the field — `reasoning.effort` has no "none"
+   * level, and every model here defaults to not thinking.
+   */
+  protected override reasoningRequestFields(
+    _model: string,
+    withReasoning?: boolean
+  ): Record<string, unknown> {
+    return withReasoning ? { reasoning: { effort: "medium" } } : {};
+  }
+
+  /**
    * OpenRouter does not expose `/images/generations` — image-capable
    * models (e.g. `openai/gpt-4o-image`, `gpt-5-image`) return inline
    * images via `/chat/completions` when `modalities: ["image", "text"]`

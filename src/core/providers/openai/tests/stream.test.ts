@@ -374,6 +374,46 @@ describe("openai/stream/readReasoningDelta", () => {
     expect(readReasoningDelta({})).toBeUndefined();
   });
 
+  it("reads OpenRouter's structured reasoning_details", () => {
+    expect(
+      readReasoningDelta({
+        reasoning_details: [
+          { type: "reasoning.text", text: "step " },
+          { type: "reasoning.text", text: "by step" },
+        ],
+      })
+    ).toBe("step by step");
+  });
+
+  it("reads a summarized detail (what OpenRouter returns for Claude)", () => {
+    expect(
+      readReasoningDelta({
+        reasoning_details: [{ type: "reasoning.summary", summary: "gist" }],
+      })
+    ).toBe("gist");
+  });
+
+  it("skips encrypted details and empty arrays", () => {
+    expect(
+      readReasoningDelta({
+        reasoning_details: [{ type: "reasoning.encrypted", data: "opaque" }],
+      })
+    ).toBeUndefined();
+    expect(readReasoningDelta({ reasoning_details: [] })).toBeUndefined();
+    expect(
+      readReasoningDelta({ reasoning_details: "not-an-array" })
+    ).toBeUndefined();
+  });
+
+  it("does not double-count when a backend sends text and details", () => {
+    expect(
+      readReasoningDelta({
+        reasoning: "thought",
+        reasoning_details: [{ type: "reasoning.text", text: "thought" }],
+      })
+    ).toBe("thought");
+  });
+
   it("streams a `reasoning`-only delta into a reasoning part", async () => {
     const chunk = {
       ...createReasoningChunk("x"),
