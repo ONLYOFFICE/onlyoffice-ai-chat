@@ -18,6 +18,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { Icon } from "../../../components/icon";
+import { LoadingDots } from "../../../components/loading-dots";
 import { MarkdownContent, MarkdownText } from "../../../components/markdown";
 import { ToolFallback } from "../../../components/tool-fallback";
 import {
@@ -33,6 +34,10 @@ import {
 } from "../../../../widget-config";
 import type { AssistantAction } from "../assistant-actions";
 
+// The reasoning header reads as the same muted aside as a tool call: glyph,
+// label, chevron — no chip background, no status glyph of its own.
+const REASONING_COLOR = "var(--text-tertiary)";
+
 const ThinkingMarkdownText = memo(
   ({
     text,
@@ -43,38 +48,42 @@ const ThinkingMarkdownText = memo(
     type: string;
     parentId?: string;
   }) => {
-    const { Loader } = useComponents();
-    const { t } = useI18n();
+    const { t, isRTL } = useI18n();
     const [isCollapsed, setIsCollapsed] = useState(true);
+
+    // A finalized reasoning part carries the provider's signature in
+    // `parentId` (see the reasoning handling in the openai/anthropic streams);
+    // while the block is still streaming that field is absent. Running state
+    // shows as dots trailing the label — the same cue a running tool call
+    // gets — instead of a spinner, and a resolved one simply drops them.
+    const isRunning = !parentId;
 
     return (
       <>
         {type === "reasoning" ? (
           <div className="my-[8px] flex w-full flex-col">
+            {/* Unlike a tool call, this row stays interactive while running:
+                the thinking already streamed so far is worth reading before
+                the block closes. */}
             <div
               className="flex items-center gap-[10px] cursor-pointer mb-[8px]"
               onClick={() => setIsCollapsed((val) => !val)}
             >
-              {parentId ? (
-                <Icon name="tool.called" size={16} noColor />
-              ) : (
-                <Loader size={16} />
-              )}
-              <div className="flex items-center bg-[var(--background-normal-element)] rounded-[4px] gap-[8px] ps-[4px] pe-[8px]">
-                <Icon name="btn-extended-thinking" size={24} />
-                <span className="font-normal text-[var(--chat-message-color)] ">
-                  {t("Thinking")}
-                </span>
-              </div>
-
-              <Icon
-                name="arrow.right"
-                size={16}
-                width={8}
-                height={8}
-                isStroke
-                className={!isCollapsed ? "rotate-90" : ""}
-              />
+              <Icon name="btn-extended-thinking" size={24} />
+              <span className="min-w-0 truncate font-normal text-[var(--text-tertiary)]">
+                {t("Thinking")}
+                {isRunning ? <LoadingDots /> : null}
+              </span>
+              <span className={isRTL && isCollapsed ? "rotate-180" : ""}>
+                <Icon
+                  name={!isCollapsed ? "arrow.bottom" : "arrow.right"}
+                  size={16}
+                  width={8}
+                  height={8}
+                  color={REASONING_COLOR}
+                  isStroke
+                />
+              </span>
             </div>
             {!isCollapsed && (
               <div className="ps-[12px] ms-[13px] border-l-[var(--border-divider)] border-l-[1px]">

@@ -205,6 +205,19 @@ vi.mock("framer-motion", () => ({
         {children}
       </div>
     ),
+    span: ({
+      children,
+      initial: _initial,
+      animate: _animate,
+      transition: _transition,
+      ...props
+    }: {
+      children?: React.ReactNode;
+      initial?: unknown;
+      animate?: unknown;
+      transition?: unknown;
+      [key: string]: unknown;
+    }) => <span {...props}>{children}</span>,
   },
 }));
 
@@ -785,22 +798,44 @@ describe("AssistantMessage", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("shows Loader when parentId is not set (streaming)", () => {
+    it("trails the label with running dots while the block streams", () => {
       mockMessageParentId = undefined as unknown as string;
       mockMessageContent = [{ type: "reasoning", text: "Thinking..." }];
       render(<AssistantMessage />);
-      expect(screen.getByTestId("loader")).toBeInTheDocument();
+      expect(screen.getByTestId("loading-dots")).toBeInTheDocument();
+      // The header carries no status glyph of its own — no spinner, no tick.
+      expect(screen.queryByTestId("loader")).not.toBeInTheDocument();
+      const icons = screen.getAllByTestId("icon");
+      expect(
+        icons.find((el) => el.getAttribute("data-name") === "tool.called")
+      ).toBeUndefined();
     });
 
-    it("shows tool.called icon when parentId is set", () => {
+    it("drops the dots once the block is finalized", () => {
       mockMessageParentId = "0";
       mockMessageContent = [{ type: "reasoning", text: "Thinking..." }];
       render(<AssistantMessage />);
+      expect(screen.queryByTestId("loading-dots")).not.toBeInTheDocument();
       const icons = screen.getAllByTestId("icon");
-      const toolCalledIcon = icons.find(
-        (el) => el.getAttribute("data-name") === "tool.called"
-      );
-      expect(toolCalledIcon).toBeInTheDocument();
+      expect(
+        icons.find((el) => el.getAttribute("data-name") === "tool.called")
+      ).toBeUndefined();
+    });
+
+    it("can be expanded while it is still streaming", () => {
+      mockMessageParentId = undefined as unknown as string;
+      mockMessageContent = [
+        { type: "reasoning", text: "Thinking about stuff..." },
+      ];
+      render(<AssistantMessage />);
+      const clickTarget = screen
+        .getByText("Thinking")
+        .closest("[class*='cursor-pointer']")!;
+      fireEvent.click(clickTarget);
+      const mdContents = screen.getAllByTestId("markdown-content");
+      expect(
+        mdContents.find((el) => el.textContent === "Thinking about stuff...")
+      ).toBeInTheDocument();
     });
 
     it("shows arrow icon for collapsing", () => {
@@ -813,17 +848,19 @@ describe("AssistantMessage", () => {
       expect(arrowIcon).toBeInTheDocument();
     });
 
-    it("rotates arrow icon when expanded", () => {
+    it("swaps the chevron when expanded", () => {
       mockMessageContent = [{ type: "reasoning", text: "Thinking..." }];
       render(<AssistantMessage />);
       const thinkingLabel = screen.getByText("Thinking");
       const clickTarget = thinkingLabel.closest("[class*='cursor-pointer']")!;
       fireEvent.click(clickTarget);
       const icons = screen.getAllByTestId("icon");
-      const arrowIcon = icons.find(
-        (el) => el.getAttribute("data-name") === "arrow.right"
-      );
-      expect(arrowIcon?.className).toContain("rotate-90");
+      expect(
+        icons.find((el) => el.getAttribute("data-name") === "arrow.bottom")
+      ).toBeInTheDocument();
+      expect(
+        icons.find((el) => el.getAttribute("data-name") === "arrow.right")
+      ).toBeUndefined();
     });
   });
 
