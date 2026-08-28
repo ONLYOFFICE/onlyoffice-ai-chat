@@ -12,10 +12,15 @@ import { cn } from "../../../shared/utils";
 import { SyntaxHighlighter } from "../assistant-ui/shiki-highlighter";
 import CodeHeader from "./sub-components/CodeHeader";
 
+// Text blocks carry `dir="auto"` so a mixed-language reply reads correctly
+// paragraph by paragraph. Lists and tables resolve once for the container —
+// per-item `dir` would scatter list markers and column alignment. Code is
+// pinned LTR instead.
 const defaultComponents = memoizeMarkdownComponents({
   SyntaxHighlighter,
   h1: ({ className, ...props }) => (
     <h1
+      dir="auto"
       className={cn(
         "my-[8px] scroll-m-20 text-fs-28 leading-[var(--lh-36)] font-bold last:mb-0 text-[var(--chat-message-color)]",
         className
@@ -25,6 +30,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   h2: ({ className, ...props }) => (
     <h2
+      dir="auto"
       className={cn(
         "my-[8px] scroll-m-20 text-fs-24 leading-[var(--lh-32)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
@@ -34,6 +40,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   h3: ({ className, ...props }) => (
     <h3
+      dir="auto"
       className={cn(
         "my-[8px] scroll-m-20 text-fs-20 leading-[var(--lh-28)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
@@ -43,6 +50,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   h4: ({ className, ...props }) => (
     <h4
+      dir="auto"
       className={cn(
         "my-[8px] scroll-m-20 text-fs-18 leading-[var(--lh-24)] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
@@ -52,6 +60,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   h5: ({ className, ...props }) => (
     <h5
+      dir="auto"
       className={cn(
         "my-[8px] text-fs-16 font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
@@ -61,6 +70,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   h6: ({ className, ...props }) => (
     <h6
+      dir="auto"
       className={cn(
         "my-[8px] font-bold first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
@@ -70,6 +80,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   p: ({ className, ...props }) => (
     <p
+      dir="auto"
       className={cn(
         "my-[8px] font-normal first:mt-0 last:mb-0 text-[var(--chat-message-color)]",
         className
@@ -90,12 +101,17 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   blockquote: ({ className, ...props }) => (
     <blockquote
-      className={cn("border-l-2 pl-6 italic", className)}
+      dir="auto"
+      // Logical border/padding: the bar follows the quote's own direction.
+      className={cn("border-s-2 ps-6 italic", className)}
       {...props}
     />
   ),
+  // Per-list, not per-item: a marker follows its item's direction, so a lone
+  // Latin bullet in an Arabic list would jump to the other side.
   ul: ({ className, ...props }) => (
     <ul
+      dir="auto"
       className={cn(
         "my-[8px] ms-6 list-disc [&>li]:mt-[4px] text-[var(--chat-message-color)]",
         className
@@ -105,6 +121,7 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   ol: ({ className, ...props }) => (
     <ol
+      dir="auto"
       className={cn(
         "my-[8px] ms-6 list-decimal [&>li]:mt-[4px] text-[var(--chat-message-color)]",
         className
@@ -121,8 +138,11 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
+  // Per-table, not per-cell — otherwise a mixed-language column alternates
+  // alignment.
   table: ({ className, ...props }) => (
     <table
+      dir="auto"
       className={cn(
         "my-[8px] w-full border-separate border-spacing-0 overflow-y-auto text-[var(--chat-message-color)]",
         className
@@ -130,10 +150,12 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
+  // `text-start`, not `text-left`, so it follows the table's direction; an
+  // explicit GFM alignment still wins.
   th: ({ className, ...props }) => (
     <th
       className={cn(
-        "px-4 py-2 border-b border-[var(--chat-message-divider-color)] text-left text-[var(--chat-message-th-color)] font-bold [&[align=center]]:text-center [&[align=right]]:text-right",
+        "px-4 py-2 border-b border-[var(--chat-message-divider-color)] text-start text-[var(--chat-message-th-color)] font-bold [&[align=center]]:text-center [&[align=right]]:text-right",
         className
       )}
       {...props}
@@ -142,7 +164,7 @@ const defaultComponents = memoizeMarkdownComponents({
   td: ({ className, ...props }) => (
     <td
       className={cn(
-        "border-b border-[var(--chat-message-divider-color)] text-[var(--chat-message-td-color)] px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right",
+        "border-b border-[var(--chat-message-divider-color)] text-[var(--chat-message-td-color)] px-4 py-2 text-start [&[align=center]]:text-center [&[align=right]]:text-right",
         className
       )}
       {...props}
@@ -160,8 +182,13 @@ const defaultComponents = memoizeMarkdownComponents({
   sup: ({ className, ...props }) => (
     <sup className={cn("[&>a]:[&>a]:no-underline", className)} {...props} />
   ),
+  // Language-less fences only: assistant-ui routes a fence that declares one
+  // to `SyntaxHighlighter`, which pins LTR on its own root instead.
   pre: ({ className, ...props }) => (
-    <div className="px-[12px] py-[8px] bg-[var(--chat-message-code-block-background-color)] rounded-[12px]">
+    <div
+      dir="ltr"
+      className="px-[12px] py-[8px] bg-[var(--chat-message-code-block-background-color)] rounded-[12px]"
+    >
       <pre
         className={cn(
           "overflow-x-auto bg-[var(--chat-message-code-block-pre-background-color)] border border-[var(--chat-message-code-block-border-color)] rounded-[4px] p-[6px]",
@@ -171,10 +198,13 @@ const defaultComponents = memoizeMarkdownComponents({
       />
     </div>
   ),
+  // `dir` on an inline element also isolates it, so a `foo()` in an Arabic
+  // sentence keeps its brackets instead of losing them to the surrounding run.
   code: function Code({ className, ...props }) {
     const isCodeBlock = useIsMarkdownCodeBlock();
     return (
       <code
+        dir="ltr"
         className={cn(!isCodeBlock && "font-bold italic", className)}
         {...props}
       />
@@ -262,13 +292,19 @@ export const plainMarkdownComponents = {
     // match too.
     if (match === null && !text.includes("\n")) {
       return (
-        <code className={cn("font-bold italic", className)} {...props}>
+        <code
+          dir="ltr"
+          className={cn("font-bold italic", className)}
+          {...props}
+        >
           {children}
         </code>
       );
     }
     const code = text.replace(/\n$/, "");
     const language = match?.[1] ?? "";
+    // The highlighter pins LTR on its own root; the header stays out of it and
+    // keeps the locale's direction.
     return (
       <>
         <CodeHeader language={language} code={code} />

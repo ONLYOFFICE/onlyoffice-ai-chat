@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **Text direction now follows the text, not the UI locale.** The composer resolves the direction of each line from its own content (`unicode-bidi: plaintext`), so a message typed in Arabic or Hebrew reads right-to-left even on an English UI, and a Latin draft stays left-to-right on `ar-SA`. An empty field has no content to key off and keeps the locale's direction, so the placeholder sits where the rest of the UI does.
+
+  Message content resolves direction per block: paragraphs, headings, blockquotes, lists and tables are `dir="auto"`, so each part of a mixed-language answer reads correctly on its own instead of inheriting one direction for the whole message. Lists and tables resolve once for the container — items and cells inherit it, so list markers and column alignment stay in a single column instead of alternating edges on mixed-language rows. Table cells default to `text-start` and the blockquote bar to logical `border-s`/`ps`, so both follow the resolved direction. Code is pinned `dir="ltr"` — both fenced blocks and inline spans, since source is read left-to-right inside an RTL answer too. On an inline span that also isolates it, so a `foo()` in an Arabic sentence keeps its brackets instead of handing them to the surrounding bidi run. Only the code itself is pinned: the code block's language label and copy button stay on the side the rest of the UI puts them.
+
+  Non-prose message parts are untouched: tool calls, attachments and the message layout itself (bubble side, action bar) still follow the locale.
+
 ## 0.5.71
 
 ### Added

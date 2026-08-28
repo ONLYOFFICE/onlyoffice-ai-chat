@@ -47,7 +47,11 @@ export const SyntaxHighlighter: FC<HighlighterProps> = ({
 
   if (!testCode) {
     return (
-      <div className="px-[12px] pb-[12px] bg-[var(--chat-message-code-block-background-color)] rounded-b-[12px]">
+      // Matches `.aui-shiki-base` so the block does not flip once shiki loads.
+      <div
+        dir="ltr"
+        className="px-[12px] pb-[12px] bg-[var(--chat-message-code-block-background-color)] rounded-b-[12px]"
+      >
         <pre
           className={cn(
             "overflow-x-auto bg-[var(--chat-message-code-block-pre-background-color)] border border-[var(--chat-message-code-block-border-color)] rounded-[4px] p-[6px]",

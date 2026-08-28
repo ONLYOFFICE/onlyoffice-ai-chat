@@ -4,6 +4,10 @@
   padding: 0 12px 12px !important;
 
   border-radius: 0 0 12px 12px !important;
+
+  /* Code reads LTR inside an RTL answer too. Set via CSS because react-shiki
+     swallows unknown props instead of forwarding them to this root. */
+  direction: ltr;
 }
 
 .aui-shiki-base > pre {
