@@ -150,6 +150,40 @@ describe("OlderMessages", () => {
     expect(scroller.scrollTop).toBe(4600);
   });
 
+  it("waits for the page the runtime has not rendered yet", () => {
+    const scroller = makeScroller(5000, 0);
+    const { grow } = renderSentinel(scroller);
+
+    scrollTo(scroller, 0);
+    // The store has the page, but the runtime renders it several commits
+    // later: the height is still the one the reader asked from.
+    grow(200, 5000);
+    runFrames(12);
+    expect(scroller.scrollTop).toBe(0);
+
+    setHeight(scroller, 9000);
+    runFrames(1);
+
+    expect(scroller.scrollTop).toBe(4000);
+  });
+
+  it("gives up on a page that never lands", () => {
+    const scroller = makeScroller(5000, 0);
+    const now = vi.spyOn(Date, "now");
+    now.mockReturnValue(0);
+    const { grow } = renderSentinel(scroller);
+
+    scrollTo(scroller, 0);
+    grow(200, 5000);
+    now.mockReturnValue(5000); // past the settle budget
+    runFrames(1);
+    now.mockRestore();
+
+    // The hold let go, so the reader is not locked out of the thread.
+    scrollTo(scroller, 60);
+    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(2);
+  });
+
   it("arms again once the page has settled", () => {
     const scroller = makeScroller(5000, 0);
     const { grow } = renderSentinel(scroller);

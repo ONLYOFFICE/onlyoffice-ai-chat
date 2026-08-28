@@ -41,6 +41,12 @@ type Pending = {
    * back under the same pixel it was under before.
    */
   gap: number;
+  /**
+   * Scroll height at that moment. The page has landed when the content is
+   * taller than this — the only honest signal available, since the store
+   * grows several commits before the runtime renders what it added.
+   */
+  height: number;
   /** Message count at that moment — how a no-op load is recognised. */
   count: number;
 };
@@ -118,6 +124,7 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
 
     const pending: Pending = {
       gap: scroller.scrollHeight - scroller.scrollTop,
+      height: scroller.scrollHeight,
       count: store.messages.length,
     };
     pendingRef.current = pending;
@@ -180,25 +187,51 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
   }, [hasMoreOlderMessages, messageCount, requestOlder, viewportRef]);
 
   useLayoutEffect(() => {
-    const scroller = scrollerRef.current;
     const pending = pendingRef.current;
+    // Resolved again rather than read from the effect above: that one runs
+    // after this and is therefore always a commit behind, and a viewport
+    // the runtime replaced would leave it pointing at a detached node —
+    // where writing a scroll offset is silently lost.
+    const scroller = resolveScroller(viewportRef.current) ?? scrollerRef.current;
     if (!scroller || !pending) return;
+    scrollerRef.current = scroller;
 
     const startedAt = Date.now();
     let lastHeight = -1;
     let stableFrames = 0;
+    let landed = false;
     let moved = false;
     let frame = 0;
+
+    const release = () => {
+      pendingRef.current = null;
+      // The page brought no height, or this element would not take the
+      // offset. Asking again right away is how one flick turns into a
+      // hundred requests, so the next one waits for the reader.
+      if (!moved) needsGestureRef.current = true;
+      // Still within reach of the top (a page shorter than the viewport):
+      // keep going, or the thread would stall until the reader scrolls.
+      requestOlder();
+    };
 
     const hold = () => {
       if (pendingRef.current !== pending) return; // the reader took over
       const height = scroller.scrollHeight;
-      if (height === lastHeight) {
-        stableFrames += 1;
-      } else {
-        lastHeight = height;
-        stableFrames = 0;
+      const expired = Date.now() - startedAt > SETTLE_BUDGET_MS;
+
+      // Nothing has been rendered yet. Counting frames here is what made
+      // the compensation a no-op: the store grows first, the runtime
+      // renders a commit or several later, and a hold that measures
+      // "stable" before that has measured the list it started with.
+      if (!landed && height <= pending.height) {
+        if (expired) {
+          release();
+          return;
+        }
+        frame = requestAnimationFrame(hold);
+        return;
       }
+      landed = true;
 
       const desired = Math.max(0, height - pending.gap);
       if (Math.abs(scroller.scrollTop - desired) > EPSILON) {
@@ -207,24 +240,22 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
         moved = true;
       }
 
-      const settled = stableFrames >= STABLE_FRAMES;
-      if (!settled && Date.now() - startedAt < SETTLE_BUDGET_MS) {
-        frame = requestAnimationFrame(hold);
-        return;
+      if (height === lastHeight) {
+        stableFrames += 1;
+      } else {
+        lastHeight = height;
+        stableFrames = 0;
       }
 
-      pendingRef.current = null;
-      // The page landed without moving the reader anywhere — either it
-      // added no height, or this element does not scroll. Asking again
-      // right away is how a single flick turns into a hundred requests.
-      if (!moved) needsGestureRef.current = true;
-      // Still within reach of the top (a page shorter than the viewport):
-      // keep going, or the thread would stall until the reader scrolls.
-      requestOlder();
+      if (stableFrames >= STABLE_FRAMES || expired) {
+        release();
+        return;
+      }
+      frame = requestAnimationFrame(hold);
     };
     hold();
     return () => cancelAnimationFrame(frame);
-  }, [messageCount, requestOlder]);
+  }, [messageCount, requestOlder, viewportRef]);
 
   if (!hasMoreOlderMessages) return null;
 

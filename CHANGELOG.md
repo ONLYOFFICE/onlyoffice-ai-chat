@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.76
+
+### Fixed
+
+- **The reading position now survives a page of older messages, not just the request for it.** The hold that keeps the distance to the bottom started counting frames the moment the store grew — but the store grows several commits before the runtime renders what it added, so eight frames of an unchanged height read as "the page has landed", the hold released without moving anything, and the reader stayed at the top of the newly loaded page. It now waits for the content to actually exceed the height it was asked from before it starts compensating, and only then for the height to stop moving; a page that never lands releases the hold on the three-second budget instead of locking the sentinel. The scroll container is also resolved inside the hold rather than read from the effect that runs after it — a viewport the runtime replaced left it writing offsets into a detached node.
+
 ## 0.5.75
 
 ### Fixed
