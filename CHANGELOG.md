@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.74
+
+### Fixed
+
+- **A paginated thread keeps loading past its second page.** The scroll sentinel is gated while a page is pending, and an `IntersectionObserver` reports the intersection state once when it starts and then only on changes — so an intersection that arrived while the gate was closed (the observer restarts on every prepend, and its first report can land before the reading position has been compensated) was dropped for good and the thread stopped loading. Releasing the gate now restarts the observer, which re-reports the current state: the next page is requested if the reader is still within reach of the top edge, and nothing happens if the compensation moved them away.
+
 ## 0.5.73
 
 ### Fixed

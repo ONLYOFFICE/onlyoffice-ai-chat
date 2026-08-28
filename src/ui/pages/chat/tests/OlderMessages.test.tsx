@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { createRef } from "react";
 
 const messageState = {
@@ -30,9 +30,14 @@ import { OlderMessages } from "../sub-components/OlderMessages";
 // Captures the observer callback so a test can say "the sentinel is in
 // view now" without a layout engine.
 let intersect: () => void = () => {};
+// How many observers have been started: the sentinel has to re-observe
+// whenever it releases its gate, or an intersection reported while a page
+// was pending is dropped for good.
+let observerCount = 0;
 
 class FakeIntersectionObserver {
   constructor(cb: IntersectionObserverCallback) {
+    observerCount += 1;
     intersect = () =>
       cb(
         [{ isIntersecting: true } as IntersectionObserverEntry],
@@ -61,6 +66,7 @@ const setViewportHeight = (el: HTMLDivElement, height: number) => {
 describe("OlderMessages", () => {
   beforeEach(() => {
     vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+    observerCount = 0;
     messageState.messages = Array.from({ length: 100 }, (_, i) => ({
       id: `m${i}`,
     }));
@@ -138,6 +144,38 @@ describe("OlderMessages", () => {
     intersect();
 
     expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(2);
+  });
+
+  it("re-observes after a load that brought nothing", async () => {
+    const viewport = makeViewport(5000, 300);
+    renderSentinel(viewport);
+
+    const observed = observerCount;
+    await act(async () => {
+      intersect();
+    });
+
+    // The reader is still sitting at the top edge and the browser will not
+    // report an intersection that never changed — only a fresh observer
+    // asks the question again.
+    expect(observerCount).toBeGreaterThan(observed);
+  });
+
+  it("re-observes once the page has been placed", () => {
+    const viewport = makeViewport(5000, 300);
+    const { rerender } = renderSentinel(viewport);
+
+    intersect();
+    const observed = observerCount;
+    messageState.messages = Array.from({ length: 200 }, (_, i) => ({
+      id: `m${i}`,
+    }));
+    setViewportHeight(viewport, 9000);
+    const ref = createRef<HTMLDivElement>();
+    (ref as { current: HTMLDivElement | null }).current = viewport;
+    rerender(<OlderMessages viewportRef={ref} />);
+
+    expect(observerCount).toBeGreaterThan(observed);
   });
 
   it("renders nothing once the thread's beginning is loaded", () => {

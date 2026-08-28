@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { useStores } from "../../../store/context";
 
@@ -59,11 +66,20 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
   // ask for the next page and what keeps the restore below from firing on
   // an ordinary appended message.
   const anchorRef = useRef<Anchor | null>(null);
+  const [armToken, setArmToken] = useState(0);
 
-  // `messageCount` in the deps reconnects the observer after every
-  // prepended page: `observe` reports the current intersection state, so
-  // a page shorter than the viewport keeps loading without asking the
-  // user for another scroll gesture.
+  // An observer reports the intersection state once when it starts
+  // observing and then only on changes. Every gate below drops an
+  // intersection that was reported while a page was pending, so releasing
+  // the gate has to come with a fresh observer: without it a reader left
+  // sitting at the top edge — a page shorter than the viewport, a
+  // compensation that found nothing to compensate — would never be asked
+  // about again, and the thread would stop loading until they scrolled.
+  const release = useCallback(() => {
+    anchorRef.current = null;
+    setArmToken((token) => token + 1);
+  }, []);
+
   useEffect(() => {
     const sentinel = sentinelRef.current;
     const viewport = viewportRef.current;
@@ -75,12 +91,12 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
         // compensated, the sentinel is still sitting at the top edge —
         // asking again here would walk the whole thread in one gesture.
         if (anchorRef.current) return;
-        anchorRef.current = {
+        const anchor: Anchor = {
           height: viewport.scrollHeight,
           top: viewport.scrollTop,
           count: messageCount,
         };
-        const anchor = anchorRef.current;
+        anchorRef.current = anchor;
         void loadOlderMessages()
           .catch(() => undefined)
           .finally(() => {
@@ -93,9 +109,7 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
             // anchor that is still needed.
             const grew =
               useMessageStore.getState().messages.length !== anchor.count;
-            if (!grew && anchorRef.current === anchor) {
-              anchorRef.current = null;
-            }
+            if (!grew && anchorRef.current === anchor) release();
           });
       },
       { root: viewport, rootMargin: TRIGGER_MARGIN }
@@ -103,9 +117,11 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [
+    armToken,
     hasMoreOlderMessages,
     loadOlderMessages,
     messageCount,
+    release,
     useMessageStore,
     viewportRef,
   ]);
@@ -124,18 +140,18 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
         // was looking at stays exactly where it was.
         viewport.scrollTop =
           viewport.scrollHeight - (anchor.height - anchor.top);
-        anchorRef.current = null;
+        release();
         return;
       }
       if (++frames > MAX_SETTLE_FRAMES) {
-        anchorRef.current = null;
+        release();
         return;
       }
       frame = requestAnimationFrame(settle);
     };
     settle();
     return () => cancelAnimationFrame(frame);
-  }, [messageCount, viewportRef]);
+  }, [messageCount, release, viewportRef]);
 
   if (!hasMoreOlderMessages) return null;
 
