@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.75
+
+### Fixed
+
+- **A paginated thread now keeps the reading position when an older page lands, and keeps loading after it.** The compensation ran as a single measurement against the message count and gave up after ~0.6s of frames: a hundred messages of markdown are not laid out that fast, so the measurement found no new height, the reader stayed pinned to the top of the freshly loaded page — the oldest of the new messages rather than the one they were reading — and the sentinel, gated on a compensation that never happened, never asked for another page.
+
+  The sentinel no longer depends on `IntersectionObserver` reporting an intersection that never changes, nor on the viewport it is handed being the element that actually scrolls: it listens for scroll on the resolved scroll container (walking up from the viewport if that one does not scroll), and *holds* the distance to the bottom while the page lays out, re-applying it every frame until the height stops moving. A page that lands without moving the reader anywhere waits for a real gesture before the next request, so a host where nothing can be compensated degrades to one page per flick instead of draining the thread.
+
 ## 0.5.74
 
 ### Fixed

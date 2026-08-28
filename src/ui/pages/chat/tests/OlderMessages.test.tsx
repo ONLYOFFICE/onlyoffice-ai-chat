@@ -27,46 +27,56 @@ vi.mock("../../../providers/ComponentsProvider", () => ({
 
 import { OlderMessages } from "../sub-components/OlderMessages";
 
-// Captures the observer callback so a test can say "the sentinel is in
-// view now" without a layout engine.
-let intersect: () => void = () => {};
-// How many observers have been started: the sentinel has to re-observe
-// whenever it releases its gate, or an intersection reported while a page
-// was pending is dropped for good.
-let observerCount = 0;
-
-class FakeIntersectionObserver {
-  constructor(cb: IntersectionObserverCallback) {
-    observerCount += 1;
-    intersect = () =>
-      cb(
-        [{ isIntersecting: true } as IntersectionObserverEntry],
-        this as never
-      );
+/** Manual frame clock: jsdom has no rendering loop to wait for. */
+let frames: (() => void)[] = [];
+const runFrames = (count: number) => {
+  for (let i = 0; i < count; i += 1) {
+    const due = frames;
+    frames = [];
+    due.forEach((cb) => cb());
   }
-  observe() {}
-  disconnect() {}
-}
+};
 
 /** A scroll container with settable metrics — jsdom has no layout. */
-const makeViewport = (scrollHeight: number, scrollTop: number) => {
+const makeScroller = (scrollHeight: number, scrollTop: number) => {
   const el = document.createElement("div");
   Object.defineProperty(el, "scrollHeight", {
     value: scrollHeight,
     writable: true,
+    configurable: true,
+  });
+  Object.defineProperty(el, "clientHeight", {
+    value: 800,
+    writable: true,
+    configurable: true,
   });
   el.scrollTop = scrollTop;
+  document.body.appendChild(el);
   return el;
 };
 
-const setViewportHeight = (el: HTMLDivElement, height: number) => {
-  Object.defineProperty(el, "scrollHeight", { value: height, writable: true });
+const setHeight = (el: HTMLDivElement, height: number) => {
+  Object.defineProperty(el, "scrollHeight", {
+    value: height,
+    writable: true,
+    configurable: true,
+  });
+};
+
+const scrollTo = (el: HTMLDivElement, top: number) => {
+  el.scrollTop = top;
+  el.dispatchEvent(new Event("scroll"));
 };
 
 describe("OlderMessages", () => {
   beforeEach(() => {
-    vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
-    observerCount = 0;
+    frames = [];
+    vi.stubGlobal("requestAnimationFrame", (cb: () => void) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+    document.body.innerHTML = "";
     messageState.messages = Array.from({ length: 100 }, (_, i) => ({
       id: `m${i}`,
     }));
@@ -75,113 +85,131 @@ describe("OlderMessages", () => {
     messageState.loadOlderMessages = vi.fn().mockResolvedValue(undefined);
   });
 
-  const renderSentinel = (viewport: HTMLDivElement) => {
+  /** Mount the sentinel against `scroller`, already scrolled down. */
+  const renderSentinel = (scroller: HTMLDivElement) => {
     const ref = createRef<HTMLDivElement>();
-    (ref as { current: HTMLDivElement | null }).current = viewport;
-    return render(<OlderMessages viewportRef={ref} />);
+    (ref as { current: HTMLDivElement | null }).current = scroller;
+    const view = render(<OlderMessages viewportRef={ref} />);
+    return {
+      ...view,
+      /** Re-render as the store would after a page was prepended. */
+      grow: (count: number, height: number) => {
+        messageState.messages = Array.from({ length: count }, (_, i) => ({
+          id: `m${i}`,
+        }));
+        setHeight(scroller, height);
+        const next = createRef<HTMLDivElement>();
+        (next as { current: HTMLDivElement | null }).current = scroller;
+        view.rerender(<OlderMessages viewportRef={next} />);
+      },
+    };
   };
 
-  it("asks for one page while the previous one is still settling", () => {
-    const viewport = makeViewport(5000, 0);
-    renderSentinel(viewport);
+  it("asks for a page when the reader comes within reach of the top", () => {
+    const scroller = makeScroller(5000, 4000);
+    renderSentinel(scroller);
+    expect(messageState.loadOlderMessages).not.toHaveBeenCalled();
 
-    intersect();
-    intersect();
-    intersect();
+    scrollTo(scroller, 150);
 
-    // The sentinel stays at the top edge until the prepend is placed and
-    // compensated — re-asking there would walk the whole thread at once.
+    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks for one page however hard the reader scrolls", () => {
+    const scroller = makeScroller(5000, 4000);
+    renderSentinel(scroller);
+
+    scrollTo(scroller, 150);
+    scrollTo(scroller, 80);
+    scrollTo(scroller, 0);
+
     expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the reading position when the page lands", () => {
-    const viewport = makeViewport(5000, 300);
-    const { rerender } = renderSentinel(viewport);
+    const scroller = makeScroller(5000, 0);
+    const { grow } = renderSentinel(scroller);
 
-    intersect();
+    scrollTo(scroller, 0);
+    grow(200, 9000);
 
-    // The page arrives: the store grows and the list gets taller.
-    messageState.messages = Array.from({ length: 200 }, (_, i) => ({
-      id: `m${i}`,
-    }));
-    setViewportHeight(viewport, 9000);
-    const ref = createRef<HTMLDivElement>();
-    (ref as { current: HTMLDivElement | null }).current = viewport;
-    rerender(<OlderMessages viewportRef={ref} />);
-
-    // Same distance from the bottom as before: 5000 - 300 = 4700.
-    expect(viewport.scrollTop).toBe(9000 - 4700);
+    // The reader was 5000px from the bottom; the page added 4000px above.
+    expect(scroller.scrollTop).toBe(4000);
   });
 
-  it("arms again once the page has been placed", () => {
-    const viewport = makeViewport(5000, 300);
-    const { rerender } = renderSentinel(viewport);
+  it("holds the position while the page keeps laying out", () => {
+    const scroller = makeScroller(5000, 0);
+    const { grow } = renderSentinel(scroller);
 
-    intersect();
-    messageState.messages = Array.from({ length: 200 }, (_, i) => ({
-      id: `m${i}`,
-    }));
-    setViewportHeight(viewport, 9000);
-    const ref = createRef<HTMLDivElement>();
-    (ref as { current: HTMLDivElement | null }).current = viewport;
-    rerender(<OlderMessages viewportRef={ref} />);
+    scrollTo(scroller, 0);
+    grow(200, 9000);
+    // Markdown, images and code blocks resolve over the next frames.
+    setHeight(scroller, 9600);
+    runFrames(1);
 
-    intersect();
+    expect(scroller.scrollTop).toBe(4600);
+  });
+
+  it("arms again once the page has settled", () => {
+    const scroller = makeScroller(5000, 0);
+    const { grow } = renderSentinel(scroller);
+
+    scrollTo(scroller, 0);
+    grow(200, 9000);
+    runFrames(12); // height stops moving, the hold releases
+
+    scrollTo(scroller, 100);
 
     expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(2);
   });
 
-  it("arms again after a load that brought nothing", async () => {
-    const viewport = makeViewport(5000, 300);
-    renderSentinel(viewport);
-
-    intersect();
-    // The request settled without growing the list — a failure, or a page
-    // the store refused. Nothing will ever be laid out to compensate for.
-    await Promise.resolve();
-    await Promise.resolve();
-
-    intersect();
-
-    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(2);
-  });
-
-  it("re-observes after a load that brought nothing", async () => {
-    const viewport = makeViewport(5000, 300);
-    renderSentinel(viewport);
-
-    const observed = observerCount;
-    await act(async () => {
-      intersect();
+  it("does not walk the thread when nothing can be compensated", () => {
+    // A container that does not scroll: writes to `scrollTop` are lost,
+    // so the reader can never be moved away from the top edge.
+    const scroller = makeScroller(400, 0);
+    Object.defineProperty(scroller, "scrollTop", {
+      get: () => 0,
+      set: () => {},
+      configurable: true,
     });
+    const { grow } = renderSentinel(scroller);
 
-    // The reader is still sitting at the top edge and the browser will not
-    // report an intersection that never changed — only a fresh observer
-    // asks the question again.
-    expect(observerCount).toBeGreaterThan(observed);
+    grow(200, 400);
+    runFrames(12);
+
+    // One page on mount, and no runaway chain after it.
+    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(1);
   });
 
-  it("re-observes once the page has been placed", () => {
-    const viewport = makeViewport(5000, 300);
-    const { rerender } = renderSentinel(viewport);
+  it("keeps loading while the loaded window is shorter than the viewport", async () => {
+    const scroller = makeScroller(400, 0);
+    const { grow } = renderSentinel(scroller);
 
-    intersect();
-    const observed = observerCount;
-    messageState.messages = Array.from({ length: 200 }, (_, i) => ({
-      id: `m${i}`,
-    }));
-    setViewportHeight(viewport, 9000);
-    const ref = createRef<HTMLDivElement>();
-    (ref as { current: HTMLDivElement | null }).current = viewport;
-    rerender(<OlderMessages viewportRef={ref} />);
+    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(1);
+    grow(200, 700); // still nothing to scroll, but the reader was moved
+    runFrames(12);
 
-    expect(observerCount).toBeGreaterThan(observed);
+    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries after a load that brought nothing only on a real gesture", async () => {
+    const scroller = makeScroller(5000, 0);
+    renderSentinel(scroller);
+
+    await act(async () => {
+      scrollTo(scroller, 0);
+    });
+    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(1);
+
+    scrollTo(scroller, 60);
+
+    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(2);
   });
 
   it("renders nothing once the thread's beginning is loaded", () => {
     messageState.hasMoreOlderMessages = false;
-    const viewport = makeViewport(5000, 0);
-    const { queryByTestId } = renderSentinel(viewport);
+    const scroller = makeScroller(5000, 0);
+    const { queryByTestId } = renderSentinel(scroller);
     expect(queryByTestId("older-messages-sentinel")).toBeNull();
   });
 });
