@@ -8,6 +8,7 @@ import {
   isPaginationEnabled,
   messagesCursorOf,
   type MessagesCursor,
+  type MessagesDirection,
   type ThreadsCursor,
 } from "../../storage";
 import type {
@@ -224,13 +225,23 @@ export class ThreadsEngine {
     return this.deps.storage.threads.readAll(entityId, count, cursor, query);
   }
 
-  /** Read messages from a thread — passthrough with same pagination. */
+  /**
+   * Read messages from a thread — passthrough with same pagination.
+   * `direction` picks which end of the thread the page comes from; see
+   * {@link MessagesStorage.readByThread}.
+   */
   async readMessages(
     threadId: string,
     count?: number,
-    cursor?: MessagesCursor
+    cursor?: MessagesCursor,
+    direction?: MessagesDirection
   ): Promise<ThreadMessageLike[]> {
-    return this.deps.storage.messages.readByThread(threadId, count, cursor);
+    return this.deps.storage.messages.readByThread(
+      threadId,
+      count,
+      cursor,
+      direction
+    );
   }
 
   /** Retrieve a single thread by id, or `null` if it does not exist. */

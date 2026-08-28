@@ -8,7 +8,7 @@ import {
 } from "@assistant-ui/react";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useWidgetConfig } from "../../../widget-config";
@@ -26,6 +26,7 @@ import { Composer } from "./sub-components/Composer";
 import { ComposerHeader } from "./sub-components/ComposerHeader";
 import { Suggestions } from "./sub-components/Suggestions";
 import { SuggestionsHeader } from "./sub-components/SuggestionsHeader";
+import { OlderMessages } from "./sub-components/OlderMessages";
 import { UserMessage } from "./sub-components/UserMessage";
 import { useChatDropAttachments } from "./useChatDropAttachments";
 
@@ -42,6 +43,9 @@ const ThreadInner = () => {
   const { t } = useI18n();
   const { isDragOver, handlers } = useChatDropAttachments();
   const { hideScrollToBottomButton, hideThreadFade } = useWidgetConfig();
+  // The scrolling message area: `OlderMessages` observes the top of it
+  // and keeps the reading position steady when a page is prepended.
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   // Derive "tool is running" from the last assistant message — adapter
   // tools are executed inside the engine and never surface as
@@ -114,7 +118,14 @@ const ThreadInner = () => {
               top and bottom edges of the message area instead of scrolling
               away with the content inside the viewport. */}
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-            <ThreadPrimitive.Viewport className="relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto">
+            <ThreadPrimitive.Viewport
+              ref={viewportRef}
+              className="relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
+            >
+              {/* Pulls the previous page when the reader nears the top of
+                  a paginated thread — see `OlderMessages`. */}
+              <OlderMessages viewportRef={viewportRef} />
+
               <ThreadPrimitive.Messages
                 components={{
                   UserMessage,

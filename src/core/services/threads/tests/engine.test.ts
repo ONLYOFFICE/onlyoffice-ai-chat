@@ -482,7 +482,26 @@ describe("ThreadsEngine pass-through readers", () => {
     const cursor = { createdAt: "2026-01-01T00:00:00.000Z", id: "m0" };
     const msgs = await engine.readMessages("t1", 5, cursor);
     expect(msgs).toEqual([userMessage]);
-    expect(storage.messages.readByThread).toHaveBeenCalledWith("t1", 5, cursor);
+    expect(storage.messages.readByThread).toHaveBeenCalledWith(
+      "t1",
+      5,
+      cursor,
+      undefined
+    );
+  });
+
+  it("readMessages() forwards the read direction to storage", async () => {
+    const { storage } = makeStorage({
+      messagesByThread: { t1: [userMessage] },
+    });
+    const engine = new ThreadsEngine({ storage });
+    await engine.readMessages("t1", 5, undefined, "desc");
+    expect(storage.messages.readByThread).toHaveBeenCalledWith(
+      "t1",
+      5,
+      undefined,
+      "desc"
+    );
   });
 
   it("list() forwards count, cursor and query to storage.threads.readAll", async () => {

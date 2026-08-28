@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Thread } from "../../types";
-import { drainPages, messagesCursorOf, threadsCursorOf } from "../pagination";
+import {
+  drainPages,
+  isDescendingPage,
+  messagesCursorOf,
+  threadsCursorOf,
+} from "../pagination";
 
 type Item = { id: string };
 
@@ -133,5 +138,48 @@ describe("cursor builders", () => {
   it("messagesCursorOf tolerates a message without id/createdAt", () => {
     const message = { role: "user", content: "hi" } as ThreadMessageLike;
     expect(messagesCursorOf(message)).toEqual({ createdAt: null, id: "" });
+  });
+});
+
+describe("isDescendingPage", () => {
+  const at = (ms: number, id: string) =>
+    ({ id, createdAt: new Date(ms) }) as never;
+
+  it("accepts a newest-first page", () => {
+    expect(
+      isDescendingPage([at(3000, "c"), at(2000, "b"), at(1000, "a")])
+    ).toBe(true);
+  });
+
+  it("rejects an ascending page — the backend ignored the direction", () => {
+    expect(
+      isDescendingPage([at(1000, "a"), at(2000, "b"), at(3000, "c")])
+    ).toBe(false);
+  });
+
+  it("treats a page with no ordering evidence as descending", () => {
+    // One item, an empty page, and timestamps that cannot be compared
+    // all read the same either way — refusing them would cost every
+    // short thread its fast path.
+    expect(isDescendingPage([])).toBe(true);
+    expect(isDescendingPage([at(1000, "a")])).toBe(true);
+    expect(isDescendingPage([{ id: "a" } as never, { id: "b" } as never])).toBe(
+      true
+    );
+  });
+
+  it("reads ISO strings and epoch milliseconds", () => {
+    expect(
+      isDescendingPage([
+        { id: "b", createdAt: "2026-01-02T00:00:00.000Z" } as never,
+        { id: "a", createdAt: "2026-01-01T00:00:00.000Z" } as never,
+      ])
+    ).toBe(true);
+    expect(
+      isDescendingPage([
+        { id: "a", createdAt: 1000 } as never,
+        { id: "b", createdAt: 2000 } as never,
+      ])
+    ).toBe(false);
   });
 });

@@ -273,8 +273,9 @@ async list(
 async readMessages(
   threadId: string,
   count?: number,
-  cursor?: MessagesCursor
-): Promise<ThreadMessageLike[]>;     // sorted by createdAt asc
+  cursor?: MessagesCursor,
+  direction?: MessagesDirection      // "asc" (default) or "desc" — which end to read from
+): Promise<ThreadMessageLike[]>;     // ordered by createdAt, in the direction read
 ```
 
 `list(entityId)` filters threads by the entity scope they were

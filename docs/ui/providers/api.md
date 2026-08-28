@@ -135,10 +135,11 @@ by mounting the same engines against your storage.
 
 With `enablePagination` on, `threads/list` and
 `threads/read-messages` receive extra query params: `count` (number),
-`cursor` (a JSON-encoded keyset object) and — for `threads/list` when
-the user searches the sidebar — `query` (a case-insensitive title
-substring). An Express route parses them and passes them positionally
-into the engine method:
+`cursor` (a JSON-encoded keyset object), for `threads/list` when the
+user searches the sidebar `query` (a case-insensitive title substring),
+and for `threads/read-messages` `direction` (`asc` | `desc`). An
+Express route parses them and passes them positionally into the engine
+method:
 
 ```ts
 app.get("/v1/ai-chat/threads/list", async (req, res) => {
@@ -172,13 +173,41 @@ LIMIT :count;
 widget verifies returned titles against that contract and falls back
 to client-side filtering if the parameter was ignored.
 
-Messages page ascending with cursor `{ createdAt, id }` (`createdAt`
-arrives as an ISO string): `WHERE thread_id = :threadId AND
-(created_at, id) > (:cursorCreatedAt, :cursorId) ORDER BY
-created_at ASC, id ASC LIMIT :count`.
+Messages page with cursor `{ createdAt, id }` (`createdAt` arrives as
+an ISO string). `direction=asc` — the default and what a full-history
+read uses — walks the thread forward:
+
+```sql
+SELECT * FROM messages
+WHERE thread_id = :threadId
+  AND (created_at, id) > (:cursorCreatedAt, :cursorId)
+ORDER BY created_at ASC, id ASC
+LIMIT :count;
+```
+
+`direction=desc` walks it backwards, and every comparison flips —
+the tiebreak on `id` included, or messages sharing a timestamp are
+lost or repeated at the page boundary:
+
+```sql
+SELECT * FROM messages
+WHERE thread_id = :threadId
+  AND (created_at, id) < (:cursorCreatedAt, :cursorId)
+ORDER BY created_at DESC, id DESC
+LIMIT :count;
+```
+
+A descending page comes back newest-first — return the rows in the
+order they were read, the widget reverses them itself. This is how
+the chat opens a long thread: one descending page renders the tail,
+and each scroll to the top pulls the page before it. A server that
+ignores `direction` answers with an ascending page; the widget spots
+that and falls back to draining the thread forward, so the history is
+still complete.
 
 Recommended composite indexes: `threads(last_edit_date, thread_id)`
-and `messages(thread_id, created_at, id)`.
+and `messages(thread_id, created_at, id)` — the messages index serves
+both directions.
 
 A request without `count`/`cursor` must return the full list — that
 is what the widget sends when `enablePagination` is off, and it

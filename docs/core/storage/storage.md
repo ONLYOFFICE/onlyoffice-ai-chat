@@ -184,8 +184,9 @@ readById(messageId: string): Promise<ThreadMessageLike | null>;
 readByThread(
   threadId: string,
   count?: number,                    // optional page size
-  cursor?: MessagesCursor            // { createdAt: ISO string, id } of the last received message
-): Promise<ThreadMessageLike[]>;     // sorted by createdAt asc, id asc
+  cursor?: MessagesCursor,           // { createdAt: ISO string, id } of the last received message
+  direction?: MessagesDirection      // "asc" (default) reads forward, "desc" reads from the newest
+): Promise<ThreadMessageLike[]>;     // ordered by createdAt, id — in the direction read
 update(messageId: string, message: ThreadMessageLike): Promise<void>;
 delete(messageId: string): Promise<void>;
 deleteByThread(threadId: string): Promise<void>;
@@ -197,11 +198,19 @@ deleteByThread(threadId: string): Promise<void>;
   read the full thread — the pre-pagination behavior. When supplied,
   return up to `count` messages strictly AFTER the cursor in
   `createdAt` asc, `id` asc order (`createdAt` travels as an ISO
-  string so it survives a JSON round trip through a query param). A
-  "before" direction for lazy tail-loading is reserved for a future
-  revision — only forward paging is required today. Implementations
-  that don't support pagination may ignore both parameters — the
-  widget detects a full dump and stops paging.
+  string so it survives a JSON round trip through a query param).
+  Implementations that don't support pagination may ignore the
+  parameters — the widget detects a full dump and stops paging.
+- **`direction` picks the end to read from.** `"asc"` (default) is
+  the forward walk above, used by every full-history read. `"desc"`
+  walks backwards from the newest message: same cursor semantics —
+  strictly after it in the direction being walked — with every
+  comparison and both sort keys flipped, `id` included. A descending
+  page is returned newest-first, in the order it was read. This is
+  how the chat view opens a long thread on its tail and pulls older
+  pages as the user scrolls up. Ignoring `direction` is safe: the
+  caller sees an ascending page where it asked for a descending one
+  and falls back to reading the thread forward.
 - **`update` overwrites the entire `ThreadMessageLike`.** No
   partial diff — the assistant-ui shape is too entangled to
   patch reliably. Engines pass the full new value.

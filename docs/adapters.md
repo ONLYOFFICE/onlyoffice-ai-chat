@@ -90,8 +90,8 @@ interface StorageAdapter {
 | `attachments` | User-message attachments (files + images) |
 
 `threads.readAll` and `messages.readByThread` accept optional
-keyset-pagination parameters (`count`, `cursor`), used only when the
-widget runs with `enablePagination` — see
+keyset-pagination parameters (`count`, `cursor`, plus `direction` on
+messages), used only when the widget runs with `enablePagination` — see
 [the storage contract](./core/storage/storage.md) for the exact
 semantics. Adapters that ignore them keep working (full-list reads).
 
