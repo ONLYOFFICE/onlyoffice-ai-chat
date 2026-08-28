@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.72
+
+### Fixed
+
+- **The widget translates through its own i18next instance again, whatever the host does with react-i18next.** `I18nBridge` resolved `t` through `useTranslation()` with no instance argument, so react-i18next handed it whichever instance the host had in context — or, with no provider at all, the global default the host registered. Both are the host's instance, which knows nothing about the `translation` namespace these strings live in, so every key came back as its own name: a confirmation dialog reading `AIWouldLikeUseThisTool` instead of "AI would like to use this tool:". Hosts that switch suspense off (`react.useSuspense: false`) got no error either — the UI rendered, quietly labelled with raw keys.
+
+  Embedders no longer have to bracket the widget with an `<I18nextProvider>` of the library's own instance to make translations work; doing so is now redundant but harmless.
+
 ## 0.5.71
 
 ### Added

@@ -165,7 +165,15 @@ const I18nBridge = ({
   locale: string;
   children: React.ReactNode;
 }) => {
-  const { t: rawT, i18n: i18nInstance } = useTranslation();
+  // Bind to the instance this provider initialised, explicitly. Left to
+  // resolve on its own, `useTranslation` takes whatever the host put in
+  // React context — or, with no provider at all, react-i18next's global
+  // default. Either one is the HOST's instance, which knows nothing about
+  // the `translation` namespace these strings live in, so every key comes
+  // back as its own name. A host that also sets `react.useSuspense: false`
+  // (the default in DocSpace) doesn't even get an error out of it: the UI
+  // renders, quietly labelled with raw keys.
+  const { t: rawT, i18n: i18nInstance } = useTranslation(undefined, { i18n });
   const platform = usePlatform();
 
   const changeLocale = useCallback((newLocale: string) => {
