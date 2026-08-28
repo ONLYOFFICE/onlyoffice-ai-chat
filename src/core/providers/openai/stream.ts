@@ -18,12 +18,43 @@ import { toChatError } from "../../services/ai/error";
 export type DeltaWithReasoning = ChatCompletionChunk.Choice["delta"] & {
   reasoning_content?: string;
   reasoning?: unknown;
+  reasoning_details?: unknown;
+};
+
+/**
+ * Concatenate the readable fragments of an OpenRouter-style
+ * `reasoning_details` array. Entries are tagged objects: `reasoning.text`
+ * carries `text`, `reasoning.summary` carries `summary` (what OpenRouter
+ * returns for Claude, which it summarizes by default), and
+ * `reasoning.encrypted` carries opaque `data` that is deliberately skipped —
+ * it is not human-readable and belongs nowhere near the transcript.
+ *
+ * @param details - The delta's `reasoning_details` value, of unknown shape.
+ * @returns The joined fragment, or `undefined` when nothing readable is in it.
+ */
+const readReasoningDetails = (details: unknown): string | undefined => {
+  if (!Array.isArray(details)) return undefined;
+  let text = "";
+  for (const entry of details) {
+    if (!entry || typeof entry !== "object") continue;
+    const detail = entry as { text?: unknown; summary?: unknown };
+    if (typeof detail.text === "string") text += detail.text;
+    else if (typeof detail.summary === "string") text += detail.summary;
+  }
+  return text || undefined;
 };
 
 /**
  * Pull the thinking fragment out of a delta, whichever field carries it.
- * `reasoning_content` wins when a backend sends both. A non-string
- * `reasoning` (an object, as some gateways send) is ignored rather than
+ * Three spellings are in the wild and a backend picks one:
+ * `reasoning_content` (DeepSeek R1, ONLYOFFICE `-thinking` variants),
+ * a string `reasoning` (OpenRouter's backwards-compatible field and the
+ * gateways that copy it), and OpenRouter's structured `reasoning_details`
+ * — the only one its Anthropic route fills, so reading just the first two
+ * left a Claude round with no visible thinking at all.
+ *
+ * They are read in that order, so a backend sending several never
+ * double-counts the same fragment. A non-string `reasoning` is still never
  * stringified into the transcript.
  *
  * @param delta - One streaming delta.
@@ -33,9 +64,10 @@ export const readReasoningDelta = (
   delta: DeltaWithReasoning
 ): string | undefined => {
   if (delta.reasoning_content) return delta.reasoning_content;
-  return typeof delta.reasoning === "string" && delta.reasoning
-    ? delta.reasoning
-    : undefined;
+  if (typeof delta.reasoning === "string" && delta.reasoning) {
+    return delta.reasoning;
+  }
+  return readReasoningDetails(delta.reasoning_details);
 };
 
 // ---------------------------------------------------------------------------

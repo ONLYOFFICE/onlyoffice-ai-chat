@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.71
+
+### Added
+
+- **A paginated thread now opens on its newest page and loads older messages as the reader scrolls up.** Until now `enablePagination` bounded the size of each request but not their number: opening a thread drained the whole history page by page, because the storage contract could only walk a thread forward from its first message — 100 round trips for a 10 000-message thread, every time it was opened.
+
+  `MessagesStorage.readByThread` takes a fourth argument for the direction, forwarded by `ThreadsEngine.readMessages` and sent as the `direction` query param on `threads/read-messages`:
+
+  ```ts
+  readByThread(threadId, count?, cursor?, direction?: "asc" | "desc")
+  ```
+
+  `"asc"` stays the default and every full-history read (the request history of a round, tool-call resume, export) keeps using it. `"desc"` returns the page newest-first with the cursor comparison and both sort keys flipped — `id` included, or messages sharing a timestamp are lost or repeated at a page boundary. See the SQL sketches in `docs/ui/providers/api.md`.
+
+  The message store keeps the loaded window and exposes `hasMoreOlderMessages`, `isLoadingOlderMessages` and `loadOlderMessages()`; a sentinel at the top of the thread pulls the previous page and the reading position is restored after the prepend, so the view does not jump.
+
+- Backends that ignore `direction` keep working. The widget checks whether a page actually came back newest-first (`isDescendingPage`, exported) and falls back to draining the thread forward, so a host that has not implemented the parameter behaves exactly as it did before instead of opening every thread at its beginning.
+
 ## 0.5.66
 
 ### Fixed

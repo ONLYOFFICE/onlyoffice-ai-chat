@@ -34,6 +34,45 @@ describe("OpenRouterProvider", () => {
     expect(out[0].provider).toBe("openrouter");
   });
 
+  describe("reasoning request fields", () => {
+    // OpenRouter reads its own unified `reasoning` object; `reasoning_effort`
+    // leaves the Anthropic route with thinking off, which is what made a
+    // Sonnet round come back with no thinking block at all.
+    const fieldsOf = (model: string, withReasoning?: boolean) => {
+      const provider = new OpenRouterProvider({
+        baseUrl: "https://openrouter.ai/api/v1",
+        apiKey: "sk",
+      });
+      return (
+        provider as unknown as {
+          reasoningRequestFields: (
+            model: string,
+            withReasoning?: boolean
+          ) => Record<string, unknown>;
+        }
+      ).reasoningRequestFields(model, withReasoning);
+    };
+
+    it("asks for thinking through the unified `reasoning` object", () => {
+      expect(fieldsOf("anthropic/claude-sonnet-4.5", true)).toEqual({
+        reasoning: { effort: "medium" },
+      });
+    });
+
+    it("omits the field entirely when thinking is off", () => {
+      expect(fieldsOf("anthropic/claude-sonnet-4.5", false)).toEqual({});
+      // Including for models the OpenAI branch would have sent "none" for:
+      // OpenRouter's `reasoning.effort` has no such level.
+      expect(fieldsOf("openai/gpt-5.1", false)).toEqual({});
+    });
+
+    it("never sends the OpenAI spelling", () => {
+      expect(fieldsOf("anthropic/claude-sonnet-4.5", true)).not.toHaveProperty(
+        "reasoning_effort"
+      );
+    });
+  });
+
   describe("imageGeneration", () => {
     function makeProvider(createImpl: (...args: unknown[]) => unknown) {
       const provider = new OpenRouterProvider({

@@ -192,6 +192,7 @@ describe("createThreadsApi", () => {
       "t1",
       10,
       { createdAt: null, id: "m0" },
+      undefined,
     ]);
     expectCall(11, "threads", "getById", ["t1"]);
     expectCall(12, "threads", "getMessageById", ["m1"]);

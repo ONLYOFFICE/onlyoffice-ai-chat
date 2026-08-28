@@ -1,5 +1,5 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
-import type { MessagesCursor } from "./pagination";
+import type { MessagesCursor, MessagesDirection } from "./pagination";
 
 /**
  * Storage interface for managing individual chat messages within threads.
@@ -32,32 +32,40 @@ export interface MessagesStorage {
   readById(messageId: string): Promise<ThreadMessageLike | null>;
 
   /**
-   * Get messages for a thread sorted by `createdAt` ascending (oldest
-   * first), with `id` ascending as the tiebreaker.
+   * Get messages for a thread ordered by `createdAt`, with `id` as the
+   * tiebreaker — ascending (oldest first) by default, descending when
+   * `direction` says so.
    *
-   * Cursor pagination (both parameters optional — omitting them returns
+   * Cursor pagination (every parameter optional — omitting them returns
    * the full thread, the pre-pagination behavior):
    *
    * - `count` — max messages to return.
    * - `cursor` — sort key of the last message the caller already has
    *   (`createdAt` as an ISO string); return messages strictly AFTER it
-   *   in the sort order above. A "before" direction (for lazy
-   *   tail-loading) is deliberately reserved for a future revision —
-   *   implementations only need the forward semantics today.
+   *   in the direction being walked.
+   * - `direction` — `"asc"` (default) reads forward from the oldest
+   *   message; `"desc"` reads backwards from the newest. A chat view
+   *   opens on the tail with a `"desc"` page and keeps pulling older
+   *   pages as the user scrolls up; a full-history reader (the request
+   *   history of a round, export) walks `"asc"` as before.
    *
-   * Implementations that don't support pagination may ignore both
+   * Implementations that don't support pagination may ignore all three
    * parameters and return everything — callers detect that and stop
-   * paging.
+   * paging. Ignoring only `direction` is equally safe: the caller sees
+   * an ascending page where it asked for a descending one and falls back
+   * to a forward read.
    *
    * @param threadId - The thread whose messages to retrieve.
    * @param count - Optional page size.
    * @param cursor - Optional keyset cursor of the last received message.
-   * @returns An array of messages in chronological order.
+   * @param direction - Optional read direction, `"asc"` by default.
+   * @returns An array of messages in the order they were read.
    */
   readByThread(
     threadId: string,
     count?: number,
-    cursor?: MessagesCursor
+    cursor?: MessagesCursor,
+    direction?: MessagesDirection
   ): Promise<ThreadMessageLike[]>;
 
   /**

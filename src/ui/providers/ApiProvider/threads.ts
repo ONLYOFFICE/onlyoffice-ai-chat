@@ -58,12 +58,12 @@ export function createThreadsApi(
         [entityId, count, cursor, query],
         engines
       ),
-    readMessages: (threadId, count, cursor) =>
+    readMessages: (threadId, count, cursor, direction) =>
       callRoute(
         config,
         "threads",
         "readMessages",
-        [threadId, count, cursor],
+        [threadId, count, cursor, direction],
         engines
       ),
     getById: (threadId) =>

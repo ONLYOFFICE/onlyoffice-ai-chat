@@ -1,7 +1,12 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { AppContext } from "../../app-context";
-import { drainPages, messagesCursorOf } from "../../core/storage";
+import {
+  PAGE_SIZE,
+  drainPages,
+  isDescendingPage,
+  messagesCursorOf,
+} from "../../core/storage";
 import type { ServerAPI } from "../providers/ApiProvider";
 import { reportStoreError } from "./report-error";
 
@@ -89,6 +94,21 @@ export interface MessageStoreState {
    * (and any trailing tool-call hops) before re-streaming.
    */
   truncateMessagesAfter: (index: number) => void;
+  /**
+   * Whether the loaded window may be preceded by older messages. Always
+   * `false` without pagination — then the list is the whole thread.
+   */
+  hasMoreOlderMessages: boolean;
+  /** `true` while {@link loadOlderMessages} is on the wire. */
+  isLoadingOlderMessages: boolean;
+  /**
+   * Prepend the page of messages immediately older than the window. The
+   * view calls this as the user approaches the top of the list; the
+   * scroll position is the caller's to preserve. No-op without
+   * pagination, without a loaded thread, or once the thread's beginning
+   * is reached. Concurrent callers share one in-flight request.
+   */
+  loadOlderMessages: () => Promise<void>;
   /** Load persisted messages for the given thread from the core threads engine. */
   fetchPrevMessages: (threadId: string) => Promise<void>;
   /**
@@ -126,13 +146,15 @@ export function createMessageStore(deps: {
 }): UseBoundStore<StoreApi<MessageStoreState>> {
   const { ctx, api, getPagination } = deps;
 
+  const paginated = () => getPagination?.() ?? false;
+
   /**
-   * Read the thread's full history. With pagination on, walks the thread
-   * in cursor pages of 100 (bounded requests, same complete result);
+   * Read the thread's full history: with pagination on, in cursor pages
+   * of {@link PAGE_SIZE} (bounded requests, same complete result);
    * otherwise one unbounded read — the pre-pagination behavior.
    */
   const readAllMessages = (threadId: string): Promise<ThreadMessageLike[]> =>
-    getPagination?.()
+    paginated()
       ? drainPages(
           (count, cursor) => api.threads.readMessages(threadId, count, cursor),
           messagesCursorOf,
@@ -140,8 +162,53 @@ export function createMessageStore(deps: {
         )
       : api.threads.readMessages(threadId);
 
+  /**
+   * Open the thread on its newest page instead of loading everything: a
+   * chat is read from the end, so the tail is the only part needed to
+   * render, and older pages follow the user's scroll.
+   *
+   * Falls back to the full read when the backend answers the descending
+   * request with an ascending page — a storage adapter that ignores
+   * `direction`. Without the fallback such a host would silently open
+   * every thread at its beginning.
+   */
+  const readWindow = async (
+    threadId: string
+  ): Promise<{ messages: ThreadMessageLike[]; hasMoreOlder: boolean }> => {
+    if (!paginated()) {
+      return { messages: await readAllMessages(threadId), hasMoreOlder: false };
+    }
+    const page = await api.threads.readMessages(
+      threadId,
+      PAGE_SIZE,
+      undefined,
+      "desc"
+    );
+    // A short page is the whole thread — ordering is the only open
+    // question, and reversing an already-ascending short page would
+    // scramble it, so check before trusting the direction.
+    if (!isDescendingPage(page)) {
+      if (page.length < PAGE_SIZE) {
+        return { messages: page, hasMoreOlder: false };
+      }
+      return { messages: await readAllMessages(threadId), hasMoreOlder: false };
+    }
+    return {
+      messages: [...page].reverse(),
+      hasMoreOlder: page.length === PAGE_SIZE,
+    };
+  };
+
+  // Coalesces concurrent `loadOlderMessages` callers onto ONE in-flight
+  // request: the scroll sentinel can fire again while the previous page
+  // is still on the wire, and two overlapping reads from the same cursor
+  // would fetch the same window twice.
+  let loadOlderInFlight: Promise<void> | null = null;
+
   return create<MessageStoreState>((set, get) => ({
     messages: [],
+    hasMoreOlderMessages: false,
+    isLoadingOlderMessages: false,
     isStreamRunning: false,
     isRequestRunning: false,
     isToolPending: false,
@@ -166,10 +233,15 @@ export function createMessageStore(deps: {
       // threads) must detach first, or its tail would surface as orphaned
       // messages inside the freshly loaded thread.
       get().orphanStreams();
-      set({ _currentThreadId: threadId, threadContextEntityId: undefined });
-      let fetchedMessages: ThreadMessageLike[];
+      set({
+        _currentThreadId: threadId,
+        threadContextEntityId: undefined,
+        hasMoreOlderMessages: false,
+        isLoadingOlderMessages: false,
+      });
+      let loaded: { messages: ThreadMessageLike[]; hasMoreOlder: boolean };
       try {
-        fetchedMessages = await readAllMessages(threadId);
+        loaded = await readWindow(threadId);
       } catch (error) {
         // Called without an await both from the thread switch and from the
         // `useMessages` effect — see `reportStoreError`. The previous
@@ -183,9 +255,52 @@ export function createMessageStore(deps: {
         return;
       }
       set({
-        messages: fetchedMessages,
-        threadContextEntityId: deriveThreadContext(fetchedMessages),
+        messages: loaded.messages,
+        hasMoreOlderMessages: loaded.hasMoreOlder,
+        threadContextEntityId: deriveThreadContext(loaded.messages),
       });
+    },
+
+    loadOlderMessages: () => {
+      if (loadOlderInFlight) return loadOlderInFlight;
+      const { messages, hasMoreOlderMessages, _currentThreadId } = get();
+      if (!paginated() || !hasMoreOlderMessages) return Promise.resolve();
+      const oldest = messages[0];
+      const threadId = _currentThreadId;
+      if (!oldest || threadId === null) return Promise.resolve();
+      loadOlderInFlight = (async () => {
+        set({ isLoadingOlderMessages: true });
+        try {
+          const page = await api.threads.readMessages(
+            threadId,
+            PAGE_SIZE,
+            messagesCursorOf(oldest),
+            "desc"
+          );
+          // The user switched threads while the page was in flight — this
+          // window belongs to a list that is no longer shown.
+          if (get()._currentThreadId !== threadId) return;
+          const known = new Set(get().messages.map((m) => m.id));
+          const fresh = page.filter((m) => !known.has(m.id));
+          set((state) => ({
+            // The page runs newest-first; the list is chronological.
+            messages: [...[...fresh].reverse(), ...state.messages],
+            // Stop at a short page, and stop when the page brought
+            // nothing new — a backend ignoring the cursor keeps handing
+            // back the same slice and would loop forever.
+            hasMoreOlderMessages: page.length === PAGE_SIZE && fresh.length > 0,
+          }));
+        } catch (error) {
+          // Leave the window in place: a failed scroll-up must not read
+          // as "the thread starts here", so `hasMoreOlderMessages` stays
+          // on and the next scroll retries.
+          reportStoreError(ctx.callbacksManager, "messages:load-older", error);
+        } finally {
+          set({ isLoadingOlderMessages: false });
+          loadOlderInFlight = null;
+        }
+      })();
+      return loadOlderInFlight;
     },
 
     claimThreadId: (threadId) => {
@@ -246,7 +361,11 @@ export function createMessageStore(deps: {
     },
 
     clearMessages: () => {
-      set({ messages: [], threadContextEntityId: undefined });
+      set({
+        messages: [],
+        hasMoreOlderMessages: false,
+        threadContextEntityId: undefined,
+      });
     },
   }));
 }

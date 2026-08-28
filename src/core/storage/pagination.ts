@@ -34,6 +34,26 @@ export type MessagesCursor = {
   id: string;
 };
 
+/**
+ * Direction of a paginated message read.
+ *
+ * - `"asc"` (default) — walk the thread forward from its oldest message,
+ *   the behavior every release before this one had.
+ * - `"desc"` — walk it backwards from the newest message. This is what a
+ *   chat view needs: open on the tail and pull older pages as the user
+ *   scrolls up, instead of draining the whole history to reach the end.
+ *
+ * Cursor semantics are identical in both directions — the page starts
+ * strictly after the cursor *in the direction being walked* — and so is
+ * the shape of a page: items always come back in the order they were
+ * read, so a `"desc"` page runs newest to oldest.
+ *
+ * Backends that ignore the parameter keep working: they answer a `"desc"`
+ * read with an ascending page, and callers detect the mismatch (see
+ * {@link isDescendingPage}) and fall back to a forward read.
+ */
+export type MessagesDirection = "asc" | "desc";
+
 /** Build the {@link ThreadsCursor} pointing at the given thread. */
 export function threadsCursorOf(thread: Thread): ThreadsCursor {
   return {
@@ -55,6 +75,35 @@ export function messagesCursorOf(message: ThreadMessageLike): MessagesCursor {
           : null,
     id: message.id ?? "",
   };
+}
+
+/**
+ * Whether a page actually came back newest-first — the check a caller
+ * makes before trusting a `"desc"` read. A backend that ignores the
+ * direction returns the same ascending slice it always did, and treating
+ * that as the thread's tail would silently show its beginning instead.
+ *
+ * Pages of one item (or of items without usable timestamps) carry no
+ * ordering evidence and are reported as descending: a single-item page is
+ * the same list either way, and refusing it would drop the fast path for
+ * every short thread.
+ */
+export function isDescendingPage(messages: ThreadMessageLike[]): boolean {
+  const first = timeOf(messages[0]);
+  const last = timeOf(messages[messages.length - 1]);
+  if (first === null || last === null || first === last) return true;
+  return first > last;
+}
+
+function timeOf(message: ThreadMessageLike | undefined): number | null {
+  const createdAt = message?.createdAt;
+  if (createdAt instanceof Date) return createdAt.getTime();
+  if (typeof createdAt === "string") {
+    const parsed = Date.parse(createdAt);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  if (typeof createdAt === "number") return createdAt;
+  return null;
 }
 
 /**

@@ -1,11 +1,11 @@
 import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useApi } from "../../providers/ApiProvider";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useToolsContext } from "../../tools/context";
 import { readToolIntent, stripToolIntent } from "../../../shared/tool-intent";
 import { Icon } from "../icon";
+import { LoadingDots } from "../loading-dots";
 import { IconButton } from "../icon-button";
 import useCopyToClipboard from "../markdown/hooks/useCopyToClipboard";
 import { ImageGeneratingPlaceholder } from "./image-generating";
@@ -14,28 +14,6 @@ const TOOL_CALL_COLOR = "var(--chat-message-tool-call-name-color)";
 // The header row (tool glyph + intent + chevron) reads as a muted aside, not
 // as a labelled chip — see the tool-call mockups.
 const INTENT_COLOR = "var(--text-tertiary)";
-
-// Three dots trailing a running tool call's intent line, each fading out and
-// back on a staggered loop — a lightweight "still working" cue. Decorative,
-// so it's hidden from assistive tech.
-const LoadingDots = () => (
-  <span aria-hidden="true">
-    {[0, 0.2, 0.4].map((delay) => (
-      <motion.span
-        key={delay}
-        animate={{ opacity: [1, 0.3, 1] }}
-        transition={{
-          duration: 1.2,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay,
-        }}
-      >
-        .
-      </motion.span>
-    ))}
-  </span>
-);
 
 export const ToolFallback: ToolCallMessagePartComponent = ({
   toolName,

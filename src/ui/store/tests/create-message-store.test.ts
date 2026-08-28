@@ -32,6 +32,48 @@ function makeMsg(
   } as ThreadMessageLike;
 }
 
+function makeHistory(count: number) {
+  return Array.from({ length: count }, (_, i) => ({
+    ...makeMsg("user", `m${i}`),
+    id: `m${i}`,
+    createdAt: new Date(1000 + i),
+  }));
+}
+
+type Paged = ReturnType<typeof makeHistory>;
+
+/**
+ * Backend double over a fixed history: keyset pages in both directions,
+ * or — with `ignoreDirection` — an adapter that only ever reads forward,
+ * which is what a host that has not implemented the parameter looks like.
+ */
+function makePagedApi(
+  history: Paged,
+  opts: { ignoreDirection?: boolean } = {}
+) {
+  const readMessages = vi.fn(
+    async (
+      _threadId: string,
+      count?: number,
+      cursor?: { id: string },
+      direction?: "asc" | "desc"
+    ) => {
+      if (direction === "desc" && !opts.ignoreDirection) {
+        const end = cursor
+          ? history.findIndex((m) => m.id === cursor.id)
+          : history.length;
+        const start = Math.max(0, end - (count ?? history.length));
+        return history.slice(start, end).reverse();
+      }
+      const from = cursor
+        ? history.findIndex((m) => m.id === cursor.id) + 1
+        : 0;
+      return history.slice(from, count ? from + count : undefined);
+    }
+  );
+  return { api: makeApi(readMessages as never), readMessages };
+}
+
 describe("createMessageStore", () => {
   let ctx: AppContext;
   let api: ServerAPI;
@@ -214,37 +256,79 @@ describe("createMessageStore", () => {
       expect(store.getState().messages).toEqual(loaded);
     });
 
-    it("drains the thread in pages when pagination is on", async () => {
-      const history = Array.from({ length: 150 }, (_, i) => ({
-        ...makeMsg("user", `m${i}`),
-        id: `m${i}`,
-        createdAt: new Date(1000 + i),
-      }));
-      const readMessages = vi.fn(
-        async (_t: string, count?: number, cursor?: { id: string }) => {
-          const from = cursor
-            ? history.findIndex((m) => m.id === cursor.id) + 1
-            : 0;
-          return history.slice(from, count ? from + count : undefined);
-        }
-      );
-      api = makeApi(readMessages as never);
+    it("opens the thread on its newest page when pagination is on", async () => {
+      const history = makeHistory(150);
+      const { api: paged, readMessages } = makePagedApi(history);
       const store = createMessageStore({
         ctx,
-        api,
+        api: paged,
         getPagination: () => true,
       });
 
       await store.getState().fetchPrevMessages("thread-1");
 
-      expect(readMessages).toHaveBeenCalledTimes(2);
+      expect(readMessages).toHaveBeenCalledTimes(1);
+      expect(readMessages).toHaveBeenCalledWith(
+        "thread-1",
+        100,
+        undefined,
+        "desc"
+      );
+      const { messages, hasMoreOlderMessages } = store.getState();
+      // The tail, in reading order — newest last.
+      expect(messages).toHaveLength(100);
+      expect(messages[0]?.id).toBe("m50");
+      expect(messages[99]?.id).toBe("m149");
+      expect(hasMoreOlderMessages).toBe(true);
+    });
+
+    it("drains forward when the backend ignores the direction", async () => {
+      const history = makeHistory(150);
+      const { api: paged, readMessages } = makePagedApi(history, {
+        ignoreDirection: true,
+      });
+      const store = createMessageStore({
+        ctx,
+        api: paged,
+        getPagination: () => true,
+      });
+
+      await store.getState().fetchPrevMessages("thread-1");
+
+      // The descending probe came back ascending, so the whole thread is
+      // read forward rather than shown beginning-first.
       expect(readMessages).toHaveBeenNthCalledWith(
         1,
         "thread-1",
         100,
-        undefined
+        undefined,
+        "desc"
       );
-      expect(store.getState().messages).toHaveLength(150);
+      const { messages, hasMoreOlderMessages } = store.getState();
+      expect(messages).toHaveLength(150);
+      expect(messages[0]?.id).toBe("m0");
+      expect(hasMoreOlderMessages).toBe(false);
+    });
+
+    it("keeps a short ascending page as the whole thread", async () => {
+      const history = makeHistory(40);
+      const { api: paged, readMessages } = makePagedApi(history, {
+        ignoreDirection: true,
+      });
+      const store = createMessageStore({
+        ctx,
+        api: paged,
+        getPagination: () => true,
+      });
+
+      await store.getState().fetchPrevMessages("thread-1");
+
+      // Nothing to drain — one request, order untouched.
+      expect(readMessages).toHaveBeenCalledTimes(1);
+      expect(store.getState().messages.map((m) => m.id)).toEqual(
+        history.map((m) => m.id)
+      );
+      expect(store.getState().hasMoreOlderMessages).toBe(false);
     });
 
     it("discards stale results if thread changed", async () => {
@@ -264,6 +348,118 @@ describe("createMessageStore", () => {
       await store.getState().fetchPrevMessages("thread-2");
       await p;
       expect(store.getState()._currentThreadId).toBe("thread-2");
+      expect(store.getState().messages).toEqual([]);
+    });
+  });
+
+  describe("loadOlderMessages", () => {
+    async function openTail(historySize = 150) {
+      const history = makeHistory(historySize);
+      const { api: paged, readMessages } = makePagedApi(history);
+      const store = createMessageStore({
+        ctx,
+        api: paged,
+        getPagination: () => true,
+      });
+      await store.getState().fetchPrevMessages("thread-1");
+      readMessages.mockClear();
+      return { store, readMessages, history };
+    }
+
+    it("prepends the previous page in reading order", async () => {
+      const { store, readMessages } = await openTail(250);
+
+      await store.getState().loadOlderMessages();
+
+      expect(readMessages).toHaveBeenCalledWith(
+        "thread-1",
+        100,
+        expect.objectContaining({ id: "m150" }),
+        "desc"
+      );
+      const { messages, hasMoreOlderMessages } = store.getState();
+      expect(messages).toHaveLength(200);
+      expect(messages[0]?.id).toBe("m50");
+      expect(messages[199]?.id).toBe("m249");
+      expect(hasMoreOlderMessages).toBe(true);
+    });
+
+    it("stops at the beginning of the thread", async () => {
+      const { store } = await openTail(150);
+
+      await store.getState().loadOlderMessages();
+
+      expect(store.getState().messages).toHaveLength(150);
+      expect(store.getState().messages[0]?.id).toBe("m0");
+      expect(store.getState().hasMoreOlderMessages).toBe(false);
+    });
+
+    it("coalesces concurrent callers onto one request", async () => {
+      const { store, readMessages } = await openTail(250);
+
+      await Promise.all([
+        store.getState().loadOlderMessages(),
+        store.getState().loadOlderMessages(),
+      ]);
+
+      expect(readMessages).toHaveBeenCalledTimes(1);
+      expect(store.getState().messages).toHaveLength(200);
+    });
+
+    it("stops when a cursor-ignoring backend repeats the same page", async () => {
+      const history = makeHistory(250);
+      const tail = history.slice(150).reverse();
+      const readMessages = vi.fn().mockResolvedValue(tail);
+      const store = createMessageStore({
+        ctx,
+        api: makeApi(readMessages as never),
+        getPagination: () => true,
+      });
+      await store.getState().fetchPrevMessages("thread-1");
+
+      await store.getState().loadOlderMessages();
+
+      expect(store.getState().messages).toHaveLength(100);
+      expect(store.getState().hasMoreOlderMessages).toBe(false);
+    });
+
+    it("drops a page that lands after the thread changed", async () => {
+      const history = makeHistory(250);
+      const { api: paged } = makePagedApi(history);
+      const store = createMessageStore({
+        ctx,
+        api: paged,
+        getPagination: () => true,
+      });
+      await store.getState().fetchPrevMessages("thread-1");
+
+      const pending = store.getState().loadOlderMessages();
+      store.getState().claimThreadId("thread-2");
+      await pending;
+
+      expect(store.getState()._currentThreadId).toBe("thread-2");
+      expect(store.getState().messages).toHaveLength(100);
+    });
+
+    it("keeps the window loadable after a failed page", async () => {
+      const { store, readMessages } = await openTail(250);
+      const failure = new Error("nope");
+      readMessages.mockRejectedValueOnce(failure);
+
+      await store.getState().loadOlderMessages();
+
+      expect(ctx.callbacksManager.emit).toHaveBeenCalledWith("onError", {
+        error: failure,
+        context: "messages:load-older",
+        type: "storage",
+      });
+      expect(store.getState().hasMoreOlderMessages).toBe(true);
+      expect(store.getState().isLoadingOlderMessages).toBe(false);
+    });
+
+    it("does nothing without pagination", async () => {
+      const store = createMessageStore({ ctx, api });
+      await store.getState().loadOlderMessages();
       expect(store.getState().messages).toEqual([]);
     });
   });

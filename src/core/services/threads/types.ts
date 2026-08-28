@@ -37,7 +37,7 @@ export const DEFAULT_THREADS_ROUTES: Record<ThreadsEngineMethod, RouteSpec> = {
   readMessages: {
     method: "GET",
     path: "threads/read-messages",
-    params: ["threadId", "count", "cursor"],
+    params: ["threadId", "count", "cursor", "direction"],
   },
   getById: {
     method: "GET",

@@ -32,6 +32,21 @@ const reasoningDelta = (delta: string, itemId = "rs-1"): ResponseStreamEvent =>
     sequence_number: ++seq,
   }) as ResponseStreamEvent;
 
+// OpenRouter's Responses transport streams the thinking text raw rather than
+// summarized — a different event type carrying the same delta.
+const rawReasoningDelta = (
+  delta: string,
+  itemId = "rs-1"
+): ResponseStreamEvent =>
+  ({
+    type: "response.reasoning_text.delta",
+    delta,
+    item_id: itemId,
+    output_index: 0,
+    content_index: 0,
+    sequence_number: ++seq,
+  }) as unknown as ResponseStreamEvent;
+
 const functionCallAdded = (
   itemId: string,
   callId: string,
@@ -145,6 +160,29 @@ describe("processResponsesStream", () => {
     expect(parts[0].type).toBe("reasoning");
     expect((parts[0] as { text: string }).text).toBe("thinking");
     // Reasoning is finalized — `parentId` is assigned.
+    expect((parts[0] as { parentId?: string }).parentId).toBeTruthy();
+    expect(parts[1]).toEqual({ type: "text", text: "done" });
+  });
+
+  it("reads OpenRouter's raw reasoning_text deltas too", async () => {
+    const results = await collect(
+      processResponsesStream(
+        iter([
+          rawReasoningDelta("think"),
+          rawReasoningDelta("ing"),
+          textDelta("done"),
+          completed(),
+        ])
+      )
+    );
+    const final = lastTerminal(results);
+    if (!("isEnd" in final)) throw new Error("expected terminal");
+    const parts = final.responseMessage.content;
+    if (!Array.isArray(parts)) throw new Error("expected array content");
+
+    expect(parts).toHaveLength(2);
+    expect(parts[0].type).toBe("reasoning");
+    expect((parts[0] as { text: string }).text).toBe("thinking");
     expect((parts[0] as { parentId?: string }).parentId).toBeTruthy();
     expect(parts[1]).toEqual({ type: "text", text: "done" });
   });
