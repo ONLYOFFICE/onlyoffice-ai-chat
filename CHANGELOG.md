@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.73
+
+### Fixed
+
+- **Scrolling to the very top of a paginated thread no longer walks the whole history.** The reading position was compensated in a single layout pass keyed on the message count, but the runtime places the prepended page a commit or two later — so the measurement was taken against a list that had not grown yet, the viewport stayed pinned at the top, and the sentinel immediately asked for the next page. The compensation now waits for the page to actually be laid out before restoring the distance to the bottom, and the sentinel is disarmed until that has happened, so one gesture loads one page.
+
 ## 0.5.72
 
 ### Fixed

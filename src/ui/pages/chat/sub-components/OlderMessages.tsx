@@ -8,6 +8,26 @@ export type OlderMessagesProps = {
 };
 
 /**
+ * How long to keep looking for the prepended page in the layout before
+ * giving up on compensating for it (~0.6s at 60fps). The list is rendered
+ * by the runtime a commit or two after the store grows, so the height the
+ * anchor needs does not exist in the first frame.
+ */
+const MAX_SETTLE_FRAMES = 40;
+
+/** Distance from the top at which the previous page starts loading. */
+const TRIGGER_MARGIN = "200px";
+
+type Anchor = {
+  /** Scroll height captured before the page was requested. */
+  height: number;
+  /** Scroll offset captured before the page was requested. */
+  top: number;
+  /** Message count at that moment — how a no-op load is recognised. */
+  count: number;
+};
+
+/**
  * Top-of-thread sentinel that pulls the previous page of messages.
  *
  * A paginated thread opens on its newest page, so everything above the
@@ -18,7 +38,7 @@ export type OlderMessagesProps = {
  * Prepending shifts every rendered message down by the height of the new
  * page, which would yank the reader away from what they were reading, so
  * the distance to the bottom is captured before the request and restored
- * once the page has been laid out.
+ * once the page has actually been laid out.
  *
  * Renders nothing when the whole thread is already loaded — including
  * every host that runs without pagination.
@@ -34,10 +54,11 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
   const messageCount = useMessageStore((s) => s.messages.length);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
-  // Distance from the bottom of the scroll content, captured just before
-  // a page is requested. `null` means "no prepend is pending", which is
-  // what keeps the restore below from firing on an appended message.
-  const anchorRef = useRef<number | null>(null);
+  // Set while a prepend is in flight or still settling into the layout.
+  // `null` means "nothing pending", which is both what lets the sentinel
+  // ask for the next page and what keeps the restore below from firing on
+  // an ordinary appended message.
+  const anchorRef = useRef<Anchor | null>(null);
 
   // `messageCount` in the deps reconnects the observer after every
   // prepended page: `observe` reports the current intersection state, so
@@ -50,29 +71,71 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
-        anchorRef.current = viewport.scrollHeight - viewport.scrollTop;
-        void loadOlderMessages().catch(() => undefined);
+        // Until the last page has been placed and the scroll position
+        // compensated, the sentinel is still sitting at the top edge —
+        // asking again here would walk the whole thread in one gesture.
+        if (anchorRef.current) return;
+        anchorRef.current = {
+          height: viewport.scrollHeight,
+          top: viewport.scrollTop,
+          count: messageCount,
+        };
+        const anchor = anchorRef.current;
+        void loadOlderMessages()
+          .catch(() => undefined)
+          .finally(() => {
+            // A load that failed, was refused by the store, or came back
+            // with nothing new leaves no prepend to compensate for — the
+            // settle pass below never runs, so release the anchor here or
+            // the sentinel stays disarmed for good. The count is read from
+            // the store, not from this render's closure: the store grows
+            // before React commits, and a stale closure would release an
+            // anchor that is still needed.
+            const grew =
+              useMessageStore.getState().messages.length !== anchor.count;
+            if (!grew && anchorRef.current === anchor) {
+              anchorRef.current = null;
+            }
+          });
       },
-      { root: viewport, rootMargin: "200px" }
+      { root: viewport, rootMargin: TRIGGER_MARGIN }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMoreOlderMessages, loadOlderMessages, messageCount, viewportRef]);
+  }, [
+    hasMoreOlderMessages,
+    loadOlderMessages,
+    messageCount,
+    useMessageStore,
+    viewportRef,
+  ]);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
-    const anchor = anchorRef.current;
-    if (!viewport || anchor === null) return;
-    viewport.scrollTop = viewport.scrollHeight - anchor;
-    anchorRef.current = null;
-  }, [messageCount, viewportRef]);
+    if (!viewport || !anchorRef.current) return;
 
-  // A request that failed (or returned nothing new) leaves the anchor
-  // armed with no prepend to compensate; drop it, or the next appended
-  // message would scroll the thread to a stale offset.
-  useEffect(() => {
-    if (!isLoadingOlderMessages) anchorRef.current = null;
-  }, [isLoadingOlderMessages]);
+    let frames = 0;
+    let frame = 0;
+    const settle = () => {
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+      if (viewport.scrollHeight > anchor.height) {
+        // Keep the same distance from the bottom: everything the reader
+        // was looking at stays exactly where it was.
+        viewport.scrollTop =
+          viewport.scrollHeight - (anchor.height - anchor.top);
+        anchorRef.current = null;
+        return;
+      }
+      if (++frames > MAX_SETTLE_FRAMES) {
+        anchorRef.current = null;
+        return;
+      }
+      frame = requestAnimationFrame(settle);
+    };
+    settle();
+    return () => cancelAnimationFrame(frame);
+  }, [messageCount, viewportRef]);
 
   if (!hasMoreOlderMessages) return null;
 
