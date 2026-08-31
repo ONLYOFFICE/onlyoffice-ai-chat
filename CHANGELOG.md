@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.79
+
+### Fixed
+
+- **Adding a local OpenAI-compatible provider (LM Studio, Ollama, GPT4All, lemonade & co) works from embedded hosts again.** The model-list clients for these providers were built directly on the SDK constructor and dropped the host's `fetch` proxy, so the request ran inside the webview where `http://localhost` is unreachable (mixed content / CORS). They now go through the shared client factory, which carries the proxy, the extra headers and the keyless-auth handling (DocSpace bug 81388).
+
+- **An unreachable provider URL reports "Failed to connect" instead of "Invalid URL".** The SDK's transport failure ("Connection error.") was aliased to HTTP 404 and rendered as an invalid-URL validation error for addresses that were perfectly valid but unreachable from the current context (DocSpace bug 81388).
+
+- **Allow-always tool permissions are scoped to their server.** The tools-service REST methods stored and matched the bare tool name, so a permission granted for one MCP server answered `true` for a same-named tool of every other server. They now use the same `${serverType}_${toolName}` token the live round and the approval dialog already persist (DocSpace bug 83161).
+
 ## 0.5.78
 
 ### Fixed
