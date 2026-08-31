@@ -16,6 +16,48 @@
 
   Non-prose message parts are untouched: tool calls, attachments and the message layout itself (bubble side, action bar) still follow the locale.
 
+## 0.5.77
+
+### Fixed
+
+- **Scrolling all the way to the top of a paginated thread keeps the reading position too.** The hold treated any wheel or touch event as the reader taking over and gave up on compensating — but wheeling into the top edge produces a stream of those events while the page loads, so the one gesture that always reaches the top was also the one gesture that always cancelled the compensation. Stopping short of the edge worked; going all the way up did not.
+
+  The hold no longer bails out on input. A scroll that is not its own re-bases the distance it is holding instead, so the reader is followed rather than fought, and late content still cannot drag them backwards. The compensation is written as an absolute offset, which is what keeps it idempotent where the browser's own scroll anchoring is already doing the same work — anchoring is suppressed at offset zero, which is why the top edge was the only place the missing compensation showed.
+
+## 0.5.76
+
+### Fixed
+
+- **The reading position now survives a page of older messages, not just the request for it.** The hold that keeps the distance to the bottom started counting frames the moment the store grew — but the store grows several commits before the runtime renders what it added, so eight frames of an unchanged height read as "the page has landed", the hold released without moving anything, and the reader stayed at the top of the newly loaded page. It now waits for the content to actually exceed the height it was asked from before it starts compensating, and only then for the height to stop moving; a page that never lands releases the hold on the three-second budget instead of locking the sentinel. The scroll container is also resolved inside the hold rather than read from the effect that runs after it — a viewport the runtime replaced left it writing offsets into a detached node.
+
+## 0.5.75
+
+### Fixed
+
+- **A paginated thread now keeps the reading position when an older page lands, and keeps loading after it.** The compensation ran as a single measurement against the message count and gave up after ~0.6s of frames: a hundred messages of markdown are not laid out that fast, so the measurement found no new height, the reader stayed pinned to the top of the freshly loaded page — the oldest of the new messages rather than the one they were reading — and the sentinel, gated on a compensation that never happened, never asked for another page.
+
+  The sentinel no longer depends on `IntersectionObserver` reporting an intersection that never changes, nor on the viewport it is handed being the element that actually scrolls: it listens for scroll on the resolved scroll container (walking up from the viewport if that one does not scroll), and *holds* the distance to the bottom while the page lays out, re-applying it every frame until the height stops moving. A page that lands without moving the reader anywhere waits for a real gesture before the next request, so a host where nothing can be compensated degrades to one page per flick instead of draining the thread.
+
+## 0.5.74
+
+### Fixed
+
+- **A paginated thread keeps loading past its second page.** The scroll sentinel is gated while a page is pending, and an `IntersectionObserver` reports the intersection state once when it starts and then only on changes — so an intersection that arrived while the gate was closed (the observer restarts on every prepend, and its first report can land before the reading position has been compensated) was dropped for good and the thread stopped loading. Releasing the gate now restarts the observer, which re-reports the current state: the next page is requested if the reader is still within reach of the top edge, and nothing happens if the compensation moved them away.
+
+## 0.5.73
+
+### Fixed
+
+- **Scrolling to the very top of a paginated thread no longer walks the whole history.** The reading position was compensated in a single layout pass keyed on the message count, but the runtime places the prepended page a commit or two later — so the measurement was taken against a list that had not grown yet, the viewport stayed pinned at the top, and the sentinel immediately asked for the next page. The compensation now waits for the page to actually be laid out before restoring the distance to the bottom, and the sentinel is disarmed until that has happened, so one gesture loads one page.
+
+## 0.5.72
+
+### Fixed
+
+- **The widget translates through its own i18next instance again, whatever the host does with react-i18next.** `I18nBridge` resolved `t` through `useTranslation()` with no instance argument, so react-i18next handed it whichever instance the host had in context — or, with no provider at all, the global default the host registered. Both are the host's instance, which knows nothing about the `translation` namespace these strings live in, so every key came back as its own name: a confirmation dialog reading `AIWouldLikeUseThisTool` instead of "AI would like to use this tool:". Hosts that switch suspense off (`react.useSuspense: false`) got no error either — the UI rendered, quietly labelled with raw keys.
+
+  Embedders no longer have to bracket the widget with an `<I18nextProvider>` of the library's own instance to make translations work; doing so is now redundant but harmless.
+
 ## 0.5.71
 
 ### Added
