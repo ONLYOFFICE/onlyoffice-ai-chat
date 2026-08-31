@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.77
+
+### Fixed
+
+- **Scrolling all the way to the top of a paginated thread keeps the reading position too.** The hold treated any wheel or touch event as the reader taking over and gave up on compensating — but wheeling into the top edge produces a stream of those events while the page loads, so the one gesture that always reaches the top was also the one gesture that always cancelled the compensation. Stopping short of the edge worked; going all the way up did not.
+
+  The hold no longer bails out on input. A scroll that is not its own re-bases the distance it is holding instead, so the reader is followed rather than fought, and late content still cannot drag them backwards. The compensation is written as an absolute offset, which is what keeps it idempotent where the browser's own scroll anchoring is already doing the same work — anchoring is suppressed at offset zero, which is why the top edge was the only place the missing compensation showed.
+
 ## 0.5.76
 
 ### Fixed

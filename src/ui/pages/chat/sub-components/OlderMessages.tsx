@@ -163,27 +163,14 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
       needsGestureRef.current = false;
       requestOlder();
     };
-    // The reader taking over mid-hold outranks the compensation: better a
-    // jump than a viewport that fights the wheel.
-    const onUserScroll = () => {
-      if (!pendingRef.current) return;
-      pendingRef.current = null;
-    };
-
     scroller.addEventListener("scroll", onScroll, { passive: true });
-    scroller.addEventListener("wheel", onUserScroll, { passive: true });
-    scroller.addEventListener("touchmove", onUserScroll, { passive: true });
     // A window shorter than the viewport has no gesture coming: nothing
     // can be scrolled, so the only way the thread keeps filling is to ask
     // here. A scrollable one is left alone — a thread opens at its bottom,
     // but the runtime gets it there a commit or two after this runs, and
     // asking now would read that gap as "the reader is at the top".
     if (!isScrollable(scroller)) requestOlder();
-    return () => {
-      scroller.removeEventListener("scroll", onScroll);
-      scroller.removeEventListener("wheel", onUserScroll);
-      scroller.removeEventListener("touchmove", onUserScroll);
-    };
+    return () => scroller.removeEventListener("scroll", onScroll);
   }, [hasMoreOlderMessages, messageCount, requestOlder, viewportRef]);
 
   useLayoutEffect(() => {
@@ -215,7 +202,7 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
     };
 
     const hold = () => {
-      if (pendingRef.current !== pending) return; // the reader took over
+      if (pendingRef.current !== pending) return;
       const height = scroller.scrollHeight;
       const expired = Date.now() - startedAt > SETTLE_BUDGET_MS;
 
@@ -232,6 +219,20 @@ export const OlderMessages = ({ viewportRef }: OlderMessagesProps) => {
         return;
       }
       landed = true;
+
+      // The reader scrolling mid-hold does not end it — it moves the
+      // target. Only frames where the content did not grow can tell the
+      // two apart: while it grows, an offset that is not ours may equally
+      // be the browser's own scroll anchoring, and re-basing on that would
+      // undo the very compensation it just performed.
+      const self = selfScrollTopRef.current;
+      if (
+        self !== null &&
+        height === lastHeight &&
+        Math.abs(scroller.scrollTop - self) > EPSILON
+      ) {
+        pending.gap = height - scroller.scrollTop;
+      }
 
       const desired = Math.max(0, height - pending.gap);
       if (Math.abs(scroller.scrollTop - desired) > EPSILON) {

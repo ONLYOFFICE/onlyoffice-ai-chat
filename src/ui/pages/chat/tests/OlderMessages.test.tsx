@@ -184,6 +184,42 @@ describe("OlderMessages", () => {
     expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(2);
   });
 
+  it("compensates even while the reader keeps flicking at the top edge", () => {
+    const scroller = makeScroller(5000, 0);
+    const { grow } = renderSentinel(scroller);
+
+    scrollTo(scroller, 0);
+    // Scrolling all the way up means wheeling into an edge that cannot
+    // move: the events keep coming for as long as the page is loading.
+    grow(200, 5000);
+    scroller.dispatchEvent(new Event("wheel"));
+    runFrames(2);
+    scroller.dispatchEvent(new Event("wheel"));
+    setHeight(scroller, 9000);
+    runFrames(1);
+    scroller.dispatchEvent(new Event("wheel"));
+
+    expect(scroller.scrollTop).toBe(4000);
+  });
+
+  it("follows the reader who scrolls while the page is settling", () => {
+    const scroller = makeScroller(5000, 0);
+    const { grow } = renderSentinel(scroller);
+
+    scrollTo(scroller, 0);
+    grow(200, 9000);
+    expect(scroller.scrollTop).toBe(4000);
+
+    // The reader moves on before the page has finished laying out.
+    scroller.scrollTop = 4300;
+    runFrames(1);
+    // Late content keeps arriving: it must not drag them back.
+    setHeight(scroller, 9500);
+    runFrames(1);
+
+    expect(scroller.scrollTop).toBe(4800);
+  });
+
   it("arms again once the page has settled", () => {
     const scroller = makeScroller(5000, 0);
     const { grow } = renderSentinel(scroller);
