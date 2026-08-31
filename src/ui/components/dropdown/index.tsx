@@ -245,7 +245,15 @@ const DropdownMenuComponent = ({
       sideOffset={sideOffset}
       alignOffset={alignOffset}
       contentClassName={contentClassName}
-      maxWidth={maxWidth}
+      // Drill-down reuses this one Content for every level, so a submenu of
+      // long labels (recent file names) would stretch the whole menu to the
+      // available width. Cap it like the flyout submenu does; rows truncate.
+      maxWidth={
+        maxWidth ??
+        (isDrill
+          ? "min(300px, var(--radix-dropdown-menu-content-available-width))"
+          : undefined)
+      }
       matchTriggerWidth={matchTriggerWidth}
       dropdownRef={dropdownRef}
       onContentKeyDown={onContentKeyDown}
