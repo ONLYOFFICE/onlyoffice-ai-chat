@@ -335,6 +335,10 @@ class OpenAIProvider extends AbstractBaseProvider {
     } catch (error) {
       const errorCode = getErrorCode(error);
       if (errorCode === "invalid_api_key") return ProviderErrors.invalidKey();
+      // A transport failure is not a bad URL: the address may be perfectly
+      // valid and merely unreachable from this context (Bug 81388).
+      if (errorCode === "connection_error")
+        return ProviderErrors.connectionFailed();
       if (errorCode === 404) return ProviderErrors.invalidUrl();
       return creds.apiKey
         ? ProviderErrors.invalidKey()
