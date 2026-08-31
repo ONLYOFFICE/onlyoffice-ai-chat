@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.78
+
+### Fixed
+
+- **Host translation overrides no longer wipe the locale bundle at init.** `initAIChatI18n` merged the host's `resources` with a plain `Object.assign`, so an override object for a locale replaced the whole freshly loaded bundle instead of layering on top of it. A host passing a single-key override for the active language (DocSpace hands one for `EnableWebSearch`) was left with a one-key dictionary, and every other string rendered as its raw key — on English only, because other languages reload their bundle after init while the init-time English bundle is final (DocSpace bugs 83450/83481/83491). Overrides now merge per key over the loaded bundles; overrides for locales without a shipped bundle are kept as before.
+
 ## 0.5.77
 
 ### Fixed
