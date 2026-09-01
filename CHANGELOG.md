@@ -4,7 +4,9 @@
 
 ### Changed
 
-- **Tooltips no longer fire the instant the pointer touches a button.** `TooltipProvider` now defaults to a 500 ms hover delay instead of `0`, so passing over a row of icon buttons stops flashing a tooltip on each one. This covers every hover tooltip in the widget — the `TooltipIconButton` actions in the header, message action bars and composer, plus the bare `Tooltip` usages that stand in for a native `title` (dropdown items, suggestions, truncated field errors). Controlled tooltips (`open={...}`) are unaffected.
+- **Suggestion chips no longer show a hover tooltip.** The tooltip only repeated the chip's own label, so hovering the empty-thread suggestions flashed a duplicate of the visible text; the chips are plain buttons now.
+
+- **Tooltips no longer fire the instant the pointer touches a button.** `TooltipProvider` now defaults to a 500 ms hover delay instead of `0`, so passing over a row of icon buttons stops flashing a tooltip on each one. This covers every hover tooltip in the widget — the `TooltipIconButton` actions in the header, message action bars and composer, plus the bare `Tooltip` usages that stand in for a native `title` (dropdown items, truncated field errors). Controlled tooltips (`open={...}`) are unaffected.
 
   The model card no longer wraps its profile name in a tooltip that repeated the visible label.
 

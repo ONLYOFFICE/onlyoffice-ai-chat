@@ -1,10 +1,5 @@
 import { useComposerRuntime } from "@assistant-ui/react";
 import { useWidgetConfig } from "../../../../widget-config";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "../../../components/tooltip";
 import { MAX_SUGGESTIONS } from "../suggestions";
 
 const Suggestions = () => {
@@ -19,23 +14,16 @@ const Suggestions = () => {
     <div className="suggestions mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[6px] px-[var(--chat-suggestions-px,12px)] mb-[var(--chat-suggestions-margin-bottom,16px)]">
       <div className="flex flex-wrap justify-center gap-[var(--chat-suggestions-gap,6px)]">
         {items.map((suggestion, index) => (
-          // Styled tooltip instead of a native `title`: the chip label is
-          // truncated, so the hover text is genuinely needed, but the browser
-          // tooltip clashes with the host's look (Bug 83350).
-          <Tooltip key={`${suggestion.name}-${index}`}>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => composerRuntime.setText(suggestion.prompt)}
-                className="inline-flex h-[var(--chat-suggestion-height,25px)] max-w-full min-w-0 items-center gap-[6px] rounded-full border border-[var(--chat-suggestion-border-color)] px-[var(--chat-suggestion-padding-x,10px)] py-[var(--chat-suggestion-padding-y,3px)] text-[var(--text-normal)] hover:bg-[var(--highlight-button-hover)]"
-              >
-                <span className="truncate font-normal text-fs-12 leading-[var(--lh-18)] tracking-[0px]">
-                  {suggestion.name}
-                </span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{suggestion.name}</TooltipContent>
-          </Tooltip>
+          <button
+            key={`${suggestion.name}-${index}`}
+            type="button"
+            onClick={() => composerRuntime.setText(suggestion.prompt)}
+            className="inline-flex h-[var(--chat-suggestion-height,25px)] max-w-full min-w-0 items-center gap-[6px] rounded-full border border-[var(--chat-suggestion-border-color)] px-[var(--chat-suggestion-padding-x,10px)] py-[var(--chat-suggestion-padding-y,3px)] text-[var(--text-normal)] hover:bg-[var(--highlight-button-hover)]"
+          >
+            <span className="truncate font-normal text-fs-12 leading-[var(--lh-18)] tracking-[0px]">
+              {suggestion.name}
+            </span>
+          </button>
         ))}
       </div>
     </div>
