@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.82
+
+### Changed
+
+- **The thinking block in a message is now labelled "Thinking", not "Reasoning".** The composer toggle that turns the feature on is called "Extended thinking", so the header over the streamed reasoning named the same feature differently. Most locales now reuse the word their own `ExtendedThinking` string already carries; seven (be, fr, id, it, pt-BR, ru, uk) keep a different stem there, since their `ExtendedThinking` wording is itself a reasoning term rather than a thinking one.
+
+### Fixed
+
+- **Locale typos around the extended-thinking strings.** Catalan carried the Spanish text with a truncated tail (`los coste`), Greek was cut mid-word (`Διευρυμένη σκέψ`), Dutch was left in English, and the Urdu description had no closing full stop.
+
 ## 0.5.81
 
 ### Changed

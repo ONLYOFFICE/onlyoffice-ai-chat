@@ -99,7 +99,7 @@
   "ConfigurationError": "Konfigurationen måste placeras i egenskapen 'mcpServers'",
   "InvalidJsonFormat": "Ogiltigt JSON-format",
   "LocalServersNotSupportedInWebEditor": "Lokala MCP-servrar stöds inte i webbredigeraren. Använd endast HTTP-servrar.",
-  "Thinking": "Resonemang",
+  "Thinking": "Tänkande",
   "ExtendedThinking": "Utökat tänkande",
   "ExtendedThinkingDescription": "Den här modellen använder avancerat resonemang, vilket kan öka kostnaderna.",
   "SaveAIPrompt": "Spara AI-prompt",

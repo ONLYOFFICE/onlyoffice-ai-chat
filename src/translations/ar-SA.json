@@ -99,7 +99,7 @@
   "ConfigurationError": " يجب وضع التهيئة داخل ملكية'mcpServers'",
   "InvalidJsonFormat": "تنسيق JSON غير صالح",
   "LocalServersNotSupportedInWebEditor": "خوادم MCP المحلية غير مدعومة في محرر الويب. يُرجى استخدام خوادم HTTP فقط.",
-  "Thinking": "تفكير منطقي",
+  "Thinking": "تفكير",
   "ExtendedThinking": "تفكير موسع",
   "ExtendedThinkingDescription": "يستخدم هذا النموذج تفكيراً منطقياً متقدماً، مما قد يزيد من التكاليف.",
   "SaveAIPrompt": "حفظ موجّه الذكاء الاصطناعي",

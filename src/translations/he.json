@@ -99,7 +99,7 @@
   "ConfigurationError": "יש למקם את התצורה בתוך המאפיין 'mcpServers'",
   "InvalidJsonFormat": "פורמט JSON לא חוקי",
   "LocalServersNotSupportedInWebEditor": "שרתי MCP מקומיים אינם נתמכים בעורך האינטרנט. אנא השתמש בשרתי HTTP בלבד.",
-  "Thinking": "הנמקה",
+  "Thinking": "חשיבה",
   "ExtendedThinking": "חשיבה מורחבת",
   "ExtendedThinkingDescription": "מודל זה משתמש בהיגיון מתקדם, אשר עשוי להגדיל את העלויות.",
   "SaveAIPrompt": "שמור פרומפט AI",

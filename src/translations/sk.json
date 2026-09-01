@@ -99,7 +99,7 @@
   "ConfigurationError": "Konfigurácia musí byť umiestnená vo vlastníctve 'mcpServers'",
   "InvalidJsonFormat": "Neplatný formát JSON",
   "LocalServersNotSupportedInWebEditor": "Lokálne MCP servery nie sú podporované vo webovom editore. Používajte iba HTTP servery.",
-  "Thinking": "Uvažovanie",
+  "Thinking": "Myslenie",
   "ExtendedThinking": "Rozšírené myslenie",
   "ExtendedThinkingDescription": "Tento model využíva pokročilé uvažovanie, čo môže zvýšiť náklady.",
   "SaveAIPrompt": "Uložiť AI výzvu",

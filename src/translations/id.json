@@ -99,7 +99,7 @@
   "ConfigurationError": "Konfigurasi harus ditempatkan di dalam properti 'mcpServers'",
   "InvalidJsonFormat": "Format JSON tidak valid",
   "LocalServersNotSupportedInWebEditor": "Server MCP lokal tidak didukung di editor web. Gunakan server HTTP saja.",
-  "Thinking": "Penalaran",
+  "Thinking": "Berpikir",
   "ExtendedThinking": "Penalaran Mendalam",
   "ExtendedThinkingDescription": "Model ini menggunakan penalaran mendalam, yang dapat meningkatkan biaya.",
   "SaveAIPrompt": "Simpan Prompt AI",

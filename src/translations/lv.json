@@ -99,7 +99,7 @@
   "ConfigurationError": "Konfigurācija jāievieto parametrā 'mcpServers'",
   "InvalidJsonFormat": "Nederīgs JSON formāts",
   "LocalServersNotSupportedInWebEditor": "Lokālie MCP serveri netiek atbalstīti tīmekļa redaktorā. Lūdzu, izmantojiet tikai HTTP serverus.",
-  "Thinking": "Argumentācija",
+  "Thinking": "Domāšana",
   "ExtendedThinking": "Paplašināta domāšana",
   "ExtendedThinkingDescription": "Šajā modelī tiek izmantota progresīva argumentācija, kas var palielināt izmaksas.",
   "SaveAIPrompt": "Saglabāt AI uzvedni",

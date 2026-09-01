@@ -99,7 +99,7 @@
   "ConfigurationError": "Yapılandırma 'mcpServers' özelliğinin içine yerleştirilmelidir",
   "InvalidJsonFormat": "Geçersiz JSON biçimi",
   "LocalServersNotSupportedInWebEditor": "Yerel MCP sunucuları web düzenleyicide desteklenmez. Lütfen yalnızca HTTP sunucuları kullanın.",
-  "Thinking": "Akıl Yürütme",
+  "Thinking": "Düşünme",
   "ExtendedThinking": "Gelişmiş Düşünme",
   "ExtendedThinkingDescription": "Bu model, maliyetleri artırabilecek gelişmiş mantık kullanır.",
   "SaveAIPrompt": "AI İstemini Kaydet",

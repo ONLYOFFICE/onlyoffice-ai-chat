@@ -99,7 +99,7 @@
   "ConfigurationError": "Cấu hình phải được đặt bên trong thuộc tính 'mcpServers'",
   "InvalidJsonFormat": "Định dạng JSON không hợp lệ",
   "LocalServersNotSupportedInWebEditor": "Máy chủ MCP cục bộ không được hỗ trợ trong trình soạn thảo web. Vui lòng chỉ sử dụng máy chủ HTTP.",
-  "Thinking": "Đang suy luận",
+  "Thinking": "Đang suy nghĩ",
   "ExtendedThinking": "Đang suy nghĩ kỹ hơn",
   "ExtendedThinkingDescription": "Mô hình này sử dụng suy luận nâng cao, có thể làm tăng chi phí.",
   "SaveAIPrompt": "Lưu AI Prompt",
