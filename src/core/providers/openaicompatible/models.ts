@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { createOpenAIClient } from "../openai/client";
 import { CapabilitiesUI } from "../../../shared/capabilities-ui";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
@@ -17,11 +17,11 @@ import type { ProviderCredentials } from "../../../shared/provider-credentials";
 export const listModels = async (
   creds: ProviderCredentials
 ): Promise<Model[]> => {
-  const client = new OpenAI({
-    apiKey: creds.apiKey,
-    baseURL: creds.baseUrl,
-    dangerouslyAllowBrowser: true,
-  });
+  // Build the client through the shared factory: it carries the host's
+  // `creds.fetch` proxy (a desktop webview cannot reach http://localhost
+  // itself — Bug 81388) and tolerates a missing API key instead of the SDK
+  // constructor throwing on an empty one.
+  const client = createOpenAIClient(creds);
   const response = await client.models.list();
 
   const defaultCaps =

@@ -80,15 +80,18 @@ describe("initAIChatI18n", () => {
     });
   });
 
-  it("custom resources can override built-in locale", async () => {
+  it("custom resources merge over the built-in locale bundle", async () => {
     await initAIChatI18n({
       resources: { en: { translation: { Custom: "Value" } } },
     });
     const callArgs = mockInit.mock.calls[0][0];
-    // Object.assign puts custom last, so custom overrides
-    expect(callArgs.resources.en).toEqual({
-      translation: { Custom: "Value" },
-    });
+    // Per-key merge: the override lands on top of the loaded bundle instead
+    // of replacing it (a single-key override used to wipe the whole bundle -
+    // DocSpace bugs 83450/83481/83491).
+    expect(callArgs.resources.en.translation.Custom).toBe("Value");
+    expect(callArgs.resources.en.translation.EditConfiguration).toBe(
+      "Edit configuration",
+    );
   });
 
   it("does not load locale module for en when locale is en", async () => {
