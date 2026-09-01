@@ -566,13 +566,15 @@ describe("OpenAIProvider", () => {
       expect(out).toEqual({ field: "key", message: "Invalid API key" });
     });
 
-    it("maps a connection error to invalidUrl", async () => {
+    it("maps a connection error to connectionFailed", async () => {
+      // A transport failure must not render as "Invalid URL" - the address
+      // may be valid and merely unreachable from this context (Bug 81388).
       modelsListMock.mockRejectedValueOnce(new Error("Connection error."));
       const out = await OpenAIProvider.checkProvider({
         baseUrl: "https://x",
         apiKey: "sk",
       });
-      expect(out).toEqual({ field: "url", message: "Invalid URL" });
+      expect(out).toEqual({ field: "url", message: "Failed to connect" });
     });
 
     it("maps empty key + generic error to emptyKey", async () => {

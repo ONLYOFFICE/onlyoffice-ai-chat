@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { createOpenAIClient } from "../openai/client";
 import { CapabilitiesUI } from "../../../shared/capabilities-ui";
 import type { TErrorData } from "../../../shared/error-data";
 import type { Model } from "../../../shared/model";
@@ -9,11 +9,14 @@ import { gpt4allInfo } from "./info";
 /** Substitute key for GPT4All — the local server doesn't require auth. */
 const DUMMY_KEY = "gpt4all";
 
-const client = (baseUrl: string) =>
-  new OpenAI({
-    apiKey: DUMMY_KEY,
-    baseURL: baseUrl || gpt4allInfo.baseUrl,
-    dangerouslyAllowBrowser: true,
+const client = (creds: ProviderCredentials) =>
+  // Shared factory keeps the host's `creds.fetch` proxy (a desktop
+  // webview cannot reach http://localhost itself - Bug 81388) and the
+  // extra headers; the dummy key stays the fallback bearer.
+  createOpenAIClient({
+    ...creds,
+    baseUrl: creds.baseUrl || gpt4allInfo.baseUrl,
+    apiKey: creds.apiKey || DUMMY_KEY,
   });
 
 /**
@@ -26,7 +29,7 @@ export const checkCredentials = async (
   creds: ProviderCredentials
 ): Promise<boolean | TErrorData> => {
   try {
-    await client(creds.baseUrl).models.list();
+    await client(creds).models.list();
     return true;
   } catch {
     return ProviderErrors.invalidUrl();
@@ -45,7 +48,7 @@ export const checkCredentials = async (
 export const listModels = async (
   creds: ProviderCredentials
 ): Promise<Model[]> => {
-  const response = (await client(creds.baseUrl).models.list()).data;
+  const response = (await client(creds).models.list()).data;
   const defaultCaps =
     CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
 

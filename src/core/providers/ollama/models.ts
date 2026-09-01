@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { createOpenAIClient } from "../openai/client";
 import { CapabilitiesUI } from "../../../shared/capabilities-ui";
 import type { TErrorData } from "../../../shared/error-data";
 import type { Model } from "../../../shared/model";
@@ -9,11 +9,14 @@ import { ProviderErrors } from "../errors";
 const DUMMY_KEY = "ollama";
 
 /** Build a throw-away SDK client pinned to Ollama's local URL. */
-const client = (baseUrl: string) =>
-  new OpenAI({
-    apiKey: DUMMY_KEY,
-    baseURL: baseUrl,
-    dangerouslyAllowBrowser: true,
+const client = (creds: ProviderCredentials) =>
+  // Shared factory keeps the host's `creds.fetch` proxy (a desktop
+  // webview cannot reach http://localhost itself - Bug 81388) and the
+  // extra headers; the dummy key stays the fallback bearer.
+  createOpenAIClient({
+    ...creds,
+    baseUrl: creds.baseUrl,
+    apiKey: creds.apiKey || DUMMY_KEY,
   });
 
 /**
@@ -26,7 +29,7 @@ export const checkCredentials = async (
   creds: ProviderCredentials
 ): Promise<boolean | TErrorData> => {
   try {
-    await client(creds.baseUrl).models.list();
+    await client(creds).models.list();
     return true;
   } catch {
     return ProviderErrors.invalidUrl();
@@ -43,7 +46,7 @@ export const checkCredentials = async (
 export const listModels = async (
   creds: ProviderCredentials
 ): Promise<Model[]> => {
-  const response = await client(creds.baseUrl).models.list();
+  const response = await client(creds).models.list();
   const defaultCaps =
     CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
 

@@ -68,7 +68,13 @@ export const getErrorStatus = (error: unknown): number | undefined => {
  */
 export const getErrorCode = (error: unknown): string | number | undefined => {
   if (typeof error !== "object" || !error) return undefined;
-  if ("message" in error && error.message === "Connection error.") return 404;
+  // The OpenAI SDK reports every transport failure (refused, DNS, CORS,
+  // mixed content) as APIConnectionError with this exact message. It used
+  // to be aliased to 404 and therefore rendered as "Invalid URL" for URLs
+  // that were perfectly valid but unreachable from this context (Bug 81388);
+  // keep it a distinct code so callers can say "failed to connect".
+  if ("message" in error && error.message === "Connection error.")
+    return "connection_error";
   if ("code" in error && typeof error.code === "string") {
     return error.code;
   }
@@ -86,6 +92,7 @@ export const mapFetchError = (
 
   if (
     status === 0 ||
+    getErrorCode(error) === "connection_error" ||
     (error && typeof error === "object" && "cause" in error)
   ) {
     return ProviderErrors.connectionFailed();

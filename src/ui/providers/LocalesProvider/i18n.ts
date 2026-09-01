@@ -73,9 +73,20 @@ export const initAIChatI18n = (
       resources[locale] = { translation: localeModule.default };
     }
 
-    // Merge with custom resources
+    // Merge custom resources per key on top of the loaded bundles. A plain
+    // Object.assign here replaced a whole locale bundle with the host's
+    // override object: a host passing a single-key override for "en" wiped
+    // the entire English bundle, and every other key rendered as its raw
+    // name (DocSpace bugs 83450/83481/83491).
     if (options?.resources) {
-      Object.assign(resources, options.resources);
+      for (const [lng, bundle] of Object.entries(options.resources)) {
+        const existing = resources[lng]?.translation;
+        resources[lng] = {
+          translation: existing
+            ? { ...existing, ...bundle.translation }
+            : bundle.translation,
+        };
+      }
     }
 
     await i18n.use(initReactI18next).init({

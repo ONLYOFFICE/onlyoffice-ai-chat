@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { createOpenAIClient } from "../openai/client";
 import { CapabilitiesUI } from "../../../shared/capabilities-ui";
 import type { TErrorData } from "../../../shared/error-data";
 import type { Model } from "../../../shared/model";
@@ -8,11 +8,14 @@ import { ProviderErrors } from "../errors";
 /** Substitute key for LM Studio — the local server doesn't require auth. */
 const DUMMY_KEY = "lm-studio";
 
-const client = (baseUrl: string) =>
-  new OpenAI({
-    apiKey: DUMMY_KEY,
-    baseURL: baseUrl,
-    dangerouslyAllowBrowser: true,
+const client = (creds: ProviderCredentials) =>
+  // Shared factory keeps the host's `creds.fetch` proxy (a desktop
+  // webview cannot reach http://localhost itself - Bug 81388) and the
+  // extra headers; the dummy key stays the fallback bearer.
+  createOpenAIClient({
+    ...creds,
+    baseUrl: creds.baseUrl,
+    apiKey: creds.apiKey || DUMMY_KEY,
   });
 
 /**
@@ -30,7 +33,7 @@ export const checkCredentials = async (
   creds: ProviderCredentials
 ): Promise<boolean | TErrorData> => {
   try {
-    const response = await client(creds.baseUrl).models.list();
+    const response = await client(creds).models.list();
     if (!response.data || response.data.length === 0) {
       return ProviderErrors.invalidUrl("No models loaded in LM Studio");
     }
@@ -54,7 +57,7 @@ export const checkCredentials = async (
 export const listModels = async (
   creds: ProviderCredentials
 ): Promise<Model[]> => {
-  const response = await client(creds.baseUrl).models.list();
+  const response = await client(creds).models.list();
   const defaultCaps =
     CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
 

@@ -91,6 +91,7 @@ export type TranslationKey =
   | "OnlyofficeAISettings"
   | "Open"
   | "OverrideForTasks"
+  | "OverrideForTasksDescription"
   | "Permissions"
   | "Previous30Days"
   | "Previous7Days"
