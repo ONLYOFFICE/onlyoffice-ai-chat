@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.81
+
+### Changed
+
+- **The thinking block in an assistant message has its own icon.** It shared `btn-extended-thinking` with the composer's Extended thinking toggle, so the same atom glyph stood for both the setting and the streamed reasoning; the in-message header now uses the new `btn-thinking` icon.
+
+### Added
+
+- **`btn-thinking` icon** in light and dark, plus the shared SVG.
+
 ## 0.5.80
 
 ### Changed

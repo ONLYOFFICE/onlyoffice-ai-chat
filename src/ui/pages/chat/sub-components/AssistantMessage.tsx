@@ -69,7 +69,7 @@ const ThinkingMarkdownText = memo(
               className="flex items-center gap-[10px] cursor-pointer mb-[8px]"
               onClick={() => setIsCollapsed((val) => !val)}
             >
-              <Icon name="btn-extended-thinking" size={24} />
+              <Icon name="btn-thinking" size={24} />
               <span className="min-w-0 truncate font-normal text-[var(--text-tertiary)]">
                 {t("Thinking")}
                 {isRunning ? <LoadingDots /> : null}
