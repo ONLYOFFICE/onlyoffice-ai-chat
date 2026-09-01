@@ -19,7 +19,7 @@ export const chipClassName = ({
     "w-fit flex flex-row items-center gap-[12px] h-[36px] rounded-[8px] box-border border-[var(--file-items-border-color)]",
     withoutClose
       ? ""
-      : "grow shrink-0 basis-[var(--file-item-min-width,120px)] max-w-max min-w-0",
+      : "grow shrink-0 basis-[var(--file-item-min-width,120px)] max-w-max min-w-0 cursor-default",
     isImage ? (isRTL ? "p-0 pl-[4px]" : "p-0 pr-[4px]") : "p-[4px]",
     withoutClose
       ? isRTL

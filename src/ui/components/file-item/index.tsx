@@ -8,6 +8,7 @@ import { selectImageBase64 } from "../../store/create-attachments-store";
 import type { TAttachmentFile, TAttachmentRef } from "../../../types";
 import { Icon } from "../icon";
 import { IconButton } from "../icon-button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
 
 /**
  * `FileItem` accepts either a {@link TAttachmentRef} (composer draft —
@@ -81,7 +82,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
     // that show a close button, so this branch is effectively unused.
   };
 
-  return (
+  const chip = (
     <div
       className={chipClassName({ isImage, withoutClose, isRTL })}
       onClick={() => {
@@ -128,6 +129,23 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
         />
       ) : null}
     </div>
+  );
+
+  // The chip truncates its name to fit the row (and an image chip shows no
+  // name at all), so the full title is only ever available on hover.
+  // `asChild` keeps the chip itself as the trigger — an extra wrapper node
+  // would become the row's flex item and undo the chip's own sizing.
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{chip}</TooltipTrigger>
+      <TooltipContent
+        className="max-w-[var(--file-item-tooltip-max-width,280px)] break-words"
+        side="top"
+        align="start"
+      >
+        {title}
+      </TooltipContent>
+    </Tooltip>
   );
 };
 
