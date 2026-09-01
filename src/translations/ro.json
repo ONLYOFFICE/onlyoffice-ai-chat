@@ -99,7 +99,7 @@
   "ConfigurationError": "Configurația trebuie plasată în interiorul proprietății 'mcpServers',",
   "InvalidJsonFormat": "Format JSON nevalid",
   "LocalServersNotSupportedInWebEditor": "Serverele MCP locale nu sunt acceptate în editorul web. Utilizați doar servere HTTP.",
-  "Thinking": "Raționament",
+  "Thinking": "Gândire",
   "ExtendedThinking": "Gândire extinsă",
   "ExtendedThinkingDescription": "Acest model utilizează un raționament avansat, ceea ce poate crește costurile.",
   "SaveAIPrompt": "Salvează prompt AI",

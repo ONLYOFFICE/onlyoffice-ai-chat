@@ -99,7 +99,7 @@
   "ConfigurationError": "Konfigurimi duhet të vendoset brenda pronës 'mcpServers",
   "InvalidJsonFormat": "Format JSON i pavlefshëm",
   "LocalServersNotSupportedInWebEditor": "Serverët lokalë MCP nuk mbështeten në redaktorin web. Ju lutemi përdorni vetëm serverë HTTP.",
-  "Thinking": "Arsyetim",
+  "Thinking": "Mendim",
   "ExtendedThinking": "Mendim i Zgjeruar",
   "ExtendedThinkingDescription": "Ky model përdor arsyetim të avancuar, i cili mund të rrisë kostot.",
   "SaveAIPrompt": "Ruaj prompt-in AI",

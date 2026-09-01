@@ -99,7 +99,7 @@
   "ConfigurationError": "구성은 반드시 'mcpServers' 속성 내에 위치해야 합니다",
   "InvalidJsonFormat": "잘못된 JSON 형식",
   "LocalServersNotSupportedInWebEditor": "로컬 MCP 서버는 웹 편집기에서 지원되지 않습니다. HTTP 서버만 사용하세요.",
-  "Thinking": "추론",
+  "Thinking": "사고 중",
   "ExtendedThinking": "확장된 사고",
   "ExtendedThinkingDescription": "이 모델은 고급 추론을 사용하므로 비용이 늘어날 수 있습니다.",
   "SaveAIPrompt": "AI 프롬프트 저장",

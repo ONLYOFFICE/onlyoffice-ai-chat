@@ -32,6 +32,7 @@ export type IconName =
   | "btn-save"
   | "btn-save.small"
   | "btn-settings"
+  | "btn-thinking"
   | "btn-web-search"
   | "btn-zoomup"
   | "checked"

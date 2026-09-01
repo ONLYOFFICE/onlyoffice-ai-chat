@@ -99,7 +99,7 @@
   "ConfigurationError": "Конфигурацию необходимо разместить внутри свойства 'mcpServers'",
   "InvalidJsonFormat": "Неверный формат JSON",
   "LocalServersNotSupportedInWebEditor": "Локальные MCP-серверы не поддерживаются в веб-редакторе. Используйте только HTTP-серверы.",
-  "Thinking": "Логическое рассуждение",
+  "Thinking": "Размышление",
   "ExtendedThinking": "Расширенная обработка",
   "ExtendedThinkingDescription": "Данная модель использует сложные логические рассуждения, что может привести к увеличению затрат.",
   "SaveAIPrompt": "Сохранить AI-запрос",

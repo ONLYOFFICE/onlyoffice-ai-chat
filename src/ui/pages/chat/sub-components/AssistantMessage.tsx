@@ -69,7 +69,7 @@ const ThinkingMarkdownText = memo(
               className="flex items-center gap-[10px] cursor-pointer mb-[8px]"
               onClick={() => setIsCollapsed((val) => !val)}
             >
-              <Icon name="btn-extended-thinking" size={24} />
+              <Icon name="btn-thinking" size={24} />
               <span className="min-w-0 truncate font-normal text-[var(--text-tertiary)]">
                 {t("Thinking")}
                 {isRunning ? <LoadingDots /> : null}
@@ -287,7 +287,7 @@ const CustomActionButton = ({
 const PlatformCopyButton = ({ text }: { text: string }) => {
   const { IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
-  const { chatMessageActionsIconSize = 20 } = useWidgetConfig();
+  const { chatMessageActionsIconSize = 24 } = useWidgetConfig();
   const platform = usePlatform();
   const [copied, setCopied] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -338,7 +338,7 @@ const AssistantActionBar = () => {
   const { useMessageStore } = useStores();
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const platform = usePlatform();
-  const { assistantActions, chatMessageActionsIconSize = 20 } =
+  const { assistantActions, chatMessageActionsIconSize = 24 } =
     useWidgetConfig();
 
   const message = useMessage();

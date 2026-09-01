@@ -99,7 +99,7 @@
   "ConfigurationError": "Konfigurationer bør placeres inden for egenskaben 'mcpServers'",
   "InvalidJsonFormat": "Ugyldigt JSON-format",
   "LocalServersNotSupportedInWebEditor": "Lokale MCP-servere understøttes ikke i webeditoren. Brug kun HTTP-servere.",
-  "Thinking": "Ræsonnement",
+  "Thinking": "Tænkning",
   "ExtendedThinking": "Udvidet tænkning",
   "ExtendedThinkingDescription": "Denne model benytter udvidet tænkning, hvilket kan øge omkostningerne.",
   "SaveAIPrompt": "Gem AI-prompt",

@@ -99,7 +99,7 @@
   "ConfigurationError": "Конфігурація має бути розміщена всередині властивості 'mcpServers'",
   "InvalidJsonFormat": "Неприпустимий формат JSON",
   "LocalServersNotSupportedInWebEditor": "Локальні MCP-сервери не підтримуються у веб-редакторі. Будь ласка, використовуйте лише HTTP-сервери.",
-  "Thinking": "Міркування",
+  "Thinking": "Мислення",
   "ExtendedThinking": "Розширене міркування",
   "ExtendedThinkingDescription": "Ця модель використовує вдосконалене міркування, що може збільшити витрати.",
   "SaveAIPrompt": "Зберегти AI-запит",

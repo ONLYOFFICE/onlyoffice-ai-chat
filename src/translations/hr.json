@@ -99,7 +99,7 @@
   "ConfigurationError": "Konfiguracija mora biti postavljena unutar 'mcpServers' svojstva",
   "InvalidJsonFormat": "Nevažeći JSON format",
   "LocalServersNotSupportedInWebEditor": "Lokalni MCP poslužitelji nisu podržani u web uređivaču. Koristite isključivo HTTP poslužitelje.",
-  "Thinking": "Rasuđivanje",
+  "Thinking": "Razmišljanje",
   "ExtendedThinking": "Prošireno Razmišljanje",
   "ExtendedThinkingDescription": "Ovaj model koristi napredno rasuđivanje, koje može povećati troškove.",
   "SaveAIPrompt": "Spremi AI upit",

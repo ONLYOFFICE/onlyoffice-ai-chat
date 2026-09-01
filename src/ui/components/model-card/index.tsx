@@ -8,7 +8,6 @@ import { useWidgetConfig } from "../../../widget-config";
 import logger from "../../../shared/logger";
 import { EditModelCard } from "../model-config-cards";
 import { ProviderLogo } from "../provider-logo";
-import { Tooltip, TooltipTrigger } from "../tooltip";
 import { DeleteProfileDialog } from "./DeleteProfileDialog";
 import { getProviderName } from "../../../core/providers";
 
@@ -27,7 +26,7 @@ const ModelCard = ({
   onStopEdit,
   isEditModelCardHorizontal,
 }: ModelCardProps) => {
-  const { DropdownMenu, IconButton, TooltipContent } = useComponents();
+  const { DropdownMenu, IconButton } = useComponents();
   const { useProfilesStore } = useStores();
   const { onDeleteProfile } = useWidgetConfig();
   const deleteProfile = useProfilesStore((s) => s.deleteProfile);
@@ -102,17 +101,12 @@ const ModelCard = ({
             shrink and truncate instead of overflowing. */}
         <div className="flex flex-col min-w-0 overflow-hidden">
           <div className="flex min-w-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <p
-                  dir="auto"
-                  className="min-w-0 font-normal text-[var(--model-card-color)] truncate"
-                >
-                  {profile?.name}
-                </p>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">{profile?.name}</TooltipContent>
-            </Tooltip>
+            <p
+              dir="auto"
+              className="min-w-0 font-normal text-[var(--model-card-color)] truncate"
+            >
+              {profile?.name}
+            </p>
           </div>
           <div className="flex min-w-0">
             <p

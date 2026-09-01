@@ -99,7 +99,7 @@
   "ConfigurationError": "Die Konfiguration muss in der Eigenschaft 'mcpServers' platziert werden",
   "InvalidJsonFormat": "Ungültiges JSON-Format",
   "LocalServersNotSupportedInWebEditor": "Lokale MCP-Server werden im Web-Editor nicht unterstützt. Bitte verwenden Sie nur HTTP-Server.",
-  "Thinking": "Schlussfolgerung",
+  "Thinking": "Denken",
   "ExtendedThinking": "Erweitertes Denken",
   "ExtendedThinkingDescription": "Dieses Modell verwendet fortgeschrittene Schlussfolgerungen, was die Kosten erhöhen kann.",
   "SaveAIPrompt": "KI-Prompt speichern",

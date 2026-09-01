@@ -99,7 +99,7 @@
   "ConfigurationError": "Կոնֆիգուրացիան պետք է գտնվի 'mcpServers' հատկության մեջ",
   "InvalidJsonFormat": "JSON-ի անվավեր ձևաչափ",
   "LocalServersNotSupportedInWebEditor": "Տեղական MCP սերվերները չեն աջակցվում վեբ խմբագրիչում։ Խնդրում ենք օգտագործել միայն HTTP սերվերներ։",
-  "Thinking": "Տրամաբանություն",
+  "Thinking": "Մտածողություն",
   "ExtendedThinking": "Ընդլայնված մտածողություն",
   "ExtendedThinkingDescription": "Այս մոդելը օգտագործում է առաջադեմ տրամաբանություն, որը կարող է մեծացնել ծախսերը։",
   "SaveAIPrompt": "Պահել AI հրահանգը",

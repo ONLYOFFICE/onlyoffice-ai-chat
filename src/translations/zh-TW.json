@@ -99,7 +99,7 @@
   "ConfigurationError": "設定必須放置於 'mcpServers' 屬性內",
   "InvalidJsonFormat": "無效的 JSON 格式",
   "LocalServersNotSupportedInWebEditor": "網頁編輯器不支援本機 MCP 伺服器，請僅使用 HTTP 伺服器。",
-  "Thinking": "推理",
+  "Thinking": "思考中",
   "ExtendedThinking": "延伸思考",
   "ExtendedThinkingDescription": "此模型使用進階推理功能，可能會增加成本。",
   "SaveAIPrompt": "儲存 AI 提示詞",

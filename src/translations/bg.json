@@ -99,7 +99,7 @@
   "ConfigurationError": "Конфигурацията трябва да се постави в собственост на 'mcpServers'",
   "InvalidJsonFormat": "Невалиден JSON формат",
   "LocalServersNotSupportedInWebEditor": "Локалните MCP сървъри не се поддържат в уеб редактора. Моля, използвайте само HTTP сървъри.",
-  "Thinking": "Разсъждение",
+  "Thinking": "Мислене",
   "ExtendedThinking": "Продължително мислене",
   "ExtendedThinkingDescription": "Този модел използва подобрено разсъждаване, което може да повиши цената.",
   "SaveAIPrompt": "Запази AI подкана",

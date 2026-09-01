@@ -99,7 +99,7 @@
   "ConfigurationError": "Konfiguraatio täytyy asettaa 'mcpServers' alueelle",
   "InvalidJsonFormat": "Virheellinen JSON-muoto",
   "LocalServersNotSupportedInWebEditor": "Paikalliset MCP-palvelimet eivät ole tuettuja verkkoeditorissa. Käytä ainoastaan HTTP-palvelimia.",
-  "Thinking": "Perustelut",
+  "Thinking": "Ajattelu",
   "ExtendedThinking": "Laajennettu ajattelu",
   "ExtendedThinkingDescription": "Tämä malli käyttää edistynyttä perustelua, joka saattaa kasvattaa kuluja.",
   "SaveAIPrompt": "Tallenna AI-kehote",

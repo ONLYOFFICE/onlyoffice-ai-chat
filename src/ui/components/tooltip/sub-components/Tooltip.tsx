@@ -3,12 +3,21 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { TooltipProvider } from "./Provider";
 
+export type TooltipProps = React.ComponentProps<typeof TooltipPrimitive.Root> &
+  Pick<
+    React.ComponentProps<typeof TooltipPrimitive.Provider>,
+    "skipDelayDuration"
+  >;
+
 const Tooltip = ({
   open,
   defaultOpen,
   onOpenChange,
+  delayDuration,
+  skipDelayDuration,
+  disableHoverableContent,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) => {
+}: TooltipProps) => {
   const isControlled = open !== undefined;
   const [internalOpen, setInternalOpen] = useState(defaultOpen ?? false);
 
@@ -36,7 +45,11 @@ const Tooltip = ({
   }, [isControlled, internalOpen]);
 
   return (
-    <TooltipProvider>
+    <TooltipProvider
+      delayDuration={delayDuration}
+      skipDelayDuration={skipDelayDuration}
+      disableHoverableContent={disableHoverableContent}
+    >
       <TooltipPrimitive.Root
         data-slot="tooltip"
         open={isControlled ? open : internalOpen}

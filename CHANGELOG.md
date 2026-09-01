@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.5.82
+
+### Changed
+
+- **The thinking block in a message is now labelled "Thinking", not "Reasoning".** The composer toggle that turns the feature on is called "Extended thinking", so the header over the streamed reasoning named the same feature differently. Most locales now reuse the word their own `ExtendedThinking` string already carries; seven (be, fr, id, it, pt-BR, ru, uk) keep a different stem there, since their `ExtendedThinking` wording is itself a reasoning term rather than a thinking one.
+
+### Fixed
+
+- **Locale typos around the extended-thinking strings.** Catalan carried the Spanish text with a truncated tail (`los coste`), Greek was cut mid-word (`Διευρυμένη σκέψ`), Dutch was left in English, and the Urdu description had no closing full stop.
+
+## 0.5.81
+
+### Changed
+
+- **The thinking block in an assistant message has its own icon.** It shared `btn-extended-thinking` with the composer's Extended thinking toggle, so the same atom glyph stood for both the setting and the streamed reasoning; the in-message header now uses the new `btn-thinking` icon.
+
+### Added
+
+- **`btn-thinking` icon** in light and dark, plus the shared SVG.
+
+## 0.5.80
+
+### Changed
+
+- **Suggestion chips no longer show a hover tooltip.** The tooltip only repeated the chip's own label, so hovering the empty-thread suggestions flashed a duplicate of the visible text; the chips are plain buttons now.
+
+- **Tooltips no longer fire the instant the pointer touches a button.** `TooltipProvider` now defaults to a 500 ms hover delay instead of `0`, so passing over a row of icon buttons stops flashing a tooltip on each one. This covers every hover tooltip in the widget — the `TooltipIconButton` actions in the header, message action bars and composer, plus the bare `Tooltip` usages that stand in for a native `title` (dropdown items, truncated field errors). Controlled tooltips (`open={...}`) are unaffected.
+
+  The model card no longer wraps its profile name in a tooltip that repeated the visible label.
+
+  `Tooltip` forwards `delayDuration`, `skipDelayDuration` and `disableHoverableContent` to its provider, so a single tooltip can override the default — until now these props reached the Radix root only, where the provider's value won.
+
+- **Text direction now follows the text, not the UI locale.** The composer resolves the direction of each line from its own content (`unicode-bidi: plaintext`), so a message typed in Arabic or Hebrew reads right-to-left even on an English UI, and a Latin draft stays left-to-right on `ar-SA`. An empty field has no content to key off and keeps the locale's direction, so the placeholder sits where the rest of the UI does.
+
+  Message content resolves direction per block: paragraphs, headings, blockquotes, lists and tables are `dir="auto"`, so each part of a mixed-language answer reads correctly on its own instead of inheriting one direction for the whole message. Lists and tables resolve once for the container — items and cells inherit it, so list markers and column alignment stay in a single column instead of alternating edges on mixed-language rows. Table cells default to `text-start` and the blockquote bar to logical `border-s`/`ps`, so both follow the resolved direction. Code is pinned `dir="ltr"` — both fenced blocks and inline spans, since source is read left-to-right inside an RTL answer too. On an inline span that also isolates it, so a `foo()` in an Arabic sentence keeps its brackets instead of handing them to the surrounding bidi run. Only the code itself is pinned: the code block's language label and copy button stay on the side the rest of the UI puts them.
+
+  Non-prose message parts are untouched: tool calls, attachments and the message layout itself (bubble side, action bar) still follow the locale.
+
+<<<<<<< HEAD
+- **The settings labels say what the controls do.** "Override for tasks" on the Model assignment page is now "Custom models per task" and carries a description — the rows below it are optional per-task choices layered over the default model, which the old jargon header left the reader to guess. The MCP servers page describes setting servers up rather than configuring and adding them, and the composer's "Web Search" / "Extended Thinking" toggles drop the mid-phrase capital. All 41 locales are updated in step.
+
+=======
+>>>>>>> 27f573723983098bdd5da2390447cd5693d80618
 ## 0.5.79
 
 ### Fixed

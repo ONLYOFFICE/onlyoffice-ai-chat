@@ -99,7 +99,7 @@
   "ConfigurationError": "A konfigurációkat az 'mcpServers' belül kell megadni",
   "InvalidJsonFormat": "Érvénytelen JSON-formátum",
   "LocalServersNotSupportedInWebEditor": "A helyi MCP szerverek nem támogatottak a webes szerkesztőben. Kérjük, csak HTTP szervereket használjon.",
-  "Thinking": "Magyarázat",
+  "Thinking": "Gondolkodás",
   "ExtendedThinking": "Meghosszabbított gondolkodás",
   "ExtendedThinkingDescription": "Ez a modell fejlettebb következtetést használ, ami növelheti a költségeket.",
   "SaveAIPrompt": "AI prompt mentése",

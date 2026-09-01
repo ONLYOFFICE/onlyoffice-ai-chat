@@ -99,7 +99,7 @@
   "ConfigurationError": "A configuração deve ser colocada dentro da propriedade 'mcpServers'",
   "InvalidJsonFormat": "Formato JSON inválido",
   "LocalServersNotSupportedInWebEditor": "Servidores MCP locais não são suportados no editor web. Use apenas servidores HTTP.",
-  "Thinking": "Raciocínio",
+  "Thinking": "Pensamento",
   "ExtendedThinking": "Raciocínio Avançado",
   "ExtendedThinkingDescription": "Este modelo usa raciocínio avançado, o que pode aumentar os custos.",
   "SaveAIPrompt": "Salvar prompt de AI",

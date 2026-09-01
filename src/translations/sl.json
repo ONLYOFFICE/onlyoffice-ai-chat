@@ -99,7 +99,7 @@
   "ConfigurationError": "CKonfiguracija mora biti postavljena v okviru 'mcpServers' lastnosti",
   "InvalidJsonFormat": "Neveljavna oblika JSON",
   "LocalServersNotSupportedInWebEditor": "Lokalni MCP strežniki niso podprti v spletnem urejevalniku. Uporabite samo HTTP strežnike.",
-  "Thinking": "Sklepanje",
+  "Thinking": "Razmišljanje",
   "ExtendedThinking": "Razširjeno razmišljanje",
   "ExtendedThinkingDescription": "Ta model uporablja napredno sklepanje, kar lahko zviša stroške.",
   "SaveAIPrompt": "Shrani AI poziv",

@@ -80,6 +80,12 @@
   font-weight: var(--chat-input-font-weight, inherit);
 
   color: var(--chat-composer-text-color);
+
+  /* Each line takes its direction from what is typed, not from the locale.
+     Not `dir="auto"`: that resolves an empty field to `ltr` outright and
+     flushed the Arabic placeholder left, while `plaintext` falls back to the
+     inherited `direction`. */
+  unicode-bidi: plaintext;
 }
 
 .composer-input::placeholder {

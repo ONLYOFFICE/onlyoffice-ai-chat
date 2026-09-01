@@ -99,7 +99,7 @@
   "ConfigurationError": "設定は'mcpServers'プロパティ内に配置する必要があります",
   "InvalidJsonFormat": "JSON形式が無効です",
   "LocalServersNotSupportedInWebEditor": "ローカル MCP サーバーは Web エディターではサポートされていません。HTTP サーバーのみご使用ください。",
-  "Thinking": "推論中",
+  "Thinking": "思考中",
   "ExtendedThinking": "拡張思考",
   "ExtendedThinkingDescription": "このモデルは高度な推論を使用するため、コストが増加する可能性があります。",
   "SaveAIPrompt": "AI プロンプトを保存",

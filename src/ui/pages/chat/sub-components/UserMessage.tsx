@@ -89,7 +89,7 @@ const UserActionBar = () => {
   const {
     onCreatePromptFolder,
     onCreatePrompt,
-    chatMessageActionsIconSize = 20,
+    chatMessageActionsIconSize = 24,
   } = useWidgetConfig();
   const addPrompt = usePromptsStore((s) => s.addPrompt);
   const addFolder = usePromptsStore((s) => s.addFolder);

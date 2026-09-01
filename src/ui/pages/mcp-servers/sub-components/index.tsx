@@ -37,7 +37,7 @@ const Servers = () => {
     Object.keys(systemTools ?? {}).length > 0;
 
   return (
-    <div className="flex flex-col pb-[var(--mcp-servers-content-padding-bottom,32px)] w-full">
+    <div className="mcp-servers-content flex flex-col pb-[var(--mcp-servers-content-padding-bottom,32px)] w-full">
       <p
         className={cn(
           "font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[var(--mcp-servers-description-margin-bottom,8px)]"
