@@ -122,11 +122,13 @@
   --model-assignment-title-margin-bottom: 24px;
   /* Vertical rhythm inside the assignment list: `--..-description-margin-bottom`
      under the intro text; `--..-default-margin-bottom` after the default-model
-     block; `--..-tasks-header-margin-bottom` under the "Override for tasks"
-     header; `--..-task-margin-bottom` between each task field. */
+     block; `--..-tasks-header-margin-bottom` under the "Custom models per task"
+     header and `--..-tasks-description-margin-bottom` under its description;
+     `--..-task-margin-bottom` between each task field. */
   --model-assignment-description-margin-bottom: 24px;
   --model-assignment-default-margin-bottom: 20px;
   --model-assignment-tasks-header-margin-bottom: 8px;
+  --model-assignment-tasks-description-margin-bottom: 16px;
   --model-assignment-task-margin-bottom: 12px;
 
   /* MCP Servers settings page (`<McpServersPage />`). `--mcp-servers-max-width`

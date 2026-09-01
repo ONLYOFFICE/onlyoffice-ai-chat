@@ -115,6 +115,9 @@ const ModelAssignment = ({
         <p className="select-none font-bold leading-[var(--lh-18)] text-[var(--settings-header-color)] mb-[var(--model-assignment-tasks-header-margin-bottom,8px)]">
           {t("OverrideForTasks")}
         </p>
+        <p className="select-none font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[var(--model-assignment-tasks-description-margin-bottom,16px)]">
+          {t("OverrideForTasksDescription")}
+        </p>
 
         <FieldContainer
           header={t("AIChat")}
