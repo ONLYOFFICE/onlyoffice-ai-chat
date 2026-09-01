@@ -38,8 +38,11 @@
 
   Non-prose message parts are untouched: tool calls, attachments and the message layout itself (bubble side, action bar) still follow the locale.
 
+<<<<<<< HEAD
 - **The settings labels say what the controls do.** "Override for tasks" on the Model assignment page is now "Custom models per task" and carries a description — the rows below it are optional per-task choices layered over the default model, which the old jargon header left the reader to guess. The MCP servers page describes setting servers up rather than configuring and adding them, and the composer's "Web Search" / "Extended Thinking" toggles drop the mid-phrase capital. All 41 locales are updated in step.
 
+=======
+>>>>>>> 27f573723983098bdd5da2390447cd5693d80618
 ## 0.5.79
 
 ### Fixed
