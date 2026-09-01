@@ -47,8 +47,13 @@ const PendingFileItem = ({ item, onCancel }: PendingFileItemProps) => {
       onMouseLeave={() => setHovered(false)}
       data-testid="pending-file-item"
     >
-      <div className="flex flex-row items-center h-[24px] gap-[4px]">
-        <Icon name={getFileIconName(item.type ?? 0)} size={24} noColor />
+      <div className="flex flex-row items-center h-[24px] gap-[4px] min-w-0">
+        <Icon
+          name={getFileIconName(item.type ?? 0)}
+          size={24}
+          noColor
+          className="shrink-0"
+        />
         <p className="text-[var(--file-items-color)] font-normal whitespace-nowrap overflow-hidden text-ellipsis">
           {nameWithoutExtension}
           <span className="text-[var(--file-items-ext-color)]">

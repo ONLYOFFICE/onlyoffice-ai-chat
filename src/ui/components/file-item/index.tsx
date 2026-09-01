@@ -94,7 +94,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
         imageSrc ? (
           <img
             className={cn(
-              "w-[36px] h-[36px]",
+              "w-[36px] h-[36px] shrink-0",
               isRTL ? "rounded-r-[8px]" : "rounded-l-[8px]"
             )}
             src={imageSrc}
@@ -103,14 +103,14 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
         ) : (
           <div
             className={cn(
-              "w-[36px] h-[36px] bg-[var(--background-tertiary)]",
+              "w-[36px] h-[36px] shrink-0 bg-[var(--background-tertiary)]",
               isRTL ? "rounded-r-[8px]" : "rounded-l-[8px]"
             )}
           />
         )
       ) : (
-        <div className="flex flex-row items-center h-[24px] gap-[4px]">
-          <Icon name={iconName} size={24} noColor />
+        <div className="flex flex-row items-center h-[24px] gap-[4px] min-w-0">
+          <Icon name={iconName} size={24} noColor className="shrink-0" />
           <p className="text-[var(--file-items-color)] font-normal whitespace-nowrap overflow-hidden text-ellipsis">
             {nameWithoutExtension}
             <span className="text-[var(--file-items-ext-color)]">
