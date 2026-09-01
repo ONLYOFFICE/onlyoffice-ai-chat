@@ -11,6 +11,7 @@ export type {
   DropDownItemProps,
   DropdownMenuProps,
   FieldContainerProps,
+  HelpButtonProps,
   IconButtonProps,
   InputProps,
   LinkProps,

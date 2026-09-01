@@ -4,6 +4,7 @@ import { useI18n } from "../../providers/LocalesProvider";
 import { cn } from "../../../shared/utils";
 import { useTheme } from "../../providers/ThemeProvider/context";
 import { DropdownMenu } from "../dropdown";
+import { HelpButton } from "../help-button";
 import { IconButton } from "../icon-button";
 import { ToggleButton } from "../toggle-button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
@@ -64,7 +65,6 @@ const DropDownItem = ({
     isRTL ? "left" : "right"
   );
   const [submenuAlign, setSubmenuAlign] = useState<"start" | "end">("start");
-  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const itemRef = useRef<HTMLDivElement | null>(null);
   const submenuRef = useRef<HTMLDivElement | null>(null);
@@ -301,20 +301,13 @@ const DropDownItem = ({
           (trailingIcon ?? null)
         )}
         {withAbout ? (
-          <Tooltip open={isAboutOpen}>
-            <TooltipTrigger asChild>
-              <IconButton
-                iconName="btn-menu-about"
-                size={aboutButtonSize}
-                disableHover
-                noColor
-                onClick={() => setIsAboutOpen((val) => !val)}
-              />
-            </TooltipTrigger>
-            <TooltipContent side={undefined} sideOffset={4} isAbout>
-              {aboutContent}
-            </TooltipContent>
-          </Tooltip>
+          <HelpButton
+            size={aboutButtonSize}
+            side="top"
+            align="center"
+            sideOffset={4}
+            content={aboutContent}
+          />
         ) : null}
       </div>
 

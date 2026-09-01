@@ -9,6 +9,7 @@ import {
 import { DropDownItem } from "../../components/dropdown-item";
 import { DropdownMenu } from "../../components/dropdown";
 import { FieldContainer } from "../../components/field-container";
+import { HelpButton } from "../../components/help-button";
 import { IconButton } from "../../components/icon-button";
 import { Input } from "../../components/input";
 import { Link } from "../../components/link";
@@ -36,6 +37,7 @@ export const defaultComponents: Required<ComponentOverrides> = {
   Tabs,
   TooltipContent,
   TooltipIconButton,
+  HelpButton,
   Link,
   Loader,
   FieldContainer,

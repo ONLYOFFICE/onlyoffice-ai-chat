@@ -5,7 +5,6 @@ import { useStores } from "../../../store/context";
 import type { ProviderType } from "../../../../types";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { useWidgetConfig } from "../../../../widget-config";
-import { Tooltip, TooltipTrigger } from "../../tooltip";
 import { useModelForm } from "../hooks/useModelForm";
 import { ModelCardShell } from "./ModelCardShell";
 import { ModelConfigForm, type ModelFormValues } from "./ModelConfigForm";
@@ -31,7 +30,7 @@ export const AddModelCard = ({
   onSuccess,
   isHorizontal,
 }: AddModelCardProps) => {
-  const { Button, IconButton, Link, TooltipContent } = useComponents();
+  const { Button, HelpButton, Link } = useComponents();
   const { t } = useI18n();
   const { useProfilesStore } = useStores();
   const addProfile = useProfilesStore((s) => s.addProfile);
@@ -40,7 +39,6 @@ export const AddModelCard = ({
     onDownloadTemplate,
     aboutButtonSize = 20,
   } = useWidgetConfig();
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -131,23 +129,12 @@ export const AddModelCard = ({
       >
         {t("Import")}
       </Link>
-      <Tooltip open={isTooltipOpen}>
-        <TooltipTrigger asChild>
-          <IconButton
-            className="cursor-pointer"
-            iconName="btn-menu-about"
-            size={aboutButtonSize}
-            disableHover
-            noColor
-            onClick={() => setIsTooltipOpen((val) => !val)}
-          />
-        </TooltipTrigger>
-        <TooltipContent
-          className="p-[var(--add-model-card-tooltip-padding,12px)]"
-          side="bottom"
-          isAbout
-          align="start"
-        >
+      <HelpButton
+        className="p-[var(--add-model-card-tooltip-padding,12px)]"
+        size={aboutButtonSize}
+        side="bottom"
+        align="start"
+        content={
           <div className="flex flex-col gap-[var(--add-model-card-tooltip-gap,6px)] max-w-[var(--add-model-card-tooltip-max-width,221px)]">
             <p className="leading-[var(--lh-16)] select-none">
               {t("EnterModelConfigTooltip")}
@@ -168,8 +155,8 @@ export const AddModelCard = ({
               {t("DownloadTemplate")}
             </Link>
           </div>
-        </TooltipContent>
-      </Tooltip>
+        }
+      />
     </div>
   ) : undefined;
 

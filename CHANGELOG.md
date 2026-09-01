@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **`HelpButton`** — the "i" icon that opens a hint popover on click, exported from the package root and overridable through `ComponentsProvider` as `HelpButton`. It is a popover, not a tooltip: the content may hold links and buttons, the pointer can travel from the icon into it, and it closes on Escape or an outside press. `TooltipIconButton` stays what it was — a hover label — so a hint carrying a link no longer has to be built out of it.
+
+  Consumers building the same hint outside the widget (the ONLYOFFICE plugins render one in the host window) now have a component to use instead of assembling `Tooltip` and `TooltipTrigger`, which are not part of the public surface.
+
+### Fixed
+
+- **The "i" hints in the Add model card and in dropdown items now close on Escape and on a click outside.** Both drove a `Tooltip` with `open` but no `onOpenChange`, so the popup could only be dismissed by clicking the icon a second time. Both now render `HelpButton`; the popups look and sit exactly where they did.
+
 ## 0.5.82
 
 ### Changed
