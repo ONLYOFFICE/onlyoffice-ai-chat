@@ -274,6 +274,18 @@ class CustomServers {
   setCustomServers = (servers: {
     mcpServers: Record<string, Record<string, unknown>>;
   }) => {
+    // When the host backend runs the registered servers itself, none of
+    // them are this runtime's to start or list — their tools and permission
+    // cards come back via `api.tools.listSystemTools`. Keeping the map here
+    // would connect every server twice (browser + backend) and render a
+    // duplicate card per server.
+    if (this.platform.customServersExecutedByHost) {
+      logger.info("[mcp] setCustomServers skipped — host executes them", {
+        receivedKeys: Object.keys(servers?.mcpServers ?? {}),
+      });
+      this.customServers = {};
+      return;
+    }
     // Keep only startable entries; non-startable markers are dropped here
     // so every consumer of the map (start, ready-wait, settings cards)
     // sees the same filtered set.

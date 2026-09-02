@@ -59,7 +59,13 @@ const AvailableTools = ({
     (id) => (servers[id] ?? []).length > 0
   );
   const hasCustomServers = Object.keys(customServers).length > 0;
-  const systemTypes = Object.keys(systemTools ?? {});
+  // A registered server can surface through both maps at once (the host's
+  // system-tools listing echoes registered custom servers). The local card
+  // already carries the live connection state and crash log, so the system
+  // echo is dropped rather than rendered as a duplicate card.
+  const systemTypes = Object.keys(systemTools ?? {}).filter(
+    (type) => !(type in customServers)
+  );
   const hasSystemTools = systemTypes.length > 0;
 
   if (!hasHostTools && !hasCustomServers && !hasSystemTools) return null;

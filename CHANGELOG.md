@@ -10,6 +10,8 @@
 
 ### Fixed
 
+- **A registered MCP server no longer connects twice or shows two permission cards in hosts whose backend runs it.** The host's system-tools listing echoes registered custom servers, while the widget also started the same servers in the browser — every server got two cards on the MCP settings page (with the browser connection typically dying on CORS and flashing a crash log). A host whose backend executes the registered servers now declares `PlatformAdapter.customServersExecutedByHost`, which stops the widget from starting or listing them locally; the permission list additionally drops a system echo of a locally listed server.
+
 - **Locale typos around the extended-thinking strings.** Catalan carried the Spanish text with a truncated tail (`los coste`), Greek was cut mid-word (`Διευρυμένη σκέψ`), Dutch was left in English, and the Urdu description had no closing full stop.
 
 ## 0.5.81
