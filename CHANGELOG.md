@@ -8,6 +8,8 @@
 
   Consumers building the same hint outside the widget (the ONLYOFFICE plugins render one in the host window) now have a component to use instead of assembling `Tooltip` and `TooltipTrigger`, which are not part of the public surface.
 
+- **`--chat-input-max-height` theme token** — the ceiling the composer input grows to before it starts scrolling, falling back to `50vh`, so sizing is unchanged by default. The value was hard-coded, which left `--chat-input-min-height` overridable but its counterpart not; a host embedding the widget in a short container can now cap the input against that container (e.g. `200px`) instead of against the viewport.
+
 ### Fixed
 
 - **The "i" hints in the Add model card and in dropdown items now close on Escape and on a click outside.** Both drove a `Tooltip` with `open` but no `onOpenChange`, so the popup could only be dismissed by clicking the icon a second time. Both now render `HelpButton`; the popups look and sit exactly where they did.
