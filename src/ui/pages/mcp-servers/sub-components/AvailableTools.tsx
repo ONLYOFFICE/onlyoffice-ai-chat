@@ -29,6 +29,8 @@ const AvailableTools = ({
   const { useServersStore } = useStores();
   const servers = useServersStore((s) => s.servers);
   const systemTools = useServersStore((s) => s.systemTools);
+  const registeredServers =
+    useServersStore((s) => s.registeredServers) ?? [];
   const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
 
   const enabledCount = React.useMemo(
@@ -67,8 +69,21 @@ const AvailableTools = ({
     (type) => !(type in customServers)
   );
   const hasSystemTools = systemTypes.length > 0;
+  // Registered servers the backend executes (nothing runs locally, see
+  // `customServersExecutedByHost`) have no card at all until the system
+  // listing lands — show a loading card per registered name meanwhile.
+  const pendingTypes = registeredServers.filter(
+    (name) => !(name in customServers) && !(name in (systemTools ?? {}))
+  );
+  const hasPendingServers = pendingTypes.length > 0;
 
-  if (!hasHostTools && !hasCustomServers && !hasSystemTools) return null;
+  if (
+    !hasHostTools &&
+    !hasCustomServers &&
+    !hasSystemTools &&
+    !hasPendingServers
+  )
+    return null;
 
   return (
     <div
@@ -125,13 +140,25 @@ const AvailableTools = ({
             disableEnable={disableEnable}
           />
         ))}
-        {/* System servers: enumerated server-side, rendered identically. */}
+        {/* System servers: enumerated server-side, rendered identically. An
+            empty group is how the backend reports a server it could not
+            connect to (or one that returned no tools) — flag it. */}
         {systemTypes.map((type) => (
           <AvailableToolsItem
             key={type}
             name={type}
             mcpItems={servers[type] ?? []}
             isLoading={false}
+            failed={(servers[type] ?? []).length === 0}
+            disableEnable={disableEnable}
+          />
+        ))}
+        {pendingTypes.map((type) => (
+          <AvailableToolsItem
+            key={type}
+            name={type}
+            mcpItems={[]}
+            isLoading
             disableEnable={disableEnable}
           />
         ))}

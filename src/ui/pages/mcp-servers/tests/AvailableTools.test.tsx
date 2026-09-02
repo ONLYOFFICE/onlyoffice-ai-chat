@@ -27,39 +27,57 @@ vi.mock("../../../../config", () => ({
   MAX_TOOL_COUNT_WITH_WEB_SEARCH: 102,
 }));
 
+const baseStoreState = () => ({
+  servers: {
+    "desktop-editor": [
+      {
+        name: "tool1",
+        description: "desc",
+        inputSchema: {},
+        enabled: true,
+      },
+    ],
+    "custom-server": [
+      {
+        name: "tool2",
+        description: "desc2",
+        inputSchema: {},
+        enabled: false,
+      },
+    ],
+  } as Record<string, unknown[]>,
+  tools: [],
+  systemTools: {} as Record<string, unknown[]>,
+  registeredServers: [] as string[],
+  webSearchEnabled: false,
+});
+
+let mockStoreState = baseStoreState();
+
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: (selector?: (s: unknown) => unknown) => {
-      const state = {
-        servers: {
-          "desktop-editor": [
-            {
-              name: "tool1",
-              description: "desc",
-              inputSchema: {},
-              enabled: true,
-            },
-          ],
-          "custom-server": [
-            {
-              name: "tool2",
-              description: "desc2",
-              inputSchema: {},
-              enabled: false,
-            },
-          ],
-        },
-        tools: [],
-        webSearchEnabled: false,
-      };
-      return typeof selector === "function" ? selector(state) : state;
-    },
+    useServersStore: (selector?: (s: unknown) => unknown) =>
+      typeof selector === "function" ? selector(mockStoreState) : mockStoreState,
   }),
 }));
 
 vi.mock("../sub-components/AvailableToolsItem", () => ({
-  default: ({ name }: { name: string }) => (
-    <div data-testid={`tools-item-${name}`}>{name}</div>
+  default: ({
+    name,
+    isLoading,
+    failed,
+  }: {
+    name: string;
+    isLoading: boolean;
+    failed?: boolean;
+  }) => (
+    <div
+      data-testid={`tools-item-${name}`}
+      data-loading={String(isLoading)}
+      data-failed={String(failed ?? false)}
+    >
+      {name}
+    </div>
   ),
 }));
 
@@ -73,6 +91,7 @@ describe("AvailableTools", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockGetCustomServers.mockReturnValue({});
+    mockStoreState = baseStoreState();
   });
 
   it("renders desktop-editor tool item", () => {
@@ -110,6 +129,42 @@ describe("AvailableTools", () => {
 
     // Called initially + on intervals; just verify it was called more than once
     expect(mockGetCustomServers.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it("shows a loading card for a registered host-executed server before its tools arrive", () => {
+    mockStoreState.registeredServers = ["github"];
+    render(<AvailableTools />);
+    const card = screen.getByTestId("tools-item-github");
+    expect(card).toHaveAttribute("data-loading", "true");
+  });
+
+  it("replaces the loading card with the system card once the listing lands", () => {
+    mockStoreState.registeredServers = ["github"];
+    mockStoreState.systemTools = { github: [] };
+    mockStoreState.servers.github = [
+      { name: "tool3", description: "d", inputSchema: {}, enabled: true },
+    ];
+    render(<AvailableTools />);
+    const cards = screen.getAllByTestId("tools-item-github");
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toHaveAttribute("data-loading", "false");
+    expect(cards[0]).toHaveAttribute("data-failed", "false");
+  });
+
+  it("flags a system server that delivered no tools as failed", () => {
+    mockStoreState.registeredServers = ["github"];
+    mockStoreState.systemTools = { github: [] };
+    render(<AvailableTools />);
+    const card = screen.getByTestId("tools-item-github");
+    expect(card).toHaveAttribute("data-loading", "false");
+    expect(card).toHaveAttribute("data-failed", "true");
+  });
+
+  it("does not duplicate a server listed both locally and by the system listing", () => {
+    mockGetCustomServers.mockReturnValue({ github: { url: "http://x" } });
+    mockStoreState.systemTools = { github: [] };
+    render(<AvailableTools />);
+    expect(screen.getAllByTestId("tools-item-github")).toHaveLength(1);
   });
 
   afterEach(() => {

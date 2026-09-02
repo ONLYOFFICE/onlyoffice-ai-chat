@@ -13,6 +13,13 @@ type AvailableToolsItemProps = {
   mcpItems: TMCPItem[];
   isLoading: boolean;
   disableEnable: boolean;
+  /**
+   * The server is listed but delivered no tools — a server-executed MCP
+   * server the backend could not connect to (or one that returned an empty
+   * list). Renders the same error icon as a stopped local server; there is
+   * no local crash log to open in this case.
+   */
+  failed?: boolean;
 };
 
 const AvailableToolsItem = ({
@@ -21,6 +28,7 @@ const AvailableToolsItem = ({
   mcpItems,
   isLoading,
   disableEnable,
+  failed = false,
 }: AvailableToolsItemProps) => {
   const { IconButton, Loader, ToggleButton } = useComponents();
   const { isRTL } = useI18n();
@@ -119,7 +127,7 @@ const AvailableToolsItem = ({
           <p className="text-[var(--servers-available-tools-item-name-color)] font-bold">
             {displayName ?? name}
           </p>
-          {!isLoadingAction && isStoped ? (
+          {!isLoadingAction && (isStoped || failed) ? (
             <IconButton
               iconName="status.error"
               size={16}
