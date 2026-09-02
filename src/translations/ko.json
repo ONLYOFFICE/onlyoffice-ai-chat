@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "JSON 구성을 입력하세요:",
   "Tools": "도구",
   "AllTools": "전체 도구",
-  "EnableAllTools": "전체 도구 활성화",
-  "DisableAllTools": "전체 도구 비활성화",
   "CopyToClipboard": "클립보드에 복사",
   "WebSearch": "웹 검색",
   "WebSearchDescription": "웹 검색 엔진을 연결하여 실시간 인터넷 정보로 AI 채팅을 강화합니다.",

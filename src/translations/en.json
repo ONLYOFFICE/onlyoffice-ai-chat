@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Enter your JSON configuration:",
   "Tools": "tools",
   "AllTools": "All tools",
-  "EnableAllTools": "Enable all tools",
-  "DisableAllTools": "Disable all tools",
   "CopyToClipboard": "Copy to clipboard",
   "WebSearch": "Web search",
   "WebSearchDescription": "Link a web search engine to improve AI chats with real-time internet info.",

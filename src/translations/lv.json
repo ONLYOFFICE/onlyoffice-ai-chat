@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Ievadiet savu JSON konfigurāciju:",
   "Tools": "rīki",
   "AllTools": "Visi rīki",
-  "EnableAllTools": "Iespējot visus rīkus",
-  "DisableAllTools": "Atspējot visus rīkus",
   "CopyToClipboard": "Kopēt starpliktuvē",
   "WebSearch": "Meklēšana tīmeklī",
   "WebSearchDescription": "Pievienojiet tīmekļa meklētāju, lai uzlabotu AI tērzēšanu ar aktuālu informāciju no interneta.",

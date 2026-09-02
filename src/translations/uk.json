@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Введіть вашу JSON-конфігурацію:",
   "Tools": "інструменти",
   "AllTools": "Усі інструменти",
-  "EnableAllTools": "Увімкнути всі інструменти",
-  "DisableAllTools": "Вимкнути всі інструменти",
   "CopyToClipboard": "Копіювати в буфер обміну",
   "WebSearch": "Web-пошук",
   "WebSearchDescription": "Підключіть пошукову систему, щоб збагатити AI Chat актуальною інформацією з інтернету.",

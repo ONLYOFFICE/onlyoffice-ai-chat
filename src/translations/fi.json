@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Syötä JSON-konfiguraatiosi:",
   "Tools": "työkalut",
   "AllTools": "Kaikki työkalut",
-  "EnableAllTools": "Ota kaikki työkalut käyttöön",
-  "DisableAllTools": "Poista kaikki työkalut käytöstä",
   "CopyToClipboard": "Kopioi leikepöydälle",
   "WebSearch": "Verkkohaku",
   "WebSearchDescription": "Yhdistä verkkohakukone parantaaksesi AI-chattia reaaliaikaisella tiedolla.",

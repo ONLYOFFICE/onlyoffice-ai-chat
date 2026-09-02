@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "JSON yapılandırmanızı girin:",
   "Tools": "araçlar",
   "AllTools": "Tüm araçlar",
-  "EnableAllTools": "Tüm araçları etkinleştir",
-  "DisableAllTools": "Tüm araçları devre dışı bırak",
   "CopyToClipboard": "Panoya kopyala",
   "WebSearch": "Web Araması",
   "WebSearchDescription": "AI sohbetlerini gerçek zamanlı internet bilgisiyle geliştirmek için bir web arama motoru bağlayın.",

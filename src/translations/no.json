@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Skriv inn JSON-konfigurasjonen din:",
   "Tools": "verktøy",
   "AllTools": "Alle verktøy",
-  "EnableAllTools": "Aktiver alle verktøy",
-  "DisableAllTools": "Deaktiver alle verktøy",
   "CopyToClipboard": "Kopier til utklippstavlen",
   "WebSearch": "Nettsøk",
   "WebSearchDescription": "Koble til et nettsøk for å gi AI Chat tilgang til sanntidsinformasjon fra internett.",

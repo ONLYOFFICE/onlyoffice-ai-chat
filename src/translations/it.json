@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Inserisci la tua configurazione JSON:",
   "Tools": "strumenti",
   "AllTools": "Tutti gli strumenti",
-  "EnableAllTools": "Abilita tutti gli strumenti",
-  "DisableAllTools": "Disabilita tutti gli strumenti",
   "CopyToClipboard": "Copia negli appunti",
   "WebSearch": "Ricerca web",
   "WebSearchDescription": "Collega un motore di ricerca web per arricchire le chat AI con informazioni in tempo reale.",

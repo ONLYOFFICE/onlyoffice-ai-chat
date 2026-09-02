@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Введите конфигурацию JSON:",
   "Tools": "инструменты",
   "AllTools": "Все инструменты",
-  "EnableAllTools": "Включить все инструменты",
-  "DisableAllTools": "Отключить все инструменты",
   "CopyToClipboard": "Копировать в буфер обмена",
   "WebSearch": "Веб-поиск",
   "WebSearchDescription": "Подключите поисковый движок для обогащения AI Chat актуальной информацией из интернета.",

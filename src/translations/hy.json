@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Մուտքագրեք ձեր JSON կարգավորումը:",
   "Tools": "գործիքներ",
   "AllTools": "Բոլոր գործիքները",
-  "EnableAllTools": "Միացնել բոլոր գործիքները",
-  "DisableAllTools": "Անջատել բոլոր գործիքները",
   "CopyToClipboard": "Պատճենել սեղմատախտակին",
   "WebSearch": "Վեբ Որոնում",
   "WebSearchDescription": "Կապեք վեբ որոնիչ՝ AI chat-ը իրական ժամանակի ինտերնետ տեղեկություններով հարստացնելու համար։",

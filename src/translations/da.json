@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Indtast din JSON-konfiguration",
   "Tools": "værktøjer",
   "AllTools": "Alle værktøjer",
-  "EnableAllTools": "Aktiver alle værktøjer",
-  "DisableAllTools": "Deaktiver alle værktøjer",
   "CopyToClipboard": "Kopier til udklipsholder",
   "WebSearch": "Websøgning",
   "WebSearchDescription": "Tilknyt en websøgemaskine for at forbedre AI Chat med realtidsoplysninger fra internettet.",

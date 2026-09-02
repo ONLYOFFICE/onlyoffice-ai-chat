@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "הזן את תצורת ה-JSON שלך:",
   "Tools": "כלים",
   "AllTools": "כל הכלים",
-  "EnableAllTools": "הפעל את כל הכלים",
-  "DisableAllTools": "השבת את כל הכלים",
   "CopyToClipboard": "העתק ללוח",
   "WebSearch": "חיפוש באינטרנט",
   "WebSearchDescription": "חבר מנוע חיפוש אינטרנט לשיפור שיחות AI עם מידע עדכני מהאינטרנט.",

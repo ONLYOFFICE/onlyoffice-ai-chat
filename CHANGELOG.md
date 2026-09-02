@@ -4,6 +4,8 @@
 
 ### Changed
 
+- **An MCP server row switches all its tools with a toggle.** The three-dots menu with Enable all tools / Disable all tools is replaced by a server-level ToggleButton: it reads ON while at least one tool is enabled, and switching it flips every tool at once. Enabling stays blocked under the paid gate while switching off is always available. The orphaned `EnableAllTools`/`DisableAllTools` keys are removed from all 41 locales (DocSpace bug 78693).
+
 - **The thinking block in a message is now labelled "Thinking", not "Reasoning".** The composer toggle that turns the feature on is called "Extended thinking", so the header over the streamed reasoning named the same feature differently. Most locales now reuse the word their own `ExtendedThinking` string already carries; seven (be, fr, id, it, pt-BR, ru, uk) keep a different stem there, since their `ExtendedThinking` wording is itself a reasoning term rather than a thinking one.
 
 ### Fixed

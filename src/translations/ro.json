@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Introduceți configurația dvs JSON:",
   "Tools": "instrumente",
   "AllTools": "Toate instrumentele",
-  "EnableAllTools": "Activează toate instrumentele",
-  "DisableAllTools": "Dezactivează toate instrumentele",
   "CopyToClipboard": "Copiere în clipboard",
   "WebSearch": "Căutare web",
   "WebSearchDescription": "Conectați un motor de căutare web pentru a îmbunătăți conversațiile AI cu informații în timp real.",

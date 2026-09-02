@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "اپنی JSON کنفیگریشن درج کریں:",
   "Tools": "اوزار",
   "AllTools": "تمام ٹولز",
-  "EnableAllTools": "تمام ٹولز کو فعال کریں۔",
-  "DisableAllTools": "تمام ٹولز کو غیر فعال کریں۔",
   "CopyToClipboard": "کلپ بورڈ پر کاپی کریں۔",
   "WebSearch": "ویب تلاش",
   "WebSearchDescription": "ویب سرچ انجن کو لنک کریں تاکہ AI Chat میں ریئل ٹائم انٹرنیٹ معلومات شامل ہوں۔",

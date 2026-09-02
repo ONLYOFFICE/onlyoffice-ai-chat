@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Introduce tu configuración JSON:",
   "Tools": "herramientas",
   "AllTools": "Totes les eines",
-  "EnableAllTools": "Habilitar todas las herramientas",
-  "DisableAllTools": "Desactivar todas las herramientas",
   "CopyToClipboard": "Copiar al portapapeles",
   "WebSearch": "Búsqueda web",
   "WebSearchDescription": "Vinculeu un motor de cerca web per millorar els xats d'IA amb informació en temps real.",

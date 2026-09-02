@@ -36,25 +36,6 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../components/dropdown", () => ({
-  DropdownMenu: ({
-    trigger,
-    items,
-  }: {
-    trigger: React.ReactNode;
-    items: Array<{ text: string; onClick: () => void }>;
-  }) => (
-    <div data-testid="dropdown">
-      {trigger}
-      {items.map((item) => (
-        <button key={item.text} onClick={item.onClick}>
-          {item.text}
-        </button>
-      ))}
-    </div>
-  ),
-}));
-
 vi.mock("../../../components/icon", () => ({
   Icon: () => <span data-testid="icon" />,
 }));
@@ -74,8 +55,21 @@ vi.mock("../../../components/loader", () => ({
 }));
 
 vi.mock("../../../components/toggle-button", () => ({
-  ToggleButton: ({ checked }: { checked: boolean }) => (
-    <div data-testid="toggle" data-checked={String(checked)} />
+  ToggleButton: ({
+    checked,
+    disabled,
+    onCheckedChange,
+  }: {
+    checked: boolean;
+    disabled?: boolean;
+    onCheckedChange?: (checked: boolean) => void;
+  }) => (
+    <button
+      data-testid="toggle"
+      data-checked={String(checked)}
+      disabled={disabled}
+      onClick={() => onCheckedChange?.(!checked)}
+    />
   ),
 }));
 
@@ -123,7 +117,7 @@ describe("AvailableToolsItem", () => {
     expect(screen.getByTestId("loader")).toBeInTheDocument();
   });
 
-  it("shows dropdown menu when not loading", () => {
+  it("shows the all-tools toggle when not loading, ON while any tool is enabled", () => {
     render(
       <AvailableToolsItem
         name="my-server"
@@ -132,7 +126,21 @@ describe("AvailableToolsItem", () => {
         disableEnable={false}
       />
     );
-    expect(screen.getByTestId("dropdown")).toBeInTheDocument();
+    const toggle = screen.getByTestId("toggle");
+    expect(toggle).toBeInTheDocument();
+    expect(toggle).toHaveAttribute("data-checked", "true");
+  });
+
+  it("hides the all-tools toggle when the server has no tools", () => {
+    render(
+      <AvailableToolsItem
+        name="my-server"
+        mcpItems={[]}
+        isLoading={false}
+        disableEnable={false}
+      />
+    );
+    expect(screen.queryByTestId("toggle")).not.toBeInTheDocument();
   });
 
   it("shows tools when expanded by click", () => {
@@ -195,7 +203,7 @@ describe("AvailableToolsItem", () => {
     );
   });
 
-  it("enable all tools calls changeAllToolStatus once with enabled=true", () => {
+  it("switching the toggle off disables all tools at once", () => {
     render(
       <AvailableToolsItem
         name="my-server"
@@ -204,13 +212,31 @@ describe("AvailableToolsItem", () => {
         disableEnable={false}
       />
     );
-    fireEvent.click(screen.getByText("EnableAllTools"));
+    fireEvent.click(screen.getByTestId("toggle"));
+    expect(mockChangeAllToolStatus).toHaveBeenCalledWith("my-server", false);
+    expect(mockChangeAllToolStatus).toHaveBeenCalledTimes(1);
+    expect(mockChangeToolStatus).not.toHaveBeenCalled();
+  });
+
+  it("switching the toggle on from all-disabled enables all tools at once", () => {
+    render(
+      <AvailableToolsItem
+        name="my-server"
+        mcpItems={mcpItems.map((tool) => ({ ...tool, enabled: false }))}
+        isLoading={false}
+        disableEnable={false}
+      />
+    );
+    const toggle = screen.getByTestId("toggle");
+    expect(toggle).toHaveAttribute("data-checked", "false");
+
+    fireEvent.click(toggle);
     expect(mockChangeAllToolStatus).toHaveBeenCalledWith("my-server", true);
     expect(mockChangeAllToolStatus).toHaveBeenCalledTimes(1);
     expect(mockChangeToolStatus).not.toHaveBeenCalled();
   });
 
-  it("disable all tools calls changeAllToolStatus once with enabled=false", () => {
+  it("clicking the toggle does not expand the tools list", () => {
     render(
       <AvailableToolsItem
         name="my-server"
@@ -219,10 +245,40 @@ describe("AvailableToolsItem", () => {
         disableEnable={false}
       />
     );
-    fireEvent.click(screen.getByText("DisableAllTools"));
+    fireEvent.click(screen.getByTestId("toggle"));
+    expect(screen.queryByText("tool-a")).not.toBeInTheDocument();
+  });
+
+  it("blocks enabling via the toggle when disableEnable is set and nothing is enabled", () => {
+    render(
+      <AvailableToolsItem
+        name="my-server"
+        mcpItems={mcpItems.map((tool) => ({ ...tool, enabled: false }))}
+        isLoading={false}
+        disableEnable
+      />
+    );
+    const toggle = screen.getByTestId("toggle");
+    expect(toggle).toBeDisabled();
+
+    fireEvent.click(toggle);
+    expect(mockChangeAllToolStatus).not.toHaveBeenCalled();
+  });
+
+  it("still allows switching off when disableEnable is set", () => {
+    render(
+      <AvailableToolsItem
+        name="my-server"
+        mcpItems={mcpItems}
+        isLoading={false}
+        disableEnable
+      />
+    );
+    const toggle = screen.getByTestId("toggle");
+    expect(toggle).not.toBeDisabled();
+
+    fireEvent.click(toggle);
     expect(mockChangeAllToolStatus).toHaveBeenCalledWith("my-server", false);
-    expect(mockChangeAllToolStatus).toHaveBeenCalledTimes(1);
-    expect(mockChangeToolStatus).not.toHaveBeenCalled();
   });
 
   it("shows error icon when server is stopped", () => {

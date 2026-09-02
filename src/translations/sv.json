@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Ange din JSON-konfiguration:",
   "Tools": "verktyg",
   "AllTools": "Alla verktyg",
-  "EnableAllTools": "Aktivera alla verktyg",
-  "DisableAllTools": "Inaktivera alla verktyg",
   "CopyToClipboard": "Kopiera till Urklipp",
   "WebSearch": "Webbsökning",
   "WebSearchDescription": "Länka en webbsökmotor för att förbättra AI-chattar med realtidsinformation från internet.",

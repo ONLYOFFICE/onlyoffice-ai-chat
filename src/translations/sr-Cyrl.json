@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Унесите своју JSON конфигурацију:",
   "Tools": "алати",
   "AllTools": "Сви алати",
-  "EnableAllTools": "Омогући све алате",
-  "DisableAllTools": "Онемогући све алате",
   "CopyToClipboard": "Копирај у привремену меморију",
   "WebSearch": "Веб претрага",
   "WebSearchDescription": "Повежите веб претраживач ради унапређења AI разговора информацијама у реалном времену.",

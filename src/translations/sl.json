@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Vnesi svojo JSON konfiguracijo:",
   "Tools": "orodja",
   "AllTools": "Vsa orodja",
-  "EnableAllTools": "Omogoči vsa orodja",
-  "DisableAllTools": "Onemogoči vsa orodja",
   "CopyToClipboard": "Kopiraj v odložišče",
   "WebSearch": "Spletno iskanje",
   "WebSearchDescription": "Povežite spletni iskalnik za izboljšanje AI klepetov z aktualnimi informacijami iz spleta.",

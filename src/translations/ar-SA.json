@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": " أدخلوا تهيئةJSON الخاصة بكم:",
   "Tools": "أدوات",
   "AllTools": "جميع الأدوات",
-  "EnableAllTools": "تمكين جميع الأدوات",
-  "DisableAllTools": "تعطيل جميع الأدوات",
   "CopyToClipboard": "نسخ إلى الحافظة",
   "WebSearch": "بحث الويب",
   "WebSearchDescription": "اربط محرك بحث ويب لتحسين محادثات الذكاء الاصطناعي بمعلومات الإنترنت الفورية.",

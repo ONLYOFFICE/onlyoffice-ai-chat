@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Zadejte svou konfiguraci JSON:",
   "Tools": "nástroje",
   "AllTools": "Všechny nástroje",
-  "EnableAllTools": "Povolit všechny nástroje",
-  "DisableAllTools": "Zakázat všechny nástroje",
   "CopyToClipboard": "Kopírovat do schránky",
   "WebSearch": "Webové vyhledávání",
   "WebSearchDescription": "Připojte webový vyhledávač pro obohacení AI chatu o aktuální informace z internetu.",

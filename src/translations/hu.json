@@ -78,8 +78,6 @@
   "EnterYourJSONConfiguration": "Add meg a JSON konfigurációt",
   "Tools": "eszközök",
   "AllTools": "Minden eszköz",
-  "EnableAllTools": "Minden eszközök engedélyezése",
-  "DisableAllTools": "Mnden eszköz kikapcsolása",
   "CopyToClipboard": "Másolás vágólapra",
   "WebSearch": "Keresés a weben",
   "WebSearchDescription": "Csatoljon webkeresőt az AI chatok valós idejű internetes információval való bővítéséhez.",
