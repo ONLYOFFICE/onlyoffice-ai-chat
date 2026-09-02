@@ -105,10 +105,16 @@ const ThreadInner = () => {
         }}
       >
         <ThreadPrimitive.If empty>
-          <SuggestionsHeader />
-          <ThreadPrimitive.Viewport className="chat-viewport--empty relative flex min-w-0 flex-1 flex-col items-center justify-center overflow-y-auto" />
-          <ThreadWelcome />
-          <Suggestions />
+          <div className="chat-viewport--empty relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+            <div className="shrink-0">
+              <SuggestionsHeader />
+            </div>
+            <div className="mt-auto shrink-0">
+              <ThreadWelcome />
+              <Suggestions />
+            </div>
+          </div>
+
           <ComposerHeader />
           <Composer />
         </ThreadPrimitive.If>

@@ -12,6 +12,10 @@
 
 ### Fixed
 
+- **The empty new chat scrolls instead of squeezing its content.** `suggestionsHeader`, the welcome screen and the suggestion chips sat outside the thread viewport, so in a short container they were compressed — and, past a point, clipped — with no way to reach them. They now live in a scrollable column that keeps them hugging the composer at a comfortable height and becomes scrollable when they no longer fit.
+
+  The empty state's scroll container is a plain element rather than `ThreadPrimitive.Viewport`: the primitive scrolls itself to the bottom when the thread initializes, which would have hidden the header. The container keeps its `chat-viewport--empty` class, and `welcome-container`, `welcome-title`, `welcome-description` and `suggestions` are untouched, so host overrides keyed on those still apply. A host stylesheet that instead relied on the welcome screen and the chips being siblings of the composer needs updating — they are now nested one level deeper.
+
 - **The "i" hints in the Add model card and in dropdown items now close on Escape and on a click outside.** Both drove a `Tooltip` with `open` but no `onOpenChange`, so the popup could only be dismissed by clicking the icon a second time. Both now render `HelpButton`; the popups look and sit exactly where they did.
 
 ## 0.5.82
