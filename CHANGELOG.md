@@ -10,7 +10,7 @@
 
 ### Fixed
 
-- **A registered MCP server no longer connects twice or shows two permission cards in hosts whose backend runs it.** The host's system-tools listing echoes registered custom servers, while the widget also started the same servers in the browser — every server got two cards on the MCP settings page (with the browser connection typically dying on CORS and flashing a crash log). A host whose backend executes the registered servers now declares `PlatformAdapter.customServersExecutedByHost`, which stops the widget from starting or listing them locally; the permission list additionally drops a system echo of a locally listed server. Host-executed servers keep their connection feedback: each registered server shows a loading card until the backend's listing lands, and a server that delivered no tools (unreachable, or genuinely empty) is flagged with the error icon.
+- **A registered MCP server no longer connects twice or shows two permission cards in hosts whose backend runs it.** The host's system-tools listing echoes registered custom servers, while the widget also started the same servers in the browser — every server got two cards on the MCP settings page (with the browser connection typically dying on CORS and flashing a crash log). A host whose backend executes the registered servers now declares `PlatformAdapter.customServersExecutedByHost`, which stops the widget from starting or listing them locally; the permission list additionally drops a system echo of a locally listed server. Host-executed servers keep their connection feedback: each registered server shows a loading card until the backend's listing lands, and a server the backend could not reach is flagged with the error icon — clicking the card opens the enumeration error message (`listSystemTools` now answers `{ groups, errors }`; the legacy grouped map is still accepted).
 
 - **Locale typos around the extended-thinking strings.** Catalan carried the Spanish text with a truncated tail (`los coste`), Greek was cut mid-word (`Διευρυμένη σκέψ`), Dutch was left in English, and the Urdu description had no closing full stop.
 
@@ -27,6 +27,8 @@
 ## 0.5.80
 
 ### Changed
+
+- **The 100-tool cap is gone.** Enabling MCP/host tools is no longer blocked past 100 (102 with web search): the toggles never disable on count, and the "N/100 Tools" counter over the permission list is removed. Users connect as many servers and tools as they want; model/provider limits are theirs to manage.
 
 - **Suggestion chips no longer show a hover tooltip.** The tooltip only repeated the chip's own label, so hovering the empty-thread suggestions flashed a duplicate of the visible text; the chips are plain buttons now.
 

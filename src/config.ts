@@ -19,9 +19,3 @@ export interface StoreKeys {
   mcpServers: string;
   disabledTools: string;
 }
-
-/** Maximum number of MCP / host tools that may be active at once */
-export const MAX_TOOL_COUNT = 100;
-
-/** Same limit as {@link MAX_TOOL_COUNT} but with two extra slots reserved for the built-in web-search tools */
-export const MAX_TOOL_COUNT_WITH_WEB_SEARCH = MAX_TOOL_COUNT + 2;

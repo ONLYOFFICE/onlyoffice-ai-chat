@@ -99,7 +99,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     expect(screen.getByText("my-server")).toBeInTheDocument();
@@ -111,7 +110,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={[]}
         isLoading={true}
-        disableEnable={false}
       />
     );
     expect(screen.getByTestId("loader")).toBeInTheDocument();
@@ -123,7 +121,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     const toggle = screen.getByTestId("toggle");
@@ -137,7 +134,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={[]}
         isLoading={false}
-        disableEnable={false}
       />
     );
     expect(screen.queryByTestId("toggle")).not.toBeInTheDocument();
@@ -149,7 +145,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     expect(screen.queryByText("tool-a")).not.toBeInTheDocument();
@@ -165,7 +160,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={true}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByText("my-server"));
@@ -178,7 +172,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={[]}
         isLoading={false}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByText("my-server"));
@@ -191,7 +184,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByText("my-server"));
@@ -209,7 +201,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByTestId("toggle"));
@@ -224,7 +215,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems.map((tool) => ({ ...tool, enabled: false }))}
         isLoading={false}
-        disableEnable={false}
       />
     );
     const toggle = screen.getByTestId("toggle");
@@ -242,43 +232,10 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByTestId("toggle"));
     expect(screen.queryByText("tool-a")).not.toBeInTheDocument();
-  });
-
-  it("blocks enabling via the toggle when disableEnable is set and nothing is enabled", () => {
-    render(
-      <AvailableToolsItem
-        name="my-server"
-        mcpItems={mcpItems.map((tool) => ({ ...tool, enabled: false }))}
-        isLoading={false}
-        disableEnable
-      />
-    );
-    const toggle = screen.getByTestId("toggle");
-    expect(toggle).toBeDisabled();
-
-    fireEvent.click(toggle);
-    expect(mockChangeAllToolStatus).not.toHaveBeenCalled();
-  });
-
-  it("still allows switching off when disableEnable is set", () => {
-    render(
-      <AvailableToolsItem
-        name="my-server"
-        mcpItems={mcpItems}
-        isLoading={false}
-        disableEnable
-      />
-    );
-    const toggle = screen.getByTestId("toggle");
-    expect(toggle).not.toBeDisabled();
-
-    fireEvent.click(toggle);
-    expect(mockChangeAllToolStatus).toHaveBeenCalledWith("my-server", false);
   });
 
   it("shows error icon when server is stopped", () => {
@@ -288,7 +245,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={true}
-        disableEnable={false}
       />
     );
     // isStoped is set via interval, advance timer
@@ -308,7 +264,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={[]}
         isLoading={true}
-        disableEnable={false}
       />
     );
     act(() => {
@@ -330,7 +285,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={[]}
         isLoading={true}
-        disableEnable={false}
       />
     );
     act(() => {
@@ -346,7 +300,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByText("my-server"));
@@ -357,7 +310,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={true}
-        disableEnable={false}
       />
     );
     expect(screen.queryByText("tool-a")).not.toBeInTheDocument();

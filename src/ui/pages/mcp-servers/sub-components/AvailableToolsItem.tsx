@@ -12,14 +12,13 @@ type AvailableToolsItemProps = {
   displayName?: string;
   mcpItems: TMCPItem[];
   isLoading: boolean;
-  disableEnable: boolean;
   /**
-   * The server is listed but delivered no tools — a server-executed MCP
-   * server the backend could not connect to (or one that returned an empty
-   * list). Renders the same error icon as a stopped local server; there is
-   * no local crash log to open in this case.
+   * Enumeration failure message for a server-executed MCP server the
+   * backend could not connect to (from the system-tools listing). Renders
+   * the same error icon as a stopped local server; clicking the row opens
+   * this message in place of a crash log.
    */
-  failed?: boolean;
+  failedText?: string;
 };
 
 const AvailableToolsItem = ({
@@ -27,8 +26,7 @@ const AvailableToolsItem = ({
   displayName,
   mcpItems,
   isLoading,
-  disableEnable,
-  failed = false,
+  failedText,
 }: AvailableToolsItemProps) => {
   const { IconButton, Loader, ToggleButton } = useComponents();
   const { isRTL } = useI18n();
@@ -107,9 +105,10 @@ const AvailableToolsItem = ({
         )}
         onClick={() => {
           if (isLoadingAction) return;
-          // A stopped server opens its crash log even with no tools;
-          // a healthy server only opens when it has tools to show.
-          if (!isStoped && mcpItems.length === 0) return;
+          // A stopped server opens its crash log even with no tools, and a
+          // server-executed one with an enumeration failure opens its error
+          // message; a healthy server only opens when it has tools to show.
+          if (!isStoped && !failedText && mcpItems.length === 0) return;
           setOpened((val) => !val);
         }}
       >
@@ -127,7 +126,7 @@ const AvailableToolsItem = ({
           <p className="text-[var(--servers-available-tools-item-name-color)] font-bold">
             {displayName ?? name}
           </p>
-          {!isLoadingAction && (isStoped || failed) ? (
+          {!isLoadingAction && (isStoped || !!failedText) ? (
             <IconButton
               iconName="status.error"
               size={16}
@@ -148,14 +147,13 @@ const AvailableToolsItem = ({
             >
               <ToggleButton
                 checked={someToolEnabled}
-                disabled={disableEnable && !someToolEnabled}
                 onCheckedChange={onToggleAllTools}
               />
             </div>
           ) : null}
         </div>
       </div>
-      {opened && isStoped ? (
+      {opened && (isStoped || failedText) ? (
         <div
           className={cn(
             "mt-[var(--servers-available-tools-logs-margin-top,4px)]",
@@ -174,11 +172,11 @@ const AvailableToolsItem = ({
               "text-[var(--servers-available-tools-item-name-color)]"
             )}
           >
-            {logs.join("")}
+            {isStoped ? logs.join("") : failedText}
           </pre>
         </div>
       ) : null}
-      {opened && !isStoped ? (
+      {opened && !isStoped && !failedText ? (
         <div className="flex flex-col gap-[var(--servers-available-tools-sublist-gap,8px)] mt-[var(--servers-available-tools-sublist-margin-top,4px)]">
           {mcpItems.map((tool) => {
             return (
@@ -197,7 +195,6 @@ const AvailableToolsItem = ({
                   </p>
                   <ToggleButton
                     checked={tool.enabled ?? false}
-                    disabled={disableEnable && !tool.enabled}
                     onCheckedChange={() => {
                       // empty change because change will be applied in onClick at div element
                     }}

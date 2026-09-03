@@ -1,14 +1,9 @@
 import React from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useToolsContext } from "../../../tools/context";
-import {
-  MAX_TOOL_COUNT,
-  MAX_TOOL_COUNT_WITH_WEB_SEARCH,
-} from "../../../../config";
 import { cn } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
 import AvailableToolsItem from "./AvailableToolsItem";
-import ToolsCounter from "./ToolsCounter";
 
 type AvailableToolsProps = {
   withHeader?: boolean;
@@ -31,16 +26,8 @@ const AvailableTools = ({
   const systemTools = useServersStore((s) => s.systemTools);
   const registeredServers =
     useServersStore((s) => s.registeredServers) ?? [];
-  const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
-
-  const enabledCount = React.useMemo(
-    () =>
-      Object.values(servers).reduce(
-        (acc, items) => acc + items.filter((t) => t.enabled).length,
-        0
-      ),
-    [servers]
-  );
+  const systemToolsErrors =
+    useServersStore((s) => s.systemToolsErrors) ?? {};
 
   React.useEffect(() => {
     setCustomServers(serversInstance.getCustomServers());
@@ -51,10 +38,6 @@ const AvailableTools = ({
 
     return () => clearInterval(interval);
   }, [serversInstance]);
-
-  const disableEnable = webSearchEnabled
-    ? enabledCount >= MAX_TOOL_COUNT_WITH_WEB_SEARCH
-    : enabledCount >= MAX_TOOL_COUNT;
 
   const hostGroupIds = serversInstance.getHostToolGroupIds();
   const hasHostTools = hostGroupIds.some(
@@ -103,7 +86,6 @@ const AvailableTools = ({
           <p className="font-bold text-[var(--servers-available-tools-header-color)]">
             {t("Permissions")}
           </p>
-          <ToolsCounter />
         </div>
       ) : null}
       <div
@@ -127,7 +109,6 @@ const AvailableTools = ({
                 )}
                 mcpItems={servers[groupId] ?? []}
                 isLoading={false}
-                disableEnable={disableEnable}
               />
             ) : null
           )}
@@ -137,20 +118,18 @@ const AvailableTools = ({
             name={type}
             mcpItems={servers[type] ?? []}
             isLoading={!servers[type]?.length}
-            disableEnable={disableEnable}
           />
         ))}
-        {/* System servers: enumerated server-side, rendered identically. An
-            empty group is how the backend reports a server it could not
-            connect to (or one that returned no tools) — flag it. */}
+        {/* System servers: enumerated server-side, rendered identically. A
+            server whose enumeration failed carries its error message in the
+            listing — the card flags it and opens the message on click. */}
         {systemTypes.map((type) => (
           <AvailableToolsItem
             key={type}
             name={type}
             mcpItems={servers[type] ?? []}
             isLoading={false}
-            failed={(servers[type] ?? []).length === 0}
-            disableEnable={disableEnable}
+            failedText={systemToolsErrors[type]}
           />
         ))}
         {pendingTypes.map((type) => (
@@ -159,7 +138,6 @@ const AvailableTools = ({
             name={type}
             mcpItems={[]}
             isLoading
-            disableEnable={disableEnable}
           />
         ))}
       </div>

@@ -22,11 +22,6 @@ vi.mock("../../../tools/context", () => ({
   }),
 }));
 
-vi.mock("../../../../config", () => ({
-  MAX_TOOL_COUNT: 100,
-  MAX_TOOL_COUNT_WITH_WEB_SEARCH: 102,
-}));
-
 const baseStoreState = () => ({
   servers: {
     "desktop-editor": [
@@ -48,6 +43,7 @@ const baseStoreState = () => ({
   } as Record<string, unknown[]>,
   tools: [],
   systemTools: {} as Record<string, unknown[]>,
+  systemToolsErrors: {} as Record<string, string>,
   registeredServers: [] as string[],
   webSearchEnabled: false,
 });
@@ -65,24 +61,20 @@ vi.mock("../sub-components/AvailableToolsItem", () => ({
   default: ({
     name,
     isLoading,
-    failed,
+    failedText,
   }: {
     name: string;
     isLoading: boolean;
-    failed?: boolean;
+    failedText?: string;
   }) => (
     <div
       data-testid={`tools-item-${name}`}
       data-loading={String(isLoading)}
-      data-failed={String(failed ?? false)}
+      data-failed-text={failedText ?? ""}
     >
       {name}
     </div>
   ),
-}));
-
-vi.mock("../sub-components/ToolsCounter", () => ({
-  default: () => <div data-testid="tools-counter" />,
 }));
 
 import AvailableTools from "../sub-components/AvailableTools";
@@ -102,7 +94,6 @@ describe("AvailableTools", () => {
   it("renders header with Permissions text when withHeader is true", () => {
     render(<AvailableTools withHeader />);
     expect(screen.getByText("Permissions")).toBeInTheDocument();
-    expect(screen.getByTestId("tools-counter")).toBeInTheDocument();
   });
 
   it("does not render header when withHeader is false", () => {
@@ -148,16 +139,17 @@ describe("AvailableTools", () => {
     const cards = screen.getAllByTestId("tools-item-github");
     expect(cards).toHaveLength(1);
     expect(cards[0]).toHaveAttribute("data-loading", "false");
-    expect(cards[0]).toHaveAttribute("data-failed", "false");
+    expect(cards[0]).toHaveAttribute("data-failed-text", "");
   });
 
-  it("flags a system server that delivered no tools as failed", () => {
+  it("passes the enumeration error to the card of a failed system server", () => {
     mockStoreState.registeredServers = ["github"];
     mockStoreState.systemTools = { github: [] };
+    mockStoreState.systemToolsErrors = { github: "connect ECONNREFUSED" };
     render(<AvailableTools />);
     const card = screen.getByTestId("tools-item-github");
     expect(card).toHaveAttribute("data-loading", "false");
-    expect(card).toHaveAttribute("data-failed", "true");
+    expect(card).toHaveAttribute("data-failed-text", "connect ECONNREFUSED");
   });
 
   it("does not duplicate a server listed both locally and by the system listing", () => {

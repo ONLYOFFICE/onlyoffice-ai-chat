@@ -67,10 +67,6 @@ vi.mock("../sub-components/ConfigEditor", () => ({
   ),
 }));
 
-vi.mock("../sub-components/ToolsCounter", () => ({
-  default: () => <div data-testid="tools-counter" />,
-}));
-
 import { Servers } from "../sub-components";
 
 describe("Servers", () => {
@@ -90,10 +86,9 @@ describe("Servers", () => {
     expect(tools).toHaveAttribute("data-with-header", "false");
   });
 
-  it("renders the Permissions header and ToolsCounter inside the panel", () => {
+  it("renders the Permissions header inside the panel", () => {
     render(<Servers />);
     expect(screen.getByText("Permissions")).toBeInTheDocument();
-    expect(screen.getByTestId("tools-counter")).toBeInTheDocument();
   });
 
   it("opens the inline config editor when edit button is clicked", async () => {

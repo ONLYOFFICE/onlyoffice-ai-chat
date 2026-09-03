@@ -1,7 +1,6 @@
 import { useI18n } from "../../../providers/LocalesProvider";
 import { cn } from "../../../../shared/utils";
 import AvailableTools from "./AvailableTools";
-import ToolsCounter from "./ToolsCounter";
 
 type PermissionsProps = {
   /** When `true`, the block is dimmed and made non-interactive (e.g. while
@@ -33,7 +32,6 @@ const Permissions = ({ dimmed }: PermissionsProps) => {
         <p className="font-bold leading-[var(--lh-16)] text-[var(--servers-available-tools-header-color)]">
           {t("Permissions")}
         </p>
-        <ToolsCounter />
       </div>
       <AvailableTools withHeader={false} bordered={false} />
     </div>
