@@ -33,8 +33,19 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../tool-fallback", () => ({
-  ToolFallback: () => <div data-testid="tool-fallback" />,
+vi.mock("../../tool-fallback/use-tool-source", () => ({
+  useToolCallSource: (toolName: string) => ({
+    type: "docspace",
+    name: toolName,
+    displayName: "Merging PDF",
+    sourceLabel: "Docspace (MCP)",
+  }),
+}));
+
+vi.mock("../../icon", () => ({
+  Icon: ({ name }: { name: string }) => (
+    <span data-testid={`icon-${name}`}>{name}</span>
+  ),
 }));
 
 vi.mock("../../dialog", () => ({
@@ -174,11 +185,28 @@ describe("ManageToolDialog", () => {
     expect(screen.getByText("Confirmation")).toBeInTheDocument();
   });
 
-  it("renders tool fallback component", () => {
+  it("renders the tool label, its source and the model's intent", () => {
+    mockManageToolData.message.content[0].argsText =
+      '{"query":"test","aiChatIntent":"Merging the selected PDF files…"}';
     render(
       <ManageToolDialog onAllow={onAllow} onDeny={onDeny} onClose={onClose} />
     );
-    expect(screen.getByTestId("tool-fallback")).toBeInTheDocument();
+    expect(screen.getByText("Merging PDF")).toBeInTheDocument();
+    expect(screen.getByTestId("tool-call-source")).toHaveTextContent(
+      "ToolCallSource: Docspace (MCP)"
+    );
+    expect(screen.getByTestId("icon-code")).toBeInTheDocument();
+    expect(
+      screen.getByText("Merging the selected PDF files…")
+    ).toBeInTheDocument();
+    mockManageToolData.message.content[0].argsText = '{"query":"test"}';
+  });
+
+  it("falls back to the bare tool name when the model wrote no intent", () => {
+    render(
+      <ManageToolDialog onAllow={onAllow} onDeny={onDeny} onClose={onClose} />
+    );
+    expect(screen.getByText("my_tool")).toBeInTheDocument();
   });
 
   it("renders descriptive text", () => {

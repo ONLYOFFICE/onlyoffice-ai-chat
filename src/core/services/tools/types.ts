@@ -1,3 +1,4 @@
+import type { TMCPItem } from "../../../shared/mcp-item";
 import type { TErrorData } from "../../../shared/error-data";
 import type { McpServerConfig } from "../../storage";
 import type { StorageAdapter } from "../../storage";
@@ -79,8 +80,31 @@ export type ToolsEngineDeps = {
    * `storage.mcpServers`, so these stay out of the config editor and
    * can't be deleted.
    */
-  systemToolsSource?: Pick<ToolsAdapter, "getTools">;
+  systemToolsSource?: Pick<ToolsAdapter, "getTools"> & {
+    /**
+     * Optional richer enumeration (see
+     * {@link SystemToolsSource.getToolsWithErrors}): when present,
+     * {@link ToolsEngine.listSystemTools} returns `{ groups, errors }` so
+     * the client can show why a server delivered no tools.
+     */
+    getToolsWithErrors?: (entityId?: string) => Promise<{
+      groups: Record<string, TMCPItem[]>;
+      errors: Record<string, string>;
+    }>;
+  };
 };
+
+/**
+ * Wire shape of {@link ToolsEngine.listSystemTools}: the legacy grouped
+ * map, or `{ groups, errors }` when the source reports per-server
+ * enumeration failures. Consumers normalize via the `groups` key.
+ */
+export type TSystemToolsListing =
+  | Record<string, TMCPItem[]>
+  | {
+      groups: Record<string, TMCPItem[]>;
+      errors: Record<string, string>;
+    };
 
 /**
  * Outcome of an MCP-server CRUD call. Either success or a

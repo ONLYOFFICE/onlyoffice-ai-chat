@@ -75,7 +75,23 @@ export class SystemToolsSource implements ToolsAdapter {
   }
 
   async getTools(entityId?: string): Promise<Record<string, TMCPItem[]>> {
-    return this.listAll(await this.resolveServers(entityId));
+    return (await this.listAllWithErrors(await this.resolveServers(entityId)))
+      .groups;
+  }
+
+  /**
+   * Like {@link getTools}, but also reports why a server delivered no
+   * tools: `errors[type]` carries the enumeration failure message for
+   * every server whose group came back empty because the connection or
+   * listing failed. A genuinely empty (but reachable) server appears in
+   * `groups` with `[]` and no error entry. Used by listing endpoints so a
+   * client without local access to the server can still show the failure.
+   */
+  async getToolsWithErrors(entityId?: string): Promise<{
+    groups: Record<string, TMCPItem[]>;
+    errors: Record<string, string>;
+  }> {
+    return this.listAllWithErrors(await this.resolveServers(entityId));
   }
 
   async callTool(
@@ -126,31 +142,52 @@ export class SystemToolsSource implements ToolsAdapter {
   private async listAll(
     servers: Record<string, McpHttpServerConfig>
   ): Promise<Record<string, TMCPItem[]>> {
+    return (await this.listAllWithErrors(servers)).groups;
+  }
+
+  private async listAllWithErrors(
+    servers: Record<string, McpHttpServerConfig>
+  ): Promise<{
+    groups: Record<string, TMCPItem[]>;
+    errors: Record<string, string>;
+  }> {
     const entries = await Promise.all(
       Object.entries(servers).map(async ([type, server]) => {
         try {
           const tools = await this.withSession(server, type, (sessionId) =>
             requestTools(this.fetchImpl, type, server, sessionId)
           );
-          return [type, tools] as const;
+          return [type, tools, undefined] as const;
         } catch (error) {
           logger.error(
             `[mcp] listTools failed for system server ${type}:`,
             error
           );
-          return [type, [] as TMCPItem[]] as const;
+          // Multi-line, log-like entry — the permission card renders it in
+          // the same panel as a local server's crash log: when + where the
+          // enumeration ran, then what failed (step + status + body).
+          const message = error instanceof Error ? error.message : String(error);
+          return [
+            type,
+            [] as TMCPItem[],
+            `${new Date().toISOString()} tools enumeration failed for ${server.url}\n${message}`,
+          ] as const;
         }
       })
     );
-    const out: Record<string, TMCPItem[]> = {};
-    for (const [type, tools] of entries) out[type] = tools;
+    const groups: Record<string, TMCPItem[]> = {};
+    const errors: Record<string, string> = {};
+    for (const [type, tools, error] of entries) {
+      groups[type] = tools;
+      if (error !== undefined) errors[type] = error;
+    }
     logger.debug(
       "[system-tools] enumerated:",
       Object.fromEntries(
         entries.map(([type, tools]) => [type, tools.map((t) => t.name)])
       )
     );
-    return out;
+    return { groups, errors };
   }
 
   /**

@@ -12,7 +12,13 @@ type AvailableToolsItemProps = {
   displayName?: string;
   mcpItems: TMCPItem[];
   isLoading: boolean;
-  disableEnable: boolean;
+  /**
+   * Enumeration failure message for a server-executed MCP server the
+   * backend could not connect to (from the system-tools listing). Renders
+   * the same error icon as a stopped local server; clicking the row opens
+   * this message in place of a crash log.
+   */
+  failedText?: string;
 };
 
 const AvailableToolsItem = ({
@@ -20,14 +26,13 @@ const AvailableToolsItem = ({
   displayName,
   mcpItems,
   isLoading,
-  disableEnable,
+  failedText,
 }: AvailableToolsItemProps) => {
-  const { IconButton, DropdownMenu, Loader, ToggleButton } = useComponents();
-  const { t, isRTL } = useI18n();
+  const { IconButton, Loader, ToggleButton } = useComponents();
+  const { isRTL } = useI18n();
   const { servers: serversInstance } = useToolsContext();
 
   const [opened, setOpened] = React.useState(false);
-  const [dropdownOpen, setDropdownOpen] = React.useState(false);
   // Seed from the servers instance synchronously so a server that is
   // already stopped when the page mounts shows its error icon and opens
   // its log on the very first click — without waiting for the 1s poll.
@@ -44,13 +49,20 @@ const AvailableToolsItem = ({
   const changeToolStatus = useServersStore((s) => s.changeToolStatus);
   const changeAllToolStatus = useServersStore((s) => s.changeAllToolStatus);
 
-  const onEnableAllTools = useCallback(() => {
-    changeAllToolStatus(name, true);
-  }, [name, changeAllToolStatus]);
+  // The server-level toggle reflects whether the server contributes any
+  // tools at all: partial enablement still reads as ON, switching it flips
+  // every tool at once (replaces the old Enable/Disable all tools menu).
+  const someToolEnabled = useMemo(
+    () => mcpItems.some((tool) => tool.enabled),
+    [mcpItems]
+  );
 
-  const onDisableAllTools = useCallback(() => {
-    changeAllToolStatus(name, false);
-  }, [name, changeAllToolStatus]);
+  const onToggleAllTools = useCallback(
+    (checked: boolean) => {
+      changeAllToolStatus(name, checked);
+    },
+    [name, changeAllToolStatus]
+  );
 
   // Collapse a loading server, but never a stopped one — its expanded
   // panel shows the crash log, which must stay open even though a
@@ -79,25 +91,6 @@ const AvailableToolsItem = ({
 
   const isLoadingAction = isStoped ? false : isLoading;
 
-  const dropdownItems = useMemo(() => {
-    const items = [];
-
-    if (mcpItems.length > 0) {
-      items.push(
-        {
-          text: t("EnableAllTools"),
-          onClick: onEnableAllTools,
-        },
-        {
-          text: t("DisableAllTools"),
-          onClick: onDisableAllTools,
-        }
-      );
-    }
-
-    return items;
-  }, [mcpItems.length, t, onEnableAllTools, onDisableAllTools]);
-
   return (
     <div dir={isRTL ? "rtl" : "ltr"} className="flex flex-col">
       <div
@@ -111,10 +104,11 @@ const AvailableToolsItem = ({
             : ""
         )}
         onClick={() => {
-          if (isLoadingAction || dropdownOpen) return;
-          // A stopped server opens its crash log even with no tools;
-          // a healthy server only opens when it has tools to show.
-          if (!isStoped && mcpItems.length === 0) return;
+          if (isLoadingAction) return;
+          // A stopped server opens its crash log even with no tools, and a
+          // server-executed one with an enumeration failure opens its error
+          // message; a healthy server only opens when it has tools to show.
+          if (!isStoped && !failedText && mcpItems.length === 0) return;
           setOpened((val) => !val);
         }}
       >
@@ -132,7 +126,7 @@ const AvailableToolsItem = ({
           <p className="text-[var(--servers-available-tools-item-name-color)] font-bold">
             {displayName ?? name}
           </p>
-          {!isLoadingAction && isStoped ? (
+          {!isLoadingAction && (isStoped || !!failedText) ? (
             <IconButton
               iconName="status.error"
               size={16}
@@ -144,26 +138,22 @@ const AvailableToolsItem = ({
         <div>
           {isLoadingAction ? (
             <Loader />
-          ) : dropdownItems.length > 0 ? (
-            <DropdownMenu
-              onOpenChange={setDropdownOpen}
-              trigger={
-                <IconButton
-                  iconName="more"
-                  size={24}
-                  isActive={dropdownOpen}
-                  insideElement
-                />
-              }
-              items={dropdownItems}
-              side="left"
-              align="start"
-              sideOffset={0}
-            />
+          ) : mcpItems.length > 0 ? (
+            // The toggle sits inside the clickable row header — swallow the
+            // click so flipping it does not also expand/collapse the row.
+            <div
+              className="flex items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ToggleButton
+                checked={someToolEnabled}
+                onCheckedChange={onToggleAllTools}
+              />
+            </div>
           ) : null}
         </div>
       </div>
-      {opened && isStoped ? (
+      {opened && (isStoped || failedText) ? (
         <div
           className={cn(
             "mt-[var(--servers-available-tools-logs-margin-top,4px)]",
@@ -182,11 +172,11 @@ const AvailableToolsItem = ({
               "text-[var(--servers-available-tools-item-name-color)]"
             )}
           >
-            {logs.join("")}
+            {isStoped ? logs.join("") : failedText}
           </pre>
         </div>
       ) : null}
-      {opened && !isStoped ? (
+      {opened && !isStoped && !failedText ? (
         <div className="flex flex-col gap-[var(--servers-available-tools-sublist-gap,8px)] mt-[var(--servers-available-tools-sublist-margin-top,4px)]">
           {mcpItems.map((tool) => {
             return (
@@ -205,7 +195,6 @@ const AvailableToolsItem = ({
                   </p>
                   <ToggleButton
                     checked={tool.enabled ?? false}
-                    disabled={disableEnable && !tool.enabled}
                     onCheckedChange={() => {
                       // empty change because change will be applied in onClick at div element
                     }}

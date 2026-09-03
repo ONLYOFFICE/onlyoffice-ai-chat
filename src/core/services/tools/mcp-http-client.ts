@@ -100,7 +100,28 @@ async function rpc(
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+    // Carry the failed JSON-RPC step and the response body into the message
+    // (body truncated): "HTTP 401" alone says nothing about why — MCP
+    // servers put the reason in the body ("Bad credentials", an HTML error
+    // page, a JSON-RPC error), and the step says where the handshake died.
+    let detail = "";
+    try {
+      detail = (await response.text()).trim();
+    } catch {
+      // body unreadable — status line only
+    }
+    const step =
+      typeof (body as { method?: unknown })?.method === "string"
+        ? `${(body as { method: string }).method}: `
+        : "";
+    const statusLine = response.statusText
+      ? `HTTP ${response.status} ${response.statusText}`
+      : `HTTP ${response.status}`;
+    throw new Error(
+      detail
+        ? `${step}${statusLine}: ${detail.slice(0, 500)}`
+        : `${step}${statusLine}`
+    );
   }
   const returnedSession = response.headers.get("Mcp-Session-Id") ?? undefined;
   const text = await response.text();

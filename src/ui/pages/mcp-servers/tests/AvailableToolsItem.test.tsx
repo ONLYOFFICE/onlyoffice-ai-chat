@@ -36,25 +36,6 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../components/dropdown", () => ({
-  DropdownMenu: ({
-    trigger,
-    items,
-  }: {
-    trigger: React.ReactNode;
-    items: Array<{ text: string; onClick: () => void }>;
-  }) => (
-    <div data-testid="dropdown">
-      {trigger}
-      {items.map((item) => (
-        <button key={item.text} onClick={item.onClick}>
-          {item.text}
-        </button>
-      ))}
-    </div>
-  ),
-}));
-
 vi.mock("../../../components/icon", () => ({
   Icon: () => <span data-testid="icon" />,
 }));
@@ -74,8 +55,21 @@ vi.mock("../../../components/loader", () => ({
 }));
 
 vi.mock("../../../components/toggle-button", () => ({
-  ToggleButton: ({ checked }: { checked: boolean }) => (
-    <div data-testid="toggle" data-checked={String(checked)} />
+  ToggleButton: ({
+    checked,
+    disabled,
+    onCheckedChange,
+  }: {
+    checked: boolean;
+    disabled?: boolean;
+    onCheckedChange?: (checked: boolean) => void;
+  }) => (
+    <button
+      data-testid="toggle"
+      data-checked={String(checked)}
+      disabled={disabled}
+      onClick={() => onCheckedChange?.(!checked)}
+    />
   ),
 }));
 
@@ -105,7 +99,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     expect(screen.getByText("my-server")).toBeInTheDocument();
@@ -117,22 +110,33 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={[]}
         isLoading={true}
-        disableEnable={false}
       />
     );
     expect(screen.getByTestId("loader")).toBeInTheDocument();
   });
 
-  it("shows dropdown menu when not loading", () => {
+  it("shows the all-tools toggle when not loading, ON while any tool is enabled", () => {
     render(
       <AvailableToolsItem
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
-    expect(screen.getByTestId("dropdown")).toBeInTheDocument();
+    const toggle = screen.getByTestId("toggle");
+    expect(toggle).toBeInTheDocument();
+    expect(toggle).toHaveAttribute("data-checked", "true");
+  });
+
+  it("hides the all-tools toggle when the server has no tools", () => {
+    render(
+      <AvailableToolsItem
+        name="my-server"
+        mcpItems={[]}
+        isLoading={false}
+      />
+    );
+    expect(screen.queryByTestId("toggle")).not.toBeInTheDocument();
   });
 
   it("shows tools when expanded by click", () => {
@@ -141,7 +145,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     expect(screen.queryByText("tool-a")).not.toBeInTheDocument();
@@ -157,7 +160,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={true}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByText("my-server"));
@@ -170,7 +172,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={[]}
         isLoading={false}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByText("my-server"));
@@ -183,7 +184,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByText("my-server"));
@@ -195,34 +195,47 @@ describe("AvailableToolsItem", () => {
     );
   });
 
-  it("enable all tools calls changeAllToolStatus once with enabled=true", () => {
+  it("switching the toggle off disables all tools at once", () => {
     render(
       <AvailableToolsItem
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
-    fireEvent.click(screen.getByText("EnableAllTools"));
+    fireEvent.click(screen.getByTestId("toggle"));
+    expect(mockChangeAllToolStatus).toHaveBeenCalledWith("my-server", false);
+    expect(mockChangeAllToolStatus).toHaveBeenCalledTimes(1);
+    expect(mockChangeToolStatus).not.toHaveBeenCalled();
+  });
+
+  it("switching the toggle on from all-disabled enables all tools at once", () => {
+    render(
+      <AvailableToolsItem
+        name="my-server"
+        mcpItems={mcpItems.map((tool) => ({ ...tool, enabled: false }))}
+        isLoading={false}
+      />
+    );
+    const toggle = screen.getByTestId("toggle");
+    expect(toggle).toHaveAttribute("data-checked", "false");
+
+    fireEvent.click(toggle);
     expect(mockChangeAllToolStatus).toHaveBeenCalledWith("my-server", true);
     expect(mockChangeAllToolStatus).toHaveBeenCalledTimes(1);
     expect(mockChangeToolStatus).not.toHaveBeenCalled();
   });
 
-  it("disable all tools calls changeAllToolStatus once with enabled=false", () => {
+  it("clicking the toggle does not expand the tools list", () => {
     render(
       <AvailableToolsItem
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
-    fireEvent.click(screen.getByText("DisableAllTools"));
-    expect(mockChangeAllToolStatus).toHaveBeenCalledWith("my-server", false);
-    expect(mockChangeAllToolStatus).toHaveBeenCalledTimes(1);
-    expect(mockChangeToolStatus).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("toggle"));
+    expect(screen.queryByText("tool-a")).not.toBeInTheDocument();
   });
 
   it("shows error icon when server is stopped", () => {
@@ -232,7 +245,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={true}
-        disableEnable={false}
       />
     );
     // isStoped is set via interval, advance timer
@@ -252,7 +264,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={[]}
         isLoading={true}
-        disableEnable={false}
       />
     );
     act(() => {
@@ -274,7 +285,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={[]}
         isLoading={true}
-        disableEnable={false}
       />
     );
     act(() => {
@@ -290,7 +300,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={false}
-        disableEnable={false}
       />
     );
     fireEvent.click(screen.getByText("my-server"));
@@ -301,7 +310,6 @@ describe("AvailableToolsItem", () => {
         name="my-server"
         mcpItems={mcpItems}
         isLoading={true}
-        disableEnable={false}
       />
     );
     expect(screen.queryByText("tool-a")).not.toBeInTheDocument();

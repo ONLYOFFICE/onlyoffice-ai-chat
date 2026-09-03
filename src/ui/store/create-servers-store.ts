@@ -4,6 +4,7 @@ import type { AppContext } from "../../app-context";
 import type { CallbacksManager } from "../providers/EventsProvider";
 import type { ServerAPI } from "../providers/ApiProvider";
 import type { TMCPItem } from "../../types";
+import type { TSystemToolsListing } from "../../core/services";
 import { reportStoreError } from "./report-error";
 
 /**
@@ -24,6 +25,21 @@ export interface ServersStoreState {
    * never appear in the config editor and can't be deleted.
    */
   systemTools: Record<string, TMCPItem[]>;
+  /**
+   * Names of the registered custom MCP servers with a startable config,
+   * straight from `api.tools.listCustomServers`. In hosts whose backend
+   * executes the servers (`PlatformAdapter.customServersExecutedByHost`)
+   * the local server map stays empty, so this is what lets the permission
+   * list show a loading card for each registered server before its tools
+   * arrive via `listSystemTools`.
+   */
+  registeredServers: string[];
+  /**
+   * Per-server enumeration failure messages from the system-tools listing
+   * (`listSystemTools` new `{ groups, errors }` shape): why a server-executed
+   * MCP server delivered no tools. Empty for hosts on the legacy shape.
+   */
+  systemToolsErrors: Record<string, string>;
   disabledTools: Record<string, string[]>;
   manageToolData?: {
     threadId: string;
@@ -113,24 +129,61 @@ export function createServersStore(deps: {
   // different instance) would run `startCustomServers` over an empty map and
   // never spawn anything. Re-reading from storage covers the cross-instance
   // and cold-start cases uniformly.
-  const loadAndStartCustomServers = async () => {
+  const loadAndStartCustomServers = async (): Promise<string[]> => {
     const mcpServers = (await api.tools.listCustomServers(entity())) ?? {};
     ctx.servers.setCustomServers({ mcpServers });
     ctx.servers.startCustomServers();
+    // Startable entries only: whitelist markers for system servers come
+    // back with their config redacted to `{}` and must not produce a
+    // pending card of their own (their group renders from `systemTools`).
+    return Object.entries(mcpServers)
+      .filter(
+        ([, config]) =>
+          typeof (config as { url?: unknown }).url === "string" ||
+          typeof (config as { command?: unknown }).command === "string"
+      )
+      .map(([name]) => name);
+  };
+
+  // `listSystemTools` answers in one of two shapes (see TSystemToolsListing):
+  // the legacy grouped map, or `{ groups, errors }` where `errors` says why
+  // a server delivered no tools. Normalize to the pair.
+  const normalizeSystemListing = (
+    raw: TSystemToolsListing
+  ): {
+    groups: Record<string, TMCPItem[]>;
+    errors: Record<string, string>;
+  } => {
+    if (
+      raw &&
+      typeof raw === "object" &&
+      "groups" in raw &&
+      "errors" in raw &&
+      !Array.isArray((raw as { groups: unknown }).groups)
+    ) {
+      const shaped = raw as {
+        groups: Record<string, TMCPItem[]>;
+        errors: Record<string, string>;
+      };
+      return { groups: shaped.groups ?? {}, errors: shaped.errors ?? {} };
+    }
+    return { groups: (raw as Record<string, TMCPItem[]>) ?? {}, errors: {} };
   };
 
   const buildToolsList = async () => {
-    const [grouped, systemTools, disabled, webSearchEnabled] =
+    const [grouped, systemListing, disabled, webSearchEnabled] =
       await Promise.all([
         ctx.servers.getTools(),
         // Single fetch — the server already connected + listed these.
         // Tolerate hosts that haven't wired the route yet.
         api.tools
           .listSystemTools(entity())
-          .catch(() => ({}) as Record<string, TMCPItem[]>),
+          .catch(() => ({}) as TSystemToolsListing),
         api.tools.getDisabled(entity()),
         api.webSearch.isConfigured(entity()),
       ]);
+    const { groups: systemTools, errors: systemToolsErrors } =
+      normalizeSystemListing(systemListing);
 
     // System tools join the same grouping so they get the disabled-flag
     // annotation and render as cards. Their server types are distinct
@@ -179,6 +232,7 @@ export function createServersStore(deps: {
       tools: flat,
       servers: annotated,
       systemTools,
+      systemToolsErrors,
       disabledTools: disabled,
       webSearchEnabled,
     };
@@ -218,6 +272,8 @@ export function createServersStore(deps: {
     servers: {},
     tools: [],
     systemTools: {},
+    systemToolsErrors: {},
+    registeredServers: [],
     disabledTools: {},
     manageToolData: undefined,
     isApprovingTool: false,
@@ -230,7 +286,8 @@ export function createServersStore(deps: {
       // Called without an await from the mount effects (`useServers`,
       // `useEnsureTools`) — see `reportStoreError`.
       try {
-        await loadAndStartCustomServers();
+        const registeredServers = await loadAndStartCustomServers();
+        set({ registeredServers });
       } catch (error) {
         reportStoreError(callbacksManager, "servers:init", error);
       }
@@ -263,7 +320,8 @@ export function createServersStore(deps: {
     getUserTools: () => buildUserTools(),
 
     reload: async () => {
-      await loadAndStartCustomServers();
+      const registeredServers = await loadAndStartCustomServers();
+      set({ registeredServers });
       const result = await buildToolsList();
       set(result);
     },
@@ -360,12 +418,23 @@ export function createServersStore(deps: {
       await api.tools.replaceAllCustomServers(config.mcpServers, entity());
       ctx.servers.setCustomServers(config);
       ctx.servers.startCustomServers();
+      // Re-read from storage rather than trusting the submitted map: the
+      // backend normalizes it (drops invalid entries, redacts system
+      // markers), and the pending cards must reflect what was stored.
+      try {
+        set({ registeredServers: await loadAndStartCustomServers() });
+      } catch {
+        // keep the previous list — the config itself was saved
+      }
       callbacksManager.emit("onServersUpdated", { kind: "config-saved" });
     },
 
     deleteCustomServer: async (name) => {
       await api.tools.removeCustomServer(name, entity());
       ctx.servers.deleteCustomServer(name);
+      set((state) => ({
+        registeredServers: state.registeredServers.filter((n) => n !== name),
+      }));
       callbacksManager.emit("onServersUpdated", {
         kind: "server-deleted",
         serverName: name,

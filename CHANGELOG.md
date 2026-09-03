@@ -18,13 +18,27 @@
 
 - **The "i" hints in the Add model card and in dropdown items now close on Escape and on a click outside.** Both drove a `Tooltip` with `open` but no `onOpenChange`, so the popup could only be dismissed by clicking the icon a second time. Both now render `HelpButton`; the popups look and sit exactly where they did.
 
+## 0.5.83
+
+### Added
+
+- **An expanded tool call names itself and its source.** The card opens with a `Tool call · <name>` title (the display name its card carries on the MCP Servers page) and a `Source:` line above the arguments: a host tool group shows its display name (e.g. `ONLYOFFICE Document Server (MCP)`), a user-configured or host-executed MCP server shows its config name — the same name its card carries on the MCP Servers page — and built-in tools with no such card (web search, image generation) are attributed to `ONLYOFFICE`.
+
+### Changed
+
+- **The tool approval dialog no longer embeds the thread's tool-call card.** It shows the tool's display name (the label its card carries on the MCP Servers page), the same `Source:` line as the expanded card, and the model's one-line intent under it — so the user sees who is about to act and why before choosing Allow or Deny.
+
 ## 0.5.82
 
 ### Changed
 
+- **An MCP server row switches all its tools with a toggle.** The three-dots menu with Enable all tools / Disable all tools is replaced by a server-level ToggleButton: it reads ON while at least one tool is enabled, and switching it flips every tool at once. Enabling stays blocked under the paid gate while switching off is always available. The orphaned `EnableAllTools`/`DisableAllTools` keys are removed from all 41 locales (DocSpace bug 78693).
+
 - **The thinking block in a message is now labelled "Thinking", not "Reasoning".** The composer toggle that turns the feature on is called "Extended thinking", so the header over the streamed reasoning named the same feature differently. Most locales now reuse the word their own `ExtendedThinking` string already carries; seven (be, fr, id, it, pt-BR, ru, uk) keep a different stem there, since their `ExtendedThinking` wording is itself a reasoning term rather than a thinking one.
 
 ### Fixed
+
+- **A registered MCP server no longer connects twice or shows two permission cards in hosts whose backend runs it.** The host's system-tools listing echoes registered custom servers, while the widget also started the same servers in the browser — every server got two cards on the MCP settings page (with the browser connection typically dying on CORS and flashing a crash log). A host whose backend executes the registered servers now declares `PlatformAdapter.customServersExecutedByHost`, which stops the widget from starting or listing them locally; the permission list additionally drops a system echo of a locally listed server. Host-executed servers keep their connection feedback: each registered server shows a loading card until the backend's listing lands, and a server the backend could not reach is flagged with the error icon — clicking the card opens the enumeration error message (`listSystemTools` now answers `{ groups, errors }`; the legacy grouped map is still accepted).
 
 - **Locale typos around the extended-thinking strings.** Catalan carried the Spanish text with a truncated tail (`los coste`), Greek was cut mid-word (`Διευρυμένη σκέψ`), Dutch was left in English, and the Urdu description had no closing full stop.
 
@@ -41,6 +55,8 @@
 ## 0.5.80
 
 ### Changed
+
+- **The 100-tool cap is gone.** Enabling MCP/host tools is no longer blocked past 100 (102 with web search): the toggles never disable on count, and the "N/100 Tools" counter over the permission list is removed. Users connect as many servers and tools as they want; model/provider limits are theirs to manage.
 
 - **Suggestion chips no longer show a hover tooltip.** The tooltip only repeated the chip's own label, so hovering the empty-thread suggestions flashed a duplicate of the visible text; the chips are plain buttons now.
 

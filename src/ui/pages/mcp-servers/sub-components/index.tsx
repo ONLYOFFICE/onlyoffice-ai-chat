@@ -19,6 +19,8 @@ const Servers = () => {
   const { useServersStore } = useStores();
   const servers = useServersStore((s) => s.servers);
   const systemTools = useServersStore((s) => s.systemTools);
+  const registeredServers =
+    useServersStore((s) => s.registeredServers) ?? [];
   const [customServers, setCustomServers] = React.useState({});
 
   React.useEffect(() => {
@@ -34,7 +36,10 @@ const Servers = () => {
       .getHostToolGroupIds()
       .some((id) => (servers[id] ?? []).length > 0) ||
     Object.keys(customServers).length > 0 ||
-    Object.keys(systemTools ?? {}).length > 0;
+    Object.keys(systemTools ?? {}).length > 0 ||
+    // Registered but not yet enumerated (host-executed servers while the
+    // system listing is in flight) — the section shows their loading cards.
+    registeredServers.length > 0;
 
   return (
     <div className="mcp-servers-content flex flex-col pb-[var(--mcp-servers-content-padding-bottom,32px)] w-full">

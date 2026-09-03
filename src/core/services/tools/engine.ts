@@ -1,9 +1,9 @@
-import type { TMCPItem } from "../../../shared/mcp-item";
 import type { McpServerConfig } from "../../storage";
 import type {
   ToolsBulkResult,
   ToolsEngineDeps,
   ToolsMutationResult,
+  TSystemToolsListing,
 } from "./types";
 import { validateServerName, validateTransportConfig } from "./validation";
 
@@ -100,10 +100,17 @@ export class ToolsEngine {
    * fetch, with no browser-side MCP connections. Returns `{}` when no
    * system source is wired.
    */
-  async listSystemTools(
-    entityId?: string
-  ): Promise<Record<string, TMCPItem[]>> {
-    return (await this.deps.systemToolsSource?.getTools(entityId)) ?? {};
+  async listSystemTools(entityId?: string): Promise<TSystemToolsListing> {
+    const source = this.deps.systemToolsSource;
+    if (!source) return {};
+    // A source that can report per-server enumeration failures returns the
+    // richer `{ groups, errors }` shape, so a client with no local access
+    // to the servers can still show why one delivered no tools. Sources
+    // with plain `getTools` keep the legacy grouped map.
+    if (typeof source.getToolsWithErrors === "function") {
+      return source.getToolsWithErrors(entityId);
+    }
+    return (await source.getTools(entityId)) ?? {};
   }
 
   async replaceAllCustomServers(

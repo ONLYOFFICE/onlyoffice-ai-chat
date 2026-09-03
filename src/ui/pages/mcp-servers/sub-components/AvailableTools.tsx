@@ -1,14 +1,9 @@
 import React from "react";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useToolsContext } from "../../../tools/context";
-import {
-  MAX_TOOL_COUNT,
-  MAX_TOOL_COUNT_WITH_WEB_SEARCH,
-} from "../../../../config";
 import { cn } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
 import AvailableToolsItem from "./AvailableToolsItem";
-import ToolsCounter from "./ToolsCounter";
 
 type AvailableToolsProps = {
   withHeader?: boolean;
@@ -29,16 +24,10 @@ const AvailableTools = ({
   const { useServersStore } = useStores();
   const servers = useServersStore((s) => s.servers);
   const systemTools = useServersStore((s) => s.systemTools);
-  const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
-
-  const enabledCount = React.useMemo(
-    () =>
-      Object.values(servers).reduce(
-        (acc, items) => acc + items.filter((t) => t.enabled).length,
-        0
-      ),
-    [servers]
-  );
+  const registeredServers =
+    useServersStore((s) => s.registeredServers) ?? [];
+  const systemToolsErrors =
+    useServersStore((s) => s.systemToolsErrors) ?? {};
 
   React.useEffect(() => {
     setCustomServers(serversInstance.getCustomServers());
@@ -50,19 +39,34 @@ const AvailableTools = ({
     return () => clearInterval(interval);
   }, [serversInstance]);
 
-  const disableEnable = webSearchEnabled
-    ? enabledCount >= MAX_TOOL_COUNT_WITH_WEB_SEARCH
-    : enabledCount >= MAX_TOOL_COUNT;
-
   const hostGroupIds = serversInstance.getHostToolGroupIds();
   const hasHostTools = hostGroupIds.some(
     (id) => (servers[id] ?? []).length > 0
   );
   const hasCustomServers = Object.keys(customServers).length > 0;
-  const systemTypes = Object.keys(systemTools ?? {});
+  // A registered server can surface through both maps at once (the host's
+  // system-tools listing echoes registered custom servers). The local card
+  // already carries the live connection state and crash log, so the system
+  // echo is dropped rather than rendered as a duplicate card.
+  const systemTypes = Object.keys(systemTools ?? {}).filter(
+    (type) => !(type in customServers)
+  );
   const hasSystemTools = systemTypes.length > 0;
+  // Registered servers the backend executes (nothing runs locally, see
+  // `customServersExecutedByHost`) have no card at all until the system
+  // listing lands — show a loading card per registered name meanwhile.
+  const pendingTypes = registeredServers.filter(
+    (name) => !(name in customServers) && !(name in (systemTools ?? {}))
+  );
+  const hasPendingServers = pendingTypes.length > 0;
 
-  if (!hasHostTools && !hasCustomServers && !hasSystemTools) return null;
+  if (
+    !hasHostTools &&
+    !hasCustomServers &&
+    !hasSystemTools &&
+    !hasPendingServers
+  )
+    return null;
 
   return (
     <div
@@ -82,7 +86,6 @@ const AvailableTools = ({
           <p className="font-bold text-[var(--servers-available-tools-header-color)]">
             {t("Permissions")}
           </p>
-          <ToolsCounter />
         </div>
       ) : null}
       <div
@@ -106,7 +109,6 @@ const AvailableTools = ({
                 )}
                 mcpItems={servers[groupId] ?? []}
                 isLoading={false}
-                disableEnable={disableEnable}
               />
             ) : null
           )}
@@ -116,17 +118,26 @@ const AvailableTools = ({
             name={type}
             mcpItems={servers[type] ?? []}
             isLoading={!servers[type]?.length}
-            disableEnable={disableEnable}
           />
         ))}
-        {/* System servers: enumerated server-side, rendered identically. */}
+        {/* System servers: enumerated server-side, rendered identically. A
+            server whose enumeration failed carries its error message in the
+            listing — the card flags it and opens the message on click. */}
         {systemTypes.map((type) => (
           <AvailableToolsItem
             key={type}
             name={type}
             mcpItems={servers[type] ?? []}
             isLoading={false}
-            disableEnable={disableEnable}
+            failedText={systemToolsErrors[type]}
+          />
+        ))}
+        {pendingTypes.map((type) => (
+          <AvailableToolsItem
+            key={type}
+            name={type}
+            mcpItems={[]}
+            isLoading
           />
         ))}
       </div>

@@ -4,7 +4,9 @@ import { useWidgetConfig } from "../../../widget-config";
 import { useStores } from "../../store/context";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { Dialog } from "../dialog";
-import { ToolFallback } from "../tool-fallback";
+import { Icon } from "../icon";
+import { readToolIntent } from "../../../shared/tool-intent";
+import { useToolCallSource } from "../tool-fallback/use-tool-source";
 
 type ManageToolDialogProps = {
   onAllow: (allowAlways: boolean) => void;
@@ -46,9 +48,6 @@ const ManageToolDialog = ({
 
   const toolCall = manageToolData?.message?.content[manageToolData.idx];
 
-  // Resolve whether the "Always allow" checkbox is hidden for this tool.
-  // `true` hides it for every tool; a string[] hides it only when the tool
-  // matches — by full name (`type_search`) or bare name (`search`).
   const toolName =
     toolCall &&
     typeof toolCall === "object" &&
@@ -56,6 +55,14 @@ const ManageToolDialog = ({
     toolCall.type === "tool-call"
       ? toolCall.toolName
       : undefined;
+
+  // Tool label and "Source:" line — resolved the same way the tool-call card
+  // in the thread does it.
+  const { name, displayName, sourceLabel } = useToolCallSource(toolName ?? "");
+
+  // Resolve whether the "Always allow" checkbox is hidden for this tool.
+  // `true` hides it for every tool; a string[] hides it only when the tool
+  // matches — by full name (`type_search`) or bare name (`search`).
   const hideAllowAlways = Array.isArray(hideToolAllowAlways)
     ? toolName !== undefined &&
       hideToolAllowAlways.some(
@@ -86,6 +93,15 @@ const ManageToolDialog = ({
   )
     return;
 
+  let intent: string | undefined;
+  try {
+    const parsed = JSON.parse(toolCall.argsText ?? "{}");
+    // Some providers wrap the real arguments in an `args` envelope.
+    intent = readToolIntent(parsed?.args ? parsed.args : parsed);
+  } catch {
+    // Arguments may still be streaming; fall back to the tool name.
+  }
+
   return (
     <Dialog open={true}>
       <DialogContent
@@ -97,21 +113,29 @@ const ManageToolDialog = ({
           <p className="mt-[8px] font-[14px] font-normal text-[var(--tool-fallback-color)]">
             {t("AIWouldLikeUseThisTool")}
           </p>
-          <ToolFallback
-            type="tool-call"
-            toolCallId={toolCall.toolCallId ?? ""}
-            args={toolCall.args ?? {}}
-            toolName={toolCall.toolName}
-            argsText={toolCall.argsText ?? "{}"}
-            result={toolCall.result}
-            status={{ type: "running" }}
-            addResult={() => {
-              // ignore
-            }}
-            resume={() => {
-              // ignore
-            }}
-          />
+          <div className="mt-[16px] flex flex-col gap-[4px]">
+            <p className="font-bold text-[var(--tool-fallback-color)]">
+              {displayName}
+            </p>
+            <p
+              data-testid="tool-call-source"
+              className="truncate text-[var(--text-tertiary)]"
+            >
+              {t("ToolCallSource")}: {sourceLabel}
+            </p>
+          </div>
+          {/* The model's one-line description of the call (`aiChatIntent`),
+              shown the way the thread card shows it; the bare tool name
+              stands in when the model wrote none. */}
+          <p className="my-[16px] flex items-center gap-[10px] text-[var(--tool-fallback-color)]">
+            <Icon
+              name="code"
+              size={24}
+              color="var(--tool-fallback-color)"
+              isStroke
+            />
+            <span className="min-w-0 truncate">{intent ?? name}</span>
+          </p>
           <p className="font-[14px] font-normal text-[var(--tool-fallback-color)]">
             {t("ReviewEachAction")}
           </p>

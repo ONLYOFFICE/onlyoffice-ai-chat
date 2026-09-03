@@ -217,6 +217,18 @@ export interface PlatformAdapter {
   /** External process runner for MCP STDIO server transport. If null — only HTTP MCP servers are available */
   process: PlatformProcessRunner | null;
 
+  /**
+   * True when the host backend registers and executes the user's custom MCP
+   * servers itself (their tools then arrive through
+   * `api.tools.listSystemTools`, alongside the host's system servers). The
+   * widget neither starts nor lists those servers locally: without this
+   * flag each registered server would connect twice (browser + backend) and
+   * render two permission cards, with the browser attempt typically dying
+   * on CORS. Leave unset for hosts where the widget itself runs the
+   * configured servers (desktop, standalone browser embeds).
+   */
+  customServersExecutedByHost?: boolean;
+
   /** Host environment info: theme, locale, pixel ratio, change events */
   env: PlatformEnvironment;
 
