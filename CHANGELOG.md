@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.83
+
+### Added
+
+- **An expanded tool call names itself and its source.** The card opens with a `Tool call · <name>` title (the display name its card carries on the MCP Servers page) and a `Source:` line above the arguments: a host tool group shows its display name (e.g. `ONLYOFFICE Document Server (MCP)`), a user-configured or host-executed MCP server shows its config name — the same name its card carries on the MCP Servers page — and built-in tools with no such card (web search, image generation) are attributed to `ONLYOFFICE`.
+
+### Changed
+
+- **The tool approval dialog no longer embeds the thread's tool-call card.** It shows the tool's display name (the label its card carries on the MCP Servers page), the same `Source:` line as the expanded card, and the model's one-line intent under it — so the user sees who is about to act and why before choosing Allow or Deny.
+
 ## 0.5.82
 
 ### Changed

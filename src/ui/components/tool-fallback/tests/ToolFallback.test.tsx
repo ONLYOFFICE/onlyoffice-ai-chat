@@ -16,10 +16,14 @@ vi.mock("../../../providers/ApiProvider", () => ({
   }),
 }));
 
+const serverTypeSpy = vi.fn((_name: string): string => "custom");
 vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     servers: {
-      getServerType: () => "custom",
+      getServerType: (name: string) => serverTypeSpy(name),
+      getHostToolGroupIds: () => ["docspace"],
+      getHostToolGroupDisplayName: (id: string) =>
+        id === "docspace" ? "ONLYOFFICE Document Server (MCP)" : id,
     },
   }),
 }));
@@ -28,6 +32,9 @@ vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useMessageStore: (selector: (s: { isToolPending: boolean }) => unknown) =>
       selector({ isToolPending: false }),
+    useServersStore: (
+      selector: (s: { servers: Record<string, { name: string }[]> }) => unknown
+    ) => selector({ servers: { "system-mcp": [{ name: "list_rooms" }] } }),
   }),
 }));
 
@@ -91,6 +98,72 @@ const defaultProps = {
 describe("ToolFallback", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    serverTypeSpy.mockImplementation(() => "custom");
+  });
+
+  describe("source line", () => {
+    const expand = (label: string) =>
+      fireEvent.click(
+        screen.getByText(label).closest("[class*='cursor-pointer']")!
+      );
+
+    it("is hidden while the call is still running", () => {
+      render(<ToolFallback {...defaultProps} />);
+      expect(screen.queryByTestId("tool-call-source")).not.toBeInTheDocument();
+    });
+
+    it("titles the expanded card with the tool name", () => {
+      render(<ToolFallback {...defaultProps} result="ok" />);
+      expand("my_tool");
+      expect(screen.getByTestId("tool-call-title")).toHaveTextContent(
+        "ToolCall · my_tool"
+      );
+    });
+
+    it("names a custom MCP server by its config key", () => {
+      render(<ToolFallback {...defaultProps} result="ok" />);
+      expand("my_tool");
+      expect(screen.getByTestId("tool-call-source")).toHaveTextContent(
+        "ToolCallSource: custom"
+      );
+    });
+
+    it("names a host tool group by its display name", () => {
+      serverTypeSpy.mockImplementation(() => "docspace");
+      render(
+        <ToolFallback
+          {...defaultProps}
+          toolName="docspace_insert_page"
+          result="ok"
+        />
+      );
+      expand("insert_page");
+      expect(screen.getByTestId("tool-call-source")).toHaveTextContent(
+        "ToolCallSource: ONLYOFFICE Document Server (MCP)"
+      );
+    });
+
+    it("resolves a host-executed system server through the servers store", () => {
+      serverTypeSpy.mockImplementation(() => "");
+      render(
+        <ToolFallback {...defaultProps} toolName="list_rooms" result="ok" />
+      );
+      expand("list_rooms");
+      expect(screen.getByTestId("tool-call-source")).toHaveTextContent(
+        "ToolCallSource: system-mcp"
+      );
+    });
+
+    it("falls back to ONLYOFFICE for built-in tools", () => {
+      serverTypeSpy.mockImplementation(() => "");
+      render(
+        <ToolFallback {...defaultProps} toolName="generate_image" result="ok" />
+      );
+      expand("generate_image");
+      expect(screen.getByTestId("tool-call-source")).toHaveTextContent(
+        "ToolCallSource: ONLYOFFICE"
+      );
+    });
   });
 
   it("renders tool name (stripped of server type prefix)", () => {

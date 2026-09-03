@@ -2,7 +2,7 @@ import type { ToolCallMessagePartComponent } from "@assistant-ui/react";
 import { useEffect, useState } from "react";
 import { useApi } from "../../providers/ApiProvider";
 import { useI18n } from "../../providers/LocalesProvider";
-import { useToolsContext } from "../../tools/context";
+import { useToolCallSource } from "./use-tool-source";
 import { readToolIntent, stripToolIntent } from "../../../shared/tool-intent";
 import { Icon } from "../icon";
 import { LoadingDots } from "../loading-dots";
@@ -22,7 +22,6 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
 }) => {
   const { t, isRTL } = useI18n();
   const api = useApi();
-  const { servers: serversInstance } = useToolsContext();
 
   const [isCollapsed, setIsCollapsed] = useState(true);
   const { isCopied: isArgsCopied, copyToClipboard: copyArgs } =
@@ -30,8 +29,9 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   const { isCopied: isResultCopied, copyToClipboard: copyResult } =
     useCopyToClipboard({ copiedDuration: 2000 });
 
-  const type = serversInstance.getServerType(toolName);
-  const name = type ? toolName.replace(`${type}_`, "") : toolName;
+  // "Source" shown in the expanded card — resolved the way the MCP Servers
+  // page names its cards (see `useToolCallSource`).
+  const { name, displayName, sourceLabel } = useToolCallSource(toolName);
 
   const isLoading = result === undefined;
 
@@ -214,6 +214,20 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
       </div>
       {!isCollapsed ? (
         <div className="flex flex-col gap-[8px] mt-[8px] px-[12px] py-[8px] bg-[var(--chat-message-tool-call-body-background-color)] rounded-[12px]">
+          <div className="flex flex-col gap-[4px]">
+            <p
+              data-testid="tool-call-title"
+              className="truncate font-bold text-[var(--chat-message-tool-call-header-color)]"
+            >
+              {t("ToolCall")} · {displayName}
+            </p>
+            <p
+              data-testid="tool-call-source"
+              className="truncate text-[var(--text-tertiary)]"
+            >
+              {t("ToolCallSource")}: {sourceLabel}
+            </p>
+          </div>
           {isWebSearch ? null : (
             <div className="">
               <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] font-bold">
