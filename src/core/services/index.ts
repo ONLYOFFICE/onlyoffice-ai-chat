@@ -75,6 +75,7 @@ export type {
   ToolsEngineDeps,
   ToolsEngineMethod,
   ToolsMutationResult,
+  TSystemToolsListing,
 } from "./tools";
 
 export { DEFAULT_PROMPTS_ROUTES, PromptsEngine } from "./prompts";

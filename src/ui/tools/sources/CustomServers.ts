@@ -284,6 +284,11 @@ class CustomServers {
         receivedKeys: Object.keys(servers?.mcpServers ?? {}),
       });
       this.customServers = {};
+      // Nothing runs locally, so no started server will ever emit
+      // `tools-changed` — fire it here so consumers refetch the system
+      // listing after a config change (a removed server would otherwise
+      // linger in the permission list, and a new one would spin forever).
+      this.eventBus.emit("tools-changed");
       return;
     }
     // Keep only startable entries; non-startable markers are dropped here

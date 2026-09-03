@@ -4,6 +4,7 @@ import type { AppContext } from "../../app-context";
 import type { CallbacksManager } from "../providers/EventsProvider";
 import type { ServerAPI } from "../providers/ApiProvider";
 import type { TMCPItem } from "../../types";
+import type { TSystemToolsListing } from "../../core/services";
 import { reportStoreError } from "./report-error";
 
 /**
@@ -33,6 +34,12 @@ export interface ServersStoreState {
    * arrive via `listSystemTools`.
    */
   registeredServers: string[];
+  /**
+   * Per-server enumeration failure messages from the system-tools listing
+   * (`listSystemTools` new `{ groups, errors }` shape): why a server-executed
+   * MCP server delivered no tools. Empty for hosts on the legacy shape.
+   */
+  systemToolsErrors: Record<string, string>;
   disabledTools: Record<string, string[]>;
   manageToolData?: {
     threadId: string;
@@ -138,18 +145,45 @@ export function createServersStore(deps: {
       .map(([name]) => name);
   };
 
+  // `listSystemTools` answers in one of two shapes (see TSystemToolsListing):
+  // the legacy grouped map, or `{ groups, errors }` where `errors` says why
+  // a server delivered no tools. Normalize to the pair.
+  const normalizeSystemListing = (
+    raw: TSystemToolsListing
+  ): {
+    groups: Record<string, TMCPItem[]>;
+    errors: Record<string, string>;
+  } => {
+    if (
+      raw &&
+      typeof raw === "object" &&
+      "groups" in raw &&
+      "errors" in raw &&
+      !Array.isArray((raw as { groups: unknown }).groups)
+    ) {
+      const shaped = raw as {
+        groups: Record<string, TMCPItem[]>;
+        errors: Record<string, string>;
+      };
+      return { groups: shaped.groups ?? {}, errors: shaped.errors ?? {} };
+    }
+    return { groups: (raw as Record<string, TMCPItem[]>) ?? {}, errors: {} };
+  };
+
   const buildToolsList = async () => {
-    const [grouped, systemTools, disabled, webSearchEnabled] =
+    const [grouped, systemListing, disabled, webSearchEnabled] =
       await Promise.all([
         ctx.servers.getTools(),
         // Single fetch — the server already connected + listed these.
         // Tolerate hosts that haven't wired the route yet.
         api.tools
           .listSystemTools(entity())
-          .catch(() => ({}) as Record<string, TMCPItem[]>),
+          .catch(() => ({}) as TSystemToolsListing),
         api.tools.getDisabled(entity()),
         api.webSearch.isConfigured(entity()),
       ]);
+    const { groups: systemTools, errors: systemToolsErrors } =
+      normalizeSystemListing(systemListing);
 
     // System tools join the same grouping so they get the disabled-flag
     // annotation and render as cards. Their server types are distinct
@@ -198,6 +232,7 @@ export function createServersStore(deps: {
       tools: flat,
       servers: annotated,
       systemTools,
+      systemToolsErrors,
       disabledTools: disabled,
       webSearchEnabled,
     };
@@ -237,6 +272,7 @@ export function createServersStore(deps: {
     servers: {},
     tools: [],
     systemTools: {},
+    systemToolsErrors: {},
     registeredServers: [],
     disabledTools: {},
     manageToolData: undefined,

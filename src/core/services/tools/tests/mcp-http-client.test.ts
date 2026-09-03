@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { callTool, listTools } from "../mcp-http-client";
+import { callTool, listTools, requestTools } from "../mcp-http-client";
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status });
@@ -55,6 +55,18 @@ describe("mcp-http-client", () => {
       .fn()
       .mockResolvedValue(new Response("nope", { status: 500 }));
     expect(await listTools(fetchImpl, "s", { url: "http://x" })).toEqual([]);
+  });
+
+  it("requestTools carries the status text and response body in the error", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response("Bad credentials", {
+        status: 401,
+        statusText: "Unauthorized",
+      })
+    );
+    await expect(
+      requestTools(fetchImpl, "s", { url: "http://x" })
+    ).rejects.toThrow("tools/list: HTTP 401 Unauthorized: Bad credentials");
   });
 
   it("callTool returns the serialised result", async () => {
