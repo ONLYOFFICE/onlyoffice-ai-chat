@@ -118,6 +118,13 @@ class CustomServers {
   httpServers: Record<string, THttpServer>;
   customServersLogs: Record<string, string[]>;
   tools: Record<string, TMCPItem[]>;
+  /**
+   * `instructions` from each server's `initialize` result — the server's
+   * own hint on how its tools are meant to be used. Stated once at
+   * handshake time and per server (not per tool), so it is kept beside
+   * the tool map and handed to the engine as `actionArgs.toolInstructions`.
+   */
+  instructions: Record<string, string>;
   private _pendingRequests: Map<
     string,
     { resolve: (value: unknown) => void; reject: (reason: unknown) => void }
@@ -135,6 +142,7 @@ class CustomServers {
     this.httpServers = {};
     this.customServersLogs = {};
     this.tools = {};
+    this.instructions = {};
     this.stoppedCustomServers = [];
     this._pendingRequests = new Map();
   }
@@ -187,6 +195,27 @@ class CustomServers {
     }
   };
 
+  /**
+   * Record the `instructions` an `initialize` result carried, if any. The
+   * entry is dropped when the field is absent or blank rather than left
+   * alone, so a server that stops advertising instructions (or is
+   * restarted against a different backend) doesn't keep injecting the
+   * stale text into the system prompt.
+   */
+  private captureInstructions = (type: string, result: unknown) => {
+    const text = (result as { instructions?: unknown } | undefined)
+      ?.instructions;
+    if (typeof text === "string" && text.trim().length > 0) {
+      this.instructions[type] = text;
+      logger.info("[mcp] initialize instructions captured", {
+        type,
+        length: text.length,
+      });
+      return;
+    }
+    delete this.instructions[type];
+  };
+
   private _appendLog(type: string, line: string) {
     const logs = this.customServersLogs[type];
     if (!logs) return;
@@ -215,6 +244,7 @@ class CustomServers {
             : null;
 
         if (jsonId && jsonId === `init-${type}`) {
+          this.captureInstructions(type, correctJson.result);
           this.initedCustomServers[type] = true;
           this.stoppedCustomServers = this.stoppedCustomServers.filter(
             (s) => s !== type
@@ -490,6 +520,7 @@ class CustomServers {
     ];
 
     this.tools[type] = [];
+    delete this.instructions[type];
     this.initedCustomServers[type] = false;
 
     this.httpServers[type] = {
@@ -512,6 +543,7 @@ class CustomServers {
     ];
 
     this.tools[type] = [];
+    delete this.instructions[type];
 
     const process = this.platform.process?.createProcess(commandLine, env);
     if (!process) return;
@@ -552,7 +584,16 @@ class CustomServers {
     if (this.tools[type]) {
       delete this.tools[type];
     }
+    delete this.instructions[type];
     this.eventBus.emit("tools-changed");
+  };
+
+  /**
+   * Per-server `initialize` instructions for the servers running right
+   * now, keyed by server type. Feeds `actionArgs.toolInstructions`.
+   */
+  getInstructions = (): Record<string, string> => {
+    return { ...this.instructions };
   };
 
   /**
@@ -618,8 +659,13 @@ class CustomServers {
       for (const result of results) {
         this.onProcess(type, 0, JSON.stringify(result));
 
-        const msg = result as { jsonrpc?: string; id?: string };
+        const msg = result as {
+          jsonrpc?: string;
+          id?: string;
+          result?: unknown;
+        };
         if (msg.jsonrpc === "2.0" && msg.id?.includes(`init-${type}`)) {
+          this.captureInstructions(type, msg.result);
           this.initedCustomServers[type] = true;
           this.stoppedCustomServers = this.stoppedCustomServers.filter(
             (s) => s !== type

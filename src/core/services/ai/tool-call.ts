@@ -208,6 +208,8 @@ export async function* resumeChat(
     tools?: ActionArgs["tools"];
     /** System-prompt override; threaded so it survives the tool-call resume. */
     prompt?: ActionArgs["prompt"];
+    /** MCP server notes; threaded so they survive the tool-call resume. */
+    toolInstructions?: ActionArgs["toolInstructions"];
     /** Opaque scope token forwarded to scoped storage reads. */
     entityId?: string;
     /** Host entity pair — mirrors {@link AdapterRunContext.entityMeta}. */
@@ -271,6 +273,7 @@ export async function* resumeChat(
     messages: await resolveAttachmentRefs(history, ctx.storage.attachments),
     tools: input.tools,
     prompt: input.prompt,
+    toolInstructions: input.toolInstructions,
     isReasoning: input.isReasoning,
     signal: input.signal,
     fetch: input.fetch,
