@@ -142,6 +142,7 @@ interface PlatformFileOperations {
   convertFileToText(path: string, format: number): Promise<string>;
   getFileType(path: string):                       number;
   getRecentFiles():                                Promise<string>;
+  onRecentFilesChange?(callback: () => void): () => void;
   saveAsFile(content: string, defaultName: string, format?: string): Promise<void>;
   getExportFormats?(): ExportFormat[];
   openFile(path: string, name: string):             void;
@@ -156,6 +157,14 @@ entry to replace the chat-list "Save" item with an "Export" submenu — the chos
 `ExportFormat.id` is forwarded as `saveAsFile`'s third `format` argument. Omit
 `getExportFormats` (or return one/zero entries) to keep the single default "Save"
 action, where `saveAsFile` is called with two arguments as before.
+
+`onRecentFilesChange` lets the host invalidate the "Recent files" submenu.
+The callback takes no payload — `getRecentFiles()` stays the only source of
+the list, and the widget re-reads it on every signal, keeping the newest
+answer when signals arrive in a burst. Return an unsubscribe function; it is
+called on unmount. Omit the method and the widget reads the list once on
+mount, which is enough where the page reloads with the document but leaves
+the submenu frozen in a long-lived embedding such as a desktop plugin panel.
 
 ### `PlatformProcessRunner`
 

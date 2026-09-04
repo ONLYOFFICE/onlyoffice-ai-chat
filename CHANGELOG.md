@@ -8,9 +8,13 @@
 
   Consumers building the same hint outside the widget (the ONLYOFFICE plugins render one in the host window) now have a component to use instead of assembling `Tooltip` and `TooltipTrigger`, which are not part of the public surface.
 
+- **`PlatformFileOperations.onRecentFilesChange`** — an optional host subscription that invalidates the "Recent files" submenu. The list was read once when the composer mounted, which is enough where the page reloads with the document, but a desktop plugin panel lives in one iframe for the whole app session: the submenu kept showing the snapshot taken at startup while the user opened and closed documents. The callback carries no payload — `getRecentFiles()` stays the only source of the list, and the widget re-reads it on every signal, keeping the newest answer when a host signals in a burst (one per checked file). Hosts that omit the method behave exactly as before.
+
 - **`--chat-input-max-height` theme token** — the ceiling the composer input grows to before it starts scrolling, falling back to `50vh`, so sizing is unchanged by default. The value was hard-coded, which left `--chat-input-min-height` overridable but its counterpart not; a host embedding the widget in a short container can now cap the input against that container (e.g. `200px`) instead of against the viewport.
 
 ### Fixed
+
+- **A failing `getRecentFiles()` no longer produces an unhandled rejection, and unusable entries are dropped.** The read was a bare `.then` with the `try/catch` wrapped around `JSON.parse` alone, so a host that rejected the call surfaced an unhandled rejection; the failure is now logged through `logger` and the previously loaded list is kept, since a failed call says nothing about its contents. A `.filter(Boolean)` meant to weed out bad records never removed anything (every object is truthy), so an entry without a `path` rendered as a nameless item that attached nothing — entries are now selected on a non-empty string `path`.
 
 - **The empty new chat scrolls instead of squeezing its content.** `suggestionsHeader`, the welcome screen and the suggestion chips sat outside the thread viewport, so in a short container they were compressed — and, past a point, clipped — with no way to reach them. They now live in a scrollable column that keeps them hugging the composer at a comfortable height and becomes scrollable when they no longer fit.
 

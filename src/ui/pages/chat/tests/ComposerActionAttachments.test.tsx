@@ -26,6 +26,8 @@ const mockPickFiles = vi.fn();
 const mockConvertFileToText = vi.fn();
 const mockGetFileType = vi.fn();
 const mockGetRecentFiles = vi.fn();
+const mockOnRecentFilesChange = vi.fn();
+const mockLoggerError = vi.fn();
 
 let mockServers: Record<string, { name: string; enabled: boolean }[]> = {};
 let mockWebSearchEnabled = false;
@@ -80,6 +82,16 @@ vi.mock("../../../tools/context", () => ({
   useToolsContext: () => ({
     eventBus: { emit: mockEmit },
   }),
+}));
+
+vi.mock("../../../../shared/logger", () => ({
+  // Indirect calls: the factory is hoisted above the const declarations.
+  default: {
+    error: (...args: unknown[]) => mockLoggerError(...args),
+    warn: () => {},
+    log: () => {},
+    info: () => {},
+  },
 }));
 
 vi.mock("../../../../widget-config", () => ({
@@ -330,6 +342,59 @@ describe("ComposerActionAttachment", () => {
       expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
     });
 
+    it("drops recent entries without a usable path", async () => {
+      mockGetRecentFiles.mockResolvedValue(
+        JSON.stringify({
+          files: [
+            { path: "/docs/kept.docx", type: 7 },
+            { type: 7 },
+            { path: "", type: 7 },
+          ],
+        })
+      );
+      await act(async () => {
+        render(<ComposerActionAttachment />);
+      });
+      await waitFor(() => {
+        const items = mockDropdownItems as {
+          text: string;
+          subMenu?: { text: string }[];
+        }[];
+        const recentItem = items.find((i) => i.text === "RecentFiles");
+        expect(recentItem?.subMenu).toHaveLength(1);
+        expect(recentItem?.subMenu?.[0].text).toBe("kept.docx");
+      });
+    });
+
+    it("keeps the previous list and logs when getRecentFiles rejects", async () => {
+      mockGetRecentFiles
+        .mockResolvedValueOnce(
+          JSON.stringify({ files: [{ path: "/docs/first.docx", type: 7 }] })
+        )
+        .mockRejectedValueOnce(new Error("host is gone"));
+      mockOnRecentFilesChange.mockReturnValue(() => {});
+      mockPlatformFile = {
+        getRecentFiles: mockGetRecentFiles,
+        onRecentFilesChange: mockOnRecentFilesChange,
+      };
+
+      await act(async () => {
+        render(<ComposerActionAttachment />);
+      });
+      const signal = mockOnRecentFilesChange.mock.calls[0][0] as () => void;
+      await act(async () => {
+        signal();
+      });
+
+      const items = mockDropdownItems as {
+        text: string;
+        subMenu?: { text: string }[];
+      }[];
+      const recentItem = items.find((i) => i.text === "RecentFiles");
+      expect(recentItem?.subMenu?.[0].text).toBe("first.docx");
+      expect(mockLoggerError).toHaveBeenCalled();
+    });
+
     it("selectLocalFile picks files and adds them", async () => {
       mockPickFiles.mockResolvedValue([{ path: "/docs/file1.docx" }]);
       mockGetFileType.mockReturnValue(7);
@@ -499,6 +564,114 @@ describe("ComposerActionAttachment", () => {
         const recentItem = items.find((i) => i.text === "RecentFiles");
         expect(recentItem?.subMenu?.[0].text).toBe("file.docx");
       });
+    });
+  });
+
+  describe("onRecentFilesChange", () => {
+    beforeEach(() => {
+      mockGetRecentFiles.mockResolvedValue(
+        JSON.stringify({ files: [{ path: "/docs/before.docx", type: 7 }] })
+      );
+      mockOnRecentFilesChange.mockReturnValue(() => {});
+      mockPlatformFile = {
+        getRecentFiles: mockGetRecentFiles,
+        onRecentFilesChange: mockOnRecentFilesChange,
+      };
+    });
+
+    it("subscribes on mount and re-reads on signal", async () => {
+      await act(async () => {
+        render(<ComposerActionAttachment />);
+      });
+      expect(mockOnRecentFilesChange).toHaveBeenCalledTimes(1);
+      expect(mockGetRecentFiles).toHaveBeenCalledTimes(1);
+
+      mockGetRecentFiles.mockResolvedValue(
+        JSON.stringify({ files: [{ path: "/docs/after.docx", type: 7 }] })
+      );
+      const signal = mockOnRecentFilesChange.mock.calls[0][0] as () => void;
+      await act(async () => {
+        signal();
+      });
+
+      expect(mockGetRecentFiles).toHaveBeenCalledTimes(2);
+      const items = mockDropdownItems as {
+        text: string;
+        subMenu?: { text: string }[];
+      }[];
+      const recentItem = items.find((i) => i.text === "RecentFiles");
+      expect(recentItem?.subMenu?.[0].text).toBe("after.docx");
+    });
+
+    it("keeps the newest answer when reads overlap", async () => {
+      // Hosts signal per file, so a burst overlaps reads: a slow first
+      // answer must not land on top of the fresher second one.
+      let resolveFirst: (raw: string) => void = () => {};
+      mockGetRecentFiles.mockReturnValueOnce(
+        new Promise<string>((resolve) => {
+          resolveFirst = resolve;
+        })
+      );
+      mockGetRecentFiles.mockResolvedValue(
+        JSON.stringify({ files: [{ path: "/docs/newest.docx", type: 7 }] })
+      );
+
+      await act(async () => {
+        render(<ComposerActionAttachment />);
+      });
+      const signal = mockOnRecentFilesChange.mock.calls[0][0] as () => void;
+      await act(async () => {
+        signal();
+      });
+      await act(async () => {
+        resolveFirst(
+          JSON.stringify({ files: [{ path: "/docs/stale.docx", type: 7 }] })
+        );
+      });
+
+      const items = mockDropdownItems as {
+        text: string;
+        subMenu?: { text: string }[];
+      }[];
+      const recentItem = items.find((i) => i.text === "RecentFiles");
+      expect(recentItem?.subMenu).toHaveLength(1);
+      expect(recentItem?.subMenu?.[0].text).toBe("newest.docx");
+    });
+
+    it("unsubscribes on unmount", async () => {
+      const unsubscribe = vi.fn();
+      mockOnRecentFilesChange.mockReturnValue(unsubscribe);
+      let unmount: () => void = () => {};
+      await act(async () => {
+        unmount = render(<ComposerActionAttachment />).unmount;
+      });
+      expect(unsubscribe).not.toHaveBeenCalled();
+      act(() => {
+        unmount();
+      });
+      expect(unsubscribe).toHaveBeenCalledTimes(1);
+    });
+
+    it("survives a host that returns a non-function from the subscription", async () => {
+      mockOnRecentFilesChange.mockReturnValue(undefined);
+      let unmount: () => void = () => {};
+      await act(async () => {
+        unmount = render(<ComposerActionAttachment />).unmount;
+      });
+      expect(() =>
+        act(() => {
+          unmount();
+        })
+      ).not.toThrow();
+    });
+
+    it("reads once and never subscribes when the host omits the method", async () => {
+      mockPlatformFile = { getRecentFiles: mockGetRecentFiles };
+      await act(async () => {
+        render(<ComposerActionAttachment />);
+      });
+      expect(mockGetRecentFiles).toHaveBeenCalledTimes(1);
+      expect(mockOnRecentFilesChange).not.toHaveBeenCalled();
     });
   });
 
