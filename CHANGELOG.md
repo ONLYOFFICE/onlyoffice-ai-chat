@@ -4,6 +4,12 @@
 
 ### Added
 
+- **An MCP server's `initialize` instructions reach the model.** A server may return an `instructions` string from the `initialize` handshake — its own hint on how its tools are meant to be used. It was parsed and thrown away; it is now captured per server and folded into the chat system prompt, so a server can steer the model's use of its tools without every host writing that guidance into its own prompt.
+
+  The notes are appended after the resolved prompt (default plus the host's `prompt` override, `replace` included) inside a framed block that states they are third-party advice and cannot override the instructions above — the text comes from whatever server the user registered, so it is never spliced in as if it were ours. A server's own name is reduced to an inert identifier before it labels its block, so a name carrying `"><` cannot close its block and re-open one under another server's name and have its notes read as that server's. Each server is guarded at 100 000 characters against a runaway server, a server whose tools were all switched off contributes nothing, and the block is re-assembled on resume rounds so a tool call doesn't wipe it.
+
+  Carried from the connection holder to the engine as `actionArgs.toolInstructions` (`serverType` → text), a new optional field on `ActionArgs`. The UI fills it for browser-run MCP servers; a host driving the engine directly can pass its own. Servers wired through `SystemToolsSource` are not covered yet — their instructions are still discarded.
+
 - **`HelpButton`** — the "i" icon that opens a hint popover on click, exported from the package root and overridable through `ComponentsProvider` as `HelpButton`. It is a popover, not a tooltip: the content may hold links and buttons, the pointer can travel from the icon into it, and it closes on Escape or an outside press. `TooltipIconButton` stays what it was — a hover label — so a hint carrying a link no longer has to be built out of it.
 
   Consumers building the same hint outside the widget (the ONLYOFFICE plugins render one in the host window) now have a component to use instead of assembling `Tooltip` and `TooltipTrigger`, which are not part of the public surface.

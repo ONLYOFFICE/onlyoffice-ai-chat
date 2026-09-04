@@ -50,6 +50,8 @@ const stores = {
     // The send / regenerate paths read the round's tools from here, not
     // from the `tools` snapshot — mirror it so both stay in step.
     getUserTools: vi.fn(async () => stores.serversState.tools),
+    toolInstructions: {} as Record<string, string>,
+    getToolInstructions: vi.fn(() => stores.serversState.toolInstructions),
   },
   attachmentsState: {
     attachmentFiles: [] as unknown[],

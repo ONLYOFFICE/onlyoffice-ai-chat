@@ -82,6 +82,17 @@ export interface ServersStoreState {
    * {@link getTools} refresh.
    */
   getUserTools: () => Promise<TMCPItem[]>;
+  /**
+   * Per-server MCP `initialize` instructions for the next chat round,
+   * keyed by server type — shipped as `actionArgs.toolInstructions` so
+   * the engine can fold them into the system prompt.
+   *
+   * Read straight from the live aggregator with no API round trip, and
+   * deliberately not filtered by the disabled map: the engine drops the
+   * notes of a server that contributed no tool, which keeps the filtering
+   * decision in the one place that always sees the current map.
+   */
+  getToolInstructions: () => Record<string, string>;
   reload: () => Promise<void>;
   /**
    * Enable or disable one tool — or several of the same server type in one
@@ -318,6 +329,8 @@ export function createServersStore(deps: {
     },
 
     getUserTools: () => buildUserTools(),
+
+    getToolInstructions: () => ctx.servers.getToolInstructions(),
 
     reload: async () => {
       const registeredServers = await loadAndStartCustomServers();

@@ -35,6 +35,21 @@ export type ActionArgs = {
   signal?: AbortSignal;
   prompt?: SystemPromptOverride;
   /**
+   * Per-server usage notes from the MCP `initialize` handshake, keyed by
+   * `serverType` (the same key as {@link TMCPItem.serverType} and the
+   * disabled map). A server states these once, at connect time, to
+   * describe how its tools are meant to be used; the `chat` action folds
+   * them into the system prompt inside a framed, advisory block.
+   *
+   * Supplied by whoever holds the MCP connection: the UI aggregator for
+   * browser-run servers, the host for its own. Keyed per server rather
+   * than carried on each tool because that is what they are — one text
+   * per server, not per tool.
+   *
+   * @see appendServerInstructions
+   */
+  toolInstructions?: Record<string, string>;
+  /**
    * Thread the round belongs to. Threaded into
    * {@link ProviderCredentials.sessionId} by {@link providerFor}, which
    * turns it into an `x-session-id` header on the ONLYOFFICE provider.

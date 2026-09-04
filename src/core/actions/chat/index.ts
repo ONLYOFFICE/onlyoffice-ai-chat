@@ -5,6 +5,7 @@ import { resolveSystemPrompt } from "../system-prompt";
 import type { ActionArgs } from "../types";
 import { isFallbackProfile, streamWithTextProtocol } from "./fallback-tools";
 import { systemPrompt } from "./prompt";
+import { appendServerInstructions } from "./server-instructions";
 
 /**
  * Streaming chat action — yields every delta as the provider produces it.
@@ -19,7 +20,14 @@ import { systemPrompt } from "./prompt";
 export async function* chat(
   args: ActionArgs
 ): AsyncGenerator<SendMessageResult> {
-  const baseSystem = resolveSystemPrompt(systemPrompt, args.prompt);
+  // Server notes go after the host's own override, so an override that
+  // says "always answer in French" still has the last word over whatever
+  // a registered MCP server decided to put in its `instructions`.
+  const baseSystem = appendServerInstructions(
+    resolveSystemPrompt(systemPrompt, args.prompt),
+    args.toolInstructions,
+    args.tools
+  );
 
   if (isFallbackProfile(args.profile) && (args.tools?.length ?? 0) > 0) {
     yield* streamWithTextProtocol(args, baseSystem);

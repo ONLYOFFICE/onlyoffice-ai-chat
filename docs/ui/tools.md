@@ -175,6 +175,15 @@ STDIO requires `PlatformAdapter.process.createProcess`.
 2. `tools/list` to discover tools
 3. `tools/call` for each invocation (30-second timeout)
 
+An `initialize` result may carry an `instructions` string — the
+server's own hint on how its tools are meant to be used. It is
+captured per server (see `getToolInstructions()` below), shipped
+with the next chat round as `actionArgs.toolInstructions`, and
+folded into the system prompt by the `chat` action — see
+[MCP server instructions](../core/actions/actions.md#mcp-server-instructions).
+The entry is dropped when a re-init stops advertising one, so a
+restarted server can't leave stale text in the prompt.
+
 The runtime emits `"tools-changed"` on `ChatEventBus` whenever the
 tool list changes; `useServers` subscribes to refresh the UI.
 
@@ -183,6 +192,7 @@ tool list changes; `useServers` subscribes to refresh the UI.
 | Method | Description |
 | --- | --- |
 | `getTools()` | Returns host + MCP custom tools, grouped by source id |
+| `getToolInstructions()` | Per-server `initialize` instructions, keyed by server type (MCP servers only — host tools have no handshake) |
 | `callTools(type, name, args)` | Execute a tool by source type + name |
 | `getServerType(name)` | Reverse-lookup the source type for a prefixed tool name |
 | `setCustomServers(config)` / `startCustomServers()` / `restartCustomServer(type)` / `deleteCustomServer(type)` | Custom MCP server lifecycle |

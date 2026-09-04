@@ -593,6 +593,52 @@ describe("CustomServers", () => {
 
       expect(customServers.customServersLogs.test).toEqual([]);
     });
+
+    it("should capture initialize instructions", () => {
+      const msg = JSON.stringify({
+        jsonrpc: "2.0",
+        id: "init-test",
+        result: { instructions: "Prefer bulk endpoints." },
+      });
+
+      customServers.onProcess("test", 0, msg);
+
+      expect(customServers.getInstructions()).toEqual({
+        test: "Prefer bulk endpoints.",
+      });
+    });
+
+    it("should drop stale instructions when a re-init omits them", () => {
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: "init-test",
+          result: { instructions: "Old text." },
+        })
+      );
+
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({ jsonrpc: "2.0", id: "init-test", result: {} })
+      );
+
+      expect(customServers.getInstructions()).toEqual({});
+    });
+
+    it("should ignore blank instructions", () => {
+      const msg = JSON.stringify({
+        jsonrpc: "2.0",
+        id: "init-test",
+        result: { instructions: "   " },
+      });
+
+      customServers.onProcess("test", 0, msg);
+
+      expect(customServers.getInstructions()).toEqual({});
+    });
   });
 
   // ==========================================================================
@@ -702,6 +748,38 @@ describe("CustomServers", () => {
       await customServers.initHttpServer("httpTest");
 
       expect(customServers.initedCustomServers.httpTest).toBe(true);
+    });
+
+    it("should capture initialize instructions from an HTTP server", async () => {
+      mockFetch
+        .mockResolvedValueOnce(
+          createMockResponse({
+            jsonrpc: "2.0",
+            id: "init-httpTest",
+            result: {
+              capabilities: {},
+              instructions: "Call search before create.",
+            },
+          })
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            jsonrpc: "2.0",
+            id: "tools-httpTest-123",
+            result: { tools: [] },
+          })
+        );
+
+      customServers.httpServers.httpTest = {
+        url: "https://example.com/mcp",
+      };
+      customServers.customServersLogs.httpTest = [];
+
+      await customServers.initHttpServer("httpTest");
+
+      expect(customServers.getInstructions()).toEqual({
+        httpTest: "Call search before create.",
+      });
     });
 
     it("should handle HTTP error during init", async () => {

@@ -132,6 +132,12 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     const t = useServersStore.getState().tools;
     return t.length > 0 ? t : undefined;
   }, [useServersStore]);
+  // Same reason as `currentTools`: an MCP server may have (re)connected
+  // since the last render, and its notes belong to the round being resumed.
+  const currentToolInstructions = useCallback(() => {
+    const map = useServersStore.getState().getToolInstructions();
+    return Object.keys(map).length > 0 ? map : undefined;
+  }, [useServersStore]);
   // Signal for a resume round (approve / deny). Reuses the live controller
   // when the resume runs inside the original stream, but dialog-driven
   // approve/deny fires after that stream ended and cleared its controller —
@@ -172,6 +178,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       actionArgs: {
         isReasoning: extendedThinking,
         tools: currentTools(),
+        toolInstructions: currentToolInstructions(),
         prompt: systemPrompt,
         signal: ensureAbortSignal(),
       },
@@ -182,6 +189,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       currentProfile?.id,
       extendedThinking,
       currentTools,
+      currentToolInstructions,
       systemPrompt,
       ensureAbortSignal,
     ]
@@ -1015,6 +1023,9 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         isReasoning: extendedThinking,
         signal: controller.signal,
         tools: freshTools.length > 0 ? freshTools : undefined,
+        // Read after `getUserTools()`, which waits out the still-connecting
+        // servers — before it, a server's notes may not have arrived yet.
+        toolInstructions: currentToolInstructions(),
         prompt: systemPrompt,
       },
     });
@@ -1253,6 +1264,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           isReasoning: extendedThinking,
           signal: controller.signal,
           tools: freshTools.length > 0 ? freshTools : undefined,
+          toolInstructions: currentToolInstructions(),
           prompt: systemPrompt,
         },
       });
@@ -1262,6 +1274,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     [
       api,
       currentProfile,
+      currentToolInstructions,
       entityId,
       contextEntityId,
       extendedThinking,
