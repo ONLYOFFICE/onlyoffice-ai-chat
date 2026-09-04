@@ -54,6 +54,7 @@ vi.mock("../../../hooks", () => ({
     denyToolCall: vi.fn(),
   }),
   useThread: vi.fn(),
+  useSanitizedCopy: () => vi.fn(),
 }));
 
 vi.mock("../../../components/manage-tool-dialog", () => ({
