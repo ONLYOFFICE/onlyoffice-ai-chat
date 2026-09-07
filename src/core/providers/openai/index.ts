@@ -136,9 +136,9 @@ class OpenAIProvider extends AbstractBaseProvider {
           tools: responsesTools.length > 0 ? responsesTools : undefined,
           // Force one tool call per turn. Only valid when tools are present.
           ...(responsesTools.length > 0 ? { parallel_tool_calls: false } : {}),
-          reasoning: resolveReasoningParam(model, withReasoning, {
+          ...this.reasoningResponsesFields(model, withReasoning, {
             summary: true,
-          }) as OpenAI.Reasoning | undefined,
+          }),
           stream: true,
           ...this.extraBody(),
         } as OpenAI.Responses.ResponseCreateParamsStreaming,
@@ -171,6 +171,26 @@ class OpenAIProvider extends AbstractBaseProvider {
   ): Record<string, unknown> {
     const effort = resolveReasoningEffort(model, withReasoning);
     return effort ? { reasoning_effort: effort } : {};
+  }
+
+  /**
+   * Responses API counterpart of {@link reasoningRequestFields}: the
+   * `reasoning` object for a `/v1/responses` round, on both the streaming
+   * and the one-shot path. Gateways that route `/v1/responses` too (the
+   * live probe in {@link checkResponsesApi} switches their profiles onto
+   * this transport) override this alongside the chat-completions hook —
+   * otherwise their "off" spelling never reaches the wire.
+   *
+   * @param opts.summary - Ask for the reasoning summary; see
+   *   {@link resolveReasoningParam}.
+   */
+  protected reasoningResponsesFields(
+    model: string,
+    withReasoning?: boolean,
+    opts?: { summary?: boolean }
+  ): Record<string, unknown> {
+    const reasoning = resolveReasoningParam(model, withReasoning, opts);
+    return reasoning ? { reasoning } : {};
   }
 
   /**
@@ -253,10 +273,7 @@ class OpenAIProvider extends AbstractBaseProvider {
           input: convertMessagesToResponses(messages, this.downgradeSystem),
           // No `summary` here — this path returns `output_text` only, so
           // the summary tokens would be billed and discarded.
-          reasoning: resolveReasoningParam(
-            model,
-            withReasoning
-          ) as OpenAI.Reasoning | undefined,
+          ...this.reasoningResponsesFields(model, withReasoning),
           stream: false,
           ...this.extraBody(),
         } as OpenAI.Responses.ResponseCreateParamsNonStreaming,
@@ -272,10 +289,7 @@ class OpenAIProvider extends AbstractBaseProvider {
           { role: "system", content: systemPrompt },
           ...convertMessages(messages, this.downgradeSystem),
         ],
-        reasoning_effort: resolveReasoningEffort(
-          model,
-          withReasoning
-        ) as OpenAI.Chat.ChatCompletionCreateParams["reasoning_effort"],
+        ...this.reasoningRequestFields(model, withReasoning),
         stream: false,
         ...this.extraBody(),
       } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,

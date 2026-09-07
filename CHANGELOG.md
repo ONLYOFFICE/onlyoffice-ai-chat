@@ -1,6 +1,27 @@
 # Changelog
 
-## [Unreleased]
+## 0.5.88
+
+### Fixed
+
+- **Extended thinking off now actually turns reasoning off on every provider that can.** "Off" used to mean "send nothing", and most current models think by default when nothing says otherwise, so the toggle had no effect on them. Each provider now sends its own explicit off switch:
+
+  | Provider | Off | On |
+  | --- | --- | --- |
+  | OpenRouter | `reasoning: { effort: "none" }` | `reasoning: { effort: "medium" }` |
+  | Anthropic 4.6+ | `thinking: { type: "disabled" }` | `thinking: { type: "adaptive" }` |
+  | Google AI 2.5 / 3.x | `thinkingBudget: 0` (2.5 Flash) or the model's lowest `thinkingLevel` | unchanged |
+  | DeepSeek | `thinking: { type: "disabled" }` | `thinking: { type: "enabled" }` |
+  | Zhipu GLM-4.5+ | `thinking: { type: "disabled" }` | `thinking: { type: "enabled" }` |
+  | Groq Qwen | `reasoning_effort: "none"` | `reasoning_effort: "default"` |
+
+  Gemini 2.5 Pro and Gemini 3 have no real off switch, so their floor level is sent; Groq's GPT-OSS cannot stop reasoning either and gets `include_reasoning: false` so the thinking at least stays out of the stream. Models without thinking receive no field, as before.
+
+- **OpenRouter profiles never received the widget's reasoning setting.** OpenRouter answers `/v1/responses`, so the live probe routed its profiles onto the Responses transport, and that path built its `reasoning` object from the OpenAI table, which has no entry for `anthropic/*` ids and omitted the field. OpenRouter now stays on `/chat/completions` — the one OpenRouter endpoint that documents the full unified `reasoning` object, off switch included — and steers profiles an earlier build had probed onto Responses back there. The Responses and one-shot request builders in the OpenAI base also go through the same per-provider hooks as streaming chat completions, so a gateway's spelling reaches the wire on every path.
+
+- **Anthropic extended thinking works on Claude 4.7 and newer.** These models reject `thinking.type: "enabled"` with a 400; the request now uses adaptive thinking from the 4.6 generation on, keeps the manual budget for 4.5 and earlier, and never tries to switch Fable / Mythos, which think always. The thinking toggle is also offered for every Claude from 4.5 on, not only the 4.5 pair.
+
+## 0.5.85
 
 ### Added
 

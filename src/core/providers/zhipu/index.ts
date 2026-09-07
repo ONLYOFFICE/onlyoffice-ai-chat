@@ -11,6 +11,20 @@ import { listModels } from "./models";
  * and a hard-coded fallback list).
  */
 class ZhipuProvider extends OpenAIProvider {
+  /**
+   * GLM-4.5 and newer think *by default* and are switched through
+   * Zhipu's own `thinking.type` field (`reasoning_effort` means nothing
+   * here), so off has to be sent explicitly as `"disabled"`. Older GLM-4
+   * models have no thinking and get no field at all.
+   */
+  protected override reasoningRequestFields(
+    model: string,
+    withReasoning?: boolean
+  ): Record<string, unknown> {
+    if (!/glm-(?:4\.[5-9]|[5-9])/i.test(model)) return {};
+    return { thinking: { type: withReasoning ? "enabled" : "disabled" } };
+  }
+
   static override getName(): string {
     return zhipuInfo.name;
   }

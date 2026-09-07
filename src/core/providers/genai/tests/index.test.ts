@@ -18,7 +18,11 @@ vi.mock("@google/genai", () => ({
       list: modelsListMock,
     };
   },
-  ThinkingLevel: { THINKING_LEVEL_UNSPECIFIED: "unspecified" },
+  ThinkingLevel: {
+    THINKING_LEVEL_UNSPECIFIED: "unspecified",
+    MINIMAL: "MINIMAL",
+    LOW: "LOW",
+  },
 }));
 
 async function* iter<T>(items: T[]) {
@@ -92,6 +96,59 @@ describe("GenAIProvider", () => {
         generateContentStreamMock.mock.calls[0]?.[0]?.config?.thinkingConfig
           ?.includeThoughts
       ).toBe(true);
+    });
+
+    describe("thinking off", () => {
+      // Gemini 2.5 Pro/Flash and every Gemini 3 model think by default, so
+      // "off" has to be spelled out per model rather than omitted.
+      const configFor = async (model: string) => {
+        generateContentStreamMock.mockResolvedValueOnce(iter([makeChunk("x")]));
+        const p = new GenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+        await drain(
+          p.sendMessage({
+            messages: [],
+            model,
+            systemPrompt: "",
+            withReasoning: false,
+          })
+        );
+        return generateContentStreamMock.mock.calls.at(-1)?.[0]?.config
+          ?.thinkingConfig;
+      };
+
+      it("zeroes the budget on 2.5 Flash, the one family with a real off switch", async () => {
+        expect(await configFor("gemini-2.5-flash")).toEqual({
+          thinkingBudget: 0,
+        });
+        expect(await configFor("gemini-2.5-flash-lite")).toEqual({
+          thinkingBudget: 0,
+        });
+      });
+
+      it("drops to minimal where Gemini 3 supports it", async () => {
+        expect(await configFor("gemini-3-flash-preview")).toEqual({
+          thinkingLevel: "MINIMAL",
+        });
+        expect(await configFor("gemini-3.5-flash-lite")).toEqual({
+          thinkingLevel: "MINIMAL",
+        });
+      });
+
+      it("drops to low on models whose floor is low", async () => {
+        expect(await configFor("gemini-2.5-pro")).toEqual({
+          thinkingLevel: "LOW",
+        });
+        expect(await configFor("gemini-3-pro-preview")).toEqual({
+          thinkingLevel: "LOW",
+        });
+        expect(await configFor("gemini-3.8-flash")).toEqual({
+          thinkingLevel: "LOW",
+        });
+      });
+
+      it("sends nothing to models without thinking", async () => {
+        expect(await configFor("gemini-2.0-flash")).toBeUndefined();
+      });
     });
 
     it("attaches tools when provided", async () => {
