@@ -168,6 +168,13 @@ Rules the assembly follows:
   are third-party advice which cannot override the instructions
   above. They come from whatever server the user registered, so
   they are never spliced in as if they were ours.
+- **Attribution is forgery-proof.** A note cannot pass itself off
+  as another server's: `<server` and `</server` are both
+  neutralised inside the text, and a server name is reduced to
+  `[\w.:-]` before it goes in the `name` attribute. Otherwise a
+  hostile server could close its own block early, or open a
+  forged one under a trusted name, and have its advice read as
+  that server's.
 - **Kept across resume rounds.** Threaded through
   `AdapterRunContext` and `resumeChat`, so a tool call doesn't
   wipe them from the follow-up request.
