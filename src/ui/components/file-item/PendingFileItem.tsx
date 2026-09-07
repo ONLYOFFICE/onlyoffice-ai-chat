@@ -5,6 +5,7 @@ import { cn, getFileIconName } from "../../../shared/utils";
 import type { TPendingAttachment } from "../../store/create-attachments-store";
 import { Icon } from "../icon";
 import { IconButton } from "../icon-button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
 import { chipClassName } from "./chip";
 
 /**
@@ -36,19 +37,23 @@ const PendingFileItem = ({ item, onCancel }: PendingFileItemProps) => {
   const nameWithoutExtension = item.title.replace(`.${extension}`, "");
   const showCancel = Boolean(onCancel) && hovered;
 
-  return (
+  const chip = (
     <div
       className={cn(chipClassName({ isRTL }), "opacity-70")}
       role="status"
       aria-busy
       aria-label={`${item.title} — ${t("Uploading")}`}
-      title={item.title}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       data-testid="pending-file-item"
     >
-      <div className="flex flex-row items-center h-[24px] gap-[4px]">
-        <Icon name={getFileIconName(item.type ?? 0)} size={24} noColor />
+      <div className="flex flex-row items-center h-[24px] gap-[4px] min-w-0">
+        <Icon
+          name={getFileIconName(item.type ?? 0)}
+          size={24}
+          noColor
+          className="shrink-0"
+        />
         <p className="text-[var(--file-items-color)] font-normal whitespace-nowrap overflow-hidden text-ellipsis">
           {nameWithoutExtension}
           <span className="text-[var(--file-items-ext-color)]">
@@ -67,6 +72,22 @@ const PendingFileItem = ({ item, onCancel }: PendingFileItemProps) => {
         <Loader size={16} />
       )}
     </div>
+  );
+
+  // Matches `FileItem`: the name truncates, so the full one lives in a
+  // tooltip. This replaces the native `title` attribute the chip used to
+  // carry — keeping both would stack two tooltips on the same hover.
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{chip}</TooltipTrigger>
+      <TooltipContent
+        className="max-w-[var(--file-item-tooltip-max-width,280px)] break-words"
+        side="top"
+        align="start"
+      >
+        {item.title}
+      </TooltipContent>
+    </Tooltip>
   );
 };
 

@@ -373,6 +373,7 @@ export { PendingFileItem } from "./ui/components/file-item/PendingFileItem";
 export { MarkdownText, MarkdownContent } from "./ui/components/markdown";
 
 // Misc
+export { HelpButton } from "./ui/components/help-button";
 export { ProviderLogo } from "./ui/components/provider-logo";
 // `SyntaxHighlighter` is re-exported through a lazy wrapper so react-shiki
 // (large grammar/theme payload) stays out of the eager root chunk; the type
@@ -433,6 +434,7 @@ export type {
   DropDownItemProps,
   DropdownMenuProps,
   FieldContainerProps,
+  HelpButtonProps,
   IconButtonProps,
   InputProps,
   LinkProps,

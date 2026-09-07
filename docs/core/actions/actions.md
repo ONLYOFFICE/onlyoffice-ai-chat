@@ -34,6 +34,7 @@ type ActionArgs = {
   isReasoning?: boolean;
   signal?: AbortSignal;
   prompt?: SystemPromptOverride;
+  toolInstructions?: Record<string, string>;
 };
 ```
 
@@ -45,6 +46,7 @@ type ActionArgs = {
 | `isReasoning`  |          | Forwarded as `withReasoning` to providers that opt in |
 | `signal`       |          | `AbortSignal` for caller-driven cancellation |
 | `prompt`       |          | [`SystemPromptOverride`](#system-prompt-override) — replaces or appends to the action's baked-in prompt |
+| `toolInstructions` |      | [MCP server notes](#mcp-server-instructions) keyed by `serverType` — folded into the `chat` system prompt |
 
 `ActionArgs` is intentionally narrow on the profile: only the four
 fields a provider actually needs. Engines pre-resolve the full
@@ -117,6 +119,69 @@ Wired into every baked-prompt action: `chat`, `summarize`,
 `translate`, `analyzeText`, `generateImage`, `recognizeText`,
 `describeImage`, `generateTitle`. The `custom` action ignores it
 — it already takes a raw `systemPrompt: string`.
+
+---
+
+## MCP server instructions
+
+> Source: [`chat/server-instructions.ts`](../../../src/core/actions/chat/server-instructions.ts)
+
+An MCP server may return an `instructions` string from the
+`initialize` handshake — its own hint on how its tools are meant
+to be used. Whoever holds the connection (the UI aggregator for
+browser-run servers, the host for its own) passes them to the
+engine as `actionArgs.toolInstructions`, keyed by `serverType`:
+
+```ts
+actionArgs: {
+  tools: freshTools,
+  toolInstructions: { docspace: "Prefer room templates over…" },
+}
+```
+
+The `chat` action folds them into the system prompt, **after** the
+resolved prompt (default + override), inside a framed block:
+
+```
+## Tool provider notes
+…framing that subordinates the notes to everything above…
+
+<server name="docspace">
+Prefer room templates over…
+</server>
+```
+
+Rules the assembly follows:
+
+- **Only represented servers.** A server whose tools were all
+  filtered out this round (disabled by the user, `enabled: false`)
+  contributes nothing. Attribution is by `TMCPItem.serverType`; if
+  no tool carries one, every entry is kept rather than all being
+  dropped.
+- **Guarded at `MAX_CHARS_PER_SERVER` (100 000 characters)**,
+  marked `[…truncated]` past it. Deliberately high: the notes are
+  documentation the server author wrote on purpose, so truncation
+  would corrupt them. It is a runaway guard against a server
+  echoing an entire API reference, not a budget — lower the
+  constant if a tighter limit is ever wanted.
+- **Framed, not merged.** The block header states that the notes
+  are third-party advice which cannot override the instructions
+  above. They come from whatever server the user registered, so
+  they are never spliced in as if they were ours.
+- **Attribution is forgery-proof.** A note cannot pass itself off
+  as another server's: `<server` and `</server` are both
+  neutralised inside the text, and a server name is reduced to
+  `[\w.:-]` before it goes in the `name` attribute. Otherwise a
+  hostile server could close its own block early, or open a
+  forged one under a trusted name, and have its advice read as
+  that server's.
+- **Kept across resume rounds.** Threaded through
+  `AdapterRunContext` and `resumeChat`, so a tool call doesn't
+  wipe them from the follow-up request.
+
+Note that a `replace` override does **not** drop them: it
+overrides the library's prompt, not documentation the host never
+wrote.
 
 ---
 

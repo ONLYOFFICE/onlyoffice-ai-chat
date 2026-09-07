@@ -204,6 +204,8 @@ export type AdapterRunContext = {
   tools: TMCPItem[];
   /** System-prompt override; threaded so resume rounds keep it. */
   prompt?: ActionArgs["prompt"];
+  /** MCP server notes; threaded so resume rounds keep them. */
+  toolInstructions?: ActionArgs["toolInstructions"];
   isReasoning?: boolean;
   signal?: AbortSignal;
   /** Opaque scope token forwarded to scoped storage reads in resume rounds. */
@@ -284,6 +286,7 @@ export async function* executeAdapterTool(
       signal: ctx.signal,
       tools: ctx.tools,
       prompt: ctx.prompt,
+      toolInstructions: ctx.toolInstructions,
       entityId: ctx.entityId,
       entityMeta: ctx.entityMeta,
       fetch: ctx.fetch,
@@ -323,7 +326,13 @@ async function dispatchAdapterTool(
     );
   }
   if (toolName === "generate_image") {
-    return callImageGenerationTool(storage, toolName, cleanArgs, pickFetch, signal);
+    return callImageGenerationTool(
+      storage,
+      toolName,
+      cleanArgs,
+      pickFetch,
+      signal
+    );
   }
   if (adapter) {
     return adapter.callTool(toolName, cleanArgs, entityId);

@@ -2,8 +2,31 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { openrouterInfo } from "../info";
 import { OpenRouterProvider } from "../index";
 
+const { chatCreateMock, responsesCreateMock } = vi.hoisted(() => ({
+  chatCreateMock: vi.fn(),
+  responsesCreateMock: vi.fn(),
+}));
+
+vi.mock("openai", () => ({
+  default: class MockOpenAI {
+    chat = { completions: { create: chatCreateMock } };
+    responses = { create: responsesCreateMock };
+  },
+}));
+
+/** A finished chat-completions stream: one empty chunk with a stop. */
+async function* completedChat() {
+  yield {
+    choices: [{ delta: {}, finish_reason: "stop", index: 0 }],
+  };
+}
+
 describe("OpenRouterProvider", () => {
-  beforeEach(() => vi.restoreAllMocks());
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    chatCreateMock.mockReset();
+    responsesCreateMock.mockReset();
+  });
 
   it("returns canonical name/baseUrl", () => {
     expect(OpenRouterProvider.getName()).toBe(openrouterInfo.name);
@@ -59,17 +82,74 @@ describe("OpenRouterProvider", () => {
       });
     });
 
-    it("omits the field entirely when thinking is off", () => {
-      expect(fieldsOf("anthropic/claude-sonnet-4.5", false)).toEqual({});
-      // Including for models the OpenAI branch would have sent "none" for:
-      // OpenRouter's `reasoning.effort` has no such level.
-      expect(fieldsOf("openai/gpt-5.1", false)).toEqual({});
+    it("disables thinking explicitly with effort=none when off", () => {
+      // Omitting the field is not enough: Claude 4.6+ on OpenRouter thinks
+      // by default (adaptive thinking), so "off" has to be spelled out.
+      expect(fieldsOf("anthropic/claude-sonnet-4.5", false)).toEqual({
+        reasoning: { effort: "none" },
+      });
+      expect(fieldsOf("openai/gpt-5.1", false)).toEqual({
+        reasoning: { effort: "none" },
+      });
     });
 
     it("never sends the OpenAI spelling", () => {
       expect(fieldsOf("anthropic/claude-sonnet-4.5", true)).not.toHaveProperty(
         "reasoning_effort"
       );
+    });
+  });
+
+  describe("transport", () => {
+    // OpenRouter answers `/v1/responses`, so the inherited probe used to
+    // route its profiles there — a transport whose `reasoning.effort` has
+    // no "none". Everything stays on chat completions instead.
+    const provider = () =>
+      new OpenRouterProvider({
+        baseUrl: "https://openrouter.ai/api/v1",
+        apiKey: "sk",
+      });
+    const drain = async (gen: AsyncGenerator<unknown>) => {
+      for await (const _ of gen) void _;
+    };
+
+    it("reports no Responses API without probing the network", async () => {
+      await expect(provider().checkResponsesApi()).resolves.toBe(false);
+      expect(responsesCreateMock).not.toHaveBeenCalled();
+    });
+
+    it("streams through chat completions even for a profile probed onto Responses", async () => {
+      chatCreateMock.mockResolvedValueOnce(completedChat());
+      await drain(
+        provider().sendMessage({
+          messages: [],
+          model: "anthropic/claude-sonnet-5",
+          systemPrompt: "",
+          useResponsesApi: true,
+          withReasoning: false,
+        })
+      );
+      expect(responsesCreateMock).not.toHaveBeenCalled();
+      expect(chatCreateMock.mock.calls[0]?.[0]?.reasoning).toEqual({
+        effort: "none",
+      });
+    });
+
+    it("keeps one-shot calls on chat completions too", async () => {
+      chatCreateMock.mockResolvedValueOnce({
+        choices: [{ message: { content: "t" } }],
+      });
+      await provider().sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "anthropic/claude-sonnet-5",
+        systemPrompt: "s",
+        useResponsesApi: true,
+        withReasoning: false,
+      });
+      expect(responsesCreateMock).not.toHaveBeenCalled();
+      const payload = chatCreateMock.mock.calls[0]?.[0];
+      expect(payload.reasoning).toEqual({ effort: "none" });
+      expect(payload).not.toHaveProperty("reasoning_effort");
     });
   });
 

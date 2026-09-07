@@ -1,5 +1,4 @@
 import type { GoogleGenAI } from "@google/genai";
-import { ThinkingLevel } from "@google/genai";
 import { isAbortError } from "../../../shared/abort";
 import type { TErrorData } from "../../../shared/error-data";
 import logger from "../../../shared/logger";
@@ -21,6 +20,7 @@ import {
   createStopResponse,
   processStream,
 } from "./stream";
+import { resolveThinkingConfig } from "./thinking";
 import { convertTools } from "./tools";
 
 class GenAIProvider extends AbstractBaseProvider {
@@ -38,12 +38,7 @@ class GenAIProvider extends AbstractBaseProvider {
     try {
       const convertedTools = convertTools(tools ?? []);
 
-      const thinkingConfig = withReasoning
-        ? {
-            thinkingLevel: ThinkingLevel.THINKING_LEVEL_UNSPECIFIED,
-            includeThoughts: true,
-          }
-        : undefined;
+      const thinkingConfig = resolveThinkingConfig(model, withReasoning);
 
       const stream = await this.client.models.generateContentStream({
         model,
@@ -76,12 +71,7 @@ class GenAIProvider extends AbstractBaseProvider {
       contents: convertMessages(messages),
       config: {
         systemInstruction: systemPrompt,
-        ...(withReasoning && {
-          thinkingConfig: {
-            thinkingLevel: ThinkingLevel.THINKING_LEVEL_UNSPECIFIED,
-            includeThoughts: true,
-          },
-        }),
+        thinkingConfig: resolveThinkingConfig(model, withReasoning),
         abortSignal: signal,
       },
     });

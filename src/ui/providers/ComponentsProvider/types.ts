@@ -9,6 +9,7 @@ import type {
 import type { DropDownItemProps } from "../../components/dropdown-item/DropDownItem.types";
 import type { DropdownMenuProps } from "../../components/dropdown/DropDown.types";
 import type { FieldContainerProps } from "../../components/field-container";
+import type { HelpButtonProps } from "../../components/help-button/HelpButton.types";
 import type { IconButtonProps } from "../../components/icon-button/IconButton.types";
 import type { InputProps } from "../../components/input";
 import type { LinkProps } from "../../components/link";
@@ -65,6 +66,8 @@ export interface ComponentOverrides {
   TooltipContent?: React.ComponentType<TooltipContentProps>;
   /** Icon button wrapped with a tooltip. */
   TooltipIconButton?: React.ComponentType<TooltipIconButtonProps>;
+  /** "i" icon opening a hint popover on click. */
+  HelpButton?: React.ComponentType<HelpButtonProps>;
   /** Hyperlink element. */
   Link?: React.ComponentType<LinkProps>;
   /** Loading spinner / indicator. */
@@ -83,6 +86,7 @@ export type {
   DropDownItemProps,
   DropdownMenuProps,
   FieldContainerProps,
+  HelpButtonProps,
   IconButtonProps,
   InputProps,
   LinkProps,

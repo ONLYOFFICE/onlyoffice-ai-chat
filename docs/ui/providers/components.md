@@ -59,7 +59,8 @@ function App() {
 | `DropDownItem` | `DropDownItemProps` | Dropdown menu item |
 | `Tabs` | `TabsProps` | Tab navigation bar |
 | `TooltipContent` | `TooltipContentProps` | Tooltip popup |
-| `TooltipIconButton` | `TooltipIconButtonProps` | Icon button + tooltip |
+| `TooltipIconButton` | `TooltipIconButtonProps` | Icon button + hover tooltip |
+| `HelpButton` | `HelpButtonProps` | "i" icon + hint popover opened on click |
 | `Link` | `LinkProps` | Hyperlink |
 | `Loader` | `LoaderProps` | Spinner |
 | `FieldContainer` | `FieldContainerProps` | Labeled field wrapper with optional error |

@@ -13,7 +13,7 @@ import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useWidgetConfig } from "../../../widget-config";
 import { useStores } from "../../store/context";
-import { useMessages } from "../../hooks";
+import { useMessages, useSanitizedCopy } from "../../hooks";
 import useEnsureProfiles from "../../hooks/useEnsureProfiles";
 import useEnsureThreads from "../../hooks/useEnsureThreads";
 import useEnsurePrompts from "../../hooks/useEnsurePrompts";
@@ -42,6 +42,10 @@ const ThreadInner = () => {
   const isToolPending = useMessageStore((s) => s.isToolPending);
   const { t } = useI18n();
   const { isDragOver, handlers } = useChatDropAttachments();
+  // Ctrl+C over the thread must yield the text, not the bubble it sits in:
+  // the browser's own clipboard HTML inlines the computed background and
+  // colour of everything it copies.
+  const onCopy = useSanitizedCopy();
   const { hideScrollToBottomButton, hideThreadFade } = useWidgetConfig();
   // The scrolling message area: `OlderMessages` observes the top of it
   // and keeps the reading position steady when a page is prepended.
@@ -90,6 +94,7 @@ const ThreadInner = () => {
   return (
     <div
       className="aui-root relative flex h-full flex-col select-none"
+      onCopy={onCopy}
       onDragEnter={handlers.onDragEnter}
       onDragOver={handlers.onDragOver}
       onDragLeave={handlers.onDragLeave}
@@ -105,10 +110,16 @@ const ThreadInner = () => {
         }}
       >
         <ThreadPrimitive.If empty>
-          <SuggestionsHeader />
-          <ThreadPrimitive.Viewport className="chat-viewport--empty relative flex min-w-0 flex-1 flex-col items-center justify-center overflow-y-auto" />
-          <ThreadWelcome />
-          <Suggestions />
+          <div className="chat-viewport--empty relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+            <div className="shrink-0">
+              <SuggestionsHeader />
+            </div>
+            <div className="mt-auto shrink-0">
+              <ThreadWelcome />
+              <Suggestions />
+            </div>
+          </div>
+
           <ComposerHeader />
           <Composer />
         </ThreadPrimitive.If>

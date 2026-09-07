@@ -138,6 +138,67 @@ describe("chat action", () => {
       `${chatSystemPrompt}\n\nEXTRA`
     );
   });
+
+  it("folds MCP server instructions into the system prompt", async () => {
+    sendMessageMock.mockReturnValueOnce(asyncFromArray([]));
+    const stream = chat({
+      ...baseArgs,
+      tools: [
+        {
+          name: "create_room",
+          description: "",
+          inputSchema: {},
+          serverType: "docspace",
+        },
+      ],
+      toolInstructions: { docspace: "Prefer templates." },
+    });
+    for await (const _ of stream) {
+      // drain
+    }
+
+    const prompt = sendMessageMock.mock.calls[0][0].systemPrompt as string;
+    expect(prompt.startsWith(chatSystemPrompt)).toBe(true);
+    expect(prompt).toContain("Prefer templates.");
+  });
+
+  it("places the host override above the server instructions", async () => {
+    sendMessageMock.mockReturnValueOnce(asyncFromArray([]));
+    const stream = chat({
+      ...baseArgs,
+      prompt: { mode: "append", text: "HOST RULE" },
+      toolInstructions: { docspace: "SERVER NOTE" },
+    });
+    for await (const _ of stream) {
+      // drain
+    }
+
+    // The notes are appended to the fully resolved prompt, so they survive a
+    // `replace` override too; the block's own header is what subordinates
+    // them to everything above, the host's override included.
+    const prompt = sendMessageMock.mock.calls[0][0].systemPrompt as string;
+    expect(prompt.indexOf("HOST RULE")).toBeLessThan(
+      prompt.indexOf("SERVER NOTE")
+    );
+  });
+
+  it("keeps the server instructions under a 'replace' override", async () => {
+    sendMessageMock.mockReturnValueOnce(asyncFromArray([]));
+    const stream = chat({
+      ...baseArgs,
+      prompt: { mode: "replace", text: "REPLACED" },
+      toolInstructions: { docspace: "SERVER NOTE" },
+    });
+    for await (const _ of stream) {
+      // drain
+    }
+
+    // A host that replaces the prompt is overriding OUR text, not opting out
+    // of the tool documentation it never wrote and cannot see.
+    const prompt = sendMessageMock.mock.calls[0][0].systemPrompt as string;
+    expect(prompt.startsWith("REPLACED")).toBe(true);
+    expect(prompt).toContain("SERVER NOTE");
+  });
 });
 
 describe("custom action", () => {

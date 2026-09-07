@@ -7,6 +7,7 @@ import { useToolsContext } from "../../../tools/context";
 import { getFileIconName, isSpreadsheet } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
+import logger from "../../../../shared/logger";
 
 // Mirrored from `ComposerActionServers.tsx`. The engine resolves these
 // on the fly per-request, so they never appear in the UI's `servers`
@@ -14,6 +15,16 @@ import { useWidgetConfig } from "../../../../widget-config";
 // `disabledTools["web-search"]` directly.
 const WEB_SEARCH_TYPE = "web-search";
 const WEB_SEARCH_TOOL_NAMES = ["web_search", "web_crawling"];
+
+// The host payload is only as trustworthy as the host: the desktop
+// `recent_files_reader` omits `url` entirely, and an entry without a usable
+// `path` would render as a nameless item that attaches nothing.
+type TRecentEntry = { path?: string; type?: number; url?: string };
+
+const hasPath = (
+  entry: TRecentEntry
+): entry is TRecentEntry & { path: string } =>
+  typeof entry.path === "string" && entry.path !== "";
 
 const ComposerActionAttachment = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
@@ -126,43 +137,71 @@ const ComposerActionAttachment = () => {
   };
 
   const [recentFiles, setRecentFiles] = React.useState<DropDownItemProps[]>([]);
+  // Ticket for the in-flight read. Hosts signal in bursts, so reads overlap;
+  // only the newest one may write, or a slow earlier answer would land on top
+  // of a fresher list.
+  const readTicketRef = React.useRef(0);
+
+  const loadRecentFiles = React.useCallback(() => {
+    if (!platform.file?.getRecentFiles) return;
+    const ticket = ++readTicketRef.current;
+
+    platform.file
+      .getRecentFiles()
+      .then((raw) => {
+        if (ticket !== readTicketRef.current) return;
+        try {
+          const parsed = JSON.parse(raw) as { files?: TRecentEntry[] };
+          const items = (parsed?.files ?? [])
+            .filter((file) => !file.url)
+            .filter(hasPath)
+            .map((file) => {
+              const type = file.type ?? 0;
+              const iconName = getFileIconName(type);
+              return {
+                text: file.path.includes("\\")
+                  ? (file.path.split("\\").pop() ?? "")
+                  : (file.path.split("/").pop() ?? ""),
+                key: file.path,
+                id: file.path,
+                icon: (
+                  <IconButton
+                    iconName={iconName}
+                    size={24}
+                    disableHover
+                    noColor
+                  />
+                ),
+                onClick: () => selectRecentFile(file.path, type),
+              };
+            });
+          setRecentFiles(items);
+        } catch {
+          setRecentFiles([]);
+        }
+      })
+      .catch((err: unknown) => {
+        // A failed call says nothing about the list, so keep the one we have
+        // instead of blanking the submenu.
+        logger.error("[ComposerActionAttachment] getRecentFiles failed", err);
+      });
+  }, [platform.file, selectRecentFile, IconButton]);
 
   React.useEffect(() => {
-    if (!platform.file?.getRecentFiles) return;
+    loadRecentFiles();
+  }, [loadRecentFiles]);
 
-    platform.file.getRecentFiles().then((raw) => {
-      try {
-        const parsed = JSON.parse(raw) as {
-          files: { path: string; type: number; url: string }[];
-        };
-        const items = parsed?.files
-          ?.filter((file) => !file.url)
-          ?.map((file) => {
-            const iconName = getFileIconName(file.type);
-            return {
-              text: file.path.includes("\\")
-                ? (file.path.split("\\").pop() ?? "")
-                : (file.path.split("/").pop() ?? ""),
-              key: file.path,
-              id: file.path,
-              icon: (
-                <IconButton
-                  iconName={iconName}
-                  size={24}
-                  disableHover
-                  noColor
-                />
-              ),
-              onClick: () => selectRecentFile(file.path, file.type),
-            };
-          })
-          .filter(Boolean);
-        setRecentFiles(items ?? []);
-      } catch {
-        setRecentFiles([]);
-      }
-    });
-  }, [platform.file, selectRecentFile, IconButton]);
+  // Without a host signal the mount read is the only one: in a desktop plugin
+  // the composer stays mounted for the whole app session, so the submenu would
+  // show the startup snapshot forever.
+  React.useLayoutEffect(() => {
+    const unsubscribe = platform.file?.onRecentFilesChange?.(loadRecentFiles);
+
+    return () => {
+      // The host owns the return value — don't assume it handed back a function.
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, [platform.file, loadRecentFiles]);
 
   const { t } = useI18n();
 

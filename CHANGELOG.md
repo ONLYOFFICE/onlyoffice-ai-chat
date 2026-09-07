@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.5.88
+
+### Fixed
+
+- **Extended thinking off now actually turns reasoning off on every provider that can.** "Off" used to mean "send nothing", and most current models think by default when nothing says otherwise, so the toggle had no effect on them. Each provider now sends its own explicit off switch:
+
+  | Provider | Off | On |
+  | --- | --- | --- |
+  | OpenRouter | `reasoning: { effort: "none" }` | `reasoning: { effort: "medium" }` |
+  | Anthropic 4.6+ | `thinking: { type: "disabled" }` | `thinking: { type: "adaptive" }` |
+  | Google AI 2.5 / 3.x | `thinkingBudget: 0` (2.5 Flash) or the model's lowest `thinkingLevel` | unchanged |
+  | DeepSeek | `thinking: { type: "disabled" }` | `thinking: { type: "enabled" }` |
+  | Zhipu GLM-4.5+ | `thinking: { type: "disabled" }` | `thinking: { type: "enabled" }` |
+  | Groq Qwen | `reasoning_effort: "none"` | `reasoning_effort: "default"` |
+
+  Gemini 2.5 Pro and Gemini 3 have no real off switch, so their floor level is sent; Groq's GPT-OSS cannot stop reasoning either and gets `include_reasoning: false` so the thinking at least stays out of the stream. Models without thinking receive no field, as before.
+
+- **OpenRouter profiles never received the widget's reasoning setting.** OpenRouter answers `/v1/responses`, so the live probe routed its profiles onto the Responses transport, and that path built its `reasoning` object from the OpenAI table, which has no entry for `anthropic/*` ids and omitted the field. OpenRouter now stays on `/chat/completions` — the one OpenRouter endpoint that documents the full unified `reasoning` object, off switch included — and steers profiles an earlier build had probed onto Responses back there. The Responses and one-shot request builders in the OpenAI base also go through the same per-provider hooks as streaming chat completions, so a gateway's spelling reaches the wire on every path.
+
+- **Anthropic extended thinking works on Claude 4.7 and newer.** These models reject `thinking.type: "enabled"` with a 400; the request now uses adaptive thinking from the 4.6 generation on, keeps the manual budget for 4.5 and earlier, and never tries to switch Fable / Mythos, which think always. The thinking toggle is also offered for every Claude from 4.5 on, not only the 4.5 pair.
+
+## 0.5.85
+
+### Added
+
+- **An MCP server's `initialize` instructions reach the model.** A server may return an `instructions` string from the `initialize` handshake — its own hint on how its tools are meant to be used. It was parsed and thrown away; it is now captured per server and folded into the chat system prompt, so a server can steer the model's use of its tools without every host writing that guidance into its own prompt.
+
+  The notes are appended after the resolved prompt (default plus the host's `prompt` override, `replace` included) inside a framed block that states they are third-party advice and cannot override the instructions above — the text comes from whatever server the user registered, so it is never spliced in as if it were ours. A note cannot forge another server's attribution either: `<server` / `</server` inside the text and the characters of the server name are both neutralised, so it can neither close its own block early nor open a forged one under a trusted server's name. A server's own name is reduced to an inert identifier before it labels its block, so a name carrying `"><` cannot close its block and re-open one under another server's name and have its notes read as that server's. Each server is guarded at 100 000 characters against a runaway server, a server whose tools were all switched off contributes nothing, and the block is re-assembled on resume rounds so a tool call doesn't wipe it.
+
+  Carried from the connection holder to the engine as `actionArgs.toolInstructions` (`serverType` → text), a new optional field on `ActionArgs`. The UI fills it for browser-run MCP servers; a host driving the engine directly can pass its own. Servers wired through `SystemToolsSource` are not covered yet — their instructions are still discarded.
+
+- **`HelpButton`** — the "i" icon that opens a hint popover on click, exported from the package root and overridable through `ComponentsProvider` as `HelpButton`. It is a popover, not a tooltip: the content may hold links and buttons, the pointer can travel from the icon into it, and it closes on Escape or an outside press. `TooltipIconButton` stays what it was — a hover label — so a hint carrying a link no longer has to be built out of it.
+
+  Consumers building the same hint outside the widget (the ONLYOFFICE plugins render one in the host window) now have a component to use instead of assembling `Tooltip` and `TooltipTrigger`, which are not part of the public surface.
+
+- **`PlatformFileOperations.onRecentFilesChange`** — an optional host subscription that invalidates the "Recent files" submenu. The list was read once when the composer mounted, which is enough where the page reloads with the document, but a desktop plugin panel lives in one iframe for the whole app session: the submenu kept showing the snapshot taken at startup while the user opened and closed documents. The callback carries no payload — `getRecentFiles()` stays the only source of the list, and the widget re-reads it on every signal, keeping the newest answer when a host signals in a burst (one per checked file). Hosts that omit the method behave exactly as before.
+
+- **`--chat-input-max-height` theme token** — the ceiling the composer input grows to before it starts scrolling, falling back to `50vh`, so sizing is unchanged by default. The value was hard-coded, which left `--chat-input-min-height` overridable but its counterpart not; a host embedding the widget in a short container can now cap the input against that container (e.g. `200px`) instead of against the viewport.
+
+### Fixed
+
+- **Copying chat text with Ctrl+C no longer pastes the message bubble's fill.** The browser builds the clipboard's `text/html` by inlining the *computed* style of everything it copies — the widget's classes mean nothing outside it — so a user message arrived at the paste target carrying `background-color` and `color`, and the target applied them: text pasted into a document came with a fill (a solid black one wherever the translucent `--chat-user-message-background` had its alpha flattened) and, out of a dark theme, with white text. The chat root now rebuilds `text/html` from the selection itself with every presentational attribute removed, so the markup — lists, emphasis, code — survives the paste and the chat's own look does not. `text/plain` and the in-widget copy buttons are unchanged.
+
+- **A failing `getRecentFiles()` no longer produces an unhandled rejection, and unusable entries are dropped.** The read was a bare `.then` with the `try/catch` wrapped around `JSON.parse` alone, so a host that rejected the call surfaced an unhandled rejection; the failure is now logged through `logger` and the previously loaded list is kept, since a failed call says nothing about its contents. A `.filter(Boolean)` meant to weed out bad records never removed anything (every object is truthy), so an entry without a `path` rendered as a nameless item that attached nothing — entries are now selected on a non-empty string `path`.
+
+- **The empty new chat scrolls instead of squeezing its content.** `suggestionsHeader`, the welcome screen and the suggestion chips sat outside the thread viewport, so in a short container they were compressed — and, past a point, clipped — with no way to reach them. They now live in a scrollable column that keeps them hugging the composer at a comfortable height and becomes scrollable when they no longer fit.
+
+  The empty state's scroll container is a plain element rather than `ThreadPrimitive.Viewport`: the primitive scrolls itself to the bottom when the thread initializes, which would have hidden the header. The container keeps its `chat-viewport--empty` class, and `welcome-container`, `welcome-title`, `welcome-description` and `suggestions` are untouched, so host overrides keyed on those still apply. A host stylesheet that instead relied on the welcome screen and the chips being siblings of the composer needs updating — they are now nested one level deeper.
+
+- **The "i" hints in the Add model card and in dropdown items now close on Escape and on a click outside.** Both drove a `Tooltip` with `open` but no `onOpenChange`, so the popup could only be dismissed by clicking the icon a second time. Both now render `HelpButton`; the popups look and sit exactly where they did.
+
 ## 0.5.83
 
 ### Added

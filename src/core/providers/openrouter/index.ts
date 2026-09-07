@@ -4,6 +4,11 @@ import type { ImageGenerationArgs } from "../../../shared/image-generation-args"
 import logger from "../../../shared/logger";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import type {
+  SendMessageArgs,
+  SendMessageResult,
+} from "../../../shared/send-message-args";
+import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args";
 import { OpenAIProvider } from "../openai";
 import { openrouterInfo } from "./info";
 import { checkCredentials, listModels } from "./models";
@@ -14,6 +19,16 @@ import { checkCredentials, listModels } from "./models";
  * `checkProvider` and `getProviderModels` (OpenRouter's error shapes and
  * `/models/user` route aren't exposed through the SDK).
  */
+/**
+ * OpenRouter's unified `reasoning` object for one round: `"medium"` while
+ * extended thinking is on, `"none"` (reasoning disabled) while it is off.
+ */
+function openRouterReasoning(withReasoning?: boolean): {
+  effort: "medium" | "none";
+} {
+  return { effort: withReasoning ? "medium" : "none" };
+}
+
 class OpenRouterProvider extends OpenAIProvider {
   static override getName(): string {
     return openrouterInfo.name;
@@ -38,18 +53,49 @@ class OpenRouterProvider extends OpenAIProvider {
   /**
    * OpenRouter takes extended thinking through its own unified `reasoning`
    * object, not OpenAI's `reasoning_effort`. That matters most for the
-   * Anthropic route: Claude reasons only when this field asks it to (the
+   * Anthropic route: Claude reasons only as this field says (the
    * `:thinking` model variants are gone), so a Sonnet round sent with
    * `reasoning_effort` came back with no thinking at all.
    *
-   * Reasoning off simply omits the field — `reasoning.effort` has no "none"
-   * level, and every model here defaults to not thinking.
+   * Reasoning off is sent explicitly as `effort: "none"` — OpenRouter's
+   * documented "disables reasoning entirely" level. Omitting the field is
+   * not enough: models OpenRouter marks as reasoning-by-default (Claude 4.6+
+   * with adaptive thinking, Gemini 3, …) keep thinking when nothing says
+   * otherwise.
    */
   protected override reasoningRequestFields(
     _model: string,
     withReasoning?: boolean
   ): Record<string, unknown> {
-    return withReasoning ? { reasoning: { effort: "medium" } } : {};
+    return { reasoning: openRouterReasoning(withReasoning) };
+  }
+
+  /**
+   * OpenRouter stays on `/chat/completions`. It does answer `/v1/responses`,
+   * so the inherited live probe would flip its profiles onto the Responses
+   * transport — but that API documents only `minimal`…`high` for
+   * `reasoning.effort`, with no off switch, whereas the chat endpoint takes
+   * the full unified object (`effort: "none"`, `exclude`, `max_tokens`) and
+   * streams the thinking back as `delta.reasoning`. Nothing OpenRouter serves
+   * needs the Responses transport, so the probe is skipped outright…
+   */
+  override async checkResponsesApi(): Promise<boolean> {
+    return false;
+  }
+
+  /**
+   * …and profiles that were probed onto it by an earlier build are steered
+   * back: `useResponsesApi` is stored on the profile and re-probed only
+   * when the model, provider or base URL changes.
+   */
+  override sendMessage(
+    args: SendMessageArgs
+  ): AsyncGenerator<SendMessageResult> {
+    return super.sendMessage({ ...args, useResponsesApi: false });
+  }
+
+  override sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
+    return super.sendMessageSync({ ...args, useResponsesApi: false });
   }
 
   /**
@@ -82,7 +128,9 @@ class OpenRouterProvider extends OpenAIProvider {
 
       type ChatImage = { image_url?: { url?: string } };
       const raw = response as unknown as {
-        choices?: Array<{ message?: { images?: ChatImage[]; content?: unknown } }>;
+        choices?: Array<{
+          message?: { images?: ChatImage[]; content?: unknown };
+        }>;
       };
       logger.info("[OpenRouter.imageGeneration] raw response", {
         choicesCount: raw.choices?.length,
@@ -93,7 +141,8 @@ class OpenRouterProvider extends OpenAIProvider {
         firstImageKeys: raw.choices?.[0]?.message?.images?.[0]
           ? Object.keys(raw.choices[0].message.images[0])
           : [],
-        urlPrefix: raw.choices?.[0]?.message?.images?.[0]?.image_url?.url?.slice(0, 80),
+        urlPrefix:
+          raw.choices?.[0]?.message?.images?.[0]?.image_url?.url?.slice(0, 80),
       });
 
       const message = raw.choices?.[0]?.message;

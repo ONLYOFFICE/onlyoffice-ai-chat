@@ -38,6 +38,15 @@ class Servers {
     return items;
   };
 
+  /**
+   * Per-server MCP `initialize` instructions, keyed by server type. Only
+   * the user's MCP servers have any: host tools are plain functions with
+   * no handshake behind them.
+   */
+  getToolInstructions = (): Record<string, string> => {
+    return this.customServers.getInstructions();
+  };
+
   callTools = async (
     type: string,
     name: string,

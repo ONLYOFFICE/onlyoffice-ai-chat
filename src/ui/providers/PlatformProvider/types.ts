@@ -68,6 +68,21 @@ export interface PlatformFileOperations {
   getRecentFiles?(): Promise<string>;
 
   /**
+   * Subscribe to recent-files list changes. Returns an unsubscribe function.
+   *
+   * The callback carries no payload: {@link getRecentFiles} stays the only
+   * source of the list, and the library re-reads it on every signal. Hosts
+   * may fire the callback in bursts (e.g. once per checked file) — the
+   * library keeps only the newest read.
+   *
+   * Omit it when the host cannot observe the list. The library then reads
+   * once on mount, which is enough for a host that reloads the page along
+   * with the document, but leaves the submenu frozen in a long-lived
+   * embedding such as a desktop plugin panel.
+   */
+  onRecentFilesChange?(callback: () => void): () => void;
+
+  /**
    * Show a "Save As" dialog and save content as a file (e.g. export message
    * as DOCX). The library always passes Markdown source as `content`; the
    * host is responsible for converting it to the target format.

@@ -32,4 +32,39 @@ describe("DeepSeekProvider", () => {
     });
     expect(out[0].provider).toBe("deepseek");
   });
+  describe("reasoning request fields", () => {
+    const fieldsOf = (model: string, withReasoning?: boolean) =>
+      (
+        new DeepSeekProvider({
+          baseUrl: "https://x",
+          apiKey: "sk",
+        }) as unknown as {
+          reasoningRequestFields: (
+            model: string,
+            withReasoning?: boolean
+          ) => Record<string, unknown>;
+        }
+      ).reasoningRequestFields(model, withReasoning);
+
+    it("switches V4 thinking through thinking.type, off included", () => {
+      // V4 thinks by default; omitting the field leaves reasoning on.
+      expect(fieldsOf("deepseek-v4-flash", false)).toEqual({
+        thinking: { type: "disabled" },
+      });
+      expect(fieldsOf("deepseek-v4-pro", true)).toEqual({
+        thinking: { type: "enabled" },
+      });
+    });
+
+    it("never sends reasoning_effort (DeepSeek has no medium)", () => {
+      expect(fieldsOf("deepseek-v4-pro", true)).not.toHaveProperty(
+        "reasoning_effort"
+      );
+    });
+
+    it("leaves the always-thinking reasoner alias alone", () => {
+      expect(fieldsOf("deepseek-reasoner", false)).toEqual({});
+      expect(fieldsOf("deepseek-reasoner", true)).toEqual({});
+    });
+  });
 });

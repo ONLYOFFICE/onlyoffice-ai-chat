@@ -26,4 +26,35 @@ describe("ZhipuProvider", () => {
     });
     expect(out[0].provider).toBe("zhipu");
   });
+  describe("reasoning request fields", () => {
+    const fieldsOf = (model: string, withReasoning?: boolean) =>
+      (
+        new ZhipuProvider({
+          baseUrl: "https://x",
+          apiKey: "sk",
+        }) as unknown as {
+          reasoningRequestFields: (
+            model: string,
+            withReasoning?: boolean
+          ) => Record<string, unknown>;
+        }
+      ).reasoningRequestFields(model, withReasoning);
+
+    it("switches GLM-4.5+ thinking through thinking.type, off included", () => {
+      expect(fieldsOf("glm-4.5", false)).toEqual({
+        thinking: { type: "disabled" },
+      });
+      expect(fieldsOf("glm-4.6", true)).toEqual({
+        thinking: { type: "enabled" },
+      });
+      expect(fieldsOf("glm-5", false)).toEqual({
+        thinking: { type: "disabled" },
+      });
+    });
+
+    it("sends nothing to the non-thinking GLM-4 models", () => {
+      expect(fieldsOf("glm-4-flash", false)).toEqual({});
+      expect(fieldsOf("glm-4-plus", true)).toEqual({});
+    });
+  });
 });

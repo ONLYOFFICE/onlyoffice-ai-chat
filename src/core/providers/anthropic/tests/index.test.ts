@@ -93,6 +93,76 @@ describe("AnthropicProvider", () => {
       );
     });
 
+    describe("thinking per generation", () => {
+      const thinkingFor = async (model: string, withReasoning: boolean) => {
+        messagesCreateMock.mockResolvedValueOnce(
+          iter([makeEv({ type: "message_stop" })])
+        );
+        const p = new AnthropicProvider({
+          baseUrl: "https://api.anthropic.com",
+          apiKey: "sk",
+        });
+        await drain(
+          p.sendMessage({
+            messages: [],
+            model,
+            systemPrompt: "",
+            withReasoning,
+          })
+        );
+        return messagesCreateMock.mock.calls.at(-1)?.[0]?.thinking;
+      };
+
+      it("uses manual extended thinking on 4.5 and earlier, omitted when off", async () => {
+        expect(await thinkingFor("claude-sonnet-4-5-20250929", true)).toEqual({
+          type: "enabled",
+          budget_tokens: 10000,
+        });
+        expect(await thinkingFor("claude-sonnet-4-5-20250929", false)).toBe(
+          undefined
+        );
+        expect(await thinkingFor("claude-opus-4-1", true)).toEqual({
+          type: "enabled",
+          budget_tokens: 10000,
+        });
+      });
+
+      it("switches to adaptive thinking from 4.6 on", async () => {
+        // `enabled` + budget is deprecated on 4.6 and a 400 from 4.7.
+        expect(await thinkingFor("claude-sonnet-4-6", true)).toEqual({
+          type: "adaptive",
+        });
+        expect(await thinkingFor("claude-opus-4-7", true)).toEqual({
+          type: "adaptive",
+        });
+        expect(await thinkingFor("claude-sonnet-5", true)).toEqual({
+          type: "adaptive",
+        });
+      });
+
+      it("sends an explicit disabled on adaptive models when off", async () => {
+        // Opus 5 and Sonnet 5 think by default — omitting the field would
+        // leave them reasoning with the toggle off.
+        expect(await thinkingFor("claude-sonnet-5", false)).toEqual({
+          type: "disabled",
+        });
+        expect(await thinkingFor("claude-opus-5", false)).toEqual({
+          type: "disabled",
+        });
+        expect(await thinkingFor("claude-sonnet-4-6", false)).toEqual({
+          type: "disabled",
+        });
+      });
+
+      it("never tries to switch Fable / Mythos, which reject both switches", async () => {
+        expect(await thinkingFor("claude-fable-5-1", false)).toBe(undefined);
+        expect(await thinkingFor("claude-mythos-5-1", false)).toBe(undefined);
+        expect(await thinkingFor("claude-fable-5-1", true)).toEqual({
+          type: "adaptive",
+        });
+      });
+    });
+
     it("raises max_tokens above the plain cap when thinking is enabled", async () => {
       messagesCreateMock.mockResolvedValueOnce(
         iter([makeEv({ type: "message_stop" })])
@@ -124,9 +194,7 @@ describe("AnthropicProvider", () => {
       // Thinking consumes max_tokens, so the cap must GROW when it's on
       // and keep the visible reply's headroom above the thinking budget.
       expect(thinking.max_tokens).toBeGreaterThan(plain.max_tokens);
-      expect(thinking.max_tokens - thinking.thinking.budget_tokens).toBe(
-        22000
-      );
+      expect(thinking.max_tokens - thinking.thinking.budget_tokens).toBe(22000);
     });
 
     it("attaches tools with auto tool_choice", async () => {

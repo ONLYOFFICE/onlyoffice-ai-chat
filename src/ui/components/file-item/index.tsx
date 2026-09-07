@@ -8,6 +8,7 @@ import { selectImageBase64 } from "../../store/create-attachments-store";
 import type { TAttachmentFile, TAttachmentRef } from "../../../types";
 import { Icon } from "../icon";
 import { IconButton } from "../icon-button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
 
 /**
  * `FileItem` accepts either a {@link TAttachmentRef} (composer draft —
@@ -81,7 +82,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
     // that show a close button, so this branch is effectively unused.
   };
 
-  return (
+  const chip = (
     <div
       className={chipClassName({ isImage, withoutClose, isRTL })}
       onClick={() => {
@@ -94,7 +95,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
         imageSrc ? (
           <img
             className={cn(
-              "w-[36px] h-[36px]",
+              "w-[36px] h-[36px] shrink-0",
               isRTL ? "rounded-r-[8px]" : "rounded-l-[8px]"
             )}
             src={imageSrc}
@@ -103,14 +104,14 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
         ) : (
           <div
             className={cn(
-              "w-[36px] h-[36px] bg-[var(--background-tertiary)]",
+              "w-[36px] h-[36px] shrink-0 bg-[var(--background-tertiary)]",
               isRTL ? "rounded-r-[8px]" : "rounded-l-[8px]"
             )}
           />
         )
       ) : (
-        <div className="flex flex-row items-center h-[24px] gap-[4px]">
-          <Icon name={iconName} size={24} noColor />
+        <div className="flex flex-row items-center h-[24px] gap-[4px] min-w-0">
+          <Icon name={iconName} size={24} noColor className="shrink-0" />
           <p className="text-[var(--file-items-color)] font-normal whitespace-nowrap overflow-hidden text-ellipsis">
             {nameWithoutExtension}
             <span className="text-[var(--file-items-ext-color)]">
@@ -128,6 +129,23 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
         />
       ) : null}
     </div>
+  );
+
+  // The chip truncates its name to fit the row (and an image chip shows no
+  // name at all), so the full title is only ever available on hover.
+  // `asChild` keeps the chip itself as the trigger — an extra wrapper node
+  // would become the row's flex item and undo the chip's own sizing.
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{chip}</TooltipTrigger>
+      <TooltipContent
+        className="max-w-[var(--file-item-tooltip-max-width,280px)] break-words"
+        side="top"
+        align="start"
+      >
+        {title}
+      </TooltipContent>
+    </Tooltip>
   );
 };
 

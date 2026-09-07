@@ -157,6 +157,41 @@ describe("AIEngine.approveToolCall", () => {
     expect(storage.messages.update).toHaveBeenCalled();
   });
 
+  it("keeps the MCP server instructions in the resumed round", async () => {
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([
+        {
+          isEnd: true,
+          responseMessage: {
+            role: "assistant",
+            content: [{ type: "text", text: "x" }],
+          },
+        },
+      ])
+    );
+    const { storage } = makeStorage();
+    await storage.messages.create("t1", toolCallMessage);
+    const engine = new AIEngine({ storage });
+
+    for await (const _ of engine.approveToolCall({
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: toolCallMessage,
+      result: "ok",
+      actionArgs: { toolInstructions: { docspace: "SERVER NOTE" } },
+    })) {
+      void _;
+    }
+
+    // A resume round is a fresh provider request: the notes have to be
+    // re-assembled into its system prompt or the model forgets them the
+    // moment the first tool runs.
+    expect(sendMessageMock.mock.calls[0][0].systemPrompt).toContain(
+      "SERVER NOTE"
+    );
+  });
+
   it("records the tool name in allowAlways when allowAlways is set", async () => {
     sendMessageMock.mockReturnValueOnce(
       arrayToStream([
