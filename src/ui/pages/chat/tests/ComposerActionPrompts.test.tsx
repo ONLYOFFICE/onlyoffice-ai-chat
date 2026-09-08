@@ -310,6 +310,39 @@ describe("ComposerActionPrompts", () => {
     expect(mockDropdownItems).toHaveLength(1);
   });
 
+  // Drill-down navigation addresses rows by `id`, so every row that can be
+  // descended into needs one that survives the tree being rebuilt around it —
+  // moving a prompt into a folder shifts every index after it at the root.
+  it("gives prompt, folder and context-menu rows stable ids", () => {
+    mockPrompts = [
+      { id: "1", name: "Prompt A", text: "text A", folderId: null },
+      { id: "2", name: "Prompt B", text: "text B", folderId: "f1" },
+    ];
+    mockFolders = [{ id: "f1", name: "Folder 1" }];
+    render(<ComposerActionPrompts />);
+    const items = mockDropdownItems as {
+      id?: string;
+      isSeparator?: boolean;
+      subMenu?: { id?: string; isSeparator?: boolean }[];
+    }[];
+
+    expect(items[0].id).toBe("prompt:1");
+    // The separator is never a navigation target, so it needs no id.
+    expect(items[1].isSeparator).toBe(true);
+    expect(items[2].id).toBe("folder:f1");
+
+    expect(items[2].subMenu?.[0].id).toBe("prompt:2");
+    const context = items[0].subMenu as { id?: string }[];
+    expect(context[0].id).toBe("edit:1");
+    expect(context[1].id).toBe("move:1");
+
+    const ids = items
+      .filter((i) => !i.isSeparator)
+      .map((i) => i.id)
+      .filter(Boolean);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   describe("prompt actions", () => {
     it("clicking a prompt applies its text via composerRuntime.setText and closes the menu", () => {
       mockPrompts = [
