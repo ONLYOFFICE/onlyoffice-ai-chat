@@ -19,6 +19,12 @@ describe("xai/models/inferCapabilities", () => {
   it("flags image models as Image", () => {
     expect(inferCapabilities("grok-image")).toBe(CapabilitiesUI.Image);
   });
+  it("flags imagine/video generation models as Image, never Chat (Bug 83730)", () => {
+    expect(inferCapabilities("grok-imagine-video-1.5")).toBe(
+      CapabilitiesUI.Image
+    );
+    expect(inferCapabilities("grok-imagine")).toBe(CapabilitiesUI.Image);
+  });
   it("defaults to Chat only", () => {
     expect(inferCapabilities("grok-beta")).toBe(CapabilitiesUI.Chat);
   });

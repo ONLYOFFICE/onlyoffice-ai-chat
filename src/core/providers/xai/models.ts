@@ -7,11 +7,18 @@ import { xaiInfo } from "./info";
 /**
  * Infer capabilities from an xAI (Grok) model id.
  *
- * | id contains  | capabilities      |
- * |--------------|-------------------|
- * | `vision`     | Chat + Vision     |
- * | `image`      | Image             |
- * | otherwise    | Chat              |
+ * | id contains          | capabilities      |
+ * |----------------------|-------------------|
+ * | `vision`             | Chat + Vision     |
+ * | `image` / `imagine`  | Image             |
+ * | `video`              | Image             |
+ * | otherwise            | Chat              |
+ *
+ * `grok-imagine-*` ids are xAI's image/video generation family — they do
+ * not answer chat completions, so classifying them as Chat made the model
+ * form default to one right after connecting the provider (Bug 83730).
+ * There is no dedicated Video capability bit; Image is the closest
+ * non-chat classification and keeps them out of every chat picker.
  *
  * @param id - Model id as returned by the xAI API.
  * @returns A bitmask from {@link CapabilitiesUI}.
@@ -20,7 +27,9 @@ export const inferCapabilities = (id: string): number => {
   if (id.includes("vision")) {
     return CapabilitiesUI.Chat | CapabilitiesUI.Vision;
   }
-  if (id.includes("image")) return CapabilitiesUI.Image;
+  if (id.includes("image") || id.includes("imagine") || id.includes("video")) {
+    return CapabilitiesUI.Image;
+  }
   return CapabilitiesUI.Chat;
 };
 

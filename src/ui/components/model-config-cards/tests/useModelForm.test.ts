@@ -215,6 +215,52 @@ describe("useModelForm", () => {
     expect(result.current.values.profileName).toBe("OpenAI - GPT-4");
   });
 
+  it("defaults to the first chat-capable model, skipping generation-only ones (Bug 83730)", async () => {
+    mockGetProviderModels.mockResolvedValue([
+      {
+        id: "grok-imagine-video-1.5",
+        name: "grok-imagine-video-1.5",
+        provider: "xai",
+        capabilities: 0x02, // Image
+      },
+      {
+        id: "grok-4",
+        name: "grok-4",
+        provider: "xai",
+        capabilities: 0x01, // Chat
+      },
+    ]);
+    const { result } = renderHook(() => useModelForm(initialValues));
+    await act(async () => {
+      await result.current.fetchModels(
+        "xai" as never,
+        "xai-key",
+        "https://api.x.ai/v1"
+      );
+    });
+    expect(result.current.values.model).toBe("grok-4");
+  });
+
+  it("falls back to the first model when none is chat-capable", async () => {
+    mockGetProviderModels.mockResolvedValue([
+      {
+        id: "img-1",
+        name: "img-1",
+        provider: "xai",
+        capabilities: 0x02,
+      },
+    ]);
+    const { result } = renderHook(() => useModelForm(initialValues));
+    await act(async () => {
+      await result.current.fetchModels(
+        "xai" as never,
+        "xai-key",
+        "https://api.x.ai/v1"
+      );
+    });
+    expect(result.current.values.model).toBe("img-1");
+  });
+
   it("fetchModels yields empty model list when provider returns non-array", async () => {
     mockGetProviderModels.mockResolvedValue({ unexpected: true });
     const { result } = renderHook(() => useModelForm(initialValues));

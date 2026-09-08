@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- **Connecting a provider no longer defaults the model to a generation-only one.** The model form picked the first listed model, and some providers sort image/video models to the top (xAI lists `grok-imagine-video-1.5` first), handing the user a profile that fails its very first text request with `model_not_found`. The default is now the first chat-capable model; xAI's `imagine`/`video` ids are classified as Image instead of Chat, keeping them out of every chat picker (DocSpace bug 83730).
+
 - **Extended thinking off now actually turns reasoning off on every provider that can.** "Off" used to mean "send nothing", and most current models think by default when nothing says otherwise, so the toggle had no effect on them. Each provider now sends its own explicit off switch:
 
   | Provider | Off | On |

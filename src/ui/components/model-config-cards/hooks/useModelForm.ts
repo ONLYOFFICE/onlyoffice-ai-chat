@@ -4,6 +4,7 @@ import { useStores } from "../../../store/context";
 import { useDebouncedCallback } from "../../../hooks/useDebouncedCallback";
 import { useApi } from "../../../providers/ApiProvider";
 import { getProviderName } from "../../../../core/providers";
+import { CapabilitiesUI } from "../../../../shared/capabilities-ui";
 import type { Model, ProviderType } from "../../../../types";
 import type {
   ModelFormErrors,
@@ -150,7 +151,18 @@ export const useModelForm = (initialValues: ModelFormValues) => {
           const currentExists = fetched.some((m) => m.id === prev.model);
           if (currentExists) return prev;
         }
-        const firstModel = fetched[0];
+        // Default to the first chat-capable model, not the first listed one:
+        // some providers sort generation-only models (image/video) to the
+        // top, and defaulting to one hands the user a profile that fails its
+        // very first text request (Bug 83730). Models without a capabilities
+        // bitmask are assumed chat-capable; if nothing qualifies, fall back
+        // to the first entry rather than leaving the field empty.
+        const firstModel =
+          fetched.find(
+            (m) =>
+              m.capabilities === undefined ||
+              (m.capabilities & CapabilitiesUI.Chat) !== 0
+          ) ?? fetched[0];
         return {
           ...prev,
           model: firstModel?.id ?? "",
