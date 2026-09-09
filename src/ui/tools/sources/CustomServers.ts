@@ -88,6 +88,27 @@ const parseSSEResponse = (text: string): unknown[] => {
   return results;
 };
 
+/**
+ * A JSON-RPC message is a plain object; primitives and arrays that a
+ * server happens to print are not ours to interpret. Batches (arrays) are
+ * not part of the MCP stdio transport since 2025-06-18.
+ */
+const isJsonRpcMessage = (value: unknown): value is JsonRpcMessage => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+/**
+ * Whether a host `TProcess` handle refers to a live process. Only hosts that
+ * expose the native id on the handle (ONLYOFFICE desktop's `ExternalProcess`)
+ * can be checked; a handle without `id` is trusted. A missing or negative id
+ * is the desktop's way of saying the spawn was refused.
+ */
+const hostSpawnSucceeded = (process: TProcess): boolean => {
+  if (!("id" in (process as object))) return true;
+  const id = (process as unknown as { id?: unknown }).id;
+  return typeof id === "number" && id >= 0;
+};
+
 const getHttpParams = (
   config: Record<string, unknown>
 ): { url: string; headers: Record<string, string> } => {
@@ -109,10 +130,67 @@ export const getClientInfo = () => clientInfo;
 
 const MAX_LOG_LINES = 1000;
 
+/**
+ * Upper bound for an unterminated stdout line kept between chunks. A
+ * `tools/list` answer with big schemas runs to a few hundred KB; anything
+ * past this is not a JSON-RPC message we are waiting for, so the buffer is
+ * dropped rather than grown without limit.
+ */
+const MAX_STDOUT_BUFFER = 4 * 1024 * 1024;
+
+/**
+ * Delay between a `notifications/tools/list_changed` and the `tools/list`
+ * it triggers. Servers that rebuild their catalog fire one notification per
+ * registered tool; one listing after the burst is enough.
+ */
+const LIST_CHANGED_DEBOUNCE_MS = 250;
+
+/** Shape of one JSON-RPC 2.0 message read off a server's stdout. */
+type JsonRpcMessage = {
+  jsonrpc?: string;
+  id?: string | number | null;
+  method?: string;
+  params?: unknown;
+  result?: unknown;
+  error?: { code: number; message: string };
+};
+
+/**
+ * Per-server bookkeeping for `tools/list` refreshes requested by
+ * `notifications/tools/list_changed`: a pending debounce timer, whether a
+ * listing is already on the wire, and whether another notification arrived
+ * while it was — in which case one more listing follows the answer.
+ */
+type ToolsRefreshState = {
+  timer?: ReturnType<typeof setTimeout>;
+  inFlight: boolean;
+  queued: boolean;
+  /**
+   * Set once a `tools/list` error has already sent this process back
+   * through `initialize`. One retry per process: a server that keeps
+   * refusing the listing is broken, not un-initialized.
+   */
+  reinitialized?: boolean;
+};
+
 class CustomServers {
   customServers: Record<string, Record<string, unknown>>;
   startedCustomServers: Record<string, string>;
   initedCustomServers: Record<string, boolean>;
+  /**
+   * Servers whose `tools/list` has been answered at least once since they
+   * started. `waitUntilReady` checks this rather than the tool count: a
+   * server may legitimately list zero tools, and a `list_changed` refresh
+   * can shrink a list to zero — neither should stall a send.
+   */
+  listedCustomServers: Record<string, boolean>;
+  /**
+   * `capabilities` from each server's `initialize` result. Read for
+   * diagnostics only: a server that advertises `tools.listChanged` is
+   * expected to push `notifications/tools/list_changed`, one that does not
+   * will never refresh its catalog until restarted.
+   */
+  serverCapabilities: Record<string, Record<string, unknown>>;
   stoppedCustomServers: string[];
   customServersProcesses: Record<string, TProcess>;
   httpServers: Record<string, THttpServer>;
@@ -129,6 +207,15 @@ class CustomServers {
     string,
     { resolve: (value: unknown) => void; reject: (reason: unknown) => void }
   >;
+  /**
+   * Unterminated tail of a stdio server's stdout, per server. The host
+   * hands chunks over as the pipe delivers them, so a message may arrive
+   * split across two `onprocess` calls or share one call with its
+   * neighbour; messages are cut on `\n` and the remainder waits here.
+   */
+  private stdoutBuffers: Record<string, string>;
+  private toolsRefresh: Record<string, ToolsRefreshState>;
+  private requestCounter: number;
   private platform: PlatformAdapter;
   private eventBus: ChatEventBus;
 
@@ -138,6 +225,8 @@ class CustomServers {
     this.customServers = {};
     this.startedCustomServers = {};
     this.initedCustomServers = {};
+    this.listedCustomServers = {};
+    this.serverCapabilities = {};
     this.customServersProcesses = {};
     this.httpServers = {};
     this.customServersLogs = {};
@@ -145,7 +234,21 @@ class CustomServers {
     this.instructions = {};
     this.stoppedCustomServers = [];
     this._pendingRequests = new Map();
+    this.stdoutBuffers = {};
+    this.toolsRefresh = {};
+    this.requestCounter = 0;
   }
+
+  /**
+   * Monotonic per-instance suffix for request ids. `Date.now()` collided
+   * when two listings were issued within the same millisecond (initial
+   * `tools/list` plus a `list_changed` refresh), and the later answer was
+   * then dropped as a duplicate.
+   */
+  private nextRequestId = (): number => {
+    this.requestCounter += 1;
+    return this.requestCounter;
+  };
 
   /** Use platform fetchProxy if available, otherwise standard fetch */
   private platformFetch = (
@@ -233,51 +336,8 @@ class CustomServers {
       preview: typeof message === "string" ? message.slice(0, 200) : message,
     });
     if (t === 0) {
-      // stdout — parse JSON-RPC responses
-      try {
-        const correctJson = JSON.parse(message);
-        const jsonId =
-          correctJson.jsonrpc === "2.0" &&
-          correctJson.id !== null &&
-          correctJson.id !== undefined
-            ? String(correctJson.id)
-            : null;
-
-        if (jsonId && jsonId === `init-${type}`) {
-          this.captureInstructions(type, correctJson.result);
-          this.initedCustomServers[type] = true;
-          this.stoppedCustomServers = this.stoppedCustomServers.filter(
-            (s) => s !== type
-          );
-        }
-
-        if (jsonId && jsonId.startsWith(`tools-${type}`)) {
-          this.tools[type] = correctJson.result.tools;
-          this.eventBus.emit("tools-changed");
-        }
-
-        // Dispatch to pending request resolvers
-        if (jsonId && this._pendingRequests.has(jsonId)) {
-          const pending = this._pendingRequests.get(jsonId)!;
-          this._pendingRequests.delete(jsonId);
-          if (correctJson.error) {
-            pending.reject(
-              new Error(
-                `MCP tool error (${correctJson.error.code}): ${correctJson.error.message}`
-              )
-            );
-          } else {
-            pending.resolve(JSON.stringify(correctJson.result));
-          }
-        }
-      } catch (err) {
-        logger.warn("[mcp] onProcess stdout JSON.parse failed", {
-          type,
-          length: message?.length ?? 0,
-          preview:
-            typeof message === "string" ? message.slice(0, 200) : message,
-          error: err instanceof Error ? err.message : String(err),
-        });
+      for (const msg of this.consumeStdout(type, message)) {
+        this.handleJsonRpcMessage(type, msg);
       }
     }
 
@@ -294,11 +354,333 @@ class CustomServers {
       case 2: {
         this._appendLog(type, `${timestamp}: [stop] ${message}\n`);
         this.stoppedCustomServers.push(type);
+        // A dead process answers nothing: drop the half-line it left behind
+        // and any listing we were still waiting on, so the next start
+        // begins from a clean slate.
+        this.resetStdioState(type);
         break;
       }
       default:
         break;
     }
+  };
+
+  /**
+   * Cut a stdout chunk into complete JSON-RPC messages. Lines end on `\n`
+   * (stdio transport rule); the unterminated tail is either a message the
+   * host delivered whole without a newline (the HTTP paths feed responses
+   * through here that way, and some hosts trim lines) — parsed right away —
+   * or a partial object kept for the next chunk. A tail that cannot be the
+   * start of an object is a stray log line and is discarded, otherwise one
+   * bad print would poison every message that follows it.
+   */
+  private consumeStdout = (type: string, chunk: string): JsonRpcMessage[] => {
+    const combined = (this.stdoutBuffers[type] ?? "") + chunk;
+    const lines = combined.split("\n");
+    const tail = lines.pop() ?? "";
+    const messages: JsonRpcMessage[] = [];
+
+    for (const line of lines) {
+      const parsed = this.parseJsonRpcLine(type, line);
+      if (parsed) messages.push(parsed);
+    }
+
+    const trimmed = tail.trim();
+    if (trimmed.length === 0) {
+      this.stdoutBuffers[type] = "";
+      return messages;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      this.stdoutBuffers[type] = "";
+      if (isJsonRpcMessage(parsed)) messages.push(parsed);
+      return messages;
+    } catch {
+      // Not (yet) a whole message.
+    }
+
+    if (trimmed.startsWith("{") && trimmed.length <= MAX_STDOUT_BUFFER) {
+      this.stdoutBuffers[type] = tail;
+    } else {
+      this.stdoutBuffers[type] = "";
+      logger.warn("[mcp] stdout line is not JSON-RPC, dropped", {
+        type,
+        length: tail.length,
+        preview: tail.slice(0, 200),
+      });
+    }
+    return messages;
+  };
+
+  private parseJsonRpcLine = (
+    type: string,
+    line: string
+  ): JsonRpcMessage | null => {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) return null;
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      if (isJsonRpcMessage(parsed)) return parsed;
+      logger.debug("[mcp] stdout JSON is not a JSON-RPC message", {
+        type,
+        preview: trimmed.slice(0, 200),
+      });
+    } catch (err) {
+      logger.warn("[mcp] stdout line JSON.parse failed", {
+        type,
+        length: line.length,
+        preview: line.slice(0, 200),
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+    return null;
+  };
+
+  /**
+   * Route one message by JSON-RPC shape: `method` without `id` is a
+   * notification from the server, `method` with `id` is a request the
+   * server expects us to answer, anything else with an `id` is a response
+   * to something we sent.
+   */
+  private handleJsonRpcMessage = (type: string, msg: JsonRpcMessage) => {
+    const hasId = msg.id !== null && msg.id !== undefined;
+    const method = typeof msg.method === "string" ? msg.method : null;
+
+    if (method && !hasId) {
+      this.handleNotification(type, method, msg.params);
+      return;
+    }
+    if (method && hasId) {
+      this.handleServerRequest(type, msg.id as string | number, method);
+      return;
+    }
+    if (!hasId || msg.jsonrpc !== "2.0") return;
+
+    const jsonId = String(msg.id);
+
+    if (jsonId === `init-${type}` && msg.error) {
+      // A refused `initialize` (e.g. mcp-go's "duplicate initialize
+      // received" when the retry loop sent a second one before the first
+      // was answered) is not a handshake. Treating it as one re-sent
+      // `notifications/initialized` and, on a fresh process, would have
+      // marked a server ready that never accepted us.
+      logger.warn("[mcp] initialize rejected by server", {
+        type,
+        error: msg.error,
+      });
+    } else if (jsonId === `init-${type}`) {
+      this.captureInstructions(type, msg.result);
+      this.captureCapabilities(type, msg.result);
+      this.initedCustomServers[type] = true;
+      this.stoppedCustomServers = this.stoppedCustomServers.filter(
+        (s) => s !== type
+      );
+      this.sendInitialized(type);
+    }
+
+    if (jsonId.startsWith(`tools-${type}`)) {
+      this.handleToolsListResponse(type, msg);
+    }
+
+    // Dispatch to pending request resolvers
+    const pending = this._pendingRequests.get(jsonId);
+    if (pending) {
+      this._pendingRequests.delete(jsonId);
+      if (msg.error) {
+        pending.reject(
+          new Error(`MCP tool error (${msg.error.code}): ${msg.error.message}`)
+        );
+      } else {
+        pending.resolve(JSON.stringify(msg.result));
+      }
+    }
+  };
+
+  private handleToolsListResponse = (type: string, msg: JsonRpcMessage) => {
+    const state = this.toolsRefresh[type];
+    if (state) state.inFlight = false;
+
+    const tools = (msg.result as { tools?: unknown } | undefined)?.tools;
+    if (Array.isArray(tools)) {
+      this.tools[type] = tools as TMCPItem[];
+      this.listedCustomServers[type] = true;
+      logger.info("[mcp] tools/list answered", { type, count: tools.length });
+      this.eventBus.emit("tools-changed");
+    } else {
+      logger.warn("[mcp] tools/list answered without a tool array", {
+        type,
+        error: msg.error,
+      });
+      this.reinitializeAfterListingError(type, msg);
+    }
+
+    // A `list_changed` that landed while this listing was on the wire may
+    // describe a catalog newer than the one just received — list once more.
+    if (state?.queued) {
+      state.queued = false;
+      void this.getToolsFromMCP(type);
+    }
+  };
+
+  /**
+   * A `tools/list` refused with a JSON-RPC error on a stdio server almost
+   * always means the session was never initialized from the server's point
+   * of view — the process was restarted under a stale `inited` flag, or the
+   * server dropped the session. Run the handshake again, once per process;
+   * `initCustomServer` then re-issues `tools/list` on the new `initialize`
+   * answer. A server that still refuses stays empty and its log shows why.
+   */
+  private reinitializeAfterListingError = (
+    type: string,
+    msg: JsonRpcMessage
+  ) => {
+    if (!msg.error || !this.customServersProcesses[type]) return;
+    const state = (this.toolsRefresh[type] ??= {
+      inFlight: false,
+      queued: false,
+    });
+    if (state.reinitialized) return;
+    state.reinitialized = true;
+    logger.warn("[mcp] tools/list rejected — re-running initialize", {
+      type,
+      error: msg.error,
+    });
+    this.initedCustomServers[type] = false;
+    this.initCustomServer(type);
+  };
+
+  /**
+   * Notifications the server pushes on its own. Only the tools catalog is
+   * acted on: `list_changed` carries no payload, it just marks the list
+   * stale, so the reaction is a fresh `tools/list`. Prompts and resources
+   * are not consumed by the widget, so their `list_changed` is only logged.
+   */
+  private handleNotification = (
+    type: string,
+    method: string,
+    params: unknown
+  ) => {
+    switch (method) {
+      case "notifications/tools/list_changed": {
+        logger.info("[mcp] tools/list_changed received", { type });
+        this.scheduleToolsRefresh(type);
+        break;
+      }
+      case "notifications/prompts/list_changed":
+      case "notifications/resources/list_changed":
+      case "notifications/resources/updated":
+      case "notifications/progress":
+      case "notifications/message": {
+        logger.debug("[mcp] notification ignored", { type, method, params });
+        break;
+      }
+      default: {
+        logger.debug("[mcp] unknown notification", { type, method });
+        break;
+      }
+    }
+  };
+
+  /**
+   * Requests the server sends *to* the client. `ping` gets its empty
+   * result so a server that health-checks its client keeps the pipe open;
+   * everything else (sampling, roots, elicitation) is unsupported here and
+   * is answered with JSON-RPC "method not found" rather than left hanging,
+   * since an unanswered request can block the server's own loop.
+   */
+  private handleServerRequest = (
+    type: string,
+    id: string | number,
+    method: string
+  ) => {
+    const reply =
+      method === "ping"
+        ? { jsonrpc: "2.0", id, result: {} }
+        : {
+            jsonrpc: "2.0",
+            id,
+            error: { code: -32601, message: `Method not found: ${method}` },
+          };
+    this.writeStdio(type, reply);
+  };
+
+  /**
+   * Second half of the handshake. Until the client sends
+   * `notifications/initialized` a compliant server holds back every
+   * notification of its own, `tools/list_changed` included, so without
+   * this the catalog would never refresh. Sent to stdio servers only —
+   * the HTTP path negotiates its session in `initHttpServer`.
+   */
+  private sendInitialized = (type: string) => {
+    if (!this.customServersProcesses[type]) return;
+    this.writeStdio(type, {
+      jsonrpc: "2.0",
+      method: "notifications/initialized",
+    });
+  };
+
+  private writeStdio = (type: string, message: unknown) => {
+    const process = this.customServersProcesses[type];
+    if (!process) return;
+    try {
+      process.stdin(`${JSON.stringify(message)}\n`);
+    } catch (error) {
+      logger.error(`[mcp] stdin write failed for ${type}:`, error);
+    }
+  };
+
+  private captureCapabilities = (type: string, result: unknown) => {
+    const capabilities = (
+      result as { capabilities?: Record<string, unknown> } | undefined
+    )?.capabilities;
+    if (capabilities && typeof capabilities === "object") {
+      this.serverCapabilities[type] = capabilities;
+      const tools = capabilities.tools as { listChanged?: unknown } | undefined;
+      logger.info("[mcp] server capabilities", {
+        type,
+        toolsListChanged: tools?.listChanged === true,
+      });
+      return;
+    }
+    delete this.serverCapabilities[type];
+  };
+
+  /**
+   * Coalesce `list_changed` bursts into one `tools/list`. While a listing
+   * is already in flight the refresh is queued behind it instead of being
+   * sent in parallel, so answers can't land out of order and overwrite a
+   * newer catalog with an older one.
+   */
+  private scheduleToolsRefresh = (type: string) => {
+    if (!this.customServersProcesses[type]) return;
+    const state = (this.toolsRefresh[type] ??= {
+      inFlight: false,
+      queued: false,
+    });
+    if (state.inFlight) {
+      state.queued = true;
+      return;
+    }
+    if (state.timer) return;
+    state.timer = setTimeout(() => {
+      state.timer = undefined;
+      void this.getToolsFromMCP(type);
+    }, LIST_CHANGED_DEBOUNCE_MS);
+  };
+
+  /**
+   * Forget everything tied to one stdio process: the partial stdout line,
+   * the pending refresh timer and the in-flight/queued listing flags, plus
+   * the "has listed" mark. Called on exit, restart and delete.
+   */
+  private resetStdioState = (type: string) => {
+    delete this.stdoutBuffers[type];
+    const state = this.toolsRefresh[type];
+    if (state?.timer) clearTimeout(state.timer);
+    delete this.toolsRefresh[type];
+    delete this.listedCustomServers[type];
+    delete this.serverCapabilities[type];
   };
 
   setCustomServers = (servers: {
@@ -463,6 +845,7 @@ class CustomServers {
 
     if (this.customServersProcesses[type]) {
       this.customServersProcesses[type].end();
+      this.resetStdioState(type);
     }
 
     this.customServersLogs[type] = [
@@ -485,12 +868,51 @@ class CustomServers {
     process.onprocess = this.onProcess.bind(this, type);
 
     this.customServersProcesses[type] = process;
+    this.beginHandshake(type);
 
     logger.info("[mcp] startStdioServer → process.start()", { type });
     process.start();
 
     this.startedCustomServers[type] = commandLine;
+
+    if (!hostSpawnSucceeded(process)) {
+      // The host handed back a handle but no process behind it — the desktop
+      // does this in frames that are not allowed to spawn (a settings page
+      // iframe): `_createProcess` returns nothing and the handle's output
+      // callback is keyed under `undefined`, so no answer can ever arrive.
+      // Say so in the server log and mark it stopped, instead of thirty
+      // unanswered `initialize` attempts behind a spinner.
+      const where =
+        (globalThis as { location?: { href?: string } }).location?.href ??
+        "this frame";
+      const hostId = (process as unknown as { id?: unknown }).id;
+      logger.warn("[mcp] host refused to spawn the process", { type, where });
+      this._appendLog(
+        type,
+        `${new Date().toLocaleString()}: [stop] host could not start the process from ${where} (process id: ${String(hostId)})\n`
+      );
+      this.stoppedCustomServers.push(type);
+      this.eventBus.emit("tools-changed");
+      return;
+    }
+
     this.initCustomServer(type);
+  };
+
+  /**
+   * Put a freshly spawned process in the "not yet initialized" state. Both
+   * flags may carry stale values from the process that ran under this type
+   * before: a leftover `inited` makes `initCustomServer` skip `initialize`
+   * and send `tools/list` into a server that rejects it ("invalid during
+   * session initialization"), and a leftover stop mark makes it give up
+   * before the first `initialize` goes out. Either one leaves the card
+   * spinning forever.
+   */
+  private beginHandshake = (type: string) => {
+    this.initedCustomServers[type] = false;
+    this.stoppedCustomServers = this.stoppedCustomServers.filter(
+      (s) => s !== type
+    );
   };
 
   restartCustomServer = (type: string) => {
@@ -535,6 +957,7 @@ class CustomServers {
 
   restartStdioServer = (type: string, config: Record<string, unknown>) => {
     this.customServersProcesses[type].end();
+    this.resetStdioState(type);
 
     const { commandLine, env } = getParams(config);
 
@@ -551,6 +974,7 @@ class CustomServers {
     process.onprocess = this.onProcess.bind(this, type);
 
     this.customServersProcesses[type] = process;
+    this.beginHandshake(type);
 
     process.start();
 
@@ -564,6 +988,8 @@ class CustomServers {
       this.customServersProcesses[type].end();
       delete this.customServersProcesses[type];
     }
+    this.resetStdioState(type);
+    delete this.initedCustomServers[type];
     // Stop HTTP connection if exists — terminate the MCP session (best-effort
     // DELETE) before dropping the connection so it is not orphaned server-side.
     const httpServer = this.httpServers[type];
@@ -757,7 +1183,7 @@ class CustomServers {
     try {
       const request = {
         jsonrpc: "2.0",
-        id: `tools-${type}-${Date.now()}`,
+        id: `tools-${type}-${this.nextRequestId()}`,
         method: "tools/list",
         params: {},
       };
@@ -792,7 +1218,7 @@ class CustomServers {
       // Create JSON-RPC request for tools/list
       const request = {
         jsonrpc: "2.0",
-        id: `tools-${type}-${Date.now()}`,
+        id: `tools-${type}-${this.nextRequestId()}`,
         method: "tools/list",
         params: {},
       };
@@ -800,8 +1226,15 @@ class CustomServers {
       const requestBody = JSON.stringify(request);
       const requestMessage = `${requestBody}\n`;
 
+      const state = (this.toolsRefresh[type] ??= {
+        inFlight: false,
+        queued: false,
+      });
+      state.inFlight = true;
       process.stdin(requestMessage);
     } catch (error) {
+      const state = this.toolsRefresh[type];
+      if (state) state.inFlight = false;
       logger.error(`Error getting tools from MCP server ${type}:`, error);
     }
   };
@@ -959,6 +1392,13 @@ class CustomServers {
    * we resolve regardless and let the caller proceed with whatever
    * tools have arrived so far.
    *
+   * "Yielded" means an answered listing (`listedCustomServers`), not a
+   * non-empty tool array: a server may list zero tools, and a
+   * `list_changed` refresh may empty a list that was full a moment ago.
+   * The tool-count check stays as a fallback for tool maps filled in by
+   * hand (tests, hosts poking the holder) that never went through a
+   * listing.
+   *
    * Subscribes to the `tools-changed` event bus so we don't poll —
    * each tools/list response and each stop transition emits, and we
    * re-evaluate on every emit.
@@ -970,6 +1410,7 @@ class CustomServers {
     const isReady = () =>
       expected.every(
         (type) =>
+          this.listedCustomServers[type] === true ||
           (this.tools[type]?.length ?? 0) > 0 ||
           this.stoppedCustomServers.includes(type)
       );
@@ -994,6 +1435,7 @@ class CustomServers {
           expected,
           ready: expected.filter(
             (t) =>
+              this.listedCustomServers[t] === true ||
               (this.tools[t]?.length ?? 0) > 0 ||
               this.stoppedCustomServers.includes(t)
           ),

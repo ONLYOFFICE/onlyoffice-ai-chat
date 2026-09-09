@@ -148,7 +148,15 @@ export type TProcess = {
   /** Write data to the process's standard input (JSON-RPC messages). */
   stdin: (data: string) => void;
 
-  /** Register a handler for process output. `type`: 0 = stdout, 1 = stderr. */
+  /**
+   * Register a handler for process output. `type`: 0 = stdout, 1 = stderr,
+   * 2 = exit.
+   *
+   * The host may deliver stdout exactly as the pipe yields it: one call
+   * may carry several newline-separated JSON-RPC messages, or only part
+   * of one. The widget reassembles lines itself, so a host need not (but
+   * may) split or trim them.
+   */
   onprocess: (type: number, message: string) => void;
 
   /** Terminate the process. */

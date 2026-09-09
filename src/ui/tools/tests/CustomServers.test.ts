@@ -1453,8 +1453,7 @@ describe("CustomServers", () => {
       ok: true,
       status: 200,
       headers: {
-        get: (name: string) =>
-          name === "Mcp-Session-Id" ? sessionId : null,
+        get: (name: string) => (name === "Mcp-Session-Id" ? sessionId : null),
       },
       text: () => Promise.resolve(JSON.stringify(data)),
     });
@@ -1463,7 +1462,11 @@ describe("CustomServers", () => {
       mockFetch
         .mockResolvedValueOnce(
           createSessionResponse(
-            { jsonrpc: "2.0", id: "init-httpTest", result: { capabilities: {} } },
+            {
+              jsonrpc: "2.0",
+              id: "init-httpTest",
+              result: { capabilities: {} },
+            },
             "sess-abc"
           )
         )
@@ -1576,11 +1579,509 @@ describe("CustomServers", () => {
         { name: "read_file", description: "", inputSchema: {} },
       ];
 
-      const promise = customServers.callToolFromStdioMCP("test", "read_file", {});
+      const promise = customServers.callToolFromStdioMCP(
+        "test",
+        "read_file",
+        {}
+      );
 
       customServers.dispose();
 
       await expect(promise).rejects.toThrow("MCP client disposed");
+    });
+  });
+
+  // ==========================================================================
+  // stdio framing + notifications (tools/list_changed)
+  // ==========================================================================
+
+  describe("stdio framing", () => {
+    const startStdio = () => {
+      customServers.setCustomServers({
+        mcpServers: { test: { command: "npx" } },
+      });
+      customServers.startCustomServers();
+      return customServers.customServersProcesses.test;
+    };
+
+    it("should reassemble a response split across two chunks", () => {
+      startStdio();
+      const msg = JSON.stringify({
+        jsonrpc: "2.0",
+        id: "tools-test-1",
+        result: { tools: [{ name: "tool1" }] },
+      });
+      const cut = Math.floor(msg.length / 2);
+
+      customServers.onProcess("test", 0, msg.slice(0, cut));
+      expect(customServers.tools.test).toBeUndefined();
+
+      customServers.onProcess("test", 0, `${msg.slice(cut)}\n`);
+      expect(customServers.tools.test).toEqual([{ name: "tool1" }]);
+    });
+
+    it("should handle a response and a notification in one chunk", () => {
+      startStdio();
+      const response = JSON.stringify({
+        jsonrpc: "2.0",
+        id: "tools-test-1",
+        result: { tools: [{ name: "tool1" }] },
+      });
+      const notification = JSON.stringify({
+        jsonrpc: "2.0",
+        method: "notifications/tools/list_changed",
+      });
+
+      customServers.onProcess("test", 0, `${response}\n${notification}\n`);
+
+      expect(customServers.tools.test).toEqual([{ name: "tool1" }]);
+      vi.advanceTimersByTime(300);
+      const calls = (lastProcess.stdin as ReturnType<typeof vi.fn>).mock.calls;
+      expect(calls.some((c: string[]) => c[0].includes("tools/list"))).toBe(
+        true
+      );
+    });
+
+    it("should drop a non-JSON stdout line without poisoning later ones", () => {
+      startStdio();
+      customServers.onProcess("test", 0, "server started on stdio");
+
+      const msg = JSON.stringify({
+        jsonrpc: "2.0",
+        id: "tools-test-1",
+        result: { tools: [{ name: "tool1" }] },
+      });
+      customServers.onProcess("test", 0, `${msg}\n`);
+
+      expect(customServers.tools.test).toEqual([{ name: "tool1" }]);
+    });
+
+    it("should send notifications/initialized after the initialize response", () => {
+      const proc = startStdio();
+      const stdinMock = proc.stdin as ReturnType<typeof vi.fn>;
+      stdinMock.mockClear();
+
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: "init-test",
+          result: { capabilities: { tools: { listChanged: true } } },
+        })
+      );
+
+      expect(stdinMock).toHaveBeenCalledTimes(1);
+      const sent = JSON.parse(stdinMock.mock.calls[0][0] as string);
+      expect(sent).toEqual({
+        jsonrpc: "2.0",
+        method: "notifications/initialized",
+      });
+      expect(stdinMock.mock.calls[0][0]).toMatch(/\n$/);
+      expect(customServers.serverCapabilities.test).toEqual({
+        tools: { listChanged: true },
+      });
+    });
+
+    it("should send initialized before the first tools/list", () => {
+      const proc = startStdio();
+      const stdinMock = proc.stdin as ReturnType<typeof vi.fn>;
+      stdinMock.mockClear();
+
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({ jsonrpc: "2.0", id: "init-test", result: {} })
+      );
+      vi.advanceTimersByTime(1000);
+
+      const methods = stdinMock.mock.calls.map(
+        (c: string[]) => JSON.parse(c[0]).method
+      );
+      expect(methods.indexOf("notifications/initialized")).toBeGreaterThan(-1);
+      expect(methods.indexOf("notifications/initialized")).toBeLessThan(
+        methods.indexOf("tools/list")
+      );
+    });
+
+    it("should not send initialized for HTTP servers", async () => {
+      mockFetch.mockResolvedValue(
+        createMockResponse({ jsonrpc: "2.0", id: "init-test", result: {} })
+      );
+      customServers.setCustomServers({
+        mcpServers: { test: { url: "http://localhost:3000" } },
+      });
+      customServers.startCustomServers();
+      await vi.runAllTimersAsync();
+
+      const bodies = mockFetch.mock.calls.map((c) =>
+        typeof c[1]?.body === "string" ? JSON.parse(c[1].body).method : null
+      );
+      expect(bodies).not.toContain("notifications/initialized");
+    });
+
+    it("should answer a server ping and reject unknown server requests", () => {
+      const proc = startStdio();
+      const stdinMock = proc.stdin as ReturnType<typeof vi.fn>;
+      stdinMock.mockClear();
+
+      customServers.onProcess(
+        "test",
+        0,
+        `${JSON.stringify({ jsonrpc: "2.0", id: 7, method: "ping" })}\n` +
+          `${JSON.stringify({ jsonrpc: "2.0", id: 8, method: "sampling/createMessage" })}\n`
+      );
+
+      const replies = stdinMock.mock.calls.map((c: string[]) =>
+        JSON.parse(c[0])
+      );
+      expect(replies).toEqual([
+        { jsonrpc: "2.0", id: 7, result: {} },
+        {
+          jsonrpc: "2.0",
+          id: 8,
+          error: {
+            code: -32601,
+            message: "Method not found: sampling/createMessage",
+          },
+        },
+      ]);
+    });
+  });
+
+  describe("notifications/tools/list_changed", () => {
+    const toolsResponse = (id: string, names: string[]) =>
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id,
+        result: { tools: names.map((name) => ({ name })) },
+      });
+    const listChanged = JSON.stringify({
+      jsonrpc: "2.0",
+      method: "notifications/tools/list_changed",
+    });
+
+    const startListed = () => {
+      customServers.setCustomServers({
+        mcpServers: { test: { command: "npx" } },
+      });
+      customServers.startCustomServers();
+      customServers.onProcess(
+        "test",
+        0,
+        `${toolsResponse("tools-test-0", ["a"])}\n`
+      );
+      const proc = customServers.customServersProcesses.test;
+      (proc.stdin as ReturnType<typeof vi.fn>).mockClear();
+      return proc.stdin as ReturnType<typeof vi.fn>;
+    };
+
+    const toolsListCalls = (stdinMock: ReturnType<typeof vi.fn>) =>
+      stdinMock.mock.calls.filter(
+        (c: string[]) => JSON.parse(c[0]).method === "tools/list"
+      );
+
+    it("should re-request tools/list after the debounce", () => {
+      const stdinMock = startListed();
+
+      customServers.onProcess("test", 0, `${listChanged}\n`);
+      expect(toolsListCalls(stdinMock)).toHaveLength(0);
+
+      vi.advanceTimersByTime(250);
+      expect(toolsListCalls(stdinMock)).toHaveLength(1);
+    });
+
+    it("should replace the tool list and emit tools-changed on the answer", () => {
+      const stdinMock = startListed();
+      mockEventBus.emit.mockClear();
+
+      customServers.onProcess("test", 0, `${listChanged}\n`);
+      vi.advanceTimersByTime(250);
+      const sent = JSON.parse(toolsListCalls(stdinMock)[0][0] as string);
+
+      customServers.onProcess(
+        "test",
+        0,
+        `${toolsResponse(sent.id, ["b", "c"])}\n`
+      );
+
+      expect(customServers.tools.test).toEqual([{ name: "b" }, { name: "c" }]);
+      expect(mockEventBus.emit).toHaveBeenCalledWith("tools-changed");
+    });
+
+    it("should coalesce a burst of notifications into one listing", () => {
+      const stdinMock = startListed();
+
+      customServers.onProcess("test", 0, `${listChanged}\n${listChanged}\n`);
+      vi.advanceTimersByTime(100);
+      customServers.onProcess("test", 0, `${listChanged}\n`);
+      vi.advanceTimersByTime(250);
+
+      expect(toolsListCalls(stdinMock)).toHaveLength(1);
+    });
+
+    it("should queue one more listing when a notification lands mid-flight", () => {
+      const stdinMock = startListed();
+
+      customServers.onProcess("test", 0, `${listChanged}\n`);
+      vi.advanceTimersByTime(250);
+      expect(toolsListCalls(stdinMock)).toHaveLength(1);
+      const first = JSON.parse(toolsListCalls(stdinMock)[0][0] as string);
+
+      // Two more while the first listing is unanswered: no new request yet.
+      customServers.onProcess("test", 0, `${listChanged}\n${listChanged}\n`);
+      vi.advanceTimersByTime(1000);
+      expect(toolsListCalls(stdinMock)).toHaveLength(1);
+
+      // The answer releases exactly one follow-up listing.
+      customServers.onProcess("test", 0, `${toolsResponse(first.id, ["b"])}\n`);
+      expect(toolsListCalls(stdinMock)).toHaveLength(2);
+      const second = JSON.parse(toolsListCalls(stdinMock)[1][0] as string);
+      expect(second.id).not.toBe(first.id);
+    });
+
+    it("should ignore list_changed for a server that is not running", () => {
+      customServers.customServersLogs.test = [];
+      customServers.onProcess("test", 0, `${listChanged}\n`);
+      vi.advanceTimersByTime(1000);
+      // No process, nothing to write to — must not throw.
+      expect(customServers.customServersProcesses.test).toBeUndefined();
+    });
+
+    it("should not stall waitUntilReady when a refresh empties the list", async () => {
+      const stdinMock = startListed();
+      customServers.onProcess("test", 0, `${listChanged}\n`);
+      vi.advanceTimersByTime(250);
+      const sent = JSON.parse(toolsListCalls(stdinMock)[0][0] as string);
+      customServers.onProcess("test", 0, `${toolsResponse(sent.id, [])}\n`);
+
+      expect(customServers.tools.test).toEqual([]);
+      expect(customServers.listedCustomServers.test).toBe(true);
+      await expect(customServers.waitUntilReady(3000)).resolves.toBeUndefined();
+    });
+
+    it("should cancel a pending refresh on restart and forget the listed mark", () => {
+      startListed();
+      customServers.onProcess("test", 0, `${listChanged}\n`);
+
+      customServers.restartCustomServer("test");
+      const stdinMock = lastProcess.stdin as ReturnType<typeof vi.fn>;
+      vi.advanceTimersByTime(250);
+
+      expect(toolsListCalls(stdinMock)).toHaveLength(0);
+      expect(customServers.listedCustomServers.test).toBeUndefined();
+      expect(customServers.initedCustomServers.test).toBe(false);
+    });
+
+    it("should forget the listed mark when the process exits", () => {
+      startListed();
+      expect(customServers.listedCustomServers.test).toBe(true);
+
+      customServers.onProcess("test", 2, "exit 1");
+
+      expect(customServers.listedCustomServers.test).toBeUndefined();
+    });
+  });
+
+  // ==========================================================================
+  // handshake lifecycle — every new process starts with initialize
+  // ==========================================================================
+
+  describe("handshake lifecycle", () => {
+    const methodsSent = (stdinMock: ReturnType<typeof vi.fn>) =>
+      stdinMock.mock.calls.map((c: string[]) => JSON.parse(c[0]).method);
+
+    it("should run initialize again after a restart even if the server was stopped", () => {
+      customServers.setCustomServers({
+        mcpServers: { test: { command: "npx" } },
+      });
+      customServers.startCustomServers();
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({ jsonrpc: "2.0", id: "init-test", result: {} })
+      );
+      // The old process died: stop mark set, inited left true.
+      customServers.onProcess("test", 2, "exit 1");
+      expect(customServers.stoppedCustomServers).toContain("test");
+
+      customServers.restartCustomServer("test");
+      const stdinMock = lastProcess.stdin as ReturnType<typeof vi.fn>;
+      vi.advanceTimersByTime(1000);
+
+      expect(customServers.stoppedCustomServers).not.toContain("test");
+      expect(methodsSent(stdinMock)).toEqual(["initialize"]);
+    });
+
+    it("should run initialize on a re-add after delete instead of reusing the inited flag", () => {
+      customServers.setCustomServers({
+        mcpServers: { test: { command: "npx" } },
+      });
+      customServers.startCustomServers();
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({ jsonrpc: "2.0", id: "init-test", result: {} })
+      );
+      customServers.deleteCustomServer("test");
+      expect(customServers.initedCustomServers.test).toBeUndefined();
+
+      customServers.setCustomServers({
+        mcpServers: { test: { command: "npx" } },
+      });
+      customServers.startCustomServers();
+      const stdinMock = lastProcess.stdin as ReturnType<typeof vi.fn>;
+      vi.advanceTimersByTime(1000);
+
+      expect(methodsSent(stdinMock)).toEqual(["initialize"]);
+    });
+
+    it("should re-run initialize once when tools/list is rejected", () => {
+      customServers.setCustomServers({
+        mcpServers: { test: { command: "npx" } },
+      });
+      customServers.startCustomServers();
+      const stdinMock = lastProcess.stdin as ReturnType<typeof vi.fn>;
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({ jsonrpc: "2.0", id: "init-test", result: {} })
+      );
+      vi.advanceTimersByTime(1000);
+      expect(methodsSent(stdinMock)).toEqual([
+        "notifications/initialized",
+        "tools/list",
+      ]);
+      const listId = JSON.parse(stdinMock.mock.calls[1][0] as string).id;
+
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: listId,
+          error: {
+            code: 0,
+            message:
+              'method "tools/list" is invalid during session initialization',
+          },
+        })
+      );
+      expect(customServers.initedCustomServers.test).toBe(false);
+      vi.advanceTimersByTime(1000);
+      expect(methodsSent(stdinMock).slice(2)).toEqual(["initialize"]);
+
+      // Second rejection does not loop.
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({ jsonrpc: "2.0", id: "init-test", result: {} })
+      );
+      vi.advanceTimersByTime(1000);
+      const secondListId = JSON.parse(
+        stdinMock.mock.calls[stdinMock.mock.calls.length - 1][0] as string
+      ).id;
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: secondListId,
+          error: { code: 0, message: "still no" },
+        })
+      );
+      const before = stdinMock.mock.calls.length;
+      vi.advanceTimersByTime(3000);
+      expect(stdinMock.mock.calls.length).toBe(before);
+    });
+  });
+
+  describe("host spawn refusal", () => {
+    it("should mark the server stopped when the host returns no process id", () => {
+      const platform = {
+        process: {
+          createProcess: () => {
+            const p = new MockExternalProcess();
+            // Desktop `ExternalProcess`: id is -1 until start(), then whatever
+            // `_createProcess` returned — `undefined` in a frame that may not
+            // spawn.
+            (p as unknown as { id: unknown }).id = -1;
+            p.start = vi.fn(() => {
+              (p as unknown as { id: unknown }).id = undefined;
+            });
+            return p;
+          },
+          isAvailable: () => true,
+        },
+        file: null,
+        env: { platform: "desktop" },
+        hostTools: null,
+      } as unknown as PlatformAdapter;
+      const cs = new CustomServers(
+        platform,
+        mockEventBus as unknown as ChatEventBus
+      );
+      cs.setCustomServers({ mcpServers: { test: { command: "npx" } } });
+      cs.startCustomServers();
+      vi.advanceTimersByTime(3000);
+
+      expect(cs.stoppedCustomServers).toContain("test");
+      expect(cs.customServersLogs.test.join("")).toContain(
+        "host could not start the process"
+      );
+      const stdinMock = lastProcess.stdin as ReturnType<typeof vi.fn>;
+      expect(stdinMock).not.toHaveBeenCalled();
+    });
+
+    it("should keep the handshake when the host id is a real number", () => {
+      const platform = {
+        process: {
+          createProcess: () => {
+            const p = new MockExternalProcess();
+            (p as unknown as { id: unknown }).id = -1;
+            p.start = vi.fn(() => {
+              (p as unknown as { id: unknown }).id = 7;
+            });
+            return p;
+          },
+          isAvailable: () => true,
+        },
+        file: null,
+        env: { platform: "desktop" },
+        hostTools: null,
+      } as unknown as PlatformAdapter;
+      const cs = new CustomServers(
+        platform,
+        mockEventBus as unknown as ChatEventBus
+      );
+      cs.setCustomServers({ mcpServers: { test: { command: "npx" } } });
+      cs.startCustomServers();
+      vi.advanceTimersByTime(1000);
+
+      expect(cs.stoppedCustomServers).not.toContain("test");
+      expect(lastProcess.stdin).toHaveBeenCalled();
+    });
+
+    it("should not treat an initialize error as a completed handshake", () => {
+      customServers.setCustomServers({
+        mcpServers: { test: { command: "npx" } },
+      });
+      customServers.startCustomServers();
+      const stdinMock = lastProcess.stdin as ReturnType<typeof vi.fn>;
+      stdinMock.mockClear();
+
+      customServers.onProcess(
+        "test",
+        0,
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: "init-test",
+          error: { code: 0, message: 'duplicate "initialize" received' },
+        })
+      );
+
+      expect(customServers.initedCustomServers.test).not.toBe(true);
+      expect(stdinMock).not.toHaveBeenCalled();
     });
   });
 });

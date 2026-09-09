@@ -172,8 +172,35 @@ STDIO requires `PlatformAdapter.process.createProcess`.
 ### JSON-RPC handshake
 
 1. `initialize` (protocol version `"2024-11-05"`)
-2. `tools/list` to discover tools
-3. `tools/call` for each invocation (30-second timeout)
+2. `notifications/initialized` (stdio only — the HTTP path negotiates its
+   session in `initHttpServer`)
+3. `tools/list` to discover tools
+4. `tools/call` for each invocation (30-second timeout)
+
+### Dynamic tool lists (stdio)
+
+A stdio server that advertises `capabilities.tools.listChanged` may push
+`notifications/tools/list_changed` at any time. The runtime answers with
+a fresh `tools/list`, replaces that server's group in the tool map and
+emits `"tools-changed"`, so the permission cards and the next chat round
+pick the new catalog up without a restart. Notifications are debounced
+(250 ms) and never overlap an in-flight listing — a notification that
+lands while one is pending queues exactly one more listing after the
+answer. Prompt and resource `list_changed` notifications are logged and
+ignored. The server's `capabilities` from `initialize` are kept in
+`CustomServers.serverCapabilities` for diagnostics.
+
+A refresh applies to the *next* user message: the tool list is read once
+per send, so a catalog change during a multi-round tool loop shows up on
+the following turn.
+
+Stdout is line-framed: chunks may carry several `\n`-separated messages
+or a fragment of one, and are reassembled before parsing. Requests the
+server sends to the client are answered too — `ping` with an empty
+result, anything else with JSON-RPC `-32601`.
+
+HTTP servers are not covered yet: in Streamable HTTP these notifications
+travel over a separate `GET` SSE stream the browser client does not open.
 
 An `initialize` result may carry an `instructions` string — the
 server's own hint on how its tools are meant to be used. It is

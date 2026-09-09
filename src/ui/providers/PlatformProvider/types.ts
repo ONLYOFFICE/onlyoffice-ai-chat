@@ -120,6 +120,12 @@ export interface PlatformFileOperations {
  * over its stdin/stdout using JSON-RPC 2.0. If the host environment cannot
  * spawn processes (e.g. a web browser), pass `null` for
  * `PlatformAdapter.process` — only HTTP-based MCP servers will be available.
+ *
+ * Stdout chunks handed to `TProcess.onprocess` may hold several messages or
+ * a fragment of one; the widget cuts them on `\n` itself. Server-initiated
+ * messages (`notifications/tools/list_changed`, `ping`) arrive over the same
+ * pipe and are handled by the widget, so the host must forward every stdout
+ * chunk, not only replies to its own writes.
  */
 export interface PlatformProcessRunner {
   /** Spawn an external process (used for MCP STDIO servers). Returns a process handle or null if unavailable */

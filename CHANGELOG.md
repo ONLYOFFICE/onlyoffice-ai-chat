@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.5.97
+
+### Added
+
+- **Stdio MCP servers can change their tool list at runtime.** A server that advertises `capabilities.tools.listChanged` pushes `notifications/tools/list_changed` when its catalog changes; the widget ignored every server-initiated message, so a tool registered after start-up never reached the model until the server was restarted. The notification now triggers a fresh `tools/list`, the server's group in the tool map is replaced and `tools-changed` fires, so the permission cards and the next chat round see the new catalog. Bursts are debounced (250 ms) and a notification arriving while a listing is in flight queues exactly one more listing after the answer, so responses cannot land out of order.
+
+  The client also sends `notifications/initialized` after the `initialize` response — the handshake step a compliant server waits for before pushing any notification of its own — and answers server-initiated requests: `ping` with an empty result, anything else with JSON-RPC `-32601` instead of leaving the server's loop blocked on a reply. HTTP servers are not covered: their notifications travel over a `GET` SSE stream the browser client does not open.
+
+### Fixed
+
+- **A frame the host will not spawn from no longer shows a spinner forever.** The ONLYOFFICE desktop renders each settings page in its own iframe and refuses `_createProcess` there: the handle comes back without a process id, its output callback is registered under `undefined`, and every `initialize` went unanswered while the card spun. Such a handle is now recognised right after `start()`; the server is marked stopped with a log line naming the frame, and no handshake is attempted. A rejected `initialize` (mcp-go's "duplicate initialize received" when the retry sent a second one before the first answered) is also no longer taken for a completed handshake.
+
+- **Stdio stdout is now line-framed.** Each `onprocess` chunk was parsed as one JSON document, so a response split across two chunks, or a response sharing a chunk with a notification, was dropped with a parse warning. Chunks are cut on `\n`, an unterminated tail is kept for the next chunk, and a stray non-JSON log line is discarded instead of poisoning the messages after it.
+
+- **Every new stdio process starts with `initialize`.** The "initialized" flag survived a restart, a delete-and-re-add and a widget remount, so the next process received `tools/list` before its handshake — which servers such as `github-mcp-server` reject ("invalid during session initialization"), leaving the card spinning forever. A stale stop mark from the previous process had the opposite effect and aborted the handshake before the first `initialize`. Both are cleared whenever a process is spawned, and a `tools/list` that comes back as a JSON-RPC error re-runs `initialize` once for that process.
+
+- **Request ids no longer collide.** `tools/list` ids were suffixed with `Date.now()`; two listings within a millisecond (start-up plus a `list_changed` refresh) shared an id. A per-instance counter is used instead.
+
+- **A server that lists zero tools no longer stalls the send.** `waitUntilReady` treated an empty tool array as "not listed yet" and waited out the 3-second deadline; it now checks whether the listing was answered, so an empty (or emptied by a refresh) catalog resolves right away.
+
 ## 0.5.88
 
 ### Fixed
