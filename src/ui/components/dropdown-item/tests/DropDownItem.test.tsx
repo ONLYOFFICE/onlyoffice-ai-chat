@@ -29,13 +29,15 @@ vi.mock("@radix-ui/react-dropdown-menu", () => ({
         role="menuitem"
         className={className}
         dir={dir}
+        // Mirrors Radix: the consumer's onClick runs first and a
+        // default-prevented click never reaches item selection.
         onClick={(e) => {
-          if (onSelect) {
-            const event = new Event("select", { cancelable: true });
-            onSelect(event);
-          }
           if (onClick) {
             onClick(e);
+          }
+          if (onSelect && !e.defaultPrevented) {
+            const event = new Event("select", { cancelable: true });
+            onSelect(event);
           }
         }}
         onMouseEnter={onMouseEnter}
@@ -115,8 +117,12 @@ vi.mock("../../tooltip", () => ({
       {children}
     </div>
   ),
+  // Carries the same `data-slot` as the real trigger: DropDownItem uses it to
+  // tell an about-button click from a click on the row itself.
   TooltipTrigger: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="tooltip-trigger">{children}</div>
+    <div data-testid="tooltip-trigger" data-slot="tooltip-trigger">
+      {children}
+    </div>
   ),
 }));
 
@@ -125,10 +131,12 @@ vi.mock("../../dropdown", () => ({
     trigger,
     items,
     dropdownRef,
+    modal,
   }: {
     trigger: React.ReactNode;
     items: { text: string }[];
     dropdownRef?: React.MutableRefObject<HTMLDivElement | null>;
+    modal?: boolean;
   }) => {
     const localRef = React.useRef<HTMLDivElement>(null);
     React.useEffect(() => {
@@ -137,7 +145,7 @@ vi.mock("../../dropdown", () => ({
       }
     }, [dropdownRef]);
     return (
-      <div data-testid="submenu" ref={localRef}>
+      <div data-testid="submenu" ref={localRef} data-modal={String(modal)}>
         {trigger}
         <span data-testid="submenu-count">{items.length}</span>
       </div>
@@ -703,6 +711,89 @@ describe("DropDownItem", () => {
         })
       );
     }
+  });
+
+  it("hover flyout submenu is non-modal so the row stays clickable", () => {
+    renderInDropdownContext(
+      <DropDownItem
+        text="Effort"
+        onClick={vi.fn()}
+        withAbout
+        aboutContent={<span>About info</span>}
+        subMenu={[{ text: "Low", onClick: vi.fn() }]}
+      />
+    );
+    expect(screen.getByTestId("submenu")).toHaveAttribute(
+      "data-modal",
+      "false"
+    );
+  });
+
+  it("click-opened more menu keeps the modal default", () => {
+    renderInDropdownContext(
+      <DropDownItem
+        text="Prompt"
+        onClick={vi.fn()}
+        subMenu={[{ text: "Rename", onClick: vi.fn() }]}
+        subMenuIcon="dots"
+      />
+    );
+    expect(screen.getByTestId("submenu")).toHaveAttribute(
+      "data-modal",
+      "undefined"
+    );
+  });
+
+  it("about button click does not select a submenu row", () => {
+    const onClick = vi.fn();
+    const onDrill = vi.fn();
+    renderInDropdownContext(
+      <DropDownItem
+        text="EffortRow"
+        onClick={onClick}
+        withAbout
+        aboutContent={<span>About info</span>}
+        subMenu={[{ text: "Low", onClick: vi.fn() }]}
+        onDrill={onDrill}
+      />
+    );
+    fireEvent.click(screen.getByTestId("icon-btn-btn-menu-about"));
+    expect(onClick).not.toHaveBeenCalled();
+    expect(onDrill).not.toHaveBeenCalled();
+    expect(screen.getByTestId("tooltip")).toHaveAttribute("data-open", "true");
+  });
+
+  it("about button click does not drill into a drill-down row", () => {
+    const onClick = vi.fn();
+    const onDrill = vi.fn();
+    renderInDropdownContext(
+      <DropDownItem
+        text="EffortRow"
+        onClick={onClick}
+        withAbout
+        aboutContent={<span>About info</span>}
+        subMenu={[{ text: "Low", onClick: vi.fn() }]}
+        navigation="drilldown"
+        onDrill={onDrill}
+      />
+    );
+    fireEvent.click(screen.getByTestId("icon-btn-btn-menu-about"));
+    expect(onDrill).not.toHaveBeenCalled();
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it("row text click still selects a row with an about button", () => {
+    const onClick = vi.fn();
+    renderInDropdownContext(
+      <DropDownItem
+        text="PlainRow"
+        onClick={onClick}
+        withAbout
+        aboutContent={<span>About info</span>}
+      />
+    );
+    fireEvent.click(screen.getByText("PlainRow"));
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it("about button toggles isAboutOpen on click", () => {

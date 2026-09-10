@@ -34,4 +34,11 @@ export type DropdownMenuProps = {
    * When omitted, falls back to the widget config, then to `"flyout"`.
    */
   navigation?: "flyout" | "drilldown";
+  /**
+   * Radix `modal` for this menu; defaults to `true`. A modal menu locks
+   * pointer events everywhere outside its own content, including a parent
+   * menu it is nested in. A flyout submenu passes `false` so the parent's
+   * rows — and the controls on them — stay clickable while it is open.
+   */
+  modal?: boolean;
 };

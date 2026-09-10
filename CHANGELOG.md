@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.108
+
+### Fixed
+
+- **The hint button on a submenu row can be clicked at all.** The flyout submenu of a row is its own Radix `DropdownMenu.Root` nested in the parent menu, and it opens the moment the pointer enters the row. As a modal root (Radix's default) its `DismissableLayer` disables pointer events on every lower layer — the parent menu included — so by the time the pointer reached the "i" of the composer's Effort row the row could not be clicked: the click fell through to the page, the hint never opened and the submenu just stayed put. The hover flyout now passes `modal={false}` (`DropdownMenuProps.modal`, new; default unchanged), so the parent's rows and their controls stay live while it is open. A click-opened "⋯" menu keeps the modal default.
+
+- **The hint button on a menu row opens its hint instead of acting on the row.** Once reachable, a click on the "i" of a `withAbout` row bubbled to the Radix menu item, which selected the row: in flyout menus it ran the row's action and closed the menu, taking the hint popover with it; in `dropdownNavigation: "drilldown"` it descended into the submenu. `DropDownItem` now recognises a click coming from the about button on every row (the toggle rows had this guard already) and stops it before Radix selects the row, so the hint opens and the menu stays where it is.
+
 ## 0.5.107
 
 ### Added

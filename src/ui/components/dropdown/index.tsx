@@ -26,6 +26,7 @@ type ShellProps = {
   matchTriggerWidth?: boolean;
   dropdownRef?: React.RefObject<HTMLDivElement | null>;
   onContentKeyDown?: (e: React.KeyboardEvent) => void;
+  modal?: boolean;
   children: React.ReactNode;
 };
 
@@ -43,6 +44,7 @@ const Shell = ({
   matchTriggerWidth,
   dropdownRef,
   onContentKeyDown,
+  modal,
   children,
 }: ShellProps) => {
   const { isRTL } = useI18n();
@@ -87,6 +89,7 @@ const Shell = ({
       open={open}
       onOpenChange={handleOpenChange}
       dir={isRTL ? "rtl" : "ltr"}
+      modal={modal}
     >
       <DropdownMenu.Trigger
         asChild
@@ -220,6 +223,7 @@ const DropdownMenuComponent = ({
   headerContent,
   variant = "menu",
   navigation,
+  modal,
 }: DropdownMenuProps) => {
   const { isRTL } = useI18n();
   const config = useWidgetConfig();
@@ -303,6 +307,7 @@ const DropdownMenuComponent = ({
       matchTriggerWidth={matchTriggerWidth}
       dropdownRef={dropdownRef}
       onContentKeyDown={onContentKeyDown}
+      modal={modal}
     >
       {canGoBack ? (
         <>

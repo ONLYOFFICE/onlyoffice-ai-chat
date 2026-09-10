@@ -108,24 +108,37 @@ const DropDownItem = ({
     onClick(e);
   };
 
+  // Use `Element` (not `HTMLElement`): clicking the about/help button hits
+  // its inner `<svg>` icon, which is an `SVGElement` — `instanceof
+  // HTMLElement` would be false and the guard would be skipped. `Element`
+  // covers both and still exposes `.closest`.
+  const isAboutClick = (e: React.MouseEvent) =>
+    e.target instanceof Element &&
+    Boolean(
+      e.target.closest("[data-slot='tooltip-trigger']") ||
+        e.target.closest("[data-slot='tooltip-content']")
+    );
+
   const handleToggleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
 
-    // Use `Element` (not `HTMLElement`): clicking the about/help button hits
-    // its inner `<svg>` icon, which is an `SVGElement` — `instanceof
-    // HTMLElement` would be false and the guard would be skipped, toggling
-    // the row. `Element` covers both and still exposes `.closest`.
-    if (
-      e.target instanceof Element &&
-      (e.target.closest("[data-slot='tooltip-trigger']") ||
-        e.target.closest("[data-slot='tooltip-content']"))
-    )
-      return;
+    if (isAboutClick(e)) return;
 
     if (toggleDisabled) return;
 
     onToggleChange?.(!toggleChecked);
+  };
+
+  // A click on the row's about/help button bubbles up to the Radix item,
+  // whose own click handler would select the row: run the leaf action, drill
+  // into the submenu, or close the menu — and the hint popover with it.
+  // Radix composes this handler before its own and skips selection once the
+  // event is default-prevented, so the hint opens and the row stays put.
+  const handleRowClick = (e: React.MouseEvent) => {
+    if (!withAbout || !isAboutClick(e)) return;
+    e.stopPropagation();
+    e.preventDefault();
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -260,7 +273,7 @@ const DropDownItem = ({
           : ""
       )}
       onSelect={withToggle ? (e) => e.preventDefault() : onSelect}
-      onClick={withToggle ? handleToggleClick : undefined}
+      onClick={withToggle ? handleToggleClick : handleRowClick}
       onMouseEnter={!isDrill && !subMenuIcon ? handleMouseEnter : undefined}
       ref={itemRef}
       dir={isRTL ? "rtl" : "ltr"}
@@ -382,6 +395,13 @@ const DropDownItem = ({
             sideOffset={8}
             alignOffset={isHorizontalSide ? -8 : 0}
             open={subMenuIcon ? undefined : isSubMenuOpen}
+            // The hover flyout is its own Radix root nested in the parent
+            // menu. As a modal it would lock pointer events on everything
+            // outside itself — the parent's rows included — for as long as
+            // it is open, and it opens the moment the pointer enters this
+            // row: a click on the row's about button never reached it. A
+            // click-opened "more" menu keeps the modal default.
+            modal={subMenuIcon ? undefined : false}
             contentClassName={cn("max-w-[300px]", subMenuClassName)}
             maxHeight={subMenuMaxHeight}
             dropdownRef={submenuRef}
