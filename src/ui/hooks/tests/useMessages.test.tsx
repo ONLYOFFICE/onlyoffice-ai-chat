@@ -61,6 +61,7 @@ const stores = {
   },
   profilesState: {
     extendedThinking: false,
+    reasoningLevel: "off",
     sessionChatProfile: null as unknown,
     chatProfile: null as unknown,
     defaultProfile: null as unknown,
@@ -188,6 +189,7 @@ beforeEach(() => {
   stores.profilesState.chatProfile = null;
   stores.profilesState.defaultProfile = null;
   stores.profilesState.extendedThinking = false;
+  stores.profilesState.reasoningLevel = "off";
   middlewareRunner.isEmpty = true;
   stores.messageState.isStreamRunning = false;
   stores.messageState._streamEpoch = 0;
@@ -1413,6 +1415,7 @@ describe("useMessages.regenerate", () => {
     stores.profilesState.chatProfile = profile;
     stores.threadsState.threadId = "t1";
     stores.profilesState.extendedThinking = true;
+    stores.profilesState.reasoningLevel = "high";
     stores.serversState.tools = [{ name: "foo" }];
     stores.messageState.messages = [
       { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
@@ -1426,6 +1429,7 @@ describe("useMessages.regenerate", () => {
 
     const arg = apiAi.regenerateStream.mock.calls[0][0];
     expect(arg.actionArgs.isReasoning).toBe(true);
+    expect(arg.actionArgs.reasoningLevel).toBe("high");
     expect(arg.actionArgs.tools).toEqual([{ name: "foo" }]);
   });
 });

@@ -1,3 +1,7 @@
+import {
+  DEFAULT_REASONING_LEVEL,
+  type ReasoningLevel,
+} from "../../../shared/reasoning-level";
 import type { StorageAdapter } from "../../storage";
 import type { RouteSpec } from "../types";
 import type { PreferencesEngine } from "./engine";
@@ -32,6 +36,15 @@ export const DEFAULT_PREFERENCES_ROUTES: Record<
     path: "preferences/is-deep-mode-set",
     params: ["entityId"],
   },
+  getReasoningLevel: {
+    method: "GET",
+    path: "preferences/get-reasoning-level",
+    params: ["entityId"],
+  },
+  setReasoningLevel: {
+    method: "PUT",
+    path: "preferences/set-reasoning-level",
+  },
 };
 
 /** Dependencies injected into a {@link PreferencesEngine} instance. */
@@ -50,9 +63,15 @@ export type PreferencesEngineDeps = {
 export type PreferenceDefaults = {
   /** Default value of the deep-mode (extended-thinking) toggle. */
   deepMode: boolean;
+  /**
+   * Depth used while deep mode is on and no depth has been persisted —
+   * also what the legacy boolean toggle alone stands for.
+   */
+  reasoningLevel: Exclude<ReasoningLevel, "off">;
 };
 
 /** Built-in defaults — read by the engine when none are passed. */
 export const DEFAULT_PREFERENCES: PreferenceDefaults = {
   deepMode: false,
+  reasoningLevel: DEFAULT_REASONING_LEVEL,
 };

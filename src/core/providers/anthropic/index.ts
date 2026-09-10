@@ -4,6 +4,10 @@ import type { TErrorData } from "../../../shared/error-data";
 import logger from "../../../shared/logger";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import {
+  effectiveReasoningLevel,
+  resolveReasoningLevel,
+} from "../../../shared/reasoning-level";
 import type {
   SendMessageArgs,
   SendMessageResult,
@@ -13,6 +17,7 @@ import { AbstractBaseProvider } from "../base";
 import { extractErrorMessage, getErrorStatus, ProviderErrors } from "../errors";
 import { createAnthropicClient } from "./client";
 import { anthropicInfo } from "./info";
+import { getAnthropicReasoningSupport } from "./reasoning";
 import { convertMessages } from "./messages";
 import { listModels } from "./models";
 import {
@@ -32,8 +37,11 @@ class AnthropicProvider extends AbstractBaseProvider {
   }
 
   async *sendMessage(args: SendMessageArgs): AsyncGenerator<SendMessageResult> {
-    const { messages, model, systemPrompt, tools, withReasoning, signal } =
-      args;
+    const { messages, model, systemPrompt, tools, signal } = args;
+    const level = effectiveReasoningLevel(
+      resolveReasoningLevel(args),
+      getAnthropicReasoningSupport(model)
+    );
 
     try {
       const convertedTools = convertTools(tools ?? []);
@@ -45,11 +53,11 @@ class AnthropicProvider extends AbstractBaseProvider {
           system: systemPrompt,
           tools: convertedTools.length > 0 ? convertedTools : undefined,
           stream: true,
-          max_tokens: withReasoning ? THINKING_MAX_TOKENS : 30000,
+          max_tokens: level !== "off" ? THINKING_MAX_TOKENS : 30000,
           ...(convertedTools.length > 0 && {
             tool_choice: { disable_parallel_tool_use: true, type: "auto" },
           }),
-          ...resolveThinkingParam(model, withReasoning),
+          ...resolveThinkingParam(model, level),
         },
         { signal }
       );
@@ -66,16 +74,20 @@ class AnthropicProvider extends AbstractBaseProvider {
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
-    const { messages, model, systemPrompt, withReasoning, signal } = args;
+    const { messages, model, systemPrompt, signal } = args;
+    const level = effectiveReasoningLevel(
+      resolveReasoningLevel(args),
+      getAnthropicReasoningSupport(model)
+    );
     const response = await this.client.messages.create(
       {
         model,
         system: systemPrompt,
         messages: convertMessages(messages),
         // Thinking needs headroom above its own budget for the visible reply.
-        max_tokens: withReasoning ? THINKING_MAX_TOKENS : 4096,
+        max_tokens: level !== "off" ? THINKING_MAX_TOKENS : 4096,
         stream: false,
-        ...resolveThinkingParam(model, withReasoning),
+        ...resolveThinkingParam(model, level),
       },
       { signal }
     );

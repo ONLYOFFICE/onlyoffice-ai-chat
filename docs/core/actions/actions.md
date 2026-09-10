@@ -32,6 +32,7 @@ type ActionArgs = {
   messages: ThreadMessageLike[];
   tools?: TMCPItem[];
   isReasoning?: boolean;
+  reasoningLevel?: ReasoningLevel;
   signal?: AbortSignal;
   prompt?: SystemPromptOverride;
   toolInstructions?: Record<string, string>;
@@ -43,7 +44,8 @@ type ActionArgs = {
 | `profile`      | ✅        | [`providerFor`](#providerfor) — picks the provider class and supplies credentials + model. `canUseTool` toggles the [text-protocol fallback](#text-protocol-fallback-canusetool--false) |
 | `messages`     | ✅        | Forwarded to provider as the conversation history |
 | `tools`        |          | Forwarded to streaming actions only (`chat`, `custom`); ignored by sync actions |
-| `isReasoning`  |          | Forwarded as `withReasoning` to providers that opt in |
+| `isReasoning`  |          | Legacy on/off switch, forwarded as `withReasoning`; `true` means `"medium"` |
+| `reasoningLevel` |        | Extended-thinking depth (`"off"` … `"max"`), forwarded as `reasoningLevel`; wins over `isReasoning` when both are set |
 | `signal`       |          | `AbortSignal` for caller-driven cancellation |
 | `prompt`       |          | [`SystemPromptOverride`](#system-prompt-override) — replaces or appends to the action's baked-in prompt |
 | `toolInstructions` |      | [MCP server notes](#mcp-server-instructions) keyed by `serverType` — folded into the `chat` system prompt |
@@ -197,7 +199,7 @@ event.
 chat(args: ActionArgs): AsyncGenerator<SendMessageResult>;
 ```
 
-Forwards `tools`, `isReasoning` (as `withReasoning`), and `signal`
+Forwards `tools`, `isReasoning` (as `withReasoning`), `reasoningLevel`, and `signal`
 to the provider. Used by `AIEngine.sendWithStream` for full chat
 sessions and indirectly by `AIEngine.send({ actionType: "Chat" })`
 which drains the stream to its terminal message.
@@ -233,7 +235,7 @@ custom(args: CustomArgs): AsyncGenerator<SendMessageResult>;     // streaming
 customSync(args: CustomArgs): Promise<ThreadMessageLike>;        // one-shot
 ```
 
-The streaming variant forwards `tools`, `isReasoning` and `signal`
+The streaming variant forwards `tools`, `isReasoning`, `reasoningLevel` and `signal`
 the same way `chat` does. The sync variant trims the same surface
 to the `sendMessageSync` shape: no tools, no reasoning, just a
 plain string round-trip.
@@ -419,7 +421,7 @@ export const summarize = async (
 
 Streaming actions (`chat`, `custom`) follow the same skeleton but
 return / yield from `sendMessage` instead, and forward `tools` /
-`withReasoning` to the provider.
+`withReasoning` (and `reasoningLevel` as `reasoningLevel`) to the provider.
 
 ---
 

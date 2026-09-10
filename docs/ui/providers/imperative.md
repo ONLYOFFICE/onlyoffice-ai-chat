@@ -81,7 +81,7 @@ re-read and re-render and emit the matching `ChatCallbacks` event.
 | `updateModelAssignment` | `() => void` | Re-read every task slot. Emits `onModelAssignmentUpdated` per changed slot. |
 | `updateMCPServer` | `() => Promise<void>` | Re-read MCP config and rebuild the tool list. Emits `onServersUpdated`. |
 | `updateWebSearch` | `() => void` | Re-read the web-search config. Emits `onWebSearchUpdated`. |
-| `updateExtendedThinking` | `() => void` | Re-read the deep-mode flag. Emits `onExtendedThinkingUpdated`. |
+| `updateExtendedThinking` | `() => void` | Re-read the extended-thinking level (deep mode + depth). Emits `onExtendedThinkingUpdated` on change. |
 | `updateSystemPromptAppendix` | `() => void` | Re-read the appendix and re-apply. Emits `onSystemPromptAppendixUpdated` if changed. |
 
 `update*` methods are unnecessary when the change went through the

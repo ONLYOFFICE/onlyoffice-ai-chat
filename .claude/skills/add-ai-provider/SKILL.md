@@ -27,12 +27,13 @@ subclass when the wire format genuinely differs (see `anthropic/`,
 ```
 core/providers/<type>/
   info.ts       # export const <name>Info = { name, baseUrl }
+  reasoning.ts  # export const get<Name>ReasoningSupport = (model) => ReasoningSupport — SDK-free
   index.ts      # the class; named export at the bottom
   models.ts     # export const listModels = (creds) => Promise<Model[]>
   tests/        # one test file per module
 ```
 
-**`info.ts` must never import a vendor SDK.** The registry pulls every
+**`info.ts` and `reasoning.ts` must never import a vendor SDK.** The registry pulls every
 `*Info` module eagerly so the UI can render provider names and base URLs
 synchronously. An SDK import there bundles that SDK for every consumer
 and breaks hosts that installed only the one optional peer they use.
@@ -46,7 +47,8 @@ of them is caught by a compile error except the first two:
 | File | What to add |
 | --- | --- |
 | `src/shared/builtin-provider-type.ts` | the type string in the union |
-| `src/core/providers/registry.ts` | an entry in **both** `builtinMetadata` and `builtinLoaders`, in the same relative order (`getSupportedProviderTypes` relies on it) |
+| `src/core/providers/registry.ts` | an entry in **both** `builtinMetadata` and `builtinLoaders`, in the same relative order (`getSupportedProviderTypes` relies on it), plus one in `builtinReasoning` pointing at the folder's `reasoning.ts` (reuse `getOpenAIReasoningSupport` for an OpenAI-compatible backend) |
+| `docs/core/providers/built-in.md` | a row in the "Extended thinking depth" table if the vendor's knob differs from the parent's |
 | `src/shared/images.ts` | `<type>: "<icon_key>"` mapping |
 | `src/shared/api-key-links.ts` | the vendor's API-key page URL |
 | `src/assets/providers/light/` + `dark/` | `<icon_key>_light.png` / `_dark.png` — **no codegen step**, see below |

@@ -11,6 +11,11 @@ export type DropdownMenuProps = {
   alignOffset?: number;
   contentClassName?: string;
   maxWidth?: number | string;
+  /**
+   * Height cap for the content; defaults to `min(14rem, available height)`.
+   * A drilled-in level takes its parent row's `subMenuMaxHeight` when set.
+   */
+  maxHeight?: number | string;
   matchTriggerWidth?: boolean;
   open?: boolean;
   dropdownRef?: React.RefObject<HTMLDivElement | null>;

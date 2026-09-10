@@ -29,4 +29,33 @@ describe("onlyoffice/models/listModels", () => {
       );
     }
   });
+
+  it("reads OpenRouter's reasoning object off each entry", async () => {
+    modelsListMock.mockResolvedValueOnce({
+      data: [
+        {
+          id: "anthropic/claude-sonnet-5",
+          reasoning: {
+            mandatory: false,
+            supported_efforts: ["max", "high", "medium", "low"],
+            default_effort: "high",
+          },
+        },
+        { id: "openai/gpt-4o", reasoning: null },
+        { id: "legacy" },
+      ],
+    });
+    const out = await listModels({ baseUrl: "https://internal", apiKey: "k" });
+    expect(out[0].reasoning).toBe(true);
+    expect(out[0].reasoningSupport).toEqual({
+      thinks: true,
+      canDisable: true,
+      depths: ["low", "medium", "high", "max"],
+      defaultDepth: "high",
+    });
+    expect(out[1].reasoning).toBe(false);
+    expect(out[1].reasoningSupport?.thinks).toBe(false);
+    expect(out[2].reasoning).toBeUndefined();
+    expect(out[2].reasoningSupport).toBeUndefined();
+  });
 });

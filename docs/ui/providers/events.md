@@ -74,7 +74,7 @@ domain.
 | `onModelAssignmentUpdated` | `ModelAssignmentUpdatedEvent` | `task` ∈ `{default, chat, code, summarization, translation, textAnalysis, imageGeneration, ocr, vision}` |
 | `onServersUpdated` | `ServersUpdatedEvent` | `"config-saved"`, `"server-deleted"`, `"tool-toggled"`, `"tool-auto-approve-changed"` |
 | `onWebSearchUpdated` | `WebSearchUpdatedEvent` | — (carries `enabled`, `provider`, `isCloudProvider`) |
-| `onExtendedThinkingUpdated` | `ExtendedThinkingUpdatedEvent` | — (carries `enabled`) |
+| `onExtendedThinkingUpdated` | `ExtendedThinkingUpdatedEvent` | — (carries `enabled` and the `level` now in effect) |
 | `onSystemPromptAppendixUpdated` | `SystemPromptAppendixUpdatedEvent` | — (carries `appendix`) |
 
 ### Errors (1)

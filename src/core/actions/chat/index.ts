@@ -41,6 +41,7 @@ export async function* chat(
     systemPrompt: baseSystem,
     tools: args.tools ? augmentToolsWithIntent(args.tools) : args.tools,
     withReasoning: args.isReasoning,
+    reasoningLevel: args.reasoningLevel,
     useResponsesApi: args.profile.useResponsesApi === true,
     signal: args.signal,
   });

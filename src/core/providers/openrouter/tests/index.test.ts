@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { openrouterInfo } from "../info";
 import { OpenRouterProvider } from "../index";
+import type { ReasoningLevel } from "../../../../shared/reasoning-level";
 
 const { chatCreateMock, responsesCreateMock } = vi.hoisted(() => ({
   chatCreateMock: vi.fn(),
@@ -61,7 +62,7 @@ describe("OpenRouterProvider", () => {
     // OpenRouter reads its own unified `reasoning` object; `reasoning_effort`
     // leaves the Anthropic route with thinking off, which is what made a
     // Sonnet round come back with no thinking block at all.
-    const fieldsOf = (model: string, withReasoning?: boolean) => {
+    const fieldsOf = (model: string, level: ReasoningLevel) => {
       const provider = new OpenRouterProvider({
         baseUrl: "https://openrouter.ai/api/v1",
         apiKey: "sk",
@@ -70,33 +71,56 @@ describe("OpenRouterProvider", () => {
         provider as unknown as {
           reasoningRequestFields: (
             model: string,
-            withReasoning?: boolean
+            level: ReasoningLevel
           ) => Record<string, unknown>;
         }
-      ).reasoningRequestFields(model, withReasoning);
+      ).reasoningRequestFields(model, level);
     };
 
     it("asks for thinking through the unified `reasoning` object", () => {
-      expect(fieldsOf("anthropic/claude-sonnet-4.5", true)).toEqual({
+      expect(fieldsOf("anthropic/claude-sonnet-4.5", "medium")).toEqual({
         reasoning: { effort: "medium" },
       });
     });
 
     it("disables thinking explicitly with effort=none when off", () => {
-      // Omitting the field is not enough: Claude 4.6+ on OpenRouter thinks
-      // by default (adaptive thinking), so "off" has to be spelled out.
-      expect(fieldsOf("anthropic/claude-sonnet-4.5", false)).toEqual({
+      // Omitting the field is not enough: reasoning-by-default models keep
+      // thinking when nothing says otherwise, so "off" has to be spelled out.
+      expect(fieldsOf("openai/gpt-5.1", "off")).toEqual({
         reasoning: { effort: "none" },
       });
-      expect(fieldsOf("openai/gpt-5.1", false)).toEqual({
+      expect(fieldsOf("google/gemini-3-pro-preview", "off")).toEqual({
         reasoning: { effort: "none" },
       });
     });
 
+    it("disables thinking with effort=none on the Anthropic route too", () => {
+      // OpenRouter turns `none` into Anthropic's `thinking: disabled`.
+      expect(fieldsOf("anthropic/claude-sonnet-4.5", "off")).toEqual({
+        reasoning: { effort: "none" },
+      });
+      expect(fieldsOf("anthropic/claude-sonnet-5", "off")).toEqual({
+        reasoning: { effort: "none" },
+      });
+    });
+
+    it("maps every level onto the unified effort scale", () => {
+      expect(fieldsOf("openai/gpt-5.2", "low")).toEqual({
+        reasoning: { effort: "low" },
+      });
+      expect(fieldsOf("openai/gpt-5.2", "high")).toEqual({
+        reasoning: { effort: "high" },
+      });
+      // OpenRouter clamps xhigh to what the routed model accepts.
+      expect(fieldsOf("anthropic/claude-opus-4.5", "max")).toEqual({
+        reasoning: { effort: "xhigh" },
+      });
+    });
+
     it("never sends the OpenAI spelling", () => {
-      expect(fieldsOf("anthropic/claude-sonnet-4.5", true)).not.toHaveProperty(
-        "reasoning_effort"
-      );
+      expect(
+        fieldsOf("anthropic/claude-sonnet-4.5", "medium")
+      ).not.toHaveProperty("reasoning_effort");
     });
   });
 
@@ -123,7 +147,7 @@ describe("OpenRouterProvider", () => {
       await drain(
         provider().sendMessage({
           messages: [],
-          model: "anthropic/claude-sonnet-5",
+          model: "openai/gpt-5.2",
           systemPrompt: "",
           useResponsesApi: true,
           withReasoning: false,
@@ -141,7 +165,7 @@ describe("OpenRouterProvider", () => {
       });
       await provider().sendMessageSync({
         messages: [{ role: "user", content: "q" }],
-        model: "anthropic/claude-sonnet-5",
+        model: "openai/gpt-5.2",
         systemPrompt: "s",
         useResponsesApi: true,
         withReasoning: false,

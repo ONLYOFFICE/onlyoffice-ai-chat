@@ -30,5 +30,21 @@ export function createPreferencesApi(
       callRoute(config, "preferences", "clearDeepMode", [entityId], engines),
     isDeepModeSet: (entityId) =>
       callRoute(config, "preferences", "isDeepModeSet", [entityId], engines),
+    getReasoningLevel: (entityId) =>
+      callRoute(
+        config,
+        "preferences",
+        "getReasoningLevel",
+        [entityId],
+        engines
+      ),
+    setReasoningLevel: (value, entityId) =>
+      callRoute(
+        config,
+        "preferences",
+        "setReasoningLevel",
+        [value, entityId],
+        engines
+      ),
   };
 }

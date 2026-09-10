@@ -73,6 +73,7 @@ export const generateImage = async (
     systemPrompt: resolveSystemPrompt(systemPrompt, args.prompt),
     useResponsesApi: args.profile.useResponsesApi === true,
     withReasoning: args.isReasoning,
+    reasoningLevel: args.reasoningLevel,
     signal: args.signal,
   });
   return { role: "assistant", content: [{ type: "text", text }] };

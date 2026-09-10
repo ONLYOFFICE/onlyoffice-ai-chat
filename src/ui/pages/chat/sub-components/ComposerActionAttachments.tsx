@@ -8,6 +8,7 @@ import { getFileIconName, isSpreadsheet } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 import logger from "../../../../shared/logger";
+import { useEffortMenuItem } from "./effort-menu";
 
 // Mirrored from `ComposerActionServers.tsx`. The engine resolves these
 // on the fly per-request, so they never appear in the UI's `servers`
@@ -32,8 +33,7 @@ const ComposerActionAttachment = () => {
   const imageInputRef = React.useRef<HTMLInputElement>(null);
   const platform = usePlatform();
   const { eventBus } = useToolsContext();
-  const { useAttachmentsStore, useServersStore, useProfilesStore } =
-    useStores();
+  const { useAttachmentsStore, useServersStore } = useStores();
 
   const addAttachmentFile = useAttachmentsStore((s) => s.addAttachmentFile);
   const addAttachmentImage = useAttachmentsStore((s) => s.addAttachmentImage);
@@ -51,10 +51,7 @@ const ComposerActionAttachment = () => {
   const webSearchActive =
     webSearchEnabled &&
     WEB_SEARCH_TOOL_NAMES.some((n) => !webSearchDisabledNames.includes(n));
-  const extendedThinking = useProfilesStore((s) => s.extendedThinking);
-  const toggleExtendedThinking = useProfilesStore(
-    (s) => s.toggleExtendedThinking
-  );
+  const effortItem = useEffortMenuItem();
   const { composerActions, addLocalImageEnabled } = useWidgetConfig();
 
   const onOpenChange = (open: boolean) => {
@@ -291,24 +288,7 @@ const ComposerActionAttachment = () => {
     },
   });
 
-  items.push({
-    text: t("ExtendedThinking"),
-    icon: (
-      <IconButton iconName="btn-extended-thinking" size={24} disableHover />
-    ),
-    onClick: () => {
-      // ignore
-    },
-    withToggle: true,
-    toggleChecked: extendedThinking,
-    onToggleChange: toggleExtendedThinking,
-    withAbout: true,
-    aboutContent: (
-      <p className="p-[16px] leading-[var(--lh-16)] text-[var(--text-secondary)]">
-        {t("ExtendedThinkingDescription")}
-      </p>
-    ),
-  });
+  if (effortItem) items.push(effortItem);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;

@@ -2,6 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { anthropicInfo } from "../info";
 import { AnthropicProvider } from "../index";
+import type { ReasoningLevel } from "../../../../shared/reasoning-level";
 
 const { messagesCreateMock, modelsListMock } = vi.hoisted(() => ({
   messagesCreateMock: vi.fn(),
@@ -155,10 +156,125 @@ describe("AnthropicProvider", () => {
       });
 
       it("never tries to switch Fable / Mythos, which reject both switches", async () => {
-        expect(await thinkingFor("claude-fable-5-1", false)).toBe(undefined);
-        expect(await thinkingFor("claude-mythos-5-1", false)).toBe(undefined);
+        // Off has no switch there: adaptive thinking at the standard depth.
+        expect(await thinkingFor("claude-fable-5-1", false)).toEqual({
+          type: "adaptive",
+        });
+        expect(await thinkingFor("claude-mythos-5-1", false)).toEqual({
+          type: "adaptive",
+        });
         expect(await thinkingFor("claude-fable-5-1", true)).toEqual({
           type: "adaptive",
+        });
+      });
+    });
+
+    describe("thinking depth", () => {
+      const fieldsFor = async (
+        model: string,
+        reasoningLevel: ReasoningLevel
+      ) => {
+        messagesCreateMock.mockResolvedValueOnce(
+          iter([makeEv({ type: "message_stop" })])
+        );
+        const p = new AnthropicProvider({
+          baseUrl: "https://api.anthropic.com",
+          apiKey: "sk",
+        });
+        await drain(
+          p.sendMessage({
+            messages: [],
+            model,
+            systemPrompt: "",
+            reasoningLevel,
+          })
+        );
+        const body = messagesCreateMock.mock.calls.at(-1)?.[0] as Record<
+          string,
+          unknown
+        >;
+        return { thinking: body.thinking, output_config: body.output_config };
+      };
+      const maxTokensFor = async (
+        args: { reasoningLevel?: ReasoningLevel; withReasoning?: boolean },
+        model = "claude-sonnet-4-5-20250929"
+      ) => {
+        messagesCreateMock.mockResolvedValueOnce(
+          iter([makeEv({ type: "message_stop" })])
+        );
+        const p = new AnthropicProvider({
+          baseUrl: "https://api.anthropic.com",
+          apiKey: "sk",
+        });
+        await drain(
+          p.sendMessage({ messages: [], model, systemPrompt: "", ...args })
+        );
+        return (
+          messagesCreateMock.mock.calls.at(-1)?.[0] as { max_tokens: number }
+        ).max_tokens;
+      };
+
+      it("keys max_tokens on the effective level, not the legacy boolean", async () => {
+        expect(await maxTokensFor({ reasoningLevel: "high" })).toBe(32000);
+        expect(
+          await maxTokensFor({ reasoningLevel: "off", withReasoning: true })
+        ).toBe(30000);
+        // Fable still thinks with the toggle off, so it keeps the headroom.
+        expect(
+          await maxTokensFor({ reasoningLevel: "off" }, "claude-fable-5-1")
+        ).toBe(32000);
+      });
+
+      it("sends output_config.effort alongside adaptive thinking on 4.6+", async () => {
+        expect(await fieldsFor("claude-sonnet-4-6", "low")).toEqual({
+          thinking: { type: "adaptive" },
+          output_config: { effort: "low" },
+        });
+        expect(await fieldsFor("claude-opus-5", "max")).toEqual({
+          thinking: { type: "adaptive" },
+          output_config: { effort: "max" },
+        });
+        expect(await fieldsFor("claude-fable-5-1", "high")).toEqual({
+          thinking: { type: "adaptive" },
+          output_config: { effort: "high" },
+        });
+        // Fable cannot stop: a stored off is the standard depth.
+        expect(await fieldsFor("claude-fable-5-1", "off")).toEqual({
+          thinking: { type: "adaptive" },
+          output_config: { effort: "medium" },
+        });
+      });
+
+      it("scales the manual budget on 4.5 and earlier, never sending effort", async () => {
+        expect(await fieldsFor("claude-sonnet-4-5-20250929", "low")).toEqual({
+          thinking: { type: "enabled", budget_tokens: 4000 },
+          output_config: undefined,
+        });
+        expect(await fieldsFor("claude-opus-4-1", "max")).toEqual({
+          thinking: { type: "enabled", budget_tokens: 28000 },
+          output_config: undefined,
+        });
+      });
+
+      it("prefers the level over the legacy boolean when both are set", async () => {
+        messagesCreateMock.mockResolvedValueOnce(
+          iter([makeEv({ type: "message_stop" })])
+        );
+        const p = new AnthropicProvider({
+          baseUrl: "https://api.anthropic.com",
+          apiKey: "sk",
+        });
+        await drain(
+          p.sendMessage({
+            messages: [],
+            model: "claude-sonnet-5",
+            systemPrompt: "",
+            withReasoning: true,
+            reasoningLevel: "off",
+          })
+        );
+        expect(messagesCreateMock.mock.calls.at(-1)?.[0]?.thinking).toEqual({
+          type: "disabled",
         });
       });
     });

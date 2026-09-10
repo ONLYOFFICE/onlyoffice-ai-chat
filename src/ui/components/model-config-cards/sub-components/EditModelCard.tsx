@@ -117,6 +117,9 @@ export const EditModelCard = ({
         key: values.apiKey || undefined,
         modelId: values.model,
         capabilities: selectedModel?.capabilities ?? profile.capabilities,
+        reasoning: selectedModel?.reasoning ?? profile.reasoning,
+        reasoningSupport:
+          selectedModel?.reasoningSupport ?? profile.reasoningSupport,
         isCloudProvider: values.isCloudProvider,
       });
     } catch (e) {

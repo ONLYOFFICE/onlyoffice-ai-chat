@@ -290,4 +290,32 @@ describe("MistralProvider", () => {
       expect(out[0].id).toBe("mistral-large");
     });
   });
+
+  describe("reasoning level", () => {
+    it("swaps to Magistral for any depth and lets the level win over the boolean", async () => {
+      chatCompleteMock.mockResolvedValue({
+        choices: [{ message: { content: "answer" } }],
+      });
+      const p = new MistralProvider({ baseUrl: "https://api.mistral.ai" });
+      await p.sendMessageSync({
+        messages: [],
+        model: "mistral-large",
+        systemPrompt: "",
+        reasoningLevel: "low",
+      });
+      expect(chatCompleteMock.mock.calls.at(-1)?.[0]?.model).toBe(
+        "magistral-medium-latest"
+      );
+      await p.sendMessageSync({
+        messages: [],
+        model: "mistral-large",
+        systemPrompt: "",
+        withReasoning: true,
+        reasoningLevel: "off",
+      });
+      expect(chatCompleteMock.mock.calls.at(-1)?.[0]?.model).toBe(
+        "mistral-large"
+      );
+    });
+  });
 });

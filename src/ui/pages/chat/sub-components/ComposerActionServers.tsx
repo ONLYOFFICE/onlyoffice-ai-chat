@@ -3,6 +3,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { useStores } from "../../../store/context";
 import { useToolsContext } from "../../../tools/context";
+import { useEffortMenuItem } from "./effort-menu";
 
 // Built-in web-search tool names — kept in sync with
 // `getWebSearchTools` in `core/services/web-search/source.ts`. The
@@ -14,16 +15,13 @@ const WEB_SEARCH_TOOL_NAMES = ["web_search", "web_crawling"];
 
 const ServersSettings = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
-  const { useServersStore, useProfilesStore } = useStores();
+  const { useServersStore } = useStores();
   const { eventBus } = useToolsContext();
   const servers = useServersStore((s) => s.servers);
   const changeToolStatus = useServersStore((s) => s.changeToolStatus);
   const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
   const disabledTools = useServersStore((s) => s.disabledTools);
-  const extendedThinking = useProfilesStore((s) => s.extendedThinking);
-  const toggleExtendedThinking = useProfilesStore(
-    (s) => s.toggleExtendedThinking
-  );
+  const effortItem = useEffortMenuItem();
 
   const webSearchDisabledNames = disabledTools[WEB_SEARCH_TYPE] ?? [];
   const webSearchActive =
@@ -72,24 +70,7 @@ const ServersSettings = () => {
           eventBus.emit("tools-changed");
         },
       },
-      {
-        text: t("ExtendedThinking"),
-        icon: (
-          <IconButton iconName="btn-extended-thinking" size={24} disableHover />
-        ),
-        onClick: () => {
-          // ignore
-        },
-        withToggle: true,
-        toggleChecked: extendedThinking,
-        onToggleChange: toggleExtendedThinking,
-        withAbout: true,
-        aboutContent: (
-          <p className="p-[16px] leading-[var(--lh-16)] text-[var(--text-secondary)]">
-            {t("ExtendedThinkingDescription")}
-          </p>
-        ),
-      },
+      ...(effortItem ? [effortItem] : []),
       {
         text: "",
         onClick: () => {
@@ -165,8 +146,7 @@ const ServersSettings = () => {
       t,
       webSearchEnabled,
       webSearchActive,
-      toggleExtendedThinking,
-      extendedThinking,
+      effortItem,
       eventBus,
       IconButton,
     ]

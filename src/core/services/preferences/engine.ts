@@ -1,3 +1,4 @@
+import type { ReasoningLevel } from "../../../shared/reasoning-level";
 import {
   DEFAULT_PREFERENCES,
   type PreferenceDefaults,
@@ -72,5 +73,44 @@ export class PreferencesEngine {
   async isDeepModeSet(entityId?: string): Promise<boolean> {
     const stored = await this.deps.storage.preferences.readDeepMode(entityId);
     return stored !== null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reasoning level (extended thinking depth)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * The effective extended-thinking depth in scope.
+   *
+   * Deep mode stays the master switch: off means `"off"` whatever depth was
+   * persisted, so a host that only knows the boolean (an older settings
+   * page, a server without the depth route) keeps full control. While on,
+   * the persisted depth is returned, falling back to the configured default
+   * when none was stored or the adapter predates the depth methods.
+   */
+  async getReasoningLevel(entityId?: string): Promise<ReasoningLevel> {
+    if (!(await this.getDeepMode(entityId))) return "off";
+    const stored =
+      (await this.deps.storage.preferences.readReasoningLevel?.(entityId)) ??
+      null;
+    return stored !== null && stored !== "off"
+      ? stored
+      : this.defaults.reasoningLevel;
+  }
+
+  /**
+   * Persist a depth in scope. Writes the deep-mode toggle first so the two
+   * never disagree, then the depth itself — only when it is a real depth:
+   * `"off"` leaves the previously chosen depth in place, so switching back
+   * on restores it. Silently skips the depth on adapters without the
+   * optional methods; the toggle still lands.
+   */
+  async setReasoningLevel(
+    value: ReasoningLevel,
+    entityId?: string
+  ): Promise<void> {
+    await this.setDeepMode(value !== "off", entityId);
+    if (value === "off") return;
+    await this.deps.storage.preferences.upsertReasoningLevel?.(value, entityId);
   }
 }

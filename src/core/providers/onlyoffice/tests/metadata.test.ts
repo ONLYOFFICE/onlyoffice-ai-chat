@@ -55,15 +55,18 @@ describe("OnlyOfficeProvider request metadata", () => {
     expect(body(chatCreate).metadata).toEqual(METADATA);
   });
 
-  it("sends metadata on the streaming Responses request", async () => {
-    responsesCreate.mockResolvedValueOnce(emptyStream());
+  it("sends metadata on chat completions even for a profile probed onto Responses", async () => {
+    // The route stays on /chat/completions like OpenRouter; the flag stored
+    // on the profile by an earlier build is ignored.
+    chatCreate.mockResolvedValueOnce(emptyStream());
     await drain(
       new OnlyOfficeProvider(CREDS).sendMessage({
         ...chatArgs,
         useResponsesApi: true,
       })
     );
-    expect(body(responsesCreate).metadata).toEqual(METADATA);
+    expect(responsesCreate).not.toHaveBeenCalled();
+    expect(body(chatCreate).metadata).toEqual(METADATA);
   });
 
   it("sends metadata on a one-shot chat request", async () => {
@@ -74,13 +77,16 @@ describe("OnlyOfficeProvider request metadata", () => {
     expect(body(chatCreate).metadata).toEqual(METADATA);
   });
 
-  it("sends metadata on a one-shot Responses request", async () => {
-    responsesCreate.mockResolvedValueOnce({ output_text: "out" });
+  it("sends metadata on a one-shot request even for a profile probed onto Responses", async () => {
+    chatCreate.mockResolvedValueOnce({
+      choices: [{ message: { content: "out" } }],
+    });
     await new OnlyOfficeProvider(CREDS).sendMessageSync({
       ...chatArgs,
       useResponsesApi: true,
     });
-    expect(body(responsesCreate).metadata).toEqual(METADATA);
+    expect(responsesCreate).not.toHaveBeenCalled();
+    expect(body(chatCreate).metadata).toEqual(METADATA);
   });
 
   it("sends metadata on an image-generation request", async () => {

@@ -1,5 +1,10 @@
 import type { ProviderCredentials } from "../../shared/provider-credentials";
 import type { ProviderType } from "../../shared/provider-type";
+import {
+  FULL_REASONING_SUPPORT,
+  NO_REASONING_SUPPORT,
+  type ReasoningSupport,
+} from "../../shared/reasoning-level";
 
 import type { AbstractBaseProvider, ProviderConstructor } from "./base";
 
@@ -23,6 +28,18 @@ import { stabilityaiInfo } from "./stabilityai/info";
 import { togetherInfo } from "./together/info";
 import { xaiInfo } from "./xai/info";
 import { zhipuInfo } from "./zhipu/info";
+
+// SDK-free per-model reasoning tables, eager for the same reason as the
+// `*Info` modules: the composer reads them synchronously while rendering.
+import { getAnthropicReasoningSupport } from "./anthropic/reasoning";
+import { getDeepSeekReasoningSupport } from "./deepseek/reasoning";
+import { getGenAIReasoningSupport } from "./genai/reasoning";
+import { getGroqReasoningSupport } from "./groq/reasoning";
+import { getMistralReasoningSupport } from "./mistral/reasoning";
+import { getOpenAIReasoningSupport } from "./openai/reasoning";
+import { getOpenRouterReasoningSupport } from "./openrouter/reasoning";
+import { getXAIReasoningSupport } from "./xai/reasoning";
+import { getZhipuReasoningSupport } from "./zhipu/reasoning";
 
 /**
  * Any provider class — built-in or custom — that satisfies the static
@@ -69,6 +86,32 @@ const builtinMetadata: Partial<Record<ProviderType, ProviderMetadata>> = {
 };
 
 type ProviderLoader = () => Promise<ProviderConstructor>;
+
+// The OpenAI-compatible backends serve whatever model ids their users pull,
+// so they share OpenAI's table (known OpenAI ids exact, everything else the
+// generic low / medium / high). ONLYOFFICE proxies OpenRouter one-to-one and
+// shares its table. `external` is resolved by the caller through
+// `Profile.basedOn`; Stability AI only generates images.
+const builtinReasoning: Partial<
+  Record<ProviderType, (model: string) => ReasoningSupport>
+> = {
+  openai: getOpenAIReasoningSupport,
+  genai: getGenAIReasoningSupport,
+  anthropic: getAnthropicReasoningSupport,
+  xai: getXAIReasoningSupport,
+  stabilityai: () => NO_REASONING_SUPPORT,
+  deepseek: getDeepSeekReasoningSupport,
+  mistral: getMistralReasoningSupport,
+  together: getOpenAIReasoningSupport,
+  groq: getGroqReasoningSupport,
+  openrouter: getOpenRouterReasoningSupport,
+  ollama: getOpenAIReasoningSupport,
+  "lm-studio": getOpenAIReasoningSupport,
+  zhipu: getZhipuReasoningSupport,
+  gpt4all: getOpenAIReasoningSupport,
+  openaicompatible: getOpenAIReasoningSupport,
+  onlyoffice: getOpenRouterReasoningSupport,
+};
 
 // Lazy class loaders — each vendor SDK is imported only when its provider is
 // actually instantiated, so a consumer that uses one provider no longer
@@ -135,6 +178,25 @@ export const getProviderMetadata = (
   const custom = customProviders.get(type);
   if (custom) return { name: custom.getName(), baseUrl: custom.getBaseUrl() };
   return undefined;
+};
+
+/**
+ * Synchronously describe what a model can do with extended thinking, without
+ * importing the provider's SDK. Built-ins answer from their eager tables;
+ * a custom provider through its optional static `getReasoningSupport`.
+ * Unknown types, and custom providers without the static, are assumed to
+ * think at every depth with an off switch — the widget's historical
+ * behaviour. For an `external` profile pass `Profile.basedOn` as the type.
+ */
+export const getReasoningSupport = (
+  type: string,
+  model: string
+): ReasoningSupport => {
+  const custom = customProviders.get(type);
+  if (custom)
+    return custom.getReasoningSupport?.(model) ?? FULL_REASONING_SUPPORT;
+  const builtin = builtinReasoning[type as ProviderType];
+  return builtin ? builtin(model) : FULL_REASONING_SUPPORT;
 };
 
 /** Display name for a provider type, falling back to the raw type string. */

@@ -1,3 +1,5 @@
+import type { ReasoningSupport } from "./shared/reasoning-level";
+
 /**
  * Descriptor for a tool exposed by an MCP server.
  *
@@ -153,6 +155,14 @@ export type Model = {
 
   /** Whether this model supports extended thinking / chain-of-thought reasoning. */
   reasoning?: boolean;
+
+  /**
+   * What the model can do with extended thinking, when the provider's
+   * catalogue says so (OpenRouter and the ONLYOFFICE route report a
+   * per-model `reasoning` object). Copied onto the profile at save time;
+   * absent, the widget falls back to the provider's id-based table.
+   */
+  reasoningSupport?: ReasoningSupport;
 
   /**
    * Bitmask of model capabilities (Chat, Image, Vision, Tools, etc.).
@@ -383,6 +393,14 @@ export type Profile = {
 
   /** Whether extended thinking is enabled for this profile's model. */
   reasoning?: boolean;
+
+  /**
+   * Extended-thinking capabilities of the selected model as reported by
+   * the provider's catalogue at save time (see {@link Model.reasoningSupport}).
+   * When present the composer's Effort row follows it exactly; when absent
+   * the provider's id-based table answers.
+   */
+  reasoningSupport?: ReasoningSupport;
 
   /** Bitmask of capabilities supported by the selected model. */
   capabilities?: number;

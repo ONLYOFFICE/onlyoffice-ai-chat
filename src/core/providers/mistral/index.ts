@@ -5,6 +5,7 @@ import type { TErrorData } from "../../../shared/error-data";
 import logger from "../../../shared/logger";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import { resolveReasoningLevel } from "../../../shared/reasoning-level";
 import type {
   SendMessageArgs,
   SendMessageResult,
@@ -32,14 +33,15 @@ class MistralProvider extends AbstractBaseProvider {
   }
 
   async *sendMessage(args: SendMessageArgs): AsyncGenerator<SendMessageResult> {
-    const { messages, model, systemPrompt, tools, withReasoning, signal } =
-      args;
+    const { messages, model, systemPrompt, tools, signal } = args;
 
     try {
       const convertedTools = convertTools(tools ?? []);
-      const effectiveModel = withReasoning
-        ? resolveReasoningModel(model)
-        : model;
+      // Magistral has no depth knob, so any level above off means the swap.
+      const effectiveModel =
+        resolveReasoningLevel(args) !== "off"
+          ? resolveReasoningModel(model)
+          : model;
 
       const stream = await this.client.chat.stream({
         model: effectiveModel,
@@ -64,9 +66,12 @@ class MistralProvider extends AbstractBaseProvider {
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
-    const { messages, model, systemPrompt, withReasoning } = args;
+    const { messages, model, systemPrompt } = args;
     const response = await this.client.chat.complete({
-      model: withReasoning ? resolveReasoningModel(model) : model,
+      model:
+        resolveReasoningLevel(args) !== "off"
+          ? resolveReasoningModel(model)
+          : model,
       messages: [
         { role: "system", content: systemPrompt },
         ...convertMessages(messages),

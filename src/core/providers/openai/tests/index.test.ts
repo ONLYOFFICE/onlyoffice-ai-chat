@@ -594,4 +594,90 @@ describe("OpenAIProvider", () => {
       expect(models[0]).toMatchObject({ id: "gpt-4o", provider: "openai" });
     });
   });
+
+  describe("reasoning level on every transport", () => {
+    async function* responsesIter(events: unknown[]) {
+      for (const e of events) yield e;
+    }
+    const minimalCompletion = () => ({
+      type: "response.completed",
+      sequence_number: 1,
+      response: {},
+    });
+
+    it("chat completions: the level wins over the boolean and max maps per model", async () => {
+      chatCreateMock.mockResolvedValue(createMockStream([createFinishChunk()]));
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-5.5",
+          systemPrompt: "s",
+          reasoningLevel: "max",
+        })
+      );
+      expect(chatCreateMock.mock.calls.at(-1)?.[0]?.reasoning_effort).toBe(
+        "max"
+      );
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-5.5",
+          systemPrompt: "s",
+          withReasoning: true,
+          reasoningLevel: "off",
+        })
+      );
+      expect(chatCreateMock.mock.calls.at(-1)?.[0]?.reasoning_effort).toBe(
+        "none"
+      );
+    });
+
+    it("responses API, streaming and one-shot", async () => {
+      responsesCreateMock.mockResolvedValueOnce(
+        responsesIter([minimalCompletion()])
+      );
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await drain(
+        p.sendMessage({
+          messages: [],
+          model: "gpt-5.2",
+          systemPrompt: "s",
+          useResponsesApi: true,
+          reasoningLevel: "max",
+        })
+      );
+      expect(responsesCreateMock.mock.calls.at(-1)?.[0]?.reasoning).toEqual({
+        effort: "xhigh",
+        summary: "auto",
+      });
+      responsesCreateMock.mockResolvedValueOnce({ output_text: "t" });
+      await p.sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "gpt-5.2",
+        systemPrompt: "s",
+        useResponsesApi: true,
+        reasoningLevel: "low",
+      });
+      expect(responsesCreateMock.mock.calls.at(-1)?.[0]?.reasoning).toEqual({
+        effort: "low",
+      });
+    });
+
+    it("one-shot chat completions", async () => {
+      chatCreateMock.mockResolvedValueOnce({
+        choices: [{ message: { content: "answer" } }],
+      });
+      const p = new OpenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+      await p.sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "o3",
+        systemPrompt: "s",
+        reasoningLevel: "high",
+      });
+      expect(chatCreateMock.mock.calls.at(-1)?.[0]?.reasoning_effort).toBe(
+        "high"
+      );
+    });
+  });
 });

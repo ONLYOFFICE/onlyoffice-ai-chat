@@ -4,6 +4,10 @@ import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
 import { ProviderErrors } from "../errors";
 import { openrouterInfo } from "./info";
+import {
+  reasoningSupportFromCatalog,
+  type OpenRouterReasoningMeta,
+} from "./reasoning";
 
 /** Shape of one entry in OpenRouter's `/models` response. */
 type OpenRouterModel = {
@@ -20,6 +24,11 @@ type OpenRouterModel = {
    * `"tools"` here is authoritative, its absence means no tool support.
    */
   supported_parameters?: string[];
+  /**
+   * Per-model thinking capabilities; `null` on models without thinking.
+   * Absent on older catalogues, in which case the id-based table answers.
+   */
+  reasoning?: OpenRouterReasoningMeta | null;
 };
 
 /**
@@ -124,9 +133,10 @@ export const checkCredentials = async (
 /**
  * Fetch the OpenRouter catalogue and project each entry into {@link Model}.
  *
- * Marks reasoning-capable ids per
- * {@link openrouterInfo.reasoningModels}. Capability inference runs
- * through {@link inferCapabilities}.
+ * The catalogue's `reasoning` object says whether and how a model thinks;
+ * {@link openrouterInfo.reasoningModels} is the fallback for catalogues that
+ * predate the field. Capability inference runs through
+ * {@link inferCapabilities}.
  */
 export const listModels = async (
   creds: ProviderCredentials
@@ -143,7 +153,11 @@ export const listModels = async (
     id: m.id,
     name: m.id,
     provider: "openrouter" as const,
-    reasoning: openrouterInfo.reasoningModels.includes(m.id),
+    reasoning:
+      m.reasoning !== undefined
+        ? m.reasoning !== null
+        : openrouterInfo.reasoningModels.includes(m.id),
+    reasoningSupport: reasoningSupportFromCatalog(m.reasoning, m.id),
     capabilities: inferCapabilities(m),
   }));
 };

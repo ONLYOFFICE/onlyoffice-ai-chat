@@ -3,6 +3,7 @@ import type { TMCPItem } from "../shared/mcp-item";
 import type { Model } from "../shared/model";
 import type { TProvider } from "../shared/provider";
 import type { ProviderType } from "../shared/provider-type";
+import type { ReasoningSupport } from "../shared/reasoning-level";
 
 export type { BuiltinProviderType, Model, ProviderType, TMCPItem, TProvider };
 
@@ -231,6 +232,15 @@ export type Profile = {
 
   /** Whether extended thinking is enabled for this profile's model. */
   reasoning?: boolean;
+
+  /**
+   * Extended-thinking capabilities of the selected model as reported by
+   * the provider's catalogue at save time (see `Model.reasoningSupport`).
+   * When present the composer's Effort row follows it exactly; when absent
+   * the provider's id-based table answers. Hosts persist it with the rest
+   * of the profile.
+   */
+  reasoningSupport?: ReasoningSupport;
 
   /** Bitmask of capabilities supported by the selected model. */
   capabilities?: number;

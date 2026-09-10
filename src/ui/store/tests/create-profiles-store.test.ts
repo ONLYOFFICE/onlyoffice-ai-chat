@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppContext } from "../../../app-context";
 import type { ServerAPI } from "../../providers/ApiProvider";
+import { RouteError } from "../../providers/ApiProvider/fetcher";
 import { createProfilesStore } from "../create-profiles-store";
 import type { Profile } from "../../../types";
 import type { StoreKeys } from "../../../config";
@@ -41,6 +42,8 @@ function makeDeps(initialProfiles: Profile[] = []) {
     preferences: {
       getDeepMode: vi.fn().mockResolvedValue(false),
       setDeepMode: vi.fn().mockResolvedValue(undefined),
+      getReasoningLevel: vi.fn().mockResolvedValue("off"),
+      setReasoningLevel: vi.fn().mockResolvedValue(undefined),
     },
   } as unknown as ServerAPI;
 
@@ -64,18 +67,19 @@ describe("createProfilesStore", () => {
     expect(st.extendedThinking).toBe(false);
   });
 
-  it("init loads profiles, deepMode and assignments", async () => {
+  it("init loads profiles, reasoning level and assignments", async () => {
     const p1 = profile("1");
     const deps = makeDeps([p1]);
     deps.api.assignments.getAllAssignments = vi.fn().mockResolvedValue({
       Default: "1",
       Chat: "1",
     });
-    deps.api.preferences.getDeepMode = vi.fn().mockResolvedValue(true);
+    deps.api.preferences.getReasoningLevel = vi.fn().mockResolvedValue("high");
     const s = createProfilesStore(deps);
     await s.getState().init();
     expect(s.getState().profiles).toEqual([p1]);
     expect(s.getState().extendedThinking).toBe(true);
+    expect(s.getState().reasoningLevel).toBe("high");
     expect(s.getState().chatProfile?.id).toBe("1");
     expect(s.getState().defaultProfile?.id).toBe("1");
   });
@@ -100,9 +104,9 @@ describe("createProfilesStore", () => {
       callOrder.push("profiles");
       return [profile("1")];
     });
-    deps.api.preferences.getDeepMode = vi.fn(async () => {
+    deps.api.preferences.getReasoningLevel = vi.fn(async () => {
       callOrder.push("deepMode");
-      return false;
+      return "off" as const;
     });
     deps.api.assignments.getAllAssignments = vi.fn(async () => {
       callOrder.push("assignments");
@@ -113,7 +117,7 @@ describe("createProfilesStore", () => {
 
     expect(deps.api.profiles.list).toHaveBeenCalledTimes(1);
     expect(deps.api.assignments.getAllAssignments).toHaveBeenCalledTimes(1);
-    expect(deps.api.preferences.getDeepMode).toHaveBeenCalledTimes(1);
+    expect(deps.api.preferences.getReasoningLevel).toHaveBeenCalledTimes(1);
     // All three calls were initiated before any of them resolved.
     expect(callOrder).toEqual(["profiles", "deepMode", "assignments"]);
   });
@@ -486,26 +490,104 @@ describe("createProfilesStore", () => {
     expect(s.getState().sessionChatProfile).toEqual(p);
   });
 
-  it("toggleExtendedThinking flips and persists", async () => {
+  it("toggleExtendedThinking flips and persists through the level route", async () => {
     const deps = makeDeps();
     const s = createProfilesStore(deps);
     await s.getState().toggleExtendedThinking();
     expect(s.getState().extendedThinking).toBe(true);
+    expect(s.getState().reasoningLevel).toBe("medium");
+    expect(deps.api.preferences.setReasoningLevel).toHaveBeenCalledWith(
+      "medium",
+      undefined
+    );
+    expect(deps.api.preferences.setDeepMode).not.toHaveBeenCalled();
+    expect(deps.emit).toHaveBeenCalledWith("onExtendedThinkingUpdated", {
+      enabled: true,
+      level: "medium",
+    });
+  });
+
+  it("setReasoningLevel picks a depth and off/on restores it", async () => {
+    const deps = makeDeps();
+    const s = createProfilesStore(deps);
+    await s.getState().setReasoningLevel("high");
+    expect(s.getState().reasoningLevel).toBe("high");
+    expect(s.getState().extendedThinking).toBe(true);
+
+    await s.getState().toggleExtendedThinking();
+    expect(s.getState().reasoningLevel).toBe("off");
+    expect(s.getState().extendedThinking).toBe(false);
+    expect(deps.emit).toHaveBeenLastCalledWith("onExtendedThinkingUpdated", {
+      enabled: false,
+      level: "off",
+    });
+
+    // Back on: the depth the user chose, not the default.
+    await s.getState().toggleExtendedThinking();
+    expect(s.getState().reasoningLevel).toBe("high");
+  });
+
+  it("init seeds the depth restored by the next toggle", async () => {
+    const deps = makeDeps();
+    deps.api.preferences.getReasoningLevel = vi.fn().mockResolvedValue("max");
+    const s = createProfilesStore(deps);
+    await s.getState().init();
+    await s.getState().toggleExtendedThinking(); // off
+    await s.getState().toggleExtendedThinking(); // on again
+    expect(s.getState().reasoningLevel).toBe("max");
+  });
+
+  it("falls back to the deep-mode routes when the host lacks the level route", async () => {
+    const deps = makeDeps();
+    deps.api.preferences.getReasoningLevel = vi
+      .fn()
+      .mockRejectedValue(new RouteError(404, "Not Found"));
+    deps.api.preferences.setReasoningLevel = vi
+      .fn()
+      .mockRejectedValue(new RouteError(404, "Not Found"));
+    deps.api.preferences.getDeepMode = vi.fn().mockResolvedValue(true);
+    const s = createProfilesStore(deps);
+    await s.getState().init();
+    // The boolean alone means the default depth.
+    expect(s.getState().reasoningLevel).toBe("medium");
+
+    await s.getState().setReasoningLevel("high");
     expect(deps.api.preferences.setDeepMode).toHaveBeenCalledWith(
       true,
       undefined
     );
-    expect(deps.emit).toHaveBeenCalledWith("onExtendedThinkingUpdated", {
-      enabled: true,
-    });
+    // Remembered in memory for the session even though the host cannot keep it.
+    expect(s.getState().reasoningLevel).toBe("high");
+    await s.getState().toggleExtendedThinking();
+    expect(deps.api.preferences.setDeepMode).toHaveBeenLastCalledWith(
+      false,
+      undefined
+    );
+    // The missing route is not retried on every call — one failed read is
+    // enough to stop asking for the rest of the store's life.
+    expect(deps.api.preferences.getReasoningLevel).toHaveBeenCalledTimes(1);
+    expect(deps.api.preferences.setReasoningLevel).not.toHaveBeenCalled();
+  });
+
+  it("does not downgrade to deep mode on a transient failure", async () => {
+    const deps = makeDeps();
+    deps.api.preferences.getReasoningLevel = vi
+      .fn()
+      .mockRejectedValue(new RouteError(500, "Internal Server Error"));
+    const s = createProfilesStore(deps);
+    await expect(s.getState().reloadExtendedThinking()).rejects.toThrow(
+      "HTTP 500"
+    );
+    expect(deps.api.preferences.getDeepMode).not.toHaveBeenCalled();
   });
 
   it("reloadExtendedThinking only emits on change", async () => {
     const deps = makeDeps();
-    deps.api.preferences.getDeepMode = vi.fn().mockResolvedValue(true);
+    deps.api.preferences.getReasoningLevel = vi.fn().mockResolvedValue("low");
     const s = createProfilesStore(deps);
     await s.getState().reloadExtendedThinking();
     expect(s.getState().extendedThinking).toBe(true);
+    expect(s.getState().reasoningLevel).toBe("low");
     deps.emit.mockClear();
     await s.getState().reloadExtendedThinking();
     expect(deps.emit).not.toHaveBeenCalled();

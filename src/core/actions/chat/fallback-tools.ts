@@ -311,6 +311,7 @@ export async function* streamWithTextProtocol(
     model: args.profile.modelId,
     systemPrompt: composedSystem,
     withReasoning: args.isReasoning,
+    reasoningLevel: args.reasoningLevel,
     useResponsesApi: args.profile.useResponsesApi === true,
     signal: args.signal,
   });

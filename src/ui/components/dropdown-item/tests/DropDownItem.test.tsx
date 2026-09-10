@@ -259,6 +259,20 @@ describe("DropDownItem", () => {
     expect(screen.getByTestId("trailing-node")).toBeInTheDocument();
   });
 
+  it("renders trailingText as the row's secondary value", () => {
+    renderInDropdownContext(
+      <DropDownItem
+        text="Effort"
+        onClick={vi.fn()}
+        trailingText="Medium"
+        subMenu={[{ text: "Low", onClick: vi.fn() }]}
+      />
+    );
+    const value = screen.getByText("Medium");
+    expect(value).toBeInTheDocument();
+    expect(value.className).toContain("text-[var(--text-secondary)]");
+  });
+
   it("applies withSpace class when withSpace is true", () => {
     renderInDropdownContext(
       <DropDownItem text="Spaced" onClick={vi.fn()} withSpace />

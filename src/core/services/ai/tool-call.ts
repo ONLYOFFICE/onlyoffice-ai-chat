@@ -9,6 +9,7 @@ import {
 } from "../../storage";
 import { chat } from "../../actions/chat";
 import type { ActionArgs } from "../../actions/types";
+import type { ReasoningLevel } from "../../../shared/reasoning-level";
 import type { StorageAdapter } from "../../storage";
 import type { Profile } from "../../types";
 import {
@@ -204,6 +205,7 @@ export async function* resumeChat(
     profile: Profile;
     profileId: string;
     isReasoning?: boolean;
+    reasoningLevel?: ReasoningLevel;
     signal?: AbortSignal;
     tools?: ActionArgs["tools"];
     /** System-prompt override; threaded so it survives the tool-call resume. */
@@ -275,6 +277,7 @@ export async function* resumeChat(
     prompt: input.prompt,
     toolInstructions: input.toolInstructions,
     isReasoning: input.isReasoning,
+    reasoningLevel: input.reasoningLevel,
     signal: input.signal,
     fetch: input.fetch,
   };
@@ -292,6 +295,7 @@ export async function* resumeChat(
     profileId: input.profileId,
     tools: input.tools,
     isReasoning: input.isReasoning,
+    reasoningLevel: input.reasoningLevel,
     signal: input.signal,
     entityId: input.entityId,
     isResume: true,

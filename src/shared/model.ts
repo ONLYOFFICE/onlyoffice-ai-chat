@@ -1,4 +1,5 @@
 import type { ProviderType } from "./provider-type";
+import type { ReasoningSupport } from "./reasoning-level";
 
 /**
  * AI model metadata. Describes a single model available from a provider.
@@ -26,6 +27,14 @@ export type Model = {
 
   /** Whether this model supports extended thinking / chain-of-thought reasoning. */
   reasoning?: boolean;
+
+  /**
+   * What the model can do with extended thinking, when the provider's
+   * catalogue says so (OpenRouter and the ONLYOFFICE route report a
+   * per-model `reasoning` object). Copied onto the profile at save time;
+   * absent, the widget falls back to the provider's id-based table.
+   */
+  reasoningSupport?: ReasoningSupport;
 
   /**
    * Bitmask of model capabilities (Chat, Image, Vision, Tools, etc.).

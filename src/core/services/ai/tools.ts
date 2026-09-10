@@ -1,4 +1,5 @@
 import type { TMCPItem } from "../../../shared/mcp-item";
+import type { ReasoningLevel } from "../../../shared/reasoning-level";
 import { stripToolIntent } from "../../../shared/tool-intent";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
@@ -207,6 +208,7 @@ export type AdapterRunContext = {
   /** MCP server notes; threaded so resume rounds keep them. */
   toolInstructions?: ActionArgs["toolInstructions"];
   isReasoning?: boolean;
+  reasoningLevel?: ReasoningLevel;
   signal?: AbortSignal;
   /** Opaque scope token forwarded to scoped storage reads in resume rounds. */
   entityId?: string;
@@ -283,6 +285,7 @@ export async function* executeAdapterTool(
       profile: ctx.profile,
       profileId: ctx.profileId,
       isReasoning: ctx.isReasoning,
+      reasoningLevel: ctx.reasoningLevel,
       signal: ctx.signal,
       tools: ctx.tools,
       prompt: ctx.prompt,

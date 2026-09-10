@@ -160,6 +160,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   );
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const extendedThinking = useProfilesStore((s) => s.extendedThinking);
+  const reasoningLevel = useProfilesStore((s) => s.reasoningLevel);
   const { servers } = useToolsContext();
   const { entityId, contextEntityId, systemPrompt, onToolCallApproveResult } =
     useWidgetConfig();
@@ -177,6 +178,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       profileId: currentProfile?.id,
       actionArgs: {
         isReasoning: extendedThinking,
+        reasoningLevel,
         tools: currentTools(),
         toolInstructions: currentToolInstructions(),
         prompt: systemPrompt,
@@ -188,6 +190,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       contextEntityId,
       currentProfile?.id,
       extendedThinking,
+      reasoningLevel,
       currentTools,
       currentToolInstructions,
       systemPrompt,
@@ -1021,6 +1024,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       profileId: currentProfile.id,
       actionArgs: {
         isReasoning: extendedThinking,
+        reasoningLevel,
         signal: controller.signal,
         tools: freshTools.length > 0 ? freshTools : undefined,
         // Read after `getUserTools()`, which waits out the still-connecting
@@ -1262,6 +1266,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         profileId: currentProfile.id,
         actionArgs: {
           isReasoning: extendedThinking,
+          reasoningLevel,
           signal: controller.signal,
           tools: freshTools.length > 0 ? freshTools : undefined,
           toolInstructions: currentToolInstructions(),
@@ -1278,6 +1283,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       entityId,
       contextEntityId,
       extendedThinking,
+      reasoningLevel,
       processStream,
       setAbortController,
       systemPrompt,

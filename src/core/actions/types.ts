@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { TMCPItem } from "../../shared/mcp-item";
+import type { ReasoningLevel } from "../../shared/reasoning-level";
 import type { ProviderFetch } from "../../shared/provider-credentials";
 import type { Profile } from "../types";
 
@@ -31,7 +32,10 @@ export type ActionArgs = {
   >;
   messages: ThreadMessageLike[];
   tools?: TMCPItem[];
+  /** Legacy extended-thinking switch; {@link reasoningLevel} wins when set. */
   isReasoning?: boolean;
+  /** Depth of extended thinking for the round; providers clamp per model. */
+  reasoningLevel?: ReasoningLevel;
   signal?: AbortSignal;
   prompt?: SystemPromptOverride;
   /**

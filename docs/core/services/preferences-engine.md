@@ -12,9 +12,9 @@ conveniences that plain CRUD doesn't provide:
   `create` / `update` branch into a single
   `storage.preferences.upsertDeepMode` call.
 
-Today the engine surfaces a single preference (the deep-mode
-toggle), but the shape is intentionally extensible: adding a new
-scalar preference is mechanical — see
+The engine surfaces two preferences — the deep-mode toggle and the
+reasoning level that goes with it — and the shape is intentionally
+extensible: adding a new scalar preference is mechanical — see
 [Adding a new preference](#adding-a-new-preference).
 
 `core/` runs on both server and client; this engine has no DOM /
@@ -43,6 +43,8 @@ type PreferencesEngineDeps = {
 
 type PreferenceDefaults = {
   deepMode: boolean;
+  // depth used while deep mode is on and none was persisted
+  reasoningLevel: "low" | "medium" | "high" | "max";
 };
 ```
 
@@ -60,6 +62,8 @@ for any preference. Unspecified keys fall back to
 | [`setDeepMode`](#setdeepmode)           | `void`                   | `preferences.upsertDeepMode`    | —        |
 | [`clearDeepMode`](#cleardeepmode)       | `void`                   | `preferences.deleteDeepMode`    | —        |
 | [`isDeepModeSet`](#isdeepmodeset)       | `boolean`                | ❌                              | —        |
+| [`getReasoningLevel`](#getreasoninglevel) | `ReasoningLevel`       | ❌                              | ✅ default depth while on |
+| [`setReasoningLevel`](#setreasoninglevel) | `void`                 | `upsertDeepMode` + `upsertReasoningLevel` | — |
 
 ---
 
@@ -193,3 +197,43 @@ When you find yourself reading `storage.preferences.readDeepMode()`
 directly and writing the `null` fallback inline, prefer this
 engine — collapsing the default into one place keeps the rest of
 the codebase from drifting into inconsistent fallbacks.
+
+---
+
+## Reasoning level (extended thinking depth)
+
+`ReasoningLevel` is `"off" | "low" | "medium" | "high" | "max"`
+(exported from the package root). Deep mode stays the **master
+switch**; the level is how hard the model thinks while it is on. That
+split keeps hosts built before the depth existed in full control: an
+older settings page that flips only the boolean still turns thinking
+on and off, and the depth it never wrote falls back to the default.
+
+### `getReasoningLevel`
+
+```ts
+async getReasoningLevel(entityId?: string): Promise<ReasoningLevel>;
+```
+
+`"off"` whenever deep mode is off in scope, whatever depth was
+persisted. Otherwise the persisted depth, or `defaults.reasoningLevel`
+(`"medium"`) when none was stored — or when the storage adapter has no
+`readReasoningLevel` (the depth methods on `PreferencesStorage` are
+optional).
+
+### `setReasoningLevel`
+
+```ts
+async setReasoningLevel(value: ReasoningLevel, entityId?: string): Promise<void>;
+```
+
+Writes deep mode (`value !== "off"`) first so the two never disagree,
+then the depth — only for a real depth. `"off"` leaves the previous
+depth in place, so switching back on restores it. On adapters without
+`upsertReasoningLevel` the toggle still lands and the depth is dropped.
+
+Default HTTP routes: `GET preferences/get-reasoning-level?entityId=`
+and `PUT preferences/set-reasoning-level`. A host that serves only the
+deep-mode routes is fine: the widget's profiles store falls back to
+`getDeepMode` / `setDeepMode` after the first failed call and keeps the
+chosen depth in memory for the session.

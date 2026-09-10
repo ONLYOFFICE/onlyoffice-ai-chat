@@ -2,6 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { genaiInfo } from "../info";
 import { GenAIProvider } from "../index";
+import type { ReasoningLevel } from "../../../../shared/reasoning-level";
 
 const { generateContentStreamMock, generateContentMock, modelsListMock } =
   vi.hoisted(() => ({
@@ -22,6 +23,8 @@ vi.mock("@google/genai", () => ({
     THINKING_LEVEL_UNSPECIFIED: "unspecified",
     MINIMAL: "MINIMAL",
     LOW: "LOW",
+    MEDIUM: "MEDIUM",
+    HIGH: "HIGH",
   },
 }));
 
@@ -87,7 +90,7 @@ describe("GenAIProvider", () => {
       await drain(
         p.sendMessage({
           messages: [],
-          model: "gemini",
+          model: "gemini-3-flash-preview",
           systemPrompt: "",
           withReasoning: true,
         })
@@ -98,9 +101,65 @@ describe("GenAIProvider", () => {
       ).toBe(true);
     });
 
+    describe("thinking depth", () => {
+      const configFor = async (
+        model: string,
+        reasoningLevel: ReasoningLevel
+      ) => {
+        generateContentStreamMock.mockResolvedValueOnce(iter([makeChunk("x")]));
+        const p = new GenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+        await drain(
+          p.sendMessage({
+            messages: [],
+            model,
+            systemPrompt: "",
+            reasoningLevel,
+          })
+        );
+        return generateContentStreamMock.mock.calls.at(-1)?.[0]?.config
+          ?.thinkingConfig;
+      };
+
+      it("maps levels onto thinkingLevel, clamping max to HIGH", async () => {
+        expect(await configFor("gemini-3-pro-preview", "low")).toEqual({
+          thinkingLevel: "LOW",
+          includeThoughts: true,
+        });
+        expect(await configFor("gemini-3.5-flash", "medium")).toEqual({
+          thinkingLevel: "MEDIUM",
+          includeThoughts: true,
+        });
+        expect(await configFor("gemini-3.1-pro-preview", "max")).toEqual({
+          thinkingLevel: "HIGH",
+          includeThoughts: true,
+        });
+        // 2.5 documents low / medium / high as well.
+        expect(await configFor("gemini-2.5-flash", "low")).toEqual({
+          thinkingLevel: "LOW",
+          includeThoughts: true,
+        });
+      });
+
+      it("raises medium to HIGH on 3 Pro preview, which knows only low and high", async () => {
+        expect(await configFor("gemini-3-pro-preview", "medium")).toEqual({
+          thinkingLevel: "HIGH",
+          includeThoughts: true,
+        });
+        expect(await configFor("gemini-3.1-pro-preview", "medium")).toEqual({
+          thinkingLevel: "MEDIUM",
+          includeThoughts: true,
+        });
+      });
+
+      it("sends nothing to models without thinking", async () => {
+        expect(await configFor("gemini-2.0-flash", "high")).toBeUndefined();
+      });
+    });
+
     describe("thinking off", () => {
-      // Gemini 2.5 Pro/Flash and every Gemini 3 model think by default, so
-      // "off" has to be spelled out per model rather than omitted.
+      // Gemini 2.5 Flash thinks by default, so "off" has to be spelled out
+      // rather than omitted; the models without an off switch run their
+      // standard depth instead.
       const configFor = async (model: string) => {
         generateContentStreamMock.mockResolvedValueOnce(iter([makeChunk("x")]));
         const p = new GenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
@@ -125,24 +184,20 @@ describe("GenAIProvider", () => {
         });
       });
 
-      it("drops to minimal where Gemini 3 supports it", async () => {
-        expect(await configFor("gemini-3-flash-preview")).toEqual({
-          thinkingLevel: "MINIMAL",
-        });
-        expect(await configFor("gemini-3.5-flash-lite")).toEqual({
-          thinkingLevel: "MINIMAL",
-        });
-      });
-
-      it("drops to low on models whose floor is low", async () => {
+      it("runs the standard depth when off on models that cannot stop", async () => {
+        // No off switch on 2.5 Pro and Gemini 3: the composer offers none,
+        // and a stored off is medium (high on 3 Pro preview, which has none).
         expect(await configFor("gemini-2.5-pro")).toEqual({
-          thinkingLevel: "LOW",
+          thinkingLevel: "MEDIUM",
+          includeThoughts: true,
+        });
+        expect(await configFor("gemini-3-flash-preview")).toEqual({
+          thinkingLevel: "MEDIUM",
+          includeThoughts: true,
         });
         expect(await configFor("gemini-3-pro-preview")).toEqual({
-          thinkingLevel: "LOW",
-        });
-        expect(await configFor("gemini-3.8-flash")).toEqual({
-          thinkingLevel: "LOW",
+          thinkingLevel: "HIGH",
+          includeThoughts: true,
         });
       });
 
@@ -229,7 +284,7 @@ describe("GenAIProvider", () => {
       const p = new GenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
       await p.sendMessageSync({
         messages: [],
-        model: "gemini",
+        model: "gemini-3-flash-preview",
         systemPrompt: "",
         withReasoning: true,
       });

@@ -29,7 +29,9 @@ type SendMessageArgs = {
   model: string;
   systemPrompt: string;
   tools?: TMCPItem[];
-  withReasoning?: boolean;
+  withReasoning?: boolean;      // legacy on/off; reasoningLevel wins when both are set
+  reasoningLevel?: ReasoningLevel; // "off" | "low" | "medium" | "high" | "max"
+  useResponsesApi?: boolean;
   signal?: AbortSignal;
 };
 
@@ -61,12 +63,15 @@ type SendMessageSyncArgs = {
   messages: ThreadMessageLike[];
   model: string;
   systemPrompt: string;
+  useResponsesApi?: boolean;
+  withReasoning?: boolean;
+  reasoningLevel?: ReasoningLevel;
   signal?: AbortSignal;
 };
 ```
 
-The trimmed input for `provider.sendMessageSync` — no `tools`,
-no `withReasoning`. Used by every action except `chat` and
+The trimmed input for `provider.sendMessageSync` — no `tools`.
+Used by every action except `chat` and
 `custom`. Returns a plain `string`, not a result union, because
 sync calls have no streaming events to surface.
 
@@ -462,3 +467,35 @@ logging plumbing on the host side, layer it on by replacing
 When you need a new shared symbol, prefer a **new file** with a
 narrow export over expanding an existing one — it keeps the
 module graph flat and lets callers import only what they use.
+
+### `ReasoningLevel`
+
+> Source: [`reasoning-level.ts`](../../src/shared/reasoning-level.ts)
+
+```ts
+type ReasoningLevel = "off" | "low" | "medium" | "high" | "max";
+
+const REASONING_LEVELS: readonly ReasoningLevel[];      // lowest first
+const DEFAULT_REASONING_LEVEL = "medium";               // what the boolean toggle alone means
+function isReasoningLevel(value: unknown): value is ReasoningLevel;
+function resolveReasoningLevel(args: { reasoningLevel?; withReasoning? }): ReasoningLevel;
+
+type ReasoningDepth = Exclude<ReasoningLevel, "off">;
+type ReasoningSupport = {
+  thinks: boolean;                    // false → no thinking controls at all
+  canDisable: boolean;                // false → "off" only drops to the model's floor
+  depths: readonly ReasoningDepth[];  // the depths the model distinguishes; [] = on/off only
+  defaultDepth?: ReasoningDepth;      // what a stored "off" runs at where off is impossible (from the catalogue)
+};
+const FULL_REASONING_SUPPORT: ReasoningSupport;  // every depth, off works
+const NO_REASONING_SUPPORT: ReasoningSupport;    // does not think
+function reasoningSupport(depths, { canDisable, thinks? }): ReasoningSupport;
+function clampReasoningLevel(level, support): ReasoningLevel;     // nearest listed depth, ties upward
+function effectiveReasoningLevel(level, support): ReasoningLevel; // clamp, and off → standard depth (medium) where off is impossible
+```
+
+The provider-neutral depth of extended thinking. Providers call
+`resolveReasoningLevel(args)` first so both the level and the legacy
+`withReasoning` boolean are honoured (`true` → `"medium"`), then map
+the level onto their own knob and clamp to what the model accepts —
+see [Extended thinking depth](../core/providers/built-in.md#extended-thinking-depth).

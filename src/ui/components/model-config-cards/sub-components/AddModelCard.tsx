@@ -95,6 +95,8 @@ export const AddModelCard = ({
         key: values.apiKey || undefined,
         modelId: values.model,
         capabilities: selectedModel?.capabilities,
+        reasoning: selectedModel?.reasoning,
+        reasoningSupport: selectedModel?.reasoningSupport,
         isCloudProvider: values.isCloudProvider,
       });
     } catch (e) {

@@ -5,6 +5,10 @@ import type { ImageGenerationArgs } from "../../../shared/image-generation-args"
 import logger from "../../../shared/logger";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import {
+  resolveReasoningLevel,
+  type ReasoningLevel,
+} from "../../../shared/reasoning-level";
 import type {
   SendMessageArgs,
   SendMessageResult,
@@ -86,8 +90,8 @@ class OpenAIProvider extends AbstractBaseProvider {
       return;
     }
 
-    const { messages, model, systemPrompt, tools, withReasoning, signal } =
-      args;
+    const { messages, model, systemPrompt, tools, signal } = args;
+    const reasoningLevel = resolveReasoningLevel(args);
 
     try {
       const stream = await this.getStream({
@@ -97,7 +101,7 @@ class OpenAIProvider extends AbstractBaseProvider {
         ],
         model,
         tools: convertTools(tools ?? []),
-        withReasoning,
+        reasoningLevel,
         signal,
       });
 
@@ -122,8 +126,8 @@ class OpenAIProvider extends AbstractBaseProvider {
   protected async *sendMessageResponses(
     args: SendMessageArgs
   ): AsyncGenerator<SendMessageResult> {
-    const { messages, model, systemPrompt, tools, withReasoning, signal } =
-      args;
+    const { messages, model, systemPrompt, tools, signal } = args;
+    const reasoningLevel = resolveReasoningLevel(args);
 
     try {
       const input = convertMessagesToResponses(messages, this.downgradeSystem);
@@ -136,7 +140,7 @@ class OpenAIProvider extends AbstractBaseProvider {
           tools: responsesTools.length > 0 ? responsesTools : undefined,
           // Force one tool call per turn. Only valid when tools are present.
           ...(responsesTools.length > 0 ? { parallel_tool_calls: false } : {}),
-          ...this.reasoningResponsesFields(model, withReasoning, {
+          ...this.reasoningResponsesFields(model, reasoningLevel, {
             summary: true,
           }),
           stream: true,
@@ -157,8 +161,8 @@ class OpenAIProvider extends AbstractBaseProvider {
   }
 
   /**
-   * Request fields that turn extended thinking on or off for a Chat
-   * Completions round. Split out of {@link getStream} so a gateway that
+   * Request fields that set the extended-thinking depth (or turn it off)
+   * for a Chat Completions round. Split out of {@link getStream} so a gateway that
    * spells it differently can swap just this without restating the whole
    * request body — OpenRouter does.
    *
@@ -167,9 +171,9 @@ class OpenAIProvider extends AbstractBaseProvider {
    */
   protected reasoningRequestFields(
     model: string,
-    withReasoning?: boolean
+    level: ReasoningLevel
   ): Record<string, unknown> {
-    const effort = resolveReasoningEffort(model, withReasoning);
+    const effort = resolveReasoningEffort(model, level);
     return effort ? { reasoning_effort: effort } : {};
   }
 
@@ -186,10 +190,10 @@ class OpenAIProvider extends AbstractBaseProvider {
    */
   protected reasoningResponsesFields(
     model: string,
-    withReasoning?: boolean,
+    level: ReasoningLevel,
     opts?: { summary?: boolean }
   ): Record<string, unknown> {
-    const reasoning = resolveReasoningParam(model, withReasoning, opts);
+    const reasoning = resolveReasoningParam(model, level, opts);
     return reasoning ? { reasoning } : {};
   }
 
@@ -202,7 +206,7 @@ class OpenAIProvider extends AbstractBaseProvider {
     messages: OpenAI.Chat.ChatCompletionMessageParam[];
     model: string;
     tools: OpenAI.Chat.ChatCompletionTool[];
-    withReasoning?: boolean;
+    reasoningLevel: ReasoningLevel;
     signal?: AbortSignal;
   }) {
     return this.client.chat.completions.create(
@@ -213,7 +217,7 @@ class OpenAIProvider extends AbstractBaseProvider {
         // Force one tool call per turn. Only valid when tools are present.
         ...(params.tools.length > 0 ? { parallel_tool_calls: false } : {}),
         stream: true,
-        ...this.reasoningRequestFields(params.model, params.withReasoning),
+        ...this.reasoningRequestFields(params.model, params.reasoningLevel),
         ...this.extraBody(),
       } as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
       { signal: params.signal }
@@ -256,14 +260,8 @@ class OpenAIProvider extends AbstractBaseProvider {
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
-    const {
-      messages,
-      model,
-      systemPrompt,
-      useResponsesApi,
-      withReasoning,
-      signal,
-    } = args;
+    const { messages, model, systemPrompt, useResponsesApi, signal } = args;
+    const reasoningLevel = resolveReasoningLevel(args);
 
     if (useResponsesApi) {
       const response = await this.client.responses.create(
@@ -273,7 +271,7 @@ class OpenAIProvider extends AbstractBaseProvider {
           input: convertMessagesToResponses(messages, this.downgradeSystem),
           // No `summary` here — this path returns `output_text` only, so
           // the summary tokens would be billed and discarded.
-          ...this.reasoningResponsesFields(model, withReasoning),
+          ...this.reasoningResponsesFields(model, reasoningLevel),
           stream: false,
           ...this.extraBody(),
         } as OpenAI.Responses.ResponseCreateParamsNonStreaming,
@@ -289,7 +287,7 @@ class OpenAIProvider extends AbstractBaseProvider {
           { role: "system", content: systemPrompt },
           ...convertMessages(messages, this.downgradeSystem),
         ],
-        ...this.reasoningRequestFields(model, withReasoning),
+        ...this.reasoningRequestFields(model, reasoningLevel),
         stream: false,
         ...this.extraBody(),
       } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,

@@ -102,6 +102,8 @@ export {
   loadProvider,
   getProviderMetadata,
   getProviderName,
+  getReasoningSupport,
+  reasoningSupportFromCatalog,
   getSupportedProviderTypes,
   isValidProviderType,
   registerProvider,
@@ -109,6 +111,7 @@ export {
 } from "./core/providers";
 export type {
   BaseProvider,
+  OpenRouterReasoningMeta,
   ProviderConstructor,
   ProviderMetadata,
 } from "./core/providers";
@@ -223,6 +226,21 @@ export type {
 
 export { providerFor } from "./core/actions/provider";
 export type { ActionArgs, SystemPromptOverride } from "./core/actions/types";
+export {
+  DEFAULT_REASONING_LEVEL,
+  FULL_REASONING_SUPPORT,
+  NO_REASONING_SUPPORT,
+  REASONING_DEPTHS,
+  REASONING_LEVELS,
+  clampReasoningLevel,
+  effectiveReasoningLevel,
+  isReasoningLevel,
+  reasoningSupport,
+  resolveReasoningLevel,
+  type ReasoningDepth,
+  type ReasoningLevel,
+  type ReasoningSupport,
+} from "./shared/reasoning-level";
 
 // ---------------------------------------------------------------------------
 // Settings (key/value adapter contract — implemented by the host)

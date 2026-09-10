@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Profile, ProviderType, TAttachmentRef } from "../../../types";
+import type { ReasoningLevel } from "../../../shared/reasoning-level";
 
 // ---------------------------------------------------------------------------
 // Message events
@@ -237,6 +238,8 @@ export interface WebSearchUpdatedEvent {
  */
 export interface ExtendedThinkingUpdatedEvent {
   enabled: boolean;
+  /** The depth now in effect; `"off"` whenever `enabled` is false. */
+  level: ReasoningLevel;
 }
 
 /**

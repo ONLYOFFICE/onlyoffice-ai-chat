@@ -55,8 +55,8 @@ satisfy the [contract](./providers.md#the-contract) defined in
 | SDK                    | `@anthropic-ai/sdk` |
 | Parent class           | `AbstractBaseProvider` |
 | Streaming              | ✅ via `client.messages.create({ stream: true })` |
-| Reasoning              | ✅ — toggles `thinking: { type: "enabled", budget_tokens: 10000 }` |
-| Max tokens             | `16000` with reasoning, `30000` without |
+| Reasoning              | ✅ — adaptive thinking + `output_config.effort` on 4.6+, a per-level `budget_tokens` before; see [Extended thinking depth](#extended-thinking-depth) |
+| Max tokens             | `32000` with reasoning, `30000` without |
 | Tools                  | ✅ — `tool_choice: { disable_parallel_tool_use: true, type: "auto" }` |
 | `imageGeneration`      | — |
 | `checkProvider` strategy | `client.models.list()` round-trip; HTTP `401` → invalidKey, `404` / `cause` set → invalidUrl |
@@ -82,7 +82,7 @@ which models support extended thinking.
 | SDK                    | `openai` |
 | Parent class           | `AbstractBaseProvider` |
 | Streaming              | ✅ via `chat.completions.create({ stream: true })` |
-| Reasoning              | ✅ — sets `reasoning_effort: "medium"` |
+| Reasoning              | ✅ — `reasoning_effort` from the level (`none` … `xhigh`); see [Extended thinking depth](#extended-thinking-depth) |
 | Tools                  | ✅ |
 | `imageGeneration`      | ✅ — `images.generate({ size, response_format: "b64_json" })`, returns base64 |
 | `checkProvider` strategy | `client.models.list()`; OpenAI error code `invalid_api_key` → invalidKey, `404` → invalidUrl |
@@ -112,7 +112,7 @@ dimension is omitted.
 | Type                   | `genai` |
 | SDK                    | `@google/genai` |
 | Parent class           | `AbstractBaseProvider` |
-| Reasoning              | ✅ — uses Google's `ThinkingLevel` enum |
+| Reasoning              | ✅ — `thinkingLevel` from the level on every thinking model (2.5 and 3.x); off is `thinkingBudget: 0` on 2.5 Flash, the only Gemini with an off switch; see [Extended thinking depth](#extended-thinking-depth) |
 | Tools                  | ✅ |
 | `imageGeneration`      | — |
 
@@ -132,7 +132,7 @@ runs the credential check.
 | Type                   | `mistral` |
 | SDK                    | `@mistralai/mistralai` |
 | Parent class           | `AbstractBaseProvider` |
-| Reasoning              | ✅ — `info.reasoningModels` is a `[level, modelId][]` table; `resolveReasoningModel` swaps the model based on the user's deep-mode level |
+| Reasoning              | ✅ — on/off only: `info.reasoningModels` is a `[sizeHint, modelId][]` table and `resolveReasoningModel` swaps to the Magistral variant for any level above off |
 | Tools                  | ✅ |
 
 The reasoning-model swap is unique to Mistral: the user picks a
@@ -173,6 +173,7 @@ should not be assigned to chat slots.
 | Base URL transform     | `<host>` → `<host>/api/2.0/ai/openai/-1/v1` (see `transformBaseUrl` in `index.ts`) |
 | Streaming              | Custom — overrides `getStream(params)` to use raw fetch + manual SSE reader (`openSSEStream`) instead of the OpenAI SDK |
 | `sendMessageSync`      | Custom override — direct `chat.completions.create({ stream: false })` call against the transformed URL |
+| Reasoning              | ✅ — the route proxies OpenRouter one-to-one, so it uses OpenRouter's unified `reasoning` object and per-route table (`openrouter/reasoning.ts`) and, like OpenRouter, stays on `/chat/completions` (no Responses probe); see [Extended thinking depth](#extended-thinking-depth) |
 
 The custom SSE reader exists because the ONLYOFFICE host emits
 non-standard error frames inside the SSE stream that the OpenAI
@@ -282,6 +283,67 @@ Behavioral notes:
 
 ---
 
+## Extended thinking depth
+
+Every provider receives the same provider-neutral
+`ReasoningLevel` (`off` / `low` / `medium` / `high` / `max`) through
+`SendMessageArgs.reasoningLevel` — the legacy `withReasoning` boolean
+still works and means `medium`. Each provider maps it onto its own knob
+and **clamps to the nearest level the model accepts** rather than
+sending a value the API would reject:
+
+| Provider | Knob | off | low | medium | high | max |
+| --- | --- | --- | --- | --- | --- | --- |
+| Anthropic 4.6+ / 5 / Fable | `thinking: adaptive` + `output_config.effort` | `disabled` (`effort: medium` on Fable / Mythos, which cannot stop) | `low` | `medium` | `high` | `max` |
+| Anthropic ≤ 4.5 | `thinking: enabled` + `budget_tokens` | omitted | 4000 | 10000 | 20000 | 28000 |
+| OpenAI gpt-5.1+ | `reasoning_effort` | `none` | `low` | `medium` | `high` | `max` (5.5+), `xhigh` (5.2+, codex-max), else `high` |
+| OpenAI gpt-6 | `reasoning_effort` | `minimal` (no `none`) | `low` | `medium` | `high` | `max` |
+| OpenAI gpt-5.0 | `reasoning_effort` | `medium` (no `none`) | `low` | `medium` | `high` | `high` |
+| OpenAI o-series | `reasoning_effort` | `medium` (no `none`) | `low` | `medium` | `high` | `high` |
+| OpenAI `*-pro` | `reasoning_effort` | `medium` (never lower) | `medium` | `medium` | `high` | `max` / `xhigh` / `high` per family |
+| OpenAI-compatible backends, unknown ids | `reasoning_effort` | omitted | `low` | `medium` | `high` | `high` |
+| Google Gemini 3.x | `thinkingLevel` | `MEDIUM` (cannot stop; `HIGH` on 3 Pro preview) | `LOW` | `MEDIUM` (`HIGH` on 3 Pro preview, which has no medium) | `HIGH` | `HIGH` |
+| Google Gemini 2.5 | `thinkingLevel` | `thinkingBudget: 0` (Flash) / `MEDIUM` (Pro, cannot stop) | `LOW` | `MEDIUM` | `HIGH` | `HIGH` |
+| OpenRouter | `reasoning.effort` | `none` (`medium` on `x-ai/*` and Claude Fable / Mythos, which cannot stop) | `low` | `medium` | `high` | `xhigh` (`high` on `google/*`) |
+| DeepSeek V4 | `thinking.type` + `reasoning_effort` | `disabled` | `low` | enabled, default depth | `high` | `max` |
+| DeepSeek `deepseek-reasoner` | — | omitted (thinks always) | — | — | — | — |
+| Groq Qwen 3.8+ | `reasoning_effort` | `none` | `low` | `default` | `high` | `high` |
+| Groq other Qwen (qwen3-32b, 3.6) | `reasoning_effort` | `none` | `default` | `default` | `default` | `default` |
+| Groq GPT-OSS | `reasoning_effort` | `medium` (cannot stop) | `low` | `medium` | `high` | `high` |
+| xAI grok-4.5+ | `reasoning_effort` | `medium` (cannot stop) | `low` | `medium` | `high` | `xhigh` (4.6+) else `high` |
+| xAI grok-3-mini | `reasoning_effort` | `high` (cannot stop, no medium) | `low` | `high` | `high` | `high` |
+| xAI grok-4 / 4.1 / code-fast | — | omitted (reject the parameter) | — | — | — | — |
+| Zhipu GLM-4.5+ | `thinking.type` | `disabled` | `enabled` | `enabled` | `enabled` | `enabled` |
+| Mistral | model swap | original model | Magistral | Magistral | Magistral | Magistral |
+
+Ollama, LM Studio, GPT4All, Together and the generic OpenAI-compatible
+provider inherit the OpenAI row; ONLYOFFICE, a one-to-one proxy in front
+of OpenRouter, inherits the OpenRouter row. Models without thinking
+receive no field at all, as before.
+
+OpenRouter's `/models` catalogue (and the ONLYOFFICE route, which proxies
+it one-to-one) reports a per-model `reasoning` object —
+`{ mandatory, default_enabled, supported_efforts, default_effort }` —
+which `reasoningSupportFromCatalog` turns into a `ReasoningSupport`
+stored on the model and copied onto the profile at save time
+(`Model.reasoningSupport` / `Profile.reasoningSupport`). Where present it
+overrides the id-based table: `mandatory` is the off switch (a request with
+`effort: "none"` on a mandatory model is a 400), `supported_efforts` the
+depths, `default_effort` what a stored off means on a mandatory model.
+
+The same table drives the composer. Each provider folder has an SDK-free
+`reasoning.ts` exporting `get<Provider>ReasoningSupport(model)` — a
+`ReasoningSupport` record (`thinks`, `canDisable`, `depths`) — which the
+registry serves synchronously through `getReasoningSupport(type, model)`
+and the request builders clamp to (`clampReasoningLevel`: nearest listed
+depth, ties upward). The composer's Effort row hides for a model that cannot
+think, lists no Off where thinking cannot be switched off (the "i" note
+says so; a stored off then means the standard depth, `medium` clamped to
+the model, on the wire and in the row alike — `effectiveReasoningLevel`), lists Off / On where
+there is a switch but no depth, and otherwise exactly the depths the
+model distinguishes; its value is the depth the model actually runs. A custom provider
+joins in by declaring the optional static `getReasoningSupport`.
+
 ## A note on `info.ts` extras
 
 Each `info.ts` exports the `name` + `baseUrl` for the static
@@ -293,7 +355,7 @@ in the codebase:
 | `anthropic`  | `thinkingModels`       | Highlight reasoning-capable models in the picker |
 | `openai`     | `reasoningModels`      | Same idea, GPT-5.x family |
 | `mistral`    | `reasoningModels`      | `[level, modelId][]` mapping for deep-mode model swap |
-| `openrouter` | `reasoningModels`      | Reasoning models accessible through OpenRouter routing |
+| `openrouter` | `reasoningModels`      | Fallback reasoning flag for catalogues that predate the per-model `reasoning` object |
 | `stabilityai`| `models`               | Hard-coded model list with per-model `endpoint` paths |
 
 These fields are not part of `ProviderConstructor` — they're

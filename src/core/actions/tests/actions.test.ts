@@ -89,6 +89,7 @@ describe("chat action", () => {
       ...baseArgs,
       tools,
       isReasoning: true,
+      reasoningLevel: "max",
       signal,
     };
 
@@ -105,6 +106,7 @@ describe("chat action", () => {
       systemPrompt: chatSystemPrompt,
       tools: augmentToolsWithIntent(tools),
       withReasoning: true,
+      reasoningLevel: "max",
       useResponsesApi: false,
       signal,
     });

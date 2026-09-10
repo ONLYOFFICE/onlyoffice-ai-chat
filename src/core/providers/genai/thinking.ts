@@ -1,4 +1,10 @@
 import { ThinkingLevel } from "@google/genai";
+import {
+  effectiveReasoningLevel,
+  type ReasoningDepth,
+  type ReasoningLevel,
+} from "../../../shared/reasoning-level";
+import { getGenAIReasoningSupport } from "./reasoning";
 
 type ThinkingConfig = {
   thinkingLevel?: ThinkingLevel;
@@ -6,41 +12,39 @@ type ThinkingConfig = {
   includeThoughts?: boolean;
 };
 
+/** `thinkingLevel` per depth; `max` never survives the clamp below. */
+const LEVELS: Record<ReasoningDepth, ThinkingLevel> = {
+  low: ThinkingLevel.LOW,
+  medium: ThinkingLevel.MEDIUM,
+  high: ThinkingLevel.HIGH,
+  max: ThinkingLevel.HIGH,
+};
+
 /**
  * The `thinkingConfig` for one Gemini round.
  *
- * On: the model's default depth, with thoughts included so the transcript
- * can render the thinking block.
+ * On: the requested depth as a `thinkingLevel`, clamped to what
+ * {@link getGenAIReasoningSupport} lists for the model (`max` → `HIGH`
+ * everywhere, `medium` → `HIGH` on 3 Pro preview, which has no medium),
+ * with thoughts included so the transcript can render the thinking block.
+ * Models without thinking get no field, as they reject it.
  *
- * Off has to be spelled out — Gemini 2.5 Pro/Flash and every Gemini 3
- * model think *by default*, so omitting the config leaves them reasoning
- * with the toggle off. The floor differs per model:
- *
- * - `gemini-2.5-flash*`: `thinkingBudget: 0` turns thinking off outright.
- * - `gemini-2.5-pro` and the Gemini 3 families: no off switch. The
- *   lowest level the model accepts is sent — `minimal` where supported
- *   (3 Flash, 3.5 Flash / Flash-Lite, 3.6 Flash; "matches the no-thinking
- *   setting for most queries"), `low` everywhere else.
- * - Anything older (2.0, 1.5) has no thinking: the field is omitted, as
- *   these models reject it.
+ * Off has to be spelled out — Gemini 2.5 Flash thinks *by default*, so
+ * omitting the config leaves it reasoning with the toggle off:
+ * `thinkingBudget: 0` turns it off outright. Gemini 2.5 Pro and every
+ * Gemini 3 model have no off switch; the composer offers them none, and a
+ * stored off means the standard depth like on every other provider
+ * (`MEDIUM`, or `HIGH` on 3 Pro preview).
  */
 export function resolveThinkingConfig(
   model: string,
-  withReasoning?: boolean
+  level: ReasoningLevel
 ): ThinkingConfig | undefined {
-  if (withReasoning) {
-    return {
-      thinkingLevel: ThinkingLevel.THINKING_LEVEL_UNSPECIFIED,
-      includeThoughts: true,
-    };
+  const support = getGenAIReasoningSupport(model);
+  if (!support.thinks) return undefined;
+  const effective = effectiveReasoningLevel(level, support);
+  if (effective !== "off") {
+    return { thinkingLevel: LEVELS[effective], includeThoughts: true };
   }
-  const id = model.toLowerCase();
-  if (/gemini-2\.5-flash/.test(id)) return { thinkingBudget: 0 };
-  if (/gemini-3(?:\.[56])?-flash/.test(id)) {
-    return { thinkingLevel: ThinkingLevel.MINIMAL };
-  }
-  if (/gemini-(?:2\.5-pro|3)/.test(id)) {
-    return { thinkingLevel: ThinkingLevel.LOW };
-  }
-  return undefined;
+  return { thinkingBudget: 0 };
 }

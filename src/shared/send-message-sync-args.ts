@@ -1,4 +1,5 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
+import type { ReasoningLevel } from "./reasoning-level";
 
 export type SendMessageSyncArgs = {
   messages: ThreadMessageLike[];
@@ -20,5 +21,10 @@ export type SendMessageSyncArgs = {
    * `actionArgs.isReasoning`.
    */
   withReasoning?: boolean;
+  /**
+   * Depth of extended thinking for this call. Mirrors
+   * {@link SendMessageArgs.reasoningLevel}; wins over `withReasoning`.
+   */
+  reasoningLevel?: ReasoningLevel;
   signal?: AbortSignal;
 };

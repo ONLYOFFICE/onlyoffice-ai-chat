@@ -1,5 +1,6 @@
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import type { ReasoningLevel } from "../../../shared/reasoning-level";
 import { OpenAIProvider } from "../openai";
 import { deepseekInfo } from "./info";
 import { listModels } from "./models";
@@ -15,17 +16,26 @@ class DeepSeekProvider extends OpenAIProvider {
    * the V4 models think *by default* — omitting the field leaves them
    * reasoning with the toggle off, so off is sent explicitly as
    * `"disabled"`. Its `reasoning_effort` knows only `low` / `high` /
-   * `max`, so the OpenAI `"medium"` is never sent; on relies on the
-   * model's default depth.
+   * `max`: those three go through, while `medium` sends no effort and
+   * relies on the model's default depth (there is no `"medium"` to send).
    *
-   * `deepseek-reasoner` is the always-thinking alias and takes no switch.
+   * `deepseek-reasoner` is the always-thinking alias and takes no switch;
+   * the effort levels are documented for `deepseek-v4-flash` / `-pro` only,
+   * so it gets no depth either.
    */
   protected override reasoningRequestFields(
     model: string,
-    withReasoning?: boolean
+    level: ReasoningLevel
   ): Record<string, unknown> {
+    const effort =
+      level === "low" || level === "high" || level === "max"
+        ? { reasoning_effort: level }
+        : {};
     if (model.includes("reasoner")) return {};
-    return { thinking: { type: withReasoning ? "enabled" : "disabled" } };
+    return {
+      thinking: { type: level === "off" ? "disabled" : "enabled" },
+      ...effort,
+    };
   }
 
   static override getName(): string {

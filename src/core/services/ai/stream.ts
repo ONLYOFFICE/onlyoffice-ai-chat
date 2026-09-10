@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import type { ReasoningLevel } from "../../../shared/reasoning-level";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { Profile } from "../../types";
@@ -88,6 +89,7 @@ export type ProcessStreamContext = {
   profileId?: string;
   tools?: ActionArgs["tools"];
   isReasoning?: boolean;
+  reasoningLevel?: ReasoningLevel;
   signal?: AbortSignal;
   isResume?: boolean;
   /**

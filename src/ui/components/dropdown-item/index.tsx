@@ -43,8 +43,10 @@ const DropDownItem = ({
   toggleDisabled,
   trailingIcon,
   trailingIconSize = 16,
+  trailingText,
   subMenu,
   subMenuClassName,
+  subMenuMaxHeight,
   subMenuIcon,
   subMenuIconSize,
   checked,
@@ -211,6 +213,7 @@ const DropDownItem = ({
   // edge and supply their own visual weight, so the row's end padding tightens).
   const hasTrailingControl = Boolean(
     trailingIcon ||
+    trailingText ||
     subMenu ||
     checked ||
     (withToggle && onToggleChange) ||
@@ -309,6 +312,14 @@ const DropDownItem = ({
             content={aboutContent}
           />
         ) : null}
+        {trailingText ? (
+          <span
+            dir="auto"
+            className="ms-auto shrink-0 truncate ps-[var(--dropdown-item-gap,10px)] text-[var(--text-secondary)]"
+          >
+            {trailingText}
+          </span>
+        ) : null}
       </div>
 
       {subMenu && isDrill ? (
@@ -372,6 +383,7 @@ const DropDownItem = ({
             alignOffset={isHorizontalSide ? -8 : 0}
             open={subMenuIcon ? undefined : isSubMenuOpen}
             contentClassName={cn("max-w-[300px]", subMenuClassName)}
+            maxHeight={subMenuMaxHeight}
             dropdownRef={submenuRef}
           />
         </div>

@@ -3,10 +3,15 @@ import i18n from "i18next";
 import type { AppContext } from "../../app-context";
 import { ActionType } from "../../shared/action-type";
 import logger from "../../shared/logger";
+import {
+  DEFAULT_REASONING_LEVEL,
+  type ReasoningLevel,
+} from "../../shared/reasoning-level";
 import { inferCapabilities } from "../../capabilities";
 import type { StoreKeys } from "../../config";
 import type { TErrorData } from "../../shared/error-data";
 import type { ServerAPI } from "../providers/ApiProvider";
+import { isRouteUnavailable } from "../providers/ApiProvider/fetcher";
 import type { ModelAssignmentTask } from "../providers/EventsProvider";
 import type { Profile } from "../../types";
 import { reportStoreError } from "./report-error";
@@ -31,7 +36,10 @@ export interface ProfilesStoreState {
   ocrProfile: Profile | null;
   visionProfile: Profile | null;
   sessionChatProfile: Profile | null;
+  /** Whether extended thinking is on — `reasoningLevel !== "off"`. */
   extendedThinking: boolean;
+  /** Effective extended-thinking depth; `"off"` while the toggle is off. */
+  reasoningLevel: ReasoningLevel;
   init: () => Promise<void>;
   reloadProfiles: () => Promise<void>;
   reloadCurrentChat: () => Promise<void>;
@@ -63,7 +71,14 @@ export interface ProfilesStoreState {
     profile: Profile | null,
     opts?: { persistAssignment?: boolean }
   ) => void;
+  /**
+   * Flip extended thinking. Off → on restores the depth that was active
+   * last (this session, then whatever the host persisted), never a fixed
+   * one.
+   */
   toggleExtendedThinking: () => Promise<void>;
+  /** Set the extended-thinking depth; `"off"` turns the toggle off. */
+  setReasoningLevel: (level: ReasoningLevel) => Promise<void>;
   reloadExtendedThinking: () => Promise<void>;
 }
 
@@ -90,6 +105,61 @@ export function createProfilesStore(deps: {
 }): UseBoundStore<StoreApi<ProfilesStoreState>> {
   const { ctx, api, getEntityId } = deps;
   const entity = () => getEntityId?.();
+
+  // Depth to restore when the toggle goes off → on. Seeded from the host on
+  // init and refreshed on every explicit pick, so a user who chose "high",
+  // switched off and back on gets "high" again — not the default.
+  let lastDepth: Exclude<ReasoningLevel, "off"> = DEFAULT_REASONING_LEVEL;
+  const rememberDepth = (level: ReasoningLevel) => {
+    if (level !== "off") lastDepth = level;
+  };
+
+  // A host built before the depth existed serves only the boolean routes:
+  // its `get-reasoning-level` is a 404. Fall back to deep mode and stop
+  // asking for the rest of this store's life — one warning, not one per
+  // round. Only an "unavailable" answer counts; a transient failure is
+  // rethrown like any other, so a flaky network never downgrades the host.
+  let levelRouteMissing = false;
+  const readLevel = async (): Promise<ReasoningLevel> => {
+    if (!levelRouteMissing) {
+      try {
+        return await api.preferences.getReasoningLevel(entity());
+      } catch (error) {
+        if (!isRouteUnavailable(error)) throw error;
+        levelRouteMissing = true;
+        logger.warn(
+          "Reasoning level is not served by the host; falling back to deep mode:",
+          error
+        );
+      }
+    }
+    const deep = await api.preferences.getDeepMode(entity());
+    return deep ? lastDepth : "off";
+  };
+  const writeLevel = async (level: ReasoningLevel): Promise<void> => {
+    if (!levelRouteMissing) {
+      try {
+        await api.preferences.setReasoningLevel(level, entity());
+        return;
+      } catch (error) {
+        if (!isRouteUnavailable(error)) throw error;
+        levelRouteMissing = true;
+        logger.warn(
+          "Reasoning level is not served by the host; persisting deep mode only:",
+          error
+        );
+      }
+    }
+    await api.preferences.setDeepMode(level !== "off", entity());
+  };
+  const applyLevel = (level: ReasoningLevel) => {
+    rememberDepth(level);
+    set({ reasoningLevel: level, extendedThinking: level !== "off" });
+    ctx.callbacksManager.emit("onExtendedThinkingUpdated", {
+      enabled: level !== "off",
+      level,
+    });
+  };
 
   const backfillCapabilities = (profiles: Profile[]) => {
     for (const p of profiles) {
@@ -173,6 +243,7 @@ export function createProfilesStore(deps: {
       visionProfile: null,
       sessionChatProfile: null,
       extendedThinking: false,
+      reasoningLevel: "off",
 
       init: () => {
         if (initInFlight) return initInFlight;
@@ -180,11 +251,13 @@ export function createProfilesStore(deps: {
           try {
             // All three reads are independent — fan them out in one round
             // so the widget can hydrate in a single network/storage trip.
-            const [rawProfiles, deepMode, assignments] = await Promise.all([
-              api.profiles.list(),
-              api.preferences.getDeepMode(entity()),
-              api.assignments.getAllAssignments(entity()),
-            ]);
+            const [rawProfiles, reasoningLevel, assignments] =
+              await Promise.all([
+                api.profiles.list(),
+                readLevel(),
+                api.assignments.getAllAssignments(entity()),
+              ]);
+            rememberDepth(reasoningLevel);
             const profiles = backfillCapabilities(rawProfiles);
             const assignmentsState = buildAssignmentsState(
               profiles,
@@ -192,7 +265,8 @@ export function createProfilesStore(deps: {
             );
             set({
               profiles,
-              extendedThinking: !!deepMode,
+              reasoningLevel,
+              extendedThinking: reasoningLevel !== "off",
               initialized: true,
               ...assignmentsState,
             } as Partial<ProfilesStoreState>);
@@ -437,21 +511,20 @@ export function createProfilesStore(deps: {
       },
 
       toggleExtendedThinking: async () => {
-        const next = !get().extendedThinking;
-        await api.preferences.setDeepMode(next, entity());
-        set({ extendedThinking: next });
-        ctx.callbacksManager.emit("onExtendedThinkingUpdated", {
-          enabled: next,
-        });
+        await get().setReasoningLevel(
+          get().extendedThinking ? "off" : lastDepth
+        );
+      },
+
+      setReasoningLevel: async (level) => {
+        await writeLevel(level);
+        applyLevel(level);
       },
 
       reloadExtendedThinking: async () => {
-        const next = !!(await api.preferences.getDeepMode(entity()));
-        if (get().extendedThinking === next) return;
-        set({ extendedThinking: next });
-        ctx.callbacksManager.emit("onExtendedThinkingUpdated", {
-          enabled: next,
-        });
+        const next = await readLevel();
+        if (get().reasoningLevel === next) return;
+        applyLevel(next);
       },
     };
   });

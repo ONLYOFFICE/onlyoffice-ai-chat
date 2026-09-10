@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { zhipuInfo } from "../info";
 import { ZhipuProvider } from "../index";
+import type { ReasoningLevel } from "../../../../shared/reasoning-level";
 
 const { modelsListMock } = vi.hoisted(() => ({ modelsListMock: vi.fn() }));
 
@@ -27,7 +28,7 @@ describe("ZhipuProvider", () => {
     expect(out[0].provider).toBe("zhipu");
   });
   describe("reasoning request fields", () => {
-    const fieldsOf = (model: string, withReasoning?: boolean) =>
+    const fieldsOf = (model: string, level: ReasoningLevel) =>
       (
         new ZhipuProvider({
           baseUrl: "https://x",
@@ -35,26 +36,35 @@ describe("ZhipuProvider", () => {
         }) as unknown as {
           reasoningRequestFields: (
             model: string,
-            withReasoning?: boolean
+            level: ReasoningLevel
           ) => Record<string, unknown>;
         }
-      ).reasoningRequestFields(model, withReasoning);
+      ).reasoningRequestFields(model, level);
 
     it("switches GLM-4.5+ thinking through thinking.type, off included", () => {
-      expect(fieldsOf("glm-4.5", false)).toEqual({
+      expect(fieldsOf("glm-4.5", "off")).toEqual({
         thinking: { type: "disabled" },
       });
-      expect(fieldsOf("glm-4.6", true)).toEqual({
+      expect(fieldsOf("glm-4.6", "medium")).toEqual({
         thinking: { type: "enabled" },
       });
-      expect(fieldsOf("glm-5", false)).toEqual({
+      expect(fieldsOf("glm-5", "off")).toEqual({
         thinking: { type: "disabled" },
       });
     });
 
+    it("has no depth: every level above off is plain enabled", () => {
+      expect(fieldsOf("glm-5", "low")).toEqual({
+        thinking: { type: "enabled" },
+      });
+      expect(fieldsOf("glm-5", "max")).toEqual({
+        thinking: { type: "enabled" },
+      });
+    });
+
     it("sends nothing to the non-thinking GLM-4 models", () => {
-      expect(fieldsOf("glm-4-flash", false)).toEqual({});
-      expect(fieldsOf("glm-4-plus", true)).toEqual({});
+      expect(fieldsOf("glm-4-flash", "off")).toEqual({});
+      expect(fieldsOf("glm-4-plus", "medium")).toEqual({});
     });
   });
 });

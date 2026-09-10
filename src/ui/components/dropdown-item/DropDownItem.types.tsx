@@ -10,6 +10,12 @@ export type DropDownItemProps = {
 
   trailingIcon?: string | React.ReactNode;
   trailingIconSize?: number;
+  /**
+   * Secondary text pinned to the end of the label area, before the submenu
+   * chevron — the current value of a row that opens a picker ("Effort ·
+   * Medium").
+   */
+  trailingText?: string;
 
   id?: string;
   isActive?: boolean;
@@ -22,6 +28,13 @@ export type DropDownItemProps = {
 
   subMenu?: DropDownItemProps[];
   subMenuClassName?: string;
+  /**
+   * Height cap for this row's `subMenu` only, replacing the menu's default
+   * `min(14rem, available height)`. Applies in both navigation modes — the
+   * flyout it opens, or the drilled-in level that replaces the menu. Other
+   * levels keep the default.
+   */
+  subMenuMaxHeight?: number | string;
   subMenuIcon?: string;
   subMenuIconSize?: number;
 

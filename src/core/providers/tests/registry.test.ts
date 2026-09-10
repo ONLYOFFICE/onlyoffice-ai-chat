@@ -7,6 +7,7 @@ import {
   createProvider,
   getProviderMetadata,
   getProviderName,
+  getReasoningSupport,
   getSupportedProviderTypes,
   isValidProviderType,
   loadProvider,
@@ -190,6 +191,80 @@ describe("Provider Registry", () => {
       const a = await createProvider("openai", creds);
       const b = await createProvider("openai", creds);
       expect(a).not.toBe(b);
+    });
+  });
+
+  describe("getReasoningSupport", () => {
+    class LocalProvider extends AbstractBaseProvider {
+      static async checkProvider() {
+        return true;
+      }
+      static async getProviderModels() {
+        return [];
+      }
+      static getName() {
+        return "Local";
+      }
+      static getBaseUrl() {
+        return "https://local";
+      }
+      async *sendMessage() {
+        yield { role: "assistant" as const, content: [] };
+      }
+      async sendMessageSync() {
+        return "";
+      }
+    }
+    const customCtor: BaseProvider = LocalProvider;
+
+    it("answers synchronously from the built-in tables", () => {
+      expect(getReasoningSupport("anthropic", "claude-opus-5")).toEqual({
+        thinks: true,
+        canDisable: true,
+        depths: ["low", "medium", "high", "max"],
+      });
+      expect(
+        getReasoningSupport("genai", "gemini-3-pro-preview").depths
+      ).toEqual(["low", "high"]);
+      expect(getReasoningSupport("stabilityai", "sd3").thinks).toBe(false);
+    });
+
+    it("shares OpenAI's table across the OpenAI-compatible backends", () => {
+      expect(getReasoningSupport("ollama", "gpt-oss:20b")).toEqual(
+        getReasoningSupport("openai", "gpt-oss:20b")
+      );
+    });
+
+    it("answers ONLYOFFICE from OpenRouter's table — the route proxies it one-to-one", () => {
+      expect(
+        getReasoningSupport("onlyoffice", "anthropic/claude-opus-5")
+      ).toEqual(getReasoningSupport("openrouter", "anthropic/claude-opus-5"));
+      expect(
+        getReasoningSupport("onlyoffice", "x-ai/grok-4.6").canDisable
+      ).toBe(false);
+    });
+
+    it("assumes everything for unknown types and statics-less custom providers", () => {
+      expect(getReasoningSupport("nonexistent", "m").depths).toHaveLength(4);
+      registerProvider("custom-llm", customCtor);
+      expect(getReasoningSupport("custom-llm", "m").canDisable).toBe(true);
+      unregisterProvider("custom-llm");
+    });
+
+    it("asks a custom provider that declares the static", () => {
+      const withSupport = Object.assign(class extends LocalProvider {}, {
+        getReasoningSupport: () => ({
+          thinks: true,
+          canDisable: false,
+          depths: ["low", "high"] as const,
+        }),
+      }) as unknown as BaseProvider;
+      registerProvider("custom-llm", withSupport);
+      expect(getReasoningSupport("custom-llm", "m").depths).toEqual([
+        "low",
+        "high",
+      ]);
+      unregisterProvider("custom-llm");
     });
   });
 });

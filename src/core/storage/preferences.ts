@@ -1,3 +1,5 @@
+import type { ReasoningLevel } from "../../shared/reasoning-level";
+
 /**
  * Storage interface for small scalar user preferences.
  *
@@ -26,4 +28,32 @@ export interface PreferencesStorage {
   upsertDeepMode(value: boolean, entityId?: string): Promise<void>;
 
   deleteDeepMode(entityId?: string): Promise<void>;
+
+  // --- Reasoning level (extended thinking depth) ---
+  //
+  // The depth that goes with the deep-mode toggle: deep mode stays the
+  // on/off switch, this is how hard the model thinks while it is on. The
+  // methods are optional so adapters written before the depth existed keep
+  // compiling; `PreferencesEngine` falls back to its default depth when
+  // they are absent. Same `entityId` scoping as deep mode.
+
+  createReasoningLevel?(
+    value: ReasoningLevel,
+    entityId?: string
+  ): Promise<void>;
+
+  readReasoningLevel?(entityId?: string): Promise<ReasoningLevel | null>;
+
+  updateReasoningLevel?(
+    value: ReasoningLevel,
+    entityId?: string
+  ): Promise<void>;
+
+  /** Idempotent write — see {@link upsertDeepMode}. */
+  upsertReasoningLevel?(
+    value: ReasoningLevel,
+    entityId?: string
+  ): Promise<void>;
+
+  deleteReasoningLevel?(entityId?: string): Promise<void>;
 }

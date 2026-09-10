@@ -61,6 +61,7 @@ interface ProviderConstructor {
   getProviderModels(creds: ProviderCredentials): Promise<Model[]>;
   getName(): string;
   getBaseUrl(): string;
+  getReasoningSupport?(model: string): ReasoningSupport; // optional
 }
 ```
 
@@ -70,6 +71,7 @@ interface ProviderConstructor {
 | `getProviderModels`   | [`ProfilesEngine.listModels`](../services/profiles-engine.md#listmodels) for the model picker |
 | `getName`             | UI labels |
 | `getBaseUrl`          | Form defaults in the profile editor |
+| `getReasoningSupport` | The composer's Extended thinking controls — which depths to offer for the model, whether to show the toggle at all. Optional; omitted means "thinks at every depth, can be switched off". Read synchronously through `getReasoningSupport(type, model)` from the registry. |
 
 Returning `true` from `checkProvider` means "credentials are
 valid". Returning a `TErrorData` (`{ field, message }`) tells the
@@ -90,7 +92,9 @@ type SendMessageArgs = {
   model: string;
   systemPrompt: string;
   tools?: TMCPItem[];
-  withReasoning?: boolean;
+  withReasoning?: boolean;        // legacy on/off; reasoningLevel wins when both are set
+  reasoningLevel?: ReasoningLevel; // "off" | "low" | "medium" | "high" | "max"
+  useResponsesApi?: boolean;
   signal?: AbortSignal;
 };
 
@@ -98,8 +102,20 @@ type SendMessageSyncArgs = {
   messages: ThreadMessageLike[];
   model: string;
   systemPrompt: string;
+  withReasoning?: boolean;
+  reasoningLevel?: ReasoningLevel;
+  useResponsesApi?: boolean;
   signal?: AbortSignal;
 };
+```
+
+A provider reads the thinking depth with `resolveReasoningLevel(args)`
+(from the package root), which honours both fields — the level when
+present, otherwise `withReasoning: true` as `"medium"` — and then maps it
+onto its own knob, clamping to what the model accepts (see
+[Extended thinking depth](./built-in.md#extended-thinking-depth)).
+
+```ts
 
 type SendMessageResult =
   | ThreadMessageLike                                    // intermediate: deltas, tool calls, reasoning

@@ -4,12 +4,23 @@ import { render, screen } from "@testing-library/react";
 
 const mockChangeToolStatus = vi.fn();
 const mockToggleExtendedThinking = vi.fn();
+const mockSetReasoningLevel = vi.fn();
 const mockEmit = vi.fn();
 
 let mockServers: Record<string, { name: string; enabled: boolean }[]> = {};
 let mockWebSearchEnabled = false;
 let mockGetWebSearchEnabled = () => false;
 let mockExtendedThinking = false;
+let mockReasoningLevel = "off";
+let mockReasoningSupport = {
+  thinks: true,
+  canDisable: true,
+  depths: ["low", "medium", "high", "max"],
+};
+
+vi.mock("../../../hooks/useReasoningSupport", () => ({
+  useReasoningSupport: () => mockReasoningSupport,
+}));
 let mockDisabledTools: Record<string, string[]> = {};
 
 vi.mock("react-i18next", () => ({
@@ -32,6 +43,8 @@ vi.mock("../../../store/context", () => ({
       const state = {
         extendedThinking: mockExtendedThinking,
         toggleExtendedThinking: mockToggleExtendedThinking,
+        reasoningLevel: mockReasoningLevel,
+        setReasoningLevel: mockSetReasoningLevel,
       };
       return typeof selector === "function" ? selector(state) : state;
     },
@@ -105,6 +118,12 @@ describe("ServersSettings", () => {
     mockWebSearchEnabled = false;
     mockGetWebSearchEnabled = () => false;
     mockExtendedThinking = false;
+    mockReasoningLevel = "off";
+    mockReasoningSupport = {
+      thinks: true,
+      canDisable: true,
+      depths: ["low", "medium", "high", "max"],
+    };
     mockDisabledTools = {};
     mockDropdownItems = [];
     mockOnOpenChange = undefined;
@@ -226,52 +245,124 @@ describe("ServersSettings", () => {
     });
   });
 
-  describe("extended thinking item", () => {
-    it("renders with toggle", () => {
-      render(<ServersSettings />);
-      const items = mockDropdownItems as {
-        text: string;
-        withToggle?: boolean;
-        toggleChecked?: boolean;
-        withAbout?: boolean;
-      }[];
-      const etItem = items.find((i) => i.text === "ExtendedThinking");
-      expect(etItem).toBeDefined();
-      expect(etItem?.withToggle).toBe(true);
-      expect(etItem?.toggleChecked).toBe(false);
-      expect(etItem?.withAbout).toBe(true);
-    });
+  describe("effort item", () => {
+    type EffortItem = {
+      text: string;
+      trailingText?: string;
+      withAbout?: boolean;
+      withToggle?: boolean;
+      subMenuMaxHeight?: string;
+      subMenu?: { text: string; checked?: boolean; onClick: () => void }[];
+    };
+    const effortItem = () =>
+      (mockDropdownItems as EffortItem[]).find((i) => i.text === "Effort");
 
-    it("reflects extendedThinking state", () => {
+    it("renders one Effort row with the current depth and a picker, no toggle", () => {
       mockExtendedThinking = true;
+      mockReasoningLevel = "medium";
       render(<ServersSettings />);
-      const items = mockDropdownItems as {
-        text: string;
-        toggleChecked?: boolean;
-      }[];
-      const etItem = items.find((i) => i.text === "ExtendedThinking");
-      expect(etItem?.toggleChecked).toBe(true);
+      const item = effortItem();
+      expect(item).toBeDefined();
+      expect(item?.withToggle).toBeUndefined();
+      expect(item?.withAbout).toBe(true);
+      expect(item?.subMenuMaxHeight).toBe(
+        "var(--radix-dropdown-menu-content-available-height)"
+      );
+      expect(item?.trailingText).toBe("ThinkingLevelMedium");
+      expect(item?.subMenu?.map((i) => i.text)).toEqual([
+        "Off",
+        "ThinkingLevelLow",
+        "ThinkingLevelMedium",
+        "ThinkingLevelHigh",
+        "ThinkingLevelMax",
+      ]);
+      expect(item?.subMenu?.find((i) => i.checked)?.text).toBe(
+        "ThinkingLevelMedium"
+      );
+      expect(
+        (mockDropdownItems as { text: string }[]).find(
+          (i) => i.text === "ExtendedThinking"
+        )
+      ).toBeUndefined();
     });
 
-    it("calls toggleExtendedThinking on toggle change", () => {
+    it("shows Off as the value while thinking is off", () => {
+      mockReasoningLevel = "off";
       render(<ServersSettings />);
-      const items = mockDropdownItems as {
-        text: string;
-        onToggleChange?: () => void;
-      }[];
-      const etItem = items.find((i) => i.text === "ExtendedThinking")!;
-      etItem.onToggleChange!();
-      expect(mockToggleExtendedThinking).toHaveBeenCalled();
+      expect(effortItem()?.trailingText).toBe("Off");
+      expect(effortItem()?.subMenu?.find((i) => i.checked)?.text).toBe("Off");
     });
 
-    it("has aboutContent with description text", () => {
+    it("sets the picked level", () => {
       render(<ServersSettings />);
-      const items = mockDropdownItems as {
-        text: string;
-        aboutContent?: React.ReactNode;
-      }[];
-      const etItem = items.find((i) => i.text === "ExtendedThinking");
-      expect(etItem?.aboutContent).toBeDefined();
+      effortItem()!.subMenu![3].onClick();
+      expect(mockSetReasoningLevel).toHaveBeenCalledWith("high");
+      effortItem()!.subMenu![0].onClick();
+      expect(mockSetReasoningLevel).toHaveBeenCalledWith("off");
+    });
+
+    it("omits the row for a model that cannot think", () => {
+      mockReasoningSupport = { thinks: false, canDisable: false, depths: [] };
+      render(<ServersSettings />);
+      expect(effortItem()).toBeUndefined();
+    });
+
+    it("omits Off for a model that thinks always", () => {
+      mockReasoningSupport = {
+        thinks: true,
+        canDisable: false,
+        depths: ["low", "medium", "high", "max"],
+      };
+      mockReasoningLevel = "off";
+      render(<ServersSettings />);
+      expect(effortItem()?.subMenu?.map((i) => i.text)).toEqual([
+        "ThinkingLevelLow",
+        "ThinkingLevelMedium",
+        "ThinkingLevelHigh",
+        "ThinkingLevelMax",
+      ]);
+      // No switch here: a stored "off" is the standard depth, medium.
+      expect(effortItem()?.trailingText).toBe("ThinkingLevelMedium");
+      expect(effortItem()?.subMenu?.find((i) => i.checked)?.text).toBe(
+        "ThinkingLevelMedium"
+      );
+    });
+
+    it("lists only the depths the model distinguishes and marks the effective one", () => {
+      mockReasoningSupport = {
+        thinks: true,
+        canDisable: false,
+        depths: ["low", "high"],
+      };
+      mockReasoningLevel = "medium";
+      render(<ServersSettings />);
+      const item = effortItem();
+      expect(item?.subMenu?.map((i) => i.text)).toEqual([
+        "ThinkingLevelLow",
+        "ThinkingLevelHigh",
+      ]);
+      // medium is not offered; the model runs high, so high is shown.
+      expect(item?.trailingText).toBe("ThinkingLevelHigh");
+      expect(item?.subMenu?.find((i) => i.checked)?.text).toBe(
+        "ThinkingLevelHigh"
+      );
+    });
+
+    it("falls back to Off / On for a model with a switch but no depth", () => {
+      mockReasoningSupport = { thinks: true, canDisable: true, depths: [] };
+      mockReasoningLevel = "high";
+      render(<ServersSettings />);
+      const item = effortItem();
+      expect(item?.subMenu?.map((i) => i.text)).toEqual(["Off", "On"]);
+      expect(item?.trailingText).toBe("On");
+      item!.subMenu![1].onClick();
+      expect(mockSetReasoningLevel).toHaveBeenCalledWith("medium");
+    });
+
+    it("omits the row for a model that thinks always with no depth knob", () => {
+      mockReasoningSupport = { thinks: true, canDisable: false, depths: [] };
+      render(<ServersSettings />);
+      expect(effortItem()).toBeUndefined();
     });
   });
 

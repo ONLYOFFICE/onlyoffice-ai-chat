@@ -177,4 +177,38 @@ describe("openrouter/models/listModels", () => {
     await listModels({ baseUrl: "https://x" });
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({});
   });
+
+  it("reads the catalogue's reasoning object, falling back to the info list without it", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          data: [
+            {
+              id: "x-ai/grok-4.6",
+              reasoning: {
+                mandatory: true,
+                supported_efforts: ["high", "low"],
+                default_effort: "high",
+              },
+            },
+            { id: "openai/gpt-4o", reasoning: null },
+            { id: "openai/gpt-5.2" },
+          ],
+        }),
+    } as unknown as Response);
+    const out = await listModels({ baseUrl: "https://x", apiKey: "sk" });
+    expect(out[0].reasoning).toBe(true);
+    expect(out[0].reasoningSupport).toEqual({
+      thinks: true,
+      canDisable: false,
+      depths: ["low", "high"],
+      defaultDepth: "high",
+    });
+    expect(out[1].reasoning).toBe(false);
+    expect(out[1].reasoningSupport?.thinks).toBe(false);
+    // No field at all: the static info list decides, no support record.
+    expect(out[2].reasoning).toBe(true);
+    expect(out[2].reasoningSupport).toBeUndefined();
+  });
 });

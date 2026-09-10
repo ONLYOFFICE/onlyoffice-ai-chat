@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.5.103
+
+### Added
+
+- **Extended thinking has a depth, not just a switch.** A provider-neutral `ReasoningLevel` (`off` / `low` / `medium` / `high` / `max`) travels from the composer to every provider: `SendMessageArgs.reasoningLevel`, `SendMessageSyncArgs.reasoningLevel` and `ActionArgs.reasoningLevel`, threaded through every engine path (tool-call resumes included). The legacy `withReasoning` / `isReasoning` booleans keep working and mean `medium`; when both are set the level wins. Each provider maps the level onto its own knob and clamps to what the model accepts instead of sending a value the API would reject:
+
+  | Provider | Knob | low → max |
+  | --- | --- | --- |
+  | Anthropic 4.6+ / 5 / Fable | `thinking: adaptive` + `output_config.effort` | `low` / `medium` / `high` / `max` |
+  | Anthropic ≤ 4.5 | `budget_tokens` | 4000 / 10000 / 20000 / 28000 |
+  | OpenAI gpt-5.x / gpt-6 / o-series | `reasoning_effort` | `low` / `medium` / `high` / `max` (5.5+, gpt-6), `xhigh` (5.2+, codex-max), `high` elsewhere |
+  | Google Gemini 2.5 / 3.x | `thinkingLevel` | `LOW` / `MEDIUM` (`HIGH` on 3 Pro preview, which has no medium) / `HIGH` / `HIGH` |
+  | OpenRouter | `reasoning.effort` | `low` / `medium` / `high` / `xhigh` |
+  | DeepSeek V4 | `thinking.type` + `reasoning_effort` | `low` / default depth / `high` / `max` |
+  | Groq Qwen 3.8+ / GPT-OSS | `reasoning_effort` | `low` / `default` or `medium` / `high` / `high` (other Qwen: `default` only) |
+  | xAI grok-4.5+ | `reasoning_effort` | `low` / `medium` / `high` / `xhigh` (4.6+) |
+  | xAI grok-3-mini | `reasoning_effort` | `low` / `high` / `high` / `high` |
+  | Zhipu, Mistral | on/off only | any level above off enables |
+
+  The composer's Extended thinking toggle is replaced by one **Effort** row (its submenu is exempt from the dropdown's 14rem height cap — `DropDownItemProps.subMenuMaxHeight`, new — so it never scrolls in hosts with taller rows): the current depth as its value, an "i" with the cost note, and a submenu that lists Off and the depths with a check mark on the active one. `onExtendedThinkingUpdated` now carries `level` next to `enabled`; the profiles store exposes `reasoningLevel` and `setReasoningLevel(level)` (its `toggleExtendedThinking` stays and restores the depth chosen last). Locale keys: `Effort`, `Off`, `On`, `ThinkingLevelLow` … `ThinkingLevelMax`, `ExtendedThinkingAlwaysOn` added to all 41 locales.
+
+- **The thinking controls adapt to the model.** Each provider describes every model through a `ReasoningSupport` record (`thinks`, `canDisable`, `depths`) in an SDK-free `reasoning.ts`, served synchronously by the registry as `getReasoningSupport(type, model)` — the same table the request builders clamp to (`clampReasoningLevel`: nearest listed depth, ties upward), so what the menu shows is what goes on the wire. A model that cannot think (gpt-4o, Gemini 2.0, Llama on Groq, Claude 3.5, …) gets no Effort row at all; one that thinks always (Claude Fable, Grok 4.5+, Gemini 3) lists no Off and says so in its "i" note — a stored Off then means the standard depth, `medium` clamped to the model, which is what the request carries (`effectiveReasoningLevel`) and what the row shows; a model with a switch but no depth (Zhipu, Mistral) lists Off / On; one that thinks always with no knob (grok-4, `deepseek-reasoner`) has nothing to choose and no row. The depths listed are only the ones the model distinguishes — `low` / `high` on Gemini 3 Pro preview and grok-3-mini, `medium` … `max` on the OpenAI `pro` variants — and the value shown is the depth the model actually runs when the stored pick is not among them. For OpenRouter and ONLYOFFICE the table comes from the catalogue itself: `/models` reports a per-model `reasoning` object (`mandatory`, `supported_efforts`, `default_effort`), which is stored as `Model.reasoningSupport`, copied onto the profile at save time (`Profile.reasoningSupport`, new) and preferred over the id-based table — so a model that OpenRouter marks mandatory (Grok, Claude Fable) offers no Off, and a stored Off runs its catalogue default. An `external` profile is answered for the provider it is based on; ONLYOFFICE, a one-to-one proxy in front of OpenRouter, uses OpenRouter's unified `reasoning` object and per-route table instead of OpenAI's `reasoning_effort`, and like OpenRouter stays on `/chat/completions` (profiles an earlier build probed onto the Responses transport are steered back). Custom providers join in through the optional static `getReasoningSupport(model)` on `ProviderConstructor`; without it they are assumed to think at every depth with an off switch, as before.
+
+- **Persistence.** `PreferencesEngine.getReasoningLevel` / `setReasoningLevel` (routes `GET preferences/get-reasoning-level`, `PUT preferences/set-reasoning-level`) and five *optional* `*ReasoningLevel` methods on `PreferencesStorage`. Deep mode stays the master switch, so a host that only knows the boolean keeps full control: off means `off` whatever depth is stored, on means the stored depth or the default (`PreferenceDefaults.reasoningLevel`, `medium`). A host without the new routes or storage methods is fine — the widget falls back to the deep-mode routes after the first failed call and keeps the chosen depth in memory for the session.
+
+- `ReasoningLevel`, `ReasoningDepth`, `ReasoningSupport`, `REASONING_LEVELS`, `REASONING_DEPTHS`, `DEFAULT_REASONING_LEVEL`, `FULL_REASONING_SUPPORT`, `NO_REASONING_SUPPORT`, `isReasoningLevel`, `resolveReasoningLevel`, `reasoningSupport`, `clampReasoningLevel`, `effectiveReasoningLevel` the registry's `getReasoningSupport` and the catalogue converter `reasoningSupportFromCatalog` (with `OpenRouterReasoningMeta`) are exported from the package root and `/core`. `Profile.reasoningSupport` is on both the widget and the core `Profile` type, so hosts persisting profiles see it.
+
+### Changed
+
+- **Models that cannot stop thinking get no Off in the composer.** A stored Off there means the standard depth — `effort: "medium"` on `x-ai/*` and Claude Fable / Mythos through OpenRouter, `output_config.effort: "medium"` on Claude Fable / Mythos, `reasoning_effort: "medium"` on Grok, GPT-OSS, gpt-5.0 / gpt-6 and the o-series (`"high"` on grok-3-mini, which has no medium), `thinkingLevel: MEDIUM` on Gemini 2.5 Pro and 3.x (`HIGH` on 3 Pro preview) — so the composer shows the depth that really runs. Every model that can stop keeps its real off switch: `none` on OpenRouter (Claude included — OpenRouter turns it into `thinking: disabled`), `thinking: disabled` on Claude 4.6+, `reasoning_effort: "none"` on gpt-5.1+, `thinkingBudget: 0` on Gemini 2.5 Flash.
+
+- **`reasoningRequestFields` / `reasoningResponsesFields` on `OpenAIProvider` take a `ReasoningLevel`** instead of the `withReasoning` boolean, as does `getStream`'s `reasoningLevel` param. Subclasses that override these hooks need the new signature; `AbstractBaseProvider` implementations are unaffected — they read `args.reasoningLevel` / `args.withReasoning` and can use `resolveReasoningLevel(args)`.
+
+### Fixed
+
+- **OpenAI-family requests no longer send `reasoning_effort` to models that do not think.** With the toggle on, `"medium"` went to every model, gpt-4o and gpt-4.1 included, which reject the parameter. The known non-reasoning families now get no field; ids an OpenAI-compatible backend serves are still assumed to reason.
+
+- **xAI no longer sends `reasoning_effort` to Grok models that reject it.** The inherited OpenAI mapping sent `"medium"` to every xAI model with thinking on; grok-4, grok-4.1-fast and grok-code-fast reject the parameter, so the round failed with a 400. It is now sent only where xAI documents it: `low` / `medium` / `high` (and `xhigh` from 4.6) on grok-4.5 and newer, `low` / `high` on grok-3-mini, nothing elsewhere. Off sends nothing on every Grok — the reasoning cannot be disabled.
+
 ## 0.5.97
 
 ### Added

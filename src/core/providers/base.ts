@@ -2,6 +2,7 @@ import type { TErrorData } from "../../shared/error-data";
 import type { ImageGenerationArgs } from "../../shared/image-generation-args";
 import type { Model } from "../../shared/model";
 import type { ProviderCredentials } from "../../shared/provider-credentials";
+import type { ReasoningSupport } from "../../shared/reasoning-level";
 import type {
   SendMessageArgs,
   SendMessageResult,
@@ -59,4 +60,13 @@ export interface ProviderConstructor {
   getProviderModels(creds: ProviderCredentials): Promise<Model[]>;
   getName(): string;
   getBaseUrl(): string;
+  /**
+   * What one of this provider's models can do with extended thinking —
+   * which depths it distinguishes and whether it can be switched off. The
+   * composer offers only those choices. Optional: a provider that omits it
+   * is assumed to think at every depth and to have an off switch. Built-in
+   * providers answer from SDK-free tables so the registry can serve the
+   * question synchronously — see `getReasoningSupport` in the registry.
+   */
+  getReasoningSupport?(model: string): ReasoningSupport;
 }

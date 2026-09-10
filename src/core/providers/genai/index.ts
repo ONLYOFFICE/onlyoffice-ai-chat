@@ -4,6 +4,7 @@ import type { TErrorData } from "../../../shared/error-data";
 import logger from "../../../shared/logger";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import { resolveReasoningLevel } from "../../../shared/reasoning-level";
 import type {
   SendMessageArgs,
   SendMessageResult,
@@ -32,13 +33,15 @@ class GenAIProvider extends AbstractBaseProvider {
   }
 
   async *sendMessage(args: SendMessageArgs): AsyncGenerator<SendMessageResult> {
-    const { messages, model, systemPrompt, tools, withReasoning, signal } =
-      args;
+    const { messages, model, systemPrompt, tools, signal } = args;
 
     try {
       const convertedTools = convertTools(tools ?? []);
 
-      const thinkingConfig = resolveThinkingConfig(model, withReasoning);
+      const thinkingConfig = resolveThinkingConfig(
+        model,
+        resolveReasoningLevel(args)
+      );
 
       const stream = await this.client.models.generateContentStream({
         model,
@@ -65,13 +68,16 @@ class GenAIProvider extends AbstractBaseProvider {
   }
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
-    const { messages, model, systemPrompt, withReasoning, signal } = args;
+    const { messages, model, systemPrompt, signal } = args;
     const response = await this.client.models.generateContent({
       model,
       contents: convertMessages(messages),
       config: {
         systemInstruction: systemPrompt,
-        thinkingConfig: resolveThinkingConfig(model, withReasoning),
+        thinkingConfig: resolveThinkingConfig(
+          model,
+          resolveReasoningLevel(args)
+        ),
         abortSignal: signal,
       },
     });

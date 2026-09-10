@@ -32,6 +32,7 @@ export async function* custom(
     systemPrompt: args.systemPrompt,
     tools: args.tools,
     withReasoning: args.isReasoning,
+    reasoningLevel: args.reasoningLevel,
     signal: args.signal,
   });
 }
@@ -50,6 +51,7 @@ export const customSync = async (
     useResponsesApi: args.profile.useResponsesApi === true,
     systemPrompt: args.systemPrompt,
     withReasoning: args.isReasoning,
+    reasoningLevel: args.reasoningLevel,
     signal: args.signal,
   });
   return { role: "assistant", content: [{ type: "text", text }] };

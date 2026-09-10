@@ -14,12 +14,15 @@ export const recognizeText = async (
   const messages = isFallbackProfile(args.profile)
     ? transformHistoryToText(args.messages)
     : args.messages;
-  const text = await (await providerFor(args)).sendMessageSync({
+  const text = await (
+    await providerFor(args)
+  ).sendMessageSync({
     messages,
     model: args.profile.modelId,
     useResponsesApi: args.profile.useResponsesApi === true,
     systemPrompt: resolveSystemPrompt(systemPrompt, args.prompt),
     withReasoning: args.isReasoning,
+    reasoningLevel: args.reasoningLevel,
     signal: args.signal,
   });
   return { role: "assistant", content: [{ type: "text", text }] };

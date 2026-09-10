@@ -366,7 +366,7 @@ deleteMany(actionTypes: ActionType[]): Promise<void>;             // batched, no
 Scalar toggles. Each preference gets its own typed CRUD quartet —
 no stringly-typed keys, no JSON parsing at call sites.
 
-Today the only entry is the **deep-mode** toggle (extended thinking):
+The **deep-mode** toggle (extended thinking on/off):
 
 ```ts
 createDeepMode(value: boolean, entityId?: string): Promise<void>;   // throws if already set in scope
@@ -374,6 +374,19 @@ readDeepMode(entityId?: string): Promise<boolean | null>;            // null = n
 updateDeepMode(value: boolean, entityId?: string): Promise<void>;   // throws if never set in scope
 upsertDeepMode(value: boolean, entityId?: string): Promise<void>;   // idempotent — used by PreferencesEngine
 deleteDeepMode(entityId?: string): Promise<void>;                    // clears the scope's entry
+```
+
+The **reasoning level** — the depth that goes with the toggle. These
+five are *optional* so adapters written before the depth existed keep
+compiling; `PreferencesEngine` falls back to its default depth when
+they are absent and only ever calls `read` / `upsert`:
+
+```ts
+createReasoningLevel?(value: ReasoningLevel, entityId?: string): Promise<void>;
+readReasoningLevel?(entityId?: string): Promise<ReasoningLevel | null>;
+updateReasoningLevel?(value: ReasoningLevel, entityId?: string): Promise<void>;
+upsertReasoningLevel?(value: ReasoningLevel, entityId?: string): Promise<void>;
+deleteReasoningLevel?(entityId?: string): Promise<void>;
 ```
 
 Each method takes an optional `entityId` last argument — when

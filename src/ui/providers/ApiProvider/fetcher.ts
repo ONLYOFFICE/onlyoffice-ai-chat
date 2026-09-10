@@ -30,6 +30,30 @@ const STREAMING_METHODS: Partial<Record<ServiceKey, ReadonlySet<string>>> = {
   ]),
 };
 
+/**
+ * A non-2xx answer from a host route. Carries the status so callers can
+ * tell a route the host does not serve (404 / 405 / 501) from a transient
+ * failure — the profiles store falls back to older routes only for the
+ * former.
+ */
+export class RouteError extends Error {
+  readonly status: number;
+
+  constructor(status: number, statusText: string) {
+    super(`HTTP ${status}: ${statusText}`);
+    this.name = "RouteError";
+    this.status = status;
+  }
+}
+
+/** True when the host answered that it does not serve the route at all. */
+export function isRouteUnavailable(error: unknown): boolean {
+  return (
+    error instanceof RouteError &&
+    (error.status === 404 || error.status === 405 || error.status === 501)
+  );
+}
+
 function isStreamingRoute(service: ServiceKey, method: string): boolean {
   return STREAMING_METHODS[service]?.has(method) ?? false;
 }
@@ -218,7 +242,7 @@ export function callRoute<
 
   const runFetch = () =>
     fetch(url, init).then((res) => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      if (!res.ok) throw new RouteError(res.status, res.statusText);
       return res.json();
     });
 

@@ -1,5 +1,6 @@
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import type { ReasoningLevel } from "../../../shared/reasoning-level";
 import { OpenAIProvider } from "../openai";
 import { zhipuInfo } from "./info";
 import { listModels } from "./models";
@@ -14,15 +15,16 @@ class ZhipuProvider extends OpenAIProvider {
   /**
    * GLM-4.5 and newer think *by default* and are switched through
    * Zhipu's own `thinking.type` field (`reasoning_effort` means nothing
-   * here), so off has to be sent explicitly as `"disabled"`. Older GLM-4
+   * here), so off has to be sent explicitly as `"disabled"`. The switch has
+   * no depth: every level above off is plain `"enabled"`. Older GLM-4
    * models have no thinking and get no field at all.
    */
   protected override reasoningRequestFields(
     model: string,
-    withReasoning?: boolean
+    level: ReasoningLevel
   ): Record<string, unknown> {
     if (!/glm-(?:4\.[5-9]|[5-9])/i.test(model)) return {};
-    return { thinking: { type: withReasoning ? "enabled" : "disabled" } };
+    return { thinking: { type: level === "off" ? "disabled" : "enabled" } };
   }
 
   static override getName(): string {

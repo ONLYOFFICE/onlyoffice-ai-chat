@@ -22,6 +22,7 @@ type ShellProps = {
   alignOffset?: number;
   contentClassName?: string;
   maxWidth?: number | string;
+  maxHeight?: number | string;
   matchTriggerWidth?: boolean;
   dropdownRef?: React.RefObject<HTMLDivElement | null>;
   onContentKeyDown?: (e: React.KeyboardEvent) => void;
@@ -38,6 +39,7 @@ const Shell = ({
   alignOffset,
   contentClassName,
   maxWidth,
+  maxHeight,
   matchTriggerWidth,
   dropdownRef,
   onContentKeyDown,
@@ -122,6 +124,7 @@ const Shell = ({
             maxWidth:
               maxWidth ?? "var(--radix-dropdown-menu-content-available-width)",
             maxHeight:
+              maxHeight ??
               "min(14rem, var(--radix-dropdown-menu-content-available-height))",
           }}
         >
@@ -140,14 +143,16 @@ const Shell = ({
 // structurally changed tree falls back to the deepest still-valid level.
 function resolveLevel(root: DropDownItemProps[], path: number[]) {
   let level = root;
+  let parent: DropDownItemProps | undefined;
   const validPath: number[] = [];
   for (const index of path) {
     const item = level[index];
     if (!item?.subMenu?.length) break;
     level = item.subMenu;
+    parent = item;
     validPath.push(index);
   }
-  return { level, validPath };
+  return { level, parent, validPath };
 }
 
 // Drill-down "back" row: the whole row is the target and shows only a chevron
@@ -190,6 +195,7 @@ const DropdownMenuComponent = ({
   alignOffset,
   contentClassName,
   maxWidth,
+  maxHeight,
   matchTriggerWidth,
   open,
   dropdownRef,
@@ -206,7 +212,7 @@ const DropdownMenuComponent = ({
   // Navigation stack of child indices; only meaningful in drill-down mode.
   const [path, setPath] = useState<number[]>([]);
 
-  const { level, validPath } = useMemo(
+  const { level, parent, validPath } = useMemo(
     () => resolveLevel(items, isDrill ? path : []),
     [items, path, isDrill]
   );
@@ -254,6 +260,10 @@ const DropdownMenuComponent = ({
           ? "min(300px, var(--radix-dropdown-menu-content-available-width))"
           : undefined)
       }
+      // A drilled-in level reuses this Content too, so a row that wants a
+      // taller submenu (`subMenuMaxHeight`) has to raise the cap here; every
+      // other level keeps the default.
+      maxHeight={maxHeight ?? parent?.subMenuMaxHeight}
       matchTriggerWidth={matchTriggerWidth}
       dropdownRef={dropdownRef}
       onContentKeyDown={onContentKeyDown}

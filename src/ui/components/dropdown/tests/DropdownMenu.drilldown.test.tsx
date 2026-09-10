@@ -148,6 +148,20 @@ describe("DropdownMenu drill-down", () => {
     expect(screen.getAllByText("New folder")).toHaveLength(2);
   });
 
+  it("raises the height cap only while inside a row that asks for it", () => {
+    const items = makeTree();
+    items[1].subMenuMaxHeight = "40rem";
+    renderMenu({ items });
+    const content = () =>
+      document.querySelector(".dropdown-menu") as HTMLElement;
+    expect(content().style.maxHeight).toContain("14rem");
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    expect(content().style.maxHeight).toBe("40rem");
+    // The deeper level has no cap of its own: back to the default.
+    fireEvent.click(screen.getByTestId("drill-SubFolder"));
+    expect(content().style.maxHeight).toContain("14rem");
+  });
+
   it("flyout mode renders all items flat with navigation=flyout and no back row", () => {
     renderMenu({ navigation: "flyout" });
     expect(screen.getByText("Leaf")).toBeInTheDocument();

@@ -145,3 +145,99 @@ describe("PreferencesEngine entity scope", () => {
     expect(await engine.isDeepModeSet("e2")).toBe(false);
   });
 });
+
+describe("PreferencesEngine reasoning level", () => {
+  function makeLevelStorage(seed: {
+    deepMode?: boolean | null;
+    level?: string | null;
+    withLevelMethods?: boolean;
+  }) {
+    let deep: boolean | null = seed.deepMode ?? null;
+    let level: string | null = seed.level ?? null;
+    const preferences: Record<string, unknown> = {
+      readDeepMode: vi.fn(async () => deep),
+      upsertDeepMode: vi.fn(async (v: boolean) => {
+        deep = v;
+      }),
+    };
+    if (seed.withLevelMethods !== false) {
+      preferences.readReasoningLevel = vi.fn(async () => level);
+      preferences.upsertReasoningLevel = vi.fn(async (v: string) => {
+        level = v;
+      });
+    }
+    return {
+      storage: { preferences } as unknown as StorageAdapter,
+      get deep() {
+        return deep;
+      },
+      get level() {
+        return level;
+      },
+    };
+  }
+
+  it("is off whenever deep mode is off, whatever depth was stored", async () => {
+    const s = makeLevelStorage({ deepMode: false, level: "high" });
+    expect(
+      await new PreferencesEngine({ storage: s.storage }).getReasoningLevel()
+    ).toBe("off");
+  });
+
+  it("returns the stored depth while deep mode is on", async () => {
+    const s = makeLevelStorage({ deepMode: true, level: "high" });
+    expect(
+      await new PreferencesEngine({ storage: s.storage }).getReasoningLevel()
+    ).toBe("high");
+  });
+
+  it("falls back to the default depth when none is stored or the adapter has no depth methods", async () => {
+    const a = makeLevelStorage({ deepMode: true });
+    expect(
+      await new PreferencesEngine({ storage: a.storage }).getReasoningLevel()
+    ).toBe(DEFAULT_PREFERENCES.reasoningLevel);
+    const b = makeLevelStorage({ deepMode: true, withLevelMethods: false });
+    expect(
+      await new PreferencesEngine(
+        { storage: b.storage },
+        {
+          reasoningLevel: "low",
+        }
+      ).getReasoningLevel()
+    ).toBe("low");
+  });
+
+  it("setReasoningLevel keeps the toggle and the depth in sync", async () => {
+    const s = makeLevelStorage({});
+    const engine = new PreferencesEngine({ storage: s.storage });
+    await engine.setReasoningLevel("max", "room-1");
+    expect(s.storage.preferences.upsertDeepMode).toHaveBeenCalledWith(
+      true,
+      "room-1"
+    );
+    expect(s.storage.preferences.upsertReasoningLevel).toHaveBeenCalledWith(
+      "max",
+      "room-1"
+    );
+    expect(await engine.getReasoningLevel("room-1")).toBe("max");
+  });
+
+  it("off clears the toggle but remembers the depth for the next on", async () => {
+    const s = makeLevelStorage({});
+    const engine = new PreferencesEngine({ storage: s.storage });
+    await engine.setReasoningLevel("high");
+    await engine.setReasoningLevel("off");
+    expect(s.deep).toBe(false);
+    expect(s.level).toBe("high");
+    await engine.setDeepMode(true);
+    expect(await engine.getReasoningLevel()).toBe("high");
+  });
+
+  it("setReasoningLevel still lands the toggle on adapters without depth methods", async () => {
+    const s = makeLevelStorage({ withLevelMethods: false });
+    await new PreferencesEngine({ storage: s.storage }).setReasoningLevel(
+      "low"
+    );
+    expect(s.deep).toBe(true);
+  });
+});

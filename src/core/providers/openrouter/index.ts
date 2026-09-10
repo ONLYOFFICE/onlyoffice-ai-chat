@@ -4,6 +4,7 @@ import type { ImageGenerationArgs } from "../../../shared/image-generation-args"
 import logger from "../../../shared/logger";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import type { ReasoningLevel } from "../../../shared/reasoning-level";
 import type {
   SendMessageArgs,
   SendMessageResult,
@@ -12,6 +13,7 @@ import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args
 import { OpenAIProvider } from "../openai";
 import { openrouterInfo } from "./info";
 import { checkCredentials, listModels } from "./models";
+import { openRouterReasoningFields } from "./reasoning";
 
 /**
  * OpenRouter — aggregates many upstream models behind an OpenAI-compatible
@@ -19,16 +21,6 @@ import { checkCredentials, listModels } from "./models";
  * `checkProvider` and `getProviderModels` (OpenRouter's error shapes and
  * `/models/user` route aren't exposed through the SDK).
  */
-/**
- * OpenRouter's unified `reasoning` object for one round: `"medium"` while
- * extended thinking is on, `"none"` (reasoning disabled) while it is off.
- */
-function openRouterReasoning(withReasoning?: boolean): {
-  effort: "medium" | "none";
-} {
-  return { effort: withReasoning ? "medium" : "none" };
-}
-
 class OpenRouterProvider extends OpenAIProvider {
   static override getName(): string {
     return openrouterInfo.name;
@@ -59,15 +51,15 @@ class OpenRouterProvider extends OpenAIProvider {
    *
    * Reasoning off is sent explicitly as `effort: "none"` — OpenRouter's
    * documented "disables reasoning entirely" level. Omitting the field is
-   * not enough: models OpenRouter marks as reasoning-by-default (Claude 4.6+
-   * with adaptive thinking, Gemini 3, …) keep thinking when nothing says
-   * otherwise.
+   * not enough: models OpenRouter marks as reasoning-by-default (Gemini 3,
+   * …) keep thinking when nothing says otherwise. Routes that cannot stop
+   * upstream get the standard depth — see {@link openRouterReasoningFields}.
    */
   protected override reasoningRequestFields(
-    _model: string,
-    withReasoning?: boolean
+    model: string,
+    level: ReasoningLevel
   ): Record<string, unknown> {
-    return { reasoning: openRouterReasoning(withReasoning) };
+    return openRouterReasoningFields(model, level);
   }
 
   /**

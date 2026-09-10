@@ -1,7 +1,14 @@
 import type OpenAI from "openai";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import type { ReasoningLevel } from "../../../shared/reasoning-level";
+import type {
+  SendMessageArgs,
+  SendMessageResult,
+} from "../../../shared/send-message-args";
+import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args";
 import { OpenAIProvider } from "../openai";
+import { openRouterReasoningFields } from "../openrouter/reasoning";
 import { withCacheControl } from "./cache-control";
 import { onlyOfficeInfo } from "./info";
 import { listModels } from "./models";
@@ -82,6 +89,50 @@ class OnlyOfficeProvider extends OpenAIProvider {
   }
 
   /**
+   * The ONLYOFFICE route is a one-to-one proxy in front of OpenRouter: the
+   * same `vendor/model` ids and the same unified `reasoning` object, so
+   * extended thinking is spelled exactly as {@link OpenRouterProvider}
+   * spells it (`effort` per level, `none` where the route can stop, the
+   * floor where it cannot) — OpenAI's `reasoning_effort` means nothing
+   * behind it. The Responses hook is overridden too so a profile an earlier
+   * build probed onto that transport never sends the OpenAI spelling.
+   */
+  protected override reasoningRequestFields(
+    model: string,
+    level: ReasoningLevel
+  ): Record<string, unknown> {
+    return openRouterReasoningFields(model, level);
+  }
+
+  protected override reasoningResponsesFields(
+    model: string,
+    level: ReasoningLevel
+  ): Record<string, unknown> {
+    return openRouterReasoningFields(model, level);
+  }
+
+  /**
+   * Like OpenRouter, the route stays on `/chat/completions`: that is the
+   * endpoint whose unified `reasoning` object has an off switch and streams
+   * the thinking back, and the one the proxy forwards one-to-one. The live
+   * probe is skipped, and profiles an earlier build probed onto the
+   * Responses transport are steered back on every call.
+   */
+  override async checkResponsesApi(): Promise<boolean> {
+    return false;
+  }
+
+  override sendMessage(
+    args: SendMessageArgs
+  ): AsyncGenerator<SendMessageResult> {
+    return super.sendMessage({ ...args, useResponsesApi: false });
+  }
+
+  override sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
+    return super.sendMessageSync({ ...args, useResponsesApi: false });
+  }
+
+  /**
    * Same request as the base provider, with Anthropic-style prompt-caching
    * breakpoints attached to the message list. The ONLYOFFICE route proxies
    * to Claude, which reuses the static prefix (system prompt + history)
@@ -94,7 +145,7 @@ class OnlyOfficeProvider extends OpenAIProvider {
     messages: OpenAI.Chat.ChatCompletionMessageParam[];
     model: string;
     tools: OpenAI.Chat.ChatCompletionTool[];
-    withReasoning?: boolean;
+    reasoningLevel: ReasoningLevel;
     signal?: AbortSignal;
   }) {
     return super.getStream({

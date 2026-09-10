@@ -22,6 +22,19 @@ Ollama, OpenRouter, Together, xAI, Zhipu, OpenAICompatible,
 ONLYOFFICE) inherit the full pipeline from `OpenAIProvider` and
 override only static identity / model lookup.
 
+## Extended thinking depth
+
+Every provider gets the same `ReasoningLevel` (`off` … `max`) via
+`SendMessageArgs.reasoningLevel` and maps it onto its own knob,
+clamping to what the model accepts. The per-model table lives in the
+folder's SDK-free `reasoning.ts` (`get<Provider>ReasoningSupport`),
+which the registry serves synchronously to the composer as
+`getReasoningSupport(type, model)` and the request builders clamp to. The OpenAI family does it in
+`reasoningRequestFields` / `reasoningResponsesFields` (overridden by
+OpenRouter, Groq, DeepSeek, xAI, Zhipu); Anthropic and Google in their
+`thinking.ts`. The full per-provider table lives in
+[`docs/core/providers/built-in.md`](../../../docs/core/providers/built-in.md#extended-thinking-depth).
+
 ## Full documentation
 
 See [`docs/core/providers/`](../../../docs/core/providers/README.md):
