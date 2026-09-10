@@ -20,7 +20,11 @@ import { createOpenAIClient } from "./client";
 import { openaiInfo } from "./info";
 import { convertMessages } from "./messages";
 import { listModels } from "./models";
-import { resolveReasoningEffort, resolveReasoningParam } from "./reasoning";
+import {
+  resolveReasoningEffort,
+  resolveReasoningParam,
+  getOpenAIReasoningSupport,
+} from "./reasoning";
 import {
   convertMessagesToResponses,
   convertToolsToResponses,
@@ -173,7 +177,11 @@ class OpenAIProvider extends AbstractBaseProvider {
     model: string,
     level: ReasoningLevel
   ): Record<string, unknown> {
-    const effort = resolveReasoningEffort(model, level);
+    const effort = resolveReasoningEffort(
+      model,
+      level,
+      this.reasoningSupportFor(model, getOpenAIReasoningSupport)
+    );
     return effort ? { reasoning_effort: effort } : {};
   }
 
@@ -193,7 +201,12 @@ class OpenAIProvider extends AbstractBaseProvider {
     level: ReasoningLevel,
     opts?: { summary?: boolean }
   ): Record<string, unknown> {
-    const reasoning = resolveReasoningParam(model, level, opts);
+    const reasoning = resolveReasoningParam(
+      model,
+      level,
+      opts,
+      this.reasoningSupportFor(model, getOpenAIReasoningSupport)
+    );
     return reasoning ? { reasoning } : {};
   }
 

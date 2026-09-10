@@ -32,7 +32,7 @@ class GroqProvider extends OpenAIProvider {
     model: string,
     level: ReasoningLevel
   ): Record<string, unknown> {
-    const support = getGroqReasoningSupport(model);
+    const support = this.reasoningSupportFor(model, getGroqReasoningSupport);
     if (!support.thinks) return {};
     const id = model.toLowerCase();
     const effective = effectiveReasoningLevel(level, support);

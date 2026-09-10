@@ -28,7 +28,7 @@ class XAIProvider extends OpenAIProvider {
     model: string,
     level: ReasoningLevel
   ): Record<string, unknown> {
-    const support = getXAIReasoningSupport(model);
+    const support = this.reasoningSupportFor(model, getXAIReasoningSupport);
     if (support.depths.length === 0) return {};
     const effective = effectiveReasoningLevel(level, support);
     if (effective === "off") return {};

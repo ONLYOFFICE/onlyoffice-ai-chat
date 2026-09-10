@@ -184,3 +184,37 @@ describe("resolveReasoningParam", () => {
     ).toBeUndefined();
   });
 });
+
+describe("resolveReasoningEffort with an explicit support", () => {
+  it("resolves against the record it is given instead of the id table", () => {
+    // gpt-5.1 can stop per the table; a catalogue that says otherwise wins,
+    // so a stored off becomes the standard depth.
+    expect(resolveReasoningEffort("gpt-5.1", "off")).toBe("none");
+    expect(
+      resolveReasoningEffort("gpt-5.1", "off", {
+        thinks: true,
+        canDisable: false,
+        depths: ["low", "medium", "high"],
+      })
+    ).toBe("medium");
+    // …and a record that says the model does not think sends nothing.
+    expect(
+      resolveReasoningEffort("gpt-5.1", "high", NO_REASONING_SUPPORT)
+    ).toBeUndefined();
+  });
+
+  it("threads the support through resolveReasoningParam", () => {
+    expect(
+      resolveReasoningParam(
+        "gpt-5.1",
+        "off",
+        { summary: true },
+        {
+          thinks: true,
+          canDisable: false,
+          depths: ["low", "medium", "high"],
+        }
+      )
+    ).toEqual({ effort: "medium" });
+  });
+});

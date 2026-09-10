@@ -13,7 +13,10 @@ import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args
 import { OpenAIProvider } from "../openai";
 import { openrouterInfo } from "./info";
 import { checkCredentials, listModels } from "./models";
-import { openRouterReasoningFields } from "./reasoning";
+import {
+  getOpenRouterReasoningSupport,
+  openRouterReasoningFields,
+} from "./reasoning";
 
 /**
  * OpenRouter — aggregates many upstream models behind an OpenAI-compatible
@@ -59,7 +62,11 @@ class OpenRouterProvider extends OpenAIProvider {
     model: string,
     level: ReasoningLevel
   ): Record<string, unknown> {
-    return openRouterReasoningFields(model, level);
+    return openRouterReasoningFields(
+      model,
+      level,
+      this.reasoningSupportFor(model, getOpenRouterReasoningSupport)
+    );
   }
 
   /**

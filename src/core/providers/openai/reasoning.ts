@@ -141,9 +141,9 @@ export function getOpenAIReasoningSupport(model: string): ReasoningSupport {
  */
 export function resolveReasoningEffort(
   model: string,
-  level: ReasoningLevel
+  level: ReasoningLevel,
+  support: ReasoningSupport = getOpenAIReasoningSupport(model)
 ): OpenAIReasoningEffort | undefined {
-  const support = getOpenAIReasoningSupport(model);
   if (!support.thinks) return undefined;
   if (support.canDisable && clampReasoningLevel(level, support) === "off") {
     return supportsNoneReasoning(model) ? "none" : undefined;
@@ -181,9 +181,10 @@ export function resolveReasoningEffort(
 export function resolveReasoningParam(
   model: string,
   level: ReasoningLevel,
-  opts?: { summary?: boolean }
+  opts?: { summary?: boolean },
+  support?: ReasoningSupport
 ): { effort: OpenAIReasoningEffort; summary?: "auto" } | undefined {
-  const effort = resolveReasoningEffort(model, level);
+  const effort = resolveReasoningEffort(model, level, support);
   if (!effort) return undefined;
   return level !== "off" && opts?.summary
     ? { effort, summary: "auto" }

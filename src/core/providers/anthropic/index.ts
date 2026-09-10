@@ -38,10 +38,11 @@ class AnthropicProvider extends AbstractBaseProvider {
 
   async *sendMessage(args: SendMessageArgs): AsyncGenerator<SendMessageResult> {
     const { messages, model, systemPrompt, tools, signal } = args;
-    const level = effectiveReasoningLevel(
-      resolveReasoningLevel(args),
-      getAnthropicReasoningSupport(model)
+    const support = this.reasoningSupportFor(
+      model,
+      getAnthropicReasoningSupport
     );
+    const level = effectiveReasoningLevel(resolveReasoningLevel(args), support);
 
     try {
       const convertedTools = convertTools(tools ?? []);
@@ -57,7 +58,7 @@ class AnthropicProvider extends AbstractBaseProvider {
           ...(convertedTools.length > 0 && {
             tool_choice: { disable_parallel_tool_use: true, type: "auto" },
           }),
-          ...resolveThinkingParam(model, level),
+          ...resolveThinkingParam(model, level, support),
         },
         { signal }
       );
@@ -75,10 +76,11 @@ class AnthropicProvider extends AbstractBaseProvider {
 
   async sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
     const { messages, model, systemPrompt, signal } = args;
-    const level = effectiveReasoningLevel(
-      resolveReasoningLevel(args),
-      getAnthropicReasoningSupport(model)
+    const support = this.reasoningSupportFor(
+      model,
+      getAnthropicReasoningSupport
     );
+    const level = effectiveReasoningLevel(resolveReasoningLevel(args), support);
     const response = await this.client.messages.create(
       {
         model,
@@ -87,7 +89,7 @@ class AnthropicProvider extends AbstractBaseProvider {
         // Thinking needs headroom above its own budget for the visible reply.
         max_tokens: level !== "off" ? THINKING_MAX_TOKENS : 4096,
         stream: false,
-        ...resolveThinkingParam(model, level),
+        ...resolveThinkingParam(model, level, support),
       },
       { signal }
     );

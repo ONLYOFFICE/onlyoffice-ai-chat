@@ -46,6 +46,22 @@ export abstract class AbstractBaseProvider {
   ): Promise<boolean> {
     return false;
   }
+
+  /**
+   * The reasoning support a request for `model` must be built against: the
+   * profile's catalogue record when the host passed one
+   * ({@link ProviderCredentials.reasoningSupport}), else the provider's own
+   * id-based `table`. The composer resolves the Effort row from exactly the
+   * same pair, so a stored `off` on a route the catalogue marks mandatory
+   * becomes the same standard depth on the wire that the row displays —
+   * instead of an `effort: "none"` the id table thought was allowed.
+   */
+  protected reasoningSupportFor(
+    model: string,
+    table: (model: string) => ReasoningSupport
+  ): ReasoningSupport {
+    return this.creds.reasoningSupport ?? table(model);
+  }
 }
 
 /**

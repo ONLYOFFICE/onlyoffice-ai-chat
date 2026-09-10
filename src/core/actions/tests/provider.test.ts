@@ -83,6 +83,27 @@ describe("providerFor", () => {
     });
   });
 
+  it("forwards the profile's reasoningSupport into the credentials", async () => {
+    registerProvider("stub-provider", StubProvider);
+    const reasoningSupport = {
+      thinks: true,
+      canDisable: false,
+      depths: ["low", "medium", "high"] as const,
+      defaultDepth: "medium" as const,
+    };
+    const instance = (await providerFor({
+      ...baseArgs,
+      profile: { ...baseArgs.profile, reasoningSupport },
+    })) as StubProvider;
+    expect(instance.seenCreds.reasoningSupport).toEqual(reasoningSupport);
+  });
+
+  it("omits reasoningSupport when the profile carries none", async () => {
+    registerProvider("stub-provider", StubProvider);
+    const instance = (await providerFor(baseArgs)) as StubProvider;
+    expect(instance.seenCreds).not.toHaveProperty("reasoningSupport");
+  });
+
   it("throws when the provider type is unknown", async () => {
     await expect(
       providerFor({

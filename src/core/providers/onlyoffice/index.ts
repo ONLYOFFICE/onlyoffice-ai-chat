@@ -8,7 +8,10 @@ import type {
 } from "../../../shared/send-message-args";
 import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args";
 import { OpenAIProvider } from "../openai";
-import { openRouterReasoningFields } from "../openrouter/reasoning";
+import {
+  getOpenRouterReasoningSupport,
+  openRouterReasoningFields,
+} from "../openrouter/reasoning";
 import { withCacheControl } from "./cache-control";
 import { onlyOfficeInfo } from "./info";
 import { listModels } from "./models";
@@ -101,14 +104,22 @@ class OnlyOfficeProvider extends OpenAIProvider {
     model: string,
     level: ReasoningLevel
   ): Record<string, unknown> {
-    return openRouterReasoningFields(model, level);
+    return openRouterReasoningFields(
+      model,
+      level,
+      this.reasoningSupportFor(model, getOpenRouterReasoningSupport)
+    );
   }
 
   protected override reasoningResponsesFields(
     model: string,
     level: ReasoningLevel
   ): Record<string, unknown> {
-    return openRouterReasoningFields(model, level);
+    return openRouterReasoningFields(
+      model,
+      level,
+      this.reasoningSupportFor(model, getOpenRouterReasoningSupport)
+    );
   }
 
   /**

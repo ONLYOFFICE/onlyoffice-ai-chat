@@ -138,3 +138,59 @@ describe("reasoningSupportFromCatalog", () => {
     );
   });
 });
+
+describe("openRouterReasoningFields with the catalogue's support", () => {
+  // The composer resolves the Effort row against `Profile.reasoningSupport`
+  // (the catalogue's record) and shows the standard depth after a stored Off
+  // on a mandatory route. The wire must reach the same answer from the same
+  // record, not from the id table that knows nothing about the route.
+  it("sends the standard depth for a stored off where the catalogue says mandatory", () => {
+    const mandatory = reasoningSupportFromCatalog(
+      { mandatory: true, supported_efforts: ["low", "medium", "high"] },
+      "openai/gpt-6-astra"
+    );
+    expect(openRouterReasoningFields("openai/gpt-6-astra", "off")).toEqual({
+      reasoning: { effort: "none" },
+    });
+    expect(
+      openRouterReasoningFields("openai/gpt-6-astra", "off", mandatory)
+    ).toEqual({ reasoning: { effort: "medium" } });
+  });
+
+  it("prefers the catalogue's default depth on such a route", () => {
+    const support = reasoningSupportFromCatalog(
+      {
+        mandatory: true,
+        supported_efforts: ["low", "high"],
+        default_effort: "high",
+      },
+      "deepseek/deepseek-v4.1-flash"
+    );
+    expect(
+      openRouterReasoningFields("deepseek/deepseek-v4.1-flash", "off", support)
+    ).toEqual({ reasoning: { effort: "high" } });
+  });
+
+  it("lets the catalogue re-enable the off switch the table denies", () => {
+    const switchable = reasoningSupportFromCatalog(
+      { mandatory: false },
+      "x-ai/grok-4.6"
+    );
+    expect(openRouterReasoningFields("x-ai/grok-4.6", "off")).toEqual({
+      reasoning: { effort: "medium" },
+    });
+    expect(
+      openRouterReasoningFields("x-ai/grok-4.6", "off", switchable)
+    ).toEqual({ reasoning: { effort: "none" } });
+  });
+
+  it("clamps to the catalogue's depths", () => {
+    const support = reasoningSupportFromCatalog(
+      { mandatory: false, supported_efforts: ["low", "high"] },
+      "openai/gpt-6-astra"
+    );
+    expect(
+      openRouterReasoningFields("openai/gpt-6-astra", "medium", support)
+    ).toEqual({ reasoning: { effort: "high" } });
+  });
+});

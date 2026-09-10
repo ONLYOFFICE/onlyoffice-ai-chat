@@ -4,6 +4,7 @@ import {
   type ReasoningDepth,
   type ReasoningLevel,
 } from "../../../shared/reasoning-level";
+import type { ReasoningSupport } from "../../../shared/reasoning-level";
 import { getGenAIReasoningSupport } from "./reasoning";
 
 type ThinkingConfig = {
@@ -38,9 +39,9 @@ const LEVELS: Record<ReasoningDepth, ThinkingLevel> = {
  */
 export function resolveThinkingConfig(
   model: string,
-  level: ReasoningLevel
+  level: ReasoningLevel,
+  support: ReasoningSupport = getGenAIReasoningSupport(model)
 ): ThinkingConfig | undefined {
-  const support = getGenAIReasoningSupport(model);
   if (!support.thinks) return undefined;
   const effective = effectiveReasoningLevel(level, support);
   if (effective !== "off") {

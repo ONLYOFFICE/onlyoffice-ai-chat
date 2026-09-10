@@ -29,6 +29,7 @@ export type ActionArgs = {
     | "canUseTool"
     | "useResponsesApi"
     | "useProxy"
+    | "reasoningSupport"
   >;
   messages: ThreadMessageLike[];
   tools?: TMCPItem[];

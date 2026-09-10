@@ -51,4 +51,13 @@ export type ProviderCredentials = {
    * the OpenAI-family providers.
    */
   headers?: Record<string, string>;
+  /**
+   * What the selected model can do with extended thinking, as the
+   * provider's catalogue reported it at save time (`Profile.reasoningSupport`).
+   * The composer builds its Effort row from this record when present, so the
+   * request builders must read the same one — otherwise the row shows a
+   * depth the wire never sends. Absent, each provider falls back to its
+   * id-based table, which is also what the composer does.
+   */
+  reasoningSupport?: import("./reasoning-level").ReasoningSupport;
 };

@@ -19,6 +19,9 @@ export async function providerFor(
     ...(args.entityTitle ? { entityTitle: args.entityTitle } : {}),
     ...(args.profile.basedOn ? { basedOn: args.profile.basedOn } : {}),
     ...(args.profile.headers ? { headers: args.profile.headers } : {}),
+    ...(args.profile.reasoningSupport
+      ? { reasoningSupport: args.profile.reasoningSupport }
+      : {}),
   });
   if (!provider) {
     throw new Error(`Unknown provider type: ${args.profile.providerType}`);

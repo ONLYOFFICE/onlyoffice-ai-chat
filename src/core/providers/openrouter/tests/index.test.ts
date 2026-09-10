@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { openrouterInfo } from "../info";
 import { OpenRouterProvider } from "../index";
-import type { ReasoningLevel } from "../../../../shared/reasoning-level";
+import type {
+  ReasoningLevel,
+  ReasoningSupport,
+} from "../../../../shared/reasoning-level";
 
 const { chatCreateMock, responsesCreateMock } = vi.hoisted(() => ({
   chatCreateMock: vi.fn(),
@@ -264,6 +267,48 @@ describe("OpenRouterProvider", () => {
       await expect(
         provider.imageGeneration({ model: "x", prompt: "p" })
       ).rejects.toThrow("boom");
+    });
+  });
+});
+
+describe("OpenRouterProvider with a profile reasoningSupport", () => {
+  const fieldsOf = (
+    model: string,
+    level: ReasoningLevel,
+    reasoningSupport?: ReasoningSupport
+  ) => {
+    const provider = new OpenRouterProvider({
+      baseUrl: "https://openrouter.ai/api/v1",
+      apiKey: "sk",
+      ...(reasoningSupport ? { reasoningSupport } : {}),
+    });
+    return (
+      provider as unknown as {
+        reasoningRequestFields: (
+          model: string,
+          level: ReasoningLevel
+        ) => Record<string, unknown>;
+      }
+    ).reasoningRequestFields(model, level);
+  };
+
+  it("resolves a stored off against the catalogue's record when the host passes one", () => {
+    expect(fieldsOf("openai/gpt-6-astra", "off")).toEqual({
+      reasoning: { effort: "none" },
+    });
+    expect(
+      fieldsOf("openai/gpt-6-astra", "off", {
+        thinks: true,
+        canDisable: false,
+        depths: ["low", "medium", "high", "max"],
+        defaultDepth: "medium",
+      })
+    ).toEqual({ reasoning: { effort: "medium" } });
+  });
+
+  it("falls back to the id table without one", () => {
+    expect(fieldsOf("x-ai/grok-4.6", "off")).toEqual({
+      reasoning: { effort: "medium" },
     });
   });
 });

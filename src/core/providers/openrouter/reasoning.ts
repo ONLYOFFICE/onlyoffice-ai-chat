@@ -116,9 +116,9 @@ export function reasoningSupportFromCatalog(
  */
 export function openRouterReasoningFields(
   model: string,
-  level: ReasoningLevel
+  level: ReasoningLevel,
+  support: ReasoningSupport = getOpenRouterReasoningSupport(model)
 ): Record<string, unknown> {
-  const support = getOpenRouterReasoningSupport(model);
   const effective = effectiveReasoningLevel(level, support);
   if (effective === "off") return { reasoning: { effort: "none" } };
   return { reasoning: { effort: effective === "max" ? "xhigh" : effective } };

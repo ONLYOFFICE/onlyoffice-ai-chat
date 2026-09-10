@@ -3,6 +3,7 @@ import {
   effectiveReasoningLevel,
   type ReasoningLevel,
 } from "../../../shared/reasoning-level";
+import type { ReasoningSupport } from "../../../shared/reasoning-level";
 import {
   getAnthropicReasoningSupport,
   isAdaptiveThinking,
@@ -80,14 +81,12 @@ const field = (thinking: ThinkingParam, effort?: Effort): ThinkingField => ({
  */
 export function resolveThinkingParam(
   model: string,
-  level: ReasoningLevel
+  level: ReasoningLevel,
+  support: ReasoningSupport = getAnthropicReasoningSupport(model)
 ): ThinkingField {
   const alwaysOn = isAlwaysThinking(model);
   const adaptive = isAdaptiveThinking(model);
-  const effective = effectiveReasoningLevel(
-    level,
-    getAnthropicReasoningSupport(model)
-  );
+  const effective = effectiveReasoningLevel(level, support);
 
   if (effective !== "off") {
     return adaptive

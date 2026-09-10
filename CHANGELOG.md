@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.104
+
+### Fixed
+
+- **The request now reasons at the depth the composer shows.** The Effort row resolves the stored level against `Profile.reasoningSupport` — the per-model record the OpenRouter / ONLYOFFICE catalogue reported at save time — while every request builder resolved it against the provider's id-based table only. Where the two disagreed the composer and the wire parted ways: a route the catalogue marks `mandatory` but the table does not know (`openai/gpt-6-astra`, `deepseek/*`, …) showed the standard depth after a stored Off, yet the round went out with `reasoning: { effort: "none" }` — a 400 upstream, or no thinking at all. `providerFor` now hands the profile's record to the provider as `ProviderCredentials.reasoningSupport` (new, optional), and every built-in builder reads it through `AbstractBaseProvider.reasoningSupportFor(model, table)` (new, protected) before falling back to its own table: OpenRouter and ONLYOFFICE (`openRouterReasoningFields` takes an optional `support`), OpenAI-compatible (`resolveReasoningEffort` / `resolveReasoningParam` take an optional `support`), Anthropic (`resolveThinkingParam`), Google (`resolveThinkingConfig`), xAI and Groq. `ActionArgs.profile` picks `reasoningSupport` too. Hosts that persist profiles already pass the field; hosts that construct providers directly can now pass it in the credentials.
+
 ## 0.5.103
 
 ### Added

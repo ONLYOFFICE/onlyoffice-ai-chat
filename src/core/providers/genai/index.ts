@@ -21,6 +21,7 @@ import {
   createStopResponse,
   processStream,
 } from "./stream";
+import { getGenAIReasoningSupport } from "./reasoning";
 import { resolveThinkingConfig } from "./thinking";
 import { convertTools } from "./tools";
 
@@ -40,7 +41,8 @@ class GenAIProvider extends AbstractBaseProvider {
 
       const thinkingConfig = resolveThinkingConfig(
         model,
-        resolveReasoningLevel(args)
+        resolveReasoningLevel(args),
+        this.reasoningSupportFor(model, getGenAIReasoningSupport)
       );
 
       const stream = await this.client.models.generateContentStream({
@@ -76,7 +78,8 @@ class GenAIProvider extends AbstractBaseProvider {
         systemInstruction: systemPrompt,
         thinkingConfig: resolveThinkingConfig(
           model,
-          resolveReasoningLevel(args)
+          resolveReasoningLevel(args),
+          this.reasoningSupportFor(model, getGenAIReasoningSupport)
         ),
         abortSignal: signal,
       },
