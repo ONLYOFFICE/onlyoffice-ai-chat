@@ -1,5 +1,5 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { cn } from "../../../shared/utils";
 import { useTheme } from "../../providers/ThemeProvider/context";
@@ -132,20 +132,37 @@ const Shell = ({
   );
 };
 
-// Resolve the visible level by walking `path` (a list of child indices) from
-// the live `items` tree. Re-derived every render so an external `items` rebuild
-// (e.g. flipping a tool toggle inside a submenu rebuilds the whole tree) keeps
-// the user at the same depth with fresh data instead of snapshotting a stale
-// level. Any index that no longer points at a submenu truncates the path, so a
+// A navigation step addresses one row of the current level. Rows that carry an
+// `id` are addressed by it, so the step survives the level being rebuilt with
+// rows added, removed or reordered around it (moving a prompt into a folder
+// drops it from the root level and may drop the separator too). Rows without an
+// `id` fall back to their position — the old behaviour, which only holds while
+// the level's composition is unchanged. The two forms are tagged apart so an
+// `id` that looks like a position can't be mistaken for one.
+const stepOf = (item: DropDownItemProps, index: number) =>
+  item.id !== undefined ? `id:${item.id}` : `at:${index}`;
+
+const findStep = (level: DropDownItemProps[], step: string) => {
+  const value = step.slice(3);
+  return step.startsWith("at:")
+    ? level[Number(value)]
+    : level.find((item) => item.id === value);
+};
+
+// Resolve the visible level by walking `path` (a list of steps) from the live
+// `items` tree. Re-derived every render so an external `items` rebuild (e.g.
+// flipping a tool toggle inside a submenu rebuilds the whole tree) keeps the
+// user at the same depth with fresh data instead of snapshotting a stale level.
+// Any step that no longer points at a submenu truncates the path, so a
 // structurally changed tree falls back to the deepest still-valid level.
-function resolveLevel(root: DropDownItemProps[], path: number[]) {
+function resolveLevel(root: DropDownItemProps[], path: string[]) {
   let level = root;
-  const validPath: number[] = [];
-  for (const index of path) {
-    const item = level[index];
+  const validPath: string[] = [];
+  for (const step of path) {
+    const item = findStep(level, step);
     if (!item?.subMenu?.length) break;
     level = item.subMenu;
-    validPath.push(index);
+    validPath.push(step);
   }
   return { level, validPath };
 }
@@ -203,8 +220,8 @@ const DropdownMenuComponent = ({
   const mode = navigation ?? config.dropdownNavigation ?? "flyout";
   const isDrill = mode === "drilldown";
 
-  // Navigation stack of child indices; only meaningful in drill-down mode.
-  const [path, setPath] = useState<number[]>([]);
+  // Navigation stack of steps (see `stepOf`); only meaningful in drill-down mode.
+  const [path, setPath] = useState<string[]>([]);
 
   const { level, validPath } = useMemo(
     () => resolveLevel(items, isDrill ? path : []),
@@ -220,17 +237,36 @@ const DropdownMenuComponent = ({
     item.withSpace ?? (hasLeadingIcon && !item.icon && !item.isSeparator);
 
   const handleOpenChange = (isOpen: boolean) => {
-    // Reset navigation on close so reopening starts at the root.
+    // Reset navigation on close so reopening starts at the root. Only fires
+    // when Radix itself closes the menu (outside click, Escape); a controlled
+    // close is caught by the effect below.
     if (!isOpen) setPath([]);
     onOpenChange?.(isOpen);
   };
+
+  // A controlled `open` flipped to false by the host never reaches
+  // `onOpenChange` (Radix only calls it for changes it initiates), so reset the
+  // stack on the actual close too — otherwise the next open resumes at whatever
+  // level the menu was dismissed from.
+  useEffect(() => {
+    if (open === false) setPath([]);
+  }, [open]);
+
+  // Navigation always moves relative to `validPath`, never the raw `path`: when
+  // a rebuild has invalidated the tail, the two differ and stepping from the
+  // raw path would leave the visible level unchanged ("back" appearing dead) or
+  // build a step onto a dead branch ("drill" appearing dead).
+  const goBack = useCallback(
+    () => setPath(validPath.slice(0, -1)),
+    [validPath]
+  );
 
   const onContentKeyDown = isDrill
     ? (e: React.KeyboardEvent) => {
         const backKey = isRTL ? "ArrowRight" : "ArrowLeft";
         if (canGoBack && e.key === backKey) {
           e.preventDefault();
-          setPath((p) => p.slice(0, -1));
+          goBack();
         }
       }
     : undefined;
@@ -260,7 +296,7 @@ const DropdownMenuComponent = ({
     >
       {canGoBack ? (
         <>
-          <BackRow onBack={() => setPath((p) => p.slice(0, -1))} />
+          <BackRow onBack={goBack} />
           <div className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[var(--dropdown-separator-margin-y,4px)] shrink-0" />
         </>
       ) : null}
@@ -275,7 +311,11 @@ const DropdownMenuComponent = ({
           variant={variant}
           navigation={mode}
           withSpace={withSpaceOf(item)}
-          onDrill={isDrill ? () => setPath((p) => [...p, index]) : undefined}
+          onDrill={
+            isDrill
+              ? () => setPath([...validPath, stepOf(item, index)])
+              : undefined
+          }
         />
       ))}
     </Shell>
