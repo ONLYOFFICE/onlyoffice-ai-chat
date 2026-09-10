@@ -19,6 +19,7 @@ import {
   openRouterReasoningFields,
   retryWhenReasoningMandatory,
 } from "./reasoning";
+import { openRouterRoutingFields } from "./routing";
 
 /**
  * OpenRouter — aggregates many upstream models behind an OpenAI-compatible
@@ -45,6 +46,16 @@ class OpenRouterProvider extends OpenAIProvider {
     creds: ProviderCredentials
   ): Promise<Model[]> {
     return listModels(creds);
+  }
+
+  /**
+   * Routing hints on every chat-completions request — the thread id as
+   * `session_id` (sticky routing, warm KV cache across the turns of one
+   * chat) and the latency / throughput preferences under `provider`. See
+   * {@link openRouterRoutingFields}.
+   */
+  protected override extraBody(): Record<string, unknown> {
+    return openRouterRoutingFields(this.creds.sessionId);
   }
 
   /**

@@ -180,6 +180,57 @@ describe("OpenRouterProvider", () => {
     });
   });
 
+  describe("routing preferences", () => {
+    // OpenRouter's latency guide: the thread id as `session_id` keeps the
+    // turns of one chat on the endpoint with the warm cache, and the
+    // `provider` object promotes fast endpoints and orders by throughput.
+    const drain = async (gen: AsyncGenerator<unknown>) => {
+      for await (const _ of gen) void _;
+    };
+
+    it("sends the thread id as session_id with the provider preferences", async () => {
+      chatCreateMock.mockResolvedValueOnce(completedChat());
+      await drain(
+        new OpenRouterProvider({
+          baseUrl: "https://openrouter.ai/api/v1",
+          apiKey: "sk",
+          sessionId: "thread-42",
+        }).sendMessage({
+          messages: [],
+          model: "openai/gpt-5.2",
+          systemPrompt: "",
+          withReasoning: false,
+        })
+      );
+      const payload = chatCreateMock.mock.calls[0]?.[0];
+      expect(payload.session_id).toBe("thread-42");
+      expect(payload.provider).toEqual({
+        preferred_max_latency: { p90: 2.5 },
+        sort: { by: "throughput" },
+      });
+      // Never pin an order: it disables OpenRouter's load balancing.
+      expect(payload.provider).not.toHaveProperty("order");
+    });
+
+    it("omits session_id when no thread id was supplied, keeping the preferences", async () => {
+      chatCreateMock.mockResolvedValueOnce({
+        choices: [{ message: { content: "t" } }],
+      });
+      await new OpenRouterProvider({
+        baseUrl: "https://openrouter.ai/api/v1",
+        apiKey: "sk",
+      }).sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "openai/gpt-5.2",
+        systemPrompt: "s",
+        withReasoning: false,
+      });
+      const payload = chatCreateMock.mock.calls[0]?.[0];
+      expect(payload).not.toHaveProperty("session_id");
+      expect(payload.provider.preferred_max_latency).toEqual({ p90: 2.5 });
+    });
+  });
+
   describe("imageGeneration", () => {
     function makeProvider(createImpl: (...args: unknown[]) => unknown) {
       const provider = new OpenRouterProvider({

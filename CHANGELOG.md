@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.107
+
+### Added
+
+- **OpenRouter requests carry routing hints.** Following OpenRouter's latency-and-performance guide, every chat-completions request now sends the thread id as `session_id` — for about ten minutes the turns of one chat stick to the endpoint holding the warm KV cache, so tool rounds stop paying the prompt prefix again — and a `provider` object with `preferred_max_latency: { p90: 2.5 }` (endpoints whose p90 time-to-first-token stays under 2.5 s are tried first; slower ones remain as fallback) and `sort: { by: "throughput" }`. No `provider.order` is pinned, so OpenRouter's load balancing stays on. `ProviderCredentials.sessionId` is thus read by OpenRouter as well as ONLYOFFICE; the other providers still ignore it.
+
+  ```json
+  { "session_id": "<threadId>", "provider": { "preferred_max_latency": { "p90": 2.5 }, "sort": { "by": "throughput" } } }
+  ```
+
 ## 0.5.106
 
 ### Fixed

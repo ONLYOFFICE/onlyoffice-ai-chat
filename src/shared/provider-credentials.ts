@@ -28,10 +28,12 @@ export type ProviderCredentials = {
   basedOn?: import("./builtin-provider-type").BuiltinProviderType;
   /**
    * Identifier of the conversation the request belongs to (the thread
-   * id), sent as the `x-session-id` header so the backend can correlate
-   * the turns of one chat. Forwarded from {@link ActionArgs.threadId} and
-   * currently honoured only by the ONLYOFFICE provider — every other
-   * provider ignores it, so no thread id leaks to a third-party endpoint.
+   * id). Forwarded from {@link ActionArgs.threadId} and honoured by two
+   * providers: ONLYOFFICE sends it as the `x-session-id` header so the
+   * backend can correlate the turns of one chat, OpenRouter as the
+   * `session_id` body field that pins the turns of one chat to the
+   * endpoint holding the warm cache. Every other provider ignores it, so
+   * no thread id leaks to any other third-party endpoint.
    */
   sessionId?: string;
   /**
