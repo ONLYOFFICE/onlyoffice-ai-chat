@@ -1,3 +1,4 @@
+import type OpenAI from "openai";
 import { isAbortError } from "../../../shared/abort";
 import type { TErrorData } from "../../../shared/error-data";
 import type { ImageGenerationArgs } from "../../../shared/image-generation-args";
@@ -16,6 +17,7 @@ import { checkCredentials, listModels } from "./models";
 import {
   getOpenRouterReasoningSupport,
   openRouterReasoningFields,
+  retryWhenReasoningMandatory,
 } from "./reasoning";
 
 /**
@@ -58,6 +60,50 @@ class OpenRouterProvider extends OpenAIProvider {
    * …) keep thinking when nothing says otherwise. Routes that cannot stop
    * upstream get the standard depth — see {@link openRouterReasoningFields}.
    */
+  /**
+   * Both request shapes retry once at the standard depth when a route the
+   * catalogue calls switchable answers "reasoning is mandatory" to `none` —
+   * see {@link retryWhenReasoningMandatory}.
+   */
+  protected override getStream(params: {
+    messages: OpenAI.Chat.ChatCompletionMessageParam[];
+    model: string;
+    tools: OpenAI.Chat.ChatCompletionTool[];
+    reasoningLevel: ReasoningLevel;
+    signal?: AbortSignal;
+  }) {
+    return retryWhenReasoningMandatory(
+      {
+        model: params.model,
+        level: params.reasoningLevel,
+        support: this.reasoningSupportFor(
+          params.model,
+          getOpenRouterReasoningSupport
+        ),
+      },
+      (reasoningLevel) => super.getStream({ ...params, reasoningLevel })
+    );
+  }
+
+  protected override getCompletion(params: {
+    messages: OpenAI.Chat.ChatCompletionMessageParam[];
+    model: string;
+    reasoningLevel: ReasoningLevel;
+    signal?: AbortSignal;
+  }) {
+    return retryWhenReasoningMandatory(
+      {
+        model: params.model,
+        level: params.reasoningLevel,
+        support: this.reasoningSupportFor(
+          params.model,
+          getOpenRouterReasoningSupport
+        ),
+      },
+      (reasoningLevel) => super.getCompletion({ ...params, reasoningLevel })
+    );
+  }
+
   protected override reasoningRequestFields(
     model: string,
     level: ReasoningLevel

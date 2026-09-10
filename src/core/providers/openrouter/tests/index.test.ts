@@ -312,3 +312,79 @@ describe("OpenRouterProvider with a profile reasoningSupport", () => {
     });
   });
 });
+
+describe("OpenRouterProvider on a route that rejects reasoning off", () => {
+  beforeEach(() => {
+    chatCreateMock.mockReset();
+  });
+  const mandatory400 = {
+    status: 400,
+    message:
+      "400 Reasoning is mandatory for this endpoint and cannot be disabled.",
+  };
+  const provider = (reasoningSupport?: ReasoningSupport) =>
+    new OpenRouterProvider({
+      baseUrl: "https://openrouter.ai/api/v1",
+      apiKey: "sk",
+      ...(reasoningSupport ? { reasoningSupport } : {}),
+    });
+  const drain = async (gen: AsyncGenerator<unknown>) => {
+    for await (const _ of gen) void _;
+  };
+
+  it("retries the stream once at the standard depth", async () => {
+    chatCreateMock
+      .mockRejectedValueOnce(mandatory400)
+      .mockResolvedValueOnce(completedChat());
+    await drain(
+      provider().sendMessage({
+        messages: [],
+        model: "deepseek/deepseek-v4-pro",
+        systemPrompt: "",
+        reasoningLevel: "off",
+      })
+    );
+    expect(chatCreateMock).toHaveBeenCalledTimes(2);
+    expect(chatCreateMock.mock.calls[0]?.[0]?.reasoning).toEqual({
+      effort: "none",
+    });
+    expect(chatCreateMock.mock.calls[1]?.[0]?.reasoning).toEqual({
+      effort: "medium",
+    });
+  });
+
+  it("retries the one-shot call at the catalogue's default depth", async () => {
+    chatCreateMock
+      .mockRejectedValueOnce(mandatory400)
+      .mockResolvedValueOnce({ choices: [{ message: { content: "t" } }] });
+    const out = await provider({
+      thinks: true,
+      canDisable: true,
+      depths: ["low", "high", "max"],
+      defaultDepth: "high",
+    }).sendMessageSync({
+      messages: [{ role: "user", content: "q" }],
+      model: "deepseek/deepseek-v4.1-flash",
+      systemPrompt: "s",
+      reasoningLevel: "off",
+    });
+    expect(out).toBe("t");
+    expect(chatCreateMock).toHaveBeenCalledTimes(2);
+    expect(chatCreateMock.mock.calls[1]?.[0]?.reasoning).toEqual({
+      effort: "high",
+    });
+  });
+
+  it("leaves a round that asked for a depth alone", async () => {
+    chatCreateMock.mockRejectedValueOnce(mandatory400);
+    await expect(
+      provider().sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "deepseek/deepseek-v4-pro",
+        systemPrompt: "s",
+        reasoningLevel: "high",
+      })
+    ).rejects.toBe(mandatory400);
+    expect(chatCreateMock).toHaveBeenCalledTimes(1);
+  });
+});

@@ -1,4 +1,5 @@
 import {
+  DEFAULT_REASONING_LEVEL,
   effectiveReasoningLevel,
   FULL_REASONING_SUPPORT,
   NO_REASONING_SUPPORT,
@@ -8,7 +9,9 @@ import {
   type ReasoningLevel,
   type ReasoningSupport,
 } from "../../../shared/reasoning-level";
+import logger from "../../../shared/logger";
 import { isAlwaysThinking } from "../anthropic/reasoning";
+import { extractErrorMessage, getErrorStatus } from "../errors";
 
 /**
  * What one OpenRouter route can do with the unified `reasoning.effort`,
@@ -122,4 +125,63 @@ export function openRouterReasoningFields(
   const effective = effectiveReasoningLevel(level, support);
   if (effective === "off") return { reasoning: { effort: "none" } };
   return { reasoning: { effort: effective === "max" ? "xhigh" : effective } };
+}
+
+/**
+ * OpenRouter's answer to `effort: "none"` on a route whose upstream cannot
+ * stop thinking: HTTP 400, "Reasoning is mandatory for this endpoint and
+ * cannot be disabled." The catalogue's `mandatory` flag is supposed to say
+ * so up front, but it is a per-model verdict and it lies for some routes —
+ * DeepSeek V4 reports `mandatory: false` and rejects `none` all the same —
+ * so the flag cannot be the only guard.
+ */
+export function isMandatoryReasoningError(error: unknown): boolean {
+  return (
+    getErrorStatus(error) === 400 &&
+    /reasoning is mandatory/i.test(extractErrorMessage(error) ?? "")
+  );
+}
+
+/**
+ * The depth to reason at when a route turns out to be mandatory after all:
+ * what a stored off means on a model that cannot stop — the catalogue's
+ * default depth, else the standard depth clamped to the model — exactly what
+ * the composer would have shown had the catalogue told the truth.
+ */
+export function mandatoryReasoningLevel(
+  model: string,
+  support: ReasoningSupport = getOpenRouterReasoningSupport(model)
+): ReasoningDepth {
+  const forced = effectiveReasoningLevel("off", {
+    ...support,
+    canDisable: false,
+    depths: support.depths.length ? support.depths : REASONING_DEPTHS,
+  });
+  return forced === "off" ? DEFAULT_REASONING_LEVEL : forced;
+}
+
+/**
+ * Run one OpenRouter request, and when it was sent with reasoning off and
+ * the route answers that reasoning is mandatory, run it once more at
+ * {@link mandatoryReasoningLevel}. Any other failure, and a failure of the
+ * retry itself, propagates unchanged. The composer keeps showing Off for
+ * the round — the catalogue gave it no reason to hide the switch — but the
+ * round completes instead of surfacing the 400.
+ */
+export async function retryWhenReasoningMandatory<T>(
+  params: { model: string; level: ReasoningLevel; support: ReasoningSupport },
+  run: (level: ReasoningLevel) => Promise<T>
+): Promise<T> {
+  try {
+    return await run(params.level);
+  } catch (error) {
+    if (params.level !== "off" || !isMandatoryReasoningError(error)) {
+      throw error;
+    }
+    const fallback = mandatoryReasoningLevel(params.model, params.support);
+    logger.warn(
+      `OpenRouter route ${params.model} rejects reasoning off although its catalogue entry allows it; retrying at ${fallback}`
+    );
+    return run(fallback);
+  }
 }

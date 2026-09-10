@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { FULL_REASONING_SUPPORT } from "../../../../shared/reasoning-level";
 import {
   getOpenRouterReasoningSupport,
+  isMandatoryReasoningError,
+  mandatoryReasoningLevel,
   openRouterReasoningFields,
   reasoningSupportFromCatalog,
+  retryWhenReasoningMandatory,
 } from "../reasoning";
 
 describe("getOpenRouterReasoningSupport", () => {
@@ -192,5 +195,88 @@ describe("openRouterReasoningFields with the catalogue's support", () => {
     expect(
       openRouterReasoningFields("openai/gpt-6-astra", "medium", support)
     ).toEqual({ reasoning: { effort: "high" } });
+  });
+});
+
+describe("mandatory reasoning fallback", () => {
+  const mandatory400 = {
+    status: 400,
+    message:
+      "400 Reasoning is mandatory for this endpoint and cannot be disabled.",
+  };
+
+  it("recognises OpenRouter's 400 and nothing else", () => {
+    expect(isMandatoryReasoningError(mandatory400)).toBe(true);
+    expect(
+      isMandatoryReasoningError({ status: 400, message: "invalid model" })
+    ).toBe(false);
+    expect(
+      isMandatoryReasoningError({ status: 500, message: mandatory400.message })
+    ).toBe(false);
+    expect(isMandatoryReasoningError(new Error("boom"))).toBe(false);
+  });
+
+  it("falls back to the catalogue's default depth, else the standard one", () => {
+    // DeepSeek V4: `mandatory: false` in the catalogue, `none` rejected live.
+    const deepseek = reasoningSupportFromCatalog(
+      {
+        mandatory: false,
+        supported_efforts: ["max", "high", "low"],
+        default_effort: "high",
+      },
+      "deepseek/deepseek-v4.1-flash"
+    );
+    expect(
+      mandatoryReasoningLevel("deepseek/deepseek-v4.1-flash", deepseek)
+    ).toBe("high");
+    expect(mandatoryReasoningLevel("deepseek/deepseek-v4-pro")).toBe("medium");
+    // A route with an on/off switch only still gets a depth to retry at.
+    expect(
+      mandatoryReasoningLevel("some/route", {
+        thinks: true,
+        canDisable: true,
+        depths: [],
+      })
+    ).toBe("medium");
+  });
+
+  it("retries a round sent with off once at the fallback depth", async () => {
+    const calls: string[] = [];
+    const out = await retryWhenReasoningMandatory(
+      {
+        model: "deepseek/deepseek-v4-pro",
+        level: "off",
+        support: FULL_REASONING_SUPPORT,
+      },
+      async (level) => {
+        calls.push(level);
+        if (level === "off") throw mandatory400;
+        return "ok";
+      }
+    );
+    expect(out).toBe("ok");
+    expect(calls).toEqual(["off", "medium"]);
+  });
+
+  it("does not retry other failures, or a round that was not off", async () => {
+    await expect(
+      retryWhenReasoningMandatory(
+        { model: "x/y", level: "off", support: FULL_REASONING_SUPPORT },
+        async () => {
+          throw { status: 400, message: "invalid model" };
+        }
+      )
+    ).rejects.toMatchObject({ message: "invalid model" });
+    let calls = 0;
+    await expect(
+      retryWhenReasoningMandatory(
+        { model: "x/y", level: "high", support: FULL_REASONING_SUPPORT },
+        async () => {
+          calls += 1;
+          throw mandatory400;
+        }
+      )
+    ).rejects.toBe(mandatory400);
+    expect(calls).toBe(1);
   });
 });

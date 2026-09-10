@@ -11,6 +11,7 @@ import { OpenAIProvider } from "../openai";
 import {
   getOpenRouterReasoningSupport,
   openRouterReasoningFields,
+  retryWhenReasoningMandatory,
 } from "../openrouter/reasoning";
 import { withCacheControl } from "./cache-control";
 import { onlyOfficeInfo } from "./info";
@@ -152,17 +153,54 @@ class OnlyOfficeProvider extends OpenAIProvider {
    * Streaming chat only — one-shot actions (`sendMessageSync`) send a
    * single request with no follow-up turn to reuse the cache.
    */
-  protected override async getStream(params: {
+  /**
+   * As on OpenRouter, a route that answers "reasoning is mandatory" to a
+   * round sent with reasoning off is retried once at the standard depth —
+   * the proxy forwards OpenRouter's verdict one-to-one, catalogue lies
+   * included (see {@link retryWhenReasoningMandatory}).
+   */
+  protected override getStream(params: {
     messages: OpenAI.Chat.ChatCompletionMessageParam[];
     model: string;
     tools: OpenAI.Chat.ChatCompletionTool[];
     reasoningLevel: ReasoningLevel;
     signal?: AbortSignal;
   }) {
-    return super.getStream({
-      ...params,
-      messages: withCacheControl(params.messages),
-    });
+    return retryWhenReasoningMandatory(
+      {
+        model: params.model,
+        level: params.reasoningLevel,
+        support: this.reasoningSupportFor(
+          params.model,
+          getOpenRouterReasoningSupport
+        ),
+      },
+      (reasoningLevel) =>
+        super.getStream({
+          ...params,
+          reasoningLevel,
+          messages: withCacheControl(params.messages),
+        })
+    );
+  }
+
+  protected override getCompletion(params: {
+    messages: OpenAI.Chat.ChatCompletionMessageParam[];
+    model: string;
+    reasoningLevel: ReasoningLevel;
+    signal?: AbortSignal;
+  }) {
+    return retryWhenReasoningMandatory(
+      {
+        model: params.model,
+        level: params.reasoningLevel,
+        support: this.reasoningSupportFor(
+          params.model,
+          getOpenRouterReasoningSupport
+        ),
+      },
+      (reasoningLevel) => super.getCompletion({ ...params, reasoningLevel })
+    );
   }
 
   static override getName(): string {

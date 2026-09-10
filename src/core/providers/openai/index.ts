@@ -293,20 +293,39 @@ class OpenAIProvider extends AbstractBaseProvider {
       return response.output_text ?? "";
     }
 
-    const response = await this.client.chat.completions.create(
+    const response = await this.getCompletion({
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...convertMessages(messages, this.downgradeSystem),
+      ],
+      model,
+      reasoningLevel,
+      signal,
+    });
+    return response.choices[0]?.message?.content ?? "";
+  }
+
+  /**
+   * One-shot counterpart of {@link getStream}: the non-streaming Chat
+   * Completions call behind {@link sendMessageSync}, split out so a gateway
+   * subclass can wrap both request shapes the same way.
+   */
+  protected async getCompletion(params: {
+    messages: OpenAI.Chat.ChatCompletionMessageParam[];
+    model: string;
+    reasoningLevel: ReasoningLevel;
+    signal?: AbortSignal;
+  }) {
+    return this.client.chat.completions.create(
       {
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...convertMessages(messages, this.downgradeSystem),
-        ],
-        ...this.reasoningRequestFields(model, reasoningLevel),
+        model: params.model,
+        messages: params.messages,
+        ...this.reasoningRequestFields(params.model, params.reasoningLevel),
         stream: false,
         ...this.extraBody(),
       } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
-      { signal }
+      { signal: params.signal }
     );
-    return response.choices[0]?.message?.content ?? "";
   }
 
   async imageGeneration(args: ImageGenerationArgs): Promise<string> {

@@ -116,3 +116,69 @@ describe("OnlyOfficeProvider", () => {
     });
   });
 });
+
+describe("OnlyOfficeProvider on a route that rejects reasoning off", () => {
+  const mandatory400 = {
+    status: 400,
+    message:
+      "400 Reasoning is mandatory for this endpoint and cannot be disabled.",
+  };
+
+  beforeEach(() => {
+    chatCreateMock.mockReset();
+  });
+
+  it("retries the stream once at the standard depth, cache control kept", async () => {
+    async function* completed() {
+      yield { choices: [{ delta: {}, finish_reason: "stop", index: 0 }] };
+    }
+    chatCreateMock
+      .mockRejectedValueOnce(mandatory400)
+      .mockResolvedValueOnce(completed());
+    const p = new OnlyOfficeProvider({
+      baseUrl: "https://internal",
+      apiKey: "k",
+    });
+    for await (const _ of p.sendMessage({
+      messages: [{ role: "user", content: "q" }],
+      model: "deepseek/deepseek-v4-pro",
+      systemPrompt: "s",
+      reasoningLevel: "off",
+    }))
+      void _;
+    expect(chatCreateMock).toHaveBeenCalledTimes(2);
+    expect(chatCreateMock.mock.calls[0]?.[0]?.reasoning).toEqual({
+      effort: "none",
+    });
+    expect(chatCreateMock.mock.calls[1]?.[0]?.reasoning).toEqual({
+      effort: "medium",
+    });
+  });
+
+  it("retries the one-shot call at the profile's default depth", async () => {
+    chatCreateMock
+      .mockRejectedValueOnce(mandatory400)
+      .mockResolvedValueOnce({ choices: [{ message: { content: "t" } }] });
+    const p = new OnlyOfficeProvider({
+      baseUrl: "https://internal",
+      apiKey: "k",
+      reasoningSupport: {
+        thinks: true,
+        canDisable: true,
+        depths: ["low", "high", "max"],
+        defaultDepth: "high",
+      },
+    });
+    await expect(
+      p.sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "deepseek/deepseek-v4.1-flash",
+        systemPrompt: "s",
+        reasoningLevel: "off",
+      })
+    ).resolves.toBe("t");
+    expect(chatCreateMock.mock.calls[1]?.[0]?.reasoning).toEqual({
+      effort: "high",
+    });
+  });
+});

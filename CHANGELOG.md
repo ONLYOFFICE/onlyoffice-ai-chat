@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.105
+
+### Fixed
+
+- **A route that rejects reasoning off no longer fails the round.** OpenRouter's catalogue flags a model as `mandatory` when its thinking cannot be switched off, and the composer hides Off on that word — but the flag is a per-model verdict that does not always match the endpoints behind it: DeepSeek V4 reports `mandatory: false` and answers `reasoning: { effort: "none" }` with `400 Reasoning is mandatory for this endpoint and cannot be disabled.` OpenRouter and the ONLYOFFICE route now catch exactly that answer on a round sent with reasoning off and send it once more at the depth a stored Off means on a model that cannot stop — the catalogue's `default_effort`, else the standard depth clamped to the model — so the round completes (thinking on, as the endpoint insists) instead of surfacing the error. Any other failure, a failure of the retry, and a round that asked for a depth are left alone. `isMandatoryReasoningError`, `mandatoryReasoningLevel` and `retryWhenReasoningMandatory` live in `openrouter/reasoning.ts`; `OpenAIProvider` gains a protected `getCompletion` (the one-shot counterpart of `getStream`) so a gateway subclass can wrap both request shapes.
+
 ## 0.5.104
 
 ### Fixed
