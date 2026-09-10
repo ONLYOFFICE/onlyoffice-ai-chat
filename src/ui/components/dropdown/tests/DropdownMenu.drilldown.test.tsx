@@ -162,6 +162,132 @@ describe("DropdownMenu drill-down", () => {
     expect(content().style.maxHeight).toContain("14rem");
   });
 
+  it("resets to the root level when a controlled close happens outside Radix", () => {
+    // ComposerActionPrompts closes the menu by flipping the controlled `open`
+    // prop from a leaf action; Radix never calls onOpenChange for that, so the
+    // reset has to hang off the actual close.
+    const { rerender } = renderMenu();
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    expect(screen.getByText("ChildLeaf")).toBeInTheDocument();
+
+    const at = (open: boolean) => (
+      <DropdownMenu
+        trigger={<button>Trigger</button>}
+        navigation="drilldown"
+        items={makeTree()}
+        open={open}
+      />
+    );
+    rerender(at(false));
+    rerender(at(true));
+
+    expect(screen.getByText("Leaf")).toBeInTheDocument();
+    expect(screen.queryByText("ChildLeaf")).not.toBeInTheDocument();
+  });
+
+  // Rows carrying an `id` are addressed by it, so a level rebuilt with rows
+  // added or removed around the current one keeps pointing at the same row —
+  // moving a prompt into a folder shifts every index after it at the root.
+  const withIds = (rows: string[]): DropDownItemProps[] =>
+    rows.map((id) => ({
+      id,
+      text: id,
+      onClick: vi.fn(),
+      subMenu: [{ text: `${id}-child`, onClick: vi.fn() }],
+    }));
+
+  it("follows the same row by id when items are rebuilt around it", () => {
+    const { rerender } = render(
+      <DropdownMenu
+        trigger={<button>Trigger</button>}
+        navigation="drilldown"
+        items={withIds(["p1", "p2"])}
+        open
+      />
+    );
+    fireEvent.click(screen.getByTestId("drill-p2"));
+    expect(screen.getByText("p2-child")).toBeInTheDocument();
+
+    // p1 leaves the level (moved into a folder): p2 slides from index 1 to 0.
+    rerender(
+      <DropdownMenu
+        trigger={<button>Trigger</button>}
+        navigation="drilldown"
+        items={withIds(["p2"])}
+        open
+      />
+    );
+    expect(screen.getByText("p2-child")).toBeInTheDocument();
+  });
+
+  // When a rebuild does invalidate the tail, the visible level is the deepest
+  // valid one — navigation has to move relative to that, not to the raw stack,
+  // or the first back/drill press is swallowed re-truncating the same tail.
+  const deepThenFlat = (deep: boolean): DropDownItemProps[] => [
+    {
+      text: "Folder",
+      onClick: vi.fn(),
+      subMenu: [
+        { text: "ChildLeaf", onClick: vi.fn() },
+        ...(deep
+          ? [
+              {
+                text: "SubFolder",
+                onClick: vi.fn(),
+                subMenu: [{ text: "DeepLeaf", onClick: vi.fn() }],
+              },
+            ]
+          : []),
+      ],
+    },
+    { text: "Leaf", onClick: vi.fn() },
+  ];
+
+  const renderInvalidatedTail = () => {
+    const { rerender } = render(
+      <DropdownMenu
+        trigger={<button>Trigger</button>}
+        navigation="drilldown"
+        items={deepThenFlat(true)}
+        open
+      />
+    );
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    fireEvent.click(screen.getByTestId("drill-SubFolder"));
+    expect(screen.getByText("DeepLeaf")).toBeInTheDocument();
+    // SubFolder disappears: the stack's last step no longer resolves.
+    rerender(
+      <DropdownMenu
+        trigger={<button>Trigger</button>}
+        navigation="drilldown"
+        items={deepThenFlat(false)}
+        open
+      />
+    );
+    expect(screen.getByText("ChildLeaf")).toBeInTheDocument();
+  };
+
+  it("goes back to the root in one press after the tail was invalidated", () => {
+    renderInvalidatedTail();
+    fireEvent.keyDown(
+      screen.getByText("ChildLeaf").closest("[data-orientation='vertical']")!,
+      { key: "ArrowLeft" }
+    );
+    expect(screen.getByText("Leaf")).toBeInTheDocument();
+    expect(screen.queryByText("ChildLeaf")).not.toBeInTheDocument();
+  });
+
+  it("still drills after the tail was invalidated", () => {
+    renderInvalidatedTail();
+    fireEvent.keyDown(
+      screen.getByText("ChildLeaf").closest("[data-orientation='vertical']")!,
+      { key: "ArrowLeft" }
+    );
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    expect(screen.getByText("ChildLeaf")).toBeInTheDocument();
+    expect(screen.queryByText("Leaf")).not.toBeInTheDocument();
+  });
+
   it("flyout mode renders all items flat with navigation=flyout and no back row", () => {
     renderMenu({ navigation: "flyout" });
     expect(screen.getByText("Leaf")).toBeInTheDocument();
