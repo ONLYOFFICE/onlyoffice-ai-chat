@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **Drill-down menus no longer reopen inside a submenu.** In `dropdownNavigation: "drilldown"` the navigation stack was reset from Radix's `onOpenChange`, which a controlled menu never receives when the host closes it by flipping `open` — and the prompts menu closes exactly that way from every leaf action. Descending into a prompt's "⋯" menu and moving the prompt to a folder left the stack behind, so the next open landed in that prompt's context menu instead of the root. The stack is now cleared on the close itself.
+
+- **A drill-down level survives the tree being rebuilt around it.** The stack addressed rows by position, so any rebuild that shifted the current level's composition — moving a prompt out of the root drops its row and can drop the separator with it — silently re-pointed the path at a different row, e.g. another prompt's context menu. Rows carrying an `id` are now addressed by it; rows without one keep the positional behaviour. The prompts menu labels its prompt, folder and context-menu rows accordingly.
+
+- **"Back" and "⋯" no longer need a second press after such a rebuild.** When a rebuild invalidated the tail of the stack, the visible level fell back to the deepest valid one but the stack kept the dead tail, and both navigation actions were computed from the stack: going back only dropped the dead step (the level did not change) and drilling in appended onto a dead branch (nothing opened). Both now move relative to the level actually on screen.
+
 ## 0.5.97
 
 ### Added
@@ -127,11 +137,8 @@
 
   Non-prose message parts are untouched: tool calls, attachments and the message layout itself (bubble side, action bar) still follow the locale.
 
-<<<<<<< HEAD
 - **The settings labels say what the controls do.** "Override for tasks" on the Model assignment page is now "Custom models per task" and carries a description — the rows below it are optional per-task choices layered over the default model, which the old jargon header left the reader to guess. The MCP servers page describes setting servers up rather than configuring and adding them, and the composer's "Web Search" / "Extended Thinking" toggles drop the mid-phrase capital. All 41 locales are updated in step.
 
-=======
->>>>>>> 27f573723983098bdd5da2390447cd5693d80618
 ## 0.5.79
 
 ### Fixed

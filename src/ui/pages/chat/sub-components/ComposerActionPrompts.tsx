@@ -395,6 +395,7 @@ const ComposerActionPrompts = () => {
 
       return [
         {
+          id: `edit:${prompt.id}`,
           text: t("EditAIPrompt"),
           onClick: () => {
             void requestEditPrompt(prompt);
@@ -403,6 +404,7 @@ const ComposerActionPrompts = () => {
         ...(moveToFolderItems.length > 0
           ? [
               {
+                id: `move:${prompt.id}`,
                 text: t("MoveToFolder"),
                 onClick: () => undefined,
                 subMenu: moveToFolderItems,
@@ -415,6 +417,7 @@ const ComposerActionPrompts = () => {
           onClick: () => undefined,
         },
         {
+          id: `delete:${prompt.id}`,
           text: t("Delete"),
           onClick: () => {
             closeMenu();
@@ -432,6 +435,7 @@ const ComposerActionPrompts = () => {
     const rootPrompts = prompts.filter((p) => !p.folderId);
     for (const prompt of rootPrompts) {
       result.push({
+        id: `prompt:${prompt.id}`,
         text: prompt.name,
         onClick: () => applyPrompt(prompt.text),
         subMenu: buildPromptContextMenu(prompt),
@@ -454,10 +458,12 @@ const ComposerActionPrompts = () => {
     for (const folder of folders) {
       const folderPrompts = prompts.filter((p) => p.folderId === folder.id);
       result.push({
+        id: `folder:${folder.id}`,
         text: folder.name,
         onClick: () => undefined,
         subMenu: [
           ...folderPrompts.map((prompt) => ({
+            id: `prompt:${prompt.id}`,
             text: prompt.name,
             onClick: () => applyPrompt(prompt.text),
             subMenu: buildPromptContextMenu(prompt),
@@ -468,11 +474,13 @@ const ComposerActionPrompts = () => {
             ? [{ text: "", isSeparator: true, onClick: () => undefined }]
             : []),
           {
+            id: `rename-folder:${folder.id}`,
             text: t("RenameFolder"),
             icon: "btn-rename",
             onClick: () => requestRenameFolder(folder),
           },
           {
+            id: `delete-folder:${folder.id}`,
             text: t("DeleteFolder"),
             icon: "btn-remove",
             onClick: () => requestDeleteFolder(folder),
@@ -489,6 +497,7 @@ const ComposerActionPrompts = () => {
     // regular prompts can't be moved into it either.
     if (builtInPrompts.length > 0) {
       result.push({
+        id: `folder:${BUILT_IN_PROMPTS_FOLDER}`,
         text: BUILT_IN_PROMPTS_FOLDER,
         onClick: () => undefined,
         subMenu: builtInPrompts.map((s) => ({
