@@ -206,7 +206,7 @@
   --checkbox-active-color: var(--background-accent-button);
   --checkbox-active-hover-color: var(--highlight-accent-button-hover);
   --checkbox-active-pressed-color: var(--highlight-accent-button-pressed);
-  --checkbox-active-icon-color: var(--background-normal);
+  --checkbox-active-icon-color: var(--text-contrast-background);
 
   /* pages */
 
