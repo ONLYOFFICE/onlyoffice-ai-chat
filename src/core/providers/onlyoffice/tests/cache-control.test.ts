@@ -28,6 +28,53 @@ describe("withCacheControl", () => {
     expect(marks(out[3])).toEqual([true]);
   });
 
+  it("types the marked block of a trailing tool message as tool_result", () => {
+    const out = withCacheControl([
+      { role: "system", content: "rules" },
+      { role: "user", content: "run it" },
+      {
+        role: "assistant",
+        content: "",
+        tool_calls: [
+          {
+            id: "call_1",
+            type: "function",
+            function: { name: "t", arguments: "{}" },
+          },
+        ],
+      },
+      { role: "tool", tool_call_id: "call_1", content: '{"content":[]}' },
+    ] as ChatCompletionMessageParam[]);
+
+    expect(out[3]).toEqual({
+      role: "tool",
+      tool_call_id: "call_1",
+      content: [
+        {
+          type: "tool_result",
+          text: '{"content":[]}',
+          cache_control: EPHEMERAL,
+        },
+      ],
+    });
+  });
+
+  it("retypes an already block-shaped trailing tool message", () => {
+    const out = withCacheControl([
+      {
+        role: "tool",
+        tool_call_id: "call_1",
+        content: [{ type: "text", text: "ok" }],
+      },
+    ] as ChatCompletionMessageParam[]);
+
+    expect(out[0]).toEqual({
+      role: "tool",
+      tool_call_id: "call_1",
+      content: [{ type: "tool_result", text: "ok", cache_control: EPHEMERAL }],
+    });
+  });
+
   it("marks only the trailing text block of a multi-part message", () => {
     const out = withCacheControl([
       { role: "system", content: "rules" },

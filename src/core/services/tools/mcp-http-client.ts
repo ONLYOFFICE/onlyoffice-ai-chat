@@ -1,5 +1,6 @@
 import logger from "../../../shared/logger";
 import type { TMCPItem } from "../../../shared/mcp-item";
+import { serializeMcpToolResult } from "../../../shared/mcp-result";
 
 /**
  * Server-side MCP client over HTTP (JSON-RPC 2.0 / Streamable HTTP).
@@ -247,7 +248,7 @@ export async function requestToolCall(
       );
     }
     if (msg.result !== undefined) {
-      return JSON.stringify(msg.result);
+      return serializeMcpToolResult(msg.result);
     }
   }
   throw new Error(`No result from system MCP server ${type}`);
