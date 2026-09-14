@@ -239,6 +239,8 @@ export type AdapterRunContext = {
 
   /** Mirrors {@link AIEngineDeps.pagination} for resume-history reads. */
   pagination?: boolean | (() => boolean);
+  /** Mirrors {@link AIEngineDeps.persistIntervalMs} for the resumed stream. */
+  persistIntervalMs?: number;
 };
 
 /**
@@ -275,7 +277,11 @@ export async function* executeAdapterTool(
   // Note: `generate_image` base64 → attachment-ref swap happens centrally
   // in `resumeChat`, which every tool-result path funnels through.
   yield* resumeChat(
-    { storage, pagination: ctx.pagination },
+    {
+      storage,
+      pagination: ctx.pagination,
+      persistIntervalMs: ctx.persistIntervalMs,
+    },
     {
       threadId: event.threadId,
       messageId: event.messageId,

@@ -1,7 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { SendMessageResult } from "../../../../shared/send-message-args";
-import { processStream } from "../stream";
+import {
+  DEFAULT_PERSIST_INTERVAL_MS,
+  MIN_PERSIST_INTERVAL_MS,
+  processStream,
+} from "../stream";
 import type { StorageAdapter } from "../../../storage";
 
 function makeStorage(opts?: { allowList?: string[] }) {
@@ -30,6 +34,13 @@ async function* feed(items: SendMessageResult[]) {
 }
 
 describe("processStream", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("emits message-start, message-delta and message-end with persistence", async () => {
     const { storage, create, update } = makeStorage();
     const final: ThreadMessageLike = {
@@ -51,7 +62,10 @@ describe("processStream", () => {
       "message-end",
     ]);
     expect(create).toHaveBeenCalledTimes(1);
-    expect(update).toHaveBeenCalledTimes(2);
+    // No timer tick fired during the synchronous feed, so the only update
+    // is the terminal one.
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenLastCalledWith("m1", final);
   });
 
   it("persists the error and emits message-incomplete on incomplete final", async () => {
@@ -247,8 +261,9 @@ describe("processStream", () => {
       events.push(e);
     }
     expect(create).not.toHaveBeenCalled();
-    // First delta updates `existing`; terminal updates again
-    expect(update).toHaveBeenCalledTimes(2);
+    // The resumed delta is only staged; the terminal write updates `existing`.
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenLastCalledWith("existing", final);
     expect(events.map((e) => e.type)).toEqual(["message-delta", "message-end"]);
   });
 
@@ -288,5 +303,334 @@ describe("processStream", () => {
     const content = last.message.content as unknown as { type: string }[];
     expect(content[0].type).toBe("tool-call");
     expect(content[content.length - 1]).toMatchObject({ type: "text" });
+  });
+
+  describe("periodic persistence", () => {
+    // A stream that hands out deltas on demand so the test controls the
+    // timer between them.
+    function gate() {
+      const queue: SendMessageResult[] = [];
+      let wake: (() => void) | null = null;
+      let closed = false;
+      const push = (item: SendMessageResult) => {
+        queue.push(item);
+        wake?.();
+      };
+      const close = () => {
+        closed = true;
+        wake?.();
+      };
+      async function* stream(): AsyncGenerator<SendMessageResult> {
+        for (;;) {
+          if (queue.length) {
+            yield queue.shift() as SendMessageResult;
+            continue;
+          }
+          if (closed) return;
+          await new Promise<void>((r) => {
+            wake = r;
+          });
+          wake = null;
+        }
+      }
+      return { push, close, stream: stream() };
+    }
+
+    const delta = (text: string): SendMessageResult => ({
+      role: "assistant",
+      content: [{ type: "text", text }],
+    });
+    const end = (text: string): SendMessageResult => ({
+      isEnd: true,
+      responseMessage: { role: "assistant", content: [{ type: "text", text }] },
+    });
+
+    async function drive(
+      events: unknown[],
+      gen: AsyncGenerator<unknown>,
+      count: number
+    ) {
+      for (let i = 0; i < count; i++) {
+        const next = await gen.next();
+        if (next.done) return;
+        events.push(next.value);
+      }
+    }
+
+    it("does not write on deltas until the interval elapses", async () => {
+      const { storage, update } = makeStorage();
+      const g = gate();
+      const gen = processStream(g.stream, {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1000,
+      });
+      const events: unknown[] = [];
+      g.push(delta("a"));
+      g.push(delta("ab"));
+      g.push(delta("abc"));
+      await drive(events, gen, 3);
+      expect(update).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(999);
+      expect(update).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(update).toHaveBeenCalledTimes(1);
+      expect(update).toHaveBeenLastCalledWith(
+        "m1",
+        expect.objectContaining({ content: [{ type: "text", text: "abc" }] })
+      );
+
+      g.push(end("abcd"));
+      await drive(events, gen, 1);
+      expect(update).toHaveBeenCalledTimes(2);
+      expect(update).toHaveBeenLastCalledWith(
+        "m1",
+        expect.objectContaining({ content: [{ type: "text", text: "abcd" }] })
+      );
+    });
+
+    it("skips a tick when nothing changed since the last write", async () => {
+      const { storage, update } = makeStorage();
+      const g = gate();
+      const gen = processStream(g.stream, {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1000,
+      });
+      g.push(delta("a"));
+      g.push(delta("ab"));
+      await drive([], gen, 2);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(update).toHaveBeenCalledTimes(1);
+      // Two more ticks with no new delta: still one write.
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(update).toHaveBeenCalledTimes(1);
+      g.push(end("ab"));
+      await drive([], gen, 1);
+    });
+
+    it("never overlaps writes and settles the in-flight one before the final write", async () => {
+      const { storage, update } = makeStorage();
+      let release: (() => void) | null = null;
+      update.mockImplementationOnce(
+        () =>
+          new Promise<void>((r) => {
+            release = r;
+          })
+      );
+      const g = gate();
+      const gen = processStream(g.stream, {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1000,
+      });
+      g.push(delta("a"));
+      g.push(delta("ab"));
+      await drive([], gen, 2);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(update).toHaveBeenCalledTimes(1);
+
+      // New content arrives while the write hangs; the next ticks are skipped.
+      g.push(delta("abc"));
+      await drive([], gen, 1);
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(update).toHaveBeenCalledTimes(1);
+
+      // The terminal write waits for the hung one.
+      g.push(end("abcd"));
+      const finalStep = gen.next();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(update).toHaveBeenCalledTimes(1);
+      (release as unknown as () => void)();
+      const next = await finalStep;
+      expect((next.value as { type: string }).type).toBe("message-end");
+      expect(update).toHaveBeenCalledTimes(2);
+      expect(update).toHaveBeenLastCalledWith(
+        "m1",
+        expect.objectContaining({ content: [{ type: "text", text: "abcd" }] })
+      );
+    });
+
+    it("survives a failed periodic write and retries via the terminal write", async () => {
+      const { storage, update } = makeStorage();
+      update.mockRejectedValueOnce(new Error("db down"));
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const g = gate();
+      const gen = processStream(g.stream, {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1000,
+      });
+      g.push(delta("a"));
+      g.push(delta("ab"));
+      await drive([], gen, 2);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(update).toHaveBeenCalledTimes(1);
+      // Content is marked dirty again, so the next tick retries.
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(update).toHaveBeenCalledTimes(2);
+      g.push(end("ab"));
+      const events: unknown[] = [];
+      await drive(events, gen, 1);
+      expect((events[0] as { type: string }).type).toBe("message-end");
+      expect(update).toHaveBeenCalledTimes(3);
+      warn.mockRestore();
+    });
+
+    it("salvages the staged snapshot and stops the timer when the consumer stops iterating", async () => {
+      const { storage, update } = makeStorage();
+      const g = gate();
+      const gen = processStream(g.stream, {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1000,
+      });
+      g.push(delta("a"));
+      g.push(delta("ab"));
+      await drive([], gen, 2);
+      await gen.return(undefined);
+      // The text already shown is written once on the way out ...
+      expect(update).toHaveBeenCalledTimes(1);
+      expect(update).toHaveBeenLastCalledWith(
+        "m1",
+        expect.objectContaining({ content: [{ type: "text", text: "ab" }] })
+      );
+      // ... and the timer is gone.
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(update).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not write on the way out when nothing is staged", async () => {
+      const { storage, update } = makeStorage();
+      const g = gate();
+      const gen = processStream(g.stream, {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1000,
+      });
+      g.push(delta("a"));
+      await drive([], gen, 1);
+      await gen.return(undefined);
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it("salvages the staged snapshot when the provider throws, keeping the error", async () => {
+      const { storage, update } = makeStorage();
+      async function* boom(): AsyncGenerator<SendMessageResult> {
+        yield delta("a");
+        yield delta("ab");
+        throw new Error("provider down");
+      }
+      const gen = processStream(boom(), {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1000,
+      });
+      await drive([], gen, 2);
+      await expect(gen.next()).rejects.toThrow("provider down");
+      expect(update).toHaveBeenCalledTimes(1);
+      expect(update).toHaveBeenLastCalledWith(
+        "m1",
+        expect.objectContaining({ content: [{ type: "text", text: "ab" }] })
+      );
+    });
+
+    it("a failing salvage write does not mask the stream error", async () => {
+      const { storage, update } = makeStorage();
+      update.mockRejectedValueOnce(new Error("db down"));
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      async function* boom(): AsyncGenerator<SendMessageResult> {
+        yield delta("a");
+        yield delta("ab");
+        throw new Error("provider down");
+      }
+      const gen = processStream(boom(), {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1000,
+      });
+      await drive([], gen, 2);
+      await expect(gen.next()).rejects.toThrow("provider down");
+      expect(update).toHaveBeenCalledTimes(1);
+      warn.mockRestore();
+    });
+
+    it("clamps a tiny interval to the lower bound", async () => {
+      const { storage, update } = makeStorage();
+      const g = gate();
+      const gen = processStream(g.stream, {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1,
+      });
+      g.push(delta("a"));
+      g.push(delta("ab"));
+      await drive([], gen, 2);
+      await vi.advanceTimersByTimeAsync(MIN_PERSIST_INTERVAL_MS - 1);
+      expect(update).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(update).toHaveBeenCalledTimes(1);
+      g.push(end("ab"));
+      await drive([], gen, 1);
+    });
+
+    it.each([0, -5, Number.NaN, Number.POSITIVE_INFINITY])(
+      "falls back to the default interval for %p",
+      async (value) => {
+        const { storage, update } = makeStorage();
+        const g = gate();
+        const gen = processStream(g.stream, {
+          storage,
+          threadId: "t",
+          persistIntervalMs: value,
+        });
+        g.push(delta("a"));
+        g.push(delta("ab"));
+        await drive([], gen, 2);
+        await vi.advanceTimersByTimeAsync(DEFAULT_PERSIST_INTERVAL_MS - 1);
+        expect(update).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1);
+        expect(update).toHaveBeenCalledTimes(1);
+        g.push(end("ab"));
+        await drive([], gen, 1);
+      }
+    );
+
+    it("salvages the last delta when the stream ends without isEnd", async () => {
+      const { storage, update } = makeStorage();
+      const g = gate();
+      const gen = processStream(g.stream, {
+        storage,
+        threadId: "t",
+        persistIntervalMs: 1000,
+      });
+      g.push(delta("a"));
+      g.push(delta("ab"));
+      await drive([], gen, 2);
+      g.close();
+      await gen.next();
+      expect(update).toHaveBeenCalledTimes(1);
+      expect(update).toHaveBeenLastCalledWith(
+        "m1",
+        expect.objectContaining({ content: [{ type: "text", text: "ab" }] })
+      );
+    });
+
+    it("uses the default interval when none is configured", async () => {
+      const { storage, update } = makeStorage();
+      const g = gate();
+      const gen = processStream(g.stream, { storage, threadId: "t" });
+      g.push(delta("a"));
+      g.push(delta("ab"));
+      await drive([], gen, 2);
+      await vi.advanceTimersByTimeAsync(DEFAULT_PERSIST_INTERVAL_MS - 1);
+      expect(update).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(update).toHaveBeenCalledTimes(1);
+      g.push(end("ab"));
+      await drive([], gen, 1);
+    });
   });
 });

@@ -408,6 +408,7 @@ export class AIEngine {
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
       entityId: contextScope,
+      persistIntervalMs: this.deps.persistIntervalMs,
     });
 
     const chatEvents = this.runChatStream(stream, toolCtx, {
@@ -640,6 +641,7 @@ export class AIEngine {
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
       entityId: contextScope,
+      persistIntervalMs: this.deps.persistIntervalMs,
     });
 
     yield* this.runChatStream(stream, toolCtx, {
@@ -724,6 +726,7 @@ export class AIEngine {
             webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
             pickFetch: (p) => this.pickFetch(p),
             pagination: this.deps.pagination,
+            persistIntervalMs: this.deps.persistIntervalMs,
           };
           const resumed = executeAdapterTool(
             this.deps.storage,
@@ -798,10 +801,15 @@ export class AIEngine {
       webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
       pagination: this.deps.pagination,
+      persistIntervalMs: this.deps.persistIntervalMs,
     };
 
     const resumed = resumeChat(
-      { storage: this.deps.storage, pagination: this.deps.pagination },
+      {
+        storage: this.deps.storage,
+        pagination: this.deps.pagination,
+        persistIntervalMs: this.deps.persistIntervalMs,
+      },
       {
         threadId: input.threadId,
         messageId: input.messageId,
@@ -886,7 +894,11 @@ export class AIEngine {
           // model recovers on the same turn — never surface it for
           // approval (dispatching a phantom tool throws and hangs).
           const resumed = resumeChat(
-            { storage: this.deps.storage, pagination: runCtx.pagination },
+            {
+              storage: this.deps.storage,
+              pagination: runCtx.pagination,
+              persistIntervalMs: runCtx.persistIntervalMs,
+            },
             {
               threadId: event.threadId,
               messageId: event.messageId,
