@@ -283,6 +283,13 @@ export const UserMessage = memo(() => {
     .filter((item) => item.type === "file")
     .map((item) => parseFileBlock(item.mimeType, item.data));
 
+  // Attachment-only sends carry a text block with an empty string (see
+  // `onNew`) — skip the bubble entirely rather than rendering an empty,
+  // still-visible rounded/padded/background box under the file chips.
+  const hasText = message.content.some(
+    (item) => item.type === "text" && item.text.trim().length > 0
+  );
+
   return (
     <MessagePrimitive.Root asChild>
       <motion.div
@@ -308,18 +315,22 @@ export const UserMessage = memo(() => {
           </div>
         ) : null}
 
-        <div
-          className={cn(
-            "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[var(--chat-user-message-border-radius,16px)] px-[12px] py-[8px] select-text",
-            isRTL ? "rounded-bl-[0px]" : "rounded-br-[0px]"
-          )}
-        >
-          <MessagePrimitive.Content
-            components={{ Text: MarkdownText, Image: () => null }}
-          />
-        </div>
+        {hasText ? (
+          <div
+            className={cn(
+              "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[var(--chat-user-message-border-radius,16px)] px-[12px] py-[8px] select-text",
+              isRTL ? "rounded-bl-[0px]" : "rounded-br-[0px]"
+            )}
+          >
+            <MessagePrimitive.Content
+              components={{ Text: MarkdownText, Image: () => null }}
+            />
+          </div>
+        ) : null}
 
-        <UserActionBar />
+        {/* Copy / save-as-prompt act on the message text — nothing to
+            copy or save when the send was attachment-only. */}
+        {hasText ? <UserActionBar /> : null}
       </motion.div>
     </MessagePrimitive.Root>
   );

@@ -31,6 +31,8 @@ const Composer = () => {
     (s) => s.cancelPendingAttachment
   );
   const hasPending = pendingAttachments.length > 0;
+  const hasAttachments =
+    attachmentFiles.length > 0 || attachmentImages.length > 0;
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const { t } = useI18n();
@@ -74,6 +76,16 @@ const Composer = () => {
       <ComposerPrimitive.Root
         ref={rootRef}
         onClick={focusInputOnClick}
+        onSubmit={(e) => {
+          // assistant-ui's own submit handler no-ops when its runtime-level
+          // `composer.isEmpty` is true — text blank *and* its own (unused)
+          // attachment list empty. It never sees our `useAttachmentsStore`,
+          // so an attachment-only draft would silently fail to submit on
+          // Enter. Take over here whenever we have attachments it can't see.
+          if (!currentProfile || hasPending || !hasAttachments) return;
+          e.preventDefault();
+          composerRuntime.send();
+        }}
         inert={composerDisabled}
         aria-disabled={composerDisabled || undefined}
         className={`composer-root relative flex w-full flex-col gap-[6px] rounded-[4px] border px-[var(--chat-composer-padding-x,8px)] pt-[var(--chat-composer-padding-top,10px)] pb-[var(--chat-composer-padding-bottom,6px)] box-border ${

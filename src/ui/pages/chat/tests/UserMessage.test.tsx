@@ -376,6 +376,44 @@ describe("UserMessage", () => {
     expect(fileItems[0].getAttribute("data-path")).toBe("/path/to/doc.docx");
   });
 
+  it("does not render the text bubble when the message is attachment-only", () => {
+    mockMessageContent.current = [
+      {
+        type: "file",
+        data: "content",
+        mimeType: JSON.stringify({ type: 7, path: "/doc.docx" }),
+      },
+      { type: "text", text: "" },
+    ];
+    render(<UserMessage />);
+    expect(screen.queryByTestId("message-content")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("file-item")).toHaveLength(1);
+  });
+
+  it("does not render the text bubble when the text is whitespace-only", () => {
+    mockMessageContent.current = [{ type: "text", text: "   " }];
+    render(<UserMessage />);
+    expect(screen.queryByTestId("message-content")).not.toBeInTheDocument();
+  });
+
+  it("does not render the action bar (copy / save prompt) when the message is attachment-only", () => {
+    mockMessageContent.current = [
+      {
+        type: "file",
+        data: "content",
+        mimeType: JSON.stringify({ type: 7, path: "/doc.docx" }),
+      },
+      { type: "text", text: "" },
+    ];
+    render(<UserMessage />);
+    expect(screen.queryByTestId("action-bar")).not.toBeInTheDocument();
+  });
+
+  it("renders the action bar when the message has text", () => {
+    render(<UserMessage />);
+    expect(screen.getByTestId("action-bar")).toBeInTheDocument();
+  });
+
   it("renders both images and files together", () => {
     mockMessageContent.current = [
       { type: "text", text: "Both" },
