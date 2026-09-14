@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.110
+
+### Fixed
+
+- **Tool results reach the ONLYOFFICE gateway as `tool_result` blocks.** The gateway proxies to Claude and maps a block inside a `tool` message onto Anthropic's `tool_result`, which is where the prompt-caching marker must sit. `withCacheControl` used to wrap the trailing tool message in a `text` block, which the gateway rejected; the block is now typed by role. Other providers are unaffected — only the ONLYOFFICE provider places cache markers.
+
+  ```json
+  { "role": "tool", "content": [{ "type": "tool_result", "text": "{\"content\":[...]}", "cache_control": { "type": "ephemeral" } }] }
+  ```
+
+### Changed
+
+- **`structuredContent` is no longer sent to the model.** MCP requires a server that returns `structuredContent` to mirror it as a text block in `content`, so the field only duplicated a payload the model already receives and doubled its token cost. All three MCP tool-call paths (server HTTP, browser HTTP, browser stdio) now serialise through `serializeMcpToolResult`, which drops it.
+
 ## 0.5.109
 
 ### Changed
