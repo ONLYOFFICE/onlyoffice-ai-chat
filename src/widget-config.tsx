@@ -320,8 +320,9 @@ export interface WidgetConfig {
   suggestions?: Suggestion[];
   /**
    * Arbitrary content rendered at the very top of a new (empty) chat
-   * (above the welcome screen, with a 12px top offset). Shown only when
-   * {@link WidgetConfig.suggestions} are visible.
+   * (above the welcome screen, with a 12px top offset). Rendered whenever a
+   * node is provided, independent of {@link WidgetConfig.suggestions} — pass
+   * no node to opt out.
    */
   suggestionsHeader?: React.ReactNode;
   /**
