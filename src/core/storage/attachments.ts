@@ -61,6 +61,14 @@ export interface Attachment {
    * `text` its human-readable label.
    */
   formKeys?: { key: string; text: string }[];
+
+  /**
+   * Starter questions generated from an analyzable form's own schema, in the
+   * user's language: `question` is the chip label, `prompt` what the chip
+   * sends. Generated asynchronously, so an attach response can carry an
+   * empty array and a later read of the same record carry the questions.
+   */
+  suggestedQuestions?: { question: string; prompt: string }[];
 }
 
 /**
