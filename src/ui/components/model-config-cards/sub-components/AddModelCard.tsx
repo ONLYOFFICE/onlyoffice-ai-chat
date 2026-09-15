@@ -123,16 +123,20 @@ export const AddModelCard = ({
   // handler; inside the form the ONLYOFFICE AI Settings link takes
   // precedence over it. Behaviour is unchanged.
   const importAction = onProfileImportClick ? (
-    <div className="flex flex-row items-center gap-[var(--add-model-card-import-gap,4px)]">
+    <div className="flex flex-row items-center min-w-0 max-w-full gap-[var(--add-model-card-import-gap,4px)]">
+      {/* The label is long in several locales ("Импорт пользовательского
+          провайдера"); in a narrow chat it truncates instead of wrapping
+          into the field below — the full text stays available as a title. */}
       <Link
         href="#"
+        title={t("Import")}
         onClick={handleImportClick}
-        className="!text-[var(--link-secondary-color)]"
+        className="!text-[var(--link-secondary-color)] truncate min-w-0"
       >
         {t("Import")}
       </Link>
       <HelpButton
-        className="p-[var(--add-model-card-tooltip-padding,12px)]"
+        className="shrink-0 p-[var(--add-model-card-tooltip-padding,12px)]"
         size={aboutButtonSize}
         side="bottom"
         align="start"
