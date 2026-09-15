@@ -433,9 +433,11 @@ const AssistantActionBar = () => {
       </ActionBarPrimitive.Reload>
       {platform.file?.saveAsFile && (
         <div>
-          <TooltipIconButton tooltip={t("Save")}>
+          {/* Its own key rather than the shared `Save`, which labels every
+              submit button in the widget: this action always exports .docx. */}
+          <TooltipIconButton tooltip={t("SaveAsDocx")}>
             <IconButton
-              iconName="btn-save.small"
+              iconName="btn-download"
               size={chatMessageActionsIconSize}
               onClick={onDownload}
               isStroke

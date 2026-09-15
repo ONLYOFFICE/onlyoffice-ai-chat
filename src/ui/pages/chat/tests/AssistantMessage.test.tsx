@@ -697,7 +697,7 @@ describe("AssistantMessage", () => {
     render(<AssistantMessage />);
     const tooltips = screen.getAllByTestId("tooltip-btn");
     const saveTooltip = tooltips.find(
-      (el) => el.getAttribute("data-tooltip") === "Save"
+      (el) => el.getAttribute("data-tooltip") === "SaveAsDocx"
     );
     expect(saveTooltip).toBeInTheDocument();
   });
@@ -706,7 +706,7 @@ describe("AssistantMessage", () => {
     mockPlatformFile = null;
     render(<AssistantMessage />);
     expect(
-      screen.queryByTestId("icon-btn-btn-save.small")
+      screen.queryByTestId("icon-btn-btn-download")
     ).not.toBeInTheDocument();
   });
 
@@ -754,7 +754,7 @@ describe("AssistantMessage", () => {
   it("renders save icon button when saveAsFile is available", () => {
     mockPlatformFile = { saveAsFile: mockSaveAsFile };
     render(<AssistantMessage />);
-    expect(screen.getByTestId("icon-btn-btn-save.small")).toBeInTheDocument();
+    expect(screen.getByTestId("icon-btn-btn-download")).toBeInTheDocument();
   });
 
   it("renders the Regenerate (Reload) button", () => {
@@ -773,7 +773,7 @@ describe("AssistantMessage", () => {
       mockPlatformFile = null;
       render(<AssistantMessage />);
       expect(
-        screen.queryByTestId("icon-btn-btn-save.small")
+        screen.queryByTestId("icon-btn-btn-download")
       ).not.toBeInTheDocument();
       expect(mockSaveAsFile).not.toHaveBeenCalled();
     });
@@ -783,7 +783,7 @@ describe("AssistantMessage", () => {
       mockMessages = [{ content: [{ type: "text", text: "User question" }] }];
       mockMessageParentId = "0";
       render(<AssistantMessage />);
-      const saveBtn = screen.getByTestId("icon-btn-btn-save.small");
+      const saveBtn = screen.getByTestId("icon-btn-btn-download");
       fireEvent.click(saveBtn);
       // Wait for async
       await vi.waitFor(() => {
@@ -917,7 +917,7 @@ describe("AssistantMessage", () => {
     it("renders nothing extra when assistantActions is undefined", () => {
       mockAssistantActions = undefined;
       render(<AssistantMessage />);
-      // Only built-in icons: btn-copy, checked, btn-save.small
+      // Only built-in icons: btn-copy, checked, btn-download
       expect(screen.queryByTestId("icon-btn-my-icon")).not.toBeInTheDocument();
     });
 

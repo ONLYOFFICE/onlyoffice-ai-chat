@@ -114,6 +114,7 @@ export type TranslationKey =
   | "Save"
   | "SaveAIPrompt"
   | "SaveAIPromptToFolder"
+  | "SaveAsDocx"
   | "SaveChanges"
   | "SavedPrompts"
   | "ScrollToBottom"
