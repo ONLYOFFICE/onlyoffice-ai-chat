@@ -301,6 +301,7 @@ vi.mock("../../../../utils", () => ({
       .map((p) => p.text)
       .join("\n\n");
   }),
+  removeSpecialCharacter: vi.fn((s: string) => s.replace(/[\\/:*"<>|?]/g, "")),
 }));
 
 vi.mock("../../../../widget-config", () => ({
@@ -310,11 +311,14 @@ vi.mock("../../../../widget-config", () => ({
   }),
 }));
 
+import { getMessageTitleFromMd } from "../../../../shared/utils";
 import { AssistantMessage } from "../sub-components/AssistantMessage";
 
 describe("AssistantMessage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // `clearAllMocks` drops the module-level implementation too.
+    vi.mocked(getMessageTitleFromMd).mockReturnValue("Title");
     mockPlatformFile = null;
     mockIsStreamRunning = false;
     mockMessages = [];
@@ -791,6 +795,84 @@ describe("AssistantMessage", () => {
           "# Title\nContent",
           "Title.docx"
         );
+      });
+    });
+
+    // An attachment-only send has an empty text part, so the Markdown yields
+    // no title and the host would otherwise be handed a bare ".docx".
+    describe("when the prompt carried no text", () => {
+      const clickSave = () => {
+        mockPlatformFile = { saveAsFile: mockSaveAsFile };
+        mockMessageParentId = "parent-1";
+        vi.mocked(getMessageTitleFromMd).mockReturnValue("");
+        render(<AssistantMessage />);
+        fireEvent.click(screen.getByTestId("icon-btn-btn-download"));
+      };
+
+      it("falls back to the attached document name (ref form)", async () => {
+        mockMessages = [
+          {
+            id: "parent-1",
+            content: [
+              { type: "text", text: "" },
+              {
+                type: "file",
+                mimeType: JSON.stringify({
+                  ref: "r1",
+                  title: "Document 1.docx",
+                  kind: "file",
+                }),
+                data: "",
+              },
+            ],
+          },
+        ];
+        clickSave();
+        await vi.waitFor(() => {
+          expect(mockSaveAsFile).toHaveBeenCalledWith(
+            "# Title\nContent",
+            "Document 1.docx"
+          );
+        });
+      });
+
+      it("falls back to the leaf of a legacy inline path", async () => {
+        mockMessages = [
+          {
+            id: "parent-1",
+            content: [
+              { type: "text", text: "" },
+              {
+                type: "file",
+                mimeType: JSON.stringify({
+                  path: "C:\\docs\\Report.docx",
+                  type: 65,
+                }),
+                data: "body",
+              },
+            ],
+          },
+        ];
+        clickSave();
+        await vi.waitFor(() => {
+          expect(mockSaveAsFile).toHaveBeenCalledWith(
+            "# Title\nContent",
+            "Report.docx"
+          );
+        });
+      });
+
+      it("falls back to the generic export name with no attachment", async () => {
+        mockMessages = [
+          { id: "parent-1", content: [{ type: "text", text: "" }] },
+        ];
+        clickSave();
+        await vi.waitFor(() => {
+          expect(mockSaveAsFile).toHaveBeenCalledWith(
+            "# Title\nContent",
+            "ChatExport.docx"
+          );
+        });
       });
     });
   });

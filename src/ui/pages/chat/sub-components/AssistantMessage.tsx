@@ -26,7 +26,7 @@ import {
   convertMessagesToMd,
   getMessageTitleFromMd,
 } from "../../../../shared/utils";
-import { getMessageText } from "../../../../utils";
+import { getMessageText, removeSpecialCharacter } from "../../../../utils";
 import logger from "../../../../shared/logger";
 import { useStores } from "../../../store/context";
 import {
@@ -378,6 +378,44 @@ const RuntimeCopyButton = () => {
   );
 };
 
+/**
+ * Leaf file name of the first attachment on a message, without its extension,
+ * for use as a fallback export title. Mirrors the attachment block forms
+ * `UserMessage` renders: the ref form (a JSON `mimeType` carrying `title` /
+ * `path`) and the legacy inline form (a JSON `mimeType` carrying `path`).
+ *
+ * @param message - The user turn that preceded the reply, if any.
+ * @returns A sanitized title, or `""` when the message has no named file.
+ */
+const getAttachmentTitle = (message?: ThreadMessageLike): string => {
+  if (!message || !Array.isArray(message.content)) return "";
+
+  for (const part of message.content) {
+    if (!part || typeof part !== "object" || !("type" in part)) continue;
+    if (part.type !== "file" || !("mimeType" in part)) continue;
+
+    let raw = "";
+    try {
+      const meta = JSON.parse(part.mimeType);
+      raw = typeof meta.title === "string" ? meta.title : (meta.path ?? "");
+    } catch {
+      continue;
+    }
+    if (typeof raw !== "string" || raw.length === 0) continue;
+
+    // `path` may be a full local path; keep the leaf, then drop the extension
+    // so the export format supplies its own.
+    const leaf = raw.split(/[\\/]/).pop() ?? raw;
+    const dot = leaf.lastIndexOf(".");
+    const base = dot > 0 ? leaf.slice(0, dot) : leaf;
+
+    const title = removeSpecialCharacter(base).trim().substring(0, 30);
+    if (title.length > 0) return title;
+  }
+
+  return "";
+};
+
 const AssistantActionBar = () => {
   const { IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
@@ -406,7 +444,13 @@ const AssistantActionBar = () => {
       parentMessage ? [parentMessage, message] : [message]
     );
 
-    const title = getMessageTitleFromMd(mdValue);
+    // An attachment-only send carries an empty text part, so the Markdown
+    // starts with a bare `## ` and yields no title — name the file after the
+    // attached document instead of handing the host a bare `.docx`.
+    const title =
+      getMessageTitleFromMd(mdValue) ||
+      getAttachmentTitle(parentMessage) ||
+      removeSpecialCharacter(t("ChatExport"));
 
     await platform.file.saveAsFile(mdValue, `${title}.docx`);
   };
