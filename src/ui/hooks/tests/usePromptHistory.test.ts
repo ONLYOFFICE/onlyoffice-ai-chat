@@ -264,6 +264,43 @@ describe("usePromptHistory", () => {
     expect(loadOlderMessages).toHaveBeenCalledTimes(1);
   });
 
+  it("treats a same-length page that brought new messages as progress", async () => {
+    state.messages = [
+      { ...user("newest"), id: "m2" },
+      { ...assistant("re"), id: "m3" },
+    ];
+    state.hasMoreOlderMessages = true;
+    // An adapter that pages by *replacing* the window rather than growing
+    // it hands back a list of the same length. The count alone cannot
+    // tell that from a load that brought nothing, so the walk would stop
+    // here as if the thread had ended; the leading id can tell.
+    const pages = [
+      // Reached only if the same-length page above counts as progress.
+      [...thread("ancient"), ...thread("older")],
+      [
+        { ...user("older"), id: "m0" },
+        { ...assistant("re"), id: "m1" },
+      ],
+    ];
+    const loadOlderMessages = vi.fn(() => {
+      const page = pages.pop();
+      if (page) state.messages = page;
+      state.hasMoreOlderMessages = pages.length > 0;
+      return Promise.resolve();
+    });
+    state.loadOlderMessages = loadOlderMessages;
+
+    const { result } = renderHook(() => usePromptHistory());
+
+    await act(async () => {
+      expect(await result.current.previous("")).toEqual({ text: "newest" });
+    });
+    await act(async () => {
+      expect(await result.current.previous("")).toEqual({ text: "ancient" });
+    });
+    expect(loadOlderMessages).toHaveBeenCalledTimes(2);
+  });
+
   it("holds its place across a page landing at the front of the list", async () => {
     state.messages = thread("one", "two", "three");
     state.hasMoreOlderMessages = true;
@@ -324,6 +361,77 @@ describe("usePromptHistory", () => {
     // The guard lifts once the page lands, so the walk continues.
     await act(async () => {
       expect(await result.current.previous("")).toBeNull();
+    });
+  });
+
+  it("restarts the walk from the newest entry after a send mid-walk", async () => {
+    state.messages = thread("first", "second", "third");
+    const { result } = renderHook(() => usePromptHistory());
+
+    // Recall an entry...
+    await act(async () => {
+      expect(await result.current.previous("")).toEqual({ text: "third" });
+    });
+    await act(async () => {
+      expect(await result.current.previous("")).toEqual({ text: "second" });
+    });
+
+    // ...and send it without touching the keyboard again. None of the
+    // three send paths is a keystroke, so nothing resets the walk for us;
+    // the appended message has to do it.
+    state.messages = [...state.messages, user("second")];
+
+    // Depth counts back from the end, so an unreset walk would resume at
+    // depth 3 and hand back "second" again, skipping the message just
+    // sent and the one before it. (The walk ends on the next step rather
+    // than at the send itself: the store is read lazily, never subscribed
+    // to, so nothing here observes the append until history is asked.)
+    await act(async () => {
+      expect(await result.current.previous("")).toEqual({ text: "second" });
+    });
+    await act(async () => {
+      expect(await result.current.previous("")).toEqual({ text: "third" });
+    });
+  });
+
+  it("ends the walk when a send arrives before a Down step", async () => {
+    state.messages = thread("first", "second");
+    const { result } = renderHook(() => usePromptHistory());
+
+    await act(async () => {
+      await result.current.previous("draft");
+    });
+    state.messages = [...state.messages, user("second")];
+
+    // The draft the walk was holding belongs to a list that no longer
+    // exists, so Down goes back to the textarea rather than restoring it.
+    await act(async () => {
+      expect(await result.current.next()).toBeNull();
+    });
+    expect(result.current.isBrowsing).toBe(false);
+  });
+
+  it("keeps its place when its own paging grows the list", async () => {
+    state.messages = thread("newest");
+    state.hasMoreOlderMessages = true;
+    state.loadOlderMessages = () => {
+      state.messages = [...thread("older"), ...state.messages];
+      state.hasMoreOlderMessages = false;
+      return Promise.resolve();
+    };
+
+    const { result } = renderHook(() => usePromptHistory());
+
+    // Growth from paging is the walk's own doing and must not read as a
+    // send — otherwise the step after a page fetch would reset and start
+    // over from the newest entry.
+    for (const expected of ["newest", "older"]) {
+      await act(async () => {
+        expect(await result.current.previous("")).toEqual({ text: expected });
+      });
+    }
+    await act(async () => {
+      expect(await result.current.next()).toEqual({ text: "newest" });
     });
   });
 

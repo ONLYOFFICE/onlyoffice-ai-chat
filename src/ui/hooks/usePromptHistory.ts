@@ -98,6 +98,13 @@ export function usePromptHistory(): PromptHistory {
   // The draft that was in the box when the walk started, restored when
   // the user walks back past the newest entry.
   const draftRef = useRef("");
+  // The thread's prompt count as of the last step. A send appends to the
+  // thread, which *is* the history, so the entry a given depth names
+  // shifts by one under a walk that is still open — see `syncToThread`.
+  // Counted rather than compared by text: recalling an entry and sending
+  // it unchanged is the most likely way to send mid-walk, and it leaves
+  // the newest text identical to what it already was.
+  const promptCountRef = useRef(0);
   const [isBrowsing, setIsBrowsing] = useState(false);
   // Set while a step is waiting on an older page. Holding Up down fires
   // a key repeat every few dozen milliseconds — far faster than a page
@@ -114,14 +121,47 @@ export function usePromptHistory(): PromptHistory {
     versionRef.current += 1;
     depthRef.current = 0;
     draftRef.current = "";
+    promptCountRef.current = 0;
     setIsBrowsing(false);
   }, []);
+
+  /**
+   * End the walk if the list it is walking changed underneath it.
+   *
+   * Sending is not a keystroke, so nothing in the composer's key handling
+   * abandons the walk — and there are three ways to send (the form's own
+   * submit override, assistant-ui's internal Enter handler, and the Send
+   * button), so a reset wired into any one of them would miss the others.
+   * The thread is the history, so ask it instead.
+   *
+   * Depth counts back from the end of the list, so a send invalidates it:
+   * the entry it named before the send is one step further back now, and
+   * continuing the walk would hand back the same prompt twice and skip
+   * the one just sent. A count that *shrank* (a thread switch, a cleared
+   * list) invalidates it just as thoroughly, so any change ends the walk.
+   *
+   * Paging in older messages is the one growth that must not reset, and
+   * it doesn't reach here: `previous` pages after its sync, and the depth
+   * it then applies is the one this call already validated.
+   *
+   * Returns the prompts it read, since every caller needs them anyway.
+   */
+  const syncToThread = useCallback((): string[] => {
+    const prompts = readPrompts();
+    if (depthRef.current > 0 && prompts.length !== promptCountRef.current) {
+      reset();
+    }
+    promptCountRef.current = prompts.length;
+    return prompts;
+  }, [readPrompts, reset]);
 
   const previous = useCallback(
     async (currentText: string): Promise<PromptHistoryStep> => {
       if (steppingRef.current) return null;
+      // Before the version is captured: a send since the last step ends
+      // the walk, and this step is then the first step of a fresh one.
+      let prompts = syncToThread();
       const version = versionRef.current;
-      let prompts = readPrompts();
       const depth = depthRef.current;
 
       // Past the oldest loaded prompt: the rest of the thread is still on
@@ -134,6 +174,7 @@ export function usePromptHistory(): PromptHistory {
         const store = useMessageStore.getState();
         if (!store.hasMoreOlderMessages) return null;
         const before = store.messages.length;
+        const oldestBefore = store.messages[0]?.id;
         steppingRef.current = true;
         try {
           await store.loadOlderMessages();
@@ -151,7 +192,17 @@ export function usePromptHistory(): PromptHistory {
         // zero prompts while still being real progress through the
         // thread, so a `prompts.length` comparison here would end the
         // walk on exactly the case the paragraph above keeps going for.
-        if (useMessageStore.getState().messages.length === before) return null;
+        //
+        // The oldest id is checked alongside the count because the count
+        // alone cannot see a page that *replaced* the window instead of
+        // prepending to it: a store that hands back a same-length list
+        // looks identical to one that loaded nothing. `loadOlderMessages`
+        // only ever prepends, so this is a guard against an adapter that
+        // paginates differently, not against the store as it stands.
+        const loaded = useMessageStore.getState().messages;
+        if (loaded.length === before && loaded[0]?.id === oldestBefore) {
+          return null;
+        }
         prompts = readPrompts();
       }
 
@@ -165,14 +216,21 @@ export function usePromptHistory(): PromptHistory {
       // First step of a walk: remember what the user had typed so Down
       // can bring it back.
       if (depth === 0) draftRef.current = currentText;
+      // Paging older messages in grew the list since the sync above, and
+      // that growth is this walk's own doing — record it, or the next
+      // step would read it as a send and abandon the walk.
+      promptCountRef.current = prompts.length;
       depthRef.current = depth + 1;
       setIsBrowsing(true);
       return { text: prompts[prompts.length - depthRef.current] ?? "" };
     },
-    [readPrompts, useMessageStore]
+    [readPrompts, syncToThread, useMessageStore]
   );
 
   const next = useCallback(async (): Promise<PromptHistoryStep> => {
+    // A send since the last step ends the walk, which leaves nothing for
+    // Down to walk back through — it belongs to the textarea again.
+    const synced = syncToThread();
     // Not browsing — Down belongs to the textarea.
     if (depthRef.current <= 0) return null;
     versionRef.current += 1;
@@ -185,9 +243,8 @@ export function usePromptHistory(): PromptHistory {
       setIsBrowsing(false);
       return { text: draft };
     }
-    const prompts = readPrompts();
-    return { text: prompts[prompts.length - depthRef.current] ?? "" };
-  }, [readPrompts]);
+    return { text: synced[synced.length - depthRef.current] ?? "" };
+  }, [syncToThread]);
 
   return { previous, next, isBrowsing, reset };
 }
