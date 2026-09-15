@@ -348,6 +348,7 @@ describe("executeAdapterTool", () => {
       "web_search",
       { q: 1 },
       undefined,
+      undefined,
       undefined
     );
     expect(resumeChatMock).toHaveBeenCalledWith(
@@ -391,7 +392,8 @@ describe("executeAdapterTool", () => {
       "web_search",
       { q: 1 },
       undefined,
-      proxyFetch
+      proxyFetch,
+      undefined
     );
   });
 
@@ -435,7 +437,8 @@ describe("executeAdapterTool", () => {
       "generate_image",
       {},
       pickFetch,
-      controller.signal
+      controller.signal,
+      undefined
     );
     // The base64 → attachment-ref swap is centralized in `resumeChat`
     // (covered by tool-call.test.ts), so `executeAdapterTool` forwards the
@@ -529,5 +532,70 @@ describe("executeAdapterTool", () => {
     expect(JSON.parse(passed.result as string)).toEqual({
       error: "No dispatcher for tool: weird",
     });
+  });
+});
+
+describe("executeAdapterTool source", () => {
+  const SOURCE = { id: "room-9", type: "Room" };
+  const pending = (toolName: string) =>
+    ({
+      type: "tool-call-pending",
+      threadId: "t",
+      messageId: "m",
+      idx: 0,
+      message: {
+        role: "assistant",
+        content: [{ type: "tool-call", toolName, args: {} }],
+      } as never,
+    }) as never;
+
+  it("forwards the round's source to callWebSearchTool", async () => {
+    callWebSearchToolMock.mockResolvedValue("web-result");
+    resumeChatMock.mockImplementation(async function* () {});
+    const gen = executeAdapterTool(
+      makeStorage(),
+      undefined,
+      pending("web_search"),
+      {
+        profile: {} as never,
+        profileId: "p",
+        tools: [],
+        entityMeta: { source: SOURCE },
+      }
+    );
+    for await (const _ of gen) void _;
+    expect(callWebSearchToolMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "web_search",
+      {},
+      undefined,
+      undefined,
+      SOURCE
+    );
+  });
+
+  it("forwards the round's source to callImageGenerationTool", async () => {
+    callImageGenerationToolMock.mockResolvedValue("image-result");
+    resumeChatMock.mockImplementation(async function* () {});
+    const gen = executeAdapterTool(
+      makeStorage(),
+      undefined,
+      pending("generate_image"),
+      {
+        profile: {} as never,
+        profileId: "p",
+        tools: [],
+        entityMeta: { source: SOURCE },
+      }
+    );
+    for await (const _ of gen) void _;
+    expect(callImageGenerationToolMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "generate_image",
+      {},
+      undefined,
+      undefined,
+      SOURCE
+    );
   });
 });

@@ -15,6 +15,7 @@ import {
 import { AttachmentsEngine } from "../attachments";
 import { chat } from "../../actions/chat";
 import { generateTitle } from "../../actions/title";
+import type { SourceScope } from "../../../shared/source-meta";
 import type { ActionArgs } from "../../actions/types";
 import { AssignmentsEngine } from "../assignments";
 import type { ResolvedAssignment } from "../assignments/types";
@@ -107,13 +108,20 @@ function stampThreadContext(
  * resume rounds can carry it forward. Returns `undefined` when the host
  * described no entity, keeping the run context free of empty objects.
  */
+/** The host-entity fields of a round that reach the provider's `metadata`. */
+type RoundMeta = Pick<ActionArgs, "entityId" | "entityTitle" | "source">;
+
 function entityMetaOf(
   actionArgs: Omit<ActionArgs, "profile" | "messages"> | undefined
-): Pick<ActionArgs, "entityId" | "entityTitle"> | undefined {
-  if (!actionArgs?.entityId && !actionArgs?.entityTitle) return undefined;
+): RoundMeta | undefined {
+  const source = actionArgs?.source;
+  if (!actionArgs?.entityId && !actionArgs?.entityTitle && !source) {
+    return undefined;
+  }
   return {
-    entityId: actionArgs.entityId,
-    entityTitle: actionArgs.entityTitle,
+    entityId: actionArgs?.entityId,
+    entityTitle: actionArgs?.entityTitle,
+    ...(source ? { source } : {}),
   };
 }
 
@@ -133,8 +141,34 @@ export class AIEngine {
       new ThreadsEngine({
         storage: deps.storage,
         pagination: deps.pagination,
+        resolveSource: deps.resolveSource,
       });
     this.attachments = new AttachmentsEngine({ storage: deps.storage });
+  }
+
+  /**
+   * The host-entity fields the round sends to the provider. With
+   * {@link AIEngineDeps.resolveSource} wired the hook is authoritative: its
+   * answer is the only source, and the caller's legacy `entityId` /
+   * `entityTitle` pair is dropped as well — an unresolved round then sends
+   * no `metadata` at all instead of a client-chosen `agent_id`. Without the
+   * hook the caller's `actionArgs` fields are forwarded as-is. Resolved once
+   * per entry point and threaded into every provider request of the round.
+   */
+  private async roundMeta(
+    scope: SourceScope,
+    actionArgs: Omit<ActionArgs, "profile" | "messages"> | undefined
+  ): Promise<RoundMeta | undefined> {
+    if (this.deps.resolveSource) {
+      // Explicit `undefined`s so the spread overrides whatever the caller
+      // put in `actionArgs`; `providerFor` skips falsy fields.
+      return {
+        entityId: undefined,
+        entityTitle: undefined,
+        source: await this.deps.resolveSource(scope),
+      };
+    }
+    return entityMetaOf(actionArgs);
   }
 
   /**
@@ -275,6 +309,10 @@ export class AIEngine {
       // (Bug 82860). Undefined for a brand-new thread — the assignment wins.
       input.threadId
     );
+    const meta = await this.roundMeta(
+      { entityId: contextScope, threadId: input.threadId },
+      input.actionArgs
+    );
 
     let threadId = input.threadId ?? "";
     let titlePromise: Promise<string> | null = null;
@@ -380,7 +418,7 @@ export class AIEngine {
       // priorMessages is empty on a new thread — the last (only) element
       // is the hydrated user message.
       titlePromise = generateTitle({
-        ...entityMetaOf(input.actionArgs),
+        ...meta,
         profile,
         messages: [resolvedMessages[resolvedMessages.length - 1]],
         fetch: proxiedFetch,
@@ -395,6 +433,7 @@ export class AIEngine {
       messages: resolvedMessages,
       tools: toolCtx.mergedTools,
       threadId,
+      ...meta,
       fetch: proxiedFetch,
     };
 
@@ -421,7 +460,7 @@ export class AIEngine {
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
       entityId: contextScope,
-      entityMeta: entityMetaOf(input.actionArgs),
+      entityMeta: meta,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
@@ -586,6 +625,10 @@ export class AIEngine {
       // (Bug 82860). Undefined for a brand-new thread — the assignment wins.
       input.threadId
     );
+    const meta = await this.roundMeta(
+      { entityId: contextScope, threadId: input.threadId },
+      input.actionArgs
+    );
 
     const stored = await this.readAllMessages(input.threadId);
 
@@ -628,6 +671,7 @@ export class AIEngine {
       ),
       tools: toolCtx.mergedTools,
       threadId: input.threadId,
+      ...meta,
       fetch: proxiedFetch,
     };
 
@@ -654,7 +698,7 @@ export class AIEngine {
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
       entityId: contextScope,
-      entityMeta: entityMetaOf(input.actionArgs),
+      entityMeta: meta,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
@@ -674,6 +718,12 @@ export class AIEngine {
     input: ApproveToolCallInput
   ): AsyncGenerator<ChatEvent> {
     const contextScope = input.contextEntityId ?? input.entityId;
+    // Resolved once here and handed to whichever branch resumes the chat, so
+    // the host's hook runs a single time per entry point.
+    const meta = await this.roundMeta(
+      { entityId: contextScope, threadId: input.threadId },
+      input.actionArgs
+    );
     if (input.allowAlways) {
       const toolCall = readToolCall(input.message, input.idx);
       if (toolCall) {
@@ -721,7 +771,7 @@ export class AIEngine {
             reasoningLevel: input.actionArgs?.reasoningLevel,
             signal: input.actionArgs?.signal,
             entityId: contextScope,
-            entityMeta: entityMetaOf(input.actionArgs),
+            entityMeta: meta,
             fetch: proxiedFetch,
             webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
             pickFetch: (p) => this.pickFetch(p),
@@ -747,7 +797,7 @@ export class AIEngine {
       }
     }
 
-    yield* this.resumeAndContinue(input, input.result);
+    yield* this.resumeAndContinue(input, input.result, meta ?? {});
   }
 
   /**
@@ -767,7 +817,8 @@ export class AIEngine {
    */
   private async *resumeAndContinue(
     input: DenyToolCallInput,
-    result: unknown
+    result: unknown,
+    resolved?: RoundMeta | undefined
   ): AsyncGenerator<ChatEvent> {
     const contextScope = input.contextEntityId ?? input.entityId;
     const { profile, profileId } = await this.resolveChatProfile(
@@ -775,6 +826,14 @@ export class AIEngine {
       contextScope,
       input.threadId
     );
+    // `approveToolCall` has already asked the host; only the deny path
+    // arrives here without an answer.
+    const meta =
+      resolved ??
+      (await this.roundMeta(
+        { entityId: contextScope, threadId: input.threadId },
+        input.actionArgs
+      ));
 
     const toolCtx = await buildToolContext(
       this.deps.storage,
@@ -796,7 +855,7 @@ export class AIEngine {
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
       entityId: contextScope,
-      entityMeta: entityMetaOf(input.actionArgs),
+      entityMeta: meta,
       fetch: proxiedFetch,
       webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
       pickFetch: (p) => this.pickFetch(p),
@@ -825,7 +884,7 @@ export class AIEngine {
         prompt: input.actionArgs?.prompt,
         toolInstructions: input.actionArgs?.toolInstructions,
         entityId: contextScope,
-        entityMeta: entityMetaOf(input.actionArgs),
+        entityMeta: meta,
         fetch: proxiedFetch,
       }
     );
@@ -856,13 +915,13 @@ export class AIEngine {
     for await (const event of stream) {
       if (event.type === "tool-call-pending") {
         const toolCall = readToolCall(event.message, event.idx);
-        const source = resolveToolSource(
+        const toolSource = resolveToolSource(
           toolCall?.toolName ?? null,
           toolCtx.userToolNames,
           toolCtx.adapterToolNames
         );
 
-        if (source === "adapter" && toolCall) {
+        if (toolSource === "adapter" && toolCall) {
           // System tools execute server-side but must be approved in the
           // UI first (unless already always-allowed). Everything else
           // adapter-served (web-search, image-gen, host adapter) runs
@@ -888,7 +947,7 @@ export class AIEngine {
           continue;
         }
 
-        if (source === "unknown" && toolCall) {
+        if (toolSource === "unknown" && toolCall) {
           // The model asked for a tool that isn't offered this turn.
           // Resolve it with a "not available" result and resume so the
           // model recovers on the same turn — never surface it for
@@ -944,6 +1003,7 @@ export class AIEngine {
         [input.userMessage],
         this.deps.storage.attachments
       ),
+      ...(await this.roundMeta({ entityId: contextScope }, input.actionArgs)),
       fetch: this.pickFetch(profile),
     };
 
@@ -958,8 +1018,31 @@ export class AIEngine {
     const pick = this.pickFetch.bind(this);
     const attachments = this.deps.storage.attachments;
     const resolveProfile = () => this.resolveCustomProfile(input.profileId);
-    return input.isStream
-      ? runCustomStream(resolveProfile, input, pick, attachments)
-      : runCustomOnce(resolveProfile, input, pick, attachments);
+    // No scope of its own on this path — the `actionArgs.entityId` hint is
+    // the only place a caller can name the entry (mirrors the host's own
+    // `sendCustom` handling).
+    const withSource = async (): Promise<SendCustomInput> => ({
+      ...input,
+      actionArgs: {
+        ...input.actionArgs,
+        ...(await this.roundMeta(
+          { entityId: input.actionArgs?.entityId },
+          input.actionArgs
+        )),
+      },
+    });
+    if (input.isStream) {
+      return (async function* () {
+        yield* runCustomStream(
+          resolveProfile,
+          await withSource(),
+          pick,
+          attachments
+        );
+      })();
+    }
+    return withSource().then((resolved) =>
+      runCustomOnce(resolveProfile, resolved, pick, attachments)
+    );
   }
 }

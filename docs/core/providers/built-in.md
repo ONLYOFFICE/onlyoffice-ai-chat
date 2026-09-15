@@ -180,6 +180,20 @@ non-standard error frames inside the SSE stream that the OpenAI
 SDK does not surface cleanly. Everything else is inherited from
 `OpenAIProvider`.
 
+Two credential fields are specific to this provider. `sessionId` (the
+thread id, set by `providerFor` from `ActionArgs.threadId`) is sent as the
+`x-session-id` header unless `profile.headers` already carries one. The
+request `metadata` object describes the entry the round is billed to:
+with `ProviderCredentials.source` set it is `source_id` / `source_type` /
+`source_title`; without it the legacy `agent_id` / `agent_title` pair is
+derived from `entityId` / `entityTitle`. It is attached to every request
+— streaming chat, one-shot actions, image generation — and dropped
+entirely when nothing is known.
+
+```json
+{ "metadata": { "source_id": "42", "source_type": "Room", "source_title": "Sales" } }
+```
+
 ---
 
 ## OpenAI-compatible thin subclasses

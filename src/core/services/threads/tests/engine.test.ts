@@ -566,3 +566,73 @@ describe("ThreadsEngine pagination flag", () => {
     expect(storage.messages.readByThread).toHaveBeenCalledWith("t1");
   });
 });
+
+describe("ThreadsEngine source", () => {
+  const SOURCE = { id: "room-9", type: "Room", title: "Sales" };
+
+  it("openOrCreate resolves the source through the hook and sends it on the title request", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Auto Title");
+    const { storage } = makeStorage();
+    const resolveSource = vi.fn().mockResolvedValue(SOURCE);
+    const engine = new ThreadsEngine({ storage, resolveSource });
+    await engine.openOrCreate({
+      profile,
+      profileId: "p1",
+      firstMessage: userMessage,
+      entityId: "room-9",
+      entityMeta: { source: { id: "claimed" } },
+    });
+    expect(resolveSource).toHaveBeenCalledWith({ entityId: "room-9" });
+    expect(lastCreds?.source).toEqual(SOURCE);
+  });
+
+  it("openOrCreate uses entityMeta.source when no hook is wired", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Auto Title");
+    const { storage } = makeStorage();
+    const engine = new ThreadsEngine({ storage });
+    await engine.openOrCreate({
+      profile,
+      profileId: "p1",
+      firstMessage: userMessage,
+      entityMeta: { source: SOURCE },
+    });
+    expect(lastCreds?.source).toEqual(SOURCE);
+  });
+
+  it("regenerateTitle resolves the source through the hook with the thread id", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Regenerated");
+    const { storage } = makeStorage({
+      threads: [{ threadId: "t1", title: "Old" }],
+      messagesByThread: { t1: [userMessage] },
+    });
+    const resolveSource = vi.fn().mockReturnValue(SOURCE);
+    const engine = new ThreadsEngine({ storage, resolveSource });
+    await engine.regenerateTitle("t1", profile, { entityId: "room-9" });
+    expect(resolveSource).toHaveBeenCalledWith({
+      entityId: "room-9",
+      threadId: "t1",
+    });
+    expect(lastCreds?.source).toEqual(SOURCE);
+  });
+});
+
+describe("ThreadsEngine source — hook is authoritative over the legacy pair", () => {
+  it("regenerateTitle drops the caller's entityId / entityTitle when the hook resolves nothing", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Regenerated");
+    const { storage } = makeStorage({
+      threads: [{ threadId: "t1", title: "Old" }],
+      messagesByThread: { t1: [userMessage] },
+    });
+    const engine = new ThreadsEngine({
+      storage,
+      resolveSource: () => undefined,
+    });
+    await engine.regenerateTitle("t1", profile, {
+      entityId: "claimed-agent",
+      entityTitle: "Claimed",
+    });
+    expect(lastCreds?.entityId).toBeUndefined();
+    expect(lastCreds?.entityTitle).toBeUndefined();
+    expect(lastCreds?.source).toBeUndefined();
+  });
+});

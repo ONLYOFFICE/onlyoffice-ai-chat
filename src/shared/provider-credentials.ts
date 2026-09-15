@@ -5,6 +5,8 @@
  * function instead of the global `fetch`. Used to route requests
  * through a host-provided CORS / auth proxy.
  */
+import type { SourceMeta } from "./source-meta";
+
 export type ProviderFetch = (
   input: RequestInfo | URL,
   init?: RequestInit
@@ -45,6 +47,14 @@ export type ProviderCredentials = {
    */
   entityId?: string;
   entityTitle?: string;
+  /**
+   * The entry the request is billed to — see {@link SourceMeta}. Forwarded
+   * from {@link ActionArgs.source} and sent by the ONLYOFFICE provider as the
+   * request's `metadata` (`source_id` / `source_type` / `source_title`);
+   * when set it replaces the legacy `agent_id` / `agent_title` pair derived
+   * from `entityId` / `entityTitle`. Every other provider ignores it.
+   */
+  source?: SourceMeta;
   /**
    * Extra HTTP headers attached to every request the provider's SDK
    * client makes. Forwarded from `Profile.headers`. A header set here

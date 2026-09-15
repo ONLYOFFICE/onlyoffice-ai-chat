@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.112
+
+### Added
+
+- **A round can name the entry it is billed to.** New `SourceMeta` (`{ id, type?, title? }`) travels `ActionArgs.source` → `ProviderCredentials.source`; the ONLYOFFICE provider sends it as the request `metadata` (`source_id` / `source_type` / `source_title`) on every request — streaming chat, one-shot actions, image generation — replacing the legacy `agent_id` / `agent_title` pair when present. The DocSpace host used to reach this by shadowing the provider class; the field is now first-class.
+- **`AIEngineDeps.resolveSource` / `ThreadsEngineDeps.resolveSource`.** A host hook called once per entry point (send, stream, regenerate, tool-call resume, title generation) with the round's context scope and thread. Its answer is threaded into every provider request of the round, including tool-call resume rounds and the built-in `generate_image` tool, and is authoritative: when the hook is wired, a caller-supplied `actionArgs.source` is ignored and the legacy `entityId` / `entityTitle` pair is dropped as well, so an unresolved round sends no `metadata` at all rather than a client-chosen `agent_id` — a client can only name an entry, never describe one it cannot see. Without the hook the caller's fields are forwarded as-is.
+- **Built-in web search is billed to the same entry.** `callWebSearchTool` accepts the round's `source` and, on the ONLYOFFICE / cloud branch only, adds it to the `search` / `contents` body as the same `metadata` object. Previously the two web-search tools were the one paid operation that carried no attribution. Exa never receives it.
+
+  ```json
+  { "engine": "exa", "query": "…", "numResults": 5, "metadata": { "source_id": "42", "source_type": "Room" } }
+  ```
+
+- `sourceMetadataFields` / `SOURCE_METADATA_KEYS` are exported so a host that builds a gateway request body itself spells the keys from one place.
+
 ## 0.5.110
 
 ### Fixed

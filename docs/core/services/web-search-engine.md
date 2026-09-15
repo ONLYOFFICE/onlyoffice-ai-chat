@@ -23,9 +23,14 @@ no DOM / browser APIs anywhere — it uses standard `fetch`
 directly. The runtime tool source lives in the same folder
 ([`source.ts`](../../../src/core/services/web-search/source.ts)) —
 `getWebSearchTools(storage)` enumerates the two tools when a
-config is persisted, `callWebSearchTool(storage, name, args)`
+config is persisted, `callWebSearchTool(storage, name, args, entityId?, fetch?, source?)`
 dispatches them server-side. `AIEngine` resolves both via
-[`buildToolContext`](../../../src/core/services/ai/tools.ts).
+[`buildToolContext`](../../../src/core/services/ai/tools.ts) and passes
+the round's `SourceMeta` as `source`; on the ONLYOFFICE / cloud branch it
+becomes the request's `metadata` object (`source_id` / `source_type` /
+`source_title`), the same shape the ONLYOFFICE chat provider sends, so the
+backend bills a search to the same entry as the chat round. Exa never
+receives it.
 
 ---
 
