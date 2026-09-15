@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **The composer recalls previously sent prompts with ↑ / ↓.** The chat input had no way back to a request the user had already typed: repeating or tweaking one meant writing it out again. It now behaves like a command terminal — ↑ walks back through the prompts sent in this chat, ↓ walks forward, and stepping past the newest entry restores whatever draft was in the box when the walk began. History only claims the arrow when it isn't stealing caret movement the user meant: the box is empty, or the caret already sits at the edge it would move towards (start for ↑, end for ↓) with nothing selected. Anywhere else the arrow moves the caret as before, so editing a multi-line draft is unaffected, and typing into a recalled entry makes it the user's own draft again.
+
+  History is scoped to the open thread, so each chat walks back through its own prompts and a new chat starts empty. A brand-new chat has no thread id until its first send creates one; that prompt is attributed to the thread the send produces.
+
+  New optional `StorageAdapter.promptHistory` slice (`append` / `readAll` / `clear`), driven by a new `PromptHistoryEngine` (`list` / `record` / `clear`) with the matching `prompt-history/*` routes for a remote core. The engine drops blanks, collapses an immediate repeat of the newest entry (bash's `ignoredups`), caps each thread's list at `PROMPT_HISTORY_LIMIT` (100), and never rejects — failing to remember a prompt must not fail the send that triggered it. Hosts whose adapter predates the slice keep working: history then lives in memory for the session, so the keys still work but nothing survives a reload. Implement `promptHistory` to make it persist. The `usePromptHistory` hook is exported from `@onlyoffice/ai-chat/hooks` for custom shells.
+
+  A new chat's **first** prompt is kept. Naming the thread mid-send re-scoped the hook, which cleared the in-memory list and re-read storage — a read that raced the write the same send had just fired, so the opening prompt of every chat vanished from ↑ while later ones survived. The loader now recognises that re-scope as the chat being named by its own send and adopts the list it already has instead of re-reading.
+
 ## 0.5.108
 
 ### Fixed

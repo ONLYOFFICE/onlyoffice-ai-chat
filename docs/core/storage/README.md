@@ -23,6 +23,7 @@ StorageAdapter
 ├── toolPrefs      disabled / auto-approved tools
 ├── webSearch      web-search provider config (singleton)
 ├── attachments    user-message attachments (files + images, ref-only persistence)
+├── promptHistory  composer sent-prompt history (optional)
 └── lifecycle      init() / close()
 ```
 
@@ -42,6 +43,9 @@ selects an isolated per-entity namespace. `profiles`, `messages`,
 are either shared across entities or already addressed by an id
 that carries the scope). See [`storage.md`](./storage.md#entity-scoping-entityid)
 for the full contract.
+
+`promptHistory` takes a scope token too, but not this one: the UI
+passes the **thread id**, so each chat keeps its own prompt history.
 
 See also: [`docs/adapters.md`](../../adapters.md) for the
 adapter pattern at the widget level, and [`docs/architecture.md`](../../architecture.md)

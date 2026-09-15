@@ -5,6 +5,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { FileItem } from "../../../components/file-item";
 import { PendingFileItem } from "../../../components/file-item/PendingFileItem";
 import { useStores } from "../../../store/context";
+import { usePromptHistory } from "../../../hooks/usePromptHistory";
 import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { useWidgetConfig } from "../../../../widget-config";
 import { ComposerAction } from "./ComposerAction";
@@ -40,6 +41,18 @@ const Composer = () => {
   const composerRuntime = useComposerRuntime();
   const composerBridge = useComposerBridge();
   const rootRef = useRef<HTMLFormElement>(null);
+  const history = usePromptHistory();
+
+  // Replace the draft with a history entry and drop the caret at the very
+  // end, so the next Up keeps walking instead of moving within the text
+  // we just pasted in. `setText` re-renders the textarea, hence the
+  // post-paint caret placement.
+  const applyHistoryText = (textarea: HTMLTextAreaElement, text: string) => {
+    composerRuntime.setText(text);
+    requestAnimationFrame(() => {
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    });
+  };
 
   // Make the whole composer area act as one big click target: a click on the
   // padding or any non-interactive gap focuses the textarea. Clicks that land
@@ -77,6 +90,13 @@ const Composer = () => {
         ref={rootRef}
         onClick={focusInputOnClick}
         onSubmit={(e) => {
+          // Every send path lands here — Enter and the Send button (a
+          // submit button) alike — so this is the one place history has
+          // to hook to catch them all. Read the text before anything
+          // downstream clears the composer.
+          if (currentProfile && !hasPending) {
+            history.record(composerRuntime.getState().text);
+          }
           // assistant-ui's own submit handler no-ops when its runtime-level
           // `composer.isEmpty` is true — text blank *and* its own (unused)
           // attachment list empty. It never sees our `useAttachmentsStore`,
@@ -138,7 +158,47 @@ const Composer = () => {
               !e.shiftKey
             ) {
               e.preventDefault();
+              return;
             }
+
+            if (e.key !== "ArrowUp" && e.key !== "ArrowDown") {
+              // Any other key is the user typing or moving around — if
+              // they edit a recalled entry it becomes their own draft
+              // again, so stop treating the next Up as a continued walk.
+              // Bare modifiers and navigation keys don't change the text,
+              // so they must not abandon the walk either.
+              if (
+                e.key.length === 1 ||
+                e.key === "Backspace" ||
+                e.key === "Delete"
+              ) {
+                history.reset();
+              }
+              return;
+            }
+
+            const textarea = e.currentTarget;
+            // Terminal rule: history only claims the arrow when it isn't
+            // stealing caret movement the user meant — an empty box, or
+            // the caret already parked at the edge it would move towards.
+            // A selection means they're manipulating text, not navigating.
+            const atEdge =
+              textarea.selectionStart === textarea.selectionEnd &&
+              (textarea.value === "" ||
+                (e.key === "ArrowUp"
+                  ? textarea.selectionStart === 0
+                  : textarea.selectionEnd === textarea.value.length));
+            if (!atEdge) return;
+
+            const step =
+              e.key === "ArrowUp"
+                ? history.previous(textarea.value)
+                : history.next();
+            // `null` = history has nothing to offer here; leave the arrow
+            // to the textarea so the caret still behaves normally.
+            if (!step) return;
+            e.preventDefault();
+            applyHistoryText(textarea, step.text);
           }}
         />
         <ComposerAction />

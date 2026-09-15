@@ -60,6 +60,7 @@ vi.mock("../core/services", () => ({
   AttachmentsEngine: class {},
   PreferencesEngine: class {},
   ProfilesEngine: class {},
+  PromptHistoryEngine: class {},
   PromptsEngine: class {},
   ThreadsEngine: class {},
   ToolsEngine: class {},

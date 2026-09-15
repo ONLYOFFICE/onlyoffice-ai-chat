@@ -91,6 +91,16 @@ export type {
   PromptsEngineMethod,
 } from "./prompts";
 
+export {
+  DEFAULT_PROMPT_HISTORY_ROUTES,
+  PROMPT_HISTORY_LIMIT,
+  PromptHistoryEngine,
+} from "./prompt-history";
+export type {
+  PromptHistoryEngineDeps,
+  PromptHistoryEngineMethod,
+} from "./prompt-history";
+
 export { DEFAULT_WEB_SEARCH_ROUTES, WebSearchEngine } from "./web-search";
 export type {
   WebSearchEngineDeps,

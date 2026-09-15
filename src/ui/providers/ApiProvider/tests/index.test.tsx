@@ -14,6 +14,7 @@ import {
   DEFAULT_ATTACHMENTS_ROUTES,
   DEFAULT_PREFERENCES_ROUTES,
   DEFAULT_PROFILES_ROUTES,
+  DEFAULT_PROMPT_HISTORY_ROUTES,
   DEFAULT_PROMPTS_ROUTES,
   DEFAULT_THREADS_ROUTES,
   DEFAULT_TOOLS_ROUTES,
@@ -35,6 +36,7 @@ describe("DEFAULT_SERVER_API_ROUTES", () => {
       attachments: DEFAULT_ATTACHMENTS_ROUTES,
       preferences: DEFAULT_PREFERENCES_ROUTES,
       profiles: DEFAULT_PROFILES_ROUTES,
+      promptHistory: DEFAULT_PROMPT_HISTORY_ROUTES,
       prompts: DEFAULT_PROMPTS_ROUTES,
       threads: DEFAULT_THREADS_ROUTES,
       tools: DEFAULT_TOOLS_ROUTES,
@@ -51,6 +53,7 @@ describe("createServerAPI", () => {
     expect(typeof api.attachments.saveFile).toBe("function");
     expect(typeof api.preferences.getDeepMode).toBe("function");
     expect(typeof api.profiles.create).toBe("function");
+    expect(typeof api.promptHistory.list).toBe("function");
     expect(typeof api.prompts.create).toBe("function");
     expect(typeof api.threads.create).toBe("function");
     expect(typeof api.tools.addCustomServer).toBe("function");

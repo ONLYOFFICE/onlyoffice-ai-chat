@@ -1,7 +1,7 @@
 # Hooks
 
-Six React hooks exported from `@onlyoffice/ai-chat/hooks`. Four of
-them drive the widget's runtime (lifecycle); two are utilities. All
+Seven React hooks exported from `@onlyoffice/ai-chat/hooks`. Four of
+them drive the widget's runtime (lifecycle); three are utilities. All
 hooks read state via `useStores()` and so must be rendered inside a
 `StoresProvider` (plus `ToolsProvider` for `useServers`).
 
@@ -17,6 +17,7 @@ import {
   useThread,
   useDirection,
   useDebouncedCallback,
+  usePromptHistory,
 } from "@onlyoffice/ai-chat/hooks";
 ```
 
@@ -100,6 +101,38 @@ const onSearch = useDebouncedCallback(
 );
 <input onChange={(e) => onSearch(e.target.value)} />;
 ```
+
+### `usePromptHistory()`
+
+Terminal-style recall of previously sent prompts, scoped to the
+currently open thread so each chat walks back through its own prompts
+and a new chat starts empty. Backs the composer's ↑ / ↓ keys; the list
+is loaded once per thread and then kept in memory, so walking it never
+waits on a round-trip.
+
+A brand-new chat has no thread id until the first send creates one: its
+history starts empty, and the prompts typed there are persisted against
+the thread that send produces.
+
+```ts
+const history = usePromptHistory();
+
+history.previous(currentDraft); // ↑ — one entry towards the past
+history.next();                 // ↓ — one entry towards the present
+history.record(sentText);       // remember a prompt that was just sent
+history.reset();                // abandon the walk (the user edited the draft)
+history.isBrowsing;             // walking the list rather than typing
+```
+
+`previous` / `next` return `{ text }` for the entry to place in the
+input, or `null` when history has nothing to offer — in which case the
+caller must leave the key to the textarea so the caret still moves
+normally. Stepping forward past the newest entry restores the draft
+that was in the box when the walk started.
+
+Persistence comes from the optional
+[`promptHistory`](../core/storage/storage.md#prompthistorystorage)
+storage slice; without it the history is session-only.
 
 ### `useDirection()`
 

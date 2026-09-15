@@ -18,6 +18,7 @@ import {
   AttachmentsEngine,
   PreferencesEngine,
   ProfilesEngine,
+  PromptHistoryEngine,
   PromptsEngine,
   ThreadsEngine,
   ToolsEngine,
@@ -507,6 +508,7 @@ export const AIChatWidget = React.forwardRef<
       const prompts = new PromptsEngine({ storage });
       const preferences = new PreferencesEngine({ storage });
       const attachments = new AttachmentsEngine({ storage });
+      const promptHistory = new PromptHistoryEngine({ storage });
 
       const servers = new Servers(platform, eventBus);
 
@@ -572,6 +574,7 @@ export const AIChatWidget = React.forwardRef<
         attachments,
         preferences,
         profiles,
+        promptHistory,
         prompts,
         threads,
         tools,

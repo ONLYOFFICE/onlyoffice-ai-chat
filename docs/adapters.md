@@ -52,9 +52,9 @@ function namespaced(prefix: string): SettingsAdapter {
 
 ## `StorageAdapter`
 
-Aggregates eleven domain-specific sub-storages plus lifecycle
-methods. All data methods are `Promise`-based so any backend
-(IndexedDB, SQLite, REST) plugs in identically.
+Aggregates eleven domain-specific sub-storages (plus one optional)
+and lifecycle methods. All data methods are `Promise`-based so any
+backend (IndexedDB, SQLite, REST) plugs in identically.
 
 ```ts
 interface StorageAdapter {
@@ -69,6 +69,7 @@ interface StorageAdapter {
   toolPrefs:      ToolPrefsStorage;
   webSearch:      WebSearchStorage;
   attachments:    AttachmentsStorage;
+  promptHistory?: PromptHistoryStorage;   // optional
 
   init():  Promise<void>;
   close(): Promise<void>;
@@ -88,6 +89,13 @@ interface StorageAdapter {
 | `toolPrefs` | Per-tool disabled / auto-approve flags |
 | `webSearch` | Singleton web-search provider config |
 | `attachments` | User-message attachments (files + images) |
+| `promptHistory` | *(optional)* Composer sent-prompt history, walked with ↑ / ↓ |
+
+`promptHistory` is optional: adapters written before it existed keep
+working, and the widget falls back to a session-only in-memory list
+(the keys still work, nothing survives a reload). Implement it to make
+history persist per thread — see
+[the storage contract](./core/storage/storage.md).
 
 `threads.readAll` and `messages.readByThread` accept optional
 keyset-pagination parameters (`count`, `cursor`, plus `direction` on

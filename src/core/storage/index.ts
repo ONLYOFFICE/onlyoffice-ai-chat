@@ -18,6 +18,7 @@ export type {
 } from "./pagination";
 export type { PreferencesStorage } from "./preferences";
 export type { ProfilesStorage } from "./profiles";
+export type { PromptHistoryStorage } from "./prompt-history";
 export type { PromptFoldersStorage } from "./prompt-folders";
 export type { PromptsStorage } from "./prompts";
 export type { ThreadsStorage } from "./threads";

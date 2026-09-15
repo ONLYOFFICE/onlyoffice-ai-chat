@@ -32,6 +32,7 @@ interface StorageAdapter {
   toolPrefs: ToolPrefsStorage;
   webSearch: WebSearchStorage;
   attachments: AttachmentsStorage;
+  promptHistory?: PromptHistoryStorage;  // optional
 
   init(): Promise<void>;   // open DB, run migrations
   close(): Promise<void>;  // flush + release resources
@@ -580,6 +581,47 @@ one entity ("room") stay isolated from drafts in another. Once
 an attachment is linked to a message via `update`, the entity is
 also implied by the owning thread — the field is then redundant
 but harmless.
+
+---
+
+## `PromptHistoryStorage`
+
+> Source: [`prompt-history.ts`](../../../src/core/storage/prompt-history.ts)
+
+The composer's sent-prompt history — the list the user walks with
+↑ / ↓ in the input, terminal-style. Deliberately **not** the message
+log: it records what the user *typed and sent*, edits and retries
+included, rather than the conversation that resulted, and it outlives
+the widget instance so reopening a chat brings its prompts back.
+
+```ts
+append(text: string, scopeId?: string): Promise<void>;
+readAll(scopeId?: string, limit?: number): Promise<string[]>;
+clear(scopeId?: string): Promise<void>;
+```
+
+### Semantics
+
+- `readAll` returns **oldest first, newest last** — ↑ walks the array
+  backwards from the end.
+- `limit`, when set, asks for the `limit` **most recent** entries
+  (still oldest-first within that slice), so a long-lived document
+  doesn't ship its whole past to the client. Ignoring it is allowed;
+  `PromptHistoryEngine` re-applies the cap on the result either way.
+- `append` is a dumb append-only log. Blank prompts and an immediate
+  repeat of the newest entry are already filtered out by the engine, so
+  a backend never has to know the dedup rule.
+- Scoped by `scopeId` — `undefined` is the unscoped namespace, a string
+  id an isolated one. The token is opaque here; the UI passes the
+  current **thread id**, so each chat keeps its own history.
+
+### Optional slice
+
+The whole slice is optional on `StorageAdapter`. Adapters written
+before it existed keep compiling, and `PromptHistoryEngine` falls back
+to a **session-only in-memory list** when it is absent: the ↑ / ↓ keys
+still work for the current session, but nothing survives a reload.
+Implement it to get the persistence the feature is for.
 
 ---
 

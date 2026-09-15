@@ -4,6 +4,7 @@ import type { McpServersStorage } from "./mcp-servers";
 import type { MessagesStorage } from "./messages";
 import type { PreferencesStorage } from "./preferences";
 import type { ProfilesStorage } from "./profiles";
+import type { PromptHistoryStorage } from "./prompt-history";
 import type { PromptFoldersStorage } from "./prompt-folders";
 import type { PromptsStorage } from "./prompts";
 import type { ThreadsStorage } from "./threads";
@@ -80,6 +81,16 @@ export interface StorageAdapter {
 
   /** User-message attachment storage (files + images). */
   attachments: AttachmentsStorage;
+
+  /**
+   * Composer sent-prompt history, walked with Up / Down in the input.
+   *
+   * Optional — adapters written before this slice existed keep working,
+   * and `PromptHistoryEngine` falls back to a session-only in-memory
+   * list when it is absent (the keys still work, nothing survives a
+   * reload).
+   */
+  promptHistory?: PromptHistoryStorage;
 
   /**
    * Initialize the storage backend (create DB/tables, run migrations).

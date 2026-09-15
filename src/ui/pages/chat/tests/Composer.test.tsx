@@ -41,7 +41,11 @@ vi.mock("@assistant-ui/react", () => ({
       />
     ),
   },
-  useComposerRuntime: () => ({ setText: vi.fn(), send: mockSend }),
+  useComposerRuntime: () => ({
+    setText: vi.fn(),
+    send: mockSend,
+    getState: () => ({ text: "" }),
+  }),
 }));
 
 vi.mock("../sub-components/ComposerAction", () => ({
@@ -71,8 +75,15 @@ function setupStores(overrides?: {
   };
   const messageState = {
     isStreamRunning: overrides?.isStreamRunning ?? false,
+    messages: [],
   };
+  const threadsState = { threadId: overrides?.entityId ?? "thread-1" };
   mockUseStores.mockReturnValue({
+    useThreadsStore: Object.assign(
+      (selector?: (s: typeof threadsState) => unknown) =>
+        typeof selector === "function" ? selector(threadsState) : threadsState,
+      { subscribe: () => () => {} }
+    ),
     useAttachmentsStore: (
       selector?: (s: typeof attachmentsState) => unknown
     ) =>
@@ -85,9 +96,19 @@ function setupStores(overrides?: {
       }
       return {};
     },
-    useMessageStore: (selector?: (s: typeof messageState) => unknown) =>
-      typeof selector === "function" ? selector(messageState) : messageState,
+    useMessageStore: Object.assign(
+      (selector?: (s: typeof messageState) => unknown) =>
+        typeof selector === "function" ? selector(messageState) : messageState,
+      { getState: () => messageState }
+    ),
     selectCurrentChatProfile: () => overrides?.currentProfile ?? null,
+    api: {
+      promptHistory: {
+        list: vi.fn().mockResolvedValue([]),
+        record: vi.fn().mockResolvedValue(undefined),
+        clear: vi.fn().mockResolvedValue(undefined),
+      },
+    },
   });
   mockUseWidgetConfig.mockReturnValue({
     hideProfilePicker: overrides?.hideProfilePicker ?? false,
