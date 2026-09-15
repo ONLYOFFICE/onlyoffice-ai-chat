@@ -790,7 +790,7 @@ describe("ComposerActionAttachment", () => {
       );
       expect(item?.trailingText).toBe("ThinkingLevelMedium");
       expect(item?.subMenu?.map((i) => i.text)).toEqual([
-        "Off",
+        "NoThinking",
         "ThinkingLevelLow",
         "ThinkingLevelMedium",
         "ThinkingLevelHigh",
@@ -809,8 +809,10 @@ describe("ComposerActionAttachment", () => {
     it("shows Off as the value while thinking is off", () => {
       mockReasoningLevel = "off";
       render(<ComposerActionAttachment />);
-      expect(effortItem()?.trailingText).toBe("Off");
-      expect(effortItem()?.subMenu?.find((i) => i.checked)?.text).toBe("Off");
+      expect(effortItem()?.trailingText).toBe("NoThinking");
+      expect(effortItem()?.subMenu?.find((i) => i.checked)?.text).toBe(
+        "NoThinking"
+      );
     });
 
     it("sets the picked level", () => {
@@ -873,7 +875,7 @@ describe("ComposerActionAttachment", () => {
       mockReasoningLevel = "high";
       render(<ComposerActionAttachment />);
       const item = effortItem();
-      expect(item?.subMenu?.map((i) => i.text)).toEqual(["Off", "On"]);
+      expect(item?.subMenu?.map((i) => i.text)).toEqual(["NoThinking", "On"]);
       expect(item?.trailingText).toBe("On");
       item!.subMenu![1].onClick();
       expect(mockSetReasoningLevel).toHaveBeenCalledWith("medium");

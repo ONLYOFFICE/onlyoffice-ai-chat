@@ -17,6 +17,7 @@ export async function providerFor(
     ...(args.threadId ? { sessionId: args.threadId } : {}),
     ...(args.entityId ? { entityId: args.entityId } : {}),
     ...(args.entityTitle ? { entityTitle: args.entityTitle } : {}),
+    ...(args.source ? { source: args.source } : {}),
     ...(args.profile.basedOn ? { basedOn: args.profile.basedOn } : {}),
     ...(args.profile.headers ? { headers: args.profile.headers } : {}),
     ...(args.profile.reasoningSupport

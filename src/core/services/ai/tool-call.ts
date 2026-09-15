@@ -217,7 +217,7 @@ export async function* resumeChat(
     /** Opaque scope token forwarded to scoped storage reads. */
     entityId?: string;
     /** Host entity pair — mirrors {@link AdapterRunContext.entityMeta}. */
-    entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle">;
+    entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle" | "source">;
     /** Proxy fetch — mirrors {@link ActionArgs.fetch}. */
     fetch?: ActionArgs["fetch"];
   }

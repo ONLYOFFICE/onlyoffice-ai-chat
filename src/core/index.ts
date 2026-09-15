@@ -13,3 +13,5 @@ export * from "./capabilities";
 export * from "./middleware";
 
 export * from "./tools-adapter";
+
+export * from "../shared/source-meta";

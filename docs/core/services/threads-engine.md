@@ -38,6 +38,14 @@ const engine = new ThreadsEngine({ storage });
 ```ts
 type ThreadsEngineDeps = {
   storage: StorageAdapter;
+  pagination?: boolean | (() => boolean);
+  /**
+   * Names the entry a title request is billed to (see `AIEngineDeps.resolveSource`).
+   * `openOrCreate` calls it with the input's `entityId` (falling back to
+   * `entityMeta.entityId`), `regenerateTitle` with `entityMeta.entityId` and
+   * the thread id; when wired, a caller-supplied `entityMeta.source` is ignored.
+   */
+  resolveSource?: SourceResolver;
 };
 ```
 
@@ -109,6 +117,9 @@ type OpenOrCreateInput = {
   profile: Profile;
   profileId: string;
   firstMessage: ThreadMessageLike;
+  entityId?: string;
+  /** Host entity pair and billing source carried into the title request's credentials. */
+  entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle" | "source">;
 };
 
 type OpenOrCreateResult = {

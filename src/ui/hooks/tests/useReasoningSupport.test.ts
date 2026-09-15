@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { FULL_REASONING_SUPPORT } from "../../../shared/reasoning-level";
 import { resolveProfileReasoningSupport } from "../useReasoningSupport";
+import { defaultReasoningDepth } from "../../store/profile-reasoning-support";
 
 describe("resolveProfileReasoningSupport", () => {
   it("answers everything until a profile is picked", () => {
@@ -47,5 +48,35 @@ describe("resolveProfileReasoningSupport", () => {
         },
       }).depths
     ).toEqual(["low", "high"]);
+  });
+});
+
+describe("defaultReasoningDepth", () => {
+  it("is the catalogue's default where reported", () => {
+    expect(
+      defaultReasoningDepth({
+        thinks: true,
+        canDisable: true,
+        depths: ["low", "high", "max"],
+        defaultDepth: "high",
+      })
+    ).toBe("high");
+  });
+
+  it("is the standard depth clamped to the model otherwise", () => {
+    expect(defaultReasoningDepth(FULL_REASONING_SUPPORT)).toBe("medium");
+    expect(
+      defaultReasoningDepth({
+        thinks: true,
+        canDisable: false,
+        depths: ["low", "high"],
+      })
+    ).toBe("high");
+  });
+
+  it("is nothing for a model that does not think", () => {
+    expect(
+      defaultReasoningDepth({ thinks: false, canDisable: true, depths: [] })
+    ).toBeUndefined();
   });
 });

@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Dit model maakt gebruik van geavanceerd redeneren, wat mogelijk tot hogere kosten leidt.",
   "ExtendedThinkingAlwaysOn": "Dit model denkt altijd en kan niet worden uitgeschakeld.",
   "Effort": "Denkniveau",
-  "Off": "Uit",
+  "NoThinking": "Geen denken",
   "On": "Aan",
   "ThinkingLevelLow": "Laag",
   "ThinkingLevelMedium": "Gemiddeld",

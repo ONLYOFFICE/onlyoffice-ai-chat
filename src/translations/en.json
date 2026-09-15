@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "This model uses advanced reasoning, which may increase costs.",
   "ExtendedThinkingAlwaysOn": "This model always thinks and cannot be switched off.",
   "Effort": "Effort",
-  "Off": "Off",
+  "NoThinking": "No thinking",
   "On": "On",
   "ThinkingLevelLow": "Low",
   "ThinkingLevelMedium": "Medium",

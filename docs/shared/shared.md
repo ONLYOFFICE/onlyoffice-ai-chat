@@ -105,14 +105,48 @@ through.
 type ProviderCredentials = {
   baseUrl: string;
   apiKey?: string;
+  fetch?: ProviderFetch;
+  basedOn?: BuiltinProviderType;
+  sessionId?: string;
+  entityId?: string;
+  entityTitle?: string;
+  source?: SourceMeta;
+  headers?: Record<string, string>;
+  reasoningSupport?: ReasoningSupport;
 };
 ```
 
-The minimal credential shape every provider class accepts in its
-constructor. `apiKey` is optional for keyless local backends
+The credential shape every provider class accepts in its constructor;
+only `baseUrl` is required. `sessionId`, `entityId` / `entityTitle` and
+`source` are honoured by the ONLYOFFICE provider only (the session header
+and the request `metadata`), so no thread or entry id reaches a third-party
+endpoint. `apiKey` is optional for keyless local backends
 (Ollama, LM Studio, GPT4All) — the convention there is to pass
 the literal string `"none"` to satisfy SDK clients that require
 *some* string.
+
+---
+
+### `SourceMeta`
+
+> Source: [`source-meta.ts`](../../src/shared/source-meta.ts)
+
+```ts
+type SourceMeta = { id: string; type?: string; title?: string };
+type SourceScope = { entityId?: string; threadId?: string };
+type SourceResolver = (scope: SourceScope) =>
+  SourceMeta | undefined | Promise<SourceMeta | undefined>;
+
+sourceMetadataFields(source) // → { source_id, source_type?, source_title? } | undefined
+```
+
+The entry a billable request is attributed to — a DocSpace agent, room,
+form, folder or file — as the ONLYOFFICE backend classifies it. Engines
+obtain it through the host's `resolveSource` hook (`AIEngineDeps`,
+`ThreadsEngineDeps`) and thread it into `ActionArgs.source` →
+`ProviderCredentials.source` and into the built-in web-search requests.
+`sourceMetadataFields` is the one place the wire keys are spelled; hosts
+that build a request body themselves (a passthrough) reuse it.
 
 ---
 

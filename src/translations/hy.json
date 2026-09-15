@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Այս մոդելը օգտագործում է առաջադեմ տրամաբանություն, որը կարող է մեծացնել ծախսերը։",
   "ExtendedThinkingAlwaysOn": "Այս մոդելը միշտ մտածում է և չի կարող անջատվել։",
   "Effort": "Մտածողության մակարդակ",
-  "Off": "Անջատված",
+  "NoThinking": "Առանց մտածելու",
   "On": "Միացված",
   "ThinkingLevelLow": "Ցածր",
   "ThinkingLevelMedium": "Միջին",

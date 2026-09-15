@@ -1,4 +1,5 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
+import type { SourceResolver } from "../../../shared/source-meta";
 import type { Profile } from "../../types";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
@@ -66,6 +67,14 @@ export type ThreadsEngineDeps = {
    * lazily at request time.
    */
   pagination?: boolean | (() => boolean);
+
+  /**
+   * Names the entry a title request is billed to — see
+   * {@link SourceResolver}. Called by `openOrCreate` and `regenerateTitle`
+   * with the thread's `entityId`; when wired, a caller-supplied
+   * `entityMeta.source` is ignored.
+   */
+  resolveSource?: SourceResolver;
 };
 
 /**
@@ -89,7 +98,7 @@ export type OpenOrCreateInput = {
    * same `metadata` the chat round does — see {@link ActionArgs.entityId}.
    * Unrelated to the `entityId` scope token above.
    */
-  entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle">;
+  entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle" | "source">;
 };
 
 /** Resolved thread state returned by {@link ThreadsEngine.openOrCreate}. */

@@ -259,3 +259,90 @@ describe("callWebSearchTool", () => {
     expect(JSON.parse(out)).toEqual({ urls: ["u"] });
   });
 });
+
+describe("callWebSearchTool source metadata", () => {
+  const SOURCE = { id: "room-9", type: "Room", title: "Sales" };
+  const METADATA = {
+    source_id: "room-9",
+    source_type: "Room",
+    source_title: "Sales",
+  };
+  const onlyoffice = () =>
+    makeStorage({
+      provider: "ONLYOFFICE",
+      key: "tk",
+      baseUrl: "https://only.example",
+    });
+  const sentBody = () =>
+    JSON.parse((fetchMock.mock.calls[0]?.[1] as RequestInit).body as string);
+
+  beforeEach(() => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ results: ["r"] }),
+    });
+  });
+
+  it("sends the source as `metadata` on an ONLYOFFICE web_search", async () => {
+    await callWebSearchTool(
+      onlyoffice(),
+      "web_search",
+      { query: "x" },
+      undefined,
+      undefined,
+      SOURCE
+    );
+    expect(sentBody()).toEqual({
+      engine: "exa",
+      query: "x",
+      numResults: 5,
+      metadata: METADATA,
+    });
+  });
+
+  it("sends the source as `metadata` on an ONLYOFFICE web_crawling", async () => {
+    await callWebSearchTool(
+      onlyoffice(),
+      "web_crawling",
+      { urls: ["https://target"] },
+      undefined,
+      undefined,
+      SOURCE
+    );
+    expect(sentBody()).toEqual({
+      engine: "exa",
+      urls: ["https://target"],
+      metadata: METADATA,
+    });
+  });
+
+  it("includes only the source keys with a value", async () => {
+    await callWebSearchTool(
+      onlyoffice(),
+      "web_search",
+      { query: "x" },
+      undefined,
+      undefined,
+      { id: "file-3" }
+    );
+    expect(sentBody().metadata).toEqual({ source_id: "file-3" });
+  });
+
+  it("sends no `metadata` key when no source is known", async () => {
+    await callWebSearchTool(onlyoffice(), "web_search", { query: "x" });
+    expect(sentBody()).not.toHaveProperty("metadata");
+  });
+
+  it("never sends the source to Exa directly", async () => {
+    await callWebSearchTool(
+      makeStorage({ provider: "Exa", key: "x" }),
+      "web_search",
+      { query: "x" },
+      undefined,
+      undefined,
+      SOURCE
+    );
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.exa.ai/search");
+    expect(sentBody()).not.toHaveProperty("metadata");
+  });
+});

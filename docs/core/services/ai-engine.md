@@ -50,8 +50,25 @@ type AIEngineDeps = {
    * `() => systemToolsSource.getServerTypes()`.
    */
   systemServerTypes?: string[] | (() => string[]);
+
+  /**
+   * Names the entry a round is billed to — a `SourceMeta`
+   * (`{ id, type?, title? }`). Called once per entry point with the
+   * round's context scope and thread; the answer reaches every provider
+   * request of the round (chat, tool-call resume rounds, title
+   * generation, the built-in image tool) and the built-in web-search
+   * requests as the `metadata` object (`source_id` / `source_type` /
+   * `source_title`) on the ONLYOFFICE provider. When wired, a
+   * caller-supplied `actionArgs.source` is ignored.
+   */
+  resolveSource?: SourceResolver; // (scope: { entityId?, threadId? }) => SourceMeta | undefined
 };
 ```
+
+Without `resolveSource`, the engine forwards whatever `actionArgs.source`
+the caller sent. A server-side host should wire the hook and resolve the
+entry itself, so a client can only *name* an entry, never describe one it
+cannot see.
 
 The engine is stateless across calls — share one instance per
 `AppContext`. All persistence flows through `deps.storage`; swap

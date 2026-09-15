@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Model ini menggunakan penalaran mendalam, yang dapat meningkatkan biaya.",
   "ExtendedThinkingAlwaysOn": "Model ini selalu bernalar dan tidak dapat dinonaktifkan.",
   "Effort": "Tingkat penalaran",
-  "Off": "Nonaktif",
+  "NoThinking": "Tanpa penalaran",
   "On": "Aktif",
   "ThinkingLevelLow": "Rendah",
   "ThinkingLevelMedium": "Sedang",

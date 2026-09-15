@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Ten model wykorzystuje zaawansowane rozumowanie, co może zwiększyć koszty.",
   "ExtendedThinkingAlwaysOn": "Ten model zawsze rozumuje i nie można tego wyłączyć.",
   "Effort": "Poziom rozumowania",
-  "Off": "Wył.",
+  "NoThinking": "Bez rozumowania",
   "On": "Wł.",
   "ThinkingLevelLow": "Niski",
   "ThinkingLevelMedium": "Średni",

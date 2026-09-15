@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Este modelo utiliza un razonamiento avanzado, lo que puede aumentar los costes.",
   "ExtendedThinkingAlwaysOn": "Este modelo siempre razona y no se puede desactivar.",
   "Effort": "Nivel de razonamiento",
-  "Off": "Desactivado",
+  "NoThinking": "Sin razonamiento",
   "On": "Activado",
   "ThinkingLevelLow": "Bajo",
   "ThinkingLevelMedium": "Medio",

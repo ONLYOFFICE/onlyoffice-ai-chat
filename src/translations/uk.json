@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Ця модель використовує вдосконалене міркування, що може збільшити витрати.",
   "ExtendedThinkingAlwaysOn": "Ця модель міркує завжди, вимкнути це неможливо.",
   "Effort": "Рівень міркувань",
-  "Off": "Вимк.",
+  "NoThinking": "Без міркувань",
   "On": "Увімк.",
   "ThinkingLevelLow": "Низький",
   "ThinkingLevelMedium": "Середній",

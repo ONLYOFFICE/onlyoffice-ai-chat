@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Mô hình này sử dụng suy luận nâng cao, có thể làm tăng chi phí.",
   "ExtendedThinkingAlwaysOn": "Mô hình này luôn suy luận và không thể tắt.",
   "Effort": "Mức độ suy luận",
-  "Off": "Tắt",
+  "NoThinking": "Không suy luận",
   "On": "Bật",
   "ThinkingLevelLow": "Thấp",
   "ThinkingLevelMedium": "Trung bình",

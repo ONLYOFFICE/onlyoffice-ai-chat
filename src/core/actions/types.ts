@@ -2,6 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { TMCPItem } from "../../shared/mcp-item";
 import type { ReasoningLevel } from "../../shared/reasoning-level";
 import type { ProviderFetch } from "../../shared/provider-credentials";
+import type { SourceMeta } from "../../shared/source-meta";
 import type { Profile } from "../types";
 
 /**
@@ -72,6 +73,15 @@ export type ActionArgs = {
    */
   entityId?: string;
   entityTitle?: string;
+  /**
+   * The entry the round is billed to (agent, room, form, folder or file).
+   * Resolved by the engine through `AIEngineDeps.resolveSource` when the
+   * host wires that hook, otherwise taken from the caller's `actionArgs`.
+   * Travels into {@link ProviderCredentials.source}, where the ONLYOFFICE
+   * provider turns it into the request's `metadata` object, and into the
+   * built-in web-search requests against the ONLYOFFICE gateway.
+   */
+  source?: SourceMeta;
   /**
    * Custom fetch routed through the host's `fetchProxy`. Set by the
    * engine when {@link ActionArgs.profile.useProxy} is true and the

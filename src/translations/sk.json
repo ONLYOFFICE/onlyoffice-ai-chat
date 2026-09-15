@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Tento model využíva pokročilé uvažovanie, čo môže zvýšiť náklady.",
   "ExtendedThinkingAlwaysOn": "Tento model uvažuje vždy a nedá sa to vypnúť.",
   "Effort": "Úroveň uvažovania",
-  "Off": "Vypnuté",
+  "NoThinking": "Bez uvažovania",
   "On": "Zapnuté",
   "ThinkingLevelLow": "Nízka",
   "ThinkingLevelMedium": "Stredná",

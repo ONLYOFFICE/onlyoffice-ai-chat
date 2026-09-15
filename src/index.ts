@@ -247,6 +247,13 @@ export {
 // ---------------------------------------------------------------------------
 
 export type { SettingsAdapter } from "./shared/settings-adapter";
+export {
+  SOURCE_METADATA_KEYS,
+  sourceMetadataFields,
+  type SourceMeta,
+  type SourceResolver,
+  type SourceScope,
+} from "./shared/source-meta";
 
 // ---------------------------------------------------------------------------
 // Tools adapter (pluggable runtime tool source the engine resolves

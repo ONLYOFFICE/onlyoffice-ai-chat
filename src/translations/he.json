@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "מודל זה משתמש בהיגיון מתקדם, אשר עשוי להגדיל את העלויות.",
   "ExtendedThinkingAlwaysOn": "מודל זה חושב תמיד ולא ניתן לכבות זאת.",
   "Effort": "רמת חשיבה",
-  "Off": "כבוי",
+  "NoThinking": "ללא חשיבה",
   "On": "פועל",
   "ThinkingLevelLow": "נמוכה",
   "ThinkingLevelMedium": "בינונית",

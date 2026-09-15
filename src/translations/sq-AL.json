@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Ky model përdor arsyetim të avancuar, i cili mund të rrisë kostot.",
   "ExtendedThinkingAlwaysOn": "Ky model arsyeton gjithmonë dhe nuk mund të çaktivizohet.",
   "Effort": "Niveli i arsyetimit",
-  "Off": "Çaktivizuar",
+  "NoThinking": "Pa arsyetim",
   "On": "Aktivizuar",
   "ThinkingLevelLow": "I ulët",
   "ThinkingLevelMedium": "Mesatar",

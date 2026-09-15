@@ -1,5 +1,6 @@
 import type { TMCPItem } from "../../../shared/mcp-item";
 import type { ReasoningLevel } from "../../../shared/reasoning-level";
+import type { SourceMeta } from "../../../shared/source-meta";
 import { stripToolIntent } from "../../../shared/tool-intent";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
@@ -217,7 +218,7 @@ export type AdapterRunContext = {
    * resume rounds keep describing the same entity to the provider —
    * see {@link ActionArgs.entityId}.
    */
-  entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle">;
+  entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle" | "source">;
   /**
    * Proxy fetch wired into resume rounds when the profile opts into
    * `useProxy`. Mirrors {@link ActionArgs.fetch}.
@@ -271,7 +272,8 @@ export async function* executeAdapterTool(
     ctx.entityId,
     ctx.webSearchFetch,
     ctx.pickFetch,
-    ctx.signal
+    ctx.signal,
+    ctx.entityMeta?.source
   );
 
   // Note: `generate_image` base64 → attachment-ref swap happens centrally
@@ -318,7 +320,8 @@ async function dispatchAdapterTool(
   entityId?: string,
   webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch,
   pickFetch?: ProfileFetchResolver,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  source?: SourceMeta
 ): Promise<unknown> {
   // Drop the synthetic `aiChatIntent` arg (injected into every tool schema
   // for the UI label) before the real tool ever sees it. Idempotent — the
@@ -331,7 +334,8 @@ async function dispatchAdapterTool(
       toolName,
       cleanArgs,
       entityId,
-      webSearchFetch
+      webSearchFetch,
+      source
     );
   }
   if (toolName === "generate_image") {
@@ -340,7 +344,8 @@ async function dispatchAdapterTool(
       toolName,
       cleanArgs,
       pickFetch,
-      signal
+      signal,
+      source
     );
   }
   if (adapter) {

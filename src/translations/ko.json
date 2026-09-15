@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "이 모델은 고급 추론을 사용하므로 비용이 늘어날 수 있습니다.",
   "ExtendedThinkingAlwaysOn": "이 모델은 항상 사고하며 끌 수 없습니다.",
   "Effort": "사고 수준",
-  "Off": "끄기",
+  "NoThinking": "사고 없음",
   "On": "켜기",
   "ThinkingLevelLow": "낮음",
   "ThinkingLevelMedium": "중간",

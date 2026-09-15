@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Acest model utilizează un raționament avansat, ceea ce poate crește costurile.",
   "ExtendedThinkingAlwaysOn": "Acest model raționează mereu și nu poate fi dezactivat.",
   "Effort": "Nivel de raționament",
-  "Off": "Dezactivat",
+  "NoThinking": "Fără raționament",
   "On": "Activat",
   "ThinkingLevelLow": "Scăzut",
   "ThinkingLevelMedium": "Mediu",

@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Bu model, maliyetleri artırabilecek gelişmiş mantık kullanır.",
   "ExtendedThinkingAlwaysOn": "Bu model her zaman düşünür ve kapatılamaz.",
   "Effort": "Düşünme düzeyi",
-  "Off": "Kapalı",
+  "NoThinking": "Düşünme yok",
   "On": "Açık",
   "ThinkingLevelLow": "Düşük",
   "ThinkingLevelMedium": "Orta",

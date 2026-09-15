@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "このモデルは高度な推論を使用するため、コストが増加する可能性があります。",
   "ExtendedThinkingAlwaysOn": "このモデルは常に思考し、オフにすることはできません。",
   "Effort": "思考レベル",
-  "Off": "オフ",
+  "NoThinking": "思考なし",
   "On": "オン",
   "ThinkingLevelLow": "低",
   "ThinkingLevelMedium": "中",

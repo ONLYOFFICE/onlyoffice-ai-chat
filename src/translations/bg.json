@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Този модел използва подобрено разсъждаване, което може да повиши цената.",
   "ExtendedThinkingAlwaysOn": "Този модел винаги разсъждава и това не може да се изключи.",
   "Effort": "Ниво на разсъждение",
-  "Off": "Изкл.",
+  "NoThinking": "Без разсъждение",
   "On": "Вкл.",
   "ThinkingLevelLow": "Ниско",
   "ThinkingLevelMedium": "Средно",

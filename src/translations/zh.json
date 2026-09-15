@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "此模型采用深度推理，可能会增加成本。",
   "ExtendedThinkingAlwaysOn": "此模型始终进行思考，无法关闭。",
   "Effort": "思考深度",
-  "Off": "关闭",
+  "NoThinking": "不思考",
   "On": "开启",
   "ThinkingLevelLow": "低",
   "ThinkingLevelMedium": "中",

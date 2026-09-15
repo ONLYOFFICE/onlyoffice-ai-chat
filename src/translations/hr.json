@@ -106,7 +106,7 @@
   "ExtendedThinkingDescription": "Ovaj model koristi napredno rasuđivanje, koje može povećati troškove.",
   "ExtendedThinkingAlwaysOn": "Ovaj model uvijek razmišlja i to se ne može isključiti.",
   "Effort": "Razina razmišljanja",
-  "Off": "Isključeno",
+  "NoThinking": "Bez razmišljanja",
   "On": "Uključeno",
   "ThinkingLevelLow": "Niska",
   "ThinkingLevelMedium": "Srednja",
