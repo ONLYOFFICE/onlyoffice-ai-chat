@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "Aquest model utilitza un raonament avançat, la qual cosa pot augmentar els costos.",
   "ExtendedThinkingAlwaysOn": "Aquest model sempre raona i no es pot desactivar.",
   "Effort": "Nivell de raonament",
-  "Off": "Desactivat",
+  "NoThinking": "Sense raonament",
   "On": "Activat",
   "ThinkingLevelLow": "Baix",
   "ThinkingLevelMedium": "Mitjà",

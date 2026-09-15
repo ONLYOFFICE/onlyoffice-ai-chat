@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "Ez a modell fejlettebb következtetést használ, ami növelheti a költségeket.",
   "ExtendedThinkingAlwaysOn": "Ez a modell mindig gondolkodik, és ez nem kapcsolható ki.",
   "Effort": "Gondolkodási szint",
-  "Off": "Ki",
+  "NoThinking": "Gondolkodás nélkül",
   "On": "Be",
   "ThinkingLevelLow": "Alacsony",
   "ThinkingLevelMedium": "Közepes",

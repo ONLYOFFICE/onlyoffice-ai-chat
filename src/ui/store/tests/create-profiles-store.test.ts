@@ -490,6 +490,132 @@ describe("createProfilesStore", () => {
     expect(s.getState().sessionChatProfile).toEqual(p);
   });
 
+  describe("a new chat model starts at its default depth", () => {
+    const sonnet = profile("sonnet", {
+      providerType: "openrouter",
+      modelId: "anthropic/claude-sonnet-5",
+      reasoningSupport: {
+        thinks: true,
+        canDisable: true,
+        depths: ["low", "medium", "high", "max"],
+        defaultDepth: "high",
+      },
+    });
+    const grok = profile("grok", {
+      providerType: "xai",
+      modelId: "grok-4.6",
+    });
+
+    it("adopts the catalogue's default depth on a session pick", async () => {
+      const deps = makeDeps();
+      const s = createProfilesStore(deps);
+      await s.getState().setReasoningLevel("max");
+      s.getState().setSessionChatProfile(sonnet);
+      await flush();
+      expect(s.getState().reasoningLevel).toBe("high");
+      expect(deps.api.preferences.setReasoningLevel).toHaveBeenLastCalledWith(
+        "high",
+        undefined
+      );
+      expect(deps.emit).toHaveBeenCalledWith("onExtendedThinkingUpdated", {
+        enabled: true,
+        level: "high",
+      });
+    });
+
+    it("falls back to the standard depth, clamped to the model", async () => {
+      const deps = makeDeps();
+      const s = createProfilesStore(deps);
+      await s.getState().setReasoningLevel("max");
+      // grok-3-mini has low / high only: medium clamps up to high.
+      s.getState().setSessionChatProfile(
+        profile("mini", { providerType: "xai", modelId: "grok-3-mini" })
+      );
+      await flush();
+      expect(s.getState().reasoningLevel).toBe("high");
+    });
+
+    it("keeps the user's Off on a model that can be switched off", async () => {
+      const deps = makeDeps();
+      const s = createProfilesStore(deps);
+      s.getState().setSessionChatProfile(sonnet);
+      await flush();
+      expect(s.getState().reasoningLevel).toBe("off");
+      expect(deps.api.preferences.setReasoningLevel).not.toHaveBeenCalled();
+    });
+
+    it("turns thinking on at the default depth where the model cannot stop", async () => {
+      const deps = makeDeps();
+      const s = createProfilesStore(deps);
+      s.getState().setSessionChatProfile(grok);
+      await flush();
+      expect(s.getState().reasoningLevel).toBe("medium");
+      expect(s.getState().extendedThinking).toBe(true);
+    });
+
+    it("leaves the level alone for a model that does not think", async () => {
+      const deps = makeDeps();
+      const s = createProfilesStore(deps);
+      await s.getState().setReasoningLevel("high");
+      deps.api.preferences.setReasoningLevel = vi.fn();
+      s.getState().setSessionChatProfile(
+        profile("4o", { providerType: "openai", modelId: "gpt-4o" })
+      );
+      await flush();
+      expect(s.getState().reasoningLevel).toBe("high");
+      expect(deps.api.preferences.setReasoningLevel).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when the same profile and model are picked again", async () => {
+      const deps = makeDeps();
+      const s = createProfilesStore(deps);
+      s.getState().setSessionChatProfile(sonnet);
+      await flush();
+      await s.getState().setReasoningLevel("low");
+      deps.api.preferences.setReasoningLevel = vi.fn();
+      s.getState().setSessionChatProfile({ ...sonnet });
+      await flush();
+      expect(s.getState().reasoningLevel).toBe("low");
+      expect(deps.api.preferences.setReasoningLevel).not.toHaveBeenCalled();
+    });
+
+    it("follows a persisted Chat assignment when no session pick shadows it", async () => {
+      const deps = makeDeps();
+      const s = createProfilesStore(deps);
+      await s.getState().setReasoningLevel("low");
+      await s.getState().setChatProfile(sonnet);
+      await flush();
+      expect(s.getState().reasoningLevel).toBe("high");
+    });
+
+    it("re-adopts when the current profile is edited onto another model", async () => {
+      const deps = makeDeps([sonnet]);
+      deps.api.profiles.update = vi
+        .fn()
+        .mockImplementation(async (p: Profile) => ({
+          success: true,
+          profile: p,
+        }));
+      const s = createProfilesStore(deps);
+      await s.getState().init();
+      s.getState().setSessionChatProfile(sonnet);
+      await flush();
+      await s.getState().setReasoningLevel("low");
+      await s.getState().editProfile({
+        ...sonnet,
+        modelId: "x-ai/grok-4.6",
+        reasoningSupport: {
+          thinks: true,
+          canDisable: false,
+          depths: ["low", "medium", "high"],
+          defaultDepth: "medium",
+        },
+      });
+      await flush();
+      expect(s.getState().reasoningLevel).toBe("medium");
+    });
+  });
+
   it("toggleExtendedThinking flips and persists through the level route", async () => {
     const deps = makeDeps();
     const s = createProfilesStore(deps);

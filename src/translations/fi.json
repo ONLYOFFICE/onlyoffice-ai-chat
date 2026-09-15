@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "Tämä malli käyttää edistynyttä perustelua, joka saattaa kasvattaa kuluja.",
   "ExtendedThinkingAlwaysOn": "Tämä malli ajattelee aina, eikä sitä voi kytkeä pois.",
   "Effort": "Ajattelun taso",
-  "Off": "Pois",
+  "NoThinking": "Ei ajattelua",
   "On": "Päällä",
   "ThinkingLevelLow": "Matala",
   "ThinkingLevelMedium": "Keskitaso",

@@ -25,7 +25,7 @@ export const THINKING_LEVEL_LABELS: Record<ReasoningDepth, TranslationKey> = {
  * the current model actually runs at, and whose submenu lists exactly the
  * choices that change the request for that model.
  *
- * - "Off" appears only where the model can really stop thinking.
+ * - "No thinking" appears only where the model can really stop thinking.
  * - A model with a depth knob lists its own depths; one without lists a
  *   single "On" (Zhipu, Mistral), so the row is still a switch.
  * - Nothing to choose — the model cannot think, or thinks always with no
@@ -49,7 +49,7 @@ export function useEffortMenuItem(): DropDownItemProps | null {
 
     const options: { level: ReasoningLevel; label: string }[] = [
       ...(support.canDisable
-        ? [{ level: "off" as const, label: t("Off") }]
+        ? [{ level: "off" as const, label: t("NoThinking") }]
         : []),
       ...(support.depths.length > 0
         ? support.depths.map((depth) => ({

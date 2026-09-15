@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "Šajā modelī tiek izmantota progresīva argumentācija, kas var palielināt izmaksas.",
   "ExtendedThinkingAlwaysOn": "Šis modelis domā vienmēr, un to nevar izslēgt.",
   "Effort": "Domāšanas līmenis",
-  "Off": "Izslēgts",
+  "NoThinking": "Bez domāšanas",
   "On": "Ieslēgts",
   "ThinkingLevelLow": "Zems",
   "ThinkingLevelMedium": "Vidējs",

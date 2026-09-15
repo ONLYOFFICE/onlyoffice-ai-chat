@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "يستخدم هذا النموذج تفكيراً منطقياً متقدماً، مما قد يزيد من التكاليف.",
   "ExtendedThinkingAlwaysOn": "يفكّر هذا النموذج دائمًا ولا يمكن إيقاف ذلك.",
   "Effort": "مستوى التفكير",
-  "Off": "إيقاف",
+  "NoThinking": "بدون تفكير",
   "On": "تشغيل",
   "ThinkingLevelLow": "منخفض",
   "ThinkingLevelMedium": "متوسط",

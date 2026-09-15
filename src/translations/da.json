@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "Denne model benytter udvidet tænkning, hvilket kan øge omkostningerne.",
   "ExtendedThinkingAlwaysOn": "Denne model tænker altid og kan ikke slås fra.",
   "Effort": "Tænkeniveau",
-  "Off": "Fra",
+  "NoThinking": "Ingen tænkning",
   "On": "Til",
   "ThinkingLevelLow": "Lav",
   "ThinkingLevelMedium": "Mellem",

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.113
+
+### Changed
+
+- **The Effort row's off entry reads "No thinking".** The translation key `Off` is renamed `NoThinking` in all 41 locales (`t("Off")` no longer compiles); it still appears only for a model whose thinking can be switched off.
+- **A new chat model starts at its own default depth.** Switching the chat model — a composer pick (`setSessionChatProfile`), a persisted Chat assignment (`setChatProfile`), or an edit of the current profile onto another model — now moves the reasoning level to the new model's default depth and persists it: the catalogue's `default_effort` where the provider reports one (`ReasoningSupport.defaultDepth`), else `medium`, clamped to the depths the model distinguishes. Previously the level carried over unchanged, so `max` chosen for one model stayed selected on a model without `max`, and a model that cannot stop thinking could sit on Off. An Off the user chose stays on a model that can be switched off; a model that cannot stop starts thinking at its default depth. Picking the same profile and model again changes nothing. `onExtendedThinkingUpdated` fires with the adopted level. `resolveProfileReasoningSupport` moved to `src/ui/store/profile-reasoning-support.ts` (still re-exported from the hook) alongside the new `defaultReasoningDepth(support)`.
+
 ## 0.5.112
 
 ### Added

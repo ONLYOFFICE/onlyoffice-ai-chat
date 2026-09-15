@@ -14,6 +14,10 @@ import type { ServerAPI } from "../providers/ApiProvider";
 import { isRouteUnavailable } from "../providers/ApiProvider/fetcher";
 import type { ModelAssignmentTask } from "../providers/EventsProvider";
 import type { Profile } from "../../types";
+import {
+  defaultReasoningDepth,
+  resolveProfileReasoningSupport,
+} from "./profile-reasoning-support";
 import { reportStoreError } from "./report-error";
 
 /**
@@ -160,6 +164,36 @@ export function createProfilesStore(deps: {
       level,
     });
   };
+
+  /**
+   * A new chat model starts at its own default depth — the catalogue's
+   * `default_effort` where the provider reports one, else the standard
+   * depth, clamped to what the model distinguishes — rather than inheriting
+   * whatever the previous model ran at (`max` on one may not exist on the
+   * next, and a model that cannot stop must not sit on Off). An Off the user
+   * chose survives on a model that can be switched off. Applied at once so
+   * the composer follows the pick; the write to the host trails behind and
+   * is only logged when it fails, as the assignment write is.
+   */
+  const adoptModelDefault = (
+    previous: Profile | null,
+    next: Profile | null
+  ) => {
+    if (!next) return;
+    if (previous?.id === next.id && previous.modelId === next.modelId) return;
+    const support = resolveProfileReasoningSupport(next);
+    const depth = defaultReasoningDepth(support);
+    if (!depth) return;
+    const current = store.getState().reasoningLevel;
+    if (current === "off" && support.canDisable) return;
+    if (current === depth) return;
+    applyLevel(depth);
+    void writeLevel(depth).catch((e) =>
+      logger.error("Failed to persist the model's default reasoning depth:", e)
+    );
+  };
+  const currentChat = (s: ProfilesStoreState) =>
+    s.sessionChatProfile ?? s.chatProfile ?? s.defaultProfile;
 
   const backfillCapabilities = (profiles: Profile[]) => {
     for (const p of profiles) {
@@ -368,6 +402,7 @@ export function createProfilesStore(deps: {
           );
         }
         backfillCapabilities([profile]);
+        const before = currentChat(get());
         set((state) => {
           const update = (p: Profile | null) =>
             p?.id === profile.id ? profile : p;
@@ -393,9 +428,9 @@ export function createProfilesStore(deps: {
         });
 
         const fresh = get();
-        const effective =
-          fresh.sessionChatProfile ?? fresh.chatProfile ?? fresh.defaultProfile;
+        const effective = currentChat(fresh);
         if (effective?.id === profile.id) {
+          adoptModelDefault(before, effective);
           const scope =
             fresh.sessionChatProfile?.id === profile.id
               ? "session"
@@ -453,7 +488,9 @@ export function createProfilesStore(deps: {
         } else {
           await api.assignments.unassign(ActionType.Chat);
         }
+        const before = currentChat(get());
         set({ chatProfile: profile });
+        adoptModelDefault(before, currentChat(get()));
         ctx.callbacksManager.emit("onModelAssignmentUpdated", {
           task: "chat",
           profileId: profile?.id ?? null,
@@ -488,7 +525,9 @@ export function createProfilesStore(deps: {
       setVisionProfile: makeTaskSetter("visionProfile", "vision"),
 
       setSessionChatProfile: (profile, opts) => {
+        const before = currentChat(get());
         set({ sessionChatProfile: profile });
+        adoptModelDefault(before, currentChat(get()));
         ctx.callbacksManager.emit("onCurrentChatProfileUpdated", {
           profileId: profile?.id ?? null,
           scope: "session",
