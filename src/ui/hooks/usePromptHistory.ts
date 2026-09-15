@@ -104,8 +104,14 @@ export function usePromptHistory(): PromptHistory {
   // comes back — and each of those would read the same depth and walk
   // from it, so all but one of the entries in between would be skipped.
   const steppingRef = useRef(false);
+  // Bumped by everything that moves the cursor. A step suspended on a
+  // page fetch compares it on resume to tell whether the walk it started
+  // is still the walk in progress — depth alone cannot say, because a
+  // `reset` during the first step puts back the 0 that step read.
+  const versionRef = useRef(0);
 
   const reset = useCallback(() => {
+    versionRef.current += 1;
     depthRef.current = 0;
     draftRef.current = "";
     setIsBrowsing(false);
@@ -114,6 +120,7 @@ export function usePromptHistory(): PromptHistory {
   const previous = useCallback(
     async (currentText: string): Promise<PromptHistoryStep> => {
       if (steppingRef.current) return null;
+      const version = versionRef.current;
       let prompts = readPrompts();
       const depth = depthRef.current;
 
@@ -144,10 +151,10 @@ export function usePromptHistory(): PromptHistory {
 
       // The walk was suspended on a page fetch, and the composer does not
       // stand still while it is: typing (`reset`) or Down (`next`) moves
-      // the cursor out from under this step, and resuming from the depth
+      // the cursor out from under this step, and resuming from the state
       // captured before the await would overwrite the user's own draft
       // with a stale entry.
-      if (awaited && depthRef.current !== depth) return null;
+      if (awaited && versionRef.current !== version) return null;
 
       // First step of a walk: remember what the user had typed so Down
       // can bring it back.
@@ -162,6 +169,7 @@ export function usePromptHistory(): PromptHistory {
   const next = useCallback(async (): Promise<PromptHistoryStep> => {
     // Not browsing — Down belongs to the textarea.
     if (depthRef.current <= 0) return null;
+    versionRef.current += 1;
     depthRef.current -= 1;
     if (depthRef.current === 0) {
       // Walked back past the newest entry: restore the draft and leave

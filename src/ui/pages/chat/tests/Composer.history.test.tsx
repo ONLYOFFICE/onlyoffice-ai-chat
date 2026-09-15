@@ -342,4 +342,33 @@ describe("Composer history navigation", () => {
 
     await expectNotRecalled();
   });
+
+  it("does not overwrite a fresh draft typed during the walk's very first step", async () => {
+    // Nothing walkable in the loaded window, so the first Up suspends on
+    // a page fetch straight away — the interruption then leaves the depth
+    // at 0, exactly where the step read it.
+    const input = renderComposer([assistant("only a reply here")]);
+    messageState.hasMoreOlderMessages = true;
+    let releasePage: () => void = () => {};
+    messageState.loadOlderMessages = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePage = () => {
+            messageState.messages = [
+              ...thread("from an older page"),
+              ...messageState.messages,
+            ];
+            messageState.hasMoreOlderMessages = false;
+            resolve();
+          };
+        })
+    );
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    setValue(input, "a fresh draft");
+    fireEvent.keyDown(input, { key: "d" });
+    releasePage();
+
+    await expectNotRecalled();
+  });
 });
