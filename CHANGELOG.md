@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **The composer recalls previously sent prompts with ↑ / ↓.** The chat input had no way back to a request the user had already typed: repeating or tweaking one meant writing it out again. It now behaves like a command terminal — ↑ walks back through the prompts of the open chat, ↓ walks forward, and stepping past the newest entry restores whatever draft was in the box when the walk began. History only claims the arrow when it isn't stealing caret movement the user meant: the box is empty, or the caret already sits at the edge it would move towards (start for ↑, end for ↓) with nothing selected. Anywhere else the arrow moves the caret as before, so editing a multi-line draft is unaffected, and typing into a recalled entry makes it the user's own draft again.
+
+  The history is the thread itself — its user messages, read from `useMessageStore`. Nothing is recorded a second time and no storage slice is involved, so a prompt is walkable the moment its message is in the store (the first send of a brand-new chat included), switching threads switches the history with it, and a new chat starts empty. Attachment-only sends carry no text and are not entries.
+
+  A paginated host loads only the newest page of a thread, so `usePromptHistory().previous()` is async: a walk that reaches the top of the loaded window pulls the page before it through the store's existing `loadOlderMessages()` and continues there, exactly as scrolling up does. It keeps pulling while a page brings no prompt of its own, and stops at a page that brings nothing at all rather than spinning on a backend that cannot answer. The walk holds its place across the prepend — the cursor is a distance from the newest entry, not an index, so a page landing at the front of the list cannot shift it — and a step fired while a page is still on the wire is ignored, so holding ↑ down cannot skip the entries a key repeat outruns. The hook is exported from `@onlyoffice/ai-chat/hooks` for custom shells.
+
 ## 0.5.110
 
 ### Fixed
