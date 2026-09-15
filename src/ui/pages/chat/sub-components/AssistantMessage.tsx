@@ -399,6 +399,11 @@ const getAttachmentTitle = (message?: ThreadMessageLike): string => {
       const meta = JSON.parse(part.mimeType);
       raw = typeof meta.title === "string" ? meta.title : (meta.path ?? "");
     } catch {
+      // Not a marker block: `mimeType` holds an ordinary media type
+      // (`image/png`, …) for every attachment that is not one of the two
+      // JSON forms, and that is what throws here. The parse *is* the
+      // discriminator, so this is the normal path for a plain attachment
+      // and must stay silent — logging it would warn on every send.
       continue;
     }
     if (typeof raw !== "string" || raw.length === 0) continue;

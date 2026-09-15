@@ -145,6 +145,12 @@ export function usePromptHistory(): PromptHistory {
         // stop rather than spin on a backend that cannot answer. A page
         // that *did* arrive but held no prompts of its own is not a stop:
         // the walkable ones may simply be another page back.
+        //
+        // This counts messages rather than prompts on purpose. A page of
+        // nothing but assistant replies (or attachment-only sends) adds
+        // zero prompts while still being real progress through the
+        // thread, so a `prompts.length` comparison here would end the
+        // walk on exactly the case the paragraph above keeps going for.
         if (useMessageStore.getState().messages.length === before) return null;
         prompts = readPrompts();
       }
