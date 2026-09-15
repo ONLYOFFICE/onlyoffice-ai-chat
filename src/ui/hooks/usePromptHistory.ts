@@ -122,21 +122,32 @@ export function usePromptHistory(): PromptHistory {
       // page can be all assistant messages, or all attachment-only sends,
       // so keep pulling while it brings nothing walkable and the thread
       // still has more.
+      let awaited = false;
       while (depth >= prompts.length) {
         const store = useMessageStore.getState();
         if (!store.hasMoreOlderMessages) return null;
+        const before = store.messages.length;
         steppingRef.current = true;
         try {
           await store.loadOlderMessages();
         } finally {
           steppingRef.current = false;
         }
-        const grown = readPrompts();
+        awaited = true;
         // A load that failed or was refused leaves the list as it was —
-        // stop rather than spin on a backend that cannot answer.
-        if (grown.length === prompts.length) return null;
-        prompts = grown;
+        // stop rather than spin on a backend that cannot answer. A page
+        // that *did* arrive but held no prompts of its own is not a stop:
+        // the walkable ones may simply be another page back.
+        if (useMessageStore.getState().messages.length === before) return null;
+        prompts = readPrompts();
       }
+
+      // The walk was suspended on a page fetch, and the composer does not
+      // stand still while it is: typing (`reset`) or Down (`next`) moves
+      // the cursor out from under this step, and resuming from the depth
+      // captured before the await would overwrite the user's own draft
+      // with a stale entry.
+      if (awaited && depthRef.current !== depth) return null;
 
       // First step of a walk: remember what the user had typed so Down
       // can bring it back.

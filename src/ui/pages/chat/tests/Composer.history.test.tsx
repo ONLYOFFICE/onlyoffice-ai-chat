@@ -271,4 +271,75 @@ describe("Composer history navigation", () => {
     await expectRecalled("from an older page");
     expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps pulling past a page that holds no prompts of its own", async () => {
+    const input = renderComposer(thread("newest"));
+    messageState.hasMoreOlderMessages = true;
+    // The page immediately older is one long assistant turn — real
+    // prompts are only on the page behind it.
+    const pages = [
+      [assistant("a long answer"), assistant("still answering")],
+      thread("from two pages back"),
+    ];
+    messageState.loadOlderMessages = vi.fn(() => {
+      const page = pages.shift() ?? [];
+      messageState.messages = [...page, ...messageState.messages];
+      messageState.hasMoreOlderMessages = pages.length > 0;
+      return Promise.resolve();
+    });
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    await expectRecalled("newest");
+    setValue(input, "newest", 0);
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    await expectRecalled("from two pages back");
+    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops when a page load brings no messages at all", async () => {
+    const input = renderComposer(thread("newest"));
+    messageState.hasMoreOlderMessages = true;
+    // A failed load leaves the window as it was but keeps the flag on.
+    messageState.loadOlderMessages = vi.fn(() => Promise.resolve());
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    await expectRecalled("newest");
+    mockSetText.mockClear();
+    setValue(input, "newest", 0);
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    await expectNotRecalled();
+    expect(messageState.loadOlderMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not overwrite a fresh draft typed while an older page is loading", async () => {
+    const input = renderComposer(thread("newest"));
+    messageState.hasMoreOlderMessages = true;
+    let releasePage: () => void = () => {};
+    messageState.loadOlderMessages = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePage = () => {
+            messageState.messages = [
+              ...thread("from an older page"),
+              ...messageState.messages,
+            ];
+            messageState.hasMoreOlderMessages = false;
+            resolve();
+          };
+        })
+    );
+
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    await expectRecalled("newest");
+    setValue(input, "newest", 0);
+    // Second Up suspends on the page fetch...
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    mockSetText.mockClear();
+    // ...and the user starts a new draft before it comes back.
+    setValue(input, "a fresh draft");
+    fireEvent.keyDown(input, { key: "d" });
+    releasePage();
+
+    await expectNotRecalled();
+  });
 });
