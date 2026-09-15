@@ -13,6 +13,8 @@ let mockAssistantActions: unknown[] | undefined = undefined;
 let mockFormatChatError: unknown = undefined;
 const mockReload = vi.fn();
 let mockThreadId = "thread-1";
+let mockIsCopied = false;
+let mockCopyToClipboard: unknown = undefined;
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -51,7 +53,10 @@ vi.mock("../../../store/context", () => ({
 }));
 
 vi.mock("../../../providers/PlatformProvider/context", () => ({
-  usePlatform: () => ({ file: mockPlatformFile }),
+  usePlatform: () => ({
+    file: mockPlatformFile,
+    copyToClipboard: mockCopyToClipboard,
+  }),
 }));
 
 vi.mock("@assistant-ui/react", () => ({
@@ -186,6 +191,8 @@ vi.mock("@assistant-ui/react", () => ({
     parentId: mockMessageParentId,
     content: mockMessageContent,
   }),
+  useAssistantState: (selector: (s: unknown) => unknown) =>
+    selector({ message: { isCopied: mockIsCopied } }),
 }));
 
 vi.mock("framer-motion", () => ({
@@ -246,6 +253,7 @@ vi.mock("../../../components/icon-button", () => ({
     <button
       data-testid={`icon-btn-${props.iconName}`}
       onClick={props.onClick as (() => void) | undefined}
+      disabled={props.disabled as boolean | undefined}
     />
   ),
 }));
@@ -260,11 +268,15 @@ vi.mock("../../../components/tooltip-icon-button", () => ({
   TooltipIconButton: ({
     children,
     tooltip,
+    onClick,
   }: {
     children: React.ReactNode;
     tooltip?: string;
+    onClick?: () => void;
   }) => (
-    <div data-testid="tooltip-btn" data-tooltip={tooltip}>
+    // The real component spreads the rest props onto its wrapper, so `onClick`
+    // lands on the wrapper rather than the icon button inside.
+    <div data-testid="tooltip-btn" data-tooltip={tooltip} onClick={onClick}>
       {children}
     </div>
   ),
@@ -312,6 +324,8 @@ describe("AssistantMessage", () => {
     mockAssistantActions = undefined;
     mockFormatChatError = undefined;
     mockThreadId = "thread-1";
+    mockIsCopied = false;
+    mockCopyToClipboard = undefined;
   });
 
   it("renders without crash", () => {
@@ -696,10 +710,45 @@ describe("AssistantMessage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders copied and not-copied icon states", () => {
+  it("renders the copy icon with its tooltip before copying", () => {
+    render(<AssistantMessage />);
+    expect(screen.getByTestId("icon-btn-btn-copy")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-checked")).not.toBeInTheDocument();
+    const tooltips = screen.getAllByTestId("tooltip-btn");
+    expect(
+      tooltips.some(
+        (el) => el.getAttribute("data-tooltip") === "CopyToClipboard"
+      )
+    ).toBe(true);
+  });
+
+  it("swaps to the checked icon and a Copied tooltip once copied", () => {
+    mockIsCopied = true;
     render(<AssistantMessage />);
     expect(screen.getByTestId("icon-btn-checked")).toBeInTheDocument();
-    expect(screen.getByTestId("icon-btn-btn-copy")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-btn-copy")).not.toBeInTheDocument();
+    const tooltips = screen.getAllByTestId("tooltip-btn");
+    expect(
+      tooltips.some((el) => el.getAttribute("data-tooltip") === "Copied")
+    ).toBe(true);
+  });
+
+  it("reports the copy through the tooltip, not a disabled button", async () => {
+    mockCopyToClipboard = vi.fn().mockResolvedValue(undefined);
+    render(<AssistantMessage />);
+
+    const copyButton = screen.getByTestId("icon-btn-btn-copy");
+    const tooltipOf = (el: HTMLElement) =>
+      el.closest("[data-testid='tooltip-btn']")?.getAttribute("data-tooltip");
+    expect(tooltipOf(copyButton)).toBe("CopyToClipboard");
+
+    fireEvent.click(copyButton);
+    await screen.findByTestId("icon-btn-checked");
+
+    const checked = screen.getByTestId("icon-btn-checked");
+    expect(tooltipOf(checked)).toBe("Copied");
+    // The whole point: a successful copy must not leave a not-allowed cursor.
+    expect(checked).not.toBeDisabled();
   });
 
   it("renders save icon button when saveAsFile is available", () => {

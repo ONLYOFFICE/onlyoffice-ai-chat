@@ -81,6 +81,7 @@
   "Tools": "herramientas",
   "AllTools": "Todas las herramientas",
   "CopyToClipboard": "Copiar al portapapeles",
+  "Copied": "Copiado",
   "WebSearch": "Búsqueda en la Web",
   "WebSearchDescription": "Vincule un motor de búsqueda web para mejorar los chats de IA con información en tiempo real.",
   "WebSearchEngine": "Motor de búsqueda web",

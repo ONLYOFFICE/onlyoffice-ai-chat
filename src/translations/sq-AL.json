@@ -81,6 +81,7 @@
   "Tools": "mjetet",
   "AllTools": "Të gjitha mjetet",
   "CopyToClipboard": "Kopjoni në kujtesën e përkohshme",
+  "Copied": "U kopjua",
   "WebSearch": "Kërkim në internet",
   "WebSearchDescription": "Lidh një motor kërkimi në internet për të pasuruar AI Chat me informacion në kohë reale.",
   "WebSearchEngine": "Motori i kërkimit në internet",

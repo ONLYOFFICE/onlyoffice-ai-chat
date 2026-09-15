@@ -81,6 +81,7 @@
   "Tools": "tools",
   "AllTools": "All tools",
   "CopyToClipboard": "Copy to clipboard",
+  "Copied": "Copied",
   "WebSearch": "Web search",
   "WebSearchDescription": "Link a web search engine to improve AI chats with real-time internet info.",
   "WebSearchEngine": "Web Search Engine",

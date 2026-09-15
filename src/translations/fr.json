@@ -81,6 +81,7 @@
   "Tools": "outils",
   "AllTools": "Tous les outils",
   "CopyToClipboard": "Copier dans le presse-papiers",
+  "Copied": "Copié",
   "WebSearch": "Recherche sur le Web",
   "WebSearchDescription": "Associez un moteur de recherche web pour enrichir le chat IA avec des informations en temps réel.",
   "WebSearchEngine": "Moteur de recherche Web",

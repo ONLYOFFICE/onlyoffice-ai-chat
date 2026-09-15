@@ -1,6 +1,7 @@
 import {
   ActionBarPrimitive,
   MessagePrimitive,
+  useAssistantState,
   useMessage,
   type ThreadMessageLike,
 } from "@assistant-ui/react";
@@ -311,14 +312,20 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
   }, [platform, text]);
 
   return (
-    <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onClick}>
+    <TooltipIconButton
+      tooltip={copied ? t("Copied") : t("CopyToClipboard")}
+      onClick={onClick}
+    >
       {copied ? (
+        // `disableHover`, not `disabled`: the latter paints a not-allowed
+        // cursor over a button the user just used successfully. The tooltip
+        // reports the result instead.
         <IconButton
           iconName="checked"
           size={chatMessageActionsIconSize}
           isStroke
           color="var(--icon-gray-secondary)"
-          disabled
+          disableHover
         />
       ) : (
         <IconButton
@@ -329,6 +336,45 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
         />
       )}
     </TooltipIconButton>
+  );
+};
+
+/**
+ * Copy button for runtimes without a platform clipboard: assistant-ui owns
+ * the copied state, so it is read off the assistant store (rather than the
+ * legacy `MessageState`, which does not carry `isCopied`) to drive both the
+ * icon and the tooltip from one value.
+ */
+const RuntimeCopyButton = () => {
+  const { IconButton, TooltipIconButton } = useComponents();
+  const { t } = useI18n();
+  const { chatMessageActionsIconSize = 24 } = useWidgetConfig();
+  const isCopied = useAssistantState(({ message }) => message.isCopied);
+
+  return (
+    <ActionBarPrimitive.Copy asChild>
+      <TooltipIconButton
+        tooltip={isCopied ? t("Copied") : t("CopyToClipboard")}
+      >
+        {isCopied ? (
+          // `disableHover`, not `disabled`: see PlatformCopyButton.
+          <IconButton
+            iconName="checked"
+            size={chatMessageActionsIconSize}
+            isStroke
+            color="var(--icon-gray-secondary)"
+            disableHover
+          />
+        ) : (
+          <IconButton
+            iconName="btn-copy"
+            size={chatMessageActionsIconSize}
+            isStroke
+            color="var(--icon-gray-secondary)"
+          />
+        )}
+      </TooltipIconButton>
+    </ActionBarPrimitive.Copy>
   );
 };
 
@@ -373,27 +419,7 @@ const AssistantActionBar = () => {
       {platform.copyToClipboard ? (
         <PlatformCopyButton text={getMessageText(message)} />
       ) : (
-        <ActionBarPrimitive.Copy asChild>
-          <TooltipIconButton tooltip={t("CopyToClipboard")}>
-            <MessagePrimitive.If copied>
-              <IconButton
-                iconName="checked"
-                size={chatMessageActionsIconSize}
-                isStroke
-                color="var(--icon-gray-secondary)"
-                disabled
-              />
-            </MessagePrimitive.If>
-            <MessagePrimitive.If copied={false}>
-              <IconButton
-                iconName="btn-copy"
-                size={chatMessageActionsIconSize}
-                isStroke
-                color="var(--icon-gray-secondary)"
-              />
-            </MessagePrimitive.If>
-          </TooltipIconButton>
-        </ActionBarPrimitive.Copy>
+        <RuntimeCopyButton />
       )}
       <ActionBarPrimitive.Reload asChild>
         <TooltipIconButton tooltip={t("Regenerate")}>

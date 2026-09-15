@@ -36,6 +36,7 @@ export type TranslationKey =
   | "Confirmation"
   | "ConnectAIModelToEnableChat"
   | "ConnectNewAIModel"
+  | "Copied"
   | "CopyToClipboard"
   | "CreatingImage"
   | "CustomProviders"

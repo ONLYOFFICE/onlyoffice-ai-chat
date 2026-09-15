@@ -81,6 +81,7 @@
   "Tools": "verktøy",
   "AllTools": "Alle verktøy",
   "CopyToClipboard": "Kopier til utklippstavlen",
+  "Copied": "Kopiert",
   "WebSearch": "Nettsøk",
   "WebSearchDescription": "Koble til et nettsøk for å gi AI Chat tilgang til sanntidsinformasjon fra internett.",
   "WebSearchEngine": "Nettsøkemotor",

@@ -193,14 +193,20 @@ const UserActionBar = () => {
   return (
     <>
       <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[var(--chat-user-message-actions-gap,2px)]">
-        <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onCopy}>
+        <TooltipIconButton
+          tooltip={copied ? t("Copied") : t("CopyToClipboard")}
+          onClick={onCopy}
+        >
           {copied ? (
+            // `disableHover`, not `disabled`: the latter paints a not-allowed
+            // cursor over a button the user just used successfully. The
+            // tooltip reports the result instead.
             <IconButton
               iconName="checked"
               size={chatMessageActionsIconSize}
               isStroke
               color="var(--icon-gray-secondary)"
-              disabled
+              disableHover
             />
           ) : (
             <IconButton

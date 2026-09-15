@@ -81,6 +81,7 @@
   "Tools": "ferramentas",
   "AllTools": "Todas as ferramentas",
   "CopyToClipboard": "Copiar para a área de transferência",
+  "Copied": "Copiado",
   "WebSearch": "Busca na Web",
   "WebSearchDescription": "Vincule um mecanismo de busca para enriquecer o AI Chat com informações da internet em tempo real.",
   "WebSearchEngine": "Mecanismo de busca na Web",

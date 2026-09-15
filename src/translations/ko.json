@@ -81,6 +81,7 @@
   "Tools": "도구",
   "AllTools": "전체 도구",
   "CopyToClipboard": "클립보드에 복사",
+  "Copied": "복사됨",
   "WebSearch": "웹 검색",
   "WebSearchDescription": "웹 검색 엔진을 연결하여 실시간 인터넷 정보로 AI 채팅을 강화합니다.",
   "WebSearchEngine": "웹 검색 엔진",
