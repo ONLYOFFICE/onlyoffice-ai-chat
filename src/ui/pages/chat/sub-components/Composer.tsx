@@ -90,8 +90,9 @@ const Composer = () => {
         ref={rootRef}
         onClick={focusInputOnClick}
         onSubmit={(e) => {
-          // Every send path lands here — Enter and the Send button (a
-          // submit button) alike — so this is the one place history has
+          // Every send path lands here — Enter, and the Send button,
+          // which submits this form rather than calling `send()` itself
+          // precisely so it does — making this the one place history has
           // to hook to catch them all. Read the text before anything
           // downstream clears the composer.
           if (currentProfile && !hasPending) {

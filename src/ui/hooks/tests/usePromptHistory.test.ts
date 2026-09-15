@@ -345,6 +345,80 @@ describe("usePromptHistory", () => {
     expect(second.result.current.previous("")).toBeNull();
   });
 
+  it("does not file an abandoned new-chat prompt against the next chat that is named", async () => {
+    // A send in a new chat that never got its thread id (failed/aborted).
+    const store = setup([], "");
+    const first = renderHook(() => usePromptHistory());
+    await act(async () => {});
+    await act(async () => {
+      first.result.current.record("abandoned prompt");
+    });
+    first.unmount();
+
+    // The user starts another brand-new chat and sends there. Only that
+    // chat's own prompt may be attributed to the thread it creates — the
+    // abandoned one must not ride along. Same store instance as before:
+    // in the app there is only one, which is what lets a stale listener
+    // wake on an unrelated chat's id.
+    mockList.mockResolvedValue([]);
+    mockUseStores.mockReturnValue({
+      useThreadsStore: store,
+      useMessageStore: makeMessageStore(0),
+      api: {
+        promptHistory: { list: mockList, record: mockRecord, clear: vi.fn() },
+      },
+    });
+    const second = renderHook(() => usePromptHistory());
+    await act(async () => {});
+    await act(async () => {
+      second.result.current.record("real prompt");
+    });
+    await act(async () => {
+      store.claim("thread-new");
+    });
+
+    expect(mockRecord).toHaveBeenCalledWith("real prompt", "thread-new");
+    expect(mockRecord).not.toHaveBeenCalledWith(
+      "abandoned prompt",
+      "thread-new"
+    );
+  });
+
+  it("loads real history when switching from the new-chat view into an existing thread", async () => {
+    // No send in flight — the scope goes "" → real id because the user
+    // picked an existing thread, so its stored history must be read.
+    setup([], "");
+    const { result, rerender } = renderHook(() => usePromptHistory());
+    await act(async () => {});
+    expect(mockList).not.toHaveBeenCalled();
+
+    setup(["from-existing-thread"], "thread-existing");
+    rerender();
+    await act(async () => {});
+
+    expect(mockList).toHaveBeenCalledWith("thread-existing");
+    expect(result.current.previous("")?.text).toBe("from-existing-thread");
+  });
+
+  it("still persists a new chat's prompt when its id arrives after the remount", async () => {
+    // The composer can be replaced by a fresh instance scoped to the new
+    // thread before the store publishes the id — cancelling the pending
+    // claim on that mount would lose the write entirely.
+    const store = setup([], "");
+    const first = renderHook(() => usePromptHistory());
+    await act(async () => {});
+    await act(async () => {
+      first.result.current.record("first");
+    });
+    first.unmount();
+
+    await act(async () => {
+      store.claim("thread-new");
+    });
+
+    expect(mockRecord).toHaveBeenCalledWith("first", "thread-new");
+  });
+
   it("does not carry one new chat's prompts into the next new chat", async () => {
     const store = setup([], "");
     const first = renderHook(() => usePromptHistory());

@@ -34,11 +34,37 @@ const historyCache = new Map<string, string[]>();
 const cacheKey = (scopeId?: string) => scopeId ?? "";
 
 /**
+ * The one in-flight "name this new chat's prompt" claim, if any.
+ *
+ * `record` in an unnamed chat can't persist yet — the thread id arrives
+ * with the send — so it waits on the threads store. That wait outlives
+ * the composer by design (the send itself unmounts it), which is exactly
+ * why it needs tracking here rather than in instance state:
+ *
+ * - it must be cancellable, or an aborted send leaves a listener that
+ *   attributes its dead prompt to whatever unrelated chat is named next;
+ * - the loader needs to know a claim is pending to tell "my own send is
+ *   naming this chat" from "the user just opened a different thread".
+ *
+ * Only one can be outstanding: a second unnamed `record` supersedes the
+ * first (both prompts are already in the same new-chat bucket, which the
+ * claim hands over wholesale).
+ */
+let pendingClaim: { cancel: () => void } | null = null;
+
+/** Drop a pending claim without persisting it. */
+function cancelPendingClaim() {
+  pendingClaim?.cancel();
+  pendingClaim = null;
+}
+
+/**
  * Drop every cached scope. Exported for tests, which would otherwise
  * leak one case's prompts into the next through module state.
  */
 export function __resetPromptHistoryCache() {
   historyCache.clear();
+  cancelPendingClaim();
 }
 
 export interface PromptHistory {
@@ -116,9 +142,14 @@ export function usePromptHistory(): PromptHistory {
     // `record` just fired against that new id is still in flight. Wiping
     // and re-reading here would race that write and lose the chat's first
     // prompt. The list is already this thread's history, so adopt it.
+    // `pendingClaim` is what separates that from the other way an unnamed
+    // scope turns into a real one: the user picking an existing thread
+    // out of the list while sitting on the empty new-chat view. That
+    // looks identical here — "" → some id, no unmount — but has no send
+    // behind it, so its history must be loaded normally.
     const loadedScope = loadedScopeRef.current;
     const wasNewChat = loadedScope !== NEVER_LOADED && loadedScope === undefined;
-    const adopted = wasNewChat && !!scopeId;
+    const adopted = wasNewChat && !!scopeId && !!pendingClaim;
     loadedScopeRef.current = scopeId;
     if (adopted) return;
 
@@ -131,13 +162,26 @@ export function usePromptHistory(): PromptHistory {
     // clears them, while a send has already put the user's message in the
     // list by the time this runs.
     if (!scopeId) {
-      if (!hasMessages()) historyCache.delete(cacheKey(undefined));
+      if (!hasMessages()) {
+        historyCache.delete(cacheKey(undefined));
+        // Starting a genuinely new chat also retires any claim left over
+        // by an earlier send that never named a thread (aborted, failed,
+        // panel closed). Left alive, it would wake on *this* chat's id
+        // and file the abandoned prompt against it.
+        cancelPendingClaim();
+      }
       itemsRef.current = [...(historyCache.get(cacheKey(undefined)) ?? [])];
       reset();
       // Nothing persisted yet, and reading the unscoped bucket via the API
       // would show prompts from every other chat.
       return;
     }
+
+    // Landing in a real thread that is *not* the one a pending send is
+    // naming (that case returned at `adopted` above) means the user
+    // navigated away from the unnamed chat. Retire the claim rather than
+    // let it file the abandoned prompt against this thread.
+    cancelPendingClaim();
 
     // A real thread switch: the previous chat's prompts must not stay in
     // the box's history. Remounting into a scope we already know (the
@@ -218,11 +262,14 @@ export function usePromptHistory(): PromptHistory {
       // Deliberately NOT tied to this component's lifetime: the same send
       // makes the thread non-empty, which unmounts this composer before
       // the id arrives. Cancelling on unmount would throw away the write
-      // every single time. The subscription is one-shot and unsubscribes
-      // itself, so it cannot outlive the event it waits for.
+      // every single time. It is tracked module-side instead, so a send
+      // that never names a thread can be cancelled when the next new chat
+      // starts rather than claiming that chat's id — see `pendingClaim`.
+      cancelPendingClaim();
       const unsubscribe = useThreadsStore.subscribe((state, prev) => {
         if (!state.threadId || state.threadId === prev.threadId) return;
         unsubscribe();
+        pendingClaim = null;
         // Hand the unnamed chat's prompts to the thread that now owns
         // them, so a composer mounting under the new id finds them, and
         // clear the new-chat bucket for the next new chat.
@@ -232,6 +279,7 @@ export function usePromptHistory(): PromptHistory {
         historyCache.delete(cacheKey(undefined));
         void api.promptHistory.record(trimmed, state.threadId);
       });
+      pendingClaim = { cancel: unsubscribe };
     },
     [api, scopeId, reset, useThreadsStore]
   );
