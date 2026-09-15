@@ -40,15 +40,7 @@ vi.mock("../../../components/icon-button", () => ({
       data-testid={props["data-testid"] as string}
       data-icon={props.iconName as string}
       disabled={props.disabled as boolean | undefined}
-      // The real IconButton hardcodes `type="button"` — the reason Send
-      // has to submit the form explicitly rather than rely on the click
-      // bubbling to it.
-      type="button"
-      onClick={
-        props.onClick as
-          | ((e: React.MouseEvent<HTMLButtonElement>) => void)
-          | undefined
-      }
+      onClick={props.onClick as (() => void) | undefined}
     >
       {props.iconName as string}
     </button>
@@ -179,29 +171,7 @@ describe("ComposerActionSend", () => {
     expect(screen.getByTestId("send-button")).not.toBeDisabled();
   });
 
-  it("submits the composer form when clicked, rather than sending around it", () => {
-    // The form's `onSubmit` is where a sent prompt is recorded into ↑/↓
-    // history, and `IconButton` is a `type="button"` that never reaches
-    // it on its own — so a click that called `send()` directly would drop
-    // every mouse send from the history list.
-    setupStores({
-      isStreamRunning: false,
-      currentProfile: { id: "1", name: "GPT" },
-      attachmentFiles: [{ id: "f1" }],
-    });
-    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
-    render(
-      <form onSubmit={onSubmit}>
-        <ComposerActionSend />
-      </form>
-    );
-    mockSend.mockClear();
-    screen.getByTestId("send-button").click();
-    expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(mockSend).not.toHaveBeenCalled();
-  });
-
-  it("falls back to composerRuntime.send() when rendered outside a form", () => {
+  it("calls composerRuntime.send() when clicked", () => {
     setupStores({
       isStreamRunning: false,
       currentProfile: { id: "1", name: "GPT" },

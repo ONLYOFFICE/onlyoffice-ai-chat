@@ -72,19 +72,7 @@ const ComposerActionSend = () => {
         disabled={
           !currentProfile || hasPending || (!hasText && !hasAttachments)
         }
-        onClick={(e) => {
-          // `IconButton` hardcodes `type="button"`, so this click never
-          // reaches the form on its own. Submit the composer rather than
-          // calling `send()` directly: the form's `onSubmit` is the one
-          // place a sent prompt is recorded into ↑/↓ history, and going
-          // around it drops every mouse/touch send from the list.
-          const form = e.currentTarget.closest("form");
-          if (form) {
-            form.requestSubmit();
-            return;
-          }
-          composerRuntime.send();
-        }}
+        onClick={() => composerRuntime.send()}
       />
     </ThreadPrimitive.If>
   );

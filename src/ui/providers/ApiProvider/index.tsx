@@ -5,7 +5,6 @@ import {
   DEFAULT_ATTACHMENTS_ROUTES,
   DEFAULT_PREFERENCES_ROUTES,
   DEFAULT_PROFILES_ROUTES,
-  DEFAULT_PROMPT_HISTORY_ROUTES,
   DEFAULT_PROMPTS_ROUTES,
   DEFAULT_THREADS_ROUTES,
   DEFAULT_TOOLS_ROUTES,
@@ -22,8 +21,6 @@ import type {
   PreferencesEngineMethod,
   ProfilesEngine,
   ProfilesEngineMethod,
-  PromptHistoryEngine,
-  PromptHistoryEngineMethod,
   PromptsEngine,
   PromptsEngineMethod,
   RouteSpec,
@@ -39,10 +36,6 @@ import { createAssignmentsApi, type AssignmentsApi } from "./assignments";
 import { createAttachmentsApi, type AttachmentsApi } from "./attachments";
 import { createPreferencesApi, type PreferencesApi } from "./preferences";
 import { createProfilesApi, type ProfilesApi } from "./profiles";
-import {
-  createPromptHistoryApi,
-  type PromptHistoryApi,
-} from "./prompt-history";
 import { createPromptsApi, type PromptsApi } from "./prompts";
 import { createThreadsApi, type ThreadsApi } from "./threads";
 import { createToolsApi, type ToolsApi } from "./tools";
@@ -54,7 +47,6 @@ export interface ServerAPIRoutes {
   attachments: Record<AttachmentsEngineMethod, RouteSpec>;
   preferences: Record<PreferencesEngineMethod, RouteSpec>;
   profiles: Record<ProfilesEngineMethod, RouteSpec>;
-  promptHistory: Record<PromptHistoryEngineMethod, RouteSpec>;
   prompts: Record<PromptsEngineMethod, RouteSpec>;
   threads: Record<ThreadsEngineMethod, RouteSpec>;
   tools: Record<ToolsEngineMethod, RouteSpec>;
@@ -68,7 +60,6 @@ export const DEFAULT_SERVER_API_ROUTES: ServerAPIRoutes = {
   attachments: DEFAULT_ATTACHMENTS_ROUTES,
   preferences: DEFAULT_PREFERENCES_ROUTES,
   profiles: DEFAULT_PROFILES_ROUTES,
-  promptHistory: DEFAULT_PROMPT_HISTORY_ROUTES,
   prompts: DEFAULT_PROMPTS_ROUTES,
   threads: DEFAULT_THREADS_ROUTES,
   tools: DEFAULT_TOOLS_ROUTES,
@@ -93,7 +84,6 @@ export interface ServerAPIEngines {
   attachments: AttachmentsEngine;
   preferences: PreferencesEngine;
   profiles: ProfilesEngine;
-  promptHistory: PromptHistoryEngine;
   prompts: PromptsEngine;
   threads: ThreadsEngine;
   tools: ToolsEngine;
@@ -107,7 +97,6 @@ export interface ServerAPI {
   attachments: AttachmentsApi;
   preferences: PreferencesApi;
   profiles: ProfilesApi;
-  promptHistory: PromptHistoryApi;
   prompts: PromptsApi;
   threads: ThreadsApi;
   tools: ToolsApi;
@@ -127,7 +116,6 @@ export function createServerAPI(
     attachments: createAttachmentsApi(config, engines),
     preferences: createPreferencesApi(config, engines),
     profiles: createProfilesApi(config, engines),
-    promptHistory: createPromptHistoryApi(config, engines),
     prompts: createPromptsApi(config, engines),
     threads: createThreadsApi(config, engines),
     tools: createToolsApi(config, engines),

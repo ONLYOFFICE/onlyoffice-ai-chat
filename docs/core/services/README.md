@@ -22,7 +22,6 @@ There are nine services today:
 | [`web-search-engine.md`](./web-search-engine.md)        | `WebSearchEngine` | Singleton web-search config with live credential validation and atomic switch |
 | [`preferences-engine.md`](./preferences-engine.md)      | `PreferencesEngine` | Scalar preferences with default-fallback `get` and idempotent `set` |
 | [`attachments-engine.md`](./attachments-engine.md)      | `AttachmentsEngine` | Local-only draft attachments — saves files / images to `storage.attachments` and binds them to messages |
-| [`prompt-history-engine.md`](./prompt-history-engine.md) | `PromptHistoryEngine` | Per-thread sent-prompt history for the composer's ↑ / ↓ recall, with dedup and an in-memory fallback |
 
 ## How they compose
 

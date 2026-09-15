@@ -10,5 +10,3 @@ export { default as useEnsurePrompts } from "./useEnsurePrompts";
 export { default as useEnsureTools } from "./useEnsureTools";
 export { default as useSanitizedCopy } from "./useSanitizedCopy";
 export { useReasoningSupport } from "./useReasoningSupport";
-export { usePromptHistory } from "./usePromptHistory";
-export type { PromptHistory, PromptHistoryStep } from "./usePromptHistory";
