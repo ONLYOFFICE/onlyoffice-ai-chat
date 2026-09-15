@@ -467,7 +467,7 @@ describe("ComposerActionPrompts", () => {
       expect(mockEditPrompt).toHaveBeenCalledWith("1", { folderId: null });
     });
 
-    it("Delete onClick calls removePrompt", () => {
+    it("Delete onClick confirms first instead of removing", () => {
       mockPrompts = [{ id: "1", name: "Prompt", text: "text", folderId: null }];
       render(<ComposerActionPrompts />);
       const items = mockDropdownItems as {
@@ -478,7 +478,8 @@ describe("ComposerActionPrompts", () => {
         (i: { text: string }) => i.text === "Delete"
       )!;
       act(() => deleteItem.onClick());
-      expect(mockRemovePrompt).toHaveBeenCalledWith("1");
+      expect(screen.getByText("WantDeletePrompt")).toBeInTheDocument();
+      expect(mockRemovePrompt).not.toHaveBeenCalled();
     });
   });
 
@@ -800,6 +801,110 @@ describe("ComposerActionPrompts", () => {
       const container = confirmText.closest("div[class*='flex']")!;
       fireEvent.keyDown(container, { key: "Enter" });
       expect(mockRemoveFolder).toHaveBeenCalledWith("f1");
+    });
+  });
+
+  describe("DeletePromptDialog", () => {
+    function openDeleteDialog() {
+      mockPrompts = [{ id: "p1", name: "My Prompt", text: "t", folderId: null }];
+      render(<ComposerActionPrompts />);
+      const items = mockDropdownItems as {
+        text: string;
+        subMenu?: { text: string; onClick: () => void }[];
+      }[];
+      const deleteItem = items[0].subMenu!.find(
+        (i: { text: string }) => i.text === "Delete"
+      )!;
+      act(() => {
+        deleteItem.onClick();
+      });
+    }
+
+    it("opens delete dialog titled after the action", () => {
+      openDeleteDialog();
+      const dialogContent = screen.getByTestId("dialog-content");
+      expect(dialogContent.getAttribute("data-header")).toBe("DeletePrompt");
+      expect(dialogContent.getAttribute("data-warning")).toBe("true");
+    });
+
+    it("shows confirmation message", () => {
+      openDeleteDialog();
+      expect(screen.getByText("WantDeletePrompt")).toBeInTheDocument();
+    });
+
+    it("clicking the confirm button deletes the prompt", () => {
+      openDeleteDialog();
+      const buttons = screen.getAllByRole("button");
+      const confirmBtn = buttons.find(
+        (b) => b.textContent === "DeletePromptConfirm"
+      )!;
+      fireEvent.click(confirmBtn);
+      expect(mockRemovePrompt).toHaveBeenCalledWith("p1");
+    });
+
+    it("closing the dialog keeps the prompt", () => {
+      openDeleteDialog();
+      const closeBtn = screen.getByTestId("dialog-close");
+      fireEvent.click(closeBtn);
+      expect(mockRemovePrompt).not.toHaveBeenCalled();
+    });
+
+    it("pressing Enter triggers confirm", () => {
+      openDeleteDialog();
+      const confirmText = screen.getByText("WantDeletePrompt");
+      const container = confirmText.closest("div[class*='flex']")!;
+      fireEvent.keyDown(container, { key: "Enter" });
+      expect(mockRemovePrompt).toHaveBeenCalledWith("p1");
+    });
+  });
+
+  describe("onDeletePrompt host handler", () => {
+    const renderWithHandler = (
+      onDeletePrompt: (name: string, id: string) => boolean | Promise<boolean>
+    ) => {
+      mockPrompts = [{ id: "p1", name: "My Prompt", text: "t", folderId: null }];
+      render(
+        <WidgetConfigProvider config={{ onDeletePrompt }}>
+          <ComposerActionPrompts />
+        </WidgetConfigProvider>
+      );
+      const items = mockDropdownItems as {
+        text: string;
+        subMenu?: { text: string; onClick: () => void }[];
+      }[];
+      const deleteItem = items[0].subMenu!.find(
+        (i: { text: string }) => i.text === "Delete"
+      )!;
+      return deleteItem;
+    };
+
+    it("delegates to the host instead of the built-in dialog", async () => {
+      const onDeletePrompt = vi.fn().mockResolvedValue(true);
+      const deleteItem = renderWithHandler(onDeletePrompt);
+      await act(async () => {
+        deleteItem.onClick();
+      });
+      expect(onDeletePrompt).toHaveBeenCalledWith("My Prompt", "p1");
+      expect(screen.queryByTestId("dialog-content")).not.toBeInTheDocument();
+      expect(mockRemovePrompt).toHaveBeenCalledWith("p1");
+    });
+
+    it("keeps the prompt when the host does not confirm", async () => {
+      const deleteItem = renderWithHandler(vi.fn().mockResolvedValue(false));
+      await act(async () => {
+        deleteItem.onClick();
+      });
+      expect(mockRemovePrompt).not.toHaveBeenCalled();
+    });
+
+    it("keeps the prompt when the host handler throws", async () => {
+      const deleteItem = renderWithHandler(
+        vi.fn().mockRejectedValue(new Error("boom"))
+      );
+      await act(async () => {
+        deleteItem.onClick();
+      });
+      expect(mockRemovePrompt).not.toHaveBeenCalled();
     });
   });
 
