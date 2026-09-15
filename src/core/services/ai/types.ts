@@ -136,6 +136,15 @@ export type AIEngineDeps = {
    * request time.
    */
   pagination?: boolean | (() => boolean);
+
+  /**
+   * How often a streaming assistant message is flushed to storage, in
+   * milliseconds. See `ProcessStreamContext.persistIntervalMs`. Defaults
+   * to 150 (`DEFAULT_PERSIST_INTERVAL_MS`), which suits a local adapter;
+   * a host whose adapter is a remote HTTP hop should raise it to a few
+   * seconds.
+   */
+  persistIntervalMs?: number;
 };
 
 /**

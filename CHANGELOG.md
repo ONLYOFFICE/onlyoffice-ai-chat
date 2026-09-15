@@ -11,6 +11,26 @@
   New optional `StorageAdapter.promptHistory` slice (`append` / `readAll` / `clear`), driven by a new `PromptHistoryEngine` (`list` / `record` / `clear`) with the matching `prompt-history/*` routes for a remote core. The engine drops blanks, collapses an immediate repeat of the newest entry (bash's `ignoredups`), caps each thread's list at `PROMPT_HISTORY_LIMIT` (100), and never rejects — failing to remember a prompt must not fail the send that triggered it. Hosts whose adapter predates the slice keep working: history then lives in memory for the session, so the keys still work but nothing survives a reload. Implement `promptHistory` to make it persist. The `usePromptHistory` hook is exported from `@onlyoffice/ai-chat/hooks` for custom shells.
 
   A new chat's **first** prompt is kept. Naming the thread mid-send re-scoped the hook, which cleared the in-memory list and re-read storage — a read that raced the write the same send had just fired, so the opening prompt of every chat vanished from ↑ while later ones survived. The loader now recognises that re-scope as the chat being named by its own send and adopts the list it already has instead of re-reading.
+  
+## 0.5.110
+
+### Fixed
+
+- **Tool results reach the ONLYOFFICE gateway as `tool_result` blocks.** The gateway proxies to Claude and maps a block inside a `tool` message onto Anthropic's `tool_result`, which is where the prompt-caching marker must sit. `withCacheControl` used to wrap the trailing tool message in a `text` block, which the gateway rejected; the block is now typed by role. Other providers are unaffected — only the ONLYOFFICE provider places cache markers.
+
+  ```json
+  { "role": "tool", "content": [{ "type": "tool_result", "text": "{\"content\":[...]}", "cache_control": { "type": "ephemeral" } }] }
+  ```
+
+### Changed
+
+- **`structuredContent` is no longer sent to the model.** MCP requires a server that returns `structuredContent` to mirror it as a text block in `content`, so the field only duplicated a payload the model already receives and doubled its token cost. All three MCP tool-call paths (server HTTP, browser HTTP, browser stdio) now serialise through `serializeMcpToolResult`, which drops it.
+
+## 0.5.109
+
+### Changed
+
+- **A streaming assistant message is persisted on a timer, off the delta loop.** `processStream` used to write the whole message to `storage.messages.update` whenever a delta arrived more than 150 ms after the previous write — and it awaited that write inside the delta loop, so against a remote storage adapter every write paused the stream itself. The loop now only stages the latest snapshot; a `setInterval` flushes it at most once per `persistIntervalMs` (new `AIEngineDeps.persistIntervalMs`), a tick that lands while a write is still in flight is skipped so writes never overlap or reorder, and a failed periodic write is logged and retried on the next tick rather than failing the round. The default stays at 150 ms (`DEFAULT_PERSIST_INTERVAL_MS`) — right for a local adapter; a host whose adapter is a remote HTTP hop raises it to a few seconds. Values under 50 ms (`MIN_PERSIST_INTERVAL_MS`) are clamped and non-positive or non-finite ones fall back to the default, so a misconfigured interval cannot turn the timer into a write-per-macrotask loop. The first `create` (which yields the `messageId`) and the terminal write — `message-end`, `message-incomplete`, `tool-call-pending`, or the salvage after a stream that ends without `isEnd` — are unchanged and always wait for an in-flight periodic write first. If the stream dies early instead (the provider throws, the consumer stops iterating), the staged snapshot is still written best-effort on the way out, and the timer is cleared in `finally` either way. The UI still receives every `message-delta`.
 
 ## 0.5.108
 

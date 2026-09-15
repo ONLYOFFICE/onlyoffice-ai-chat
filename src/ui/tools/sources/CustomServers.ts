@@ -1,5 +1,6 @@
 import type { ChatEventBus } from "../../providers/EventsProvider";
 import logger from "../../../shared/logger";
+import { serializeMcpToolResult } from "../../../shared/mcp-result";
 import type { PlatformAdapter } from "../../providers/PlatformProvider/types";
 import type { TMCPItem, TProcess } from "../../../types";
 
@@ -492,7 +493,7 @@ class CustomServers {
           new Error(`MCP tool error (${msg.error.code}): ${msg.error.message}`)
         );
       } else {
-        pending.resolve(JSON.stringify(msg.result));
+        pending.resolve(serializeMcpToolResult(msg.result));
       }
     }
   };
@@ -1311,7 +1312,7 @@ class CustomServers {
         }
 
         if (msg.result !== undefined) {
-          return JSON.stringify(msg.result);
+          return serializeMcpToolResult(msg.result);
         }
       }
 

@@ -9,6 +9,8 @@ export type {
 export {
   AIEngine,
   DEFAULT_AI_ROUTES,
+  DEFAULT_PERSIST_INTERVAL_MS,
+  MIN_PERSIST_INTERVAL_MS,
   toChatError,
   toOpenAIChatCompletionStream,
 } from "./ai";

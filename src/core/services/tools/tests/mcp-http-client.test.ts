@@ -81,6 +81,29 @@ describe("mcp-http-client", () => {
     );
   });
 
+  it("callTool drops structuredContent from the serialised result", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(json({ jsonrpc: "2.0", id: "init-s", result: {} }))
+      .mockResolvedValueOnce(
+        json({
+          jsonrpc: "2.0",
+          id: "c",
+          result: {
+            content: [{ type: "text", text: '{"a":1}' }],
+            structuredContent: { a: 1 },
+            isError: false,
+          },
+        })
+      );
+    expect(await callTool(fetchImpl, "s", { url: "http://x" }, "t", {})).toBe(
+      JSON.stringify({
+        content: [{ type: "text", text: '{"a":1}' }],
+        isError: false,
+      })
+    );
+  });
+
   it("callTool throws on a JSON-RPC error", async () => {
     const fetchImpl = vi
       .fn()
