@@ -3,6 +3,7 @@ import type { SendMessageResult } from "../../../shared/send-message-args";
 import type { ReasoningLevel } from "../../../shared/reasoning-level";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
+import logger from "../../../shared/logger";
 import type { Profile } from "../../types";
 import { readToolCall } from "./tool-call";
 import type { ChatEvent } from "./types";
@@ -97,6 +98,18 @@ export type ProcessStreamContext = {
    * `toolPrefs.readAllowAlways`). Engine never inspects it.
    */
   entityId?: string;
+  /**
+   * How often the in-flight assistant message is flushed to storage while
+   * streaming, in milliseconds. The UI still receives every delta; storage
+   * sees at most one write per interval plus the authoritative terminal
+   * write, and a write never overlaps the previous one. The window of text
+   * lost if the process dies mid-stream equals this interval, so the
+   * default ({@link DEFAULT_PERSIST_INTERVAL_MS}) suits a local adapter;
+   * a host whose adapter is a remote HTTP hop raises it (a few seconds).
+   * Values below {@link MIN_PERSIST_INTERVAL_MS} are clamped; a
+   * non-finite or non-positive value falls back to the default.
+   */
+  persistIntervalMs?: number;
   /** Existing assistant messageId to update when `isResume` is true. */
   resumeMessageId?: string;
   /**
@@ -124,6 +137,24 @@ function mergeResume(
     role: fresh.role ?? base.role,
     content: [...baseContent, ...freshContent],
   } as ThreadMessageLike;
+}
+
+/** Default {@link ProcessStreamContext.persistIntervalMs}. */
+export const DEFAULT_PERSIST_INTERVAL_MS = 150;
+
+/** Lower bound for {@link ProcessStreamContext.persistIntervalMs}. */
+export const MIN_PERSIST_INTERVAL_MS = 50;
+
+/**
+ * Resolve the configured persist interval: clamp to the lower bound so a
+ * tiny value cannot turn the timer into a write-per-macrotask loop, and
+ * fall back to the default for anything that is not a positive number.
+ */
+export function resolvePersistInterval(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return DEFAULT_PERSIST_INTERVAL_MS;
+  }
+  return Math.max(value, MIN_PERSIST_INTERVAL_MS);
 }
 
 /**
@@ -169,118 +200,166 @@ export async function* processStream(
 
   // Coalesce per-delta persistence. The UI still receives every
   // `message-delta` event (streaming is unaffected), but storage is written
-  // at most once per FLUSH_INTERVAL_MS while streaming — instead of a full
+  // on a timer — at most once per `persistIntervalMs` — instead of a full
   // whole-message rewrite on every token, which is costly against a remote /
-  // host storage adapter and back-pressures the stream loop. The first update
-  // persists immediately (`lastFlushAt = 0`) for crash recovery, and the
-  // terminal `isEnd` below always writes the authoritative final message.
-  const FLUSH_INTERVAL_MS = 150;
-  let lastFlushAt = 0;
-  let pendingWrite = false;
+  // host storage adapter and back-pressures the stream loop. The delta loop
+  // never awaits a write: it only refreshes `lastSnapshot` and marks it
+  // dirty. The first `create` still happens immediately (it yields the
+  // `messageId`), and every terminal branch writes the authoritative final
+  // message after `settle()` so it can neither race a periodic write nor be
+  // overwritten by a stale snapshot.
+  const intervalMs = resolvePersistInterval(ctx.persistIntervalMs);
+  let dirty = false;
+  let inflight: Promise<void> | null = null;
 
-  for await (const result of stream) {
-    if ("isEnd" in result) {
-      const final = merge(result.responseMessage);
+  // Write the latest snapshot if it changed since the previous write. A tick
+  // that lands while a write is still in flight is skipped — the next tick or
+  // the terminal flush picks the content up — so writes never overlap and
+  // storage sees them in order.
+  const flush = (): Promise<void> => {
+    if (inflight) return inflight;
+    if (!dirty || !messageId || !lastSnapshot) return Promise.resolve();
+    dirty = false;
+    const snapshot = lastSnapshot;
+    inflight = storage.messages
+      .update(messageId, snapshot)
+      .catch((e: unknown) => {
+        // A failed periodic write must not kill the stream; the terminal
+        // write retries with the final content.
+        logger.warn("[stream] periodic persist failed", e);
+        dirty = true;
+      })
+      .finally(() => {
+        inflight = null;
+      });
+    return inflight;
+  };
 
-      if (final.status?.type === "incomplete") {
-        // Persist the terminal state (error / cancelled) so it survives a
-        // reload. The provider's error/stop response carries an empty
-        // body, so we keep the last streamed snapshot's content (the
-        // partial text already shown) and attach only the status. With no
-        // prior delta there is nothing to preserve — save the empty shell
-        // plus status; `hasSendableContent` keeps it out of future
-        // request history.
-        const persisted = {
-          ...(lastSnapshot ?? final),
-          status: final.status,
-        } as ThreadMessageLike;
-        if (!messageId) {
-          const stored = await storage.messages.create(threadId, persisted);
-          messageId = stored.id ?? "";
-        } else {
-          await storage.messages.update(messageId, persisted);
-        }
-        yield {
-          type: "message-incomplete",
-          message: withId(persisted),
-        };
-        return;
-      }
+  const timer = setInterval(() => {
+    void flush();
+  }, intervalMs);
 
-      if (final?.role === "assistant" && Array.isArray(final.content)) {
-        const toolIdx = findPendingToolCall(final);
-        if (toolIdx !== -1) {
-          if (!messageId) {
-            const stored = await storage.messages.create(threadId, final);
-            messageId = stored.id ?? "";
-          } else {
-            await storage.messages.update(messageId, final);
-          }
+  // Stop the timer and wait for an in-flight periodic write before a
+  // terminal write, so the final `update` is always the last one applied.
+  const settle = async (): Promise<void> => {
+    clearInterval(timer);
+    if (inflight) await inflight;
+    dirty = false;
+  };
 
-          const toolName = readToolCall(final, toolIdx)?.toolName ?? null;
-          const allowList = await storage.toolPrefs.readAllowAlways(
-            ctx.entityId
-          );
-          // A tool auto-allows when the user pinned it to the persisted
-          // "always-allow" list OR the tool itself opts in via
-          // `requireApproval === false` (host tools default to this). A tool
-          // that never sets the flag (MCP / custom servers) keeps prompting.
-          const tool = ctx.tools?.find((t) => t.name === toolName);
-          const autoAllow =
-            !!toolName &&
-            (allowList.includes(toolName) || tool?.requireApproval === false);
+  const persistFinal = async (message: ThreadMessageLike): Promise<void> => {
+    await settle();
+    if (!messageId) {
+      const stored = await storage.messages.create(threadId, message);
+      messageId = stored.id ?? "";
+    } else {
+      await storage.messages.update(messageId, message);
+    }
+  };
 
+  try {
+    for await (const result of stream) {
+      if ("isEnd" in result) {
+        const final = merge(result.responseMessage);
+
+        if (final.status?.type === "incomplete") {
+          // Persist the terminal state (error / cancelled) so it survives a
+          // reload. The provider's error/stop response carries an empty
+          // body, so we keep the last streamed snapshot's content (the
+          // partial text already shown) and attach only the status. With no
+          // prior delta there is nothing to preserve — save the empty shell
+          // plus status; `hasSendableContent` keeps it out of future
+          // request history.
+          const persisted = {
+            ...(lastSnapshot ?? final),
+            status: final.status,
+          } as ThreadMessageLike;
+          await persistFinal(persisted);
           yield {
-            type: "tool-call-pending",
-            message: withId(final),
-            idx: toolIdx,
-            messageId,
-            threadId,
-            autoAllow,
+            type: "message-incomplete",
+            message: withId(persisted),
           };
           return;
         }
-      }
 
-      if (!messageId) {
-        const stored = await storage.messages.create(threadId, final);
-        messageId = stored.id ?? "";
-      } else {
-        await storage.messages.update(messageId, final);
-      }
+        if (final?.role === "assistant" && Array.isArray(final.content)) {
+          const toolIdx = findPendingToolCall(final);
+          if (toolIdx !== -1) {
+            await persistFinal(final);
 
-      yield { type: "message-end", message: withId(final), messageId };
-      return;
-    }
+            const toolName = readToolCall(final, toolIdx)?.toolName ?? null;
+            const allowList = await storage.toolPrefs.readAllowAlways(
+              ctx.entityId
+            );
+            // A tool auto-allows when the user pinned it to the persisted
+            // "always-allow" list OR the tool itself opts in via
+            // `requireApproval === false` (host tools default to this). A tool
+            // that never sets the flag (MCP / custom servers) keeps prompting.
+            const tool = ctx.tools?.find((t) => t.name === toolName);
+            const autoAllow =
+              !!toolName &&
+              (allowList.includes(toolName) || tool?.requireApproval === false);
 
-    const merged = merge(result);
-    lastSnapshot = merged;
-    if (!inited) {
-      const stored = await storage.messages.create(threadId, merged);
-      messageId = stored.id ?? "";
-      inited = true;
-      yield { type: "message-start", message: withId(merged), messageId };
-    } else {
-      if (messageId) {
-        const now = Date.now();
-        if (now - lastFlushAt >= FLUSH_INTERVAL_MS) {
-          await storage.messages.update(messageId, merged);
-          lastFlushAt = now;
-          pendingWrite = false;
-        } else {
-          // Persisted lazily — the next flush, the terminal write, or the
-          // post-loop salvage below writes this content.
-          pendingWrite = true;
+            yield {
+              type: "tool-call-pending",
+              message: withId(final),
+              idx: toolIdx,
+              messageId,
+              threadId,
+              autoAllow,
+            };
+            return;
+          }
         }
-      }
-      yield { type: "message-delta", message: withId(merged), messageId };
-    }
-  }
 
-  // Providers normally close with a terminal `isEnd` (handled above, which
-  // returns). If the stream instead exhausts without one, persist the last
-  // coalesced delta so nothing streamed is lost.
-  if (pendingWrite && messageId && lastSnapshot) {
-    await storage.messages.update(messageId, lastSnapshot);
+        await persistFinal(final);
+
+        yield { type: "message-end", message: withId(final), messageId };
+        return;
+      }
+
+      const merged = merge(result);
+      lastSnapshot = merged;
+      if (!inited) {
+        const stored = await storage.messages.create(threadId, merged);
+        messageId = stored.id ?? "";
+        inited = true;
+        yield { type: "message-start", message: withId(merged), messageId };
+      } else {
+        if (messageId) {
+          // Persisted lazily — the next timer tick, the terminal write, or
+          // the post-loop salvage below writes this content.
+          dirty = true;
+        }
+        yield { type: "message-delta", message: withId(merged), messageId };
+      }
+    }
+
+    // Providers normally close with a terminal `isEnd` (handled above, which
+    // returns). If the stream instead exhausts without one, persist the last
+    // coalesced delta so nothing streamed is lost.
+    if (dirty && messageId && lastSnapshot) {
+      await settle();
+      await storage.messages.update(messageId, lastSnapshot);
+    }
+  } finally {
+    // Runs on normal exit, on a thrown error and on generator `return()`
+    // (the consumer stopped iterating) — the timer must never outlive the
+    // stream. The terminal branches above leave nothing dirty; if we get
+    // here with a staged snapshot the stream died early (provider threw,
+    // consumer bailed), so salvage it best-effort — the text was already
+    // shown, losing it to the interval would be a regression against the
+    // per-delta writes this replaced. Errors are swallowed so a storage
+    // failure cannot mask the exception that brought us here.
+    clearInterval(timer);
+    if (dirty && messageId && lastSnapshot) {
+      dirty = false;
+      try {
+        if (inflight) await inflight;
+        await storage.messages.update(messageId, lastSnapshot);
+      } catch (e) {
+        logger.warn("[stream] salvage persist failed", e);
+      }
+    }
   }
 }

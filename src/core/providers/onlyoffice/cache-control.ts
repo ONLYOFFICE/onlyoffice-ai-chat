@@ -8,12 +8,21 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
  */
 const EPHEMERAL = { type: "ephemeral" } as const;
 
-/** A text content block carrying the caching marker. */
+/**
+ * A text content block carrying the caching marker. Inside a `tool`
+ * message the ONLYOFFICE gateway expects the block to be typed
+ * `tool_result` (it maps onto Anthropic's `tool_result` block, which is
+ * where the marker must sit); everywhere else it is a plain `text` block.
+ */
 type CacheableTextPart = {
-  type: "text";
+  type: "text" | "tool_result";
   text: string;
   cache_control?: typeof EPHEMERAL;
 };
+
+/** Block type the marked text block must carry for a given message role. */
+const blockTypeFor = (role: string): CacheableTextPart["type"] =>
+  role === "tool" ? "tool_result" : "text";
 
 /** Loose view of a converted message, before the marker is attached. */
 type LooseMessage = {
@@ -30,6 +39,9 @@ type LooseMessage = {
  * Non-text trailing blocks (images, files) are skipped in favour of the
  * last text block; a message with no text block at all is returned as is.
  *
+ * For a `tool` message the marked block is emitted as `tool_result`
+ * instead of `text` — see {@link blockTypeFor}.
+ *
  * @param message - One already-converted chat-completion message.
  * @returns A copy carrying the marker, or the original when inapplicable.
  */
@@ -37,7 +49,7 @@ const markMessage = (message: LooseMessage): LooseMessage => {
   if (typeof message.content === "string") {
     if (!message.content) return message;
     const part: CacheableTextPart = {
-      type: "text",
+      type: blockTypeFor(message.role),
       text: message.content,
       cache_control: EPHEMERAL,
     };
@@ -57,7 +69,9 @@ const markMessage = (message: LooseMessage): LooseMessage => {
   if (index === -1) return message;
 
   const content = message.content.map((part, i) =>
-    i === index ? { ...part, cache_control: EPHEMERAL } : part
+    i === index
+      ? { ...part, type: blockTypeFor(message.role), cache_control: EPHEMERAL }
+      : part
   );
   return { ...message, content } as LooseMessage;
 };

@@ -28,6 +28,8 @@ export type ToolCallContext = {
   storage: StorageAdapter;
   /** Mirrors {@link AIEngineDeps.pagination} for the resume-history read. */
   pagination?: boolean | (() => boolean);
+  /** Mirrors {@link AIEngineDeps.persistIntervalMs} for the resumed stream. */
+  persistIntervalMs?: number;
 };
 
 /**
@@ -298,6 +300,7 @@ export async function* resumeChat(
     reasoningLevel: input.reasoningLevel,
     signal: input.signal,
     entityId: input.entityId,
+    persistIntervalMs: ctx.persistIntervalMs,
     isResume: true,
     resumeMessageId: input.messageId,
     resumeBaseMessage: updatedMessage,
