@@ -124,9 +124,10 @@ export const AddModelCard = ({
   // precedence over it. Behaviour is unchanged.
   const importAction = onProfileImportClick ? (
     <div className="flex flex-row items-center min-w-0 max-w-full gap-[var(--add-model-card-import-gap,4px)]">
-      {/* The label is long in several locales ("Импорт пользовательского
-          провайдера"); in a narrow chat it truncates instead of wrapping
-          into the field below — the full text stays available as a title. */}
+      {/* The label is long in several locales (e.g. the Russian translation
+          of "Import custom provider"); in a narrow chat it truncates instead
+          of wrapping into the field below - the full text stays available as
+          a title. */}
       <Link
         href="#"
         title={t("Import")}
