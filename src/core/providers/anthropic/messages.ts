@@ -150,6 +150,12 @@ const convertAssistantMessage = (
     }
 
     if (part.type === "text") {
+      // Anthropic rejects a text block with no visible text. A stopped turn
+      // can carry one: the OpenAI-compatible stream closes a reasoning
+      // block with an empty text part, and a cancelled round persists that
+      // shell. Dropping it keeps the turn replayable — the assistant
+      // message is skipped entirely when nothing else is left (Bug 83732).
+      if (part.text.trim() === "") continue;
       content.push({ type: "text", text: part.text });
       continue;
     }
