@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.114
+
+### Fixed
+
+- **A DeepSeek thinking-mode dialog no longer fails with `400 The reasoning_content in the thinking mode must be passed back to the API` after a tool call (Bug 83335).** DeepSeek checks every assistant message with `tool_calls` in the current turn for a `reasoning_content` key; the key only has to exist, an empty string passes. The OpenAI converter set it only when the round carried a reasoning part, so a tool round the model answered without thinking broke the resume request. `DeepSeekProvider` now sends the field on every assistant message (`reasoningContentMode = "always"`, a new protected knob on `OpenAIProvider`; other OpenAI-compatible providers keep the old when-present behaviour). `convertMessages` takes an options object (`{ downgradeSystem, reasoningContent }`); the boolean form is still accepted.
+- **A tool loop is replayed round by round.** The engine resumes into the same assistant message, so one stored message holds every round of a tool loop. It went out as a single assistant message with every `tool_call`, only the last reasoning, and the closing text ahead of the tool results. Each round is now its own assistant message with its own `reasoning_content`, followed by its `tool` results — the shape the model produced, and the one DeepSeek's docs require for thinking mode.
+- **Switching a thread from DeepSeek to Claude no longer fails with `invalid "signature" in "thinking" block`.** The Anthropic converter turned every reasoning part into a `thinking` block signed with its `parentId`, which for reasoning streamed by another provider is the synthetic id the OpenAI stream stamps on a finished block. Only a signature Anthropic issued (`isThinkingSignature`) is replayed now; foreign reasoning is dropped and the turn's text and tool calls still go out.
+
 ## 0.5.113
 
 ### Changed
