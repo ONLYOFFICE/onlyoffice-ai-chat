@@ -76,6 +76,7 @@ profile must support to be a valid binding target.
 | `ImageGeneration`   | `Image`                |
 | `OCR`               | `Vision`               |
 | `Vision`            | `Vision`               |
+| `FormAnalysis`      | `Chat`                 |
 
 Profiles with `capabilities` undefined or `0` have no declared
 support and only satisfy the empty `Default` requirement. This

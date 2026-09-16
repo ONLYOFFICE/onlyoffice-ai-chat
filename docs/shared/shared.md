@@ -247,12 +247,13 @@ const ActionType = {
   ImageGeneration: "ImageGeneration",
   OCR: "OCR",
   Vision: "Vision",
+  FormAnalysis: "FormAnalysis",
 } as const;
 
 type ActionType = (typeof ActionType)[keyof typeof ActionType];
 ```
 
-The nine slots
+The ten slots
 [`AssignmentsStorage`](../core/storage/storage.md#assignmentsstorage)
 keys on. Used in three places:
 

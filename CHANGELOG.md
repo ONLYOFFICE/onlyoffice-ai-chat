@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **A `FormAnalysis` assignment slot.** New `ActionType.FormAnalysis` (requires the `Chat` capability), exposed as a "Form analysis" row on the Model Assignment page and wired through the profiles store (`formAnalysisProfile`, `setFormAnalysisProfile`, `ModelAssignmentTask = "formAnalysis"`). It is the last member of the enum, matching the DocSpace backend, which already persists and resolves the slot over `ai/assignments` and picks its default from the configured `ai:formAnalysisModel` gateway model. The slot has no entry in `SYNC_ACTIONS` — form analysis runs server-side, so there is no client-side action to dispatch — and no `ACTION_FALLBACKS` hop, so an unset slot falls through to `Default` as the other slots do.
+
 ## 0.5.114
 
 ### Fixed

@@ -10,6 +10,7 @@ const mockSetTextAnalysisProfile = vi.fn();
 const mockSetImageGenerationProfile = vi.fn();
 const mockSetOcrProfile = vi.fn();
 const mockSetVisionProfile = vi.fn();
+const mockSetFormAnalysisProfile = vi.fn();
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -33,6 +34,7 @@ vi.mock("../../../store/context", () => ({
         imageGenerationProfile: { id: "p2", name: "DALL-E" },
         ocrProfile: null,
         visionProfile: null,
+        formAnalysisProfile: null,
         setDefaultProfile: mockSetDefaultProfile,
         setChatProfile: mockSetChatProfile,
         setSummarizationProfile: mockSetSummarizationProfile,
@@ -41,6 +43,7 @@ vi.mock("../../../store/context", () => ({
         setImageGenerationProfile: mockSetImageGenerationProfile,
         setOcrProfile: mockSetOcrProfile,
         setVisionProfile: mockSetVisionProfile,
+        setFormAnalysisProfile: mockSetFormAnalysisProfile,
       };
       return typeof selector === "function" ? selector(state) : state;
     },
@@ -127,15 +130,17 @@ describe("ModelAssignment", () => {
     expect(screen.getByText("OverrideForTasks")).toBeInTheDocument();
   });
 
-  it("renders all 7 task fields", () => {
+  it("renders all task fields", () => {
     render(<ModelAssignment />);
     expect(screen.getByTestId("field-AIChat")).toBeInTheDocument();
+    expect(screen.getByTestId("field-Code")).toBeInTheDocument();
     expect(screen.getByTestId("field-Summarization")).toBeInTheDocument();
     expect(screen.getByTestId("field-Translation")).toBeInTheDocument();
     expect(screen.getByTestId("field-TextAnalysis")).toBeInTheDocument();
     expect(screen.getByTestId("field-ImageGeneration")).toBeInTheDocument();
     expect(screen.getByTestId("field-OCR")).toBeInTheDocument();
     expect(screen.getByTestId("field-Vision")).toBeInTheDocument();
+    expect(screen.getByTestId("field-FormAnalysis")).toBeInTheDocument();
   });
 
   it("shows DefaultModel as value for task fields when no override is set", () => {
@@ -178,6 +183,10 @@ describe("ModelAssignment", () => {
     expect(screen.getByTestId("field-Vision")).toHaveAttribute(
       "data-icon",
       "vision-ai"
+    );
+    expect(screen.getByTestId("field-FormAnalysis")).toHaveAttribute(
+      "data-icon",
+      "text-analysis-ai"
     );
   });
 
@@ -285,6 +294,26 @@ describe("ModelAssignment", () => {
     });
   });
 
+  it("calls setFormAnalysisProfile when selected", () => {
+    render(<ModelAssignment />);
+    const field = screen.getByTestId("field-FormAnalysis");
+    const btn = field.querySelector("[data-testid='combo-item-p1']");
+    fireEvent.click(btn!);
+    expect(mockSetFormAnalysisProfile).toHaveBeenCalledWith({
+      id: "p1",
+      name: "GPT-4",
+      capabilities: 0x01,
+    });
+  });
+
+  it("calls setFormAnalysisProfile with null when DefaultModel is chosen", () => {
+    render(<ModelAssignment />);
+    const field = screen.getByTestId("field-FormAnalysis");
+    const btn = field.querySelector("[data-testid='combo-item-default']");
+    fireEvent.click(btn!);
+    expect(mockSetFormAnalysisProfile).toHaveBeenCalledWith(null);
+  });
+
   it("filters profiles by Chat capability for chat-related tasks", () => {
     render(<ModelAssignment />);
     const field = screen.getByTestId("field-AIChat");
@@ -339,6 +368,7 @@ describe("ModelAssignment", () => {
       "field-ImageGeneration",
       "field-OCR",
       "field-Vision",
+      "field-FormAnalysis",
     ];
     for (const fieldId of fields) {
       const field = screen.getByTestId(fieldId);

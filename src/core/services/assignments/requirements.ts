@@ -22,6 +22,7 @@ export const ACTION_REQUIREMENTS: Record<ActionType, number> = {
   [ActionType.ImageGeneration]: CapabilitiesUI.Image,
   [ActionType.OCR]: CapabilitiesUI.Vision,
   [ActionType.Vision]: CapabilitiesUI.Vision,
+  [ActionType.FormAnalysis]: CapabilitiesUI.Chat,
 };
 
 /**

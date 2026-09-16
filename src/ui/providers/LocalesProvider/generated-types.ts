@@ -65,6 +65,7 @@ export type TranslationKey =
   | "ExtendedThinkingDescription"
   | "FinishAISetup"
   | "FinishAISetupDescription"
+  | "FormAnalysis"
   | "GetAPIKey"
   | "GoToAISettings"
   | "ImageGeneration"
