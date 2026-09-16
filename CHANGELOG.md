@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.5.114
+
+### Fixed
+
+- **A DeepSeek thinking-mode dialog no longer fails with `400 The reasoning_content in the thinking mode must be passed back to the API` after a tool call (Bug 83335).** DeepSeek checks every assistant message with `tool_calls` in the current turn for a `reasoning_content` key; the key only has to exist, an empty string passes. The OpenAI converter set it only when the round carried a reasoning part, so a tool round the model answered without thinking broke the resume request. `DeepSeekProvider` now sends the field on every assistant message (`reasoningContentMode = "always"`, a new protected knob on `OpenAIProvider`; other OpenAI-compatible providers keep the old when-present behaviour). `convertMessages` takes an options object (`{ downgradeSystem, reasoningContent }`); the boolean form is still accepted.
+- **A tool loop is replayed round by round.** The engine resumes into the same assistant message, so one stored message holds every round of a tool loop. It went out as a single assistant message with every `tool_call`, only the last reasoning, and the closing text ahead of the tool results. Each round is now its own assistant message with its own `reasoning_content`, followed by its `tool` results — the shape the model produced, and the one DeepSeek's docs require for thinking mode.
+- **Switching a thread from DeepSeek to Claude no longer fails with `invalid "signature" in "thinking" block`.** The Anthropic converter turned every reasoning part into a `thinking` block signed with its `parentId`, which for reasoning streamed by another provider is the synthetic id the OpenAI stream stamps on a finished block. Only a signature Anthropic issued (`isThinkingSignature`) is replayed now; foreign reasoning is dropped and the turn's text and tool calls still go out.
+
+## 0.5.113
+
+### Changed
+
+- **The Effort row's off entry reads "No thinking".** The translation key `Off` is renamed `NoThinking` in all 41 locales (`t("Off")` no longer compiles); it still appears only for a model whose thinking can be switched off.
+- **A new chat model starts at its own default depth.** Switching the chat model — a composer pick (`setSessionChatProfile`), a persisted Chat assignment (`setChatProfile`), or an edit of the current profile onto another model — now moves the reasoning level to the new model's default depth and persists it: the catalogue's `default_effort` where the provider reports one (`ReasoningSupport.defaultDepth`), else `medium`, clamped to the depths the model distinguishes. Previously the level carried over unchanged, so `max` chosen for one model stayed selected on a model without `max`, and a model that cannot stop thinking could sit on Off. An Off the user chose stays on a model that can be switched off; a model that cannot stop starts thinking at its default depth. Picking the same profile and model again changes nothing. `onExtendedThinkingUpdated` fires with the adopted level. `resolveProfileReasoningSupport` moved to `src/ui/store/profile-reasoning-support.ts` (still re-exported from the hook) alongside the new `defaultReasoningDepth(support)`.
+
+## 0.5.112
+
+### Added
+
+- **A round can name the entry it is billed to.** New `SourceMeta` (`{ id, type?, title? }`) travels `ActionArgs.source` → `ProviderCredentials.source`; the ONLYOFFICE provider sends it as the request `metadata` (`source_id` / `source_type` / `source_title`) on every request — streaming chat, one-shot actions, image generation — replacing the legacy `agent_id` / `agent_title` pair when present. The DocSpace host used to reach this by shadowing the provider class; the field is now first-class.
+- **`AIEngineDeps.resolveSource` / `ThreadsEngineDeps.resolveSource`.** A host hook called once per entry point (send, stream, regenerate, tool-call resume, title generation) with the round's context scope and thread. Its answer is threaded into every provider request of the round, including tool-call resume rounds and the built-in `generate_image` tool, and is authoritative: when the hook is wired, a caller-supplied `actionArgs.source` is ignored and the legacy `entityId` / `entityTitle` pair is dropped as well, so an unresolved round sends no `metadata` at all rather than a client-chosen `agent_id` — a client can only name an entry, never describe one it cannot see. Without the hook the caller's fields are forwarded as-is.
+- **Built-in web search is billed to the same entry.** `callWebSearchTool` accepts the round's `source` and, on the ONLYOFFICE / cloud branch only, adds it to the `search` / `contents` body as the same `metadata` object. Previously the two web-search tools were the one paid operation that carried no attribution. Exa never receives it.
+
+  ```json
+  { "engine": "exa", "query": "…", "numResults": 5, "metadata": { "source_id": "42", "source_type": "Room" } }
+  ```
+
+- `sourceMetadataFields` / `SOURCE_METADATA_KEYS` are exported so a host that builds a gateway request body itself spells the keys from one place.
+
 ## 0.5.110
 
 ### Fixed

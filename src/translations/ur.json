@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "یہ ماڈل جدید استدلال کا استعمال کرتا ہے، جس سے اخراجات بڑھ سکتے ہیں۔",
   "ExtendedThinkingAlwaysOn": "یہ ماڈل ہمیشہ سوچتا ہے اور اسے بند نہیں کیا جا سکتا۔",
   "Effort": "سوچ کی سطح",
-  "Off": "بند",
+  "NoThinking": "بغیر سوچ",
   "On": "آن",
   "ThinkingLevelLow": "کم",
   "ThinkingLevelMedium": "درمیانی",

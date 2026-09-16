@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "Den här modellen använder avancerat resonemang, vilket kan öka kostnaderna.",
   "ExtendedThinkingAlwaysOn": "Den här modellen tänker alltid och kan inte stängas av.",
   "Effort": "Tankenivå",
-  "Off": "Av",
+  "NoThinking": "Ingen tänkning",
   "On": "På",
   "ThinkingLevelLow": "Låg",
   "ThinkingLevelMedium": "Medel",

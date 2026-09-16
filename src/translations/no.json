@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "Denne modellen bruker avansert resonnering, noe som kan øke kostnadene.",
   "ExtendedThinkingAlwaysOn": "Denne modellen tenker alltid og kan ikke slås av.",
   "Effort": "Tenkenivå",
-  "Off": "Av",
+  "NoThinking": "Ingen tenkning",
   "On": "På",
   "ThinkingLevelLow": "Lav",
   "ThinkingLevelMedium": "Middels",

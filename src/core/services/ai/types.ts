@@ -1,6 +1,7 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { ActionType } from "../../../shared/action-type";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import type { SourceResolver } from "../../../shared/source-meta";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { ToolsAdapter } from "../../tools-adapter";
@@ -145,6 +146,17 @@ export type AIEngineDeps = {
    * seconds.
    */
   persistIntervalMs?: number;
+
+  /**
+   * Names the entry a round is billed to — see {@link SourceResolver}.
+   * Called once per entry point with the round's context scope and thread;
+   * the answer travels into every provider request of the round (chat,
+   * tool-call resume rounds, title generation, the built-in image tool) and
+   * into the built-in web-search requests as the `metadata` object. When
+   * wired, a caller-supplied `actionArgs.source` is ignored. Forwarded to
+   * the engine's own {@link ThreadsEngine} unless one is injected.
+   */
+  resolveSource?: SourceResolver;
 };
 
 /**

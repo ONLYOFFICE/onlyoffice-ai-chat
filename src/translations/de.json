@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "Dieses Modell verwendet fortgeschrittene Schlussfolgerungen, was die Kosten erhöhen kann.",
   "ExtendedThinkingAlwaysOn": "Dieses Modell denkt immer und lässt sich nicht abschalten.",
   "Effort": "Denktiefe",
-  "Off": "Aus",
+  "NoThinking": "Kein Nachdenken",
   "On": "Ein",
   "ThinkingLevelLow": "Niedrig",
   "ThinkingLevelMedium": "Mittel",

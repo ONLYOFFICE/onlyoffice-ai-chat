@@ -2,6 +2,7 @@ import { ActionType } from "../../../../shared/action-type";
 import logger from "../../../../shared/logger";
 import type { TMCPItem } from "../../../../shared/mcp-item";
 import type { ProviderFetch } from "../../../../shared/provider-credentials";
+import type { SourceMeta } from "../../../../shared/source-meta";
 import { providerFor } from "../../../actions/provider";
 import type { StorageAdapter } from "../../../storage";
 
@@ -76,7 +77,8 @@ export async function callImageGenerationTool(
   bareName: string,
   args: Record<string, unknown>,
   pickFetch?: ProfileFetchResolver,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  source?: SourceMeta
 ): Promise<string> {
   logger.info("[generate_image] tool called", { bareName, args });
 
@@ -112,10 +114,13 @@ export async function callImageGenerationTool(
     // `external` profile surfaces as a tool-result error string instead
     // of throwing into the chat stream.
     const fetch = pickFetch?.(profile);
+    // The image profile is billed to the same entry as the chat round that
+    // asked for the picture, so the round's source travels along.
     const provider = await providerFor({
       profile,
       messages: [],
       ...(fetch ? { fetch } : {}),
+      ...(source ? { source } : {}),
     });
     if (typeof provider.imageGeneration !== "function") {
       return JSON.stringify({

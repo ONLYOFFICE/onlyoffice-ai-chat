@@ -104,7 +104,7 @@
   "ExtendedThinkingDescription": "Гэтая мадэль выкарыстоўвае паглыбленую логіку, што можа павялічыць выдаткі.",
   "ExtendedThinkingAlwaysOn": "Гэтая мадэль разважае заўсёды, выключыць гэта нельга.",
   "Effort": "Узровень разважанняў",
-  "Off": "Выкл.",
+  "NoThinking": "Без разважанняў",
   "On": "Укл.",
   "ThinkingLevelLow": "Нізкі",
   "ThinkingLevelMedium": "Сярэдні",

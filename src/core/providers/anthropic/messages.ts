@@ -5,6 +5,7 @@ import type {
 } from "@anthropic-ai/sdk/resources/index.mjs";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
+import { isThinkingSignature } from "./signature";
 
 type ImageMimeType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
@@ -130,11 +131,21 @@ const convertAssistantMessage = (
 
   for (const part of message.content) {
     if (part.type === "reasoning") {
-      content.push({
-        type: "thinking",
-        thinking: part.text,
-        signature: part.parentId ?? "",
-      });
+      // Only Anthropic's own thinking can go back as a `thinking` block:
+      // the API verifies the signature, and reasoning streamed by another
+      // provider (DeepSeek's `reasoning_content`, an OpenRouter route) has
+      // none — its `parentId` is the synthetic id the OpenAI stream stamps
+      // on finalized reasoning. Replaying that gets the whole request
+      // rejected with `invalid "signature" in "thinking" block` when the
+      // user switches a thread over to Claude (Bug 83335). Such parts are
+      // dropped; the visible text and tool calls still carry the turn.
+      if (isThinkingSignature(part.parentId)) {
+        content.push({
+          type: "thinking",
+          thinking: part.text,
+          signature: part.parentId,
+        });
+      }
       continue;
     }
 

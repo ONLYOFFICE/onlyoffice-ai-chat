@@ -1145,3 +1145,133 @@ describe("AIEngine built-in generate_image fetch wiring", () => {
     expect(capturedCreds?.fetch).toBeUndefined();
   });
 });
+
+describe("AIEngine source", () => {
+  const SOURCE = { id: "room-9", type: "Room", title: "Sales" };
+
+  it("resolves the source through the hook and sends it on the chat and title requests", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const resolveSource = vi.fn().mockResolvedValue(SOURCE);
+    const engine = new AIEngine({ storage, resolveSource });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      entityId: "room-9",
+    })) {
+      // drain
+    }
+    expect(resolveSource).toHaveBeenCalledWith({
+      entityId: "room-9",
+      threadId: undefined,
+    });
+    expect(syncCreds?.source).toEqual(SOURCE);
+    expect(capturedCreds?.source).toEqual(SOURCE);
+  });
+
+  it("asks the hook with the context scope rather than the thread's entity", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const resolveSource = vi.fn().mockReturnValue(undefined);
+    const engine = new AIEngine({ storage, resolveSource });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      entityId: "history",
+      contextEntityId: "agent-7",
+    })) {
+      // drain
+    }
+    expect(resolveSource).toHaveBeenCalledWith({
+      entityId: "agent-7",
+      threadId: undefined,
+    });
+  });
+
+  it("the hook's answer is final — a caller-supplied source is ignored", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({
+      storage,
+      resolveSource: () => undefined,
+    });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      actionArgs: { source: { id: "claimed" } },
+    })) {
+      // drain
+    }
+    expect(syncCreds?.source).toBeUndefined();
+    expect(capturedCreds?.source).toBeUndefined();
+  });
+
+  it("without a hook the caller-supplied source is used as-is", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      actionArgs: { source: SOURCE },
+    })) {
+      // drain
+    }
+    expect(syncCreds?.source).toEqual(SOURCE);
+    expect(capturedCreds?.source).toEqual(SOURCE);
+  });
+});
+
+describe("AIEngine source — hook is authoritative over the legacy pair", () => {
+  it("drops the caller's entityId / entityTitle when the hook resolves nothing", async () => {
+    sendMessageSyncMock.mockResolvedValueOnce("Title");
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage } = makeStorage();
+    const engine = new AIEngine({ storage, resolveSource: () => undefined });
+    for await (const _ of engine.sendWithStream({
+      userMessage,
+      actionArgs: { entityId: "claimed-agent", entityTitle: "Claimed" },
+    })) {
+      // drain
+    }
+    expect(syncCreds?.entityId).toBeUndefined();
+    expect(syncCreds?.entityTitle).toBeUndefined();
+    expect(syncCreds?.source).toBeUndefined();
+    expect(capturedCreds?.entityId).toBeUndefined();
+    expect(capturedCreds?.source).toBeUndefined();
+  });
+
+  it("drops the legacy pair on the deny / resume path too", async () => {
+    sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+    const { storage, messages } = makeStorage();
+    const SOURCE = { id: "room-9", type: "Room" };
+    const resolveSource = vi.fn().mockResolvedValue(SOURCE);
+    const engine = new AIEngine({ storage, resolveSource });
+    const assistant = {
+      id: "a1",
+      role: "assistant" as const,
+      content: [
+        {
+          type: "tool-call" as const,
+          toolCallId: "c1",
+          toolName: "some_tool",
+          args: {},
+        },
+      ],
+    };
+    messages.push({ ...assistant, threadId: "t1" } as never);
+    for await (const _ of engine.denyToolCall({
+      threadId: "t1",
+      messageId: "a1",
+      idx: 0,
+      message: assistant,
+      entityId: "room-9",
+      actionArgs: { entityId: "claimed-agent", entityTitle: "Claimed" },
+    })) {
+      // drain
+    }
+    expect(resolveSource).toHaveBeenCalledTimes(1);
+    expect(capturedCreds?.source).toEqual(SOURCE);
+    expect(capturedCreds?.entityId).toBeUndefined();
+  });
+});

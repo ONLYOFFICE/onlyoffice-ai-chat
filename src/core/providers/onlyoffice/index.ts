@@ -13,6 +13,7 @@ import {
   openRouterReasoningFields,
   retryWhenReasoningMandatory,
 } from "../openrouter/reasoning";
+import { sourceMetadataFields } from "../../../shared/source-meta";
 import { withCacheControl } from "./cache-control";
 import { onlyOfficeInfo } from "./info";
 import { listModels } from "./models";
@@ -75,13 +76,17 @@ class OnlyOfficeProvider extends OpenAIProvider {
   }
 
   /**
-   * Describe the host entity behind the round — the agent's id and title —
-   * as the `metadata` object on every request: streaming chat, Responses
-   * API, one-shot actions, and image generation. Keys the backend reads
-   * are `agent_id` / `agent_title`; absent credentials drop the whole
-   * object rather than sending empty strings.
+   * Describe the entry the round is billed to as the `metadata` object on
+   * every request: streaming chat, Responses API, one-shot actions, and
+   * image generation. With {@link ProviderCredentials.source} set the keys
+   * are `source_id` / `source_type` / `source_title`; without it the legacy
+   * `agent_id` / `agent_title` pair is derived from `entityId` /
+   * `entityTitle`. Absent credentials drop the whole object rather than
+   * sending empty strings.
    */
   protected override extraBody(): Record<string, unknown> {
+    const source = sourceMetadataFields(this.creds.source);
+    if (source) return { metadata: source };
     const metadata: Record<string, string> = {};
     if (this.creds.entityId) {
       metadata[METADATA_KEYS.entityId] = this.creds.entityId;

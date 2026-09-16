@@ -115,3 +115,71 @@ describe("OnlyOfficeProvider request metadata", () => {
     expect(body(chatCreate)).not.toHaveProperty("metadata");
   });
 });
+
+describe("OnlyOfficeProvider source metadata", () => {
+  const SOURCE_CREDS: ProviderCredentials = {
+    baseUrl: "https://internal",
+    apiKey: "k",
+    source: { id: "room-9", type: "Room", title: "Sales" },
+  };
+  const SOURCE_METADATA = {
+    source_id: "room-9",
+    source_type: "Room",
+    source_title: "Sales",
+  };
+
+  beforeEach(() => {
+    chatCreate.mockReset();
+    imagesGenerate.mockReset();
+  });
+
+  it("sends the source on the streaming chat request", async () => {
+    chatCreate.mockResolvedValueOnce(emptyStream());
+    await drain(new OnlyOfficeProvider(SOURCE_CREDS).sendMessage(chatArgs));
+    expect(body(chatCreate).metadata).toEqual(SOURCE_METADATA);
+  });
+
+  it("sends the source on a one-shot request", async () => {
+    chatCreate.mockResolvedValueOnce({ choices: [] });
+    await new OnlyOfficeProvider(SOURCE_CREDS).sendMessageSync(chatArgs);
+    expect(body(chatCreate).metadata).toEqual(SOURCE_METADATA);
+  });
+
+  it("sends the source on an image-generation request", async () => {
+    imagesGenerate.mockResolvedValueOnce({ data: [{ b64_json: "b" }] });
+    await new OnlyOfficeProvider(SOURCE_CREDS).imageGeneration({
+      model: "gpt-image-1",
+      prompt: "a cat",
+    });
+    expect(body(imagesGenerate).metadata).toEqual(SOURCE_METADATA);
+  });
+
+  it("the source replaces the legacy agent pair when both are present", async () => {
+    chatCreate.mockResolvedValueOnce({ choices: [] });
+    await new OnlyOfficeProvider({
+      ...SOURCE_CREDS,
+      entityId: "agent-7",
+      entityTitle: "Support agent",
+    }).sendMessageSync(chatArgs);
+    expect(body(chatCreate).metadata).toEqual(SOURCE_METADATA);
+  });
+
+  it("includes only the source keys with a value", async () => {
+    chatCreate.mockResolvedValueOnce({ choices: [] });
+    await new OnlyOfficeProvider({
+      baseUrl: "https://internal",
+      source: { id: "file-3" },
+    }).sendMessageSync(chatArgs);
+    expect(body(chatCreate).metadata).toEqual({ source_id: "file-3" });
+  });
+
+  it("falls back to the legacy agent pair when the source has no id", async () => {
+    chatCreate.mockResolvedValueOnce({ choices: [] });
+    await new OnlyOfficeProvider({
+      baseUrl: "https://internal",
+      entityId: "agent-7",
+      source: { id: "" },
+    }).sendMessageSync(chatArgs);
+    expect(body(chatCreate).metadata).toEqual({ agent_id: "agent-7" });
+  });
+});

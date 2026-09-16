@@ -2,6 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import type {
   ChatCompletionAssistantMessageParam,
   ChatCompletionContentPart,
+  ChatCompletionContentPartText,
   ChatCompletionMessageFunctionToolCall,
   ChatCompletionMessageParam,
   ChatCompletionToolMessageParam,
@@ -101,64 +102,86 @@ const convertUserContent = (
   return flattenTextParts(parts);
 };
 
-/** Intermediate shape used when translating an assistant message. */
-interface ProcessedAssistantParts {
-  content: ChatCompletionAssistantMessageParam["content"];
-  reasoningContent: string | null;
+/**
+ * One round of an assistant turn in OpenAI terms: the assistant message
+ * body (text + `tool_calls` + optional reasoning) and the `tool` messages
+ * that answer its calls.
+ */
+interface AssistantRound {
+  content: ChatCompletionContentPartText[];
+  reasoning: string[];
   toolCalls: ChatCompletionMessageFunctionToolCall[];
   toolResults: ChatCompletionToolMessageParam[];
 }
 
+const createRound = (): AssistantRound => ({
+  content: [],
+  reasoning: [],
+  toolCalls: [],
+  toolResults: [],
+});
+
 /**
- * Split a single assistant `ThreadMessageLike` into OpenAI wire-format
- * pieces: the assistant message body, accompanying `tool_calls`, and
- * subsequent `tool` messages carrying their results. Reasoning parts are
- * captured separately — OpenAI carries them through a non-standard
- * `reasoning_content` field on the assistant message.
+ * Split a single assistant `ThreadMessageLike` into the rounds it went
+ * through on the wire.
+ *
+ * The engine resumes a chat after a tool result *into the same* assistant
+ * message, so one stored message holds every round of a tool loop:
+ * `[reasoning, tool-call+result, reasoning, tool-call+result, text]`.
+ * Flattening that into one assistant message with all `tool_calls` loses
+ * every reasoning block but the last and places the final text before the
+ * tool results it was written from. DeepSeek's thinking mode rejects such
+ * a history outright — every round must come back with its own
+ * `reasoning_content` (Bug 83335) — and for every other backend the
+ * per-round form is simply what the model produced.
+ *
+ * A round ends once it holds a tool call and a non-tool part follows:
+ * that part was streamed *after* the tool result, i.e. by the next
+ * request. Consecutive tool calls stay in one round — the model may have
+ * issued them in parallel, and the wire shape is valid either way.
  *
  * @param message - One assistant message from the thread.
- * @returns The split-out content / tool_calls / tool_results / reasoning.
+ * @returns The rounds, in order; a message with no parts yields one empty
+ *   round so the turn still appears in the history.
  */
-const processAssistantParts = (
-  message: ThreadMessageLike
-): ProcessedAssistantParts => {
-  if (typeof message.content === "string") {
-    return {
-      content: message.content,
-      reasoningContent: null,
-      toolCalls: [],
-      toolResults: [],
-    };
+const splitAssistantRounds = (
+  message: ThreadMessageLike & {
+    content: Exclude<ThreadMessageLike["content"], string>;
   }
-
-  const content: ChatCompletionAssistantMessageParam["content"] = [];
-  const toolCalls: ChatCompletionMessageFunctionToolCall[] = [];
-  const toolResults: ChatCompletionToolMessageParam[] = [];
-  let reasoningContent: string | null = null;
+): AssistantRound[] => {
+  const rounds: AssistantRound[] = [];
+  let round = createRound();
 
   for (const part of message.content) {
+    if (part.type !== "tool-call" && round.toolCalls.length > 0) {
+      rounds.push(round);
+      round = createRound();
+    }
+
     if (part.type === "text") {
-      content.push({ type: "text", text: part.text });
+      round.content.push({ type: "text", text: part.text });
       continue;
     }
 
     if (part.type === "reasoning") {
-      reasoningContent = part.text;
+      round.reasoning.push(part.text);
       continue;
     }
 
     if (part.type !== "tool-call") continue;
 
+    const toolCallId = part.toolCallId ?? generateFallbackToolCallId();
+
     if (part.result) {
-      toolResults.push({
+      round.toolResults.push({
         role: "tool",
         content: part.result,
-        tool_call_id: part.toolCallId ?? generateFallbackToolCallId(),
+        tool_call_id: toolCallId,
       });
     }
 
-    toolCalls.push({
-      id: part.toolCallId ?? generateFallbackToolCallId(),
+    round.toolCalls.push({
+      id: toolCallId,
       type: "function",
       function: {
         arguments: part.argsText ?? "",
@@ -167,12 +190,8 @@ const processAssistantParts = (
     });
   }
 
-  return {
-    content: flattenTextParts(content),
-    reasoningContent,
-    toolCalls,
-    toolResults,
-  };
+  rounds.push(round);
+  return rounds;
 };
 
 /** Assistant message with optional DeepSeek/thinking `reasoning_content`. */
@@ -181,21 +200,51 @@ type AssistantMessageWithReasoning = ChatCompletionAssistantMessageParam & {
 };
 
 /**
+ * How `reasoning_content` is replayed on assistant messages.
+ *
+ * - `"when-present"` — sent only when the message carries a reasoning
+ *   part. The default: the field is non-standard, and most backends only
+ *   read it when they wrote it.
+ * - `"always"` — sent on every assistant message, `""` when there is no
+ *   reasoning. DeepSeek's thinking mode requires the field on every
+ *   assistant message of a request that carries `tools` and answers a
+ *   missing one with `400 The reasoning_content in the thinking mode must
+ *   be passed back to the API` — a round the model answered without
+ *   thinking, or a turn produced with thinking off, would otherwise poison
+ *   the whole thread (Bug 83335).
+ */
+export type ReasoningContentMode = "when-present" | "always";
+
+/** Options for {@link convertMessages}. */
+export interface ConvertMessagesOptions {
+  /**
+   * When `true`, mid-conversation `system` messages are converted to
+   * `user` (some OpenAI-compatible servers reject `system` anywhere but
+   * the head of the request). Defaults to `false`.
+   */
+  downgradeSystem?: boolean;
+  /** See {@link ReasoningContentMode}. Defaults to `"when-present"`. */
+  reasoningContent?: ReasoningContentMode;
+}
+
+/**
  * Convert the thread's message array into OpenAI's wire format.
  *
  * Assistant turns may expand into multiple messages: one assistant message
- * followed by one or more `tool` messages when tool-results are attached.
+ * per tool-call round, each followed by the `tool` messages carrying its
+ * results — see {@link splitAssistantRounds}.
  *
  * @param messages - The thread as a flat array of `ThreadMessageLike`.
- * @param downgradeSystem - When `true`, mid-conversation `system` messages
- *   are converted to `user` (some OpenAI-compatible servers reject `system`
- *   anywhere but the head of the request). Defaults to `false`.
+ * @param options - See {@link ConvertMessagesOptions}. A bare boolean is
+ *   accepted as `downgradeSystem` for the older call shape.
  * @returns A flat array ready to pass to `chat.completions.create`.
  */
 export const convertMessages = (
   messages: ThreadMessageLike[],
-  downgradeSystem = false
+  options: ConvertMessagesOptions | boolean = {}
 ): ChatCompletionMessageParam[] => {
+  const { downgradeSystem = false, reasoningContent = "when-present" } =
+    typeof options === "boolean" ? { downgradeSystem: options } : options;
   const result: ChatCompletionMessageParam[] = [];
 
   for (const message of messages) {
@@ -209,26 +258,42 @@ export const convertMessages = (
       continue;
     }
 
-    const { content, reasoningContent, toolCalls, toolResults } =
-      processAssistantParts(message);
-
-    const assistantMessage: AssistantMessageWithReasoning = {
-      role: "assistant",
-      content,
-    };
-
-    if (reasoningContent) {
-      assistantMessage.reasoning_content = reasoningContent;
+    if (typeof message.content === "string") {
+      const assistantMessage: AssistantMessageWithReasoning = {
+        role: "assistant",
+        content: message.content,
+      };
+      if (reasoningContent === "always") {
+        assistantMessage.reasoning_content = "";
+      }
+      result.push(assistantMessage);
+      continue;
     }
 
-    if (toolCalls.length > 0) {
-      assistantMessage.tool_calls = toolCalls;
-    }
+    for (const round of splitAssistantRounds(
+      message as ThreadMessageLike & {
+        content: Exclude<ThreadMessageLike["content"], string>;
+      }
+    )) {
+      const assistantMessage: AssistantMessageWithReasoning = {
+        role: "assistant",
+        content: flattenTextParts(round.content),
+      };
 
-    result.push(assistantMessage);
+      const reasoning = round.reasoning.join("\n");
+      if (reasoning || reasoningContent === "always") {
+        assistantMessage.reasoning_content = reasoning;
+      }
 
-    if (toolResults.length > 0) {
-      result.push(...toolResults);
+      if (round.toolCalls.length > 0) {
+        assistantMessage.tool_calls = round.toolCalls;
+      }
+
+      result.push(assistantMessage);
+
+      if (round.toolResults.length > 0) {
+        result.push(...round.toolResults);
+      }
     }
   }
 

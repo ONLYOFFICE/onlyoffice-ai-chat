@@ -18,7 +18,8 @@ src/shared
 │   ├── send-message-args.ts        SendMessageArgs / SendMessageResult
 │   ├── send-message-sync-args.ts   SendMessageSyncArgs
 │   ├── image-generation-args.ts    ImageGenerationArgs
-│   └── provider-credentials.ts     ProviderCredentials
+│   ├── provider-credentials.ts     ProviderCredentials
+│   └── source-meta.ts              SourceMeta / SourceResolver / sourceMetadataFields
 │
 ├── Provider identity — naming and selecting providers
 │   ├── provider.ts                 TProvider (user-defined connection)

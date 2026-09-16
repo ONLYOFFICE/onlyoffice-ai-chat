@@ -1,6 +1,8 @@
 import logger from "../../../shared/logger";
 import type { TMCPItem } from "../../../shared/mcp-item";
 import type { ProviderFetch } from "../../../shared/provider-credentials";
+import type { SourceMeta } from "../../../shared/source-meta";
+import { sourceMetadataFields } from "../../../shared/source-meta";
 import type { StorageAdapter } from "../../storage";
 
 /** Stable serverType prefix used in `storage.toolPrefs` and runtime routing. */
@@ -134,13 +136,19 @@ export async function getWebSearchTools(
  *
  * `fetchImpl` overrides the global `fetch` — wired to the host's
  * `PlatformAdapter.fetchProxy` when configured, otherwise omitted.
+ *
+ * `source` is the entry the search is billed to. Sent as the request's
+ * `metadata` object (`source_id` / `source_type` / `source_title`) on the
+ * ONLYOFFICE / cloud branch only — the same shape the ONLYOFFICE chat
+ * provider sends — and never to Exa directly.
  */
 export async function callWebSearchTool(
   storage: StorageAdapter,
   bareName: string,
   args: Record<string, unknown>,
   entityId?: string,
-  fetchImpl?: ProviderFetch
+  fetchImpl?: ProviderFetch,
+  source?: SourceMeta
 ): Promise<string> {
   const config = await storage.webSearch.read(entityId);
   if (!config) {
@@ -148,10 +156,10 @@ export async function callWebSearchTool(
   }
 
   if (bareName === "web_search") {
-    return webSearch(config, args, fetchImpl);
+    return webSearch(config, args, fetchImpl, source);
   }
   if (bareName === "web_crawling") {
-    return webCrawling(config, args, fetchImpl);
+    return webCrawling(config, args, fetchImpl, source);
   }
   return JSON.stringify({ error: `Unknown tool: ${bareName}` });
 }
@@ -164,30 +172,65 @@ type WebSearchConfig = {
   headers?: Record<string, string>;
 };
 
+/**
+ * Whether requests go to the ONLYOFFICE gateway (or another cloud backend
+ * speaking its wire shape) rather than to Exa directly.
+ */
+function isOnlyofficeBranch(config: WebSearchConfig): boolean {
+  return (
+    config.isCloudProvider === true || isOnlyofficeProvider(config.provider)
+  );
+}
+
+function onlyofficeBaseUrl(config: WebSearchConfig): string {
+  return config.baseUrl || (config.isCloudProvider ? config.provider : "");
+}
+
+/**
+ * Headers for the ONLYOFFICE / cloud branch: JSON, an optional bearer, then
+ * `config.headers`, which win over the derived ones.
+ */
+function onlyofficeHeaders(config: WebSearchConfig): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
+    ...config.headers,
+  };
+}
+
+/**
+ * Request body for the ONLYOFFICE / cloud branch: the payload plus the
+ * source `metadata` when a source is known. Mirrors the `metadata` object the
+ * ONLYOFFICE chat provider sends, so the backend bills both alike.
+ */
+function onlyofficeBody(
+  payload: Record<string, unknown>,
+  source: SourceMeta | undefined
+): string {
+  const metadata = sourceMetadataFields(source);
+  return JSON.stringify(metadata ? { ...payload, metadata } : payload);
+}
+
 async function webSearch(
   config: WebSearchConfig,
   args: Record<string, unknown>,
-  fetchImpl?: ProviderFetch
+  fetchImpl?: ProviderFetch,
+  source?: SourceMeta
 ): Promise<string> {
   const doFetch = fetchImpl ?? fetch;
-  if (config.isCloudProvider || isOnlyofficeProvider(config.provider)) {
+  if (isOnlyofficeBranch(config)) {
     try {
-      const baseUrl =
-        config.baseUrl || (config.isCloudProvider ? config.provider : "");
-      const url = new URL("search", normalizeBaseUrl(baseUrl));
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
-        ...config.headers,
-      };
+      const url = new URL(
+        "search",
+        normalizeBaseUrl(onlyofficeBaseUrl(config))
+      );
       const response = await fetchWithRetry(doFetch, url.href, {
         method: "POST",
-        headers,
-        body: JSON.stringify({
-          engine: "exa",
-          query: args.query,
-          numResults: 5,
-        }),
+        headers: onlyofficeHeaders(config),
+        body: onlyofficeBody(
+          { engine: "exa", query: args.query, numResults: 5 },
+          source
+        ),
       });
       return await formatResponse(response);
     } catch (e) {
@@ -197,19 +240,23 @@ async function webSearch(
   }
   if (isExaProvider(config.provider)) {
     try {
-      const response = await fetchWithRetry(doFetch, "https://api.exa.ai/search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": config.key ?? "",
-        },
-        body: JSON.stringify({
-          query: args.query,
-          text: true,
-          numResults: 5,
-          livecrawl: "preferred",
-        }),
-      });
+      const response = await fetchWithRetry(
+        doFetch,
+        "https://api.exa.ai/search",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": config.key ?? "",
+          },
+          body: JSON.stringify({
+            query: args.query,
+            text: true,
+            numResults: 5,
+            livecrawl: "preferred",
+          }),
+        }
+      );
       return await formatResponse(response);
     } catch (e) {
       logger.error("WebSearch error:", e);
@@ -222,23 +269,20 @@ async function webSearch(
 async function webCrawling(
   config: WebSearchConfig,
   args: Record<string, unknown>,
-  fetchImpl?: ProviderFetch
+  fetchImpl?: ProviderFetch,
+  source?: SourceMeta
 ): Promise<string> {
   const doFetch = fetchImpl ?? fetch;
-  if (config.isCloudProvider || isOnlyofficeProvider(config.provider)) {
+  if (isOnlyofficeBranch(config)) {
     try {
-      const baseUrl =
-        config.baseUrl || (config.isCloudProvider ? config.provider : "");
-      const url = new URL("contents", normalizeBaseUrl(baseUrl));
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        ...(config.key ? { Authorization: `Bearer ${config.key}` } : {}),
-        ...config.headers,
-      };
+      const url = new URL(
+        "contents",
+        normalizeBaseUrl(onlyofficeBaseUrl(config))
+      );
       const response = await fetchWithRetry(doFetch, url.href, {
         method: "POST",
-        headers,
-        body: JSON.stringify({ engine: "exa", urls: args.urls }),
+        headers: onlyofficeHeaders(config),
+        body: onlyofficeBody({ engine: "exa", urls: args.urls }, source),
       });
       return await formatResponse(response);
     } catch (e) {

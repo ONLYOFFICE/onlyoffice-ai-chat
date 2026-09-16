@@ -180,6 +180,20 @@ non-standard error frames inside the SSE stream that the OpenAI
 SDK does not surface cleanly. Everything else is inherited from
 `OpenAIProvider`.
 
+Two credential fields are specific to this provider. `sessionId` (the
+thread id, set by `providerFor` from `ActionArgs.threadId`) is sent as the
+`x-session-id` header unless `profile.headers` already carries one. The
+request `metadata` object describes the entry the round is billed to:
+with `ProviderCredentials.source` set it is `source_id` / `source_type` /
+`source_title`; without it the legacy `agent_id` / `agent_title` pair is
+derived from `entityId` / `entityTitle`. It is attached to every request
+— streaming chat, one-shot actions, image generation — and dropped
+entirely when nothing is known.
+
+```json
+{ "metadata": { "source_id": "42", "source_type": "Room", "source_title": "Sales" } }
+```
+
 ---
 
 ## OpenAI-compatible thin subclasses
@@ -339,10 +353,16 @@ and the request builders clamp to (`clampReasoningLevel`: nearest listed
 depth, ties upward). The composer's Effort row hides for a model that cannot
 think, lists no Off where thinking cannot be switched off (the "i" note
 says so; a stored off then means the standard depth, `medium` clamped to
-the model, on the wire and in the row alike — `effectiveReasoningLevel`), lists Off / On where
+the model, on the wire and in the row alike — `effectiveReasoningLevel`), lists "No thinking" / On where
 there is a switch but no depth, and otherwise exactly the depths the
-model distinguishes; its value is the depth the model actually runs. A custom provider
-joins in by declaring the optional static `getReasoningSupport`.
+model distinguishes; its value is the depth the model actually runs. Switching
+the chat model — a composer pick, a Chat assignment, an edit of the current
+profile onto another model — moves the level to the new model's default
+depth (the catalogue's `default_effort`, else `medium`, clamped to the
+model) and persists it; an Off the user chose stays on a model that can be
+switched off, and a model that cannot stop starts thinking at that depth.
+A custom provider joins in by declaring the optional static
+`getReasoningSupport`.
 
 ## A note on `info.ts` extras
 

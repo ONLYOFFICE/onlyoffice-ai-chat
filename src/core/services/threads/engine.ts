@@ -3,6 +3,7 @@ import type { Profile, Thread } from "../../types";
 import { resolveAttachmentRefs } from "../../actions/attachment-resolution";
 import { generateTitle } from "../../actions/title";
 import type { ActionArgs } from "../../actions/types";
+import type { SourceScope } from "../../../shared/source-meta";
 import {
   drainPages,
   isPaginationEnabled,
@@ -39,6 +40,29 @@ export class ThreadsEngine {
 
   constructor(deps: ThreadsEngineDeps) {
     this.deps = deps;
+  }
+
+  /**
+   * The host-entity fields a title request sends to the provider. With
+   * {@link ThreadsEngineDeps.resolveSource} wired the hook is authoritative:
+   * its answer is the only source and the caller's legacy `entityId` /
+   * `entityTitle` pair is dropped too, so an unresolved request sends no
+   * `metadata` rather than a client-chosen `agent_id`. Without the hook the
+   * caller's `entityMeta` is forwarded as-is.
+   */
+  private async roundMeta(
+    scope: SourceScope,
+    entityMeta:
+      | Pick<ActionArgs, "entityId" | "entityTitle" | "source">
+      | undefined
+  ): Promise<
+    Pick<ActionArgs, "entityId" | "entityTitle" | "source"> | undefined
+  > {
+    if (this.deps.resolveSource) {
+      const source = await this.deps.resolveSource(scope);
+      return source ? { source } : undefined;
+    }
+    return entityMeta;
   }
 
   /**
@@ -93,11 +117,15 @@ export class ThreadsEngine {
       return { threadId: input.threadId, title: "", priorMessages };
     }
 
+    const meta = await this.roundMeta(
+      { entityId: input.entityId ?? input.entityMeta?.entityId },
+      input.entityMeta
+    );
     // Hydrate image/file refs before the provider call — `firstMessage`
     // arrives in its persisted form, where attachments are lightweight
     // ref markers rather than inline base64.
     const generated = await generateTitle({
-      ...input.entityMeta,
+      ...meta,
       profile: input.profile,
       messages: await resolveAttachmentRefs(
         [input.firstMessage],
@@ -184,7 +212,7 @@ export class ThreadsEngine {
   async regenerateTitle(
     threadId: string,
     profile: Profile,
-    entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle">
+    entityMeta?: Pick<ActionArgs, "entityId" | "entityTitle" | "source">
   ): Promise<string> {
     const messages = await this.deps.storage.messages.readByThread(threadId, 1);
     const first = messages[0];
@@ -193,10 +221,14 @@ export class ThreadsEngine {
         `Thread has no messages to derive a title from: ${threadId}`
       );
     }
+    const meta = await this.roundMeta(
+      { entityId: entityMeta?.entityId, threadId },
+      entityMeta
+    );
     // Stored messages carry attachments as ref markers — hydrate them
     // into inline base64 before the provider call.
     const generated = await generateTitle({
-      ...entityMeta,
+      ...meta,
       profile,
       messages: await resolveAttachmentRefs(
         [first],

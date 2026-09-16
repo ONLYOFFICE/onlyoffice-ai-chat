@@ -113,3 +113,23 @@ describe("providerFor", () => {
     ).rejects.toThrow("Unknown provider type: unknown-type-xyz");
   });
 });
+
+describe("providerFor source", () => {
+  afterEach(() => unregisterProvider("stub-provider"));
+
+  it("forwards the round's source into the credentials", async () => {
+    registerProvider("stub-provider", StubProvider);
+    const source = { id: "room-9", type: "Room", title: "Sales" };
+    const instance = (await providerFor({
+      ...baseArgs,
+      source,
+    })) as StubProvider;
+    expect(instance.seenCreds.source).toEqual(source);
+  });
+
+  it("leaves the credentials without a source key when none is given", async () => {
+    registerProvider("stub-provider", StubProvider);
+    const instance = (await providerFor(baseArgs)) as StubProvider;
+    expect(instance.seenCreds).not.toHaveProperty("source");
+  });
+});
