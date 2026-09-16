@@ -116,12 +116,12 @@ describe("CodeHeader", () => {
     );
   });
 
-  it("sets visible to false when copied", () => {
+  it("shows the Copied tooltip once copied", () => {
     mockIsCopied = true;
     render(<CodeHeader language="js" code="x" />);
     expect(screen.getByTestId("tooltip-icon-button")).toHaveAttribute(
-      "data-visible",
-      "false"
+      "data-tooltip",
+      "Copied"
     );
   });
 });

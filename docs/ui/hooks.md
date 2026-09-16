@@ -1,7 +1,7 @@
 # Hooks
 
-Six React hooks exported from `@onlyoffice/ai-chat/hooks`. Four of
-them drive the widget's runtime (lifecycle); two are utilities. All
+Seven React hooks exported from `@onlyoffice/ai-chat/hooks`. Four of
+them drive the widget's runtime (lifecycle); three are utilities. All
 hooks read state via `useStores()` and so must be rendered inside a
 `StoresProvider` (plus `ToolsProvider` for `useServers`).
 
@@ -17,6 +17,7 @@ import {
   useThread,
   useDirection,
   useDebouncedCallback,
+  usePromptHistory,
 } from "@onlyoffice/ai-chat/hooks";
 ```
 
@@ -100,6 +101,37 @@ const onSearch = useDebouncedCallback(
 );
 <input onChange={(e) => onSearch(e.target.value)} />;
 ```
+
+### `usePromptHistory()`
+
+Terminal-style ↑ / ↓ recall for a composer, read straight from the
+open thread's own user messages — there is no separate record of
+what was sent. A prompt becomes walkable the moment its message is
+in `useMessageStore`, so the first send of a brand-new chat is
+included, switching threads switches the history, and a new chat
+starts empty.
+
+```tsx
+const history = usePromptHistory();
+// in onKeyDown, once the caret rule says the arrow is ours:
+e.preventDefault();
+const step = await history.previous(textarea.value);
+if (step) composerRuntime.setText(step.text);
+```
+
+| Returned | Description |
+| --- | --- |
+| `previous(currentText)` | Walk one entry towards the past. Resolves `null` at the beginning of the thread. Async because a thread is paginated: a walk that reaches the top of the loaded window pulls the page before it via `loadOlderMessages()` and continues there. |
+| `next()` | Walk one entry towards the present. Stepping past the newest entry resolves with the draft that was in the box when the walk began; `null` when not browsing, so the caller leaves ↓ to the textarea. |
+| `isBrowsing` | `true` while the box holds a history entry rather than the user's own draft. |
+| `reset()` | Abandon the walk — call it when the user edits the draft. |
+
+Attachment-only sends carry no text and are not entries. The
+built-in composer claims the arrow only when it isn't stealing caret
+movement the user meant: the box is empty, or the caret already sits
+at the edge it would move towards with nothing selected.
+
+- Required providers: `StoresProvider`
 
 ### `useDirection()`
 

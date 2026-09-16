@@ -295,6 +295,12 @@ export interface AIChatWidgetProps {
    */
   onDeletePromptFolder?: WidgetConfig["onDeletePromptFolder"];
   /**
+   * Custom UI for deleting a saved prompt. When provided, the built-in
+   * "Delete prompt" confirmation dialog is skipped and the host owns the
+   * confirmation UI. See {@link WidgetConfig.onDeletePrompt}.
+   */
+  onDeletePrompt?: WidgetConfig["onDeletePrompt"];
+  /**
    * Custom UI for creating a prompt. When provided, the built-in
    * "Save prompt" auto-name path is replaced and the host owns the input UI.
    * See {@link WidgetConfig.onCreatePrompt}.
@@ -398,6 +404,7 @@ export const AIChatWidget = React.forwardRef<
       onCreatePromptFolder,
       onRenamePromptFolder,
       onDeletePromptFolder,
+      onDeletePrompt,
       onCreatePrompt,
       onEditPrompt,
       onOpenCustomProvider,
@@ -441,6 +448,7 @@ export const AIChatWidget = React.forwardRef<
         onCreatePromptFolder,
         onRenamePromptFolder,
         onDeletePromptFolder,
+        onDeletePrompt,
         onCreatePrompt,
         onEditPrompt,
         onOpenCustomProvider,
@@ -481,6 +489,7 @@ export const AIChatWidget = React.forwardRef<
         onCreatePromptFolder,
         onRenamePromptFolder,
         onDeletePromptFolder,
+        onDeletePrompt,
         onCreatePrompt,
         onEditPrompt,
         onOpenCustomProvider,

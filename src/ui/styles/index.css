@@ -244,6 +244,9 @@
   --field-container-control-gap-horizontal: 8px;
   --field-container-control-gap-vertical: 4px;
   --field-container-header-gap: 8px;
+  /* Vertical gap between the label and its action once the header row is too
+     narrow to hold both and the action wraps onto its own line. */
+  --field-container-header-row-gap: 2px;
   --field-container-header-margin-bottom: 2px;
   --field-container-header-height: auto;
   --field-container-label-width: 160px;

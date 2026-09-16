@@ -193,14 +193,20 @@ const UserActionBar = () => {
   return (
     <>
       <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[var(--chat-user-message-actions-gap,2px)]">
-        <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onCopy}>
+        <TooltipIconButton
+          tooltip={copied ? t("Copied") : t("CopyToClipboard")}
+          onClick={onCopy}
+        >
           {copied ? (
+            // `disableHover`, not `disabled`: the latter paints a not-allowed
+            // cursor over a button the user just used successfully. The
+            // tooltip reports the result instead.
             <IconButton
               iconName="checked"
               size={chatMessageActionsIconSize}
               isStroke
               color="var(--icon-gray-secondary)"
-              disabled
+              disableHover
             />
           ) : (
             <IconButton
@@ -283,6 +289,13 @@ export const UserMessage = memo(() => {
     .filter((item) => item.type === "file")
     .map((item) => parseFileBlock(item.mimeType, item.data));
 
+  // Attachment-only sends carry a text block with an empty string (see
+  // `onNew`) — skip the bubble entirely rather than rendering an empty,
+  // still-visible rounded/padded/background box under the file chips.
+  const hasText = message.content.some(
+    (item) => item.type === "text" && item.text.trim().length > 0
+  );
+
   return (
     <MessagePrimitive.Root asChild>
       <motion.div
@@ -308,18 +321,22 @@ export const UserMessage = memo(() => {
           </div>
         ) : null}
 
-        <div
-          className={cn(
-            "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[var(--chat-user-message-border-radius,16px)] px-[12px] py-[8px] select-text",
-            isRTL ? "rounded-bl-[0px]" : "rounded-br-[0px]"
-          )}
-        >
-          <MessagePrimitive.Content
-            components={{ Text: MarkdownText, Image: () => null }}
-          />
-        </div>
+        {hasText ? (
+          <div
+            className={cn(
+              "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[var(--chat-user-message-border-radius,16px)] px-[12px] py-[8px] select-text",
+              isRTL ? "rounded-bl-[0px]" : "rounded-br-[0px]"
+            )}
+          >
+            <MessagePrimitive.Content
+              components={{ Text: MarkdownText, Image: () => null }}
+            />
+          </div>
+        ) : null}
 
-        <UserActionBar />
+        {/* Copy / save-as-prompt act on the message text — nothing to
+            copy or save when the send was attachment-only. */}
+        {hasText ? <UserActionBar /> : null}
       </motion.div>
     </MessagePrimitive.Root>
   );

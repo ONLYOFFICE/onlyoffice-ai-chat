@@ -260,6 +260,7 @@ vi.mock("../../../components/icon-button", () => ({
     <button
       data-testid={`icon-btn-${props.iconName}`}
       onClick={props.onClick as (() => void) | undefined}
+      disabled={props.disabled as boolean | undefined}
     />
   ),
 }));
@@ -285,11 +286,15 @@ vi.mock("../../../components/tooltip-icon-button", () => ({
   TooltipIconButton: ({
     children,
     tooltip,
+    onClick,
   }: {
     children: React.ReactNode;
     tooltip?: string;
+    onClick?: () => void;
   }) => (
-    <div data-testid="tooltip-btn" data-tooltip={tooltip}>
+    // The real component spreads the rest props onto its wrapper, so `onClick`
+    // lands on the wrapper rather than the icon button inside.
+    <div data-testid="tooltip-btn" data-tooltip={tooltip} onClick={onClick}>
       {children}
     </div>
   ),
@@ -376,6 +381,44 @@ describe("UserMessage", () => {
     expect(fileItems[0].getAttribute("data-path")).toBe("/path/to/doc.docx");
   });
 
+  it("does not render the text bubble when the message is attachment-only", () => {
+    mockMessageContent.current = [
+      {
+        type: "file",
+        data: "content",
+        mimeType: JSON.stringify({ type: 7, path: "/doc.docx" }),
+      },
+      { type: "text", text: "" },
+    ];
+    render(<UserMessage />);
+    expect(screen.queryByTestId("message-content")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("file-item")).toHaveLength(1);
+  });
+
+  it("does not render the text bubble when the text is whitespace-only", () => {
+    mockMessageContent.current = [{ type: "text", text: "   " }];
+    render(<UserMessage />);
+    expect(screen.queryByTestId("message-content")).not.toBeInTheDocument();
+  });
+
+  it("does not render the action bar (copy / save prompt) when the message is attachment-only", () => {
+    mockMessageContent.current = [
+      {
+        type: "file",
+        data: "content",
+        mimeType: JSON.stringify({ type: 7, path: "/doc.docx" }),
+      },
+      { type: "text", text: "" },
+    ];
+    render(<UserMessage />);
+    expect(screen.queryByTestId("action-bar")).not.toBeInTheDocument();
+  });
+
+  it("renders the action bar when the message has text", () => {
+    render(<UserMessage />);
+    expect(screen.getByTestId("action-bar")).toBeInTheDocument();
+  });
+
   it("renders both images and files together", () => {
     mockMessageContent.current = [
       { type: "text", text: "Both" },
@@ -404,6 +447,28 @@ describe("UserMessage", () => {
     render(<UserMessage />);
     expect(screen.getByTestId("icon-btn-btn-copy")).toBeInTheDocument();
     expect(screen.queryByTestId("icon-btn-checked")).not.toBeInTheDocument();
+  });
+
+  it("reports the copy through the tooltip, not a disabled button", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+
+    render(<UserMessage />);
+
+    const copyButton = screen.getByTestId("icon-btn-btn-copy");
+    const tooltipOf = (el: HTMLElement) =>
+      el.closest("[data-testid='tooltip-btn']")?.getAttribute("data-tooltip");
+    expect(tooltipOf(copyButton)).toBe("CopyToClipboard");
+
+    fireEvent.click(copyButton);
+    await screen.findByTestId("icon-btn-checked");
+
+    const checked = screen.getByTestId("icon-btn-checked");
+    expect(tooltipOf(checked)).toBe("Copied");
+    // The whole point: a successful copy must not leave a not-allowed cursor.
+    expect(checked).not.toBeDisabled();
+
+    vi.unstubAllGlobals();
   });
 
   it("renders the more button in dropdown trigger", () => {

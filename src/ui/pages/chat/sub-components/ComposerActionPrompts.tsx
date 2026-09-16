@@ -211,6 +211,57 @@ const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
   );
 };
 
+type DeletePromptDialogProps = {
+  promptId: string;
+  onClose: VoidFunction;
+};
+
+const DeletePromptDialog = ({ promptId, onClose }: DeletePromptDialogProps) => {
+  const { DialogContent, DialogFooter } = useComponents();
+  const { t } = useI18n();
+  const { usePromptsStore } = useStores();
+  const removePrompt = usePromptsStore((s) => s.removePrompt);
+
+  const onConfirm = useCallback(() => {
+    removePrompt(promptId);
+    onClose();
+  }, [promptId, onClose, removePrompt]);
+
+  // Named title and action label rather than the folder dialog's generic
+  // "Warning" + Yes/No, so the built-in fallback reads the same as the host
+  // windows the desktop and docs plugins open for this action.
+  return (
+    <Dialog open={true}>
+      <DialogContent
+        header={t("DeletePrompt")}
+        onClose={onClose}
+        withWarningIcon
+      >
+        <div
+          className="flex flex-col justify-between h-full"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onConfirm();
+            }
+          }}
+        >
+          <p className="select-none h-[var(--delete-folder-dialog-message-height,40px)] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
+            {t("WantDeletePrompt")}
+          </p>
+          <DialogFooter
+            className="h-[64px] mx-[-24px] px-[24px]"
+            cancelLabel={t("Cancel")}
+            onCancel={onClose}
+            submitLabel={t("DeletePromptConfirm")}
+            onSubmit={onConfirm}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const ComposerActionPrompts = () => {
   const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
   const { t } = useI18n();
@@ -219,6 +270,7 @@ const ComposerActionPrompts = () => {
     onEditPrompt,
     onRenamePromptFolder,
     onDeletePromptFolder,
+    onDeletePrompt,
     suggestions,
   } = useWidgetConfig();
   const prompts = usePromptsStore((s) => s.prompts);
@@ -241,6 +293,7 @@ const ComposerActionPrompts = () => {
     name: string;
   } | null>(null);
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+  const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null);
   const [editingPrompt, setEditingPrompt] = useState<{
     id: string;
     name: string;
@@ -318,6 +371,28 @@ const ComposerActionPrompts = () => {
       }
     },
     [onDeletePromptFolder, removeFolder, closeMenu]
+  );
+
+  // Same split for deleting a single prompt: with `onDeletePrompt` the host
+  // owns the confirmation UI and resolves whether to proceed; without it the
+  // built-in dialog asks. Either way the widget performs the deletion — it is
+  // never done straight from the menu item.
+  const requestDeletePrompt = useCallback(
+    async (prompt: { id: string; name: string }) => {
+      closeMenu();
+      if (!onDeletePrompt) {
+        setDeletingPromptId(prompt.id);
+        return;
+      }
+      try {
+        const confirmed = await onDeletePrompt(prompt.name, prompt.id);
+        if (confirmed !== true) return;
+        removePrompt(prompt.id);
+      } catch (err) {
+        logger.error("onDeletePrompt handler failed:", err);
+      }
+    },
+    [onDeletePrompt, removePrompt, closeMenu]
   );
 
   // When the host supplies `onEditPrompt`, it owns the input UI (its own
@@ -420,13 +495,19 @@ const ComposerActionPrompts = () => {
           id: `delete:${prompt.id}`,
           text: t("Delete"),
           onClick: () => {
-            closeMenu();
-            removePrompt(prompt.id);
+            void requestDeletePrompt(prompt);
           },
         },
       ];
     },
-    [t, folders, editPrompt, removePrompt, requestEditPrompt, closeMenu]
+    [
+      t,
+      folders,
+      editPrompt,
+      requestEditPrompt,
+      requestDeletePrompt,
+      closeMenu,
+    ]
   );
 
   const items = useMemo(() => {
@@ -554,6 +635,12 @@ const ComposerActionPrompts = () => {
         <DeleteFolderDialog
           folderId={deletingFolderId}
           onClose={() => setDeletingFolderId(null)}
+        />
+      ) : null}
+      {deletingPromptId ? (
+        <DeletePromptDialog
+          promptId={deletingPromptId}
+          onClose={() => setDeletingPromptId(null)}
         />
       ) : null}
     </>

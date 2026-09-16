@@ -131,7 +131,7 @@ const ThreadInner = () => {
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
             <ThreadPrimitive.Viewport
               ref={viewportRef}
-              className="relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
+              className="thread-viewport relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
             >
               {/* Pulls the previous page when the reader nears the top of
                   a paginated thread — see `OlderMessages`. */}
