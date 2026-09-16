@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.115
 
 ### Added
 
@@ -17,6 +17,12 @@
 - **The copy button reports the copy instead of looking broken.** After a successful copy the button swapped to a checkmark and was rendered `disabled`, which painted a `not-allowed` cursor over a control the user had just used, and its tooltip was suppressed outright — the click read as a failure. The checkmark state now uses `disableHover` and keeps its tooltip, which says "Copied" while the state lasts and returns to "Copy to clipboard" after. Applies to all three copy buttons — assistant message, user message and code block — and the assistant one reads its copied state from the assistant store (`useAssistantState`) so icon and tooltip come from a single value.
 
 - **The checkmark of a checked checkbox stays legible in the dark themes.** `--checkbox-active-icon-color` resolved to `--background-normal`, which in the dark, night and contrast-dark themes is close enough to the checked box's accent fill to swallow the mark. It now resolves to `--text-contrast-background`, the token meant for content sitting on an accent surface, and the checkbox draws the dedicated `checked-white` asset.
+
+- **A rejected parameter no longer shows as "Selected model unavailable" (Bug 83703).** Any 400 mentioning the word "model" was classified as `model_not_found`, hiding the provider's real message. Now only an explicit `model_not_found` code or a missing-model phrasing maps there; other 400s stay `bad_request` with the provider's text.
+
+- **No more `400 Invalid signature in thinking block` after stopping a reply (Bug 83732).** A reply stopped mid-thinking left an unsigned reasoning part and an empty text block; both are now skipped, and an assistant turn left empty is omitted from the request.
+
+- **Gemini no longer answers `400 INVALID_ARGUMENT` on every request (Bug 83699).** Tool `inputSchema`s are passed through `sanitizeGeminiSchema`: unknown JSON Schema keys are dropped, union types become type + nullable, non-string enums move into the description as "Allowed values".
 
 ### Changed
 
