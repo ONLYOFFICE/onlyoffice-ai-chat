@@ -12,6 +12,13 @@ import { listModels } from "./models";
  */
 class DeepSeekProvider extends OpenAIProvider {
   /**
+   * DeepSeek's thinking mode checks that every assistant message of a
+   * request carrying `tools` has a `reasoning_content` field — even an
+   * empty one — and answers a missing field with a 400 (Bug 83335).
+   */
+  protected override reasoningContentMode = "always" as const;
+
+  /**
    * DeepSeek toggles thinking through its own `thinking.type` field, and
    * the V4 models think *by default* — omitting the field leaves them
    * reasoning with the toggle off, so off is sent explicitly as

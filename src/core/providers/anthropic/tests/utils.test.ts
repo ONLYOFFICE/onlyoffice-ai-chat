@@ -487,7 +487,7 @@ describe("anthropic utils", () => {
         });
       });
 
-      it("should convert assistant message with reasoning part", () => {
+      it("drops an unsigned reasoning part — nothing is left to send", () => {
         const messages = [
           {
             role: "assistant" as const,
@@ -504,18 +504,9 @@ describe("anthropic utils", () => {
           messages as unknown as ThreadMessageLike[]
         );
 
-        expect(result).toEqual([
-          {
-            role: "assistant",
-            content: [
-              {
-                type: "thinking",
-                thinking: "Let me think about this problem",
-                signature: "",
-              },
-            ],
-          },
-        ]);
+        // Anthropic verifies thinking signatures; a block without one would
+        // fail the whole request, so it is not replayed.
+        expect(result).toEqual([]);
       });
 
       it("should convert assistant message with reasoning part and signature", () => {
@@ -526,7 +517,8 @@ describe("anthropic utils", () => {
               {
                 type: "reasoning" as const,
                 text: "Let me analyze this",
-                parentId: "signature_abc123",
+                parentId:
+                  "ErUBCkYIBBgCIkDq2H0h6lJvFqpQ0WgU6Q0mCtb1o8Lz3f9ZpTq4k9XaH2sN7cVbYtRe5uIo3pAsDfGhJkLzXcVbNm",
               },
             ],
           },
@@ -543,7 +535,8 @@ describe("anthropic utils", () => {
               {
                 type: "thinking",
                 thinking: "Let me analyze this",
-                signature: "signature_abc123",
+                signature:
+                  "ErUBCkYIBBgCIkDq2H0h6lJvFqpQ0WgU6Q0mCtb1o8Lz3f9ZpTq4k9XaH2sN7cVbYtRe5uIo3pAsDfGhJkLzXcVbNm",
               },
             ],
           },
@@ -571,15 +564,11 @@ describe("anthropic utils", () => {
           messages as unknown as ThreadMessageLike[]
         );
 
+        // The unsigned reasoning is dropped; the answer text still goes out.
         expect(result).toEqual([
           {
             role: "assistant",
             content: [
-              {
-                type: "thinking",
-                thinking: "Internal thought process",
-                signature: "",
-              },
               {
                 type: "text",
                 text: "Here's my answer",
