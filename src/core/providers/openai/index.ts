@@ -18,7 +18,7 @@ import { AbstractBaseProvider } from "../base";
 import { getErrorCode, ProviderErrors } from "../errors";
 import { createOpenAIClient } from "./client";
 import { openaiInfo } from "./info";
-import { convertMessages } from "./messages";
+import { convertMessages, type ReasoningContentMode } from "./messages";
 import { listModels } from "./models";
 import {
   resolveReasoningEffort,
@@ -67,6 +67,22 @@ class OpenAIProvider extends AbstractBaseProvider {
    */
   protected downgradeSystem = false;
 
+  /**
+   * How `reasoning_content` is replayed on assistant messages — see
+   * {@link ReasoningContentMode}. Subclasses talking to a backend that
+   * demands the field on every assistant message (DeepSeek) switch this
+   * to `"always"`.
+   */
+  protected reasoningContentMode: ReasoningContentMode = "when-present";
+
+  /** {@link convertMessages} options for this provider's wire format. */
+  private get convertOptions() {
+    return {
+      downgradeSystem: this.downgradeSystem,
+      reasoningContent: this.reasoningContentMode,
+    };
+  }
+
   constructor(creds: ProviderCredentials) {
     super(creds);
     this.client = createOpenAIClient(creds);
@@ -101,7 +117,7 @@ class OpenAIProvider extends AbstractBaseProvider {
       const stream = await this.getStream({
         messages: [
           { role: "system", content: systemPrompt },
-          ...convertMessages(messages, this.downgradeSystem),
+          ...convertMessages(messages, this.convertOptions),
         ],
         model,
         tools: convertTools(tools ?? []),
@@ -296,7 +312,7 @@ class OpenAIProvider extends AbstractBaseProvider {
     const response = await this.getCompletion({
       messages: [
         { role: "system", content: systemPrompt },
-        ...convertMessages(messages, this.downgradeSystem),
+        ...convertMessages(messages, this.convertOptions),
       ],
       model,
       reasoningLevel,

@@ -127,15 +127,17 @@ describe("anthropic/messages/convertMessages", () => {
       expect(out[0].content).toEqual([{ type: "text", text: "a" }]);
     });
 
-    it("maps reasoning parts into thinking blocks with signature", () => {
+    it("maps signed reasoning parts into thinking blocks", () => {
+      const signature =
+        "ErUBCkYIBBgCIkDq2H0h6lJvFqpQ0WgU6Q0mCtb1o8Lz3f9ZpTq4k9XaH2sN7cVbYtRe5uIo3pAsDfGhJkLzXcVbNm";
       const out = convertMessages([
         {
           role: "assistant",
-          content: [{ type: "reasoning", text: "t", parentId: "sig-1" }],
+          content: [{ type: "reasoning", text: "t", parentId: signature }],
         } as ThreadMessageLike,
       ]);
       expect(out[0].content).toEqual([
-        { type: "thinking", thinking: "t", signature: "sig-1" },
+        { type: "thinking", thinking: "t", signature },
       ]);
     });
 
