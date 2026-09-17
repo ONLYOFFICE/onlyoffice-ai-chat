@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.116
+
+### Fixed
+
+- **MCP tool results reach the model again on the ONLYOFFICE route.** The prompt-caching breakpoint on the final message rewrote a trailing `tool` message into a `tool_result`-typed content block. That block type does not exist in the chat-completion wire format, the gateway's OpenAI-to-Anthropic conversion dropped it, and Claude received an empty tool result — a `download_file_as_text` call showed the document text in the tool card while the assistant reported the file as unreadable. `tool` messages are now never touched; when the conversation ends on one, the breakpoint moves back to the nearest non-`tool` message.
+
 ## 0.5.115
 
 ### Added
