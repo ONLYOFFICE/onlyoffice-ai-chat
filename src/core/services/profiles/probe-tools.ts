@@ -4,7 +4,10 @@ import type { SendMessageResult } from "../../../shared/send-message-args";
 import type { Profile } from "../../types";
 import { credsOf, providerFor } from "./lookup";
 
-const PROBE_TIMEOUT_MS = 15_000;
+// A CLI-backed OpenAI-compatible bridge (claude -p, codex exec) spends most of
+// this on cold start; 15 s produced false negatives that stuck the profile in
+// the text-protocol fallback for good.
+const PROBE_TIMEOUT_MS = 120_000;
 
 const probeTool: TMCPItem = {
   name: "probe_echo",
