@@ -36,6 +36,7 @@ export type IconName =
   | "btn-web-search"
   | "btn-zoomup"
   | "checked"
+  | "checked-white"
   | "chevron"
   | "clear.search"
   | "code"

@@ -27,6 +27,48 @@ describe("toChatError", () => {
     expect(toChatError(err).code).toBe("model_not_found");
   });
 
+  describe("400 with the word 'model' in the message", () => {
+    const at400 = (message: string, code?: string) =>
+      toChatError(
+        Object.assign(new Error(message), {
+          status: 400,
+          ...(code ? { code } : {}),
+        })
+      ).code;
+
+    it("keeps a rejected parameter as bad_request even when the text names the model (Bug 83703)", () => {
+      expect(
+        at400(
+          '"thinking.type.enabled" is not supported for this model. Use "thinking.type.adaptive" and "output_config.effort" to control thinking behavior.'
+        )
+      ).toBe("bad_request");
+      expect(at400("This model does not support tools")).toBe("bad_request");
+      expect(
+        at400(
+          "Unsupported parameter: 'reasoning_effort' is not supported with this model."
+        )
+      ).toBe("bad_request");
+    });
+
+    it("still reports a missing model", () => {
+      expect(
+        at400(
+          "The model `gpt-99` does not exist or you do not have access to it."
+        )
+      ).toBe("model_not_found");
+      expect(at400("Unknown model: llama-x")).toBe("model_not_found");
+      expect(
+        at400("models/gemini-2.5-flash is no longer available to new users.")
+      ).toBe("model_not_found");
+      expect(at400("model not found")).toBe("model_not_found");
+      expect(at400("The model is deprecated")).toBe("model_not_found");
+    });
+
+    it("trusts an explicit model_not_found code regardless of text", () => {
+      expect(at400("Nope", "model_not_found")).toBe("model_not_found");
+    });
+  });
+
   it("classifies 402 as insufficient_funds", () => {
     const err = Object.assign(
       new Error("402 — insufficient funds to complete this request"),

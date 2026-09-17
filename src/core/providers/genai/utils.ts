@@ -2,6 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Content, FunctionDeclaration, Part } from "@google/genai";
 import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 import type { TMCPItem } from "../../types";
+import { sanitizeGeminiSchema } from "./schema";
 
 export type GenAIMessageParam = Content;
 
@@ -34,7 +35,7 @@ export const convertToolsToModelFormat = (
         description: tool.description,
         parameters: {
           type: "OBJECT",
-          ...tool.inputSchema,
+          ...sanitizeGeminiSchema(tool.inputSchema),
         },
       }) as FunctionDeclaration
   );

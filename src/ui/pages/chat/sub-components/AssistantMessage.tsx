@@ -1,6 +1,7 @@
 import {
   ActionBarPrimitive,
   MessagePrimitive,
+  useAssistantState,
   useMessage,
   type ThreadMessageLike,
 } from "@assistant-ui/react";
@@ -25,7 +26,7 @@ import {
   convertMessagesToMd,
   getMessageTitleFromMd,
 } from "../../../../shared/utils";
-import { getMessageText } from "../../../../utils";
+import { getMessageText, removeSpecialCharacter } from "../../../../utils";
 import logger from "../../../../shared/logger";
 import { useStores } from "../../../store/context";
 import {
@@ -311,14 +312,20 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
   }, [platform, text]);
 
   return (
-    <TooltipIconButton tooltip={t("CopyToClipboard")} onClick={onClick}>
+    <TooltipIconButton
+      tooltip={copied ? t("Copied") : t("CopyToClipboard")}
+      onClick={onClick}
+    >
       {copied ? (
+        // `disableHover`, not `disabled`: the latter paints a not-allowed
+        // cursor over a button the user just used successfully. The tooltip
+        // reports the result instead.
         <IconButton
           iconName="checked"
           size={chatMessageActionsIconSize}
           isStroke
           color="var(--icon-gray-secondary)"
-          disabled
+          disableHover
         />
       ) : (
         <IconButton
@@ -330,6 +337,88 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
       )}
     </TooltipIconButton>
   );
+};
+
+/**
+ * Copy button for runtimes without a platform clipboard: assistant-ui owns
+ * the copied state, so it is read off the assistant store (rather than the
+ * legacy `MessageState`, which does not carry `isCopied`) to drive both the
+ * icon and the tooltip from one value.
+ */
+const RuntimeCopyButton = () => {
+  const { IconButton, TooltipIconButton } = useComponents();
+  const { t } = useI18n();
+  const { chatMessageActionsIconSize = 24 } = useWidgetConfig();
+  const isCopied = useAssistantState(({ message }) => message.isCopied);
+
+  return (
+    <ActionBarPrimitive.Copy asChild>
+      <TooltipIconButton
+        tooltip={isCopied ? t("Copied") : t("CopyToClipboard")}
+      >
+        {isCopied ? (
+          // `disableHover`, not `disabled`: see PlatformCopyButton.
+          <IconButton
+            iconName="checked"
+            size={chatMessageActionsIconSize}
+            isStroke
+            color="var(--icon-gray-secondary)"
+            disableHover
+          />
+        ) : (
+          <IconButton
+            iconName="btn-copy"
+            size={chatMessageActionsIconSize}
+            isStroke
+            color="var(--icon-gray-secondary)"
+          />
+        )}
+      </TooltipIconButton>
+    </ActionBarPrimitive.Copy>
+  );
+};
+
+/**
+ * Leaf file name of the first attachment on a message, without its extension,
+ * for use as a fallback export title. Mirrors the attachment block forms
+ * `UserMessage` renders: the ref form (a JSON `mimeType` carrying `title` /
+ * `path`) and the legacy inline form (a JSON `mimeType` carrying `path`).
+ *
+ * @param message - The user turn that preceded the reply, if any.
+ * @returns A sanitized title, or `""` when the message has no named file.
+ */
+const getAttachmentTitle = (message?: ThreadMessageLike): string => {
+  if (!message || !Array.isArray(message.content)) return "";
+
+  for (const part of message.content) {
+    if (!part || typeof part !== "object" || !("type" in part)) continue;
+    if (part.type !== "file" || !("mimeType" in part)) continue;
+
+    let raw = "";
+    try {
+      const meta = JSON.parse(part.mimeType);
+      raw = typeof meta.title === "string" ? meta.title : (meta.path ?? "");
+    } catch {
+      // Not a marker block: `mimeType` holds an ordinary media type
+      // (`image/png`, …) for every attachment that is not one of the two
+      // JSON forms, and that is what throws here. The parse *is* the
+      // discriminator, so this is the normal path for a plain attachment
+      // and must stay silent — logging it would warn on every send.
+      continue;
+    }
+    if (typeof raw !== "string" || raw.length === 0) continue;
+
+    // `path` may be a full local path; keep the leaf, then drop the extension
+    // so the export format supplies its own.
+    const leaf = raw.split(/[\\/]/).pop() ?? raw;
+    const dot = leaf.lastIndexOf(".");
+    const base = dot > 0 ? leaf.slice(0, dot) : leaf;
+
+    const title = removeSpecialCharacter(base).trim().substring(0, 30);
+    if (title.length > 0) return title;
+  }
+
+  return "";
 };
 
 const AssistantActionBar = () => {
@@ -360,7 +449,13 @@ const AssistantActionBar = () => {
       parentMessage ? [parentMessage, message] : [message]
     );
 
-    const title = getMessageTitleFromMd(mdValue);
+    // An attachment-only send carries an empty text part, so the Markdown
+    // starts with a bare `## ` and yields no title — name the file after the
+    // attached document instead of handing the host a bare `.docx`.
+    const title =
+      getMessageTitleFromMd(mdValue) ||
+      getAttachmentTitle(parentMessage) ||
+      removeSpecialCharacter(t("ChatExport"));
 
     await platform.file.saveAsFile(mdValue, `${title}.docx`);
   };
@@ -373,27 +468,7 @@ const AssistantActionBar = () => {
       {platform.copyToClipboard ? (
         <PlatformCopyButton text={getMessageText(message)} />
       ) : (
-        <ActionBarPrimitive.Copy asChild>
-          <TooltipIconButton tooltip={t("CopyToClipboard")}>
-            <MessagePrimitive.If copied>
-              <IconButton
-                iconName="checked"
-                size={chatMessageActionsIconSize}
-                isStroke
-                color="var(--icon-gray-secondary)"
-                disabled
-              />
-            </MessagePrimitive.If>
-            <MessagePrimitive.If copied={false}>
-              <IconButton
-                iconName="btn-copy"
-                size={chatMessageActionsIconSize}
-                isStroke
-                color="var(--icon-gray-secondary)"
-              />
-            </MessagePrimitive.If>
-          </TooltipIconButton>
-        </ActionBarPrimitive.Copy>
+        <RuntimeCopyButton />
       )}
       <ActionBarPrimitive.Reload asChild>
         <TooltipIconButton tooltip={t("Regenerate")}>
@@ -407,9 +482,11 @@ const AssistantActionBar = () => {
       </ActionBarPrimitive.Reload>
       {platform.file?.saveAsFile && (
         <div>
-          <TooltipIconButton tooltip={t("Save")}>
+          {/* Its own key rather than the shared `Save`, which labels every
+              submit button in the widget: this action always exports .docx. */}
+          <TooltipIconButton tooltip={t("SaveAsDocx")}>
             <IconButton
-              iconName="btn-save.small"
+              iconName="btn-download"
               size={chatMessageActionsIconSize}
               onClick={onDownload}
               isStroke

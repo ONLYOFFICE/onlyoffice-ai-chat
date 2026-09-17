@@ -35,6 +35,27 @@ type WithStatus = {
 };
 
 /**
+ * Whether a 400's text says the model itself is missing or gone — as
+ * opposed to merely mentioning the model while rejecting a parameter.
+ * Anthropic answers an unsupported thinking switch with `"thinking.type.
+ * enabled" is not supported for this model`; the bare word test turned
+ * that into "Selected model unavailable" with a Retry button that could
+ * not help (Bug 83703). Only the phrasings providers use for a missing
+ * model count, in either word order: `The model X does not exist`,
+ * `unknown model`, `models/X is no longer available`.
+ */
+function isModelNotFoundMessage(message: string): boolean {
+  return (
+    /\bmodels?\b.{0,80}?\b(?:not found|does(?:n't| not) exist|no longer (?:available|exists|supported)|(?:is )?(?:not available|unavailable)|(?:has been |is )?(?:deprecated|retired|decommissioned))\b/i.test(
+      message
+    ) ||
+    /\b(?:unknown|invalid|unsupported|unrecognized|no such)\s+model\b/i.test(
+      message
+    )
+  );
+}
+
+/**
  * Map a JS `Error` (typically an SDK API error) to a stable
  * {@link ChatErrorPayload.code}. Covers the OpenAI / Anthropic /
  * GenAI shape (`status` + `code` + nested `error.type`) and a few
@@ -56,7 +77,7 @@ function classifyErrorCode(err: Error): string {
   if (status === 408) return "timeout";
   if (status === 429) return "rate_limit";
   if (status === 400) {
-    if (apiCode === "model_not_found" || /model/i.test(err.message)) {
+    if (apiCode === "model_not_found" || isModelNotFoundMessage(err.message)) {
       return "model_not_found";
     }
     return "bad_request";

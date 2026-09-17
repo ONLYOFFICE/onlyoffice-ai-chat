@@ -7,6 +7,7 @@ vi.mock("react-i18next", () => ({
 }));
 
 const mockUseStores = vi.fn();
+const mockSend = vi.fn();
 
 vi.mock("../../../store/context", () => ({
   useStores: () => mockUseStores(),
@@ -27,9 +28,9 @@ vi.mock("@assistant-ui/react", () => ({
       children: React.ReactNode;
       className?: string;
     }) => (
-      <div data-testid="composer-root" {...props}>
+      <form data-testid="composer-root" {...props}>
         {children}
-      </div>
+      </form>
     ),
     Input: (props: Record<string, unknown>) => (
       <input
@@ -40,7 +41,7 @@ vi.mock("@assistant-ui/react", () => ({
       />
     ),
   },
-  useComposerRuntime: () => ({ setText: vi.fn() }),
+  useComposerRuntime: () => ({ setText: vi.fn(), send: mockSend }),
 }));
 
 vi.mock("../sub-components/ComposerAction", () => ({
@@ -147,5 +148,28 @@ describe("Composer", () => {
     setupStores();
     render(<Composer />);
     expect(screen.getByTestId("composer-action")).toBeInTheDocument();
+  });
+
+  it("sends via the runtime on submit when only attachments are present", () => {
+    setupStores({
+      attachmentFiles: [{ path: "/doc.pdf", content: "content", type: 1 }],
+      currentProfile: { id: "1", name: "GPT" },
+    });
+    render(<Composer />);
+    mockSend.mockClear();
+    screen.getByTestId("composer-root").dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })
+    );
+    expect(mockSend).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not send via the runtime on submit when there are no attachments", () => {
+    setupStores({ currentProfile: { id: "1", name: "GPT" } });
+    render(<Composer />);
+    mockSend.mockClear();
+    screen.getByTestId("composer-root").dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })
+    );
+    expect(mockSend).not.toHaveBeenCalled();
   });
 });

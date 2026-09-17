@@ -86,8 +86,13 @@ const FieldContainer = ({
         )}
       >
         {!isHorizontal ? (
-          <div className="flex justify-between items-center w-full h-[var(--field-container-header-height,auto)] mb-[var(--field-container-header-margin-bottom,2px)]">
-            <div className="flex items-center gap-[var(--field-container-header-gap,8px)]">
+          /* Narrow chat: the label and a long action (e.g. the import link)
+             must never overlap. The row wraps instead — the action drops
+             onto its own line — and both sides stay shrinkable with their
+             text truncated, so neither can push the other out or bleed
+             into the field below. */
+          <div className="flex flex-wrap justify-between items-center gap-x-[var(--field-container-header-gap,8px)] gap-y-[var(--field-container-header-row-gap,2px)] w-full min-w-0 min-h-[var(--field-container-header-height,auto)] mb-[var(--field-container-header-margin-bottom,2px)]">
+            <div className="flex items-center gap-[var(--field-container-header-gap,8px)] min-w-0">
               {icon && (
                 <Icon
                   name={icon}
@@ -97,14 +102,18 @@ const FieldContainer = ({
               )}
               <p
                 className={cn(
-                  "select-none text-[var(--field-container-header-color)]",
+                  "select-none truncate text-[var(--field-container-header-color)]",
                   headerClassName
                 )}
               >
                 {header}
               </p>
             </div>
-            {action}
+            {action && (
+              <div className="flex items-center min-w-0 max-w-full">
+                {action}
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-[var(--field-container-header-gap,8px)] w-full max-w-[var(--field-container-label-width,160px)] shrink-0">

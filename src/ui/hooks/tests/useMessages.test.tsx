@@ -226,6 +226,26 @@ describe("useMessages.onNew", () => {
     expect(apiAi.sendWithStream).not.toHaveBeenCalled();
   });
 
+  it("sends an attachment-only message when content is empty (no text block)", async () => {
+    stores.profilesState.chatProfile = profile;
+    stores.attachmentsState.attachmentFiles = [
+      { id: "f1", title: "doc.pdf", path: "/doc.pdf", type: 1 },
+    ];
+    apiAi.sendWithStream.mockReturnValue(arr([]));
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      // assistant-ui emits `content: []` (no text block at all) when the
+      // composer text is empty, e.g. a file-only send.
+      await result.current.onNew({ content: [] } as never);
+    });
+    expect(apiAi.sendWithStream).toHaveBeenCalled();
+    const optimistic = stores.messageState.addMessage.mock.calls[0][0] as {
+      content: { type: string; text?: string }[];
+    };
+    const textBlock = optimistic.content.find((c) => c.type === "text");
+    expect(textBlock?.text).toBe("");
+  });
+
   it("sends user message and drains stream into addMessage / events", async () => {
     stores.profilesState.chatProfile = profile;
     apiAi.sendWithStream.mockReturnValue(

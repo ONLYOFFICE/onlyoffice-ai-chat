@@ -469,6 +469,24 @@ export interface WidgetConfig {
     folderId: string
   ) => boolean | void | Promise<boolean | void>;
   /**
+   * Custom UI for deleting a saved prompt. When provided, the widget's
+   * built-in "Delete prompt" confirmation dialog is NOT shown — the host owns
+   * the confirmation UI (e.g. its own modal) and resolves whether to proceed:
+   * - `true` — the widget deletes the prompt
+   * - `false` / `undefined` / no return (or a rejected promise) — cancelled,
+   *   the prompt is kept
+   *
+   * The widget always performs the actual deletion itself; the host only owns
+   * the confirmation step. When omitted, the built-in dialog is used.
+   *
+   * @param currentName the prompt's name (to show in the confirmation)
+   * @param promptId the id of the prompt being deleted
+   */
+  onDeletePrompt?: (
+    currentName: string,
+    promptId: string
+  ) => boolean | void | Promise<boolean | void>;
+  /**
    * Custom UI for creating a prompt. When provided, the widget's built-in
    * "Save prompt" path (which auto-names from the message) is replaced — the
    * host owns the name/text input UI (e.g. its own window) and resolves the

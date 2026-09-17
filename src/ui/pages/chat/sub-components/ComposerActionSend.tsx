@@ -1,4 +1,9 @@
-import { ComposerPrimitive, ThreadPrimitive } from "@assistant-ui/react";
+import {
+  ComposerPrimitive,
+  ThreadPrimitive,
+  useComposer,
+  useComposerRuntime,
+} from "@assistant-ui/react";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { useI18n } from "../../../providers/LocalesProvider";
 import { useStores } from "../../../store/context";
@@ -27,8 +32,19 @@ const ComposerActionSend = () => {
   const hasPending = useAttachmentsStore(
     (s) => s.pendingAttachments.length > 0
   );
+  const hasAttachments = useAttachmentsStore(
+    (s) => s.attachmentFiles.length > 0 || s.attachmentImages.length > 0
+  );
   const { composerActionSendSize = 17, composerActionSendBoxSize = 24 } =
     useWidgetConfig();
+  const composerRuntime = useComposerRuntime();
+  const hasText = useComposer((s) => s.text.trim().length > 0);
+  // `ComposerPrimitive.Send`'s built-in disabled state gates on the
+  // assistant-ui runtime's own `composer.isEmpty` (text + its *own*
+  // attachment list), which never sees our custom `useAttachmentsStore` —
+  // so a file-only draft would look "empty" to it and the button would
+  // stay unclickable however this prop is set. We drive Send manually
+  // instead, allowing either text or a settled attachment/image.
 
   return isStreamRunning ? (
     <ComposerPrimitive.Cancel asChild>
@@ -44,18 +60,20 @@ const ComposerActionSend = () => {
     </ComposerPrimitive.Cancel>
   ) : (
     <ThreadPrimitive.If running={false}>
-      <ComposerPrimitive.Send asChild disabled={!currentProfile || hasPending}>
-        <IconButton
-          iconName="send"
-          size={composerActionSendBoxSize}
-          width={composerActionSendSize}
-          height={composerActionSendSize}
-          color="var(--chat-composer-action-send-color)"
-          className={BUTTON_STYLES}
-          title={hasPending ? t("Uploading") : undefined}
-          data-testid="send-button"
-        />
-      </ComposerPrimitive.Send>
+      <IconButton
+        iconName="send"
+        size={composerActionSendBoxSize}
+        width={composerActionSendSize}
+        height={composerActionSendSize}
+        color="var(--chat-composer-action-send-color)"
+        className={BUTTON_STYLES}
+        title={hasPending ? t("Uploading") : undefined}
+        data-testid="send-button"
+        disabled={
+          !currentProfile || hasPending || (!hasText && !hasAttachments)
+        }
+        onClick={() => composerRuntime.send()}
+      />
     </ThreadPrimitive.If>
   );
 };

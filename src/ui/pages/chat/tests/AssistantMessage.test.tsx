@@ -13,6 +13,8 @@ let mockAssistantActions: unknown[] | undefined = undefined;
 let mockFormatChatError: unknown = undefined;
 const mockReload = vi.fn();
 let mockThreadId = "thread-1";
+let mockIsCopied = false;
+let mockCopyToClipboard: unknown = undefined;
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -51,7 +53,10 @@ vi.mock("../../../store/context", () => ({
 }));
 
 vi.mock("../../../providers/PlatformProvider/context", () => ({
-  usePlatform: () => ({ file: mockPlatformFile }),
+  usePlatform: () => ({
+    file: mockPlatformFile,
+    copyToClipboard: mockCopyToClipboard,
+  }),
 }));
 
 vi.mock("@assistant-ui/react", () => ({
@@ -186,6 +191,8 @@ vi.mock("@assistant-ui/react", () => ({
     parentId: mockMessageParentId,
     content: mockMessageContent,
   }),
+  useAssistantState: (selector: (s: unknown) => unknown) =>
+    selector({ message: { isCopied: mockIsCopied } }),
 }));
 
 vi.mock("framer-motion", () => ({
@@ -246,6 +253,7 @@ vi.mock("../../../components/icon-button", () => ({
     <button
       data-testid={`icon-btn-${props.iconName}`}
       onClick={props.onClick as (() => void) | undefined}
+      disabled={props.disabled as boolean | undefined}
     />
   ),
 }));
@@ -260,11 +268,15 @@ vi.mock("../../../components/tooltip-icon-button", () => ({
   TooltipIconButton: ({
     children,
     tooltip,
+    onClick,
   }: {
     children: React.ReactNode;
     tooltip?: string;
+    onClick?: () => void;
   }) => (
-    <div data-testid="tooltip-btn" data-tooltip={tooltip}>
+    // The real component spreads the rest props onto its wrapper, so `onClick`
+    // lands on the wrapper rather than the icon button inside.
+    <div data-testid="tooltip-btn" data-tooltip={tooltip} onClick={onClick}>
       {children}
     </div>
   ),
@@ -289,6 +301,7 @@ vi.mock("../../../../utils", () => ({
       .map((p) => p.text)
       .join("\n\n");
   }),
+  removeSpecialCharacter: vi.fn((s: string) => s.replace(/[\\/:*"<>|?]/g, "")),
 }));
 
 vi.mock("../../../../widget-config", () => ({
@@ -298,11 +311,14 @@ vi.mock("../../../../widget-config", () => ({
   }),
 }));
 
+import { getMessageTitleFromMd } from "../../../../shared/utils";
 import { AssistantMessage } from "../sub-components/AssistantMessage";
 
 describe("AssistantMessage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // `clearAllMocks` drops the module-level implementation too.
+    vi.mocked(getMessageTitleFromMd).mockReturnValue("Title");
     mockPlatformFile = null;
     mockIsStreamRunning = false;
     mockMessages = [];
@@ -312,6 +328,8 @@ describe("AssistantMessage", () => {
     mockAssistantActions = undefined;
     mockFormatChatError = undefined;
     mockThreadId = "thread-1";
+    mockIsCopied = false;
+    mockCopyToClipboard = undefined;
   });
 
   it("renders without crash", () => {
@@ -683,7 +701,7 @@ describe("AssistantMessage", () => {
     render(<AssistantMessage />);
     const tooltips = screen.getAllByTestId("tooltip-btn");
     const saveTooltip = tooltips.find(
-      (el) => el.getAttribute("data-tooltip") === "Save"
+      (el) => el.getAttribute("data-tooltip") === "SaveAsDocx"
     );
     expect(saveTooltip).toBeInTheDocument();
   });
@@ -692,20 +710,55 @@ describe("AssistantMessage", () => {
     mockPlatformFile = null;
     render(<AssistantMessage />);
     expect(
-      screen.queryByTestId("icon-btn-btn-save.small")
+      screen.queryByTestId("icon-btn-btn-download")
     ).not.toBeInTheDocument();
   });
 
-  it("renders copied and not-copied icon states", () => {
+  it("renders the copy icon with its tooltip before copying", () => {
+    render(<AssistantMessage />);
+    expect(screen.getByTestId("icon-btn-btn-copy")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-checked")).not.toBeInTheDocument();
+    const tooltips = screen.getAllByTestId("tooltip-btn");
+    expect(
+      tooltips.some(
+        (el) => el.getAttribute("data-tooltip") === "CopyToClipboard"
+      )
+    ).toBe(true);
+  });
+
+  it("swaps to the checked icon and a Copied tooltip once copied", () => {
+    mockIsCopied = true;
     render(<AssistantMessage />);
     expect(screen.getByTestId("icon-btn-checked")).toBeInTheDocument();
-    expect(screen.getByTestId("icon-btn-btn-copy")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-btn-btn-copy")).not.toBeInTheDocument();
+    const tooltips = screen.getAllByTestId("tooltip-btn");
+    expect(
+      tooltips.some((el) => el.getAttribute("data-tooltip") === "Copied")
+    ).toBe(true);
+  });
+
+  it("reports the copy through the tooltip, not a disabled button", async () => {
+    mockCopyToClipboard = vi.fn().mockResolvedValue(undefined);
+    render(<AssistantMessage />);
+
+    const copyButton = screen.getByTestId("icon-btn-btn-copy");
+    const tooltipOf = (el: HTMLElement) =>
+      el.closest("[data-testid='tooltip-btn']")?.getAttribute("data-tooltip");
+    expect(tooltipOf(copyButton)).toBe("CopyToClipboard");
+
+    fireEvent.click(copyButton);
+    await screen.findByTestId("icon-btn-checked");
+
+    const checked = screen.getByTestId("icon-btn-checked");
+    expect(tooltipOf(checked)).toBe("Copied");
+    // The whole point: a successful copy must not leave a not-allowed cursor.
+    expect(checked).not.toBeDisabled();
   });
 
   it("renders save icon button when saveAsFile is available", () => {
     mockPlatformFile = { saveAsFile: mockSaveAsFile };
     render(<AssistantMessage />);
-    expect(screen.getByTestId("icon-btn-btn-save.small")).toBeInTheDocument();
+    expect(screen.getByTestId("icon-btn-btn-download")).toBeInTheDocument();
   });
 
   it("renders the Regenerate (Reload) button", () => {
@@ -724,7 +777,7 @@ describe("AssistantMessage", () => {
       mockPlatformFile = null;
       render(<AssistantMessage />);
       expect(
-        screen.queryByTestId("icon-btn-btn-save.small")
+        screen.queryByTestId("icon-btn-btn-download")
       ).not.toBeInTheDocument();
       expect(mockSaveAsFile).not.toHaveBeenCalled();
     });
@@ -734,7 +787,7 @@ describe("AssistantMessage", () => {
       mockMessages = [{ content: [{ type: "text", text: "User question" }] }];
       mockMessageParentId = "0";
       render(<AssistantMessage />);
-      const saveBtn = screen.getByTestId("icon-btn-btn-save.small");
+      const saveBtn = screen.getByTestId("icon-btn-btn-download");
       fireEvent.click(saveBtn);
       // Wait for async
       await vi.waitFor(() => {
@@ -742,6 +795,84 @@ describe("AssistantMessage", () => {
           "# Title\nContent",
           "Title.docx"
         );
+      });
+    });
+
+    // An attachment-only send has an empty text part, so the Markdown yields
+    // no title and the host would otherwise be handed a bare ".docx".
+    describe("when the prompt carried no text", () => {
+      const clickSave = () => {
+        mockPlatformFile = { saveAsFile: mockSaveAsFile };
+        mockMessageParentId = "parent-1";
+        vi.mocked(getMessageTitleFromMd).mockReturnValue("");
+        render(<AssistantMessage />);
+        fireEvent.click(screen.getByTestId("icon-btn-btn-download"));
+      };
+
+      it("falls back to the attached document name (ref form)", async () => {
+        mockMessages = [
+          {
+            id: "parent-1",
+            content: [
+              { type: "text", text: "" },
+              {
+                type: "file",
+                mimeType: JSON.stringify({
+                  ref: "r1",
+                  title: "Document 1.docx",
+                  kind: "file",
+                }),
+                data: "",
+              },
+            ],
+          },
+        ];
+        clickSave();
+        await vi.waitFor(() => {
+          expect(mockSaveAsFile).toHaveBeenCalledWith(
+            "# Title\nContent",
+            "Document 1.docx"
+          );
+        });
+      });
+
+      it("falls back to the leaf of a legacy inline path", async () => {
+        mockMessages = [
+          {
+            id: "parent-1",
+            content: [
+              { type: "text", text: "" },
+              {
+                type: "file",
+                mimeType: JSON.stringify({
+                  path: "C:\\docs\\Report.docx",
+                  type: 65,
+                }),
+                data: "body",
+              },
+            ],
+          },
+        ];
+        clickSave();
+        await vi.waitFor(() => {
+          expect(mockSaveAsFile).toHaveBeenCalledWith(
+            "# Title\nContent",
+            "Report.docx"
+          );
+        });
+      });
+
+      it("falls back to the generic export name with no attachment", async () => {
+        mockMessages = [
+          { id: "parent-1", content: [{ type: "text", text: "" }] },
+        ];
+        clickSave();
+        await vi.waitFor(() => {
+          expect(mockSaveAsFile).toHaveBeenCalledWith(
+            "# Title\nContent",
+            "ChatExport.docx"
+          );
+        });
       });
     });
   });
@@ -868,7 +999,7 @@ describe("AssistantMessage", () => {
     it("renders nothing extra when assistantActions is undefined", () => {
       mockAssistantActions = undefined;
       render(<AssistantMessage />);
-      // Only built-in icons: btn-copy, checked, btn-save.small
+      // Only built-in icons: btn-copy, checked, btn-download
       expect(screen.queryByTestId("icon-btn-my-icon")).not.toBeInTheDocument();
     });
 

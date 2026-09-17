@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 const mockUseStores = vi.fn();
+const mockSend = vi.fn();
+const mockUseComposer = vi.fn();
 
 vi.mock("../../../store/context", () => ({
   useStores: () => mockUseStores(),
@@ -21,29 +23,15 @@ vi.mock("@assistant-ui/react", () => ({
         {children}
       </div>
     ),
-    Send: ({
-      children,
-      asChild,
-      disabled,
-    }: {
-      children: React.ReactNode;
-      asChild?: boolean;
-      disabled?: boolean;
-    }) => (
-      <button
-        data-testid="composer-send"
-        data-as-child={asChild}
-        disabled={disabled ?? false}
-      >
-        {children}
-      </button>
-    ),
   },
   ThreadPrimitive: {
     If: ({ children }: { children: React.ReactNode; running?: boolean }) => (
       <div data-testid="thread-if">{children}</div>
     ),
   },
+  useComposerRuntime: () => ({ send: mockSend }),
+  useComposer: (selector: (s: { text: string }) => unknown) =>
+    mockUseComposer(selector),
 }));
 
 vi.mock("../../../components/icon-button", () => ({
@@ -51,6 +39,8 @@ vi.mock("../../../components/icon-button", () => ({
     <button
       data-testid={props["data-testid"] as string}
       data-icon={props.iconName as string}
+      disabled={props.disabled as boolean | undefined}
+      onClick={props.onClick as (() => void) | undefined}
     >
       {props.iconName as string}
     </button>
@@ -63,7 +53,14 @@ function setupStores(overrides: {
   isStreamRunning?: boolean;
   currentProfile?: { id: string; name: string } | null;
   pendingAttachments?: unknown[];
+  attachmentFiles?: unknown[];
+  attachmentImages?: unknown[];
+  text?: string;
 }) {
+  mockUseComposer.mockImplementation(
+    (selector: (s: { text: string }) => unknown) =>
+      selector({ text: overrides.text ?? "" })
+  );
   mockUseStores.mockReturnValue({
     useMessageStore: (selector?: (s: Record<string, unknown>) => unknown) => {
       const state = {
@@ -71,9 +68,13 @@ function setupStores(overrides: {
       };
       return selector ? selector(state) : state;
     },
-    useAttachmentsStore: (selector?: (s: Record<string, unknown>) => unknown) => {
+    useAttachmentsStore: (
+      selector?: (s: Record<string, unknown>) => unknown
+    ) => {
       const state = {
         pendingAttachments: overrides.pendingAttachments ?? [],
+        attachmentFiles: overrides.attachmentFiles ?? [],
+        attachmentImages: overrides.attachmentImages ?? [],
       };
       return selector ? selector(state) : state;
     },
@@ -93,6 +94,7 @@ describe("ComposerActionSend", () => {
     setupStores({
       isStreamRunning: false,
       currentProfile: { id: "1", name: "GPT" },
+      text: "hello",
     });
     render(<ComposerActionSend />);
     expect(screen.getByTestId("send-button")).toBeInTheDocument();
@@ -110,20 +112,23 @@ describe("ComposerActionSend", () => {
   });
 
   it("disables send button when no profile is selected", () => {
-    setupStores({ isStreamRunning: false, currentProfile: null });
+    setupStores({
+      isStreamRunning: false,
+      currentProfile: null,
+      text: "hello",
+    });
     render(<ComposerActionSend />);
-    const sendWrapper = screen.getByTestId("composer-send");
-    expect(sendWrapper).toBeDisabled();
+    expect(screen.getByTestId("send-button")).toBeDisabled();
   });
 
-  it("enables send button when a profile is selected", () => {
+  it("enables send button when there is text", () => {
     setupStores({
       isStreamRunning: false,
       currentProfile: { id: "1", name: "GPT" },
+      text: "hello",
     });
     render(<ComposerActionSend />);
-    const sendWrapper = screen.getByTestId("composer-send");
-    expect(sendWrapper).not.toBeDisabled();
+    expect(screen.getByTestId("send-button")).not.toBeDisabled();
   });
 
   it("disables send button while an attachment is still pending", () => {
@@ -131,9 +136,50 @@ describe("ComposerActionSend", () => {
       isStreamRunning: false,
       currentProfile: { id: "1", name: "GPT" },
       pendingAttachments: [{ id: "p1" }],
+      text: "hello",
     });
     render(<ComposerActionSend />);
-    const sendWrapper = screen.getByTestId("composer-send");
-    expect(sendWrapper).toBeDisabled();
+    expect(screen.getByTestId("send-button")).toBeDisabled();
+  });
+
+  it("disables send button when there is no text and no attachments", () => {
+    setupStores({
+      isStreamRunning: false,
+      currentProfile: { id: "1", name: "GPT" },
+    });
+    render(<ComposerActionSend />);
+    expect(screen.getByTestId("send-button")).toBeDisabled();
+  });
+
+  it("enables send button when a file is attached, even with no text", () => {
+    setupStores({
+      isStreamRunning: false,
+      currentProfile: { id: "1", name: "GPT" },
+      attachmentFiles: [{ id: "f1" }],
+    });
+    render(<ComposerActionSend />);
+    expect(screen.getByTestId("send-button")).not.toBeDisabled();
+  });
+
+  it("enables send button when an image is attached, even with no text", () => {
+    setupStores({
+      isStreamRunning: false,
+      currentProfile: { id: "1", name: "GPT" },
+      attachmentImages: [{ id: "i1" }],
+    });
+    render(<ComposerActionSend />);
+    expect(screen.getByTestId("send-button")).not.toBeDisabled();
+  });
+
+  it("calls composerRuntime.send() when clicked", () => {
+    setupStores({
+      isStreamRunning: false,
+      currentProfile: { id: "1", name: "GPT" },
+      attachmentFiles: [{ id: "f1" }],
+    });
+    render(<ComposerActionSend />);
+    mockSend.mockClear();
+    screen.getByTestId("send-button").click();
+    expect(mockSend).toHaveBeenCalledTimes(1);
   });
 });

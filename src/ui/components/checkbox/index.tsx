@@ -79,7 +79,7 @@ const Checkbox = ({
         >
           {checked ? (
             <Icon
-              name="checked"
+              name="checked-white"
               size={16}
               color="var(--checkbox-active-icon-color)"
               isStroke

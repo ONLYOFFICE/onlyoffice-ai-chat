@@ -5,6 +5,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { FileItem } from "../../../components/file-item";
 import { PendingFileItem } from "../../../components/file-item/PendingFileItem";
 import { useStores } from "../../../store/context";
+import { usePromptHistory } from "../../../hooks/usePromptHistory";
 import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { useWidgetConfig } from "../../../../widget-config";
 import { ComposerAction } from "./ComposerAction";
@@ -31,6 +32,8 @@ const Composer = () => {
     (s) => s.cancelPendingAttachment
   );
   const hasPending = pendingAttachments.length > 0;
+  const hasAttachments =
+    attachmentFiles.length > 0 || attachmentImages.length > 0;
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
   const { t } = useI18n();
@@ -38,6 +41,18 @@ const Composer = () => {
   const composerRuntime = useComposerRuntime();
   const composerBridge = useComposerBridge();
   const rootRef = useRef<HTMLFormElement>(null);
+  const history = usePromptHistory();
+
+  // Replace the draft with a history entry and drop the caret at the very
+  // end, so the next Up keeps walking instead of moving within the text
+  // we just pasted in. `setText` re-renders the textarea, hence the
+  // post-paint caret placement.
+  const applyHistoryText = (textarea: HTMLTextAreaElement, text: string) => {
+    composerRuntime.setText(text);
+    requestAnimationFrame(() => {
+      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    });
+  };
 
   // Make the whole composer area act as one big click target: a click on the
   // padding or any non-interactive gap focuses the textarea. Clicks that land
@@ -74,6 +89,16 @@ const Composer = () => {
       <ComposerPrimitive.Root
         ref={rootRef}
         onClick={focusInputOnClick}
+        onSubmit={(e) => {
+          // assistant-ui's own submit handler no-ops when its runtime-level
+          // `composer.isEmpty` is true — text blank *and* its own (unused)
+          // attachment list empty. It never sees our `useAttachmentsStore`,
+          // so an attachment-only draft would silently fail to submit on
+          // Enter. Take over here whenever we have attachments it can't see.
+          if (!currentProfile || hasPending || !hasAttachments) return;
+          e.preventDefault();
+          composerRuntime.send();
+        }}
         inert={composerDisabled}
         aria-disabled={composerDisabled || undefined}
         className={`composer-root relative flex w-full flex-col gap-[6px] rounded-[4px] border px-[var(--chat-composer-padding-x,8px)] pt-[var(--chat-composer-padding-top,10px)] pb-[var(--chat-composer-padding-bottom,6px)] box-border ${
@@ -126,7 +151,52 @@ const Composer = () => {
               !e.shiftKey
             ) {
               e.preventDefault();
+              return;
             }
+
+            if (e.key !== "ArrowUp" && e.key !== "ArrowDown") {
+              // Any other key is the user typing or moving around — if
+              // they edit a recalled entry it becomes their own draft
+              // again, so stop treating the next Up as a continued walk.
+              // Bare modifiers and navigation keys don't change the text,
+              // so they must not abandon the walk either.
+              if (
+                e.key.length === 1 ||
+                e.key === "Backspace" ||
+                e.key === "Delete"
+              ) {
+                history.reset();
+              }
+              return;
+            }
+
+            const textarea = e.currentTarget;
+            // Terminal rule: history only claims the arrow when it isn't
+            // stealing caret movement the user meant — an empty box, or
+            // the caret already parked at the edge it would move towards.
+            // A selection means they're manipulating text, not navigating.
+            const atEdge =
+              textarea.selectionStart === textarea.selectionEnd &&
+              (textarea.value === "" ||
+                (e.key === "ArrowUp"
+                  ? textarea.selectionStart === 0
+                  : textarea.selectionEnd === textarea.value.length));
+            if (!atEdge) return;
+
+            // Claimed before the step is known: walking off the top of the
+            // loaded window has to fetch the page before it, and by the
+            // time that resolves the event is long past being cancellable.
+            // The caret is already at the edge the arrow moves towards, so
+            // the only movement being suppressed is a no-op anyway.
+            e.preventDefault();
+            const step =
+              e.key === "ArrowUp"
+                ? history.previous(textarea.value)
+                : history.next();
+            void step.then((result) => {
+              // `null` = history had nothing to offer here.
+              if (result) applyHistoryText(textarea, result.text);
+            });
           }}
         />
         <ComposerAction />

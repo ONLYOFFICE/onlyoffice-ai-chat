@@ -883,9 +883,13 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
   const onNew = async (message: AppendMessage) => {
     if (!currentProfile) return;
-    if (message.content[0].type !== "text") return;
+    // Attachment-only sends carry no text block at all (assistant-ui emits
+    // `content: []` rather than a `{type: "text", text: ""}` placeholder) —
+    // only reject a genuinely non-text first block, not an empty one.
+    const firstBlock = message.content[0];
+    if (firstBlock && firstBlock.type !== "text") return;
 
-    let text = message.content[0].text;
+    let text = firstBlock?.type === "text" ? firstBlock.text : "";
     const originalFiles = [...attachmentFiles];
     const originalImages = [...attachmentImages];
     let files = originalFiles.length > 0 ? [...originalFiles] : undefined;
