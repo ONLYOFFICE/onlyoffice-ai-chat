@@ -1,6 +1,7 @@
 import { ActionType } from "../../../shared/action-type";
 import type { TErrorData } from "../../../shared/error-data";
 import type { Model } from "../../../shared/model";
+import type { ProviderFetch } from "../../../shared/provider-credentials";
 import type { Profile, ProviderType } from "../../types";
 import { AssignmentsEngine } from "../assignments";
 import { credsOf, loadProfile, providerFor } from "./lookup";
@@ -35,6 +36,20 @@ export class ProfilesEngine {
       deps.assignments ?? new AssignmentsEngine({ storage: deps.storage });
   }
 
+  // Mirrors AIEngine.pickFetch so the probe travels the same transport as
+  // chat; an `external` profile without externalFetch simply probes bare
+  // and fails soft instead of throwing out of `create`.
+  private pickFetch(
+    profile: Pick<Profile, "providerType" | "useProxy">
+  ): ProviderFetch | undefined {
+    if (profile.providerType === "external") return this.deps.externalFetch;
+    const forced =
+      typeof this.deps.forceProxy === "function"
+        ? this.deps.forceProxy()
+        : this.deps.forceProxy === true;
+    return profile.useProxy || forced ? this.deps.fetchProxy : undefined;
+  }
+
   async create(input: CreateProfileInput): Promise<ProfileMutationResult> {
     const { storage } = this.deps;
     const existing = await storage.profiles.readAll();
@@ -42,7 +57,10 @@ export class ProfilesEngine {
     const error = await validateProfile(existing, input);
     if (error) return { success: false, error };
 
-    const { canUseTool, useResponsesApi } = await probeCapabilities(input);
+    const { canUseTool, useResponsesApi } = await probeCapabilities(
+      input,
+      credsOf(input, this.pickFetch(input))
+    );
     const profile = await storage.profiles.create({
       ...input,
       canUseTool,
@@ -79,7 +97,10 @@ export class ProfilesEngine {
       prev.providerType !== profile.providerType ||
       prev.baseUrl !== profile.baseUrl;
     const { canUseTool, useResponsesApi } = probeTriggers
-      ? await probeCapabilities(profile)
+      ? await probeCapabilities(
+          profile,
+          credsOf(profile, this.pickFetch(profile))
+        )
       : {
           canUseTool: profile.canUseTool ?? prev.canUseTool,
           useResponsesApi: profile.useResponsesApi ?? prev.useResponsesApi,

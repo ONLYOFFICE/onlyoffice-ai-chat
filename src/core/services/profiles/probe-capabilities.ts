@@ -1,3 +1,4 @@
+import type { ProviderCredentials } from "../../../shared/provider-credentials";
 import type { Profile } from "../../types";
 import { credsOf, providerFor } from "./lookup";
 import { probeToolCapability } from "./probe-tools";
@@ -27,6 +28,7 @@ export type ProbedCapabilities = {
  */
 export async function probeCapabilities(
   profile: Pick<Profile, "providerType" | "modelId" | "baseUrl" | "key">,
+  creds: ProviderCredentials = credsOf(profile),
   externalSignal?: AbortSignal
 ): Promise<ProbedCapabilities> {
   // Only providers that actually expose the OpenAI Responses API should pay
@@ -37,7 +39,7 @@ export async function probeCapabilities(
   let supportsResponses = false;
   try {
     const Provider = await providerFor(profile.providerType);
-    supportsResponses = await new Provider(credsOf(profile)).checkResponsesApi(
+    supportsResponses = await new Provider(creds).checkResponsesApi(
       profile.modelId,
       externalSignal
     );
@@ -47,9 +49,9 @@ export async function probeCapabilities(
 
   const [viaResponses, viaChat] = await Promise.all([
     supportsResponses
-      ? probeToolCapability(profile, true, externalSignal)
+      ? probeToolCapability(profile, creds, true, externalSignal)
       : Promise.resolve(false),
-    probeToolCapability(profile, false, externalSignal),
+    probeToolCapability(profile, creds, false, externalSignal),
   ]);
 
   if (viaResponses) return { canUseTool: true, useResponsesApi: true };

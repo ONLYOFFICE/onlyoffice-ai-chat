@@ -7,6 +7,7 @@ import {
   getProviderModelsMock,
   makeProfile,
   makeStorage,
+  probeCredsLog,
   PROFILE_STUB_TYPE,
   registerStubProvider,
   sendMessageProbeMock,
@@ -19,6 +20,7 @@ beforeEach(() => {
   getProviderModelsMock.mockReset();
   sendMessageProbeMock.mockReset();
   sendMessageProbeMock.mockReturnValue(false);
+  probeCredsLog.length = 0;
   vi.spyOn(crypto, "randomUUID").mockReturnValue(
     "00000000-0000-0000-0000-000000000001"
   );
@@ -174,10 +176,61 @@ describe("ProfilesEngine.listModels", () => {
 });
 
 describe("ProfilesEngine probes (canUseTool + useResponsesApi)", () => {
+  it("probes through fetchProxy for a useProxy profile and bare otherwise", async () => {
+    checkProviderMock.mockResolvedValue(true);
+    const fetchProxy = vi.fn();
+    const { storage } = makeStorage();
+    const engine = new ProfilesEngine({ storage, fetchProxy });
+
+    await engine.create({
+      name: "proxied",
+      providerType: PROFILE_STUB_TYPE,
+      baseUrl: "https://x",
+      key: "k",
+      modelId: "m",
+      useProxy: true,
+    });
+    expect(probeCredsLog.length).toBeGreaterThan(0);
+    for (const creds of probeCredsLog) expect(creds.fetch).toBe(fetchProxy);
+
+    probeCredsLog.length = 0;
+    await engine.create({
+      name: "direct",
+      providerType: PROFILE_STUB_TYPE,
+      baseUrl: "https://x",
+      key: "k",
+      modelId: "m",
+    });
+    for (const creds of probeCredsLog) expect(creds.fetch).toBeUndefined();
+  });
+
+  it("probes through fetchProxy for every profile when forceProxy is on", async () => {
+    checkProviderMock.mockResolvedValue(true);
+    const fetchProxy = vi.fn();
+    const { storage } = makeStorage();
+    const engine = new ProfilesEngine({
+      storage,
+      fetchProxy,
+      forceProxy: true,
+    });
+
+    await engine.create({
+      name: "p",
+      providerType: PROFILE_STUB_TYPE,
+      baseUrl: "https://x",
+      key: "k",
+      modelId: "m",
+    });
+    expect(probeCredsLog.length).toBeGreaterThan(0);
+    for (const creds of probeCredsLog) expect(creds.fetch).toBe(fetchProxy);
+  });
+
   it("persists canUseTool + useResponsesApi from the probe on create", async () => {
     checkProviderMock.mockResolvedValueOnce(true);
     // Model only calls tools through the Responses API — the gpt-5.5 case.
-    sendMessageProbeMock.mockImplementation((args) => args.useResponsesApi === true);
+    sendMessageProbeMock.mockImplementation(
+      (args) => args.useResponsesApi === true
+    );
     const { storage, snapshot } = makeStorage();
     const engine = new ProfilesEngine({ storage });
 
@@ -197,7 +250,9 @@ describe("ProfilesEngine probes (canUseTool + useResponsesApi)", () => {
 
   it("sets canUseTool true / useResponsesApi false when tools work on chat completions", async () => {
     checkProviderMock.mockResolvedValueOnce(true);
-    sendMessageProbeMock.mockImplementation((args) => args.useResponsesApi !== true);
+    sendMessageProbeMock.mockImplementation(
+      (args) => args.useResponsesApi !== true
+    );
     const { storage, snapshot } = makeStorage();
     const engine = new ProfilesEngine({ storage });
 
@@ -264,7 +319,9 @@ describe("ProfilesEngine probes (canUseTool + useResponsesApi)", () => {
 
   it("re-probes canUseTool + useResponsesApi when modelId changes", async () => {
     checkProviderMock.mockResolvedValueOnce(true);
-    sendMessageProbeMock.mockImplementation((args) => args.useResponsesApi === true);
+    sendMessageProbeMock.mockImplementation(
+      (args) => args.useResponsesApi === true
+    );
     const seed = makeProfile({
       id: "p1",
       modelId: "m1",

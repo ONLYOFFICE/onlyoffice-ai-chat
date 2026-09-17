@@ -1,8 +1,9 @@
 import logger from "../../../shared/logger";
 import type { TMCPItem } from "../../../shared/mcp-item";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import type { ProviderCredentials } from "../../../shared/provider-credentials";
 import type { Profile } from "../../types";
-import { credsOf, providerFor } from "./lookup";
+import { providerFor } from "./lookup";
 
 // A CLI-backed OpenAI-compatible bridge (claude -p, codex exec) spends most of
 // this on cold start; 15 s produced false negatives that stuck the profile in
@@ -56,7 +57,8 @@ const hasProbeToolCall = (result: SendMessageResult): boolean => {
  * transport the real chat would use to avoid a false negative.
  */
 export async function probeToolCapability(
-  profile: Pick<Profile, "providerType" | "modelId" | "baseUrl" | "key">,
+  profile: Pick<Profile, "providerType" | "modelId">,
+  creds: ProviderCredentials,
   useResponsesApi = false,
   externalSignal?: AbortSignal
 ): Promise<boolean> {
@@ -67,7 +69,7 @@ export async function probeToolCapability(
 
   try {
     const Provider = await providerFor(profile.providerType);
-    const provider = new Provider(credsOf(profile));
+    const provider = new Provider(creds);
 
     const stream = provider.sendMessage({
       messages: probeMessages,
