@@ -17,6 +17,14 @@ class OpenAICompatibleProvider extends OpenAIProvider {
    */
   protected override downgradeSystem = true;
 
+  /**
+   * The endpoints behind this provider are the self-hosted ones (llama.cpp,
+   * vLLM, text-generation-webui, …) that emit thinking inside `content`
+   * rather than in `reasoning_content` — see
+   * {@link OpenAIProvider.splitInlineReasoning}.
+   */
+  protected override splitInlineReasoning = true;
+
   static override getName(): string {
     return openaicompatibleInfo.name;
   }

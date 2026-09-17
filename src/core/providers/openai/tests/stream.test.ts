@@ -437,3 +437,97 @@ describe("openai/stream/readReasoningDelta", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// processStream with inline-reasoning splitting (local backends)
+// ---------------------------------------------------------------------------
+
+describe("openai/stream/processStream inline reasoning", () => {
+  const finalOf = async (chunks: ChatCompletionChunk[], split: boolean) => {
+    const out = await collect(
+      processStream(toStream(chunks), undefined, {
+        splitInlineReasoning: split,
+      })
+    );
+    return (
+      out[out.length - 1] as unknown as {
+        isEnd: true;
+        responseMessage: ThreadMessageLike;
+      }
+    ).responseMessage;
+  };
+
+  it("keeps a <think> span out of the answer text", async () => {
+    const msg = await finalOf(
+      [
+        createTextDeltaChunk("<think>the user wants coffee</think>"),
+        createTextDeltaChunk("Coffee is a brewed drink."),
+        createFinishChunk(),
+      ],
+      true
+    );
+
+    const content = msg.content as { type: string; text: string }[];
+    const text = content
+      .filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+    const reasoning = content
+      .filter((p) => p.type === "reasoning")
+      .map((p) => p.text)
+      .join("");
+
+    expect(text).toBe("Coffee is a brewed drink.");
+    expect(reasoning).toBe("the user wants coffee");
+    expect(text).not.toContain("<think>");
+  });
+
+  it("splits gpt-oss harmony channels across chunk boundaries", async () => {
+    const msg = await finalOf(
+      [
+        createTextDeltaChunk("<|channel|>anal"),
+        createTextDeltaChunk("ysis<|message|>We need a paragraph."),
+        createTextDeltaChunk(
+          "<|end|><|channel|>final<|message|>Coffee is warm."
+        ),
+        createFinishChunk(),
+      ],
+      true
+    );
+
+    const content = msg.content as { type: string; text: string }[];
+    const text = content
+      .filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+    const reasoning = content
+      .filter((p) => p.type === "reasoning")
+      .map((p) => p.text)
+      .join("");
+
+    expect(text).toBe("Coffee is warm.");
+    expect(reasoning).toBe("We need a paragraph.");
+  });
+
+  it("leaves <think> alone when splitting is off (hosted providers)", async () => {
+    const msg = await finalOf(
+      [createTextDeltaChunk("<think>literal</think>ok"), createFinishChunk()],
+      false
+    );
+
+    expect(msg.content).toEqual([
+      { type: "text", text: "<think>literal</think>ok" },
+    ]);
+  });
+
+  it("flushes a withheld partial marker when the stream ends abruptly", async () => {
+    const msg = await finalOf([createTextDeltaChunk("answer <th")], true);
+
+    const content = msg.content as { type: string; text: string }[];
+    const text = content
+      .filter((p) => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+    expect(text).toBe("answer <th");
+  });
+});

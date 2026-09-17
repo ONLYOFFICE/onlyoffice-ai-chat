@@ -18,6 +18,7 @@ import { AbstractBaseProvider } from "../base";
 import { getErrorCode, ProviderErrors } from "../errors";
 import { createOpenAIClient } from "./client";
 import { openaiInfo } from "./info";
+import { stripInlineReasoning } from "./inline-reasoning";
 import { convertMessages, type ReasoningContentMode } from "./messages";
 import { listModels } from "./models";
 import {
@@ -75,6 +76,21 @@ class OpenAIProvider extends AbstractBaseProvider {
    */
   protected reasoningContentMode: ReasoningContentMode = "when-present";
 
+  /**
+   * When `true`, thinking the backend emits inside `delta.content` —
+   * `<think>` / `<reasoning>` spans, gpt-oss harmony channels — is routed
+   * into reasoning parts instead of the answer text.
+   *
+   * Off in the base class. The local-model servers (Ollama, LM Studio and
+   * the generic OpenAI-compatible endpoint) don't fill `reasoning_content`,
+   * so their thinking is otherwise indistinguishable from the reply: it
+   * rendered as the answer and was copied into document-writing tool
+   * arguments, putting the model's deliberation into the user's document
+   * (Bug 83793). Hosted providers report thinking in its own field, and
+   * there a model writing `<think>` in a reply means it literally.
+   */
+  protected splitInlineReasoning = false;
+
   /** {@link convertMessages} options for this provider's wire format. */
   private get convertOptions() {
     return {
@@ -125,7 +141,9 @@ class OpenAIProvider extends AbstractBaseProvider {
         signal,
       });
 
-      yield* processStream(stream, signal);
+      yield* processStream(stream, signal, {
+        splitInlineReasoning: this.splitInlineReasoning,
+      });
     } catch (error) {
       if (isAbortError(error, signal)) {
         yield { isEnd: true, responseMessage: createStopResponse() };
@@ -318,7 +336,8 @@ class OpenAIProvider extends AbstractBaseProvider {
       reasoningLevel,
       signal,
     });
-    return response.choices[0]?.message?.content ?? "";
+    const content = response.choices[0]?.message?.content ?? "";
+    return this.splitInlineReasoning ? stripInlineReasoning(content) : content;
   }
 
   /**

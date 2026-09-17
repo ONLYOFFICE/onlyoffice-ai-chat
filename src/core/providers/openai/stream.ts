@@ -6,6 +6,7 @@ import type {
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
 import type { SendMessageResult } from "../../../shared/send-message-args";
 import { toChatError } from "../../services/ai/error";
+import { InlineReasoningSplitter } from "./inline-reasoning";
 
 /**
  * Extension of OpenAI's streaming delta that adds the non-standard
@@ -208,8 +209,21 @@ export const finalizeReasoning = (
 export const handleText = (
   responseMessage: ThreadMessageLike,
   chunk: ChatCompletionChunk.Choice
+): ThreadMessageLike => appendText(responseMessage, chunk.delta.content ?? "");
+
+/**
+ * Append a text fragment that has already been separated from the chunk.
+ * Shared by {@link handleText} and the inline-reasoning path, which emits
+ * only the answer half of a delta and so has no chunk to hand over.
+ *
+ * @param responseMessage - The accumulating response.
+ * @param delta           - The answer text to append.
+ * @returns The updated response message.
+ */
+export const appendText = (
+  responseMessage: ThreadMessageLike,
+  delta: string
 ): ThreadMessageLike => {
-  const delta = chunk.delta.content;
   if (!delta) return responseMessage;
   if (!Array.isArray(responseMessage.content)) return responseMessage;
 
@@ -323,6 +337,18 @@ export const handleToolCall = (
 /** Streaming iterable returned by OpenAI's `chat.completions.create`. */
 type OpenAIStream = AsyncIterable<ChatCompletionChunk>;
 
+/** Per-request switches for {@link processStream}. */
+export interface ProcessStreamOptions {
+  /**
+   * Route thinking that a backend emits inside `delta.content` — Qwen3's
+   * `<think>` spans, gpt-oss's harmony channels — into reasoning parts
+   * instead of answer text. Opt-in: only the local-model providers see
+   * backends that do this, and a hosted model writing `<think>` in a reply
+   * about prompt formats means it literally (Bug 83793).
+   */
+  splitInlineReasoning?: boolean;
+}
+
 /**
  * Walk an OpenAI streaming response and yield snapshot-style
  * `SendMessageResult`s:
@@ -339,11 +365,15 @@ type OpenAIStream = AsyncIterable<ChatCompletionChunk>;
  */
 export async function* processStream(
   stream: OpenAIStream,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  options: ProcessStreamOptions = {}
 ): AsyncGenerator<SendMessageResult> {
   let responseMessage: ThreadMessageLike = createEmptyResponse();
   let isStreamComplete = false;
   let hasUnfinalizedReasoning = false;
+  const splitter = options.splitInlineReasoning
+    ? new InlineReasoningSplitter()
+    : undefined;
 
   for await (const streamEvent of stream) {
     const prev = responseMessage;
@@ -353,6 +383,20 @@ export async function* processStream(
       const delta = chunk.delta as DeltaWithReasoning;
 
       if (chunk.finish_reason) {
+        // Release any tail the splitter withheld as a possible partial
+        // marker before the message is finalized.
+        const tail = splitter?.flush();
+        if (tail?.reasoning) {
+          hasUnfinalizedReasoning = true;
+          responseMessage = handleReasoning(responseMessage, tail.reasoning);
+        }
+        if (tail?.text) {
+          if (hasUnfinalizedReasoning) {
+            responseMessage = finalizeReasoning(responseMessage);
+            hasUnfinalizedReasoning = false;
+          }
+          responseMessage = appendText(responseMessage, tail.text);
+        }
         if (hasUnfinalizedReasoning) {
           responseMessage = finalizeReasoning(responseMessage, true);
         }
@@ -367,11 +411,24 @@ export async function* processStream(
       }
 
       if (delta.content) {
-        if (hasUnfinalizedReasoning) {
-          responseMessage = finalizeReasoning(responseMessage);
-          hasUnfinalizedReasoning = false;
+        // With the splitter on, one content delta can carry both halves:
+        // the text that closed the thinking span and the answer after it.
+        const split = splitter
+          ? splitter.push(delta.content)
+          : { text: delta.content, reasoning: "" };
+
+        if (split.reasoning) {
+          hasUnfinalizedReasoning = true;
+          responseMessage = handleReasoning(responseMessage, split.reasoning);
         }
-        responseMessage = handleText(responseMessage, chunk);
+
+        if (split.text) {
+          if (hasUnfinalizedReasoning) {
+            responseMessage = finalizeReasoning(responseMessage);
+            hasUnfinalizedReasoning = false;
+          }
+          responseMessage = appendText(responseMessage, split.text);
+        }
       }
 
       if (delta.tool_calls && Array.isArray(responseMessage.content)) {
@@ -395,7 +452,24 @@ export async function* processStream(
     if (responseMessage !== prev) yield responseMessage;
   }
 
-  // Stream closed without a `finish_reason` — salvage whatever we got.
+  // Stream closed without a `finish_reason` — salvage whatever we got,
+  // including anything the splitter was still holding back.
+  const tail = splitter?.flush();
+  if (tail?.reasoning) {
+    hasUnfinalizedReasoning = true;
+    responseMessage = handleReasoning(responseMessage, tail.reasoning);
+  }
+  if (tail?.text) {
+    if (hasUnfinalizedReasoning) {
+      responseMessage = finalizeReasoning(responseMessage);
+      hasUnfinalizedReasoning = false;
+    }
+    responseMessage = appendText(responseMessage, tail.text);
+  }
+  if (hasUnfinalizedReasoning) {
+    responseMessage = finalizeReasoning(responseMessage, true);
+  }
+
   const hasContent =
     typeof responseMessage.content === "string"
       ? responseMessage.content.length > 0
