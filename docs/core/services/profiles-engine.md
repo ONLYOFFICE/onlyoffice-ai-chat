@@ -48,6 +48,16 @@ type ProfilesEngineDeps = {
    * a single sub-engine across `ProfilesEngine` and `AIEngine`.
    */
   assignments?: AssignmentsEngine;
+  /**
+   * Optional — the same transport switches `AIEngineDeps` takes. The
+   * capability probe run on `create` / `update` reaches the model the
+   * way chat will (`useProxy` / `forceProxy` → `fetchProxy`,
+   * `providerType: "external"` → `externalFetch`), so a host that only
+   * allows proxied traffic does not get a false `canUseTool: false`.
+   */
+  fetchProxy?: ProviderFetch;
+  forceProxy?: boolean | (() => boolean);
+  externalFetch?: ProviderFetch;
 };
 ```
 
@@ -383,7 +393,7 @@ can be unit-tested without mocking storage.
 | [`validation.ts`](../../../src/core/services/profiles/validation.ts)            | `validateProfile`, `checkCredentials`         | Name uniqueness + provider credential check |
 | (delegated)                                                                    | [`AssignmentsEngine.cascadeProfileDelete`](./assignments-engine.md#cascadeprofiledelete) | Default-slot promotion + orphan cleanup |
 | [`lookup.ts`](../../../src/core/services/profiles/lookup.ts)                    | `loadProfile`, `providerFor`, `credsOf`       | Storage / provider lookup helpers |
-| [`probe-tools.ts`](../../../src/core/services/profiles/probe-tools.ts)          | `probeToolCapability`                         | Live tool-capability probe (15 s timeout, never throws) |
+| [`probe-tools.ts`](../../../src/core/services/profiles/probe-tools.ts)          | `probeToolCapability`                         | Live tool-capability probe (2 min timeout, never throws) |
 | [`index.ts`](../../../src/core/services/profiles/index.ts)                      | barrel                                        | Re-exports `ProfilesEngine` and public types |
 
 ---

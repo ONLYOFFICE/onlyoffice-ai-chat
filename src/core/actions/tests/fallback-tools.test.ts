@@ -150,6 +150,31 @@ describe("transformHistoryToText", () => {
     expect(out[1].content).toBe('<TOOL_RESULT>{"ok":true}</TOOL_RESULT>');
   });
 
+  it("closes the assistant turn at a resolved call so the follow-up text comes after the result", () => {
+    const merged = {
+      role: "assistant",
+      content: [
+        { type: "text", text: "Let me search." },
+        {
+          type: "tool-call",
+          toolName: "search",
+          toolCallId: "1",
+          args: { q: "x" },
+          result: "found 3",
+        },
+        { type: "text", text: "Here are the results." },
+      ],
+    } as unknown as ThreadMessageLike;
+
+    const out = transformHistoryToText([merged]);
+    expect(out.map((m) => m.role)).toEqual(["assistant", "user", "assistant"]);
+    expect(out[0].content).toBe(
+      'Let me search.\n<TOOL_CALL>{"name":"search","arguments":{"q":"x"}}</TOOL_CALL>'
+    );
+    expect(out[1].content).toBe("<TOOL_RESULT>found 3</TOOL_RESULT>");
+    expect(out[2].content).toBe("Here are the results.");
+  });
+
   it("drops reasoning parts", () => {
     const input: ThreadMessageLike[] = [
       {
@@ -307,6 +332,70 @@ describe("wrapStream", () => {
     expect(parts.find((p) => p.type === "text")?.text).toBe(
       'hi <TOOL_CALL>{"name":"x"'
     );
+  });
+
+  it("matches the tags case-insensitively", async () => {
+    const out = await collect(
+      wrapStream(
+        fakeStream(
+          textEnd('ok <tool_call>{"name":"a","arguments":{"x":1}}</Tool_Call>')
+        )
+      )
+    );
+    const parts = partsOf(lastMessage(out));
+    expect(parts.find((p) => p.type === "tool-call")?.args).toEqual({ x: 1 });
+    expect(parts.find((p) => p.type === "text")?.text).toBe("ok ");
+  });
+
+  it("strips a markdown fence the model wrapped the block in", async () => {
+    const out = await collect(
+      wrapStream(
+        fakeStream(
+          textEnd(
+            'Searching.\n```json\n<TOOL_CALL>{"name":"a","arguments":{}}</TOOL_CALL>\n```'
+          )
+        )
+      )
+    );
+    const parts = partsOf(lastMessage(out));
+    expect(parts.find((p) => p.type === "tool-call")?.toolName).toBe("a");
+    expect(parts.find((p) => p.type === "text")?.text).toBe("Searching.");
+  });
+
+  it("carries reasoning parts through untouched", async () => {
+    const withReasoning = (t: string, isEnd: boolean): SendMessageResult => {
+      const message = {
+        role: "assistant",
+        content: [
+          { type: "reasoning", text: "hmm" },
+          { type: "text", text: t },
+        ],
+      } as unknown as ThreadMessageLike;
+      return isEnd ? { isEnd: true, responseMessage: message } : message;
+    };
+    const out = await collect(
+      wrapStream(
+        fakeStream(
+          withReasoning("plain answer", false),
+          withReasoning(
+            'plain <TOOL_CALL>{"name":"a","arguments":{}}</TOOL_CALL>',
+            true
+          )
+        )
+      )
+    );
+    for (const yielded of out) {
+      const parts = partsOf(
+        "isEnd" in yielded ? yielded.responseMessage : yielded
+      );
+      expect(parts[0]).toEqual({ type: "reasoning", text: "hmm" });
+    }
+    const finalParts = partsOf(lastMessage(out));
+    expect(finalParts.map((p) => p.type)).toEqual([
+      "reasoning",
+      "text",
+      "tool-call",
+    ]);
   });
 
   it("ignores trailing text after </TOOL_CALL>", async () => {
