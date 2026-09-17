@@ -445,15 +445,21 @@ const AssistantActionBar = () => {
     const messages = useMessageStore.getState().messages;
     const parentMessage = messages.find((m) => m.id === message.parentId);
 
-    const mdValue = convertMessagesToMd(
-      parentMessage ? [parentMessage, message] : [message]
-    );
+    const exported = parentMessage ? [parentMessage, message] : [message];
+
+    // In debug-export mode this carries the tool calls and reasoning too.
+    const mdValue = convertMessagesToMd(exported);
 
     // An attachment-only send carries an empty text part, so the Markdown
     // starts with a bare `## ` and yields no title — name the file after the
     // attached document instead of handing the host a bare `.docx`.
+    // The title is always derived from the prose-only rendering: a debug
+    // export can open with a tool-call block, which would otherwise name the
+    // file after a JSON fragment.
     const title =
-      getMessageTitleFromMd(mdValue) ||
+      getMessageTitleFromMd(
+        convertMessagesToMd(exported, { verbose: false })
+      ) ||
       getAttachmentTitle(parentMessage) ||
       removeSpecialCharacter(t("ChatExport"));
 

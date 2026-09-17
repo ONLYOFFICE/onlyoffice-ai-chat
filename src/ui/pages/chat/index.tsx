@@ -27,6 +27,7 @@ import { ComposerHeader } from "./sub-components/ComposerHeader";
 import { Suggestions } from "./sub-components/Suggestions";
 import { SuggestionsHeader } from "./sub-components/SuggestionsHeader";
 import { OlderMessages } from "./sub-components/OlderMessages";
+import { PreserveScrollOnHide } from "./sub-components/PreserveScrollOnHide";
 import { UserMessage } from "./sub-components/UserMessage";
 import { useChatDropAttachments } from "./useChatDropAttachments";
 
@@ -136,6 +137,10 @@ const ThreadInner = () => {
               {/* Pulls the previous page when the reader nears the top of
                   a paginated thread — see `OlderMessages`. */}
               <OlderMessages viewportRef={viewportRef} />
+
+              {/* Keeps the reading position when a host hides the chat
+                  with `display: none` — see `PreserveScrollOnHide`. */}
+              <PreserveScrollOnHide viewportRef={viewportRef} />
 
               <ThreadPrimitive.Messages
                 components={{
