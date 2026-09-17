@@ -8,21 +8,12 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
  */
 const EPHEMERAL = { type: "ephemeral" } as const;
 
-/**
- * A text content block carrying the caching marker. Inside a `tool`
- * message the ONLYOFFICE gateway expects the block to be typed
- * `tool_result` (it maps onto Anthropic's `tool_result` block, which is
- * where the marker must sit); everywhere else it is a plain `text` block.
- */
+/** A text content block carrying the caching marker. */
 type CacheableTextPart = {
-  type: "text" | "tool_result";
+  type: "text";
   text: string;
   cache_control?: typeof EPHEMERAL;
 };
-
-/** Block type the marked text block must carry for a given message role. */
-const blockTypeFor = (role: string): CacheableTextPart["type"] =>
-  role === "tool" ? "tool_result" : "text";
 
 /** Loose view of a converted message, before the marker is attached. */
 type LooseMessage = {
@@ -39,8 +30,7 @@ type LooseMessage = {
  * Non-text trailing blocks (images, files) are skipped in favour of the
  * last text block; a message with no text block at all is returned as is.
  *
- * For a `tool` message the marked block is emitted as `tool_result`
- * instead of `text` — see {@link blockTypeFor}.
+ * `tool` messages are never marked — see {@link withCacheControl}.
  *
  * @param message - One already-converted chat-completion message.
  * @returns A copy carrying the marker, or the original when inapplicable.
@@ -49,7 +39,7 @@ const markMessage = (message: LooseMessage): LooseMessage => {
   if (typeof message.content === "string") {
     if (!message.content) return message;
     const part: CacheableTextPart = {
-      type: blockTypeFor(message.role),
+      type: "text",
       text: message.content,
       cache_control: EPHEMERAL,
     };
@@ -69,9 +59,7 @@ const markMessage = (message: LooseMessage): LooseMessage => {
   if (index === -1) return message;
 
   const content = message.content.map((part, i) =>
-    i === index
-      ? { ...part, type: blockTypeFor(message.role), cache_control: EPHEMERAL }
-      : part
+    i === index ? { ...part, cache_control: EPHEMERAL } : part
   );
   return { ...message, content } as LooseMessage;
 };
@@ -87,6 +75,16 @@ const markMessage = (message: LooseMessage): LooseMessage => {
  *  2. the final message of the conversation — so the whole history up to
  *     the current turn is cached and the next turn reuses it.
  *
+ * A trailing `tool` message (the round right after a tool call) is left
+ * exactly as the converter produced it, and the second breakpoint moves
+ * back to the nearest non-`tool` message. In the chat-completion wire
+ * format a `tool` message carries a plain string or `text` blocks only;
+ * the gateway's OpenAI-to-Anthropic conversion drops any other block type,
+ * and an earlier build that emitted a `tool_result`-typed block there made
+ * Claude receive an empty tool result — MCP tool output never reached the
+ * model. The tool result itself is a single message and is not worth a
+ * cache breakpoint; the history before it still is.
+ *
  * Both are pure additions to the request body: a backend that ignores
  * `cache_control` sees an otherwise unchanged request.
  *
@@ -99,7 +97,15 @@ export const withCacheControl = (
   if (messages.length === 0) return messages;
 
   const loose = messages as unknown as LooseMessage[];
-  const last = loose.length - 1;
+
+  // Manual reverse scan: `findLastIndex` needs an ES2023 lib.
+  let last = -1;
+  for (let i = loose.length - 1; i >= 0; i--) {
+    if (loose[i].role !== "tool") {
+      last = i;
+      break;
+    }
+  }
 
   const result = loose.map((message, i) => {
     if (i === last) return markMessage(message);

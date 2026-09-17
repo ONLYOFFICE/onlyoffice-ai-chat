@@ -28,13 +28,13 @@ describe("withCacheControl", () => {
     expect(marks(out[3])).toEqual([true]);
   });
 
-  it("types the marked block of a trailing tool message as tool_result", () => {
+  it("leaves a trailing tool message untouched and marks the message before it", () => {
     const out = withCacheControl([
       { role: "system", content: "rules" },
       { role: "user", content: "run it" },
       {
         role: "assistant",
-        content: "",
+        content: "on it",
         tool_calls: [
           {
             id: "call_1",
@@ -43,35 +43,62 @@ describe("withCacheControl", () => {
           },
         ],
       },
-      { role: "tool", tool_call_id: "call_1", content: '{"content":[]}' },
+      {
+        role: "tool",
+        tool_call_id: "call_1",
+        content: '{"content":[{"type":"text","text":"Lorem ipsum"}]}',
+      },
     ] as ChatCompletionMessageParam[]);
 
+    // The wire format allows only a string or `text` blocks here; any other
+    // block type is dropped by the gateway and the model sees an empty result.
     expect(out[3]).toEqual({
       role: "tool",
       tool_call_id: "call_1",
-      content: [
+      content: '{"content":[{"type":"text","text":"Lorem ipsum"}]}',
+    });
+    expect(out[2]).toEqual({
+      role: "assistant",
+      content: [{ type: "text", text: "on it", cache_control: EPHEMERAL }],
+      tool_calls: [
         {
-          type: "tool_result",
-          text: '{"content":[]}',
-          cache_control: EPHEMERAL,
+          id: "call_1",
+          type: "function",
+          function: { name: "t", arguments: "{}" },
         },
       ],
     });
   });
 
-  it("retypes an already block-shaped trailing tool message", () => {
-    const out = withCacheControl([
+  it("never retypes a block-shaped tool message", () => {
+    const input = [
       {
         role: "tool",
         tool_call_id: "call_1",
         content: [{ type: "text", text: "ok" }],
       },
+    ] as ChatCompletionMessageParam[];
+
+    expect(withCacheControl(input)[0]).toEqual(input[0]);
+  });
+
+  it("skips several trailing tool messages of a parallel call", () => {
+    const out = withCacheControl([
+      { role: "user", content: "run both" },
+      { role: "tool", tool_call_id: "call_1", content: "a" },
+      { role: "tool", tool_call_id: "call_2", content: "b" },
     ] as ChatCompletionMessageParam[]);
 
-    expect(out[0]).toEqual({
+    expect(marks(out[0])).toEqual([true]);
+    expect(out[1]).toEqual({
       role: "tool",
       tool_call_id: "call_1",
-      content: [{ type: "tool_result", text: "ok", cache_control: EPHEMERAL }],
+      content: "a",
+    });
+    expect(out[2]).toEqual({
+      role: "tool",
+      tool_call_id: "call_2",
+      content: "b",
     });
   });
 
