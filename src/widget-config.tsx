@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import { setLogLevel, type LogLevel } from "./shared/logger";
+import { setVerboseExport } from "./utils";
 import type { SystemPromptOverride } from "./core/actions";
 import type { AssistantAction } from "./ui/pages/chat/assistant-actions";
 import type { ComposerAction } from "./ui/pages/chat/composer-actions";
@@ -625,6 +626,26 @@ export interface WidgetConfig {
    * the exported `setLogLevel` directly is not overridden.
    */
   logLevel?: LogLevel;
+  /**
+   * Debug export mode: when `true`, every export/copy path writes the full
+   * message model into the produced document instead of only the
+   * user/assistant prose — tool calls with their arguments and results,
+   * reasoning blocks and attachment markers are all included, nothing is
+   * cut out.
+   *
+   * Intended for hosts that opened the editor in debug mode, so a support
+   * engineer can save a chat and see exactly what the model did.
+   *
+   * Applies globally (the serializers are module-level, like the logger),
+   * not per widget instance. When omitted, the current state is left
+   * untouched, so a host that calls the exported `setVerboseExport`
+   * directly is not overridden.
+   *
+   * This flag can only turn verbose export *on*. The desktop editor's own
+   * debug build enables it independently — it appends a `DebugMode` token to
+   * the User-Agent — and `debugExport: false` does not switch that off.
+   */
+  debugExport?: boolean;
 }
 
 /** Prompt fields exchanged with the host's create/edit windows. */
@@ -719,6 +740,11 @@ export const WidgetConfigProvider = ({
   // effect before children emit anything on first paint. Only when explicitly
   // set — otherwise a host-side `setLogLevel` call is left intact.
   if (value.logLevel) setLogLevel(value.logLevel);
+
+  // Same synchronous-during-render treatment for the debug-export switch:
+  // the export serializers are module-level and must already agree with the
+  // config before any action bar can fire.
+  if (value.debugExport !== undefined) setVerboseExport(value.debugExport);
 
   return (
     <WidgetConfigContext.Provider value={value}>

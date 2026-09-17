@@ -569,6 +569,9 @@ export {
   convertMessagesToMd,
   getMessageText,
   getMessageTitleFromMd,
+  getVerboseExport,
+  setVerboseExport,
+  type ExportOptions,
 } from "./utils";
 
 export {

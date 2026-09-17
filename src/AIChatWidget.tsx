@@ -342,6 +342,13 @@ export interface AIChatWidgetProps {
    * defaults to logging everything. See {@link WidgetConfig.logLevel}.
    */
   logLevel?: WidgetConfig["logLevel"];
+  /**
+   * Write the full message model (tool calls with arguments and results,
+   * reasoning, attachments) into every chat/message export instead of only
+   * the conversation prose. Set it when the editor runs in debug mode.
+   * See {@link WidgetConfig.debugExport}.
+   */
+  debugExport?: WidgetConfig["debugExport"];
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -412,6 +419,7 @@ export const AIChatWidget = React.forwardRef<
       onToolCallApproveResult,
       formatChatError,
       logLevel,
+      debugExport,
     },
     ref
   ) => {
@@ -456,6 +464,7 @@ export const AIChatWidget = React.forwardRef<
         onToolCallApproveResult,
         formatChatError,
         logLevel,
+        debugExport,
       }),
       [
         hideProfilePicker,
@@ -497,6 +506,7 @@ export const AIChatWidget = React.forwardRef<
         onToolCallApproveResult,
         formatChatError,
         logLevel,
+        debugExport,
       ]
     );
 
