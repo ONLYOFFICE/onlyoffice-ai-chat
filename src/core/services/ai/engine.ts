@@ -606,10 +606,12 @@ export class AIEngine {
   }
 
   /**
-   * Re-roll the last assistant reply in an existing thread. Drops every
-   * trailing message after the last user message (the previous reply
-   * plus any tool-call hops), persists the deletion, and streams a
-   * fresh reply against the unchanged user prompt. Skips title
+   * Re-roll the assistant reply to a user turn in an existing thread.
+   * Drops every trailing message after that user message (the previous
+   * reply plus any tool-call hops), persists the deletion, and streams a
+   * fresh reply against the unchanged user prompt. `input.messageId`
+   * selects the turn — regenerating an older one rewinds the thread to
+   * it; without it the last user message is used. Skips title
    * generation and thread creation — the thread must already exist.
    */
   async *regenerateStream(
@@ -632,22 +634,40 @@ export class AIEngine {
 
     const stored = await this.readAllMessages(input.threadId);
 
-    let lastUserIdx = -1;
-    for (let i = stored.length - 1; i >= 0; i--) {
-      if (stored[i].role === "user") {
-        lastUserIdx = i;
-        break;
+    // The turn to re-roll from. An explicit `messageId` lets the caller
+    // rewind to an older user message; anything after it is dropped.
+    // Falls back to the last user message when the id is absent or no
+    // longer in the thread, and never targets a non-user message.
+    let userIdx = -1;
+    if (input.messageId !== undefined) {
+      const idx = stored.findIndex((m) => m.id === input.messageId);
+      if (idx >= 0 && stored[idx].role === "user") userIdx = idx;
+    }
+    if (userIdx < 0 && input.keepCount !== undefined) {
+      // The id was optimistic (never stored) — fall back to the caller's
+      // position, which the UI keeps in lockstep with the thread.
+      const idx = input.keepCount - 1;
+      if (idx >= 0 && idx < stored.length && stored[idx].role === "user") {
+        userIdx = idx;
       }
     }
-    if (lastUserIdx < 0) return;
+    if (userIdx < 0) {
+      for (let i = stored.length - 1; i >= 0; i--) {
+        if (stored[i].role === "user") {
+          userIdx = i;
+          break;
+        }
+      }
+    }
+    if (userIdx < 0) return;
 
-    const tail = stored.slice(lastUserIdx + 1);
+    const tail = stored.slice(userIdx + 1);
     for (const m of tail) {
       if (m.id) await this.deps.storage.messages.delete(m.id);
     }
 
     const priorMessages = stripUnresolvedToolCalls(
-      stored.slice(0, lastUserIdx + 1)
+      stored.slice(0, userIdx + 1)
     ).filter(hasSendableContent);
 
     const toolCtx = await buildToolContext(

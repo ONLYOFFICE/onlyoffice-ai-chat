@@ -207,14 +207,36 @@ export type SendStreamInput = {
 
 /**
  * Payload for {@link AIEngine.regenerateStream}. The engine drops every
- * trailing message after the last user message in the thread (the
- * previous assistant reply plus any tool-call hops) and streams a fresh
- * reply against the unchanged user prompt. The thread must already
- * exist — regenerate only operates on persisted history.
+ * trailing message after the user message being re-rolled (the previous
+ * assistant reply plus any tool-call hops) and streams a fresh reply
+ * against that unchanged user prompt. The thread must already exist —
+ * regenerate only operates on persisted history.
  */
 export type RegenerateStreamInput = {
   /** Target thread (must exist). */
   threadId: string;
+
+  /**
+   * The user message to re-roll from. Everything stored after it is
+   * dropped, so regenerating an older turn rewinds the thread to that
+   * point instead of re-rolling the newest reply. Omitted (or no longer
+   * present in the thread) → the last user message, the pre-existing
+   * behavior.
+   *
+   * Callers that render optimistically may hold a client-side id the
+   * storage layer never saw; {@link keepCount} covers that case.
+   */
+  messageId?: string;
+
+  /**
+   * How many messages from the start of the thread to keep, used when
+   * `messageId` cannot be resolved against storage. The message at
+   * `keepCount - 1` must be the user turn to re-roll; everything after
+   * it is dropped. Ignored when it does not land on a user message, so
+   * a stale count degrades to the last-user-message fallback rather
+   * than re-rolling from the wrong turn.
+   */
+  keepCount?: number;
 
   /** Forwarded to the underlying action. `profile` and `messages` are owned by the engine. */
   actionArgs?: Omit<ActionArgs, "profile" | "messages">;

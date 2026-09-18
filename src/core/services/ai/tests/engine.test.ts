@@ -810,6 +810,110 @@ describe("AIEngine.regenerateStream", () => {
     expect(deletedIds).toEqual(["asst-tool", "tool-result", "asst-final"]);
   });
 
+  describe("turn selection", () => {
+    /** Two complete rounds: user-1 / asst-1, then user-2 / asst-2. */
+    const twoRounds = (): ThreadMessageLike[] => [
+      { id: "user-1", role: "user", content: [{ type: "text", text: "one" }] },
+      {
+        id: "asst-1",
+        role: "assistant",
+        content: [{ type: "text", text: "reply one" }],
+      },
+      { id: "user-2", role: "user", content: [{ type: "text", text: "two" }] },
+      {
+        id: "asst-2",
+        role: "assistant",
+        content: [{ type: "text", text: "reply two" }],
+      },
+    ];
+
+    const runRegenerate = async (
+      input: Omit<Parameters<AIEngine["regenerateStream"]>[0], "threadId">
+    ) => {
+      sendMessageMock.mockReturnValueOnce(arrayToStream([]));
+      const { storage } = makeStorage();
+      (
+        storage.messages.readByThread as ReturnType<typeof vi.fn>
+      ).mockResolvedValueOnce(twoRounds());
+
+      const engine = new AIEngine({ storage });
+      for await (const _ of engine.regenerateStream({
+        threadId: "t1",
+        ...input,
+      })) {
+        // drain
+      }
+
+      return {
+        deleted: (
+          storage.messages.delete as ReturnType<typeof vi.fn>
+        ).mock.calls.map((c: unknown[]) => c[0]),
+        sent: (
+          sendMessageMock.mock.calls[0][0] as {
+            messages: ThreadMessageLike[];
+          }
+        ).messages,
+      };
+    };
+
+    it("rewinds to the message named by messageId, not the newest turn", async () => {
+      const { deleted, sent } = await runRegenerate({ messageId: "user-1" });
+
+      expect(deleted).toEqual(["asst-1", "user-2", "asst-2"]);
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({ id: "user-1" });
+    });
+
+    it("falls back to keepCount when messageId is an optimistic id storage never saw", async () => {
+      const { deleted, sent } = await runRegenerate({
+        messageId: "client-side-uuid",
+        keepCount: 1,
+      });
+
+      expect(deleted).toEqual(["asst-1", "user-2", "asst-2"]);
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({ id: "user-1" });
+    });
+
+    it("prefers a resolvable messageId over keepCount", async () => {
+      const { sent } = await runRegenerate({
+        messageId: "user-1",
+        keepCount: 3,
+      });
+
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({ id: "user-1" });
+    });
+
+    it("ignores a keepCount that does not land on a user message", async () => {
+      // keepCount 2 points at asst-1 — a stale count. Rather than
+      // re-rolling the wrong turn, degrade to the last user message.
+      const { deleted, sent } = await runRegenerate({
+        messageId: "gone",
+        keepCount: 2,
+      });
+
+      expect(deleted).toEqual(["asst-2"]);
+      expect(sent).toHaveLength(3);
+      expect(sent[2]).toMatchObject({ id: "user-2" });
+    });
+
+    it("ignores a messageId pointing at an assistant message", async () => {
+      const { deleted, sent } = await runRegenerate({ messageId: "asst-1" });
+
+      expect(deleted).toEqual(["asst-2"]);
+      expect(sent[sent.length - 1]).toMatchObject({ id: "user-2" });
+    });
+
+    it("re-rolls the last user message when neither hint is given", async () => {
+      const { deleted, sent } = await runRegenerate({});
+
+      expect(deleted).toEqual(["asst-2"]);
+      expect(sent).toHaveLength(3);
+      expect(sent[2]).toMatchObject({ id: "user-2" });
+    });
+  });
+
   it("forwards entityId to assignments.readByType", async () => {
     const userPersisted: ThreadMessageLike = {
       id: "u",
