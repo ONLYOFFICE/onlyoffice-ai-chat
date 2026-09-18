@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.117
 
 ### Added
 
@@ -13,6 +13,20 @@
 - **A `FormAnalysis` assignment slot.** New `ActionType.FormAnalysis` (requires the `Chat` capability), exposed as a "Form analysis" row on the Model Assignment page and wired through the profiles store (`formAnalysisProfile`, `setFormAnalysisProfile`, `ModelAssignmentTask = "formAnalysis"`). It is the last member of the enum, matching the DocSpace backend, which already persists and resolves the slot over `ai/assignments` and picks its default from the configured `ai:formAnalysisModel` gateway model. The slot has no entry in `SYNC_ACTIONS` — form analysis runs server-side, so there is no client-side action to dispatch — and no `ACTION_FALLBACKS` hop, so an unset slot falls through to `Default` as the other slots do.
 
 ### Fixed
+
+- **A tool-capability probe gets two minutes instead of fifteen seconds.** Saving a profile asks the model to call a test tool to learn whether it supports function calling. A profile backed by a CLI bridge (`claude -p` or `codex exec` behind an OpenAI-compatible server) spends most of a request on process start, and a cold start easily outlived the 15 s limit; the false negative stuck the profile in the text-protocol fallback for good, since the probe only reruns when the model or base URL changes. A model that does answer still returns in seconds, so the save button waits longer only when nothing is coming back anyway.
+
+- **MCP tool results reach Claude on the ONLYOFFICE route.** The cache-control pass rewrote a trailing `tool` message into a `tool_result`-typed content block, a type that does not exist in the chat-completion wire format. The gateway dropped it while converting to Anthropic, and Claude received an empty tool result — the output of `download_file_as_text` and every other MCP tool never reached the model. Tool messages are now never touched; when the conversation ends on one, the second cache breakpoint moves back to the nearest non-tool message.
+
+- **A rejected parameter no longer shows as "Selected model unavailable" (Bug 83703).** The 400 branch of the error classifier turned any message containing the word "model" into `model_not_found`, so Anthropic's `"thinking.type.enabled" is not supported for this model` came out as an unavailable model with a Retry button that could not help. A 400 is now `model_not_found` only on an explicit code or a phrasing providers use for a missing model ("does not exist", "not found", "unknown model" and the like); any other 400 stays `bad_request` and shows the provider's own text.
+
+- **Stopping a Claude reply mid-thought no longer breaks the next request (Bug 83732).** Anthropic sends a thinking block's signature as its last event, so a reply stopped while Claude was still thinking persisted a reasoning part with no signature, and the next request replayed it as a `thinking` block with an empty one — rejected as `Invalid signature in thinking block`. The unsigned block was already dropped since Bug 83335; the remaining hole was the blank text block a stopped round leaves behind, which Anthropic rejects as well and which OpenAI-compatible streams also emit. It is skipped too, and an assistant turn left with nothing to say is omitted from the request entirely.
+
+- **Gemini accepts the editor's tool catalogue (Bug 83699).** Gemini validates tool schemas against its own `Schema` subset and fails the whole request on the first violation, so a single property declared with `enum: [2, 3]` made every Google AI request answer `INVALID_ARGUMENT`, even one asking for a plain "OK". Every `inputSchema` now passes through `sanitizeGeminiSchema` before going on the wire: unknown JSON Schema keys are dropped, a union type becomes type + `nullable`, an undocumented `format` is dropped, and a non-string enum is replaced by an "Allowed values" note in the description, so the model still sees the choices and the host still receives a number.
+
+  ```ts
+  // { type: "integer", enum: [2, 3] } → { type: "integer", description: "… Allowed values: 2, 3" }
+  ```
 
 - **A draft of attachments alone can be sent.** Dropping a file into the composer and pressing Enter (or Send) with no text did nothing: both paths gate on assistant-ui's runtime-level `composer.isEmpty`, which counts the runtime's own attachment list and never sees the widget's `useAttachmentsStore`, so a file-only draft looked empty to it. Send is now driven directly — enabled on either text or a settled attachment — and the composer's own `onSubmit` takes over whenever attachments the runtime cannot see are present. `onNew` no longer drops such a send either: an attachment-only message arrives with no text block at all, which the old `message.content[0].type !== "text"` guard rejected outright. The resulting message renders as the file chips alone — no empty text bubble under them, and no copy / save-as-prompt bar, neither of which has anything to act on.
 

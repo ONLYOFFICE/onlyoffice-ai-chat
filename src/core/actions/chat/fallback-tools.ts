@@ -1,6 +1,7 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { TMCPItem } from "../../../shared/mcp-item";
 import type { SendMessageResult } from "../../../shared/send-message-args";
+import { augmentToolsWithIntent } from "../../../shared/tool-intent";
 import { providerFor } from "../provider";
 import { resolveSystemPrompt } from "../system-prompt";
 import type { ActionArgs } from "../types";
@@ -8,6 +9,15 @@ import { systemPrompt as defaultPrompt } from "./prompt";
 
 const OPEN = "<TOOL_CALL>";
 const CLOSE = "</TOOL_CALL>";
+
+// Models fine-tuned on Hermes/Qwen-style protocols drift to `<tool_call>`
+// no matter what the instruction says, so both tags match case-insensitively.
+const OPEN_RE = /<tool_call>/i;
+const CLOSE_RE = /<\/tool_call>/i;
+
+// A markdown fence the model wrapped the block in — with or without a
+// language tag — would otherwise leak into the text before the call.
+const TRAILING_FENCE_RE = /\n?```[a-z]*[ \t]*\n?$/i;
 
 type AssistantContentPart = {
   type: string;
@@ -62,24 +72,33 @@ const stringifyResult = (result: unknown): string => {
   }
 };
 
+/**
+ * Rewrite structured tool-call parts in assistant history into the text
+ * protocol. Every resolved call closes the assistant turn: the call text
+ * ends that message, its result follows as a user `<TOOL_RESULT>` message,
+ * and any later parts open a fresh assistant message — so the model reads
+ * call → result → follow-up in the order they actually happened, even
+ * though `mergeResume` stores the follow-up in the same message.
+ */
 export const transformHistoryToText = (
   messages: ThreadMessageLike[]
 ): ThreadMessageLike[] => {
   const out: ThreadMessageLike[] = [];
 
   for (const message of messages) {
-    if (message.role !== "assistant") {
+    if (message.role !== "assistant" || typeof message.content === "string") {
       out.push(message);
       continue;
     }
 
-    if (typeof message.content === "string") {
-      out.push(message);
-      continue;
-    }
-
-    const textPieces: string[] = [];
-    const trailingResults: string[] = [];
+    let textPieces: string[] = [];
+    let pushed = false;
+    const flushAssistant = () => {
+      if (textPieces.length === 0) return;
+      out.push({ ...message, content: textPieces.join("\n") });
+      textPieces = [];
+      pushed = true;
+    };
 
     for (const rawPart of message.content) {
       const part = rawPart as AssistantContentPart;
@@ -92,25 +111,18 @@ export const transformHistoryToText = (
             : safeParse(part.argsText);
         textPieces.push(stringifyToolCall(part.toolName, argsObj));
         if (part.result !== undefined && part.result !== null) {
-          trailingResults.push(
-            `<TOOL_RESULT>${stringifyResult(part.result)}</TOOL_RESULT>`
-          );
+          flushAssistant();
+          out.push({
+            role: "user",
+            content: `<TOOL_RESULT>${stringifyResult(part.result)}</TOOL_RESULT>`,
+          });
         }
       }
       // reasoning parts intentionally dropped
     }
 
-    out.push({
-      ...message,
-      content: textPieces.join("\n"),
-    });
-
-    if (trailingResults.length > 0) {
-      out.push({
-        role: "user",
-        content: trailingResults.join("\n"),
-      });
-    }
+    flushAssistant();
+    if (!pushed) out.push({ ...message, content: "" });
   }
 
   return out;
@@ -139,38 +151,65 @@ const extractText = (message: ThreadMessageLike): string => {
   return acc;
 };
 
-const textOnlyResult = (text: string, isEnd: boolean): SendMessageResult => {
-  const message: ThreadMessageLike = {
+// Everything the protocol does not own (reasoning, images, …) is carried
+// over verbatim so the text-protocol path renders the same as native.
+const passthroughParts = (
+  message: ThreadMessageLike
+): AssistantContentPart[] => {
+  if (!Array.isArray(message.content)) return [];
+  return (message.content as AssistantContentPart[]).filter(
+    (part) => part.type !== "text" && part.type !== "tool-call"
+  );
+};
+
+const rebuild = (
+  source: ThreadMessageLike,
+  parts: AssistantContentPart[],
+  isEnd: boolean
+): SendMessageResult => {
+  const message = {
+    ...source,
     role: "assistant",
-    content: [{ type: "text", text }],
-  };
+    content: [...passthroughParts(source), ...parts],
+  } as unknown as ThreadMessageLike;
   return isEnd ? { isEnd: true, responseMessage: message } : message;
 };
 
+const textOnlyResult = (
+  source: ThreadMessageLike,
+  text: string,
+  isEnd: boolean
+): SendMessageResult => rebuild(source, [{ type: "text", text }], isEnd);
+
 const toolCallResult = (
+  source: ThreadMessageLike,
   textBefore: string,
   toolName: string,
   argsObj: Record<string, unknown>,
   toolCallId: string,
   isEnd: boolean
 ): SendMessageResult => {
-  const content: AssistantContentPart[] = [];
+  const parts: AssistantContentPart[] = [];
   if (textBefore.length > 0) {
-    content.push({ type: "text", text: textBefore });
+    parts.push({ type: "text", text: textBefore });
   }
-  content.push({
+  parts.push({
     type: "tool-call",
     toolName,
     toolCallId,
     argsText: JSON.stringify(argsObj),
     args: argsObj,
   });
-  const message = {
-    role: "assistant",
-    content,
-  } as unknown as ThreadMessageLike;
-  return isEnd ? { isEnd: true, responseMessage: message } : message;
+  return rebuild(source, parts, isEnd);
 };
+
+const indexOfTag = (text: string, tag: RegExp, from = 0): number => {
+  const match = tag.exec(text.slice(from));
+  return match ? from + match.index : -1;
+};
+
+const stripFence = (textBefore: string): string =>
+  textBefore.replace(TRAILING_FENCE_RE, "");
 
 export const wrapStream = async function* (
   upstream: AsyncGenerator<SendMessageResult>
@@ -199,12 +238,12 @@ export const wrapStream = async function* (
     const rawText = extractText(message);
 
     if (state === "scanning") {
-      const idx = rawText.indexOf(OPEN);
+      const idx = indexOfTag(rawText, OPEN_RE);
       if (idx < 0) {
         const exposed = isEnd
           ? rawText
           : rawText.slice(0, Math.max(0, rawText.length - holdTail));
-        yield textOnlyResult(exposed, isEnd);
+        yield textOnlyResult(message, exposed, isEnd);
         continue;
       }
       state = "buffering";
@@ -212,17 +251,18 @@ export const wrapStream = async function* (
     }
 
     if (state === "buffering") {
-      const idx = rawText.indexOf(OPEN);
-      const closeAt = idx >= 0 ? rawText.indexOf(CLOSE, idx + OPEN.length) : -1;
-      const textBefore = idx >= 0 ? rawText.slice(0, idx) : rawText;
+      const idx = indexOfTag(rawText, OPEN_RE);
+      const closeAt =
+        idx >= 0 ? indexOfTag(rawText, CLOSE_RE, idx + OPEN.length) : -1;
+      const textBefore = stripFence(idx >= 0 ? rawText.slice(0, idx) : rawText);
 
       if (idx < 0) {
         // shouldn't really happen — buffering means we already saw OPEN
         if (isEnd) {
           state = "broken";
-          yield textOnlyResult(rawText, true);
+          yield textOnlyResult(message, rawText, true);
         } else {
-          yield textOnlyResult(textBefore, false);
+          yield textOnlyResult(message, textBefore, false);
         }
         continue;
       }
@@ -230,9 +270,9 @@ export const wrapStream = async function* (
       if (closeAt < 0) {
         if (isEnd) {
           state = "broken";
-          yield textOnlyResult(rawText, true);
+          yield textOnlyResult(message, rawText, true);
         } else {
-          yield textOnlyResult(textBefore, false);
+          yield textOnlyResult(message, textBefore, false);
         }
         continue;
       }
@@ -243,7 +283,7 @@ export const wrapStream = async function* (
         parsed = JSON.parse(body);
       } catch {
         state = "broken";
-        yield textOnlyResult(rawText, isEnd);
+        yield textOnlyResult(message, rawText, isEnd);
         continue;
       }
 
@@ -260,7 +300,7 @@ export const wrapStream = async function* (
 
       if (!name) {
         state = "broken";
-        yield textOnlyResult(rawText, isEnd);
+        yield textOnlyResult(message, rawText, isEnd);
         continue;
       }
 
@@ -268,7 +308,14 @@ export const wrapStream = async function* (
       frozenTextBefore = textBefore;
       frozenToolName = name;
       frozenArgs = argsObj;
-      yield toolCallResult(textBefore, name, argsObj, toolCallId, isEnd);
+      yield toolCallResult(
+        message,
+        textBefore,
+        name,
+        argsObj,
+        toolCallId,
+        isEnd
+      );
       continue;
     }
 
@@ -276,6 +323,7 @@ export const wrapStream = async function* (
       // tool-call already exposed; ignore trailing text after </TOOL_CALL>.
       if (isEnd) {
         yield toolCallResult(
+          message,
           frozenTextBefore,
           frozenToolName,
           frozenArgs,
@@ -287,7 +335,7 @@ export const wrapStream = async function* (
     }
 
     // state === "broken"
-    yield textOnlyResult(rawText, isEnd);
+    yield textOnlyResult(message, rawText, isEnd);
   }
 };
 
@@ -302,7 +350,7 @@ export async function* streamWithTextProtocol(
   args: ActionArgs,
   baseSystemPrompt: string
 ): AsyncGenerator<SendMessageResult> {
-  const tools = args.tools ?? [];
+  const tools = augmentToolsWithIntent(args.tools ?? []);
   const composedSystem = `${baseSystemPrompt}\n\n${buildToolsBlock(tools)}`;
 
   const provider = await providerFor(args);

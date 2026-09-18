@@ -507,7 +507,6 @@ export const AIChatWidget = React.forwardRef<
       const middlewareRunner = new MiddlewareRunner(middleware ?? []);
 
       const assignments = new AssignmentsEngine({ storage });
-      const profiles = new ProfilesEngine({ storage, assignments });
       const threads = new ThreadsEngine({
         storage,
         ...(enablePagination ? { pagination: true } : {}),
@@ -543,6 +542,14 @@ export const AIChatWidget = React.forwardRef<
       const externalFetch: ProviderFetch | undefined = platform.externalFetch
         ? normalizeFetch(platform.externalFetch)
         : undefined;
+
+      const profiles = new ProfilesEngine({
+        storage,
+        assignments,
+        ...(proxyFetch ? { fetchProxy: proxyFetch } : {}),
+        ...(externalFetch ? { externalFetch } : {}),
+        ...(forceProxy ? { forceProxy: true } : {}),
+      });
 
       // Web search routes its HTTP through the host proxy only when one
       // is configured; otherwise it falls back to the global `fetch`.

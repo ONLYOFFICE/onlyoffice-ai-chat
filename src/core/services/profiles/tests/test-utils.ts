@@ -1,5 +1,6 @@
 import { vi } from "vitest";
 import type { Model } from "../../../../shared/model";
+import type { ProviderCredentials } from "../../../../shared/provider-credentials";
 import type {
   SendMessageArgs,
   SendMessageResult,
@@ -24,10 +25,15 @@ export const sendMessageProbeMock = vi.fn(
   (_args: SendMessageArgs): boolean => false
 );
 
+/** Credentials the probe constructed the stub with, newest first. */
+export const probeCredsLog: ProviderCredentials[] = [];
+
 export class StubProfileProvider extends AbstractBaseProvider {
-  async *sendMessage(
-    args: SendMessageArgs
-  ): AsyncGenerator<SendMessageResult> {
+  constructor(creds: ProviderCredentials) {
+    super(creds);
+    probeCredsLog.unshift(creds);
+  }
+  async *sendMessage(args: SendMessageArgs): AsyncGenerator<SendMessageResult> {
     if (sendMessageProbeMock(args)) {
       yield {
         isEnd: true,
