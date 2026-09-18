@@ -1,6 +1,7 @@
 import type { GoogleGenAI } from "@google/genai";
 import { isAbortError } from "../../../shared/abort";
 import type { TErrorData } from "../../../shared/error-data";
+import type { ImageGenerationArgs } from "../../../shared/image-generation-args";
 import logger from "../../../shared/logger";
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
@@ -13,6 +14,7 @@ import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args
 import { AbstractBaseProvider } from "../base";
 import { ProviderErrors } from "../errors";
 import { createGenAIClient } from "./client";
+import { generateImage } from "./image";
 import { genaiInfo } from "./info";
 import { convertMessages } from "./messages";
 import { listModels } from "./models";
@@ -85,6 +87,16 @@ class GenAIProvider extends AbstractBaseProvider {
       },
     });
     return response.text ?? "";
+  }
+
+  async imageGeneration(args: ImageGenerationArgs): Promise<string> {
+    try {
+      return await generateImage(this.client, args);
+    } catch (error) {
+      if (isAbortError(error, args.signal)) return "";
+      logger.error("GenAI imageGeneration error:", error);
+      throw error;
+    }
   }
 
   static getName(): string {

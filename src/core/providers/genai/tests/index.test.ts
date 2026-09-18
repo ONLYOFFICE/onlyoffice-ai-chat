@@ -4,18 +4,24 @@ import { genaiInfo } from "../info";
 import { GenAIProvider } from "../index";
 import type { ReasoningLevel } from "../../../../shared/reasoning-level";
 
-const { generateContentStreamMock, generateContentMock, modelsListMock } =
-  vi.hoisted(() => ({
-    generateContentStreamMock: vi.fn(),
-    generateContentMock: vi.fn(),
-    modelsListMock: vi.fn(),
-  }));
+const {
+  generateContentStreamMock,
+  generateContentMock,
+  generateImagesMock,
+  modelsListMock,
+} = vi.hoisted(() => ({
+  generateContentStreamMock: vi.fn(),
+  generateContentMock: vi.fn(),
+  generateImagesMock: vi.fn(),
+  modelsListMock: vi.fn(),
+}));
 
 vi.mock("@google/genai", () => ({
   GoogleGenAI: class MockGenAI {
     models = {
       generateContent: generateContentMock,
       generateContentStream: generateContentStreamMock,
+      generateImages: generateImagesMock,
       list: modelsListMock,
     };
   },
@@ -46,6 +52,7 @@ describe("GenAIProvider", () => {
   beforeEach(() => {
     generateContentStreamMock.mockReset();
     generateContentMock.mockReset();
+    generateImagesMock.mockReset();
     modelsListMock.mockReset();
   });
 
@@ -371,6 +378,72 @@ describe("GenAIProvider", () => {
         apiKey: "sk",
       });
       expect(out[0].id).toBe("x");
+    });
+  });
+
+  describe("imageGeneration", () => {
+    const provider = () =>
+      new GenAIProvider({ baseUrl: "https://x", apiKey: "sk" });
+
+    it("is implemented, so the image-generation action takes the native path", () => {
+      expect(typeof provider().imageGeneration).toBe("function");
+    });
+
+    it("returns inline base64 for a Gemini image model", async () => {
+      generateContentMock.mockResolvedValueOnce({
+        candidates: [
+          { content: { parts: [{ inlineData: { data: "Ym9keQ==" } }] } },
+        ],
+      });
+
+      const out = await provider().imageGeneration({
+        model: "gemini-2.5-flash-image",
+        prompt: "carrot",
+      });
+
+      expect(out).toBe("Ym9keQ==");
+      expect(generateImagesMock).not.toHaveBeenCalled();
+    });
+
+    it("returns base64 bytes for an Imagen model", async () => {
+      generateImagesMock.mockResolvedValueOnce({
+        generatedImages: [{ image: { imageBytes: "aW1n" } }],
+      });
+
+      const out = await provider().imageGeneration({
+        model: "imagen-4.0-generate-001",
+        prompt: "carrot",
+      });
+
+      expect(out).toBe("aW1n");
+      expect(generateContentMock).not.toHaveBeenCalled();
+    });
+
+    it("swallows an abort into an empty result", async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const abortError = new Error("aborted");
+      abortError.name = "AbortError";
+      generateContentMock.mockRejectedValueOnce(abortError);
+
+      const out = await provider().imageGeneration({
+        model: "gemini-2.5-flash-image",
+        prompt: "carrot",
+        signal: controller.signal,
+      });
+
+      expect(out).toBe("");
+    });
+
+    it("rethrows a genuine failure", async () => {
+      generateContentMock.mockRejectedValueOnce(new Error("quota exceeded"));
+
+      await expect(
+        provider().imageGeneration({
+          model: "gemini-2.5-flash-image",
+          prompt: "carrot",
+        })
+      ).rejects.toThrow("quota exceeded");
     });
   });
 });

@@ -20,6 +20,7 @@ export type DeltaWithReasoning = ChatCompletionChunk.Choice["delta"] & {
   reasoning_content?: string;
   reasoning?: unknown;
   reasoning_details?: unknown;
+  images?: unknown;
 };
 
 /**
@@ -244,6 +245,60 @@ export const appendText = (
 };
 
 // ---------------------------------------------------------------------------
+// Image delta handler
+// ---------------------------------------------------------------------------
+
+/**
+ * Pull image URLs out of a delta's `images` array.
+ *
+ * Image-output models (Gemini 3 Pro Image, `gpt-4o-image`) return their
+ * pictures through `/chat/completions` rather than an images endpoint,
+ * as `message.images[*].image_url.url` — a `data:` URI or an http(s)
+ * link. The field is OpenRouter's extension to the OpenAI shape, so it
+ * is read defensively: anything that is not a non-empty string url is
+ * skipped.
+ *
+ * @param images - The delta's `images` value, of unknown shape.
+ * @returns Every url found, in order; empty when the delta carries none.
+ */
+export const readImageDeltas = (images: unknown): string[] => {
+  if (!Array.isArray(images)) return [];
+  const urls: string[] = [];
+  for (const entry of images) {
+    if (!entry || typeof entry !== "object") continue;
+    const url = (entry as { image_url?: { url?: unknown } }).image_url?.url;
+    if (typeof url === "string" && url) urls.push(url);
+  }
+  return urls;
+};
+
+/**
+ * Append an `image` part for each url the delta carried.
+ *
+ * Images are always pushed as their own parts rather than merged into a
+ * neighbour — unlike text, two images are two pictures, never one split
+ * across deltas.
+ *
+ * @param responseMessage - The accumulating response.
+ * @param urls            - Urls from {@link readImageDeltas}.
+ * @returns The updated response message.
+ */
+export const handleImages = (
+  responseMessage: ThreadMessageLike,
+  urls: string[]
+): ThreadMessageLike => {
+  if (!urls.length) return responseMessage;
+  if (!Array.isArray(responseMessage.content)) return responseMessage;
+
+  const content = [...responseMessage.content];
+  for (const url of urls) {
+    content.push({ type: "image", image: url });
+  }
+
+  return { ...responseMessage, content };
+};
+
+// ---------------------------------------------------------------------------
 // Tool-call delta handler
 // ---------------------------------------------------------------------------
 
@@ -429,6 +484,18 @@ export async function* processStream(
           }
           responseMessage = appendText(responseMessage, split.text);
         }
+      }
+
+      // Image-output models emit the picture alongside their reasoning; the
+      // thinking is closed off first so the image is not appended into the
+      // reasoning transcript.
+      const imageDeltas = readImageDeltas(delta.images);
+      if (imageDeltas.length) {
+        if (hasUnfinalizedReasoning) {
+          responseMessage = finalizeReasoning(responseMessage);
+          hasUnfinalizedReasoning = false;
+        }
+        responseMessage = handleImages(responseMessage, imageDeltas);
       }
 
       if (delta.tool_calls && Array.isArray(responseMessage.content)) {

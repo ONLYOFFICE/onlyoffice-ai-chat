@@ -59,7 +59,15 @@ export function inferCapabilities(
     return CapabilitiesUI.Image;
   }
 
+  if (providerType === "genai") {
+    // Imagen models and the Gemini-native image models (Nano Banana) are
+    // image-only; everything else Gemini serves is a chat model.
+    if (id.includes("imagen") || id.includes("image"))
+      return CapabilitiesUI.Image;
+    return CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
+  }
+
   // together, openrouter — can't infer without API metadata, use broad default
-  // deepseek, ollama, lm-studio, openaicompatible, genai, gpt4all — broad default
+  // deepseek, ollama, lm-studio, openaicompatible, gpt4all — broad default
   return CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools;
 }

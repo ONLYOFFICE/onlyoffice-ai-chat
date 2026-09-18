@@ -169,6 +169,29 @@ describe("inferCapabilities", () => {
     });
   });
 
+  describe("genai", () => {
+    it("returns Image for Imagen models", () => {
+      expect(inferCapabilities("genai", "imagen-4.0-generate-001")).toBe(
+        CapabilitiesUI.Image
+      );
+    });
+
+    it("returns Image for Gemini-native image models (Nano Banana)", () => {
+      expect(inferCapabilities("genai", "gemini-2.5-flash-image")).toBe(
+        CapabilitiesUI.Image
+      );
+      expect(inferCapabilities("genai", "gemini-3-pro-image-preview")).toBe(
+        CapabilitiesUI.Image
+      );
+    });
+
+    it("returns Chat | Vision | Tools for ordinary Gemini models", () => {
+      expect(inferCapabilities("genai", "gemini-1.5-pro")).toBe(
+        CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools
+      );
+    });
+  });
+
   describe("default fallback", () => {
     it("returns Chat | Vision | Tools for unknown providers", () => {
       const expected =
@@ -179,7 +202,6 @@ describe("inferCapabilities", () => {
       expect(inferCapabilities("ollama", "llama3.1")).toBe(expected);
       expect(inferCapabilities("lm-studio", "anything")).toBe(expected);
       expect(inferCapabilities("openaicompatible", "anything")).toBe(expected);
-      expect(inferCapabilities("genai", "gemini-1.5-pro")).toBe(expected);
       expect(inferCapabilities("gpt4all", "anything")).toBe(expected);
       expect(inferCapabilities("custom-provider", "model")).toBe(expected);
     });

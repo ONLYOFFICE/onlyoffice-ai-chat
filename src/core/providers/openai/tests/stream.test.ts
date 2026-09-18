@@ -12,10 +12,12 @@ import {
   createErrorResponse,
   createStopResponse,
   finalizeReasoning,
+  handleImages,
   handleReasoning,
   handleText,
   handleToolCall,
   processStream,
+  readImageDeltas,
   readReasoningDelta,
 } from "../stream";
 
@@ -187,6 +189,46 @@ describe("openai/stream/handleText", () => {
 // Tool-call handler
 // ---------------------------------------------------------------------------
 
+describe("openai/stream/readImageDeltas", () => {
+  it("reads every image url in order", () => {
+    expect(
+      readImageDeltas([
+        { image_url: { url: "data:image/png;base64,AAA" } },
+        { image_url: { url: "https://cdn.example.com/i.png" } },
+      ])
+    ).toEqual(["data:image/png;base64,AAA", "https://cdn.example.com/i.png"]);
+  });
+
+  it("returns nothing for a missing or malformed field", () => {
+    expect(readImageDeltas(undefined)).toEqual([]);
+    expect(readImageDeltas("nope")).toEqual([]);
+    expect(readImageDeltas([null, 7, {}, { image_url: {} }])).toEqual([]);
+    expect(readImageDeltas([{ image_url: { url: "" } }])).toEqual([]);
+  });
+});
+
+describe("openai/stream/handleImages", () => {
+  it("appends one image part per url", () => {
+    const out = handleImages(emptyMsg(), ["data:image/png;base64,AAA"]);
+    expect(out.content).toEqual([
+      { type: "image", image: "data:image/png;base64,AAA" },
+    ]);
+  });
+
+  it("keeps two images as two separate parts", () => {
+    const out = handleImages(emptyMsg(), ["a", "b"]);
+    expect(out.content).toEqual([
+      { type: "image", image: "a" },
+      { type: "image", image: "b" },
+    ]);
+  });
+
+  it("is a no-op when there are no urls", () => {
+    const msg = emptyMsg();
+    expect(handleImages(msg, [])).toBe(msg);
+  });
+});
+
 describe("openai/stream/handleToolCall", () => {
   it("creates a fresh tool-call part when none is in progress", () => {
     const out = handleToolCall(
@@ -279,6 +321,47 @@ describe("openai/stream/processStream", () => {
       responseMessage: { content: Array<{ parentId?: string }> };
     };
     expect(last.responseMessage.content[0].parentId).toBeTruthy();
+  });
+
+  it("emits an image part when the delta carries images", async () => {
+    // The Bug: an image-output route (Gemini 3 Pro Image) streams its
+    // reasoning and then the picture. Before `images` was read, the round
+    // showed the thinking block and nothing else.
+    const imageChunk = {
+      choices: [
+        {
+          delta: {
+            images: [{ image_url: { url: "data:image/png;base64,AAA" } }],
+          },
+          index: 0,
+        },
+      ],
+    } as unknown as ChatCompletionChunk;
+
+    const out = await collect(
+      processStream(
+        toStream([
+          createReasoningChunk("planning a carrot"),
+          imageChunk,
+          createFinishChunk(),
+        ])
+      )
+    );
+    const last = out[out.length - 1] as unknown as {
+      responseMessage: {
+        content: Array<{ type: string; image?: string; parentId?: string }>;
+      };
+    };
+    const content = last.responseMessage.content;
+
+    // Thinking is closed off before the image, so the picture is its own
+    // part rather than being swallowed into the reasoning transcript.
+    expect(content[0].type).toBe("reasoning");
+    expect(content[0].parentId).toBeTruthy();
+    expect(content[1]).toEqual({
+      type: "image",
+      image: "data:image/png;base64,AAA",
+    });
   });
 
   it("finalises reasoning when text starts after thinking", async () => {
