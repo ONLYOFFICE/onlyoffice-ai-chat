@@ -381,6 +381,58 @@ describe("UserMessage", () => {
     expect(fileItems[0].getAttribute("data-path")).toBe("/path/to/doc.docx");
   });
 
+  it("falls back to the ref title when a dropped file carries no path", () => {
+    // Drag'n'dropped text files have no local path — the ref-form block
+    // carries `path: ""`, and the chip must still show the file name.
+    mockMessageContent.current = [
+      { type: "text", text: "With a dropped file" },
+      {
+        type: "file",
+        data: "",
+        mimeType: JSON.stringify({
+          ref: "att-1",
+          title: "report.txt",
+          kind: "file",
+          path: "",
+          type: 0,
+        }),
+      },
+    ];
+    render(<UserMessage />);
+    const fileItems = screen.getAllByTestId("file-item");
+    expect(fileItems).toHaveLength(1);
+    expect(fileItems[0].getAttribute("data-path")).toBe("report.txt");
+  });
+
+  it("renders every pathless dropped file rather than collapsing them", () => {
+    mockMessageContent.current = [
+      {
+        type: "file",
+        data: "",
+        mimeType: JSON.stringify({
+          ref: "att-1",
+          title: "a.txt",
+          kind: "file",
+          path: "",
+          type: 0,
+        }),
+      },
+      {
+        type: "file",
+        data: "",
+        mimeType: JSON.stringify({
+          ref: "att-2",
+          title: "b.txt",
+          kind: "file",
+          path: "",
+          type: 0,
+        }),
+      },
+    ];
+    render(<UserMessage />);
+    expect(screen.getAllByTestId("file-item")).toHaveLength(2);
+  });
+
   it("does not render the text bubble when the message is attachment-only", () => {
     mockMessageContent.current = [
       {
