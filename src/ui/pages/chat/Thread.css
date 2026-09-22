@@ -11,13 +11,19 @@
   border-color: var(--chat-composer-active-border-color);
 }
 
-/* The message viewport is scrolled to the bottom by assistant-ui on every
-   content mutation while a response streams (`useThreadViewportAutoScroll`
-   → `scrollTo({ top: scrollHeight })`). The browser's own scroll anchoring
+/* With the runtime's follow enabled (`autoScrollWhileStreaming`), the message
+   viewport is scrolled to the bottom by assistant-ui on every content
+   mutation while a response streams (`useThreadViewportAutoScroll` →
+   `scrollTo({ top: scrollHeight })`). The browser's own scroll anchoring
    adjusts `scrollTop` for the same growth in the same frame, so both write
-   the offset at once and the text visibly jumps instead of scrolling. The
-   runtime owns the position here — turn the browser's half off. */
-.thread-viewport {
+   the offset at once and the text visibly jumps instead of scrolling. There
+   the runtime owns the position — turn the browser's half off.
+
+   In the default mode nothing re-pins the viewport, so the browser's
+   anchoring is exactly what should stay on: it keeps the text the reader is
+   looking at still while content grows, including when `OlderMessages`
+   prepends a page above. */
+.thread-viewport[data-auto-scroll="on"] {
   overflow-anchor: none;
 }
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **A long answer no longer scrolls itself away while it is generated.** The thread followed the stream token by token, so a response taller than the message area dragged its own beginning off-screen: the reader had to scroll back up to start reading, for every long answer. Sending still jumps to the bottom, but from there the reading position stays where it is and the answer grows below it. The floating "scroll to bottom" button needs no new wiring to announce that growth — `ThreadPrimitive.ScrollToBottom` un-disables itself the moment there is content past the fold, so the existing arrow becomes the "more below" indicator and returns the reader to the end in one click.
+
+  The follow was assistant-ui's `autoScroll`: a resize observer on the viewport content that re-pins it to `scrollHeight` on every growth while its `isAtBottom` flag holds. The scroll-to-bottom on send sets that flag, and the primitive only clears it when the user scrolls *up* themselves, so the follow never stopped on its own. It is now off (`autoScroll={false}`), while `scrollToBottomOnRunStart` — the jump on send — keeps its default. The new `autoScrollWhileStreaming` widget config restores the classic behavior for hosts that want it.
+
+  With nothing re-pinning the viewport, the browser's own scroll anchoring is what holds the reading position steady as content grows, so the `overflow-anchor: none` on `.thread-viewport` is now scoped to the opt-in case (`[data-auto-scroll="on"]`) — there the runtime writes the offset itself and the two would fight over the same frame. Anchoring also cooperates with `OlderMessages`, which measures its gap from the bottom of the content and deliberately does not re-base while the height is still moving.
+
 ## 0.5.117
 
 ### Added
