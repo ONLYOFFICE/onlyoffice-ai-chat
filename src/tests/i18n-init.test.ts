@@ -60,6 +60,18 @@ describe("initAIChatI18n", () => {
     expect(callArgs.resources.de).toBeDefined();
   });
 
+  // The editors ask for Hebrew and Urdu as "he-IL"/"ur-PK"; the loaders were
+  // keyed "he"/"ur", so no bundle loaded and the widget rendered English.
+  it.each(["ar-SA", "he-IL", "ur-PK"])(
+    "loads the RTL bundle for editor locale %s",
+    async (locale) => {
+      await initAIChatI18n({ locale });
+      const callArgs = mockInit.mock.calls[0][0];
+      expect(callArgs.lng).toBe(locale);
+      expect(callArgs.resources[locale]).toBeDefined();
+    }
+  );
+
   it("handles locale not in the loaders gracefully", async () => {
     await initAIChatI18n({ locale: "xx-UNKNOWN" });
     const callArgs = mockInit.mock.calls[0][0];
@@ -182,7 +194,7 @@ describe("initAIChatI18n", () => {
     "es",
     "fi",
     "gl",
-    "he",
+    "he-IL",
     "hr",
     "hu",
     "hy",
@@ -198,7 +210,7 @@ describe("initAIChatI18n", () => {
     "sq-AL",
     "sr-Cyrl-RS",
     "sr-Latn-RS",
-    "ur",
+    "ur-PK",
     "zh-TW",
     "pt-BR",
     "pt-PT",
