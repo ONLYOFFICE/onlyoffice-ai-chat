@@ -1457,6 +1457,9 @@ describe("useMessages.regenerate", () => {
     expect(arg.messageId).toBe("u1");
     // Positional fallback for ids storage never saw (optimistic sends).
     expect(arg.keepCount).toBe(1);
+    // The pre-truncation thread length that count was derived from, so
+    // the engine can reject the index if storage has since moved on.
+    expect(arg.expectedLength).toBe(4);
   });
 
   it("omits keepCount while older pages are unloaded", async () => {
@@ -1479,6 +1482,7 @@ describe("useMessages.regenerate", () => {
     const arg = apiAi.regenerateStream.mock.calls[0][0];
     expect(arg.messageId).toBe("u1");
     expect(arg.keepCount).toBeUndefined();
+    expect(arg.expectedLength).toBeUndefined();
   });
 
   it("forwards extendedThinking, tools, and systemPrompt via actionArgs", async () => {

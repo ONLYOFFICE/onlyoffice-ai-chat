@@ -646,8 +646,25 @@ export class AIEngine {
     if (userIdx < 0 && input.keepCount !== undefined) {
       // The id was optimistic (never stored) — fall back to the caller's
       // position, which the UI keeps in lockstep with the thread.
+      //
+      // A position only means anything against the thread the caller was
+      // looking at, so require that thread to still be the one in storage
+      // when the caller told us how long it was. Without this, an edit
+      // that shifts messages while preserving user/assistant alignment
+      // (an even-sized change, or a user+assistant pair deleted from
+      // another tab) leaves `keepCount - 1` on a *different* user turn —
+      // the role check below passes and we silently re-roll the wrong
+      // message, hard-deleting everything after it.
+      const lengthMatches =
+        input.expectedLength === undefined ||
+        input.expectedLength === stored.length;
       const idx = input.keepCount - 1;
-      if (idx >= 0 && idx < stored.length && stored[idx].role === "user") {
+      if (
+        lengthMatches &&
+        idx >= 0 &&
+        idx < stored.length &&
+        stored[idx].role === "user"
+      ) {
         userIdx = idx;
       }
     }

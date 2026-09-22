@@ -1276,6 +1276,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         // store index is not the thread index.
         messageId: parentId,
         keepCount: state.hasMoreOlderMessages ? undefined : parentIndex + 1,
+        // The thread length this index was computed against, so the
+        // engine can reject the index if storage has moved on since
+        // (another tab, another device) instead of rewinding to whatever
+        // now sits at that position.
+        expectedLength: state.hasMoreOlderMessages ? undefined : msgs.length,
         entityId,
         contextEntityId,
         profileId: currentProfile.id,

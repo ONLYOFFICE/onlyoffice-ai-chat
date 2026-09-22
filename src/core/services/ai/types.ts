@@ -235,8 +235,35 @@ export type RegenerateStreamInput = {
    * it is dropped. Ignored when it does not land on a user message, so
    * a stale count degrades to the last-user-message fallback rather
    * than re-rolling from the wrong turn.
+   *
+   * A bare index is only meaningful against the thread the caller was
+   * looking at. Pass {@link expectedLength} alongside it so the engine
+   * can tell a still-valid index from one that storage has since moved
+   * out from under — see that field.
    */
   keepCount?: number;
+
+  /**
+   * The caller's view of the thread length when it computed
+   * {@link keepCount}, used to validate that index before trusting it.
+   *
+   * `keepCount` is a position, not an identity: if storage gained or
+   * lost messages between render and click (another tab, another
+   * device, an in-flight delete), the same index now names a different
+   * turn. The role check on `keepCount - 1` catches the common
+   * off-by-one, because a one-message shift lands on the assistant half
+   * of an alternating thread — but a shift that preserves user/assistant
+   * alignment (an even-sized edit, or a whole user+assistant pair
+   * removed) slips through and would silently re-roll the wrong turn,
+   * hard-deleting every message after it.
+   *
+   * When this is supplied and disagrees with what storage holds, the
+   * engine discards `keepCount` and falls back to the last user message
+   * rather than acting on an index it can no longer trust. Omitted →
+   * the index is used unvalidated, preserving the previous behavior for
+   * callers that cannot supply a length.
+   */
+  expectedLength?: number;
 
   /** Forwarded to the underlying action. `profile` and `messages` are owned by the engine. */
   actionArgs?: Omit<ActionArgs, "profile" | "messages">;
