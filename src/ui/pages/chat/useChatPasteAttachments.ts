@@ -1,4 +1,5 @@
 import React from "react";
+import { useWidgetConfig } from "../../../widget-config";
 import { useStores } from "../../store/context";
 import { partitionReads, readFile } from "./attachment-reads";
 
@@ -7,7 +8,11 @@ import { partitionReads, readFile } from "./attachment-reads";
  *
  * Mount the returned `onPaste` on the composer input. Image items on the
  * clipboard go through `readAsDataURL` → `addAttachmentImage`, mirroring
- * the drop path in `useChatDropAttachments`.
+ * the drop path in `useChatDropAttachments` — including its `onDropFiles`
+ * host override, which takes precedence over the built-in read. A pasted
+ * screenshot is a `File` like a dropped one, so a host that uploads to
+ * its own storage must receive both the same way; without this, DocSpace
+ * paste would try `attachments/save-image*`, which it does not serve.
  *
  * Text is deliberately left alone: a paste that carries *both* an image
  * and text (copying a chart out of a spreadsheet yields `image/png` plus
@@ -24,6 +29,7 @@ export const useChatPasteAttachments = () => {
   const failPendingAttachments = useAttachmentsStore(
     (s) => s.failPendingAttachments
   );
+  const { onDropFiles } = useWidgetConfig();
 
   const onPaste = async (e: React.ClipboardEvent) => {
     const clipboard = e.clipboardData;
@@ -48,6 +54,15 @@ export const useChatPasteAttachments = () => {
     // decide what a lone image means inside a textarea.
     const hasText = clipboard.getData("text/plain") !== "";
     if (!hasText) e.preventDefault();
+
+    // Host override: hand the raw pasted files over and skip the built-in
+    // read-and-attach entirely — same contract as the drop path. The host
+    // owns the upload *and* the loading chips from here, so no lease is
+    // reserved below.
+    if (onDropFiles) {
+      await onDropFiles(imageFiles);
+      return;
+    }
 
     // Reserve loading chips before the reads — a pasted screenshot takes
     // a visible moment to base64. The reservation is also the cap check,

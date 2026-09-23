@@ -3,9 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 
 const mockUseStores = vi.fn();
+const mockWidgetConfig = vi.fn(() => ({}) as Record<string, unknown>);
 
 vi.mock("../../../store/context", () => ({
   useStores: () => mockUseStores(),
+}));
+
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => mockWidgetConfig(),
 }));
 
 import { useChatPasteAttachments } from "../useChatPasteAttachments";
@@ -14,7 +19,13 @@ const setupStores = (overrides?: {
   addAttachmentImage?: (i: unknown) => void;
   beginPendingAttachments?: (inputs: unknown[]) => string[];
   failPendingAttachments?: (ids: string[]) => void;
+  onDropFiles?: (files: File[]) => void | Promise<void>;
 }) => {
+  // No host override unless a test asks for one — the built-in
+  // read-and-attach path is the default everywhere else.
+  mockWidgetConfig.mockReturnValue(
+    overrides?.onDropFiles ? { onDropFiles: overrides.onDropFiles } : {}
+  );
   mockUseStores.mockReturnValue({
     useAttachmentsStore: (selector?: (s: unknown) => unknown) => {
       const state = {
@@ -265,5 +276,93 @@ describe("useChatPasteAttachments", () => {
     const [batch] = addAttachmentImage.mock.calls[0];
     expect(batch).toHaveLength(1);
     expect(batch[0].name).toBe("a.png");
+  });
+
+  describe("onDropFiles host override", () => {
+    it("hands pasted images to the host instead of reading them as base64", async () => {
+      // DocSpace unmounts `attachments/save-image*` — the host upload is
+      // the only path an image can take there.
+      const onDropFiles = vi.fn();
+      const addAttachmentImage = vi.fn();
+      const beginPendingAttachments = vi.fn(() => ["pending-0"]);
+      setupStores({
+        onDropFiles,
+        addAttachmentImage,
+        beginPendingAttachments,
+      });
+      const { getByTestId } = render(<Harness />);
+      const file = makeFile("shot.png", "image/png", "pngdata");
+
+      await act(async () => {
+        fireEvent.paste(getByTestId("input"), {
+          clipboardData: makeClipboard([file]),
+        });
+      });
+
+      await waitFor(() => {
+        expect(onDropFiles).toHaveBeenCalledTimes(1);
+      });
+      // The raw File goes over, not a data URL.
+      expect(onDropFiles.mock.calls[0][0]).toEqual([file]);
+      expect(addAttachmentImage).not.toHaveBeenCalled();
+      // The host owns the chips too — no orphaned lease left behind.
+      expect(beginPendingAttachments).not.toHaveBeenCalled();
+    });
+
+    it("passes every pasted image, uncapped — the host owns the limit", async () => {
+      const onDropFiles = vi.fn();
+      setupStores({ onDropFiles });
+      const { getByTestId } = render(<Harness />);
+      const a = makeFile("a.png", "image/png", "a");
+      const b = makeFile("b.png", "image/png", "b");
+
+      await act(async () => {
+        fireEvent.paste(getByTestId("input"), {
+          clipboardData: makeClipboard([a, b]),
+        });
+      });
+
+      await waitFor(() => {
+        expect(onDropFiles).toHaveBeenCalledWith([a, b]);
+      });
+    });
+
+    it("is not called for a text-only paste", async () => {
+      const onDropFiles = vi.fn();
+      setupStores({ onDropFiles });
+      const { getByTestId } = render(<Harness />);
+
+      await act(async () => {
+        fireEvent.paste(getByTestId("input"), {
+          clipboardData: makeClipboard([], "just text"),
+        });
+      });
+
+      expect(onDropFiles).not.toHaveBeenCalled();
+    });
+
+    it("still lets accompanying text land in the textarea", async () => {
+      // A rich copy (chart + text fallback): the image is delegated, the
+      // text insert is left to the browser.
+      const onDropFiles = vi.fn();
+      setupStores({ onDropFiles });
+      const { getByTestId } = render(<Harness />);
+      const event = new Event("paste", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "clipboardData", {
+        value: makeClipboard(
+          [makeFile("chart.png", "image/png", "c")],
+          "cell text"
+        ),
+      });
+
+      await act(async () => {
+        getByTestId("input").dispatchEvent(event);
+      });
+
+      await waitFor(() => {
+        expect(onDropFiles).toHaveBeenCalledTimes(1);
+      });
+      expect(event.defaultPrevented).toBe(false);
+    });
   });
 });
