@@ -224,7 +224,8 @@ describe("Composer history navigation", () => {
     setValue(input, "my draft", 0);
     fireEvent.keyDown(input, { key: "ArrowUp" });
     await expectRecalled("sent");
-    // The recalled text is now in the box, caret at the end.
+    // Walking forward again needs the caret at the end, so put it there the
+    // way an ArrowDown-then-ArrowUp round trip would.
     setValue(input, "sent");
     fireEvent.keyDown(input, { key: "ArrowDown" });
     await expectRecalled("my draft");
@@ -370,5 +371,55 @@ describe("Composer history navigation", () => {
     releasePage();
 
     await expectNotRecalled();
+  });
+
+  describe("caret placement after a recall", () => {
+    /**
+     * The composer runtime is mocked, so the recalled text never reaches the
+     * textarea on its own. Mirror what the real `setText` does — write the
+     * value — so the post-paint caret placement has something to measure
+     * against, then flush the frame it defers to.
+     */
+    function recallInto(input: HTMLTextAreaElement, key: string) {
+      mockSetText.mockImplementation((text: string) => {
+        input.value = text;
+      });
+      fireEvent.keyDown(input, { key });
+      return waitFor(() => {
+        expect(mockSetText).toHaveBeenCalled();
+      }).then(
+        () => new Promise((resolve) => requestAnimationFrame(() => resolve(0)))
+      );
+    }
+
+    it("parks the caret at the start after ArrowUp, so the next Up walks on", async () => {
+      const input = renderComposer(thread("line one\nline two"));
+      await recallInto(input, "ArrowUp");
+      expect(input.value).toBe("line one\nline two");
+      expect(input.selectionStart).toBe(0);
+      expect(input.selectionEnd).toBe(0);
+    });
+
+    it("parks the caret at the end after ArrowDown, so the next Down walks on", async () => {
+      const input = renderComposer(thread("older", "line one\nline two"));
+      // Walk back twice to leave room to walk forward again.
+      await recallInto(input, "ArrowUp");
+      await recallInto(input, "ArrowUp");
+      setValue(input, "older");
+      await recallInto(input, "ArrowDown");
+      expect(input.value).toBe("line one\nline two");
+      expect(input.selectionStart).toBe(input.value.length);
+      expect(input.selectionEnd).toBe(input.value.length);
+    });
+
+    it("keeps walking back on a second ArrowUp without repositioning the caret", async () => {
+      const input = renderComposer(thread("older", "newest"));
+      await recallInto(input, "ArrowUp");
+      expect(input.value).toBe("newest");
+      // No manual caret fix-up here: the recall already left it at the
+      // start, so this Up is claimed by history rather than the textarea.
+      await recallInto(input, "ArrowUp");
+      expect(input.value).toBe("older");
+    });
   });
 });

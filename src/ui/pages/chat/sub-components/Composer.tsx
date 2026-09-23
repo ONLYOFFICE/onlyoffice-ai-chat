@@ -45,14 +45,20 @@ const Composer = () => {
   const history = usePromptHistory();
   const { onPaste } = useChatPasteAttachments();
 
-  // Replace the draft with a history entry and drop the caret at the very
-  // end, so the next Up keeps walking instead of moving within the text
-  // we just pasted in. `setText` re-renders the textarea, hence the
-  // post-paint caret placement.
-  const applyHistoryText = (textarea: HTMLTextAreaElement, text: string) => {
+  // Replace the draft with a history entry and park the caret at the edge
+  // the *same* arrow would move towards next, so a second press keeps
+  // walking the history instead of first moving inside the multi-line entry
+  // we just pasted in: Up leaves it at the start, Down at the end.
+  // `setText` re-renders the textarea, hence the post-paint placement.
+  const applyHistoryText = (
+    textarea: HTMLTextAreaElement,
+    text: string,
+    caret: "start" | "end"
+  ) => {
     composerRuntime.setText(text);
     requestAnimationFrame(() => {
-      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+      const position = caret === "start" ? 0 : textarea.value.length;
+      textarea.selectionStart = textarea.selectionEnd = position;
     });
   };
 
@@ -194,13 +200,15 @@ const Composer = () => {
             // The caret is already at the edge the arrow moves towards, so
             // the only movement being suppressed is a no-op anyway.
             e.preventDefault();
-            const step =
-              e.key === "ArrowUp"
-                ? history.previous(textarea.value)
-                : history.next();
+            const isUp = e.key === "ArrowUp";
+            const step = isUp
+              ? history.previous(textarea.value)
+              : history.next();
             void step.then((result) => {
               // `null` = history had nothing to offer here.
-              if (result) applyHistoryText(textarea, result.text);
+              if (result) {
+                applyHistoryText(textarea, result.text, isUp ? "start" : "end");
+              }
             });
           }}
         />
