@@ -89,8 +89,14 @@ function makeStorage() {
         return thread;
       }),
       readAll: vi.fn(async () => [...threads]),
-      readById: vi.fn(async () => null),
-      update: vi.fn(),
+      readById: vi.fn(
+        async (threadId: string) =>
+          threads.find((t) => t.threadId === threadId) ?? null
+      ),
+      update: vi.fn(async (threadId: string, title?: string) => {
+        const thread = threads.find((t) => t.threadId === threadId);
+        if (thread && title !== undefined) thread.title = title;
+      }),
       touch: vi.fn(),
       delete: vi.fn(),
     },
@@ -300,7 +306,7 @@ describe("AIEngine.sendWithStream", () => {
     );
   });
 
-  it("closes immediately and keeps the default title when the title outlives the reply", async () => {
+  it("closes immediately and persists the title out-of-band when it outlives the reply", async () => {
     let resolveTitle!: (t: string) => void;
     sendMessageSyncMock.mockReturnValueOnce(
       new Promise<string>((r) => (resolveTitle = r))
@@ -325,10 +331,77 @@ describe("AIEngine.sendWithStream", () => {
     // The round is over — no waiting for the title, the generator ends.
     expect((await iter.next()).done).toBe(true);
 
-    // A late resolution is discarded: the placeholder name is final.
+    // The round is over, but the name is not lost: it is written once the
+    // request resolves (Bug 83841). No event follows — there is no stream
+    // left to carry one.
+    resolveTitle("Late Title");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(storage.threads.update).toHaveBeenCalledWith(
+      expect.any(String),
+      "Late Title"
+    );
+  });
+
+  it("leaves a thread the user renamed while the title was in flight", async () => {
+    let resolveTitle!: (t: string) => void;
+    sendMessageSyncMock.mockReturnValueOnce(
+      new Promise<string>((r) => (resolveTitle = r))
+    );
+    const final: ThreadMessageLike = {
+      role: "assistant",
+      content: [{ type: "text", text: "ok" }],
+    };
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([{ isEnd: true, responseMessage: final }])
+    );
+    const { storage, threads } = makeStorage();
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.sendWithStream({ userMessage })) {
+      void _;
+    }
+
+    // The user names the chat before the generated title arrives.
+    threads[0].title = "My own name";
+    (storage.threads.update as ReturnType<typeof vi.fn>).mockClear();
+
     resolveTitle("Late Title");
     await new Promise((r) => setTimeout(r, 0));
     expect(storage.threads.update).not.toHaveBeenCalled();
+    expect(threads[0].title).toBe("My own name");
+  });
+
+  it("persists a late title after the consumer walks away mid-round", async () => {
+    let resolveTitle!: (t: string) => void;
+    sendMessageSyncMock.mockReturnValueOnce(
+      new Promise<string>((r) => (resolveTitle = r))
+    );
+    // A reply still streaming when the consumer abandons it: the round is
+    // suspended on a yielded chunk, so `return()` unwinds it for real.
+    sendMessageMock.mockReturnValueOnce(
+      (async function* () {
+        yield {
+          isEnd: false,
+          responseMessage: {
+            role: "assistant",
+            content: [{ type: "text", text: "partial" }],
+          },
+        };
+        await new Promise(() => {});
+      })() as unknown as AsyncGenerator<SendMessageResult>
+    );
+    const { storage, threads } = makeStorage();
+    const engine = new AIEngine({ storage });
+    const iter = engine.sendWithStream({ userMessage });
+    let event = await iter.next();
+    while (!event.done && !String(event.value.type).startsWith("message-")) {
+      event = await iter.next();
+    }
+    // Early termination: the generator's `finally` runs here.
+    await iter.return(undefined as never);
+
+    resolveTitle("Late Title");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(threads[0].title).toBe("Late Title");
   });
 
   it("still delivers a late title when the round pauses on a tool call", async () => {
