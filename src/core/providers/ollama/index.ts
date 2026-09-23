@@ -13,6 +13,14 @@ import { checkCredentials, listModels } from "./models";
  * requires a non-empty string, still constructs cleanly.
  */
 class OllamaProvider extends OpenAIProvider {
+  /**
+   * Ollama's OpenAI-compatible shim doesn't fill `reasoning_content` — the
+   * models it serves emit their thinking inside `content` (`<think>` on
+   * Qwen3 and the R1 distills, harmony channels on gpt-oss), so it has to
+   * be split out here or it becomes the answer.
+   */
+  protected override splitInlineReasoning = true;
+
   constructor(creds: ProviderCredentials) {
     super({ ...creds, apiKey: creds.apiKey || "ollama" });
   }

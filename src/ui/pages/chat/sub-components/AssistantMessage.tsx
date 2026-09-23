@@ -454,8 +454,8 @@ const AssistantActionBar = () => {
     // starts with a bare `## ` and yields no title — name the file after the
     // attached document instead of handing the host a bare `.docx`.
     // The title is always derived from the prose-only rendering: a debug
-    // export can open with a tool-call block, which would otherwise name the
-    // file after a JSON fragment.
+    // export can open with a tool-call or reasoning block, which would
+    // otherwise name the file after a JSON fragment.
     const title =
       getMessageTitleFromMd(
         convertMessagesToMd(exported, { verbose: false })

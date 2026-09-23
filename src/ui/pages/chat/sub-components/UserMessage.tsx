@@ -314,8 +314,8 @@ export const UserMessage = memo(() => {
                   item={img}
                 />
               ))}
-              {files.map((file) => (
-                <FileItem key={file.path} file={file} withoutClose />
+              {files.map((file, i) => (
+                <FileItem key={`${file.path}-${i}`} file={file} withoutClose />
               ))}
             </div>
           </div>
@@ -378,8 +378,11 @@ function parseFileBlock(mimeType: string, data: string): TAttachmentFile {
   if (ref) {
     return {
       // FileItem renders icon + name from `path` and `type`. Title is
-      // already the leaf filename in the ref-form.
-      path: ref.path ?? ref.title,
+      // already the leaf filename in the ref-form. Dropped files have no
+      // local path at all and carry `path: ""` — an empty string is "no
+      // path" here, so it must fall back to the title like a missing one
+      // does, or the chip renders a bare ".".
+      path: ref.path || ref.title,
       type: ref.type ?? 0,
       content: "",
     };

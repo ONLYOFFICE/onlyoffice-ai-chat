@@ -1,12 +1,6 @@
 # Changelog
 
-## 0.5.116
-
-### Fixed
-
-- **MCP tool results reach the model again on the ONLYOFFICE route.** The prompt-caching breakpoint on the final message rewrote a trailing `tool` message into a `tool_result`-typed content block. That block type does not exist in the chat-completion wire format, the gateway's OpenAI-to-Anthropic conversion dropped it, and Claude received an empty tool result — a `download_file_as_text` call showed the document text in the tool card while the assistant reported the file as unreadable. `tool` messages are now never touched; when the conversation ends on one, the breakpoint moves back to the nearest non-`tool` message.
-
-## 0.5.115
+## 0.5.117
 
 ### Added
 
@@ -17,6 +11,20 @@
   A paginated host loads only the newest page of a thread, so `usePromptHistory().previous()` is async: a walk that reaches the top of the loaded window pulls the page before it through the store's existing `loadOlderMessages()` and continues there, exactly as scrolling up does. It keeps pulling while a page brings no prompt of its own, and stops at a page that brings nothing at all rather than spinning on a backend that cannot answer. The walk holds its place across the prepend — the cursor is a distance from the newest entry, not an index, so a page landing at the front of the list cannot shift it — and a step fired while a page is still on the wire is ignored, so holding ↑ down cannot skip the entries a key repeat outruns. A step whose page lands after the user has moved on — typing a fresh draft, or walking forward with ↓ — is dropped rather than applied, so a slow page cannot overwrite what the user has since put in the box. The hook is exported from `@onlyoffice/ai-chat/hooks` for custom shells.
 
 ### Fixed
+
+- **A tool-capability probe gets two minutes instead of fifteen seconds.** Saving a profile asks the model to call a test tool to learn whether it supports function calling. A profile backed by a CLI bridge (`claude -p` or `codex exec` behind an OpenAI-compatible server) spends most of a request on process start, and a cold start easily outlived the 15 s limit; the false negative stuck the profile in the text-protocol fallback for good, since the probe only reruns when the model or base URL changes. A model that does answer still returns in seconds, so the save button waits longer only when nothing is coming back anyway.
+
+- **MCP tool results reach Claude on the ONLYOFFICE route.** The cache-control pass rewrote a trailing `tool` message into a `tool_result`-typed content block, a type that does not exist in the chat-completion wire format. The gateway dropped it while converting to Anthropic, and Claude received an empty tool result — the output of `download_file_as_text` and every other MCP tool never reached the model. Tool messages are now never touched; when the conversation ends on one, the second cache breakpoint moves back to the nearest non-tool message.
+
+- **A rejected parameter no longer shows as "Selected model unavailable" (Bug 83703).** The 400 branch of the error classifier turned any message containing the word "model" into `model_not_found`, so Anthropic's `"thinking.type.enabled" is not supported for this model` came out as an unavailable model with a Retry button that could not help. A 400 is now `model_not_found` only on an explicit code or a phrasing providers use for a missing model ("does not exist", "not found", "unknown model" and the like); any other 400 stays `bad_request` and shows the provider's own text.
+
+- **Stopping a Claude reply mid-thought no longer breaks the next request (Bug 83732).** Anthropic sends a thinking block's signature as its last event, so a reply stopped while Claude was still thinking persisted a reasoning part with no signature, and the next request replayed it as a `thinking` block with an empty one — rejected as `Invalid signature in thinking block`. The unsigned block was already dropped since Bug 83335; the remaining hole was the blank text block a stopped round leaves behind, which Anthropic rejects as well and which OpenAI-compatible streams also emit. It is skipped too, and an assistant turn left with nothing to say is omitted from the request entirely.
+
+- **Gemini accepts the editor's tool catalogue (Bug 83699).** Gemini validates tool schemas against its own `Schema` subset and fails the whole request on the first violation, so a single property declared with `enum: [2, 3]` made every Google AI request answer `INVALID_ARGUMENT`, even one asking for a plain "OK". Every `inputSchema` now passes through `sanitizeGeminiSchema` before going on the wire: unknown JSON Schema keys are dropped, a union type becomes type + `nullable`, an undocumented `format` is dropped, and a non-string enum is replaced by an "Allowed values" note in the description, so the model still sees the choices and the host still receives a number.
+
+  ```ts
+  // { type: "integer", enum: [2, 3] } → { type: "integer", description: "… Allowed values: 2, 3" }
+  ```
 
 - **A draft of attachments alone can be sent.** Dropping a file into the composer and pressing Enter (or Send) with no text did nothing: both paths gate on assistant-ui's runtime-level `composer.isEmpty`, which counts the runtime's own attachment list and never sees the widget's `useAttachmentsStore`, so a file-only draft looked empty to it. Send is now driven directly — enabled on either text or a settled attachment — and the composer's own `onSubmit` takes over whenever attachments the runtime cannot see are present. `onNew` no longer drops such a send either: an attachment-only message arrives with no text block at all, which the old `message.content[0].type !== "text"` guard rejected outright. The resulting message renders as the file chips alone — no empty text bubble under them, and no copy / save-as-prompt bar, neither of which has anything to act on.
 
@@ -35,6 +43,22 @@
 - **The message action that exports a chat is labelled "Save as docx".** It shared the generic `Save` key with every submit button in the widget, and its floppy-disk icon read as "save this message" rather than "download it" — the action always exports a .docx. It now has its own translation key and the `btn-download` icon.
 
 - **The file-format icons are redrawn as document sheets.** Every format icon (documents, spreadsheets, presentations, pdf, pdf-form, djvu, visio, xps and the unknown-format fallback) was a solid rounded square with a white glyph, which sat oddly against the file chips in the composer and message list. They are now page-shaped sheets with a folded corner and a per-format mark, matching the rest of the ONLYOFFICE icon set, at every raster density.
+
+## 0.5.116
+
+### Fixed
+
+- **MCP tool results reach the model again on the ONLYOFFICE route.** The prompt-caching breakpoint on the final message rewrote a trailing `tool` message into a `tool_result`-typed content block. That block type does not exist in the chat-completion wire format, the gateway's OpenAI-to-Anthropic conversion dropped it, and Claude received an empty tool result — a `download_file_as_text` call showed the document text in the tool card while the assistant reported the file as unreadable. `tool` messages are now never touched; when the conversation ends on one, the breakpoint moves back to the nearest non-`tool` message.
+
+## 0.5.115
+
+### Changed
+
+- **A long answer no longer scrolls itself away while it is generated.** The thread followed the stream token by token, so a response taller than the message area dragged its own beginning off-screen: the reader had to scroll back up to start reading, for every long answer. Sending still jumps to the bottom, but from there the reading position stays where it is and the answer grows below it. The floating "scroll to bottom" button needs no new wiring to announce that growth — `ThreadPrimitive.ScrollToBottom` un-disables itself the moment there is content past the fold, so the existing arrow becomes the "more below" indicator and returns the reader to the end in one click.
+
+  The follow was assistant-ui's `autoScroll`: a resize observer on the viewport content that re-pins it to `scrollHeight` on every growth while its `isAtBottom` flag holds. The scroll-to-bottom on send sets that flag, and the primitive only clears it when the user scrolls *up* themselves, so the follow never stopped on its own. It is now off (`autoScroll={false}`), while `scrollToBottomOnRunStart` — the jump on send — keeps its default. The new `autoScrollWhileStreaming` widget config restores the classic behavior for hosts that want it.
+
+  With nothing re-pinning the viewport, the browser's own scroll anchoring is what holds the reading position steady as content grows, so the `overflow-anchor: none` on `.thread-viewport` is now scoped to the opt-in case (`[data-auto-scroll="on"]`) — there the runtime writes the offset itself and the two would fight over the same frame. Anchoring also cooperates with `OlderMessages`, which measures its gap from the bottom of the content and deliberately does not re-base while the height is still moving.
 
 ## 0.5.114
 

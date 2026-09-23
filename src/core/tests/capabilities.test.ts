@@ -31,6 +31,9 @@ describe("inferCapabilities", () => {
     ["zhipu", "image-x", C.Image],
     ["zhipu", "glm-4", C.Chat | C.Tools],
     ["stabilityai", "stable-diffusion-3", C.Image],
+    ["genai", "imagen-4.0-generate-001", C.Image],
+    ["genai", "gemini-2.5-flash-image", C.Image],
+    ["genai", "gemini-2.5-pro", C.Chat | C.Vision | C.Tools],
     ["openrouter", "mystery", C.Chat | C.Vision | C.Tools],
   ])("infers %s/%s", (provider, model, expected) => {
     expect(inferCapabilities(provider, model)).toBe(expected);

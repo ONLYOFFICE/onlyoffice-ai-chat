@@ -1,4 +1,7 @@
-import type { ProviderCredentials } from "../../../shared/provider-credentials";
+import type {
+  ProviderCredentials,
+  ProviderFetch,
+} from "../../../shared/provider-credentials";
 import type { Profile } from "../../types";
 import { loadProvider } from "../../providers";
 import type { ProviderConstructor } from "../../providers";
@@ -15,9 +18,7 @@ export async function loadProfile(
 }
 
 /** Look up a concrete provider class by type or throw on unknown type. */
-export async function providerFor(
-  type: string
-): Promise<ProviderConstructor> {
+export async function providerFor(type: string): Promise<ProviderConstructor> {
   const Provider = await loadProvider(type);
   if (!Provider) throw new Error(`Unknown provider type: ${type}`);
   return Provider;
@@ -25,11 +26,15 @@ export async function providerFor(
 
 /** Map the subset of profile fields used for provider calls. */
 export function credsOf(
-  input: Pick<Profile, "baseUrl" | "key"> & Partial<Pick<Profile, "headers">>
+  input: Pick<Profile, "baseUrl" | "key"> &
+    Partial<Pick<Profile, "headers" | "basedOn">>,
+  fetch?: ProviderFetch
 ): ProviderCredentials {
   return {
     baseUrl: input.baseUrl,
     apiKey: input.key,
     ...(input.headers ? { headers: input.headers } : {}),
+    ...(input.basedOn ? { basedOn: input.basedOn } : {}),
+    ...(fetch ? { fetch } : {}),
   };
 }

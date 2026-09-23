@@ -6,6 +6,7 @@ import type {
 import type { ChatCompletionChunk } from "openai/resources/chat/completions";
 import type { SendMessageResult } from "../../../shared/send-message-args";
 import { toChatError } from "../../services/ai/error";
+import { InlineReasoningSplitter } from "./inline-reasoning";
 
 /**
  * Extension of OpenAI's streaming delta that adds the non-standard
@@ -19,6 +20,7 @@ export type DeltaWithReasoning = ChatCompletionChunk.Choice["delta"] & {
   reasoning_content?: string;
   reasoning?: unknown;
   reasoning_details?: unknown;
+  images?: unknown;
 };
 
 /**
@@ -208,8 +210,21 @@ export const finalizeReasoning = (
 export const handleText = (
   responseMessage: ThreadMessageLike,
   chunk: ChatCompletionChunk.Choice
+): ThreadMessageLike => appendText(responseMessage, chunk.delta.content ?? "");
+
+/**
+ * Append a text fragment that has already been separated from the chunk.
+ * Shared by {@link handleText} and the inline-reasoning path, which emits
+ * only the answer half of a delta and so has no chunk to hand over.
+ *
+ * @param responseMessage - The accumulating response.
+ * @param delta           - The answer text to append.
+ * @returns The updated response message.
+ */
+export const appendText = (
+  responseMessage: ThreadMessageLike,
+  delta: string
 ): ThreadMessageLike => {
-  const delta = chunk.delta.content;
   if (!delta) return responseMessage;
   if (!Array.isArray(responseMessage.content)) return responseMessage;
 
@@ -224,6 +239,60 @@ export const handleText = (
     // After reasoning, tool-call, or any other non-text part, start a
     // new text part so the delta is not silently dropped.
     content.push({ type: "text", text: delta });
+  }
+
+  return { ...responseMessage, content };
+};
+
+// ---------------------------------------------------------------------------
+// Image delta handler
+// ---------------------------------------------------------------------------
+
+/**
+ * Pull image URLs out of a delta's `images` array.
+ *
+ * Image-output models (Gemini 3 Pro Image, `gpt-4o-image`) return their
+ * pictures through `/chat/completions` rather than an images endpoint,
+ * as `message.images[*].image_url.url` — a `data:` URI or an http(s)
+ * link. The field is OpenRouter's extension to the OpenAI shape, so it
+ * is read defensively: anything that is not a non-empty string url is
+ * skipped.
+ *
+ * @param images - The delta's `images` value, of unknown shape.
+ * @returns Every url found, in order; empty when the delta carries none.
+ */
+export const readImageDeltas = (images: unknown): string[] => {
+  if (!Array.isArray(images)) return [];
+  const urls: string[] = [];
+  for (const entry of images) {
+    if (!entry || typeof entry !== "object") continue;
+    const url = (entry as { image_url?: { url?: unknown } }).image_url?.url;
+    if (typeof url === "string" && url) urls.push(url);
+  }
+  return urls;
+};
+
+/**
+ * Append an `image` part for each url the delta carried.
+ *
+ * Images are always pushed as their own parts rather than merged into a
+ * neighbour — unlike text, two images are two pictures, never one split
+ * across deltas.
+ *
+ * @param responseMessage - The accumulating response.
+ * @param urls            - Urls from {@link readImageDeltas}.
+ * @returns The updated response message.
+ */
+export const handleImages = (
+  responseMessage: ThreadMessageLike,
+  urls: string[]
+): ThreadMessageLike => {
+  if (!urls.length) return responseMessage;
+  if (!Array.isArray(responseMessage.content)) return responseMessage;
+
+  const content = [...responseMessage.content];
+  for (const url of urls) {
+    content.push({ type: "image", image: url });
   }
 
   return { ...responseMessage, content };
@@ -323,6 +392,18 @@ export const handleToolCall = (
 /** Streaming iterable returned by OpenAI's `chat.completions.create`. */
 type OpenAIStream = AsyncIterable<ChatCompletionChunk>;
 
+/** Per-request switches for {@link processStream}. */
+export interface ProcessStreamOptions {
+  /**
+   * Route thinking that a backend emits inside `delta.content` — Qwen3's
+   * `<think>` spans, gpt-oss's harmony channels — into reasoning parts
+   * instead of answer text. Opt-in: only the local-model providers see
+   * backends that do this, and a hosted model writing `<think>` in a reply
+   * about prompt formats means it literally (Bug 83793).
+   */
+  splitInlineReasoning?: boolean;
+}
+
 /**
  * Walk an OpenAI streaming response and yield snapshot-style
  * `SendMessageResult`s:
@@ -339,11 +420,15 @@ type OpenAIStream = AsyncIterable<ChatCompletionChunk>;
  */
 export async function* processStream(
   stream: OpenAIStream,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  options: ProcessStreamOptions = {}
 ): AsyncGenerator<SendMessageResult> {
   let responseMessage: ThreadMessageLike = createEmptyResponse();
   let isStreamComplete = false;
   let hasUnfinalizedReasoning = false;
+  const splitter = options.splitInlineReasoning
+    ? new InlineReasoningSplitter()
+    : undefined;
 
   for await (const streamEvent of stream) {
     const prev = responseMessage;
@@ -353,6 +438,20 @@ export async function* processStream(
       const delta = chunk.delta as DeltaWithReasoning;
 
       if (chunk.finish_reason) {
+        // Release any tail the splitter withheld as a possible partial
+        // marker before the message is finalized.
+        const tail = splitter?.flush();
+        if (tail?.reasoning) {
+          hasUnfinalizedReasoning = true;
+          responseMessage = handleReasoning(responseMessage, tail.reasoning);
+        }
+        if (tail?.text) {
+          if (hasUnfinalizedReasoning) {
+            responseMessage = finalizeReasoning(responseMessage);
+            hasUnfinalizedReasoning = false;
+          }
+          responseMessage = appendText(responseMessage, tail.text);
+        }
         if (hasUnfinalizedReasoning) {
           responseMessage = finalizeReasoning(responseMessage, true);
         }
@@ -367,11 +466,36 @@ export async function* processStream(
       }
 
       if (delta.content) {
+        // With the splitter on, one content delta can carry both halves:
+        // the text that closed the thinking span and the answer after it.
+        const split = splitter
+          ? splitter.push(delta.content)
+          : { text: delta.content, reasoning: "" };
+
+        if (split.reasoning) {
+          hasUnfinalizedReasoning = true;
+          responseMessage = handleReasoning(responseMessage, split.reasoning);
+        }
+
+        if (split.text) {
+          if (hasUnfinalizedReasoning) {
+            responseMessage = finalizeReasoning(responseMessage);
+            hasUnfinalizedReasoning = false;
+          }
+          responseMessage = appendText(responseMessage, split.text);
+        }
+      }
+
+      // Image-output models emit the picture alongside their reasoning; the
+      // thinking is closed off first so the image is not appended into the
+      // reasoning transcript.
+      const imageDeltas = readImageDeltas(delta.images);
+      if (imageDeltas.length) {
         if (hasUnfinalizedReasoning) {
           responseMessage = finalizeReasoning(responseMessage);
           hasUnfinalizedReasoning = false;
         }
-        responseMessage = handleText(responseMessage, chunk);
+        responseMessage = handleImages(responseMessage, imageDeltas);
       }
 
       if (delta.tool_calls && Array.isArray(responseMessage.content)) {
@@ -395,7 +519,24 @@ export async function* processStream(
     if (responseMessage !== prev) yield responseMessage;
   }
 
-  // Stream closed without a `finish_reason` — salvage whatever we got.
+  // Stream closed without a `finish_reason` — salvage whatever we got,
+  // including anything the splitter was still holding back.
+  const tail = splitter?.flush();
+  if (tail?.reasoning) {
+    hasUnfinalizedReasoning = true;
+    responseMessage = handleReasoning(responseMessage, tail.reasoning);
+  }
+  if (tail?.text) {
+    if (hasUnfinalizedReasoning) {
+      responseMessage = finalizeReasoning(responseMessage);
+      hasUnfinalizedReasoning = false;
+    }
+    responseMessage = appendText(responseMessage, tail.text);
+  }
+  if (hasUnfinalizedReasoning) {
+    responseMessage = finalizeReasoning(responseMessage, true);
+  }
+
   const hasContent =
     typeof responseMessage.content === "string"
       ? responseMessage.content.length > 0

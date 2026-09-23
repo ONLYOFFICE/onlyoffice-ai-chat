@@ -14,7 +14,7 @@ satisfy the [contract](./providers.md#the-contract) defined in
 | ------------------- | ----------------- | ----------------------------------------------------- | ---------------------- | :----------: | :-----------: | :-------: | :---: |
 | `anthropic`         | Anthropic         | `https://api.anthropic.com`                            | `AbstractBaseProvider` | ✅           | ✅            |           | ✅    |
 | `openai`            | OpenAI            | `https://api.openai.com/v1`                            | `AbstractBaseProvider` | ✅           | ✅            | ✅        | ✅    |
-| `genai`             | Google AI         | `https://generativelanguage.googleapis.com`            | `AbstractBaseProvider` | ✅           | ✅            |           | ✅    |
+| `genai`             | Google AI         | `https://generativelanguage.googleapis.com`            | `AbstractBaseProvider` | ✅           | ✅            | ✅        | ✅    |
 | `mistral`           | Mistral           | `https://api.mistral.ai`                               | `AbstractBaseProvider` | ✅           | ✅            |           | ✅    |
 | `stabilityai`       | Stability AI      | `https://api.stability.ai`                             | `AbstractBaseProvider` |             |               | ✅        |       |
 | `onlyoffice`        | ONLYOFFICE AI     | host-supplied (transformed)                            | `OpenAIProvider`       | ✅ (custom SSE) | ✅          | ✅        | ✅    |
@@ -114,12 +114,29 @@ dimension is omitted.
 | Parent class           | `AbstractBaseProvider` |
 | Reasoning              | ✅ — `thinkingLevel` from the level on every thinking model (2.5 and 3.x); off is `thinkingBudget: 0` on 2.5 Flash, the only Gemini with an off switch; see [Extended thinking depth](#extended-thinking-depth) |
 | Tools                  | ✅ |
-| `imageGeneration`      | — |
+| `imageGeneration`      | ✅ — two routes, see below; returns base64 |
 
 Folder layout matches Anthropic / OpenAI: `client.ts` builds the
 SDK client, `messages.ts` / `tools.ts` translate shapes, `stream.ts`
 emits `SendMessageResult` events, `models.ts` lists models and
-runs the credential check.
+runs the credential check. `image.ts` holds image generation.
+
+Google splits image generation across two incompatible APIs, and
+`image.ts` routes on the model id:
+
+- **Imagen** (`imagen-*`) → `models.generateImages`, which accepts an
+  `aspectRatio` string. `width` / `height` are mapped to the nearest
+  of `1:1`, `3:4`, `4:3`, `9:16`, `16:9`.
+- **Gemini-native image models** (`gemini-*-image-*`, marketed as Nano
+  Banana) → ordinary `models.generateContent` with
+  `responseModalities: ["TEXT", "IMAGE"]`; the image arrives as an
+  `inlineData` part. These models expose no size control, so
+  `width` / `height` are ignored.
+
+Capability detection follows the same split: Imagen is recognised by
+its `predict` / `predictLongRunning` generation method, while Nano
+Banana advertises plain `generateContent` and is recognised only by
+the `image` segment in its id.
 
 ---
 

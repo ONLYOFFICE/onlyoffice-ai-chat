@@ -1,3 +1,4 @@
+import type { AttachmentPickFilter } from "../../../shared/attachment-formats";
 import type { TCloud, TCloudKey, TMCPItem, TProcess } from "../../../types";
 
 /**
@@ -52,8 +53,23 @@ export interface CopyMeta {
  * pickers without losing save/export.
  */
 export interface PlatformFileOperations {
-  /** Show a native file picker dialog and return selected file paths, or null if cancelled */
-  pickFiles?(): Promise<{ path: string; name: string }[] | null>;
+  /**
+   * Show a native file picker dialog and return selected file paths, or null
+   * if cancelled.
+   *
+   * `filters` lists the format groups the widget can actually attach, in the
+   * order they should appear in the dialog. A host that can configure its
+   * dialog should render exactly one row per entry and **must not** add an
+   * "all files" row: the widget re-checks every returned path against the
+   * same list and silently drops anything outside it, so a file picked
+   * through such a row would attach nothing.
+   *
+   * The argument is additive — hosts predating it keep working, and the
+   * widget's own check is what actually enforces the format set.
+   */
+  pickFiles?(
+    filters?: readonly AttachmentPickFilter[]
+  ): Promise<{ path: string; name: string }[] | null>;
 
   /** Show a native image picker dialog and return the image as base64, or null if cancelled */
   pickImage?(): Promise<{ name: string; base64: string } | null>;

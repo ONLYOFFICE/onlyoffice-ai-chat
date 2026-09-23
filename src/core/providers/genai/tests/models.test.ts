@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CapabilitiesUI } from "../../../../shared/capabilities-ui";
-import { inferCapabilities, listModels } from "../models";
+import { inferCapabilities, isImageModel, listModels } from "../models";
 
 const { pagerPageMock, pagerHasNextMock, pagerNextPageMock, modelsListMock } =
   vi.hoisted(() => ({
@@ -32,6 +32,47 @@ describe("genai/models/inferCapabilities", () => {
     expect(inferCapabilities([])).toBe(
       CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools
     );
+  });
+
+  it("marks Imagen models as Image via their predict method", () => {
+    expect(inferCapabilities(["predict"])).toBe(CapabilitiesUI.Image);
+    expect(inferCapabilities(["predictLongRunning"])).toBe(
+      CapabilitiesUI.Image
+    );
+  });
+
+  it("marks Gemini-native image models as Image via the model id", () => {
+    // Nano Banana advertises plain `generateContent`, so only the id
+    // separates it from a chat model.
+    expect(
+      inferCapabilities(["generateContent"], "gemini-2.5-flash-image")
+    ).toBe(CapabilitiesUI.Image);
+    expect(
+      inferCapabilities(["generateContent"], "gemini-3-pro-image-preview")
+    ).toBe(CapabilitiesUI.Image);
+  });
+
+  it("keeps ordinary Gemini models on the chat default", () => {
+    expect(inferCapabilities(["generateContent"], "gemini-2.5-pro")).toBe(
+      CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools
+    );
+  });
+
+  it("prefers Embeddings over the image id heuristic", () => {
+    expect(inferCapabilities(["embedContent"], "some-image-embedder")).toBe(
+      CapabilitiesUI.Embeddings
+    );
+  });
+});
+
+describe("genai/models/isImageModel", () => {
+  it("matches Imagen and Gemini image ids, case-insensitively", () => {
+    expect(isImageModel("imagen-4.0-generate-001")).toBe(true);
+    expect(isImageModel("GEMINI-2.5-FLASH-IMAGE")).toBe(true);
+  });
+
+  it("rejects chat model ids", () => {
+    expect(isImageModel("gemini-2.5-pro")).toBe(false);
   });
 });
 

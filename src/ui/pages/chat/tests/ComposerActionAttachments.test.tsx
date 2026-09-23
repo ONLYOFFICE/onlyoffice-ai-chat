@@ -203,6 +203,10 @@ vi.mock("../../../../shared/utils", () => {
 });
 
 import { ComposerActionAttachment } from "../sub-components/ComposerActionAttachments";
+import {
+  ATTACHMENT_PICK_FILTERS,
+  type AttachmentPickFilter,
+} from "../../../../shared/attachment-formats";
 
 describe("ComposerActionAttachment", () => {
   beforeEach(() => {
@@ -488,6 +492,94 @@ describe("ComposerActionAttachment", () => {
       });
 
       expect(mockAddAttachmentFile).not.toHaveBeenCalled();
+    });
+
+    it("passes the supported-format filters to pickFiles", async () => {
+      mockPickFiles.mockResolvedValue(null);
+
+      await act(async () => {
+        render(<ComposerActionAttachment />);
+      });
+      const items = mockDropdownItems as {
+        text: string;
+        onClick: () => void;
+      }[];
+      const addLocalFile = items.find((i) => i.text === "AddLocalFile")!;
+
+      await act(async () => {
+        addLocalFile.onClick();
+      });
+
+      expect(mockPickFiles).toHaveBeenCalledWith(ATTACHMENT_PICK_FILTERS);
+      // The host must not be asked to offer an "all files" escape hatch.
+      const filters = mockPickFiles.mock
+        .calls[0][0] as AttachmentPickFilter[];
+      expect(filters.length).toBeGreaterThan(0);
+      for (const filter of filters) {
+        expect(filter.extensions).not.toContain("*");
+        expect(filter.extensions.length).toBeGreaterThan(0);
+      }
+    });
+
+    it("drops unsupported files a host returns anyway", async () => {
+      // A host that ignores the filters (or a hand-typed name) can still hand
+      // back something unconvertible — it must not reserve a chip.
+      mockPickFiles.mockResolvedValue([
+        { path: "/docs/setup.exe" },
+        { path: "/docs/archive.zip" },
+      ]);
+
+      await act(async () => {
+        render(<ComposerActionAttachment />);
+      });
+      const items = mockDropdownItems as {
+        text: string;
+        onClick: () => void;
+      }[];
+      const addLocalFile = items.find((i) => i.text === "AddLocalFile")!;
+
+      await act(async () => {
+        addLocalFile.onClick();
+      });
+
+      expect(mockBeginPendingAttachments).not.toHaveBeenCalled();
+      expect(mockConvertFileToText).not.toHaveBeenCalled();
+      expect(mockAddAttachmentFile).not.toHaveBeenCalled();
+    });
+
+    it("keeps supported files when a batch is partly unsupported", async () => {
+      mockPickFiles.mockResolvedValue([
+        { path: "/docs/setup.exe" },
+        { path: "/docs/report.docx" },
+      ]);
+      mockGetFileType.mockReturnValue(7);
+      mockConvertFileToText.mockResolvedValue("content");
+
+      await act(async () => {
+        render(<ComposerActionAttachment />);
+      });
+      const items = mockDropdownItems as {
+        text: string;
+        onClick: () => void;
+      }[];
+      const addLocalFile = items.find((i) => i.text === "AddLocalFile")!;
+
+      await act(async () => {
+        addLocalFile.onClick();
+      });
+
+      // Only the .docx converts, and the pending ids stay aligned with it.
+      await waitFor(() => {
+        expect(mockConvertFileToText).toHaveBeenCalledTimes(1);
+      });
+      expect(mockConvertFileToText).toHaveBeenCalledWith(
+        "/docs/report.docx",
+        69
+      );
+      expect(mockAddAttachmentFile).toHaveBeenCalledWith(
+        [{ path: "/docs/report.docx", content: "content", type: 7 }],
+        { pendingIds: ["pending-0"] }
+      );
     });
 
     it("limits picked files to 5", async () => {

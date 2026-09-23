@@ -8,6 +8,7 @@ import { useStores } from "../../../store/context";
 import { usePromptHistory } from "../../../hooks/usePromptHistory";
 import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { useWidgetConfig } from "../../../../widget-config";
+import { useChatPasteAttachments } from "../useChatPasteAttachments";
 import { ComposerAction } from "./ComposerAction";
 
 // Coarse-pointer devices (phones, tablets) must not autofocus the input:
@@ -42,6 +43,7 @@ const Composer = () => {
   const composerBridge = useComposerBridge();
   const rootRef = useRef<HTMLFormElement>(null);
   const history = usePromptHistory();
+  const { onPaste } = useChatPasteAttachments();
 
   // Replace the draft with a history entry and drop the caret at the very
   // end, so the next Up keeps walking instead of moving within the text
@@ -140,6 +142,9 @@ const Composer = () => {
           aria-label={t("MessageInput")}
           disabled={!currentProfile || composerDisabled}
           data-testid="composer-input"
+          onPaste={(e) => {
+            void onPaste(e);
+          }}
           onKeyDown={(e) => {
             // `hasPending`: sending mid-upload would silently drop the
             // attachment the user just watched appear — `onNew` reads only

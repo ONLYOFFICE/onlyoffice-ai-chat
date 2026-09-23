@@ -1,4 +1,5 @@
 import type { TErrorData } from "../../../shared/error-data";
+import type { ProviderFetch } from "../../../shared/provider-credentials";
 import type { Profile } from "../../types";
 import type { StorageAdapter } from "../../storage";
 import type { AssignmentsEngine } from "../assignments";
@@ -48,6 +49,14 @@ export const DEFAULT_PROFILES_ROUTES: Record<ProfilesEngineMethod, RouteSpec> =
 export type ProfilesEngineDeps = {
   storage: StorageAdapter;
   assignments?: AssignmentsEngine;
+  /**
+   * Same transport switches as {@link AIEngineDeps}: the capability probe
+   * run on save must reach the model the way chat will, or a host that only
+   * allows proxied traffic gets a false `canUseTool: false` that sticks.
+   */
+  fetchProxy?: ProviderFetch;
+  forceProxy?: boolean | (() => boolean);
+  externalFetch?: ProviderFetch;
 };
 
 /**

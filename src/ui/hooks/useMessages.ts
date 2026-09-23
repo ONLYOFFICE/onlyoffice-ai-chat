@@ -1265,6 +1265,22 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
 
       const stream = api.ai.regenerateStream({
         threadId,
+        // Tells the engine which turn to re-roll. Without it the engine
+        // falls back to the thread's last user message, so regenerating
+        // an older reply would re-roll the newest one instead.
+        //
+        // The id is the runtime one, which for a message sent in this
+        // session is the optimistic client id storage never saw — hence
+        // the positional fallback. It is only meaningful when the loaded
+        // window is the whole thread; with older pages still unloaded the
+        // store index is not the thread index.
+        messageId: parentId,
+        keepCount: state.hasMoreOlderMessages ? undefined : parentIndex + 1,
+        // The thread length this index was computed against, so the
+        // engine can reject the index if storage has moved on since
+        // (another tab, another device) instead of rewinding to whatever
+        // now sits at that position.
+        expectedLength: state.hasMoreOlderMessages ? undefined : msgs.length,
         entityId,
         contextEntityId,
         profileId: currentProfile.id,

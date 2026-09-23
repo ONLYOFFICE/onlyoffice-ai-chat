@@ -220,6 +220,48 @@ describe("I18nProvider", () => {
     expect(captured!.direction).toBe("rtl");
   });
 
+  // The RTL locales as the editors spell them. Hebrew and Urdu were missing
+  // from the list entirely and rendered LTR.
+  it.each(["ar-SA", "he-IL", "ur-PK"])(
+    "useI18n reports RTL for editor locale %s",
+    async (lang) => {
+      i18nInstance.language = lang;
+      let captured: ReturnType<typeof useI18n> | undefined;
+      const Probe = () => {
+        captured = useI18n();
+        return <span />;
+      };
+      render(
+        <I18nProvider>
+          <Probe />
+        </I18nProvider>
+      );
+      await waitFor(() => expect(captured).toBeDefined());
+      expect(captured!.isRTL).toBe(true);
+      expect(captured!.direction).toBe("rtl");
+    }
+  );
+
+  it.each(["en-US", "ru", "de", "hy"])(
+    "useI18n reports LTR for %s",
+    async (lang) => {
+      i18nInstance.language = lang;
+      let captured: ReturnType<typeof useI18n> | undefined;
+      const Probe = () => {
+        captured = useI18n();
+        return <span />;
+      };
+      render(
+        <I18nProvider>
+          <Probe />
+        </I18nProvider>
+      );
+      await waitFor(() => expect(captured).toBeDefined());
+      expect(captured!.isRTL).toBe(false);
+      expect(captured!.direction).toBe("ltr");
+    }
+  );
+
   it("changeLocale loads the requested locale", async () => {
     let captured: ReturnType<typeof useI18n> | undefined;
     const Probe = () => {
