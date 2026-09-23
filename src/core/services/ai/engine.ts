@@ -628,6 +628,13 @@ export class AIEngine {
    * A thread that vanished meanwhile surfaces as a rejected write, logged
    * like any other; there is no reply left for it to damage.
    *
+   * The guard is a read followed by a write, not one atomic operation:
+   * {@link ThreadsStorage.update} takes no expected-value argument, so a
+   * rename landing between the two still loses. The read is kept adjacent
+   * to the write — nothing is awaited in between — so the window is one
+   * storage round trip rather than the whole title request. Closing it
+   * properly needs a compare-and-swap in the adapter contract.
+   *
    * No `thread-title` event follows — the stream that would have carried it
    * is gone, so the name reaches the UI with the next read of the thread.
    */

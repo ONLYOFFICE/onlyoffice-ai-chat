@@ -1,5 +1,6 @@
 import React from "react";
 import { useStores } from "../../store/context";
+import { partitionReads, readFile } from "./attachment-reads";
 
 /**
  * Clipboard-paste handler for attaching images to the chat.
@@ -61,36 +62,26 @@ export const useChatPasteAttachments = () => {
     const accepted = imageFiles.slice(0, pendingIds.length);
     if (accepted.length === 0) return;
 
+    // Per-file failures collapse to `null` so one unreadable image can't
+    // sink the whole paste — its lease is dropped in the aligned pass below.
     const results = await Promise.all(
-      accepted.map(
-        (file) =>
-          new Promise<{ name: string; base64: string } | null>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () =>
-              resolve({
-                name: file.name || "image.png",
-                base64: String(reader.result ?? ""),
-              });
-            reader.onerror = () => resolve(null);
-            reader.readAsDataURL(file);
-          })
-      )
+      accepted.map(async (file) => {
+        try {
+          return {
+            name: file.name || "image.png",
+            base64: await readFile(file, "dataURL"),
+          };
+        } catch {
+          return null;
+        }
+      })
     );
 
-    // Failed reads drop their lease; survivors keep id/input alignment by
-    // being filtered in the same pass.
-    const inputs: { name: string; base64: string }[] = [];
-    const liveIds: string[] = [];
-    const failedIds: string[] = [];
-    results.forEach((result, i) => {
-      if (result === null) {
-        failedIds.push(pendingIds[i]);
-      } else {
-        inputs.push(result);
-        liveIds.push(pendingIds[i]);
-      }
-    });
-    if (failedIds.length > 0) failPendingAttachments(failedIds);
+    const { inputs, liveIds } = partitionReads(
+      results,
+      pendingIds,
+      failPendingAttachments
+    );
     // On throw the store fails the leases itself before re-throwing.
     if (inputs.length > 0) {
       await addAttachmentImage(inputs, { pendingIds: liveIds });

@@ -35,6 +35,11 @@ vi.mock("@assistant-ui/react", () => ({
             e: React.KeyboardEvent<HTMLTextAreaElement>
           ) => void
         }
+        onMouseDown={
+          props.onMouseDown as (
+            e: React.MouseEvent<HTMLTextAreaElement>
+          ) => void
+        }
       />
     ),
   },
@@ -402,14 +407,50 @@ describe("Composer history navigation", () => {
 
     it("parks the caret at the end after ArrowDown, so the next Down walks on", async () => {
       const input = renderComposer(thread("older", "line one\nline two"));
-      // Walk back twice to leave room to walk forward again.
+      // Walk back twice to leave room to walk forward again. No manual caret
+      // fix-up between the steps — the real post-recall position is exactly
+      // what these tests are here to exercise.
       await recallInto(input, "ArrowUp");
       await recallInto(input, "ArrowUp");
-      setValue(input, "older");
       await recallInto(input, "ArrowDown");
       expect(input.value).toBe("line one\nline two");
       expect(input.selectionStart).toBe(input.value.length);
       expect(input.selectionEnd).toBe(input.value.length);
+    });
+
+    it("reverses direction on the first opposite-arrow press after a recall", async () => {
+      const input = renderComposer(thread("older", "newest"));
+      await recallInto(input, "ArrowUp");
+      await recallInto(input, "ArrowUp");
+      expect(input.value).toBe("older");
+      // The Up walk left the caret at the start. A Down now has to be claimed
+      // by history too, or reversing costs the user a wasted keypress.
+      await recallInto(input, "ArrowDown");
+      expect(input.value).toBe("newest");
+    });
+
+    it("hands the edge rule back once the user moves the caret themselves", async () => {
+      const input = renderComposer(thread("older", "line one\nline two"));
+      await recallInto(input, "ArrowUp");
+      expect(input.value).toBe("line one\nline two");
+      // An End press parks the caret at the end deliberately. A Down there
+      // is the user asking to move within their text, not to walk forward.
+      fireEvent.keyDown(input, { key: "End" });
+      setValue(input, "line one\nline two", 4);
+      mockSetText.mockClear();
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      await expectNotRecalled();
+    });
+
+    it("hands the edge rule back after a click places the caret", async () => {
+      const input = renderComposer(thread("older", "line one\nline two"));
+      await recallInto(input, "ArrowUp");
+      // A click mid-text moves the caret with no keydown at all.
+      fireEvent.mouseDown(input);
+      setValue(input, "line one\nline two", 4);
+      mockSetText.mockClear();
+      fireEvent.keyDown(input, { key: "ArrowUp" });
+      await expectNotRecalled();
     });
 
     it("keeps walking back on a second ArrowUp without repositioning the caret", async () => {
