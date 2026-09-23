@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.118
+
+### Fixed
+
+- **A chat keeps the name generated for it, even when its round ends first (Bug 83841).** The generated title was written from inside the generator carrying the reply, and only for as long as that generator lived: a title that resolved after the reply's terminal event — or after the consumer walked away — was dropped with no write and no event. A title is generated exactly once, on the round that creates the thread (every later round already carries a `threadId`), so the thread then stayed "New chat" for good. Agent chats hit this as a matter of course: their rounds pause for tool approval and continue as separate streams, so the round that owns the title is routinely the one that ends first.
+
+  The title is now persisted out-of-band once it resolves, whatever ended the round — a terminal reply, an early `return`, a dropped connection. It is detached on purpose: awaiting it would hold the round, and the UI's busy state, open again, which is exactly what multiplexing the title into the stream removed. With no stream left to carry an event, the name reaches the UI with the next read of the thread rather than immediately, so a host that wants it on screen at once should refresh its thread list when a round ends.
+
+  Two guards: a thread whose title is no longer the placeholder has been named by its owner and is left alone, and the placeholder is never written back over itself. A failed write is logged and dropped, as before. A round that pauses on a tool call is unchanged — it still delivers the title as a trailing event.
+
+- **A failed title request says why.** `generateTitle` rejections were collapsed into the placeholder silently, so a refused, unauthorized or unreachable title request looked exactly like a thread whose name never arrived. The reason is now logged under `[title]`, alongside the existing log for a failed write.
+
 ## 0.5.117
 
 ### Added

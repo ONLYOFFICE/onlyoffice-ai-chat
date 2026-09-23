@@ -51,6 +51,13 @@ import type {
 } from "./types";
 
 /**
+ * Name a thread is created with, before the generated title lands. Also the
+ * marker that tells a late title it may still claim the thread: a thread
+ * carrying anything else has a name of its own.
+ */
+const PLACEHOLDER_TITLE = "New chat";
+
+/**
  * Thin orchestrator that binds the AI actions layer to a
  * {@link StorageAdapter} via the {@link AssignmentsEngine} and
  * {@link ThreadsEngine} sub-engines.
@@ -347,7 +354,7 @@ export class AIEngine {
       // title in parallel and yield it once both the title and the
       // assistant reply have settled.
       const placeholder = await this.deps.storage.threads.create(
-        "New chat",
+        PLACEHOLDER_TITLE,
         profileId,
         input.entityId
       );
@@ -372,7 +379,7 @@ export class AIEngine {
       yield {
         type: "thread-title",
         threadId,
-        title: "New chat",
+        title: PLACEHOLDER_TITLE,
         profileId,
       };
 
@@ -423,8 +430,15 @@ export class AIEngine {
         messages: [resolvedMessages[resolvedMessages.length - 1]],
         fetch: proxiedFetch,
       })
-        .then((t) => t || "New chat")
-        .catch(() => "New chat");
+        .then((t) => t || PLACEHOLDER_TITLE)
+        // The round must survive a title the provider would not produce, but
+        // the reason has to be recoverable: swallowed silently, a refused or
+        // unreachable title request is indistinguishable from a thread whose
+        // name simply never arrived.
+        .catch((e) => {
+          logger.error(`[title] generation failed for thread ${threadId}`, e);
+          return PLACEHOLDER_TITLE;
+        });
     }
 
     const actionArgs: ActionArgs = {
@@ -489,14 +503,21 @@ export class AIEngine {
    * stream, so a slow/hung title request kept the whole round (and the
    * UI busy state) open with nothing left to say.
    *
-   * When the reply ends first, the round closes IMMEDIATELY and the
-   * thread keeps its placeholder title ("New chat") for good — a late
-   * title is deliberately discarded rather than applied out-of-band, so
-   * nothing ever holds the round open just to rename a thread. The one
-   * exception is a round paused on a tool call: it isn't over (the
-   * consumer is in the approval dialog and the continuation runs as a
-   * separate stream), so the generator stays open and the title still
-   * lands as a trailing event.
+   * When the reply ends first, the round closes IMMEDIATELY — nothing
+   * ever holds it open just to rename a thread — and the title is
+   * persisted out-of-band once it resolves (see
+   * {@link persistDetachedTitle}). It reaches the UI on the next read of
+   * the thread list rather than as an event, because there is no stream
+   * left to carry one. The same happens when the consumer walks away
+   * early (`return`/`throw`, a dropped connection): the write no longer
+   * dies with the generator. The one case that still delivers an event is
+   * a round paused on a tool call: it isn't over (the consumer is in the
+   * approval dialog and the continuation runs as a separate stream), so
+   * the generator stays open and the title lands as a trailing event.
+   *
+   * This matters because a title is generated **once**, on the round that
+   * creates the thread: every later round carries a `threadId`, so a
+   * dropped title left the thread named "New chat" for good (Bug 83841).
    *
    * A title whose write to storage fails is dropped (logged, no event) —
    * never propagated, since that would abort the reply this generator is
@@ -565,20 +586,72 @@ export class AIEngine {
       // a tool call isn't over — hold the generator so the title still
       // lands as a trailing event while the approval dialog is open.
       // Otherwise (reply terminal) fall through: the round closes now and
-      // the placeholder title stays for good.
+      // the `finally` below writes the title without it.
       if (pendingTitle && pausedForToolCall) {
         const { __title } = await pendingTitle;
+        pendingTitle = null;
         const titleEvent = await emitTitle(__title);
         if (titleEvent) {
           yield titleEvent;
         }
       }
     } finally {
+      // Whatever ended the round — a terminal reply, an early `return`, a
+      // throw — a title still in flight is persisted on its own instead of
+      // being dropped with the generator. Detached on purpose: awaiting it
+      // here would hold the round open again, which is what this generator
+      // exists to avoid.
+      if (pendingTitle) {
+        this.persistDetachedTitle(pendingTitle, threadId);
+        pendingTitle = null;
+      }
       // Forward early termination (consumer `return`/`throw`) to the
       // inner stream so the provider request is torn down — `yield*`
       // would have done this automatically; a manual pump must not leak.
       await events.return(undefined).catch(() => undefined);
     }
+  }
+
+  /**
+   * Persist a title whose round is already over.
+   *
+   * The write outlives the generator on purpose: the title request is not
+   * bound to the round's abort signal, so it resolves even after the reply
+   * ended or the consumer walked away, and the rename is a plain storage
+   * call that needs nothing from the closed stream. Hosts whose storage
+   * adapter dies with the request (a per-request transaction, say) see the
+   * failure as a logged rejection rather than a broken reply.
+   *
+   * Two things it refuses to do: rename a thread the user has since named
+   * (anything other than the placeholder is the owner's choice — the title
+   * arrived too late to win), and write the placeholder back over itself.
+   * A thread that vanished meanwhile surfaces as a rejected write, logged
+   * like any other; there is no reply left for it to damage.
+   *
+   * No `thread-title` event follows — the stream that would have carried it
+   * is gone, so the name reaches the UI with the next read of the thread.
+   */
+  private persistDetachedTitle(
+    pending: Promise<{ __title: string }>,
+    threadId: string
+  ): void {
+    void pending
+      .then(async ({ __title: title }) => {
+        if (title === PLACEHOLDER_TITLE) {
+          return;
+        }
+        const thread = await this.deps.storage.threads.readById(threadId);
+        if (thread && thread.title !== PLACEHOLDER_TITLE) {
+          return;
+        }
+        await this.deps.storage.threads.update(threadId, title);
+      })
+      .catch((e) => {
+        logger.error(
+          `[title] failed to persist late title of thread ${threadId}`,
+          e
+        );
+      });
   }
 
   /**
