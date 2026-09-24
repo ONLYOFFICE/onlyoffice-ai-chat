@@ -99,8 +99,16 @@ vi.mock("@assistant-ui/react", () => ({
         {children}
       </div>
     ),
-    Viewport: ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="viewport">{children}</div>
+    Viewport: ({
+      children,
+      autoScroll,
+    }: {
+      children: React.ReactNode;
+      autoScroll?: boolean;
+    }) => (
+      <div data-testid="viewport" data-auto-scroll-prop={String(autoScroll)}>
+        {children}
+      </div>
     ),
     If: ({
       children,
@@ -149,6 +157,7 @@ vi.mock("framer-motion", () => ({
 }));
 
 import Thread from "../index";
+import { WidgetConfigProvider } from "../../../../widget-config";
 
 describe("ChatPage (Thread)", () => {
   it("renders without crashing", () => {
@@ -183,6 +192,26 @@ describe("ChatPage (Thread)", () => {
     render(<Thread />);
     expect(screen.getByTestId("manage-tool-dialog")).toBeInTheDocument();
     serversState.manageToolData = undefined;
+  });
+
+  it("does not follow the stream down the viewport by default", () => {
+    render(<Thread />);
+    expect(screen.getAllByTestId("viewport")[0]).toHaveAttribute(
+      "data-auto-scroll-prop",
+      "false"
+    );
+  });
+
+  it("follows the stream when autoScrollWhileStreaming is set", () => {
+    render(
+      <WidgetConfigProvider config={{ autoScrollWhileStreaming: true }}>
+        <Thread />
+      </WidgetConfigProvider>
+    );
+    expect(screen.getAllByTestId("viewport")[0]).toHaveAttribute(
+      "data-auto-scroll-prop",
+      "true"
+    );
   });
 
   it("clears manageToolData when the dialog closes", () => {

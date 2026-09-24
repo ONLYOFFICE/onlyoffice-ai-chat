@@ -19,6 +19,7 @@ const stores = {
   messageState: {
     messages: [] as unknown[],
     isStreamRunning: false,
+    hasMoreOlderMessages: false,
     _abortController: undefined as AbortController | undefined,
     setIsStreamRunning: vi.fn(),
     setIsRequestRunning: vi.fn(),
@@ -176,6 +177,7 @@ const profile = { id: "p1", name: "P", providerType: "x" } as never;
 beforeEach(() => {
   vi.clearAllMocks();
   stores.messageState.messages = [];
+  stores.messageState.hasMoreOlderMessages = false;
   stores.messageState._currentThreadId = "";
   stores.messageState._abortController = undefined;
   stores.threadsState.threadId = "";
@@ -1429,6 +1431,58 @@ describe("useMessages.regenerate", () => {
     // The composer path is what appends; retry must not go through it.
     expect(apiAi.sendWithStream).not.toHaveBeenCalled();
     expect(stores.messageState.addMessage).not.toHaveBeenCalled();
+  });
+
+  it("names the turn to re-roll so an older reply does not re-roll the newest", async () => {
+    // Two complete rounds. Regenerating the FIRST one must tell the
+    // engine which turn it is: the engine otherwise re-reads storage and
+    // falls back to the last user message, re-rolling the wrong reply.
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.messageState.messages = [
+      { id: "u1", role: "user", content: [{ type: "text", text: "one" }] },
+      { id: "a1", role: "assistant", content: [{ type: "text", text: "r1" }] },
+      { id: "u2", role: "user", content: [{ type: "text", text: "two" }] },
+      { id: "a2", role: "assistant", content: [{ type: "text", text: "r2" }] },
+    ];
+    apiAi.regenerateStream.mockReturnValue(arr([]));
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate("u1");
+    });
+
+    expect(stores.messageState.truncateMessagesAfter).toHaveBeenCalledWith(0);
+    const arg = apiAi.regenerateStream.mock.calls[0][0];
+    expect(arg.messageId).toBe("u1");
+    // Positional fallback for ids storage never saw (optimistic sends).
+    expect(arg.keepCount).toBe(1);
+    // The pre-truncation thread length that count was derived from, so
+    // the engine can reject the index if storage has since moved on.
+    expect(arg.expectedLength).toBe(4);
+  });
+
+  it("omits keepCount while older pages are unloaded", async () => {
+    // With a partial window the store index is not the thread index, so
+    // the count would point at the wrong turn — only the id is sound.
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.messageState.hasMoreOlderMessages = true;
+    stores.messageState.messages = [
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
+      { id: "a1", role: "assistant", content: [{ type: "text", text: "old" }] },
+    ];
+    apiAi.regenerateStream.mockReturnValue(arr([]));
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate("u1");
+    });
+
+    const arg = apiAi.regenerateStream.mock.calls[0][0];
+    expect(arg.messageId).toBe("u1");
+    expect(arg.keepCount).toBeUndefined();
+    expect(arg.expectedLength).toBeUndefined();
   });
 
   it("forwards extendedThinking, tools, and systemPrompt via actionArgs", async () => {

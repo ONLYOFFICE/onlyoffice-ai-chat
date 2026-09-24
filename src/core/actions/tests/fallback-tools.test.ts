@@ -416,3 +416,57 @@ describe("wrapStream", () => {
     expect(textPart?.text ?? "").not.toContain("trailing junk");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Interaction with the inline-reasoning splitter (local backends)
+// ---------------------------------------------------------------------------
+
+describe("fallback text protocol vs inline reasoning", () => {
+  /**
+   * The splitter runs inside `provider.sendMessage`, i.e. upstream of
+   * `wrapStream`. By the time the fallback protocol reads the message, the
+   * thinking is already a `reasoning` part — so it must not reach either the
+   * prose or the tool arguments (Bug 83793).
+   */
+  it("ignores reasoning parts when scanning for a tool call", async () => {
+    const upstream = (async function* (): AsyncGenerator<SendMessageResult> {
+      yield {
+        role: "assistant",
+        content: [
+          { type: "reasoning", text: "We need a paragraph about coffee." },
+          {
+            type: "text",
+            text: '<TOOL_CALL>{"name":"generate_document","arguments":{"content":"Coffee is warm."}}</TOOL_CALL>',
+          },
+        ],
+      } as ThreadMessageLike;
+      yield {
+        isEnd: true,
+        responseMessage: {
+          role: "assistant",
+          content: [
+            { type: "reasoning", text: "We need a paragraph about coffee." },
+            {
+              type: "text",
+              text: '<TOOL_CALL>{"name":"generate_document","arguments":{"content":"Coffee is warm."}}</TOOL_CALL>',
+            },
+          ],
+        } as ThreadMessageLike,
+      };
+    })();
+
+    const results: SendMessageResult[] = [];
+    for await (const r of wrapStream(upstream)) results.push(r);
+
+    const last = results[results.length - 1] as {
+      responseMessage: ThreadMessageLike;
+    };
+    const parts = last.responseMessage.content as AnyPart[];
+    const call = parts.find((p) => p.type === "tool-call");
+
+    expect(call?.toolName).toBe("generate_document");
+    expect(call?.args).toEqual({ content: "Coffee is warm." });
+    // The deliberation must not have been folded into the document content.
+    expect(JSON.stringify(call?.args)).not.toContain("We need a paragraph");
+  });
+});

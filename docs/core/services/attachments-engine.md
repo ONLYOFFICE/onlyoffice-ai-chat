@@ -17,6 +17,23 @@ use the `DELETE` verb for idiomatic REST; `get` / `getMany` are
 `POST` because their inputs (id / ids array) belong in the body
 rather than the query string.
 
+### Hosts that cannot store a base64 draft
+
+`save-image` / `save-images-many` are **not served by every host**.
+DocSpace unmounts them (Bug 83289): its backend stores attachments
+only as references to existing portal entries, so a raw base64 draft
+has nowhere to go and the routes answer `404`. They remain in the
+route table for local-storage hosts.
+
+Such a host must supply
+[`onDropFiles`](../../../src/widget-config.tsx), which takes over
+**both** drag-and-drop and clipboard paste: the widget hands over the
+raw `File` list and skips its built-in read-and-attach entirely, so
+the host can upload to its own storage and attach by file id. Without
+it, a pasted or dropped image on such a host would try `save-image*`
+and fail. The host owns the loading chips on this path — the widget
+reserves none.
+
 The full payload (file text content, image base64) lives in
 `storage.attachments`. Right before the provider sees a message,
 `AIEngine` walks the message history and calls

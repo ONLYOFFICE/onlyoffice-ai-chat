@@ -18,6 +18,7 @@ import { AbstractBaseProvider } from "../base";
 import { getErrorCode, ProviderErrors } from "../errors";
 import { createOpenAIClient } from "./client";
 import { openaiInfo } from "./info";
+import { stripInlineReasoning } from "./inline-reasoning";
 import { convertMessages, type ReasoningContentMode } from "./messages";
 import { listModels } from "./models";
 import {
@@ -75,6 +76,21 @@ class OpenAIProvider extends AbstractBaseProvider {
    */
   protected reasoningContentMode: ReasoningContentMode = "when-present";
 
+  /**
+   * When `true`, thinking the backend emits inside `delta.content` —
+   * `<think>` / `<reasoning>` spans, gpt-oss harmony channels — is routed
+   * into reasoning parts instead of the answer text.
+   *
+   * Off in the base class. The local-model servers (Ollama, LM Studio and
+   * the generic OpenAI-compatible endpoint) don't fill `reasoning_content`,
+   * so their thinking is otherwise indistinguishable from the reply: it
+   * rendered as the answer and was copied into document-writing tool
+   * arguments, putting the model's deliberation into the user's document
+   * (Bug 83793). Hosted providers report thinking in its own field, and
+   * there a model writing `<think>` in a reply means it literally.
+   */
+  protected splitInlineReasoning = false;
+
   /** {@link convertMessages} options for this provider's wire format. */
   private get convertOptions() {
     return {
@@ -98,9 +114,12 @@ class OpenAIProvider extends AbstractBaseProvider {
    * The values are not part of the OpenAI wire format, so each call site
    * casts the assembled params back to the SDK's type.
    *
+   * @param model - The model the request targets, for subclasses whose
+   *   extra fields are per-route (OpenRouter's `modalities`). Omitted by
+   *   call sites that have no model in scope.
    * @returns Fields to spread into the request body.
    */
-  protected extraBody(): Record<string, unknown> {
+  protected extraBody(_model?: string): Record<string, unknown> {
     return {};
   }
 
@@ -125,7 +144,9 @@ class OpenAIProvider extends AbstractBaseProvider {
         signal,
       });
 
-      yield* processStream(stream, signal);
+      yield* processStream(stream, signal, {
+        splitInlineReasoning: this.splitInlineReasoning,
+      });
     } catch (error) {
       if (isAbortError(error, signal)) {
         yield { isEnd: true, responseMessage: createStopResponse() };
@@ -164,7 +185,7 @@ class OpenAIProvider extends AbstractBaseProvider {
             summary: true,
           }),
           stream: true,
-          ...this.extraBody(),
+          ...this.extraBody(model),
         } as OpenAI.Responses.ResponseCreateParamsStreaming,
         { signal }
       );
@@ -247,7 +268,7 @@ class OpenAIProvider extends AbstractBaseProvider {
         ...(params.tools.length > 0 ? { parallel_tool_calls: false } : {}),
         stream: true,
         ...this.reasoningRequestFields(params.model, params.reasoningLevel),
-        ...this.extraBody(),
+        ...this.extraBody(params.model),
       } as OpenAI.Chat.ChatCompletionCreateParamsStreaming,
       { signal: params.signal }
     );
@@ -302,7 +323,7 @@ class OpenAIProvider extends AbstractBaseProvider {
           // the summary tokens would be billed and discarded.
           ...this.reasoningResponsesFields(model, reasoningLevel),
           stream: false,
-          ...this.extraBody(),
+          ...this.extraBody(model),
         } as OpenAI.Responses.ResponseCreateParamsNonStreaming,
         { signal }
       );
@@ -318,7 +339,8 @@ class OpenAIProvider extends AbstractBaseProvider {
       reasoningLevel,
       signal,
     });
-    return response.choices[0]?.message?.content ?? "";
+    const content = response.choices[0]?.message?.content ?? "";
+    return this.splitInlineReasoning ? stripInlineReasoning(content) : content;
   }
 
   /**
@@ -338,7 +360,7 @@ class OpenAIProvider extends AbstractBaseProvider {
         messages: params.messages,
         ...this.reasoningRequestFields(params.model, params.reasoningLevel),
         stream: false,
-        ...this.extraBody(),
+        ...this.extraBody(params.model),
       } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
       { signal: params.signal }
     );
@@ -365,7 +387,7 @@ class OpenAIProvider extends AbstractBaseProvider {
           n: 1,
           size,
           ...(isGptImage ? {} : { response_format: "b64_json" }),
-          ...this.extraBody(),
+          ...this.extraBody(model),
         } as OpenAI.Images.ImageGenerateParamsNonStreaming,
         { signal }
       );

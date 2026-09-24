@@ -8,6 +8,7 @@ import { useStores } from "../../../store/context";
 import { usePromptHistory } from "../../../hooks/usePromptHistory";
 import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { useWidgetConfig } from "../../../../widget-config";
+import { useChatPasteAttachments } from "../useChatPasteAttachments";
 import { ComposerAction } from "./ComposerAction";
 
 // Coarse-pointer devices (phones, tablets) must not autofocus the input:
@@ -42,15 +43,31 @@ const Composer = () => {
   const composerBridge = useComposerBridge();
   const rootRef = useRef<HTMLFormElement>(null);
   const history = usePromptHistory();
+  const { onPaste } = useChatPasteAttachments();
 
-  // Replace the draft with a history entry and drop the caret at the very
-  // end, so the next Up keeps walking instead of moving within the text
-  // we just pasted in. `setText` re-renders the textarea, hence the
-  // post-paint caret placement.
-  const applyHistoryText = (textarea: HTMLTextAreaElement, text: string) => {
+  // Set while the caret sits where a recall parked it rather than where the
+  // user put it. It makes the *opposite* arrow a history step too: after an
+  // Up the caret is at the start, which is not the edge a Down would normally
+  // need, but there is no caret movement worth protecting inside text the
+  // user never navigated — so reversing direction still costs one keypress.
+  // Any real edit or caret move clears it, handing the edge rule back.
+  const caretParkedByHistory = useRef(false);
+
+  // Replace the draft with a history entry and park the caret at the edge
+  // the *same* arrow would move towards next, so a second press keeps
+  // walking the history instead of first moving inside the multi-line entry
+  // we just pasted in: Up leaves it at the start, Down at the end.
+  // `setText` re-renders the textarea, hence the post-paint placement.
+  const applyHistoryText = (
+    textarea: HTMLTextAreaElement,
+    text: string,
+    caret: "start" | "end"
+  ) => {
     composerRuntime.setText(text);
+    caretParkedByHistory.current = true;
     requestAnimationFrame(() => {
-      textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+      const position = caret === "start" ? 0 : textarea.value.length;
+      textarea.selectionStart = textarea.selectionEnd = position;
     });
   };
 
@@ -140,6 +157,15 @@ const Composer = () => {
           aria-label={t("MessageInput")}
           disabled={!currentProfile || composerDisabled}
           data-testid="composer-input"
+          onPaste={(e) => {
+            void onPaste(e);
+          }}
+          // Clicking or dragging places the caret with no keydown to hear,
+          // so the parked-caret flag would otherwise go stale and hand the
+          // next arrow to history from a spot the user chose themselves.
+          onMouseDown={() => {
+            caretParkedByHistory.current = false;
+          }}
           onKeyDown={(e) => {
             // `hasPending`: sending mid-upload would silently drop the
             // attachment the user just watched appear — `onNew` reads only
@@ -167,6 +193,9 @@ const Composer = () => {
               ) {
                 history.reset();
               }
+              // Whatever the key did, the caret is no longer parked purely
+              // by us — Home/End/click-through all move it deliberately.
+              caretParkedByHistory.current = false;
               return;
             }
 
@@ -175,9 +204,13 @@ const Composer = () => {
             // stealing caret movement the user meant — an empty box, or
             // the caret already parked at the edge it would move towards.
             // A selection means they're manipulating text, not navigating.
+            // A caret we parked ourselves counts as at-edge for either
+            // arrow, so reversing direction mid-walk isn't charged a
+            // keypress just to cross text the user never navigated into.
             const atEdge =
               textarea.selectionStart === textarea.selectionEnd &&
               (textarea.value === "" ||
+                caretParkedByHistory.current ||
                 (e.key === "ArrowUp"
                   ? textarea.selectionStart === 0
                   : textarea.selectionEnd === textarea.value.length));
@@ -189,13 +222,15 @@ const Composer = () => {
             // The caret is already at the edge the arrow moves towards, so
             // the only movement being suppressed is a no-op anyway.
             e.preventDefault();
-            const step =
-              e.key === "ArrowUp"
-                ? history.previous(textarea.value)
-                : history.next();
+            const isUp = e.key === "ArrowUp";
+            const step = isUp
+              ? history.previous(textarea.value)
+              : history.next();
             void step.then((result) => {
               // `null` = history had nothing to offer here.
-              if (result) applyHistoryText(textarea, result.text);
+              if (result) {
+                applyHistoryText(textarea, result.text, isUp ? "start" : "end");
+              }
             });
           }}
         />

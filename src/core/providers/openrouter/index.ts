@@ -19,7 +19,10 @@ import {
   openRouterReasoningFields,
   retryWhenReasoningMandatory,
 } from "./reasoning";
-import { openRouterRoutingFields } from "./routing";
+import {
+  openRouterModalityFields,
+  openRouterRoutingFields,
+} from "./routing";
 
 /**
  * OpenRouter — aggregates many upstream models behind an OpenAI-compatible
@@ -53,9 +56,16 @@ class OpenRouterProvider extends OpenAIProvider {
    * `session_id` (sticky routing, warm KV cache across the turns of one
    * chat) and the latency / throughput preferences under `provider`. See
    * {@link openRouterRoutingFields}.
+   *
+   * Image-output routes additionally get `modalities`, without which
+   * OpenRouter answers a chat round with reasoning and text but no
+   * picture — see {@link openRouterModalityFields}.
    */
-  protected override extraBody(): Record<string, unknown> {
-    return openRouterRoutingFields(this.creds.sessionId);
+  protected override extraBody(model?: string): Record<string, unknown> {
+    return {
+      ...openRouterRoutingFields(this.creds.sessionId),
+      ...(model ? openRouterModalityFields(model) : {}),
+    };
   }
 
   /**

@@ -128,6 +128,13 @@ export interface AIChatWidgetProps {
    * default. See {@link WidgetConfig.hideThreadFade}.
    */
   hideThreadFade?: boolean;
+  /**
+   * Follow the streaming response by keeping the thread pinned to the
+   * bottom. Off by default — the reading position stays where it is and the
+   * answer grows below it. See
+   * {@link WidgetConfig.autoScrollWhileStreaming}.
+   */
+  autoScrollWhileStreaming?: boolean;
   hideSettingsButton?: boolean;
   /**
    * Icon name for the chat-history panel's close button. Defaults to
@@ -342,6 +349,13 @@ export interface AIChatWidgetProps {
    * defaults to logging everything. See {@link WidgetConfig.logLevel}.
    */
   logLevel?: WidgetConfig["logLevel"];
+  /**
+   * Write the full message model (tool calls with arguments and results,
+   * reasoning, attachments) into every chat/message export instead of only
+   * the conversation prose. Set it when the editor runs in debug mode.
+   * See {@link WidgetConfig.debugExport}.
+   */
+  debugExport?: WidgetConfig["debugExport"];
 }
 
 export const AIChatWidget = React.forwardRef<
@@ -373,6 +387,7 @@ export const AIChatWidget = React.forwardRef<
       hideProfilePicker,
       hideScrollToBottomButton,
       hideThreadFade,
+      autoScrollWhileStreaming,
       hideSettingsButton,
       chatHistoryCloseIcon,
       inputIconPosition,
@@ -412,6 +427,7 @@ export const AIChatWidget = React.forwardRef<
       onToolCallApproveResult,
       formatChatError,
       logLevel,
+      debugExport,
     },
     ref
   ) => {
@@ -420,6 +436,7 @@ export const AIChatWidget = React.forwardRef<
         hideProfilePicker,
         hideScrollToBottomButton,
         hideThreadFade,
+        autoScrollWhileStreaming,
         hideSettingsButton,
         chatHistoryCloseIcon,
         inputIconPosition,
@@ -456,11 +473,13 @@ export const AIChatWidget = React.forwardRef<
         onToolCallApproveResult,
         formatChatError,
         logLevel,
+        debugExport,
       }),
       [
         hideProfilePicker,
         hideScrollToBottomButton,
         hideThreadFade,
+        autoScrollWhileStreaming,
         hideSettingsButton,
         chatHistoryCloseIcon,
         inputIconPosition,
@@ -497,6 +516,7 @@ export const AIChatWidget = React.forwardRef<
         onToolCallApproveResult,
         formatChatError,
         logLevel,
+        debugExport,
       ]
     );
 

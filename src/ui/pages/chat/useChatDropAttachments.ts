@@ -1,6 +1,7 @@
 import React from "react";
 import { useStores } from "../../store/context";
 import { useWidgetConfig } from "../../../widget-config";
+import { partitionReads, readFile } from "./attachment-reads";
 
 // Extensions we treat as plain-text when dropped via DND (no host converter).
 // Binary Office documents / PDFs are intentionally excluded — those require
@@ -60,15 +61,6 @@ const isTextFile = (file: File): boolean => {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   return TEXT_EXTENSIONS.has(ext);
 };
-
-const readFile = (file: File, as: "dataURL" | "text"): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(reader.error);
-    if (as === "dataURL") reader.readAsDataURL(file);
-    else reader.readAsText(file);
-  });
 
 const hasDraggedFiles = (e: React.DragEvent) =>
   Array.from(e.dataTransfer.types).includes("Files");
@@ -188,24 +180,12 @@ export const useChatDropAttachments = () => {
       Promise.all(textReads),
     ]);
 
-    const partition = <T>(results: (T | null)[], ids: string[]) => {
-      const inputs: T[] = [];
-      const liveIds: string[] = [];
-      const failedIds: string[] = [];
-      results.forEach((result, i) => {
-        if (result === null) {
-          failedIds.push(ids[i]);
-        } else {
-          inputs.push(result);
-          liveIds.push(ids[i]);
-        }
-      });
-      if (failedIds.length > 0) failPendingAttachments(failedIds);
-      return { inputs, liveIds };
-    };
-
-    const images = partition(imageResults, imageIds);
-    const texts = partition(textResults, textIds);
+    const images = partitionReads(
+      imageResults,
+      imageIds,
+      failPendingAttachments
+    );
+    const texts = partitionReads(textResults, textIds, failPendingAttachments);
 
     // On throw the store fails the leases itself before re-throwing.
     const work: Promise<unknown>[] = [];

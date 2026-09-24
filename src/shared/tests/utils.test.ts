@@ -1,10 +1,12 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   convertMessagesToMd,
   getMessageText,
   getMessageTitleFromMd,
+  getVerboseExport,
   removeSpecialCharacter,
+  setVerboseExport,
 } from "../../utils";
 import {
   cn,
@@ -217,6 +219,198 @@ describe("getMessageText", () => {
   it("returns empty string for empty array", () => {
     const message: ThreadMessageLike = { role: "assistant", content: [] };
     expect(getMessageText(message)).toBe("");
+  });
+});
+
+describe("verbose (debug) export", () => {
+  afterEach(() => {
+    setVerboseExport(false);
+  });
+
+  const toolMessage = {
+    role: "assistant",
+    content: [
+      { type: "reasoning", text: "thinking about it" },
+      { type: "text", text: "Before tool" },
+      {
+        type: "tool-call",
+        toolCallId: "1",
+        toolName: "web_search",
+        args: { query: "weather", aiChatIntent: "Searching the web…" },
+        result: { data: [{ id: "a" }] },
+      },
+      { type: "text", text: "After tool" },
+    ],
+  } as unknown as ThreadMessageLike;
+
+  it("is off by default", () => {
+    expect(getVerboseExport()).toBe(false);
+    expect(convertMessagesToMd([toolMessage])).toBe(
+      "Before tool\n\nAfter tool\n\n"
+    );
+  });
+
+  it("writes tool calls, arguments, results and reasoning when enabled", () => {
+    setVerboseExport(true);
+    const md = convertMessagesToMd([toolMessage]);
+
+    expect(md).toContain("**Reasoning:**");
+    expect(md).toContain("thinking about it");
+    expect(md).toContain("**Tool call:** `web_search`");
+    expect(md).toContain("Searching the web…");
+    expect(md).toContain('"query": "weather"');
+    expect(md).toContain('"id": "a"');
+    expect(md).toContain("Before tool");
+    expect(md).toContain("After tool");
+  });
+
+  it("strips the synthetic aiChatIntent field from the argument dump", () => {
+    setVerboseExport(true);
+    expect(convertMessagesToMd([toolMessage])).not.toContain("aiChatIntent");
+  });
+
+  it("marks a tool call that has no result yet", () => {
+    setVerboseExport(true);
+    const pending = {
+      role: "assistant",
+      content: [{ type: "tool-call", toolName: "t", args: {} }],
+    } as unknown as ThreadMessageLike;
+    expect(convertMessagesToMd([pending])).toContain("Result: _(none)_");
+  });
+
+  it("includes attachment parts", () => {
+    setVerboseExport(true);
+    const withImage = {
+      role: "user",
+      content: [{ type: "image", image: "data:image/png;base64,AAA" }],
+    } as unknown as ThreadMessageLike;
+    expect(convertMessagesToMd([withImage])).toContain("**Attachment (image)");
+  });
+
+  it("re-indents a stringified JSON tool result", () => {
+    setVerboseExport(true);
+    const stringResult = {
+      role: "assistant",
+      content: [
+        { type: "tool-call", toolName: "t", args: {}, result: '{"ok":true}' },
+      ],
+    } as unknown as ThreadMessageLike;
+    expect(convertMessagesToMd([stringResult])).toContain('"ok": true');
+  });
+
+  it("keeps a non-JSON string tool result verbatim", () => {
+    setVerboseExport(true);
+    const textResult = {
+      role: "assistant",
+      content: [
+        { type: "tool-call", toolName: "t", args: {}, result: "plain output" },
+      ],
+    } as unknown as ThreadMessageLike;
+    expect(convertMessagesToMd([textResult])).toContain("plain output");
+  });
+
+  it("is honoured by getMessageText too", () => {
+    setVerboseExport(true);
+    const text = getMessageText(toolMessage);
+    expect(text).toContain("**Tool call:** `web_search`");
+    expect(text).toContain("**Reasoning:**");
+  });
+
+  it("can be overridden per call in both directions", () => {
+    setVerboseExport(true);
+    expect(convertMessagesToMd([toolMessage], { verbose: false })).toBe(
+      "Before tool\n\nAfter tool\n\n"
+    );
+
+    setVerboseExport(false);
+    expect(convertMessagesToMd([toolMessage], { verbose: true })).toContain(
+      "**Tool call:**"
+    );
+    expect(getMessageText(toolMessage, { verbose: true })).toContain(
+      "**Tool call:**"
+    );
+  });
+
+  describe("desktop editor debug mode (User-Agent)", () => {
+    /** Swap in a User-Agent for one assertion. */
+    const withUserAgent = (ua: string | undefined, assert: () => void) => {
+      const original = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+      Object.defineProperty(globalThis, "navigator", {
+        value: ua === undefined ? undefined : { userAgent: ua },
+        configurable: true,
+        writable: true,
+      });
+      try {
+        assert();
+      } finally {
+        if (original) Object.defineProperty(globalThis, "navigator", original);
+        else
+          delete (globalThis as unknown as Record<string, unknown>).navigator;
+      }
+    };
+
+    /** The real desktop editor User-Agent, debug build. */
+    const DEBUG_UA =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+      "(KHTML, like Gecko) Chrome/109.0.0.0 AscDesktopEditor/2.5.565.0 " +
+      "DebugMode Safari/537.36";
+
+    /** The same editor without the debug token. */
+    const RELEASE_UA = DEBUG_UA.replace(" DebugMode", "");
+
+    it("turns verbose export on for a DebugMode User-Agent", () => {
+      withUserAgent(DEBUG_UA, () => {
+        expect(getVerboseExport()).toBe(true);
+        expect(convertMessagesToMd([toolMessage])).toContain("**Tool call:**");
+      });
+    });
+
+    it("stays off for the release desktop editor", () => {
+      withUserAgent(RELEASE_UA, () => {
+        expect(getVerboseExport()).toBe(false);
+        expect(convertMessagesToMd([toolMessage])).toBe(
+          "Before tool\n\nAfter tool\n\n"
+        );
+      });
+    });
+
+    it("stays off for an ordinary browser", () => {
+      withUserAgent(
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+          "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        () => {
+          expect(getVerboseExport()).toBe(false);
+        }
+      );
+    });
+
+    it("matches DebugMode as a whole token only", () => {
+      withUserAgent(
+        RELEASE_UA.replace("AscDesktopEditor", "DebugModeless"),
+        () => {
+          expect(getVerboseExport()).toBe(false);
+        }
+      );
+    });
+
+    it("matches the token at the very end of the User-Agent", () => {
+      withUserAgent(`${RELEASE_UA} DebugMode`, () => {
+        expect(getVerboseExport()).toBe(true);
+      });
+    });
+
+    it("does not throw when navigator is absent (SSR / Node)", () => {
+      withUserAgent(undefined, () => {
+        expect(getVerboseExport()).toBe(false);
+      });
+    });
+
+    it("still honours an explicit setVerboseExport(true) without the token", () => {
+      withUserAgent(RELEASE_UA, () => {
+        setVerboseExport(true);
+        expect(getVerboseExport()).toBe(true);
+      });
+    });
   });
 });
 
