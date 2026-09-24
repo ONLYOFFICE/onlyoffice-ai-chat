@@ -3,11 +3,14 @@
  * filter descriptor it hands to a host file picker.
  *
  * This is the single source of truth for "what can be attached from disk". It
- * is consumed twice:
+ * is consumed three times:
  *
  * - {@link ATTACHMENT_PICK_FILTERS} is passed to
  *   `PlatformFileOperations.pickFiles` so the host's native dialog offers only
  *   these groups — no `All files (*.*)` escape hatch.
+ * - {@link ATTACHMENT_ACCEPT} is the same set as an `accept` attribute, for a
+ *   web host that opens its own `<input type="file">` instead of going through
+ *   `pickFiles` — the browser's own file dialog then greys out the rest.
  * - {@link isSupportedAttachmentPath} re-checks whatever the host returns,
  *   because the filter is a hint the host may ignore (older builds take no
  *   argument at all) and the user can always type a name by hand.
@@ -126,6 +129,28 @@ export const ATTACHMENT_PICK_FILTERS: readonly AttachmentPickFilter[] = [
 const SUPPORTED_EXTENSIONS = new Set(
   ATTACHMENT_PICK_FILTERS.flatMap((filter) => filter.extensions)
 );
+
+/**
+ * {@link ATTACHMENT_PICK_FILTERS} as an `accept` attribute value — a
+ * comma-separated list of dotted extensions, in the same order.
+ *
+ * For a web host that opens its own `<input type="file">` (a `composerActions`
+ * entry, a portal upload dialog) rather than the widget's `pickFiles` path:
+ * setting this as `accept` makes the browser's file dialog grey out everything
+ * the widget cannot convert, instead of letting the user pick an archive and
+ * hit an error afterwards.
+ *
+ * Extensions only, no MIME types: the set is keyed by extension throughout
+ * (see {@link isSupportedAttachmentPath}), and several entries here — `oform`,
+ * `docxf`, `fb2` — have no MIME type a browser would recognize.
+ *
+ * Images are **not** included; they ride the separate `accept="image/*"` input.
+ */
+export const ATTACHMENT_ACCEPT: string = ATTACHMENT_PICK_FILTERS.flatMap(
+  (filter) => filter.extensions
+)
+  .map((ext) => `.${ext}`)
+  .join(",");
 
 /**
  * Extracts the lowercase extension of a path, handling both separators.

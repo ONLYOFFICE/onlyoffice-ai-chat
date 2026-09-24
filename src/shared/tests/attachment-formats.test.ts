@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ATTACHMENT_ACCEPT,
   ATTACHMENT_PICK_FILTERS,
   isSupportedAttachmentPath,
 } from "../attachment-formats";
@@ -29,6 +30,32 @@ describe("ATTACHMENT_PICK_FILTERS", () => {
   it("lists no extension in two groups", () => {
     const all = ATTACHMENT_PICK_FILTERS.flatMap((f) => f.extensions);
     expect(new Set(all).size).toBe(all.length);
+  });
+});
+
+describe("ATTACHMENT_ACCEPT", () => {
+  it("lists every extension dotted, comma-separated, with no spaces", () => {
+    const entries = ATTACHMENT_ACCEPT.split(",");
+    expect(entries.length).toBeGreaterThan(0);
+    for (const entry of entries) {
+      expect(entry).toMatch(/^\.[a-z0-9]+$/);
+    }
+  });
+
+  it("covers exactly the set the widget will accept back", () => {
+    // The point of the attribute: what the dialog offers and what
+    // `isSupportedAttachmentPath` lets through cannot drift apart.
+    for (const entry of ATTACHMENT_ACCEPT.split(",")) {
+      expect(isSupportedAttachmentPath(`/docs/file${entry}`)).toBe(true);
+    }
+    const all = ATTACHMENT_PICK_FILTERS.flatMap((f) => f.extensions);
+    expect(ATTACHMENT_ACCEPT.split(",").length).toBe(all.length);
+  });
+
+  it("offers no wildcard the browser would read as all-files", () => {
+    expect(ATTACHMENT_ACCEPT).not.toContain("*");
+    // Formats we cannot convert must not appear.
+    expect(ATTACHMENT_ACCEPT.split(",")).not.toContain(".zip");
   });
 });
 

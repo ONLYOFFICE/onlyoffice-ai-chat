@@ -80,7 +80,10 @@ export type { StoreKeys } from "./config";
 // ---------------------------------------------------------------------------
 
 export { PlatformProvider, usePlatform } from "./ui/providers/PlatformProvider";
-export { ATTACHMENT_PICK_FILTERS } from "./ui/providers/PlatformProvider";
+export {
+  ATTACHMENT_ACCEPT,
+  ATTACHMENT_PICK_FILTERS,
+} from "./ui/providers/PlatformProvider";
 export type {
   AttachmentPickFilter,
   CopyFormat,

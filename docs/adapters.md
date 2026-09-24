@@ -183,6 +183,24 @@ pickFiles: (filters = ATTACHMENT_PICK_FILTERS) =>
 Images are **not** in this list: "Add local image" rides an internal
 `<input accept="image/*">` and never reaches `pickFiles`.
 
+A **web host that opens its own file dialog** — a `composerActions` entry, a
+portal upload flow — never reaches `pickFiles` either, so the filter groups
+above do nothing for it. Use `ATTACHMENT_ACCEPT` instead: the same format set
+rendered as an `accept` attribute, so the browser's dialog greys out everything
+the widget cannot convert rather than letting the user pick an archive and hit
+an error after the upload.
+
+```tsx
+import { ATTACHMENT_ACCEPT } from "@onlyoffice/ai-chat";
+
+<input type="file" multiple accept={ATTACHMENT_ACCEPT} onChange={…} />;
+```
+
+It is extensions only (`.docx,.xlsx,…`), no MIME types — the widget keys the
+set by extension everywhere, and formats like `oform` / `docxf` have no MIME
+type a browser knows. Both constants derive from the same list, so a format
+added in one place reaches the other.
+
 The library always passes Markdown source as `saveAsFile`'s `content`; the host
 converts it to the target format. Declare more than one `getExportFormats()`
 entry to replace the chat-list "Save" item with an "Export" submenu — the chosen
