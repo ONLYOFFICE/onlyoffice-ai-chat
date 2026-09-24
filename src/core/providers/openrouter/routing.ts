@@ -18,6 +18,43 @@ export const OPENROUTER_PROVIDER_PREFERENCES = {
 } as const;
 
 /**
+ * Whether an OpenRouter route returns pictures from `/chat/completions`.
+ *
+ * OpenRouter has no images endpoint: an image-output model answers a
+ * normal chat request with `message.images[*]`, but only when the request
+ * asked for the image modality. The per-model catalogue says so in
+ * `architecture.output_modalities`, but a provider instance holds only
+ * credentials and a model id at request time — so the id is the signal,
+ * and every image route to date carries `image` in its slug
+ * (`google/gemini-3-pro-image`, `openai/gpt-4o-image`, `gpt-5-image`).
+ *
+ * The check is deliberately narrow: `modalities` on a text-only route is
+ * a 400 from some upstreams, so it is sent only where it is needed.
+ *
+ * @param model - OpenRouter route id, e.g. `google/gemini-3-pro-image`.
+ * @returns `true` when the route can emit inline images.
+ */
+export function isImageOutputModel(model: string): boolean {
+  return model.toLowerCase().includes("image");
+}
+
+/**
+ * The `modalities` field for one route: present only on image-output
+ * routes, where it is what makes OpenRouter return the picture at all.
+ *
+ * @param model - OpenRouter route id.
+ * @returns Fields to spread into the request body.
+ * @see isImageOutputModel
+ */
+export function openRouterModalityFields(
+  model: string
+): Record<string, unknown> {
+  return isImageOutputModel(model)
+    ? { modalities: ["image", "text"] }
+    : {};
+}
+
+/**
  * Body fields OpenRouter reads on every chat-completions request:
  * {@link OPENROUTER_PROVIDER_PREFERENCES} under `provider`, and the
  * conversation id as `session_id` when the host supplied one.

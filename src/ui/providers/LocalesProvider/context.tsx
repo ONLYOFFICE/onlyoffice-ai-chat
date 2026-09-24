@@ -15,7 +15,7 @@ import { initAIChatI18n, loadLocale } from "./i18n";
 import { usePlatform } from "../PlatformProvider/context";
 import logger from "../../../shared/logger";
 
-const RTL_LANGUAGES = ["ar-SA"];
+const RTL_LANGUAGES = ["ar-SA", "he-IL", "ur-PK"];
 
 // ---------------------------------------------------------------------------
 // Public types

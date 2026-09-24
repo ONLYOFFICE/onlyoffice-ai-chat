@@ -136,8 +136,15 @@ interface ExportFormat {
   extension: string; // file extension, e.g. "docx"
 }
 
+interface AttachmentPickFilter {
+  id: string; // stable group id, e.g. "documents", "spreadsheets"
+  label: string; // English fallback label, e.g. "Text documents"
+  extensions: string[]; // lowercase, no leading dot, e.g. ["doc", "docx"]
+}
+
 interface PlatformFileOperations {
-  pickFiles():  Promise<{ path: string; name: string }[] | null>;
+  pickFiles(filters?: readonly AttachmentPickFilter[]):
+    Promise<{ path: string; name: string }[] | null>;
   pickImage():  Promise<{ name: string; base64: string } | null>;
   convertFileToText(path: string, format: number): Promise<string>;
   getFileType(path: string):                       number;
@@ -150,6 +157,49 @@ interface PlatformFileOperations {
 ```
 
 `null` → attachment button and "Save as" options are hidden.
+
+`pickFiles` receives the format groups the widget can actually attach, exported
+as `ATTACHMENT_PICK_FILTERS`. A host that can configure its native dialog should
+render one filter row per entry, in order, and **must not** add an "all files"
+row: the widget re-checks every returned path against the same list and silently
+drops anything outside it, so a file picked through such a row would attach
+nothing. The argument is additive — a host whose `pickFiles` takes no parameters
+keeps working unchanged, and the widget's own check, not the dialog, is what
+enforces the format set.
+
+```ts
+import { ATTACHMENT_PICK_FILTERS } from "@onlyoffice/ai-chat";
+
+// A host mapping the groups onto its own dialog API:
+pickFiles: (filters = ATTACHMENT_PICK_FILTERS) =>
+  nativeDialog.open({
+    filters: filters.map((f) => ({
+      name: localize(f.id) ?? f.label,
+      extensions: f.extensions,
+    })),
+  });
+```
+
+Images are **not** in this list: "Add local image" rides an internal
+`<input accept="image/*">` and never reaches `pickFiles`.
+
+A **web host that opens its own file dialog** — a `composerActions` entry, a
+portal upload flow — never reaches `pickFiles` either, so the filter groups
+above do nothing for it. Use `ATTACHMENT_ACCEPT` instead: the same format set
+rendered as an `accept` attribute, so the browser's dialog greys out everything
+the widget cannot convert rather than letting the user pick an archive and hit
+an error after the upload.
+
+```tsx
+import { ATTACHMENT_ACCEPT } from "@onlyoffice/ai-chat";
+
+<input type="file" multiple accept={ATTACHMENT_ACCEPT} onChange={…} />;
+```
+
+It is extensions only (`.docx,.xlsx,…`), no MIME types — the widget keys the
+set by extension everywhere, and formats like `oform` / `docxf` have no MIME
+type a browser knows. Both constants derive from the same list, so a format
+added in one place reaches the other.
 
 The library always passes Markdown source as `saveAsFile`'s `content`; the host
 converts it to the target format. Declare more than one `getExportFormats()`

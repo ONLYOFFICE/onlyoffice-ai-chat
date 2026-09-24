@@ -196,6 +196,24 @@ describe("inferCapabilities", () => {
     });
   });
 
+  // GenAI
+  describe("genai", () => {
+    it("returns Image for Imagen and Gemini-native image models", () => {
+      expect(inferCapabilities("genai", "imagen-4.0-generate-001")).toBe(
+        CapabilitiesUI.Image
+      );
+      expect(inferCapabilities("genai", "gemini-2.5-flash-image")).toBe(
+        CapabilitiesUI.Image
+      );
+    });
+
+    it("returns Chat|Vision|Tools for ordinary Gemini models", () => {
+      expect(inferCapabilities("genai", "gemini-pro")).toBe(
+        CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools
+      );
+    });
+  });
+
   // Default
   describe("default providers", () => {
     it("returns Chat|Vision|Tools for unknown providers", () => {
@@ -206,7 +224,6 @@ describe("inferCapabilities", () => {
       expect(inferCapabilities("deepseek", "deepseek-chat")).toBe(expected);
       expect(inferCapabilities("ollama", "llama3")).toBe(expected);
       expect(inferCapabilities("lm-studio", "local")).toBe(expected);
-      expect(inferCapabilities("genai", "gemini-pro")).toBe(expected);
       expect(inferCapabilities("gpt4all", "gpt4all")).toBe(expected);
     });
   });

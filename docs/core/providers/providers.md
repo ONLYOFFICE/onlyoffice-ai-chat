@@ -44,7 +44,7 @@ abstract class AbstractBaseProvider {
 | --------------------- | -------- | ------- |
 | `sendMessage`         | ✅       | streaming chat — `chat`, `custom` actions |
 | `sendMessageSync`     | ✅       | one-shot — `summarize`, `translate`, `analyzeText`, `recognizeText`, `describeImage`, `generateImage`, `generateTitle`, `customSync` actions |
-| `imageGeneration`     |          | optional — direct image-API providers (Stability AI, OpenAI's `images.generate`) |
+| `imageGeneration`     |          | optional — direct image-API providers (Stability AI, OpenAI's `images.generate`, Google AI's Imagen / Gemini image models) |
 
 The only piece of instance state is `creds`. The SDK client (when
 the provider needs one) is created in the constructor and stored
@@ -335,9 +335,10 @@ them). Every call takes its data as arguments — `messages`,
 
 The `imageGeneration?` opt-in is the only differentiation: image-only
 providers (Stability AI) implement just that, and chat providers
-(every other built-in) usually skip it. OpenAI is the exception
-— it implements `imageGeneration` because the SDK exposes
-`images.generate` on the same client.
+(every other built-in) usually skip it. OpenAI and Google AI are the
+exceptions — both serve images from the same client they chat on
+(`images.generate` for OpenAI; `generateImages` or an image-modality
+`generateContent` for Google AI).
 
 ---
 

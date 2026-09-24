@@ -5,6 +5,10 @@ import { useComponents } from "../../../providers/ComponentsProvider";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
 import { useToolsContext } from "../../../tools/context";
 import { getFileIconName, isSpreadsheet } from "../../../../shared/utils";
+import {
+  ATTACHMENT_PICK_FILTERS,
+  isSupportedAttachmentPath,
+} from "../../../../shared/attachment-formats";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 import logger from "../../../../shared/logger";
@@ -92,9 +96,23 @@ const ComposerActionAttachment = () => {
 
   const selectLocalFile = async () => {
     if (!platform.file?.pickFiles) return;
-    const files = await platform.file.pickFiles();
-    if (!files) return;
+    const picked = await platform.file.pickFiles(ATTACHMENT_PICK_FILTERS);
+    if (!picked) return;
     const fileApi = platform.file;
+
+    // The filter argument is a hint: a host predating it ignores it, and even
+    // a host that honours it lets the user type a name by hand. Drop anything
+    // we can't convert here, before a chip is reserved — attaching it would
+    // produce an empty-content attachment that looks like it worked.
+    const files = picked.filter((file) => {
+      if (isSupportedAttachmentPath(file.path)) return true;
+      logger.warn(
+        "[ComposerActionAttachment] skipping unsupported file",
+        file.path
+      );
+      return false;
+    });
+    if (files.length === 0) return;
 
     // Reserve loading chips first: the reservation is the cap check
     // (replacing the old hardcoded slice-to-5), so we never pay for a

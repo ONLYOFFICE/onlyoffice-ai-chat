@@ -27,6 +27,7 @@ import { ComposerHeader } from "./sub-components/ComposerHeader";
 import { Suggestions } from "./sub-components/Suggestions";
 import { SuggestionsHeader } from "./sub-components/SuggestionsHeader";
 import { OlderMessages } from "./sub-components/OlderMessages";
+import { PreserveScrollOnHide } from "./sub-components/PreserveScrollOnHide";
 import { UserMessage } from "./sub-components/UserMessage";
 import { useChatDropAttachments } from "./useChatDropAttachments";
 
@@ -46,7 +47,8 @@ const ThreadInner = () => {
   // the browser's own clipboard HTML inlines the computed background and
   // colour of everything it copies.
   const onCopy = useSanitizedCopy();
-  const { hideScrollToBottomButton, hideThreadFade } = useWidgetConfig();
+  const { hideScrollToBottomButton, hideThreadFade, autoScrollWhileStreaming } =
+    useWidgetConfig();
   // The scrolling message area: `OlderMessages` observes the top of it
   // and keeps the reading position steady when a page is prepended.
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -129,13 +131,30 @@ const ThreadInner = () => {
               top and bottom edges of the message area instead of scrolling
               away with the content inside the viewport. */}
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+            {/* `autoScroll` is the runtime's *follow* behavior: a resize
+                observer on the content that re-pins the viewport to the
+                bottom on every growth while `isAtBottom` holds. Sending
+                scrolls to the bottom, which sets that flag, so a streaming
+                answer used to drag the view down token by token and a long
+                one scrolled its own beginning off-screen. Off by default so
+                the reading position stays put and the answer grows below it;
+                `ScrollToBottom` below un-disables itself as soon as there is
+                content past the fold, which is the "more below" affordance.
+                `scrollToBottomOnRunStart` keeps its default — the jump to
+                the bottom on send is still wanted. */}
             <ThreadPrimitive.Viewport
               ref={viewportRef}
+              autoScroll={autoScrollWhileStreaming ?? false}
               className="thread-viewport relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
+              data-auto-scroll={autoScrollWhileStreaming ? "on" : "off"}
             >
               {/* Pulls the previous page when the reader nears the top of
                   a paginated thread — see `OlderMessages`. */}
               <OlderMessages viewportRef={viewportRef} />
+
+              {/* Keeps the reading position when a host hides the chat
+                  with `display: none` — see `PreserveScrollOnHide`. */}
+              <PreserveScrollOnHide viewportRef={viewportRef} />
 
               <ThreadPrimitive.Messages
                 components={{

@@ -48,11 +48,33 @@
 
 - **The checkmark of a checked checkbox stays legible in the dark themes.** `--checkbox-active-icon-color` resolved to `--background-normal`, which in the dark, night and contrast-dark themes is close enough to the checked box's accent fill to swallow the mark. It now resolves to `--text-contrast-background`, the token meant for content sitting on an accent surface, and the checkbox draws the dedicated `checked-white` asset.
 
+- **A rejected parameter no longer shows as "Selected model unavailable" (Bug 83703).** Any 400 mentioning the word "model" was classified as `model_not_found`, hiding the provider's real message. Now only an explicit `model_not_found` code or a missing-model phrasing maps there; other 400s stay `bad_request` with the provider's text.
+
+- **No more `400 Invalid signature in thinking block` after stopping a reply (Bug 83732).** A reply stopped mid-thinking left an unsigned reasoning part and an empty text block; both are now skipped, and an assistant turn left empty is omitted from the request.
+
+- **Gemini no longer answers `400 INVALID_ARGUMENT` on every request (Bug 83699).** Tool `inputSchema`s are passed through `sanitizeGeminiSchema`: unknown JSON Schema keys are dropped, union types become type + nullable, non-string enums move into the description as "Allowed values".
+
 ### Changed
 
 - **The message action that exports a chat is labelled "Save as docx".** It shared the generic `Save` key with every submit button in the widget, and its floppy-disk icon read as "save this message" rather than "download it" — the action always exports a .docx. It now has its own translation key and the `btn-download` icon.
 
 - **The file-format icons are redrawn as document sheets.** Every format icon (documents, spreadsheets, presentations, pdf, pdf-form, djvu, visio, xps and the unknown-format fallback) was a solid rounded square with a white glyph, which sat oddly against the file chips in the composer and message list. They are now page-shaped sheets with a folded corner and a per-format mark, matching the rest of the ONLYOFFICE icon set, at every raster density.
+
+## 0.5.116
+
+### Fixed
+
+- **MCP tool results reach the model again on the ONLYOFFICE route.** The prompt-caching breakpoint on the final message rewrote a trailing `tool` message into a `tool_result`-typed content block. That block type does not exist in the chat-completion wire format, the gateway's OpenAI-to-Anthropic conversion dropped it, and Claude received an empty tool result — a `download_file_as_text` call showed the document text in the tool card while the assistant reported the file as unreadable. `tool` messages are now never touched; when the conversation ends on one, the breakpoint moves back to the nearest non-`tool` message.
+
+## 0.5.115
+
+### Changed
+
+- **A long answer no longer scrolls itself away while it is generated.** The thread followed the stream token by token, so a response taller than the message area dragged its own beginning off-screen: the reader had to scroll back up to start reading, for every long answer. Sending still jumps to the bottom, but from there the reading position stays where it is and the answer grows below it. The floating "scroll to bottom" button needs no new wiring to announce that growth — `ThreadPrimitive.ScrollToBottom` un-disables itself the moment there is content past the fold, so the existing arrow becomes the "more below" indicator and returns the reader to the end in one click.
+
+  The follow was assistant-ui's `autoScroll`: a resize observer on the viewport content that re-pins it to `scrollHeight` on every growth while its `isAtBottom` flag holds. The scroll-to-bottom on send sets that flag, and the primitive only clears it when the user scrolls *up* themselves, so the follow never stopped on its own. It is now off (`autoScroll={false}`), while `scrollToBottomOnRunStart` — the jump on send — keeps its default. The new `autoScrollWhileStreaming` widget config restores the classic behavior for hosts that want it.
+
+  With nothing re-pinning the viewport, the browser's own scroll anchoring is what holds the reading position steady as content grows, so the `overflow-anchor: none` on `.thread-viewport` is now scoped to the opt-in case (`[data-auto-scroll="on"]`) — there the runtime writes the offset itself and the two would fight over the same frame. Anchoring also cooperates with `OlderMessages`, which measures its gap from the bottom of the content and deliberately does not re-base while the height is still moving.
 
 ## 0.5.114
 

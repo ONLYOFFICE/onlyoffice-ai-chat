@@ -13,6 +13,12 @@ import { checkCredentials, listModels } from "./models";
  * constructs cleanly.
  */
 class LMStudioProvider extends OpenAIProvider {
+  /**
+   * LM Studio serves the same local models as Ollama and leaks thinking
+   * into `content` the same way — see {@link OpenAIProvider.splitInlineReasoning}.
+   */
+  protected override splitInlineReasoning = true;
+
   constructor(creds: ProviderCredentials) {
     super({ ...creds, apiKey: creds.apiKey || "lm-studio" });
   }
