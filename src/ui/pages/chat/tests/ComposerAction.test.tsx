@@ -12,6 +12,10 @@ vi.mock("../sub-components/ComposerActionPrompts", () => ({
   ComposerActionPrompts: () => <div data-testid="composer-action-prompts" />,
 }));
 
+vi.mock("../sub-components/ComposerActionSettings", () => ({
+  ComposerActionSettings: () => <div data-testid="composer-action-settings" />,
+}));
+
 vi.mock("../sub-components/ComposerActionSend", () => ({
   ComposerActionSend: () => <div data-testid="composer-action-send" />,
 }));
@@ -54,6 +58,7 @@ describe("ComposerAction", () => {
       screen.getByTestId("composer-action-attachment")
     ).toBeInTheDocument();
     expect(screen.getByTestId("composer-action-prompts")).toBeInTheDocument();
+    expect(screen.getByTestId("composer-action-settings")).toBeInTheDocument();
     expect(screen.getByTestId("composer-action-send")).toBeInTheDocument();
   });
 
@@ -64,11 +69,13 @@ describe("ComposerAction", () => {
     expect(root.className).toContain("flex-col");
   });
 
-  it("groups attachment and prompts on the left", () => {
+  it("groups attachment, prompts and settings on the left", () => {
     render(<ComposerAction />);
     const attachment = screen.getByTestId("composer-action-attachment");
     const prompts = screen.getByTestId("composer-action-prompts");
+    const settings = screen.getByTestId("composer-action-settings");
     expect(attachment.parentElement).toBe(prompts.parentElement);
+    expect(settings.parentElement).toBe(prompts.parentElement);
   });
 
   it("places send button in a separate container", () => {

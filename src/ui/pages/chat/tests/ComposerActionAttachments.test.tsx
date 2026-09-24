@@ -229,22 +229,26 @@ describe("ComposerActionAttachment", () => {
   });
 
   it("renders the dropdown trigger", () => {
+    mockAddLocalImageEnabled = true;
     render(<ComposerActionAttachment />);
     expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
   });
 
   it("renders the attachment button with tooltip", () => {
+    mockAddLocalImageEnabled = true;
     render(<ComposerActionAttachment />);
     const tooltip = screen.getByTestId("tooltip-btn");
     expect(tooltip.getAttribute("data-tooltip")).toBe("Attachments");
   });
 
   it("renders the attachment icon button", () => {
+    mockAddLocalImageEnabled = true;
     render(<ComposerActionAttachment />);
     expect(screen.getByTestId("attachment-button")).toBeInTheDocument();
   });
 
   it("includes a hidden file input for images", () => {
+    mockAddLocalImageEnabled = true;
     const { container } = render(<ComposerActionAttachment />);
     const fileInput = container.querySelector("input[type='file']");
     expect(fileInput).toBeInTheDocument();
@@ -254,25 +258,22 @@ describe("ComposerActionAttachment", () => {
   });
 
   describe("without platform.file", () => {
-    it("renders only web search + extended thinking when AddLocalImage is not enabled", () => {
+    it("renders nothing when AddLocalImage is not enabled", () => {
       render(<ComposerActionAttachment />);
       // "Add local image" is opt-in via `addLocalImageEnabled`; with the
-      // flag omitted (and no platform.file) there are no attachment
-      // entries, hence no separator either.
-      expect(mockDropdownItems).toHaveLength(2);
-      const items = mockDropdownItems as { isSeparator?: boolean }[];
-      expect(items.find((i) => i.isSeparator)).toBeUndefined();
+      // flag omitted (and no platform.file) there are no entries at all,
+      // so the paperclip is hidden instead of opening an empty menu.
+      expect(screen.queryByTestId("dropdown-menu")).not.toBeInTheDocument();
     });
 
-    it("renders AddLocalImage + separator + web search + extended thinking = 4 items when enabled", () => {
+    it("renders only AddLocalImage when enabled", () => {
       mockAddLocalImageEnabled = true;
       render(<ComposerActionAttachment />);
       // "Add local image" rides on the HTML <input>, not platform.file,
-      // so the opt-in flag alone is enough (which adds the leading
-      // separator too).
-      expect(mockDropdownItems).toHaveLength(4);
+      // so the opt-in flag alone is enough.
+      expect(mockDropdownItems).toHaveLength(1);
       const items = mockDropdownItems as { isSeparator?: boolean }[];
-      expect(items.find((i) => i.isSeparator)).toBeDefined();
+      expect(items.find((i) => i.isSeparator)).toBeUndefined();
     });
 
     it("includes AddLocalImage but not AddLocalFile", () => {
@@ -305,12 +306,12 @@ describe("ComposerActionAttachment", () => {
       expect(items.find((i) => i.text === "AddLocalImage")).toBeDefined();
     });
 
-    it("includes 5 items: AddLocalFile + AddLocalImage + separator + web search + extended thinking", async () => {
+    it("includes 2 items: AddLocalFile + AddLocalImage", async () => {
       mockAddLocalImageEnabled = true;
       await act(async () => {
         render(<ComposerActionAttachment />);
       });
-      expect(mockDropdownItems).toHaveLength(5);
+      expect(mockDropdownItems).toHaveLength(2);
     });
 
     it("includes RecentFiles submenu when recent files exist", async () => {
@@ -512,8 +513,7 @@ describe("ComposerActionAttachment", () => {
 
       expect(mockPickFiles).toHaveBeenCalledWith(ATTACHMENT_PICK_FILTERS);
       // The host must not be asked to offer an "all files" escape hatch.
-      const filters = mockPickFiles.mock
-        .calls[0][0] as AttachmentPickFilter[];
+      const filters = mockPickFiles.mock.calls[0][0] as AttachmentPickFilter[];
       expect(filters.length).toBeGreaterThan(0);
       for (const filter of filters) {
         expect(filter.extensions).not.toContain("*");
@@ -786,201 +786,13 @@ describe("ComposerActionAttachment", () => {
     });
   });
 
-  describe("web search toggle", () => {
-    it("renders web search item with toggle disabled when not enabled", () => {
-      render(<ComposerActionAttachment />);
-      const items = mockDropdownItems as {
-        text: string;
-        withToggle?: boolean;
-        toggleChecked?: boolean;
-        toggleDisabled?: boolean;
-      }[];
-      const wsItem = items.find((i) => i.text === "WebSearch");
-      expect(wsItem).toBeDefined();
-      expect(wsItem?.withToggle).toBe(true);
-      expect(wsItem?.toggleChecked).toBe(false);
-      expect(wsItem?.toggleDisabled).toBe(true);
-    });
-
-    it("renders web search toggle enabled when getWebSearchEnabled returns true", () => {
-      mockGetWebSearchEnabled = () => true;
-      mockWebSearchEnabled = true;
-      render(<ComposerActionAttachment />);
-      const items = mockDropdownItems as {
-        text: string;
-        toggleChecked?: boolean;
-        toggleDisabled?: boolean;
-      }[];
-      const wsItem = items.find((i) => i.text === "WebSearch");
-      expect(wsItem?.toggleChecked).toBe(true);
-      expect(wsItem?.toggleDisabled).toBe(false);
-    });
-
-    it("web search onToggleChange calls changeToolStatus and emits event", async () => {
-      mockGetWebSearchEnabled = () => true;
-      mockWebSearchEnabled = true;
-      render(<ComposerActionAttachment />);
-      const items = mockDropdownItems as {
-        text: string;
-        onToggleChange?: () => Promise<void> | void;
-      }[];
-      const wsItem = items.find((i) => i.text === "WebSearch")!;
-      await wsItem.onToggleChange!();
-      expect(mockChangeToolStatus).toHaveBeenCalledWith(
-        "web-search",
-        ["web_search", "web_crawling"],
-        false
-      );
-      expect(mockEmit).toHaveBeenCalledWith("tools-changed");
-    });
-
-    it("shows tooltip text when web search is not available", () => {
-      mockGetWebSearchEnabled = () => false;
-      render(<ComposerActionAttachment />);
-      const items = mockDropdownItems as {
-        text: string;
-        tooltipText?: string;
-      }[];
-      const wsItem = items.find((i) => i.text === "WebSearch");
-      expect(wsItem?.tooltipText).toBe("EnableWebSearch");
-    });
-
-    it("shows empty tooltip when web search is available", () => {
-      mockGetWebSearchEnabled = () => true;
-      render(<ComposerActionAttachment />);
-      const items = mockDropdownItems as {
-        text: string;
-        tooltipText?: string;
-      }[];
-      const wsItem = items.find((i) => i.text === "WebSearch");
-      expect(wsItem?.tooltipText).toBe("EnableWebSearch");
-    });
-  });
-
-  describe("effort item", () => {
-    type EffortItem = {
-      text: string;
-      trailingText?: string;
-      withAbout?: boolean;
-      withToggle?: boolean;
-      subMenuMaxHeight?: string;
-      subMenu?: { text: string; checked?: boolean; onClick: () => void }[];
-    };
-    const effortItem = () =>
-      (mockDropdownItems as EffortItem[]).find((i) => i.text === "Effort");
-
-    it("renders one Effort row with the current depth and a picker, no toggle", () => {
-      mockExtendedThinking = true;
-      mockReasoningLevel = "medium";
-      render(<ComposerActionAttachment />);
-      const item = effortItem();
-      expect(item).toBeDefined();
-      expect(item?.withToggle).toBeUndefined();
-      expect(item?.withAbout).toBe(true);
-      expect(item?.subMenuMaxHeight).toBe(
-        "var(--radix-dropdown-menu-content-available-height)"
-      );
-      expect(item?.trailingText).toBe("ThinkingLevelMedium");
-      expect(item?.subMenu?.map((i) => i.text)).toEqual([
-        "NoThinking",
-        "ThinkingLevelLow",
-        "ThinkingLevelMedium",
-        "ThinkingLevelHigh",
-        "ThinkingLevelMax",
-      ]);
-      expect(item?.subMenu?.find((i) => i.checked)?.text).toBe(
-        "ThinkingLevelMedium"
-      );
-      expect(
-        (mockDropdownItems as { text: string }[]).find(
-          (i) => i.text === "ExtendedThinking"
-        )
-      ).toBeUndefined();
-    });
-
-    it("shows Off as the value while thinking is off", () => {
-      mockReasoningLevel = "off";
-      render(<ComposerActionAttachment />);
-      expect(effortItem()?.trailingText).toBe("NoThinking");
-      expect(effortItem()?.subMenu?.find((i) => i.checked)?.text).toBe(
-        "NoThinking"
-      );
-    });
-
-    it("sets the picked level", () => {
-      render(<ComposerActionAttachment />);
-      effortItem()!.subMenu![3].onClick();
-      expect(mockSetReasoningLevel).toHaveBeenCalledWith("high");
-      effortItem()!.subMenu![0].onClick();
-      expect(mockSetReasoningLevel).toHaveBeenCalledWith("off");
-    });
-
-    it("omits the row for a model that cannot think", () => {
-      mockReasoningSupport = { thinks: false, canDisable: false, depths: [] };
-      render(<ComposerActionAttachment />);
-      expect(effortItem()).toBeUndefined();
-    });
-
-    it("omits Off for a model that thinks always", () => {
-      mockReasoningSupport = {
-        thinks: true,
-        canDisable: false,
-        depths: ["low", "medium", "high", "max"],
-      };
-      mockReasoningLevel = "off";
-      render(<ComposerActionAttachment />);
-      expect(effortItem()?.subMenu?.map((i) => i.text)).toEqual([
-        "ThinkingLevelLow",
-        "ThinkingLevelMedium",
-        "ThinkingLevelHigh",
-        "ThinkingLevelMax",
-      ]);
-      // No switch here: a stored "off" is the standard depth, medium.
-      expect(effortItem()?.trailingText).toBe("ThinkingLevelMedium");
-      expect(effortItem()?.subMenu?.find((i) => i.checked)?.text).toBe(
-        "ThinkingLevelMedium"
-      );
-    });
-
-    it("lists only the depths the model distinguishes and marks the effective one", () => {
-      mockReasoningSupport = {
-        thinks: true,
-        canDisable: false,
-        depths: ["low", "high"],
-      };
-      mockReasoningLevel = "medium";
-      render(<ComposerActionAttachment />);
-      const item = effortItem();
-      expect(item?.subMenu?.map((i) => i.text)).toEqual([
-        "ThinkingLevelLow",
-        "ThinkingLevelHigh",
-      ]);
-      // medium is not offered; the model runs high, so high is shown.
-      expect(item?.trailingText).toBe("ThinkingLevelHigh");
-      expect(item?.subMenu?.find((i) => i.checked)?.text).toBe(
-        "ThinkingLevelHigh"
-      );
-    });
-
-    it("falls back to Off / On for a model with a switch but no depth", () => {
-      mockReasoningSupport = { thinks: true, canDisable: true, depths: [] };
-      mockReasoningLevel = "high";
-      render(<ComposerActionAttachment />);
-      const item = effortItem();
-      expect(item?.subMenu?.map((i) => i.text)).toEqual(["NoThinking", "On"]);
-      expect(item?.trailingText).toBe("On");
-      item!.subMenu![1].onClick();
-      expect(mockSetReasoningLevel).toHaveBeenCalledWith("medium");
-    });
-
-    it("omits the row for a model that thinks always with no depth knob", () => {
-      mockReasoningSupport = { thinks: true, canDisable: false, depths: [] };
-      render(<ComposerActionAttachment />);
-      expect(effortItem()).toBeUndefined();
-    });
-  });
-
   describe("image input handling", () => {
+    // The hidden <input> only mounts alongside the menu, which needs at
+    // least one entry now that web search / effort live elsewhere.
+    beforeEach(() => {
+      mockAddLocalImageEnabled = true;
+    });
+
     it("calls addAttachmentImage when image is selected", async () => {
       let capturedOnload: ((event: unknown) => void) | null = null;
       const mockReadAsDataURL = vi.fn();
@@ -1086,6 +898,10 @@ describe("ComposerActionAttachment", () => {
   });
 
   describe("onOpenChange", () => {
+    beforeEach(() => {
+      mockAddLocalImageEnabled = true;
+    });
+
     it("calls onOpenChange callback", () => {
       render(<ComposerActionAttachment />);
       expect(mockOnOpenChange).toBeDefined();
@@ -1146,15 +962,17 @@ describe("ComposerActionAttachment", () => {
 
   describe("composerActions", () => {
     it("renders nothing extra when composerActions is undefined", () => {
+      mockAddLocalImageEnabled = true;
       render(<ComposerActionAttachment />);
-      // baseline (AddLocalImage not enabled): web search + extended thinking
-      expect(mockDropdownItems).toHaveLength(2);
+      // baseline: AddLocalImage only
+      expect(mockDropdownItems).toHaveLength(1);
     });
 
     it("renders nothing extra when composerActions is empty", () => {
+      mockAddLocalImageEnabled = true;
       mockComposerActions = [];
       render(<ComposerActionAttachment />);
-      expect(mockDropdownItems).toHaveLength(2);
+      expect(mockDropdownItems).toHaveLength(1);
     });
 
     it("renders custom items with id, text, and string icon", () => {
@@ -1181,7 +999,7 @@ describe("ComposerActionAttachment", () => {
       expect(onClick).toHaveBeenCalled();
     });
 
-    it("renders custom items above the separator", () => {
+    it("renders custom items without a trailing separator", () => {
       mockComposerActions = [
         { id: "act-1", text: "Custom A", onClick: vi.fn() },
       ];
@@ -1191,15 +1009,12 @@ describe("ComposerActionAttachment", () => {
         text: string;
         isSeparator?: boolean;
       }[];
-      const customIdx = items.findIndex((i) => i.id === "act-1");
-      const sepIdx = items.findIndex((i) => i.isSeparator);
-      const wsIdx = items.findIndex((i) => i.text === "WebSearch");
-      expect(customIdx).toBeGreaterThanOrEqual(0);
-      expect(customIdx).toBeLessThan(sepIdx);
-      expect(sepIdx).toBeLessThan(wsIdx);
+      expect(items.findIndex((i) => i.id === "act-1")).toBe(0);
+      expect(items.find((i) => i.isSeparator)).toBeUndefined();
+      expect(items.find((i) => i.text === "WebSearch")).toBeUndefined();
     });
 
-    it("renders alongside file attachments above the separator", async () => {
+    it("renders after file attachments", async () => {
       mockGetRecentFiles.mockResolvedValue(JSON.stringify({ files: [] }));
       mockPlatformFile = {
         pickFiles: mockPickFiles,
@@ -1217,11 +1032,9 @@ describe("ComposerActionAttachment", () => {
         text: string;
         isSeparator?: boolean;
       }[];
-      // AddLocalFile + AddLocalImage + custom + separator + ws + et = 6
-      expect(items).toHaveLength(6);
-      const customIdx = items.findIndex((i) => i.id === "act-1");
-      const sepIdx = items.findIndex((i) => i.isSeparator);
-      expect(customIdx).toBeLessThan(sepIdx);
+      // AddLocalFile + AddLocalImage + custom = 3
+      expect(items).toHaveLength(3);
+      expect(items.findIndex((i) => i.id === "act-1")).toBe(2);
     });
 
     it("supports ReactNode icon", () => {

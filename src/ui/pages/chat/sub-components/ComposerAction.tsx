@@ -2,6 +2,7 @@ import { useWidgetConfig } from "../../../../widget-config";
 import { ComposerActionAttachment } from "./ComposerActionAttachments";
 import { ComposerActionPrompts } from "./ComposerActionPrompts";
 import { ComposerActionSend } from "./ComposerActionSend";
+import { ComposerActionSettings } from "./ComposerActionSettings";
 import { SelectModel } from "./ComposerActionSelectModel";
 
 const ComposerAction = () => {
@@ -23,6 +24,7 @@ const ComposerAction = () => {
         <div className="flex items-center gap-[var(--action-gap,4px)] flex-row">
           <ComposerActionAttachment />
           <ComposerActionPrompts />
+          <ComposerActionSettings />
         </div>
 
         <div className="flex items-center gap-[4px] flex-row min-w-0">
