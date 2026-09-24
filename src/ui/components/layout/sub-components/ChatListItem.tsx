@@ -144,6 +144,10 @@ const ChatListItemComponent = ({
   const exportMenuItem: DropDownItemProps =
     exportFormats.length > 1
       ? {
+          // Same icon as the single-format "Save" below: the submenu replaces
+          // that item in place, and dropping the icon left the export row as
+          // the only one without one, next to Open / Rename / Delete.
+          icon: <DownloadIcon />,
           text: t("ExportTo"),
           onClick: () => undefined,
           subMenu: exportFormats.map((format) => ({

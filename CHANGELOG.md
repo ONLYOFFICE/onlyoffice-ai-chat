@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.138
+
+### Fixed
+
+- **The chat's "Export to…" item keeps the icon its "Save" predecessor had.** A host declaring several export formats turned the single "Save" entry into a submenu, which lost the icon and left the export row as the only one in the menu without one.
+
 ## 0.5.137
 
 ### Fixed
