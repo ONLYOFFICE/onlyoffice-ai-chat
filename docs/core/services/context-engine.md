@@ -169,3 +169,12 @@ appends the room's agent instruction). The thread stays under
 ```tsx
 <WidgetConfigProvider config={{ contextRoomScopesRounds: true }}>
 ```
+
+---
+
+## The menu's hint
+
+The context menu is headed "Add room context" with an "i" popover that
+explains what connecting a room does. `WidgetConfig.roomContextHelpUrl`
+adds a *Read more* button to it, opening the host's article in a new
+tab; without the URL the hint is text only.

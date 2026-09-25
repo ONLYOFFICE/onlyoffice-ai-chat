@@ -3,6 +3,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
 import { useStores } from "../../../store/context";
+import { useWidgetConfig } from "../../../../widget-config";
 
 /**
  * The composer's context picker: one row per cloud account the host reports,
@@ -12,8 +13,9 @@ import { useStores } from "../../../store/context";
  * so with no clouds to offer it is not rendered at all.
  */
 const ComposerActionSettings = () => {
-  const { DropdownMenu, HelpButton, IconButton, TooltipIconButton } =
+  const { Button, DropdownMenu, HelpButton, IconButton, TooltipIconButton } =
     useComponents();
+  const { roomContextHelpUrl } = useWidgetConfig();
   const [isOpen, setIsOpen] = React.useState(false);
   const { useCloudsStore } = useStores();
   const { t } = useI18n();
@@ -80,17 +82,28 @@ const ComposerActionSettings = () => {
       className="flex items-center gap-[var(--dropdown-item-gap,10px)] ps-[var(--dropdown-item-padding-start-text,16px)] pe-[var(--dropdown-item-padding-end-control,8px)] pb-[4px] leading-[var(--lh-16)] text-[var(--text-secondary)]"
     >
       <span dir="auto" className="min-w-0 truncate">
-        {t("AddRoomContextFrom")}
+        {t("AddRoomContext")}
       </span>
       <HelpButton
         side="top"
-        align="center"
+        align="start"
         sideOffset={4}
-        aria-label={t("AddRoomContextFrom")}
+        aria-label={t("AddRoomContext")}
         content={
-          <p className="p-[16px] leading-[var(--lh-16)] text-[var(--text-secondary)]">
-            {t("AddRoomContextDescription")}
-          </p>
+          <div className="flex flex-col items-start gap-[12px] p-[16px] max-w-[var(--composer-settings-hint-max-width,280px)] leading-[var(--lh-16)] text-[var(--text-normal)]">
+            <p>{t("AddRoomContextDescription")}</p>
+            {roomContextHelpUrl ? (
+              <Button
+                variant="default"
+                data-testid="composer-settings-read-more"
+                onClick={() =>
+                  window.open(roomContextHelpUrl, "_blank", "noopener")
+                }
+              >
+                {t("ReadMore")}
+              </Button>
+            ) : null}
+          </div>
         }
       />
     </div>

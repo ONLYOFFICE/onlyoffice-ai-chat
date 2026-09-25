@@ -59,6 +59,12 @@ export interface WidgetConfig {
    */
   contextRoomScopesRounds?: boolean;
   /**
+   * Where the "Read more" button in the context menu's hint points: the
+   * host's article on connecting a room as chat context. Omitted → the
+   * hint has no button, only its text.
+   */
+  roomContextHelpUrl?: string;
+  /**
    * Global cursor-pagination switch (default `false`). When enabled:
    *
    * - the sidebar loads threads in pages of 100 and infinite-scrolls;

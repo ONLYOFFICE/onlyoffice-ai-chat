@@ -99,6 +99,7 @@ vi.mock("../../../components/tooltip-icon-button", () => ({
 }));
 
 import { ComposerActionSettings } from "../sub-components/ComposerActionSettings";
+import { WidgetConfigProvider } from "../../../../widget-config";
 
 type MenuItem = {
   id?: string;
@@ -151,10 +152,37 @@ describe("ComposerActionSettings", () => {
     ];
     render(<ComposerActionSettings />);
     const header = screen.getByTestId("composer-settings-header");
-    expect(header.textContent).toContain("AddRoomContextFrom");
+    expect(header.textContent).toContain("AddRoomContext");
     expect(screen.getByTestId("help-button").textContent).toBe(
       "AddRoomContextDescription"
     );
+    // No article to point at: no button.
+    expect(screen.queryByTestId("composer-settings-read-more")).toBeNull();
+  });
+
+  it("offers Read more in the hint when the host names an article", () => {
+    mockContextFolders = [
+      { cloud: "a.example.com", rooms: [{ id: "r1", name: "Room 1" }] },
+    ];
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    render(
+      <WidgetConfigProvider
+        config={{ roomContextHelpUrl: "https://example.com/rooms" }}
+      >
+        <ComposerActionSettings />
+      </WidgetConfigProvider>
+    );
+    const button = screen.getByTestId("composer-settings-read-more");
+    expect(button.textContent).toBe("ReadMore");
+    act(() => {
+      button.click();
+    });
+    expect(open).toHaveBeenCalledWith(
+      "https://example.com/rooms",
+      "_blank",
+      "noopener"
+    );
+    open.mockRestore();
   });
 
   it("reads the context folders on mount", () => {
