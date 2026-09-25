@@ -33,6 +33,8 @@
   "EnterKey": "Introducere cheie API",
   "Cancel": "Anulare",
   "DisconnectRoom": "Deconectare cameră",
+  "AddRoomContextFrom": "Adăugați context de cameră din:",
+  "AddRoomContextDescription": "Conectați o cameră din cloudul dvs. ONLYOFFICE. Asistentul va vedea abilitățile stocate în ea și le va citi când o sarcină o cere, doar în acest chat.",
   "Regenerate": "Regenerează",
   "Retry": "Reîncearcă",
   "Save": "Salvare",

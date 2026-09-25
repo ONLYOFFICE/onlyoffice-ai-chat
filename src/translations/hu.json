@@ -33,6 +33,8 @@
   "EnterKey": "Gépeld be az API kulcsot",
   "Cancel": "Visszavonás",
   "DisconnectRoom": "Szoba leválasztása",
+  "AddRoomContextFrom": "Szobakontextus hozzáadása innen:",
+  "AddRoomContextDescription": "Csatlakoztasson egy szobát az ONLYOFFICE felhőjéből. Az asszisztens látja a benne tárolt készségeket, és elolvassa őket, amikor egy feladat megköveteli, csak ebben a csevegésben.",
   "Regenerate": "Újragenerálás",
   "Retry": "Újra",
   "Save": "Mentés",

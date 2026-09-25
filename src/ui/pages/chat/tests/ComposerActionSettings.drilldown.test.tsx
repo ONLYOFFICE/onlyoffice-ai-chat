@@ -48,6 +48,10 @@ vi.mock("../../../components/icon-button", () => ({
   ),
 }));
 
+vi.mock("../../../components/help-button", () => ({
+  HelpButton: () => <span data-testid="help-button" />,
+}));
+
 vi.mock("../../../components/tooltip-icon-button", () => ({
   TooltipIconButton: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>

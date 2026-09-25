@@ -33,6 +33,8 @@
   "EnterKey": "Vnesi API ključ",
   "Cancel": "Prekliči",
   "DisconnectRoom": "Odklopi sobo",
+  "AddRoomContextFrom": "Dodaj kontekst sobe iz:",
+  "AddRoomContextDescription": "Povežite sobo iz svojega oblaka ONLYOFFICE. Pomočnik bo videl spretnosti, shranjene v njej, in jih prebral, ko naloga to zahteva, samo v tem klepetu.",
   "Regenerate": "Znova ustvari",
   "Retry": "Poskusi znova",
   "Save": "Shrani",

@@ -33,6 +33,8 @@
   "EnterKey": "Ange API-nyckel",
   "Cancel": "Avbryt",
   "DisconnectRoom": "Koppla från rum",
+  "AddRoomContextFrom": "Lägg till rumskontext från:",
+  "AddRoomContextDescription": "Anslut ett rum från ditt ONLYOFFICE-moln. Assistenten ser de färdigheter som lagras där och läser dem när en uppgift kräver det, endast i den här chatten.",
   "Regenerate": "Återskapa",
   "Retry": "Försök igen",
   "Save": "Spara",

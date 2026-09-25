@@ -33,6 +33,8 @@
   "EnterKey": "Enter API key",
   "Cancel": "Cancel",
   "DisconnectRoom": "Disconnect room",
+  "AddRoomContextFrom": "Add room context from:",
+  "AddRoomContextDescription": "Connect a room from your ONLYOFFICE cloud. The assistant will see the skills stored in it and read them when a task calls for one, in this chat only.",
   "Regenerate": "Regenerate",
   "Retry": "Retry",
   "Save": "Save",

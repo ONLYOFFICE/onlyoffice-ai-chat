@@ -33,6 +33,8 @@
   "EnterKey": "API anahtarını girin",
   "Cancel": "İptal",
   "DisconnectRoom": "Odanın bağlantısını kes",
+  "AddRoomContextFrom": "Şuradan oda bağlamı ekle:",
+  "AddRoomContextDescription": "ONLYOFFICE bulutunuzdan bir oda bağlayın. Asistan odada saklanan becerileri görür ve bir görev gerektirdiğinde okur, yalnızca bu sohbette.",
   "Regenerate": "Yeniden oluştur",
   "Retry": "Yeniden dene",
   "Save": "Kaydet",

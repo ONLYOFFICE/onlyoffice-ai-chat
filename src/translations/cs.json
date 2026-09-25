@@ -33,6 +33,8 @@
   "EnterKey": "Zadat API klíč",
   "Cancel": "Zrušit",
   "DisconnectRoom": "Odpojit místnost",
+  "AddRoomContextFrom": "Přidat kontext místnosti z:",
+  "AddRoomContextDescription": "Připojte místnost z vašeho cloudu ONLYOFFICE. Asistent uvidí dovednosti v ní uložené a přečte je, když to úkol vyžaduje, pouze v tomto chatu.",
   "Regenerate": "Znovu generovat",
   "Retry": "Zkusit znovu",
   "Save": "Uložit",

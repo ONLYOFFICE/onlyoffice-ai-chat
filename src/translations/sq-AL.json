@@ -33,6 +33,8 @@
   "EnterKey": "Shtoni çelësin API",
   "Cancel": "Anuloni",
   "DisconnectRoom": "Shkëput dhomën",
+  "AddRoomContextFrom": "Shto kontekst dhome nga:",
+  "AddRoomContextDescription": "Lidhni një dhomë nga cloud-i juaj ONLYOFFICE. Asistenti do të shohë aftësitë e ruajtura në të dhe do t'i lexojë kur një detyrë e kërkon, vetëm në këtë bisedë.",
   "Regenerate": "Rigjeneroj",
   "Retry": "Riprovo",
   "Save": "Ruani",

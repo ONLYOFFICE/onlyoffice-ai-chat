@@ -33,6 +33,8 @@
   "EnterKey": "أدخلوا مفتاح API",
   "Cancel": "إلغاء",
   "DisconnectRoom": "فصل الغرفة",
+  "AddRoomContextFrom": "إضافة سياق غرفة من:",
+  "AddRoomContextDescription": "اربط غرفة من سحابة ONLYOFFICE الخاصة بك. سيرى المساعد المهارات المخزنة فيها ويقرأها عندما تتطلب مهمة ذلك، في هذه المحادثة فقط.",
   "Regenerate": "إعادة التوليد",
   "Retry": "إعادة المحاولة",
   "Save": "حفظ",

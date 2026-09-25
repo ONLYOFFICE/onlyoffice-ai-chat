@@ -33,6 +33,8 @@
   "EnterKey": "Wpisz klucz API",
   "Cancel": "Anuluj",
   "DisconnectRoom": "Odłącz pokój",
+  "AddRoomContextFrom": "Dodaj kontekst pokoju z:",
+  "AddRoomContextDescription": "Podłącz pokój ze swojej chmury ONLYOFFICE. Asystent zobaczy zapisane w nim umiejętności i odczyta je, gdy zadanie tego wymaga, tylko w tym czacie.",
   "Regenerate": "Wygeneruj ponownie",
   "Retry": "Ponów",
   "Save": "Zapisz",

@@ -33,6 +33,8 @@
   "EnterKey": "API-Schlüssel eingeben",
   "Cancel": "Abbrechen",
   "DisconnectRoom": "Raum trennen",
+  "AddRoomContextFrom": "Raumkontext hinzufügen aus:",
+  "AddRoomContextDescription": "Verbinden Sie einen Raum aus Ihrer ONLYOFFICE-Cloud. Der Assistent sieht die darin gespeicherten Skills und liest sie, wenn eine Aufgabe es erfordert, nur in diesem Chat.",
   "Regenerate": "Neu generieren",
   "Retry": "Wiederholen",
   "Save": "Speichern",

@@ -12,6 +12,8 @@ export type TranslationKey =
   | "AddLocalFile"
   | "AddLocalImage"
   | "AddModel"
+  | "AddRoomContextDescription"
+  | "AddRoomContextFrom"
   | "AllTools"
   | "Allow"
   | "AlwaysAllow"

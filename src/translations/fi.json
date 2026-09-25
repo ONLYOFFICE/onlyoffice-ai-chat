@@ -33,6 +33,8 @@
   "EnterKey": "Syötä API-avain",
   "Cancel": "Peruuta",
   "DisconnectRoom": "Katkaise huoneen yhteys",
+  "AddRoomContextFrom": "Lisää huoneen konteksti lähteestä:",
+  "AddRoomContextDescription": "Yhdistä huone ONLYOFFICE-pilvestäsi. Avustaja näkee siihen tallennetut taidot ja lukee ne, kun tehtävä sitä vaatii, vain tässä keskustelussa.",
   "Regenerate": "Luo uudelleen",
   "Retry": "Yritä uudelleen",
   "Save": "Tallenna",

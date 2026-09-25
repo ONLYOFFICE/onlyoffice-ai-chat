@@ -37,11 +37,13 @@ vi.mock("../../../components/dropdown", () => ({
   DropdownMenu: ({
     trigger,
     items,
+    headerContent,
     open,
     onOpenChange,
   }: {
     trigger: React.ReactNode;
     items: unknown[];
+    headerContent?: React.ReactNode;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
   }) => {
@@ -51,9 +53,16 @@ vi.mock("../../../components/dropdown", () => ({
     return (
       <div data-testid="dropdown-menu" data-item-count={items.length}>
         {trigger}
+        {headerContent}
       </div>
     );
   },
+}));
+
+vi.mock("../../../components/help-button", () => ({
+  HelpButton: ({ content }: { content: React.ReactNode }) => (
+    <div data-testid="help-button">{content}</div>
+  ),
 }));
 
 vi.mock("../../../components/icon-button", () => ({
@@ -133,6 +142,18 @@ describe("ComposerActionSettings", () => {
     expect(button.className).not.toContain("rotate-90");
     expect(screen.getByTestId("tooltip-btn").getAttribute("data-tooltip")).toBe(
       "Settings"
+    );
+  });
+
+  it("heads the menu with the context prompt and an about hint", () => {
+    mockContextFolders = [
+      { cloud: "a.example.com", rooms: [{ id: "r1", name: "Room 1" }] },
+    ];
+    render(<ComposerActionSettings />);
+    const header = screen.getByTestId("composer-settings-header");
+    expect(header.textContent).toContain("AddRoomContextFrom");
+    expect(screen.getByTestId("help-button").textContent).toBe(
+      "AddRoomContextDescription"
     );
   });
 

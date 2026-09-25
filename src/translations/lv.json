@@ -33,6 +33,8 @@
   "EnterKey": "Ievadiet API atslēgu",
   "Cancel": "Atcelt",
   "DisconnectRoom": "Atvienot istabu",
+  "AddRoomContextFrom": "Pievienot telpas kontekstu no:",
+  "AddRoomContextDescription": "Pievienojiet telpu no sava ONLYOFFICE mākoņa. Asistents redzēs tajā saglabātās prasmes un lasīs tās, kad uzdevums to prasīs, tikai šajā tērzēšanā.",
   "Regenerate": "Reģenerēt",
   "Retry": "Mēģināt vēlreiz",
   "Save": "Saglabāt",

@@ -33,6 +33,8 @@
   "EnterKey": "Indtast API-nøgle",
   "Cancel": "Annuller",
   "DisconnectRoom": "Frakobl rum",
+  "AddRoomContextFrom": "Tilføj rumkontekst fra:",
+  "AddRoomContextDescription": "Tilslut et rum fra din ONLYOFFICE-cloud. Assistenten ser de færdigheder, der er gemt i det, og læser dem, når en opgave kræver det, kun i denne chat.",
   "Regenerate": "Regenerér",
   "Retry": "Prøv igen",
   "Save": "Gem",

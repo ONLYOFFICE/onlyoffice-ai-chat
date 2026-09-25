@@ -12,7 +12,8 @@ import { useStores } from "../../../store/context";
  * so with no clouds to offer it is not rendered at all.
  */
 const ComposerActionSettings = () => {
-  const { DropdownMenu, IconButton, TooltipIconButton } = useComponents();
+  const { DropdownMenu, HelpButton, IconButton, TooltipIconButton } =
+    useComponents();
   const [isOpen, setIsOpen] = React.useState(false);
   const { useCloudsStore } = useStores();
   const { t } = useI18n();
@@ -71,10 +72,35 @@ const ComposerActionSettings = () => {
     })),
   }));
 
+  // The heading names the menu's job — rows below are accounts, not
+  // settings — and the "i" explains what connecting a room does.
+  const header = (
+    <div
+      data-testid="composer-settings-header"
+      className="flex items-center gap-[var(--dropdown-item-gap,10px)] ps-[var(--dropdown-item-padding-start-text,16px)] pe-[var(--dropdown-item-padding-end-control,8px)] pb-[4px] leading-[var(--lh-16)] text-[var(--text-secondary)]"
+    >
+      <span dir="auto" className="min-w-0 truncate">
+        {t("AddRoomContextFrom")}
+      </span>
+      <HelpButton
+        side="top"
+        align="center"
+        sideOffset={4}
+        aria-label={t("AddRoomContextFrom")}
+        content={
+          <p className="p-[16px] leading-[var(--lh-16)] text-[var(--text-secondary)]">
+            {t("AddRoomContextDescription")}
+          </p>
+        }
+      />
+    </div>
+  );
+
   return (
     <DropdownMenu
       trigger={trigger}
       items={items}
+      headerContent={header}
       open={isOpen}
       onOpenChange={setIsOpen}
     />

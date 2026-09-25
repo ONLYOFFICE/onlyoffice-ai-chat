@@ -33,6 +33,8 @@
   "EnterKey": "Masukkan kunci API",
   "Cancel": "Batal",
   "DisconnectRoom": "Putuskan ruangan",
+  "AddRoomContextFrom": "Tambahkan konteks ruang dari:",
+  "AddRoomContextDescription": "Hubungkan ruang dari cloud ONLYOFFICE Anda. Asisten akan melihat keterampilan yang tersimpan di dalamnya dan membacanya saat tugas memerlukannya, hanya dalam obrolan ini.",
   "Regenerate": "Buat ulang",
   "Retry": "Coba lagi",
   "Save": "Simpan",

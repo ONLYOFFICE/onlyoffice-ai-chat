@@ -33,6 +33,8 @@
   "EnterKey": "APIキーを入力",
   "Cancel": "キャンセル",
   "DisconnectRoom": "ルームの接続を解除",
+  "AddRoomContextFrom": "ルームのコンテキストを追加:",
+  "AddRoomContextDescription": "ONLYOFFICE クラウドのルームを接続します。アシスタントはそこに保存されたスキルを参照し、タスクに必要なときに読み取ります。このチャットのみで有効です。",
   "Regenerate": "再生成",
   "Retry": "再試行",
   "Save": "保存",

@@ -33,6 +33,8 @@
   "EnterKey": "Skriv inn API-nøkkel",
   "Cancel": "Avbryt",
   "DisconnectRoom": "Koble fra rom",
+  "AddRoomContextFrom": "Legg til romkontekst fra:",
+  "AddRoomContextDescription": "Koble til et rom fra ONLYOFFICE-skyen din. Assistenten ser ferdighetene som er lagret der og leser dem når en oppgave krever det, bare i denne chatten.",
   "Regenerate": "Regenerer",
   "Retry": "Prøv igjen",
   "Save": "Lagre",

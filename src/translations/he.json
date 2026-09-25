@@ -33,6 +33,8 @@
   "EnterKey": "הזן מפתח API",
   "Cancel": "ביטול",
   "DisconnectRoom": "נתק חדר",
+  "AddRoomContextFrom": "הוסף הקשר חדר מ:",
+  "AddRoomContextDescription": "חבר חדר מענן ONLYOFFICE שלך. העוזר יראה את המיומנויות השמורות בו ויקרא אותן כשמשימה תדרוש זאת, בצ'אט זה בלבד.",
   "Regenerate": "צור מחדש",
   "Retry": "נסה שוב",
   "Save": "שמירה",

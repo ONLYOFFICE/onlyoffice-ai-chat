@@ -33,6 +33,8 @@
   "EnterKey": "Inserisci chiave API",
   "Cancel": "Annulla",
   "DisconnectRoom": "Scollega stanza",
+  "AddRoomContextFrom": "Aggiungi contesto della stanza da:",
+  "AddRoomContextDescription": "Collega una stanza dal tuo cloud ONLYOFFICE. L'assistente vedrà le competenze salvate al suo interno e le leggerà quando un'attività lo richiede, solo in questa chat.",
   "Regenerate": "Rigenera",
   "Retry": "Riprova",
   "Save": "Salva",

@@ -33,6 +33,8 @@
   "EnterKey": "Voer API key in",
   "Cancel": "Annuleren",
   "DisconnectRoom": "Kamer ontkoppelen",
+  "AddRoomContextFrom": "Kamercontext toevoegen uit:",
+  "AddRoomContextDescription": "Verbind een kamer uit uw ONLYOFFICE-cloud. De assistent ziet de daarin opgeslagen vaardigheden en leest ze wanneer een taak dat vereist, alleen in deze chat.",
   "Regenerate": "Opnieuw genereren",
   "Retry": "Opnieuw",
   "Save": "Opslaan",

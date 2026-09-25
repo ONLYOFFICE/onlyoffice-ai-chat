@@ -33,6 +33,8 @@
   "EnterKey": "Nhập Khoá API",
   "Cancel": "Hủy",
   "DisconnectRoom": "Ngắt kết nối phòng",
+  "AddRoomContextFrom": "Thêm ngữ cảnh phòng từ:",
+  "AddRoomContextDescription": "Kết nối một phòng từ đám mây ONLYOFFICE của bạn. Trợ lý sẽ thấy các kỹ năng được lưu trong đó và đọc chúng khi tác vụ yêu cầu, chỉ trong cuộc trò chuyện này.",
   "Regenerate": "Tạo lại",
   "Retry": "Thử lại",
   "Save": "Lưu",

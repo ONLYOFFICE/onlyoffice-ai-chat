@@ -33,6 +33,8 @@
   "EnterKey": "Inserir chave de API",
   "Cancel": "Cancelar",
   "DisconnectRoom": "Desconectar sala",
+  "AddRoomContextFrom": "Adicionar contexto da sala de:",
+  "AddRoomContextDescription": "Conecte uma sala da sua nuvem ONLYOFFICE. O assistente verá as habilidades armazenadas nela e as lerá quando uma tarefa exigir, apenas neste chat.",
   "Regenerate": "Regenerar",
   "Retry": "Tentar novamente",
   "Save": "Salvar",
