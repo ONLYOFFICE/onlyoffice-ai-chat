@@ -201,6 +201,17 @@ export interface ThemeTokens {
   "--text-normal-pressed"?: string;
   "--text-secondary"?: string;
   "--text-tertiary"?: string;
+  "--toast-background-color"?: string;
+  "--toast-border-color"?: string;
+  "--toast-border-radius"?: string;
+  "--toast-font-size"?: string;
+  "--toast-line-height"?: string;
+  "--toast-padding-x"?: string;
+  "--toast-padding-y"?: string;
+  "--toast-shadow"?: string;
+  "--toast-text-color"?: string;
+  "--toast-viewport-bottom"?: string;
+  "--toast-viewport-inline"?: string;
   "--toggle-button-background-color"?: string;
   "--toggle-button-background-hover-color"?: string;
   "--toggle-button-circle-color"?: string;

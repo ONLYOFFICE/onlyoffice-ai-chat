@@ -150,5 +150,7 @@
   "DownloadTemplate": "Ladda ned mall",
   "Permissions": "Behörigheter",
   "DropFilesHere": "Släpp filer här för att bifoga",
-  "Uploading": "Laddar upp…"
+  "Uploading": "Laddar upp…",
+  "PromptSaved": "Prompten har sparats",
+  "PromptSavedToFolder": "Prompten har sparats i ”{{folder}}”"
 }

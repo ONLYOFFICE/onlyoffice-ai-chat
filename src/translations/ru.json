@@ -150,5 +150,7 @@
   "DownloadTemplate": "Скачать шаблон",
   "Permissions": "Разрешения",
   "DropFilesHere": "Перетащите файлы сюда, чтобы прикрепить",
-  "Uploading": "Загрузка…"
+  "Uploading": "Загрузка…",
+  "PromptSaved": "AI-запрос сохранён",
+  "PromptSavedToFolder": "AI-запрос сохранён в папку «{{folder}}»"
 }

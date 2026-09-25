@@ -33,6 +33,7 @@ import { UserMessage } from "./sub-components/UserMessage";
 import { useChatDropAttachments } from "./useChatDropAttachments";
 
 import InitialSetup from "../initial-setup";
+import { ToastProvider } from "../../components/toast";
 
 import "./Thread.css";
 
@@ -352,17 +353,23 @@ const Thread = () => {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ThreadInner />
-      {/* Tool-approval dialog lives with the chat surface so every
-          consumer of ChatPage (not just AIChatWidget) shows it — e.g.
-          server-side system tools that pause for approval. */}
-      {manageToolData ? (
-        <ManageToolDialog
-          onAllow={approveToolCall}
-          onDeny={denyToolCall}
-          onClose={() => setManageToolData(undefined)}
-        />
-      ) : null}
+      {/* Same reasoning as the tool-approval dialog below: the "prompt saved"
+          toast is queued from `UserMessage`, so every consumer of ChatPage
+          needs a viewport, not just `AIChatWidget`. Nesting is a no-op when
+          the widget already mounted one above. */}
+      <ToastProvider>
+        <ThreadInner />
+        {/* Tool-approval dialog lives with the chat surface so every
+            consumer of ChatPage (not just AIChatWidget) shows it — e.g.
+            server-side system tools that pause for approval. */}
+        {manageToolData ? (
+          <ManageToolDialog
+            onAllow={approveToolCall}
+            onDeny={denyToolCall}
+            onClose={() => setManageToolData(undefined)}
+          />
+        ) : null}
+      </ToastProvider>
     </AssistantRuntimeProvider>
   );
 };

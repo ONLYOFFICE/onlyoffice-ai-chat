@@ -402,6 +402,21 @@ export { PendingFileItem } from "./ui/components/file-item/PendingFileItem";
 // Markdown
 export { MarkdownText, MarkdownContent } from "./ui/components/markdown";
 
+// Toast — mounted by both `AIChatWidget` and `ChatPage` (nesting is a no-op),
+// so the chat's own toasts work in either. Export it for hosts that queue
+// their own toasts from outside those surfaces.
+export {
+  DEFAULT_TOAST_DURATION,
+  ToastContent,
+  ToastProvider,
+  useToast,
+} from "./ui/components/toast";
+export type {
+  ShowToastOptions,
+  ToastContentProps,
+  ToastProviderProps,
+} from "./ui/components/toast";
+
 // Misc
 export { HelpButton } from "./ui/components/help-button";
 export { ProviderLogo } from "./ui/components/provider-logo";

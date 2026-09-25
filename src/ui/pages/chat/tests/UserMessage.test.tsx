@@ -15,6 +15,8 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../providers/PlatformProvider", () => ({
   usePlatform: () => ({ copyToClipboard: undefined }),
+  // No host `showToast`, so toasts stay with the built-in stack.
+  useOptionalPlatform: () => ({ copyToClipboard: undefined }),
 }));
 
 vi.mock("../../../store/context", () => ({

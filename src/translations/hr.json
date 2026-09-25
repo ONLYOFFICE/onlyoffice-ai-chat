@@ -150,5 +150,7 @@
   "DownloadTemplate": "Preuzmi predložak",
   "Permissions": "Dozvole",
   "DropFilesHere": "Povucite datoteke ovdje za prilaganje",
-  "Uploading": "Učitavanje…"
+  "Uploading": "Učitavanje…",
+  "PromptSaved": "Upit je spremljen",
+  "PromptSavedToFolder": "Upit je spremljen u „{{folder}}”"
 }

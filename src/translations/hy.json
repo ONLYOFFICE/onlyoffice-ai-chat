@@ -150,5 +150,7 @@
   "DownloadTemplate": "Ներբեռնել ձևանմուշ",
   "Permissions": "Թույլտվություններ",
   "DropFilesHere": "Կցելու համար թափեք ֆայլերն այստեղ",
-  "Uploading": "Վերբեռնում…"
+  "Uploading": "Վերբեռնում…",
+  "PromptSaved": "Հրահանգը պահվեց",
+  "PromptSavedToFolder": "Հրահանգը պահվեց «{{folder}}» թղթապանակում"
 }

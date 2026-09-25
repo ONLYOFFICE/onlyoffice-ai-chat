@@ -150,5 +150,7 @@
   "DownloadTemplate": "Stiahnuť šablónu",
   "Permissions": "Oprávnenia",
   "DropFilesHere": "Sem presuňte súbory na priloženie",
-  "Uploading": "Nahrávanie…"
+  "Uploading": "Nahrávanie…",
+  "PromptSaved": "Výzva bola uložená",
+  "PromptSavedToFolder": "Výzva bola uložená do „{{folder}}“"
 }

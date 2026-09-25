@@ -150,5 +150,7 @@
   "DownloadTemplate": "Tải mẫu",
   "Permissions": "Quyền",
   "DropFilesHere": "Thả tệp vào đây để đính kèm",
-  "Uploading": "Đang tải lên…"
+  "Uploading": "Đang tải lên…",
+  "PromptSaved": "Đã lưu prompt",
+  "PromptSavedToFolder": "Đã lưu prompt vào “{{folder}}”"
 }

@@ -150,5 +150,7 @@
   "DownloadTemplate": "Λήψη προτύπου",
   "Permissions": "Δικαιώματα",
   "DropFilesHere": "Αποθέστε εδώ αρχεία για επισύναψη",
-  "Uploading": "Μεταφόρτωση…"
+  "Uploading": "Μεταφόρτωση…",
+  "PromptSaved": "Η οδηγία αποθηκεύτηκε",
+  "PromptSavedToFolder": "Η οδηγία αποθηκεύτηκε στον φάκελο «{{folder}}»"
 }

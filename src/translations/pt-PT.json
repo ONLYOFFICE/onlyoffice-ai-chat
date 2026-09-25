@@ -150,5 +150,7 @@
   "DownloadTemplate": "Transferir modelo",
   "Permissions": "Permissões",
   "DropFilesHere": "Largue ficheiros aqui para anexar",
-  "Uploading": "A enviar…"
+  "Uploading": "A enviar…",
+  "PromptSaved": "Prompt guardado",
+  "PromptSavedToFolder": "Prompt guardado em “{{folder}}”"
 }

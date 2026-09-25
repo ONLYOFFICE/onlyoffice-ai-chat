@@ -150,5 +150,7 @@
   "DownloadTemplate": "Sjabloon downloaden",
   "Permissions": "Machtigingen",
   "DropFilesHere": "Sleep bestanden hierheen om toe te voegen",
-  "Uploading": "Uploaden…"
+  "Uploading": "Uploaden…",
+  "PromptSaved": "Prompt opgeslagen",
+  "PromptSavedToFolder": "Prompt opgeslagen in “{{folder}}”"
 }

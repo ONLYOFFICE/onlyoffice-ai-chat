@@ -150,5 +150,7 @@
   "DownloadTemplate": "Prenesi predlogo",
   "Permissions": "Dovoljenja",
   "DropFilesHere": "Povlecite datoteke sem za prilogo",
-  "Uploading": "Nalaganje…"
+  "Uploading": "Nalaganje…",
+  "PromptSaved": "Poziv je shranjen",
+  "PromptSavedToFolder": "Poziv je shranjen v »{{folder}}«"
 }
