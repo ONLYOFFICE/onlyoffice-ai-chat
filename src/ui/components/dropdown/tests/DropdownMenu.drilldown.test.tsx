@@ -93,6 +93,41 @@ describe("DropdownMenu drill-down", () => {
     expect(screen.getByTestId("icon-btn-arrow.right")).toBeInTheDocument();
   });
 
+  it("labels the back row with the parent and drops its separator on request", () => {
+    renderMenu({ backRowLabel: true });
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    const back = screen.getByTestId("dropdown-back-row");
+    expect(back.textContent).toContain("Folder");
+    expect(
+      back.querySelector("[data-testid='icon-btn-arrow.right']")
+    ).not.toBeNull();
+    expect(screen.queryByTestId("dropdown-back-separator")).toBeNull();
+    // Selecting the labelled row goes back up.
+    fireEvent.click(back);
+    expect(screen.getByText("Leaf")).toBeInTheDocument();
+  });
+
+  it("keeps the bare chevron and its separator by default", () => {
+    renderMenu();
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    expect(screen.queryByTestId("dropdown-back-row")).toBeNull();
+    expect(screen.getByTestId("dropdown-back-separator")).toBeInTheDocument();
+  });
+
+  it("keeps the header at the root only when asked, on every level otherwise", () => {
+    const { unmount } = renderMenu({
+      headerContent: <div data-testid="hdr" />,
+      headerAtRootOnly: true,
+    });
+    expect(screen.getByTestId("hdr")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    expect(screen.queryByTestId("hdr")).toBeNull();
+    unmount();
+    renderMenu({ headerContent: <div data-testid="hdr" /> });
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    expect(screen.getByTestId("hdr")).toBeInTheDocument();
+  });
+
   it("goes back a level via ArrowLeft", () => {
     renderMenu();
     fireEvent.click(screen.getByTestId("drill-Folder"));

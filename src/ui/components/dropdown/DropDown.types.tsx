@@ -13,6 +13,19 @@ export type DropdownMenuProps = {
    */
   footerItems?: DropDownItemProps[];
   headerContent?: React.ReactNode;
+  /**
+   * Render `headerContent` at the root level only. A heading that names the
+   * root list ("Add room context") has nothing to say about a drilled-in
+   * level; the search box of a combobox, by contrast, stays on every level.
+   */
+  headerAtRootOnly?: boolean;
+  /**
+   * Label the drill-down back row with the parent row's text, so a drilled-in
+   * level is headed "‹ nct2.onlyoffice.com" rather than a bare chevron. The
+   * labelled row takes a regular row's height and is the level's heading, so
+   * the separator under the bare chevron is dropped.
+   */
+  backRowLabel?: boolean;
   side?: "bottom" | "top" | "left" | "right";
   align?: "start" | "center" | "end";
   sideOffset?: number;

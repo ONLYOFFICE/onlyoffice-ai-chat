@@ -114,6 +114,8 @@ const ComposerActionSettings = () => {
       trigger={trigger}
       items={items}
       headerContent={header}
+      headerAtRootOnly
+      backRowLabel
       open={isOpen}
       onOpenChange={setIsOpen}
     />

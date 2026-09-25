@@ -133,11 +133,19 @@ describe("ComposerActionSettings drill-down", () => {
     expect(screen.queryByText("Room 1")).not.toBeInTheDocument();
   });
 
-  it("descends into one cloud's rooms", () => {
+  it("descends into one cloud's rooms, headed by the cloud as the back row", () => {
     render(<ComposerActionSettings />);
+    expect(screen.getByTestId("composer-settings-header")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("drill-a.example.com"));
     expect(rowTexts()).toEqual(["Room 1", "Room 2"]);
     expect(screen.queryByText("Room 3")).not.toBeInTheDocument();
+    // The level is headed "‹ cloud"; the root heading and the separator
+    // under a bare chevron are gone.
+    expect(screen.getByTestId("dropdown-back-row").textContent).toContain(
+      "a.example.com"
+    );
+    expect(screen.queryByTestId("composer-settings-header")).toBeNull();
+    expect(screen.queryByTestId("dropdown-back-separator")).toBeNull();
   });
 
   it("a room click stores the room with its cloud", () => {

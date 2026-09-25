@@ -183,9 +183,10 @@ function resolveLevel(root: DropDownItemProps[], path: string[]) {
   return { level, parent, validPath };
 }
 
-// Drill-down "back" row: the whole row is the target and shows only a chevron
-// (no label, no hover background of its own). Height is token-driven.
-const BackRow = ({ onBack }: { onBack: () => void }) => {
+// Drill-down "back" row: the whole row is the target. By default it shows
+// only a chevron (no label, no hover background of its own) at a token-driven
+// height; with `label` it reads "‹ parent" at a regular row's height.
+const BackRow = ({ onBack, label }: { onBack: () => void; label?: string }) => {
   const { isRTL } = useI18n();
   return (
     <DropdownMenu.Item
@@ -196,11 +197,14 @@ const BackRow = ({ onBack }: { onBack: () => void }) => {
       className={cn(
         "flex items-center select-none cursor-pointer",
         "px-[var(--dropdown-back-row-padding,8px)]",
-        "h-[var(--dropdown-back-row-height,20px)] min-h-[var(--dropdown-back-row-height,20px)]",
+        label
+          ? "gap-[var(--dropdown-item-gap,10px)] min-h-[var(--dropdown-item-height,26px)] h-[var(--dropdown-item-height,26px)]"
+          : "h-[var(--dropdown-back-row-height,20px)] min-h-[var(--dropdown-back-row-height,20px)]",
         "outline-none focus:outline-none ring-0 border-0",
         "bg-transparent hover:bg-transparent data-[highlighted]:bg-transparent"
       )}
       dir={isRTL ? "rtl" : "ltr"}
+      data-testid={label ? "dropdown-back-row" : undefined}
     >
       <IconButton
         iconName="arrow.right"
@@ -210,6 +214,14 @@ const BackRow = ({ onBack }: { onBack: () => void }) => {
         disableHover
         className={isRTL ? "" : "rotate-180"}
       />
+      {label ? (
+        <span
+          dir="auto"
+          className="min-w-0 truncate text-[var(--drop-down-menu-item-color)]"
+        >
+          {label}
+        </span>
+      ) : null}
     </DropdownMenu.Item>
   );
 };
@@ -230,6 +242,8 @@ const DropdownMenuComponent = ({
   dropdownRef,
   onOpenChange,
   headerContent,
+  headerAtRootOnly = false,
+  backRowLabel = false,
   variant = "menu",
   navigation,
   modal,
@@ -346,12 +360,19 @@ const DropdownMenuComponent = ({
       scrollInside={pinned !== null}
     >
       {canGoBack ? (
-        <>
-          <BackRow onBack={goBack} />
-          <div className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[var(--dropdown-separator-margin-y,4px)] shrink-0" />
-        </>
+        backRowLabel && parent ? (
+          <BackRow onBack={goBack} label={parent.text} />
+        ) : (
+          <>
+            <BackRow onBack={goBack} />
+            <div
+              className="w-full border-t border-[var(--drop-down-menu-separator-color)] my-[var(--dropdown-separator-margin-y,4px)] shrink-0"
+              data-testid="dropdown-back-separator"
+            />
+          </>
+        )
       ) : null}
-      {headerContent}
+      {headerAtRootOnly && !atRoot ? null : headerContent}
       {pinned ? (
         <>
           <div
