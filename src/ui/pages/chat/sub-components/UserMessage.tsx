@@ -39,8 +39,9 @@ const useSavedPromptToast = () => {
       }
       // The library's `t` takes a key and nothing else — it drops i18next's
       // options argument — so the folder name is substituted here rather than
-      // through interpolation.
-      showToast(t("PromptSavedToFolder").replace("{{folder}}", folder));
+      // through interpolation. The replacer function keeps `$`-sequences in a
+      // user-typed folder name from being read as replacement patterns.
+      showToast(t("PromptSavedToFolder").replace("{{folder}}", () => folder));
     },
     [showToast, t]
   );
