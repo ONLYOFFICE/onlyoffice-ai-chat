@@ -102,6 +102,7 @@ export const listModels = async (
       name: m.id,
       provider: "zhipu" as const,
       capabilities: inferCapabilities(m.id),
+      ...(typeof m.created === "number" ? { created: m.created } : {}),
     }));
   } catch {
     return FALLBACK_MODELS;

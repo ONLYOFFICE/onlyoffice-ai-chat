@@ -61,5 +61,7 @@ export const listModels = async (
     provider: "openai" as const,
     reasoning: openaiInfo.reasoningModels.includes(model.id),
     capabilities: inferCapabilities(model.id),
+    // Typed as required by the SDK, but OpenAI-compatible proxies omit it.
+    ...(typeof model.created === "number" ? { created: model.created } : {}),
   }));
 };

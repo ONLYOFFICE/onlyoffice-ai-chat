@@ -55,5 +55,6 @@ export const listModels = async (
     name: m.id,
     provider: "ollama" as const,
     capabilities: defaultCaps,
+    ...(typeof m.created === "number" ? { created: m.created } : {}),
   }));
 };

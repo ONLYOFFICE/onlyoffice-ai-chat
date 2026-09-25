@@ -43,6 +43,7 @@ export const listModels = async (
       ...(meta !== undefined ? { reasoning: meta !== null } : {}),
       reasoningSupport: reasoningSupportFromCatalog(meta, m.id),
       capabilities: defaultCaps,
+      ...(typeof m.created === "number" ? { created: m.created } : {}),
     };
   });
 };
