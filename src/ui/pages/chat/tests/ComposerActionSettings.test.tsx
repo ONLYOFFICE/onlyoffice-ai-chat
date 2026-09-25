@@ -223,7 +223,7 @@ describe("ComposerActionSettings", () => {
       expect(mockSelectContextFolder).not.toHaveBeenCalled();
     });
 
-    it("room rows are plain leaves — no toggle, unchecked by default", () => {
+    it("room rows are plain leaves with the room icon — no toggle, unchecked by default", () => {
       render(<ComposerActionSettings />);
       const rooms = cloudRows().flatMap((c) => c.subMenu!);
       expect(rooms).toHaveLength(3);
@@ -231,6 +231,8 @@ describe("ComposerActionSettings", () => {
         expect(room.withToggle).toBeUndefined();
         expect(room.checked).toBe(false);
         expect(room.subMenu).toBeUndefined();
+        const { container } = render(<>{room.icon}</>);
+        expect(container.textContent).toBe("btn-room");
       }
     });
 

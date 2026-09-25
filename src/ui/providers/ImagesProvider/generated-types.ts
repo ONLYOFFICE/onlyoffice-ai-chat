@@ -30,6 +30,7 @@ export type IconName =
   | "btn-remove"
   | "btn-rename"
   | "btn-reset"
+  | "btn-room"
   | "btn-save"
   | "btn-save.small"
   | "btn-settings"

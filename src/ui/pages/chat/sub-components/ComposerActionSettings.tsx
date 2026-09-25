@@ -58,6 +58,7 @@ const ComposerActionSettings = () => {
     subMenu: folder.rooms.map((room) => ({
       id: `context-room:${room.id}`,
       text: room.name,
+      icon: <IconButton iconName="btn-room" size={24} disableHover />,
       // Room ids are only unique within their cloud, so the match
       // needs both halves.
       checked:
