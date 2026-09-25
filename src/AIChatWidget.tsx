@@ -243,7 +243,7 @@ export interface AIChatWidgetProps {
   suggestions?: WidgetConfig["suggestions"];
   /**
    * Arbitrary content rendered at the very top of a new (empty) chat,
-   * shown only when suggestions are visible. See
+   * whenever a node is provided — independent of `suggestions`. See
    * {@link WidgetConfig.suggestionsHeader}.
    */
   suggestionsHeader?: WidgetConfig["suggestionsHeader"];

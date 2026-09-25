@@ -432,12 +432,18 @@ describe("createProfilesStore", () => {
     await s.getState().setImageGenerationProfile(p);
     await s.getState().setOcrProfile(p);
     await s.getState().setVisionProfile(p);
+    await s.getState().setFormAnalysisProfile(p);
+    expect(deps.api.assignments.assign).toHaveBeenCalledWith(
+      "FormAnalysis",
+      "1"
+    );
     expect(s.getState().summarizationProfile).toEqual(p);
     expect(s.getState().translationProfile).toBeNull();
     expect(s.getState().textAnalysisProfile).toEqual(p);
     expect(s.getState().imageGenerationProfile).toEqual(p);
     expect(s.getState().ocrProfile).toEqual(p);
     expect(s.getState().visionProfile).toEqual(p);
+    expect(s.getState().formAnalysisProfile).toEqual(p);
   });
 
   it("setSessionChatProfile updates state and emits session scope", () => {

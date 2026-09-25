@@ -52,6 +52,7 @@ describe("ActionType", () => {
       "ImageGeneration",
       "OCR",
       "Vision",
+      "FormAnalysis",
     ]);
   });
 });
