@@ -121,16 +121,16 @@ describe("ComposerActionSettings", () => {
     mockDropdownOpen = undefined;
   });
 
-  it("renders the settings cog with the Settings tooltip", () => {
+  it("renders the cloud button with the Settings tooltip", () => {
     mockContextFolders = [
       { cloud: "a.example.com", rooms: [{ id: "r1", name: "Room 1" }] },
     ];
     render(<ComposerActionSettings />);
     expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
     const button = screen.getByTestId("composer-settings-button");
-    expect(button.textContent).toBe("btn-settings");
-    // Same orientation as the header's settings button.
-    expect(button.className).toContain("rotate-90");
+    expect(button.textContent).toBe("btn-cloud");
+    // A filled glyph drawn upright — not the header's rotated cog.
+    expect(button.className).not.toContain("rotate-90");
     expect(screen.getByTestId("tooltip-btn").getAttribute("data-tooltip")).toBe(
       "Settings"
     );

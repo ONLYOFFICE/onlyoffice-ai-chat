@@ -14,6 +14,7 @@ export type IconName =
   | "btn-attach.small"
   | "btn-close"
   | "btn-close.small"
+  | "btn-cloud"
   | "btn-copy"
   | "btn-download"
   | "btn-edit"

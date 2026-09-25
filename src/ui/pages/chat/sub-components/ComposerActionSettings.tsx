@@ -33,10 +33,9 @@ const ComposerActionSettings = () => {
   const trigger = (
     <TooltipIconButton tooltip={t("Settings")} visible={!isOpen}>
       <IconButton
-        iconName="btn-settings"
+        iconName="btn-cloud"
         size={20}
-        isStroke
-        className="cursor-pointer rounded-[4px] outline-none rotate-90 text-[var(--composer-settings-button-color,var(--icon-button-color))] hover:enabled:text-[var(--composer-settings-button-hover-color,var(--text-normal))]"
+        className="cursor-pointer rounded-[4px] outline-none text-[var(--composer-settings-button-color,var(--icon-button-color))] hover:enabled:text-[var(--composer-settings-button-hover-color,var(--text-normal))]"
         isActive={isOpen}
         data-testid="composer-settings-button"
       />
