@@ -4,6 +4,14 @@ import type { DropDownItemProps } from "../dropdown-item/DropDownItem.types";
 export type DropdownMenuProps = {
   trigger: React.ReactNode;
   items: DropDownItemProps[];
+  /**
+   * Rows pinned below the list. `items` scroll inside the menu's height
+   * cap; these stay in view at the bottom, so a long list (many profiles)
+   * never hides them. Root level only — in drill-down mode a drilled-in
+   * level replaces the whole menu, footer included, and a footer row with a
+   * `subMenu` drills like any other row.
+   */
+  footerItems?: DropDownItemProps[];
   headerContent?: React.ReactNode;
   side?: "bottom" | "top" | "left" | "right";
   align?: "start" | "center" | "end";

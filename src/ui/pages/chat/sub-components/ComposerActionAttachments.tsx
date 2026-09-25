@@ -3,6 +3,7 @@ import { useI18n } from "../../../providers/LocalesProvider";
 import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
+import { useToolsContext } from "../../../tools/context";
 import { getFileIconName, isSpreadsheet } from "../../../../shared/utils";
 import {
   ATTACHMENT_PICK_FILTERS,
@@ -11,6 +12,12 @@ import {
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 import logger from "../../../../shared/logger";
+
+// The engine resolves the web-search tools on the fly per-request, so they
+// never appear in the UI's `servers` aggregator — the composer toggle has
+// to flip them through `disabledTools["web-search"]` directly.
+const WEB_SEARCH_TYPE = "web-search";
+const WEB_SEARCH_TOOL_NAMES = ["web_search", "web_crawling"];
 
 // The host payload is only as trustworthy as the host: the desktop
 // `recent_files_reader` omits `url` entirely, and an entry without a usable
@@ -27,7 +34,8 @@ const ComposerActionAttachment = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const imageInputRef = React.useRef<HTMLInputElement>(null);
   const platform = usePlatform();
-  const { useAttachmentsStore } = useStores();
+  const { eventBus } = useToolsContext();
+  const { useAttachmentsStore, useServersStore } = useStores();
 
   const addAttachmentFile = useAttachmentsStore((s) => s.addAttachmentFile);
   const addAttachmentImage = useAttachmentsStore((s) => s.addAttachmentImage);
@@ -37,6 +45,14 @@ const ComposerActionAttachment = () => {
   const failPendingAttachments = useAttachmentsStore(
     (s) => s.failPendingAttachments
   );
+  const changeToolStatus = useServersStore((s) => s.changeToolStatus);
+  const webSearchEnabled = useServersStore((s) => s.webSearchEnabled);
+  const disabledTools = useServersStore((s) => s.disabledTools);
+
+  const webSearchDisabledNames = disabledTools[WEB_SEARCH_TYPE] ?? [];
+  const webSearchActive =
+    webSearchEnabled &&
+    WEB_SEARCH_TOOL_NAMES.some((n) => !webSearchDisabledNames.includes(n));
   const { composerActions, addLocalImageEnabled } = useWidgetConfig();
 
   const onOpenChange = (open: boolean) => {
@@ -257,6 +273,36 @@ const ComposerActionAttachment = () => {
     }
   }
 
+  if (items.length > 0) {
+    items.push({
+      text: "",
+      onClick: () => {
+        // ignore
+      },
+      isSeparator: true,
+    });
+  }
+
+  items.push({
+    text: t("WebSearch"),
+    onClick: () => {
+      // ignore
+    },
+    icon: <IconButton iconName="btn-web-search" size={24} disableHover />,
+    withToggle: true,
+    toggleChecked: webSearchActive,
+    toggleDisabled: !webSearchEnabled,
+    tooltipText: webSearchEnabled ? "" : t("EnableWebSearch"),
+    onToggleChange: async () => {
+      if (!webSearchEnabled) return;
+      const next = !webSearchActive;
+      // Flip both web-search tools in one atomic write — a per-tool
+      // Promise.all races and leaves one tool enabled.
+      await changeToolStatus(WEB_SEARCH_TYPE, WEB_SEARCH_TOOL_NAMES, next);
+      eventBus.emit("tools-changed");
+    },
+  });
+
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const files = input.files;
@@ -308,11 +354,6 @@ const ComposerActionAttachment = () => {
       await addAttachmentImage(inputs, { pendingIds: liveIds });
     }
   };
-
-  // Web search and Effort live under the settings cog now, so with no host
-  // file capability, no image opt-in and no custom actions there is nothing
-  // to open — hide the paperclip rather than show an empty menu.
-  if (items.length === 0) return null;
 
   return (
     <>

@@ -299,4 +299,48 @@ describe("DropdownMenu drill-down", () => {
       "flyout"
     );
   });
+
+  describe("footerItems", () => {
+    const footer: DropDownItemProps[] = [
+      { text: "", onClick: vi.fn(), isSeparator: true },
+      {
+        text: "Effort",
+        onClick: vi.fn(),
+        subMenu: [
+          { text: "Low", onClick: vi.fn() },
+          { text: "High", onClick: vi.fn() },
+        ],
+      },
+    ];
+
+    it("shows the footer on the root level only", () => {
+      renderMenu({ footerItems: footer });
+      expect(screen.getByTestId("dropdown-footer")).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId("drill-Folder"));
+      expect(screen.queryByTestId("dropdown-footer")).toBeNull();
+      expect(screen.queryByText("Effort")).not.toBeInTheDocument();
+      expect(screen.getByText("ChildLeaf")).toBeInTheDocument();
+    });
+
+    it("drills into a footer row like any other row", () => {
+      renderMenu({ footerItems: footer });
+      fireEvent.click(screen.getByTestId("drill-Effort"));
+      expect(screen.getByText("Low")).toBeInTheDocument();
+      expect(screen.getByText("High")).toBeInTheDocument();
+      expect(screen.queryByText("Leaf")).not.toBeInTheDocument();
+    });
+
+    it("comes back to the root with the footer in place", () => {
+      renderMenu({ footerItems: footer });
+      fireEvent.click(screen.getByTestId("drill-Effort"));
+      const content = screen
+        .getByText("Low")
+        .closest("[data-orientation='vertical']");
+      fireEvent.keyDown(content as Element, { key: "ArrowLeft" });
+      expect(screen.getByTestId("dropdown-footer")).toContainElement(
+        screen.getByText("Effort")
+      );
+      expect(screen.getByText("Leaf")).toBeInTheDocument();
+    });
+  });
 });

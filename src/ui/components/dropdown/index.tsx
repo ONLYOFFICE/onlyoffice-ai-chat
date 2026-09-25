@@ -27,6 +27,12 @@ type ShellProps = {
   dropdownRef?: React.RefObject<HTMLDivElement | null>;
   onContentKeyDown?: (e: React.KeyboardEvent) => void;
   modal?: boolean;
+  /**
+   * The children own the scrolling (a scroll area plus pinned rows), so the
+   * content itself must clip rather than scroll — otherwise the pinned rows
+   * would scroll away with everything else.
+   */
+  scrollInside?: boolean;
   children: React.ReactNode;
 };
 
@@ -45,6 +51,7 @@ const Shell = ({
   dropdownRef,
   onContentKeyDown,
   modal,
+  scrollInside,
   children,
 }: ShellProps) => {
   const { isRTL } = useI18n();
@@ -111,7 +118,8 @@ const Shell = ({
           data-orientation="vertical"
           onKeyDown={onContentKeyDown}
           className={cn(
-            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[4px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[var(--dropdown-menu-padding-y,5px)] max-h-56 overflow-y-auto flex flex-col",
+            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[4px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[var(--dropdown-menu-padding-y,5px)] max-h-56 flex flex-col",
+            scrollInside ? "overflow-hidden" : "overflow-y-auto",
             matchTriggerWidth
               ? "min-w-[var(--dropdown-menu-min-width,150px)] w-[var(--radix-dropdown-menu-trigger-width)]"
               : "w-fit",
@@ -209,6 +217,7 @@ const BackRow = ({ onBack }: { onBack: () => void }) => {
 const DropdownMenuComponent = ({
   trigger,
   items,
+  footerItems,
   side,
   align,
   sideOffset,
@@ -233,11 +242,19 @@ const DropdownMenuComponent = ({
   // Navigation stack of steps (see `stepOf`); only meaningful in drill-down mode.
   const [path, setPath] = useState<string[]>([]);
 
+  // Footer rows are part of the tree for navigation (a footer row may drill),
+  // but the root level renders them apart from the scrolling list.
+  const tree = useMemo(
+    () => (footerItems?.length ? [...items, ...footerItems] : items),
+    [items, footerItems]
+  );
   const { level, parent, validPath } = useMemo(
-    () => resolveLevel(items, isDrill ? path : []),
-    [items, path, isDrill]
+    () => resolveLevel(tree, isDrill ? path : []),
+    [tree, path, isDrill]
   );
   const canGoBack = isDrill && validPath.length > 0;
+  const atRoot = validPath.length === 0;
+  const pinned = atRoot && footerItems?.length ? footerItems : null;
 
   // Reserve the icon column on icon-less rows when the visible level has any
   // leading icon, so labels line up. Evaluated per visible level (in flyout
@@ -269,6 +286,24 @@ const DropdownMenuComponent = ({
   const goBack = useCallback(
     () => setPath(validPath.slice(0, -1)),
     [validPath]
+  );
+
+  // Index-based fallback, never `text`: menus can hold duplicate names
+  // (e.g. a folder literally named "New folder" alongside a built-in
+  // action of the same name) that would collide as keys and swap handlers.
+  // `index` is the row's position in the visible level — for a pinned
+  // footer row that is its position in the joined tree, so `stepOf` finds it.
+  const renderRow = (item: DropDownItemProps, index: number) => (
+    <DropDownItem
+      key={item.id ?? `item-${index}`}
+      {...item}
+      variant={variant}
+      navigation={mode}
+      withSpace={withSpaceOf(item)}
+      onDrill={
+        isDrill ? () => setPath([...validPath, stepOf(item, index)]) : undefined
+      }
+    />
   );
 
   const onContentKeyDown = isDrill
@@ -308,6 +343,7 @@ const DropdownMenuComponent = ({
       dropdownRef={dropdownRef}
       onContentKeyDown={onContentKeyDown}
       modal={modal}
+      scrollInside={pinned !== null}
     >
       {canGoBack ? (
         <>
@@ -316,23 +352,21 @@ const DropdownMenuComponent = ({
         </>
       ) : null}
       {headerContent}
-      {level.map((item, index) => (
-        // Index-based fallback, never `text`: menus can hold duplicate names
-        // (e.g. a folder literally named "New folder" alongside a built-in
-        // action of the same name) that would collide as keys and swap handlers.
-        <DropDownItem
-          key={item.id ?? `item-${index}`}
-          {...item}
-          variant={variant}
-          navigation={mode}
-          withSpace={withSpaceOf(item)}
-          onDrill={
-            isDrill
-              ? () => setPath([...validPath, stepOf(item, index)])
-              : undefined
-          }
-        />
-      ))}
+      {pinned ? (
+        <>
+          <div
+            className="min-h-0 overflow-y-auto flex flex-col"
+            data-testid="dropdown-scroll-area"
+          >
+            {items.map((item, index) => renderRow(item, index))}
+          </div>
+          <div className="shrink-0 flex flex-col" data-testid="dropdown-footer">
+            {pinned.map((item, index) => renderRow(item, items.length + index))}
+          </div>
+        </>
+      ) : (
+        level.map((item, index) => renderRow(item, index))
+      )}
     </Shell>
   );
 };

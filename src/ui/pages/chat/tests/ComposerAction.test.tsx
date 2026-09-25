@@ -25,7 +25,12 @@ vi.mock("../sub-components/ComposerActionSend", () => ({
 }));
 
 vi.mock("../sub-components/ComposerActionSelectModel", () => ({
-  SelectModel: () => <div data-testid="composer-action-select-model" />,
+  SelectModel: ({ locked }: { locked?: boolean }) => (
+    <div
+      data-testid="composer-action-select-model"
+      data-locked={String(locked ?? false)}
+    />
+  ),
 }));
 
 const mockUseWidgetConfig = vi.fn();
@@ -94,68 +99,57 @@ describe("ComposerAction", () => {
     expect(send.parentElement).not.toBe(attachment.parentElement);
   });
 
-  it("shows the model selector by default", () => {
+  const lockedAttr = () =>
+    screen
+      .getByTestId("composer-action-select-model")
+      .getAttribute("data-locked");
+
+  it("shows the model selector open by default", () => {
     render(<ComposerAction />);
-    expect(
-      screen.getByTestId("composer-action-select-model")
-    ).toBeInTheDocument();
+    expect(lockedAttr()).toBe("false");
   });
 
-  it("hides the model selector when hideProfilePicker is true", () => {
+  it("locks (but keeps) the model selector when hideProfilePicker is true", () => {
     setupWidgetConfig({ hideProfilePicker: true });
     render(<ComposerAction />);
-    expect(
-      screen.queryByTestId("composer-action-select-model")
-    ).not.toBeInTheDocument();
+    expect(lockedAttr()).toBe("true");
   });
 
-  it("hides the model selector in entity (room) mode when the flag is omitted", () => {
+  it("locks the model selector in entity (room) mode when the flag is omitted", () => {
     setupWidgetConfig({ entityId: "e1" });
     render(<ComposerAction />);
-    expect(
-      screen.queryByTestId("composer-action-select-model")
-    ).not.toBeInTheDocument();
+    expect(lockedAttr()).toBe("true");
   });
 
-  it("shows the model selector in entity mode when hideProfilePicker is false", () => {
+  it("keeps the selector open in entity mode when hideProfilePicker is false", () => {
     setupWidgetConfig({ entityId: "e1", hideProfilePicker: false });
     render(<ComposerAction />);
-    expect(
-      screen.getByTestId("composer-action-select-model")
-    ).toBeInTheDocument();
+    expect(lockedAttr()).toBe("false");
   });
 
-  it("hides the model selector in entity mode when hideProfilePicker is true", () => {
+  it("locks the selector in entity mode when hideProfilePicker is true", () => {
     setupWidgetConfig({ entityId: "e1", hideProfilePicker: true });
     render(<ComposerAction />);
-    expect(
-      screen.queryByTestId("composer-action-select-model")
-    ).not.toBeInTheDocument();
+    expect(lockedAttr()).toBe("true");
   });
 
-  it("shows the model selector when hideProfilePicker is false without entityId", () => {
+  it("keeps the selector open when hideProfilePicker is false without entityId", () => {
     setupWidgetConfig({ hideProfilePicker: false });
     render(<ComposerAction />);
-    expect(
-      screen.getByTestId("composer-action-select-model")
-    ).toBeInTheDocument();
+    expect(lockedAttr()).toBe("false");
   });
 
-  it("shows the selector in entity mode when profilePickerReadOnly is true", () => {
+  it("keeps the selector open in entity mode when profilePickerReadOnly is true", () => {
     // Read-only mode means "display the profile", so it overrides the
-    // entity default-hide heuristic.
+    // entity default-lock heuristic; SelectModel renders the label itself.
     setupWidgetConfig({ entityId: "e1", profilePickerReadOnly: true });
     render(<ComposerAction />);
-    expect(
-      screen.getByTestId("composer-action-select-model")
-    ).toBeInTheDocument();
+    expect(lockedAttr()).toBe("false");
   });
 
-  it("hides the selector when hideProfilePicker is true despite profilePickerReadOnly", () => {
+  it("locks the selector when hideProfilePicker is true despite profilePickerReadOnly", () => {
     setupWidgetConfig({ hideProfilePicker: true, profilePickerReadOnly: true });
     render(<ComposerAction />);
-    expect(
-      screen.queryByTestId("composer-action-select-model")
-    ).not.toBeInTheDocument();
+    expect(lockedAttr()).toBe("true");
   });
 });

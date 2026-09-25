@@ -229,26 +229,22 @@ describe("ComposerActionAttachment", () => {
   });
 
   it("renders the dropdown trigger", () => {
-    mockAddLocalImageEnabled = true;
     render(<ComposerActionAttachment />);
     expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
   });
 
   it("renders the attachment button with tooltip", () => {
-    mockAddLocalImageEnabled = true;
     render(<ComposerActionAttachment />);
     const tooltip = screen.getByTestId("tooltip-btn");
     expect(tooltip.getAttribute("data-tooltip")).toBe("Attachments");
   });
 
   it("renders the attachment icon button", () => {
-    mockAddLocalImageEnabled = true;
     render(<ComposerActionAttachment />);
     expect(screen.getByTestId("attachment-button")).toBeInTheDocument();
   });
 
   it("includes a hidden file input for images", () => {
-    mockAddLocalImageEnabled = true;
     const { container } = render(<ComposerActionAttachment />);
     const fileInput = container.querySelector("input[type='file']");
     expect(fileInput).toBeInTheDocument();
@@ -258,22 +254,25 @@ describe("ComposerActionAttachment", () => {
   });
 
   describe("without platform.file", () => {
-    it("renders nothing when AddLocalImage is not enabled", () => {
+    it("renders only web search when AddLocalImage is not enabled", () => {
       render(<ComposerActionAttachment />);
       // "Add local image" is opt-in via `addLocalImageEnabled`; with the
-      // flag omitted (and no platform.file) there are no entries at all,
-      // so the paperclip is hidden instead of opening an empty menu.
-      expect(screen.queryByTestId("dropdown-menu")).not.toBeInTheDocument();
-    });
-
-    it("renders only AddLocalImage when enabled", () => {
-      mockAddLocalImageEnabled = true;
-      render(<ComposerActionAttachment />);
-      // "Add local image" rides on the HTML <input>, not platform.file,
-      // so the opt-in flag alone is enough.
+      // flag omitted (and no platform.file) there are no attachment
+      // entries, hence no separator either.
       expect(mockDropdownItems).toHaveLength(1);
       const items = mockDropdownItems as { isSeparator?: boolean }[];
       expect(items.find((i) => i.isSeparator)).toBeUndefined();
+    });
+
+    it("renders AddLocalImage + separator + web search = 3 items when enabled", () => {
+      mockAddLocalImageEnabled = true;
+      render(<ComposerActionAttachment />);
+      // "Add local image" rides on the HTML <input>, not platform.file,
+      // so the opt-in flag alone is enough (which adds the leading
+      // separator too).
+      expect(mockDropdownItems).toHaveLength(3);
+      const items = mockDropdownItems as { isSeparator?: boolean }[];
+      expect(items.find((i) => i.isSeparator)).toBeDefined();
     });
 
     it("includes AddLocalImage but not AddLocalFile", () => {
@@ -306,12 +305,12 @@ describe("ComposerActionAttachment", () => {
       expect(items.find((i) => i.text === "AddLocalImage")).toBeDefined();
     });
 
-    it("includes 2 items: AddLocalFile + AddLocalImage", async () => {
+    it("includes 4 items: AddLocalFile + AddLocalImage + separator + web search", async () => {
       mockAddLocalImageEnabled = true;
       await act(async () => {
         render(<ComposerActionAttachment />);
       });
-      expect(mockDropdownItems).toHaveLength(2);
+      expect(mockDropdownItems).toHaveLength(4);
     });
 
     it("includes RecentFiles submenu when recent files exist", async () => {
@@ -786,13 +785,84 @@ describe("ComposerActionAttachment", () => {
     });
   });
 
-  describe("image input handling", () => {
-    // The hidden <input> only mounts alongside the menu, which needs at
-    // least one entry now that web search / effort live elsewhere.
-    beforeEach(() => {
-      mockAddLocalImageEnabled = true;
+  describe("web search toggle", () => {
+    it("is the only request switch here — Effort lives in the model picker", () => {
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as { text: string }[];
+      expect(items.find((i) => i.text === "Effort")).toBeUndefined();
     });
 
+    it("renders web search item with toggle disabled when not enabled", () => {
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        text: string;
+        withToggle?: boolean;
+        toggleChecked?: boolean;
+        toggleDisabled?: boolean;
+      }[];
+      const wsItem = items.find((i) => i.text === "WebSearch");
+      expect(wsItem).toBeDefined();
+      expect(wsItem?.withToggle).toBe(true);
+      expect(wsItem?.toggleChecked).toBe(false);
+      expect(wsItem?.toggleDisabled).toBe(true);
+    });
+
+    it("renders web search toggle enabled when getWebSearchEnabled returns true", () => {
+      mockGetWebSearchEnabled = () => true;
+      mockWebSearchEnabled = true;
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        text: string;
+        toggleChecked?: boolean;
+        toggleDisabled?: boolean;
+      }[];
+      const wsItem = items.find((i) => i.text === "WebSearch");
+      expect(wsItem?.toggleChecked).toBe(true);
+      expect(wsItem?.toggleDisabled).toBe(false);
+    });
+
+    it("web search onToggleChange calls changeToolStatus and emits event", async () => {
+      mockGetWebSearchEnabled = () => true;
+      mockWebSearchEnabled = true;
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        text: string;
+        onToggleChange?: () => Promise<void> | void;
+      }[];
+      const wsItem = items.find((i) => i.text === "WebSearch")!;
+      await wsItem.onToggleChange!();
+      expect(mockChangeToolStatus).toHaveBeenCalledWith(
+        "web-search",
+        ["web_search", "web_crawling"],
+        false
+      );
+      expect(mockEmit).toHaveBeenCalledWith("tools-changed");
+    });
+
+    it("shows tooltip text when web search is not available", () => {
+      mockGetWebSearchEnabled = () => false;
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        text: string;
+        tooltipText?: string;
+      }[];
+      const wsItem = items.find((i) => i.text === "WebSearch");
+      expect(wsItem?.tooltipText).toBe("EnableWebSearch");
+    });
+
+    it("shows empty tooltip when web search is available", () => {
+      mockGetWebSearchEnabled = () => true;
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        text: string;
+        tooltipText?: string;
+      }[];
+      const wsItem = items.find((i) => i.text === "WebSearch");
+      expect(wsItem?.tooltipText).toBe("EnableWebSearch");
+    });
+  });
+
+  describe("image input handling", () => {
     it("calls addAttachmentImage when image is selected", async () => {
       let capturedOnload: ((event: unknown) => void) | null = null;
       const mockReadAsDataURL = vi.fn();
@@ -898,10 +968,6 @@ describe("ComposerActionAttachment", () => {
   });
 
   describe("onOpenChange", () => {
-    beforeEach(() => {
-      mockAddLocalImageEnabled = true;
-    });
-
     it("calls onOpenChange callback", () => {
       render(<ComposerActionAttachment />);
       expect(mockOnOpenChange).toBeDefined();
@@ -962,14 +1028,12 @@ describe("ComposerActionAttachment", () => {
 
   describe("composerActions", () => {
     it("renders nothing extra when composerActions is undefined", () => {
-      mockAddLocalImageEnabled = true;
       render(<ComposerActionAttachment />);
-      // baseline: AddLocalImage only
+      // baseline (AddLocalImage not enabled): web search only
       expect(mockDropdownItems).toHaveLength(1);
     });
 
     it("renders nothing extra when composerActions is empty", () => {
-      mockAddLocalImageEnabled = true;
       mockComposerActions = [];
       render(<ComposerActionAttachment />);
       expect(mockDropdownItems).toHaveLength(1);
@@ -999,7 +1063,7 @@ describe("ComposerActionAttachment", () => {
       expect(onClick).toHaveBeenCalled();
     });
 
-    it("renders custom items without a trailing separator", () => {
+    it("renders custom items above the separator", () => {
       mockComposerActions = [
         { id: "act-1", text: "Custom A", onClick: vi.fn() },
       ];
@@ -1009,12 +1073,15 @@ describe("ComposerActionAttachment", () => {
         text: string;
         isSeparator?: boolean;
       }[];
-      expect(items.findIndex((i) => i.id === "act-1")).toBe(0);
-      expect(items.find((i) => i.isSeparator)).toBeUndefined();
-      expect(items.find((i) => i.text === "WebSearch")).toBeUndefined();
+      const customIdx = items.findIndex((i) => i.id === "act-1");
+      const sepIdx = items.findIndex((i) => i.isSeparator);
+      const wsIdx = items.findIndex((i) => i.text === "WebSearch");
+      expect(customIdx).toBeGreaterThanOrEqual(0);
+      expect(customIdx).toBeLessThan(sepIdx);
+      expect(sepIdx).toBeLessThan(wsIdx);
     });
 
-    it("renders after file attachments", async () => {
+    it("renders alongside file attachments above the separator", async () => {
       mockGetRecentFiles.mockResolvedValue(JSON.stringify({ files: [] }));
       mockPlatformFile = {
         pickFiles: mockPickFiles,
@@ -1032,9 +1099,11 @@ describe("ComposerActionAttachment", () => {
         text: string;
         isSeparator?: boolean;
       }[];
-      // AddLocalFile + AddLocalImage + custom = 3
-      expect(items).toHaveLength(3);
-      expect(items.findIndex((i) => i.id === "act-1")).toBe(2);
+      // AddLocalFile + AddLocalImage + custom + separator + ws = 5
+      expect(items).toHaveLength(5);
+      const customIdx = items.findIndex((i) => i.id === "act-1");
+      const sepIdx = items.findIndex((i) => i.isSeparator);
+      expect(customIdx).toBeLessThan(sepIdx);
     });
 
     it("supports ReactNode icon", () => {

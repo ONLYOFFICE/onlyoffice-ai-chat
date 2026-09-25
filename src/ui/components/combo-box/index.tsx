@@ -13,6 +13,11 @@ export type ComboBoxProps = {
   withoutBg?: boolean;
   disabled?: boolean;
   items: DropDownItemProps[];
+  /**
+   * Rows pinned below the scrolling list; never filtered by the search.
+   * See `DropdownMenuProps.footerItems`.
+   */
+  footerItems?: DropDownItemProps[];
   searchable?: boolean;
   searchPlaceholder?: string;
   /**
@@ -40,6 +45,7 @@ const ComboBox = ({
   withoutBg,
   disabled,
   items,
+  footerItems,
   searchable,
   searchPlaceholder,
   matchTriggerWidth = true,
@@ -102,7 +108,7 @@ const ComboBox = ({
                 ? "border bg-[var(--input-background-color)] border-[var(--input-active-border-color)]"
                 : "border bg-[var(--input-background-color)] border-[var(--input-border-color)] hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]",
             className,
-            disabled || items.length === 0
+            disabled || items.length + (footerItems?.length ?? 0) === 0
               ? "cursor-not-allowed pointer-events-none opacity-50"
               : ""
           )}
@@ -140,6 +146,7 @@ const ComboBox = ({
       maxWidth={maxWidth}
       headerContent={searchHeader}
       items={visibleItems}
+      footerItems={footerItems}
       variant="combobox"
     />
   );

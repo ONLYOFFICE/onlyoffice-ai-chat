@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
@@ -7,6 +7,19 @@ vi.mock("react-i18next", () => ({
 }));
 
 const mockSetSessionChatProfile = vi.fn();
+const mockSetReasoningLevel = vi.fn();
+let mockReasoningLevel = "off";
+// Off by default so the existing item counts hold; the effort describe
+// switches it on.
+let mockReasoningSupport: {
+  thinks: boolean;
+  canDisable: boolean;
+  depths: string[];
+} = { thinks: false, canDisable: false, depths: [] };
+
+vi.mock("../../../hooks/useReasoningSupport", () => ({
+  useReasoningSupport: () => mockReasoningSupport,
+}));
 const mockSetCurrentProviderTools = vi.fn();
 const mockSetCurrentProviderPrevMessages = vi.fn();
 const mockUseStores = vi.fn();
@@ -59,6 +72,8 @@ function setupStores(overrides?: {
     sessionChatProfile: currentProfile,
     chatProfile: null,
     defaultProfile: null,
+    reasoningLevel: mockReasoningLevel,
+    setReasoningLevel: mockSetReasoningLevel,
   };
   const selectCurrentChatProfile = (s: typeof profilesState) =>
     s.sessionChatProfile ?? s.chatProfile ?? s.defaultProfile;
@@ -406,5 +421,178 @@ describe("SelectModel profilePickerActions", () => {
       { id: "1", name: "GPT-4" },
       undefined
     );
+  });
+});
+
+describe("SelectModel effort row", () => {
+  const items = () => lastComboBoxProps.items as DropDownItemProps[];
+  const footer = () => lastComboBoxProps.footerItems as DropDownItemProps[];
+  const effortRow = () => footer().find((i) => i.text === "Effort");
+
+  beforeEach(() => {
+    mockSetReasoningLevel.mockClear();
+    mockReasoningLevel = "medium";
+    mockReasoningSupport = {
+      thinks: true,
+      canDisable: true,
+      depths: ["low", "medium", "high", "max"],
+    };
+    setupStores({
+      profiles: [
+        { id: "p1", name: "GPT", capabilities: 0x01 },
+        { id: "p2", name: "Claude", capabilities: 0x01 },
+      ],
+      currentProfile: { id: "p1", name: "GPT" },
+    });
+  });
+
+  afterEach(() => {
+    mockReasoningLevel = "off";
+    mockReasoningSupport = { thinks: false, canDisable: false, depths: [] };
+  });
+
+  it("pins Effort under its own separator below the profile list", () => {
+    render(<SelectModel />);
+    // Only the profiles scroll; Effort is a footer row and stays in view.
+    expect(items().map((i) => i.text)).toEqual(["GPT", "Claude"]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
+    expect(footer()[0].isSeparator).toBe(true);
+    expect(effortRow()?.trailingText).toBe("ThinkingLevelMedium");
+    expect(effortRow()?.subMenu?.map((i) => i.text)).toEqual([
+      "NoThinking",
+      "ThinkingLevelLow",
+      "ThinkingLevelMedium",
+      "ThinkingLevelHigh",
+      "ThinkingLevelMax",
+    ]);
+  });
+
+  it("stays pinned below the host actions too", () => {
+    const actions: ProfilePickerAction[] = [
+      { id: "a1", text: "Agent A" },
+      { id: "a2", text: "Agent B" },
+    ];
+    render(
+      <WidgetConfigProvider config={{ profilePickerActions: actions }}>
+        <SelectModel />
+      </WidgetConfigProvider>
+    );
+    expect(items().map((i) => i.text)).toEqual([
+      "GPT",
+      "Claude",
+      "",
+      "Agent A",
+      "Agent B",
+    ]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
+  });
+
+  it("sets the picked level", () => {
+    render(<SelectModel />);
+    effortRow()!.subMenu![3].onClick(new Event("click"));
+    expect(mockSetReasoningLevel).toHaveBeenCalledWith("high");
+  });
+
+  it("has no footer at all for a model that cannot think", () => {
+    mockReasoningSupport = { thinks: false, canDisable: false, depths: [] };
+    render(<SelectModel />);
+    expect(items().map((i) => i.text)).toEqual(["GPT", "Claude"]);
+    expect(footer()).toEqual([]);
+  });
+});
+
+describe("SelectModel locked", () => {
+  const items = () => lastComboBoxProps.items as DropDownItemProps[];
+  const footer = () => lastComboBoxProps.footerItems as DropDownItemProps[];
+  const profiles = [
+    { id: "p1", name: "GPT", capabilities: 0x01 },
+    { id: "p2", name: "Claude", capabilities: 0x01 },
+  ];
+
+  beforeEach(() => {
+    mockSetSessionChatProfile.mockClear();
+    mockSetReasoningLevel.mockClear();
+    mockReasoningLevel = "medium";
+    mockReasoningSupport = {
+      thinks: true,
+      canDisable: true,
+      depths: ["low", "medium", "high", "max"],
+    };
+    setupStores({ profiles, currentProfile: { id: "p1", name: "GPT" } });
+  });
+
+  afterEach(() => {
+    mockReasoningLevel = "off";
+    mockReasoningSupport = { thinks: false, canDisable: false, depths: [] };
+  });
+
+  it("still renders the combobox with the current profile as its value", () => {
+    render(<SelectModel locked />);
+    const box = screen.getByTestId("combo-box");
+    expect(box.getAttribute("data-value")).toBe("GPT");
+  });
+
+  it("offers exactly the current profile, then a pinned separator and Effort", () => {
+    render(<SelectModel locked />);
+    expect(items().map((i) => i.text)).toEqual(["GPT"]);
+    expect(items()[0].checked).toBe(true);
+    expect(items()[0].id).toBe("p1");
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
+    expect(footer()[0].isSeparator).toBe(true);
+    expect(footer()[1].trailingText).toBe("ThinkingLevelMedium");
+  });
+
+  it("the profile row is inert — no switch, no host notification", () => {
+    const onSelect = vi.fn();
+    render(
+      <WidgetConfigProvider config={{ onProfilePickerSelect: onSelect }}>
+        <SelectModel locked />
+      </WidgetConfigProvider>
+    );
+    items()[0].onClick(new Event("click"));
+    expect(mockSetSessionChatProfile).not.toHaveBeenCalled();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("leaves the host actions out", () => {
+    const actions: ProfilePickerAction[] = [{ id: "a1", text: "Agent A" }];
+    render(
+      <WidgetConfigProvider config={{ profilePickerActions: actions }}>
+        <SelectModel locked />
+      </WidgetConfigProvider>
+    );
+    expect(items().map((i) => i.text)).toEqual(["GPT"]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
+  });
+
+  it("Effort still sets the level", () => {
+    render(<SelectModel locked />);
+    footer()[1].subMenu![0].onClick(new Event("click"));
+    expect(mockSetReasoningLevel).toHaveBeenCalledWith("off");
+  });
+
+  it("shows only the current profile for a model that cannot think", () => {
+    mockReasoningSupport = { thinks: false, canDisable: false, depths: [] };
+    render(<SelectModel locked />);
+    expect(items().map((i) => i.text)).toEqual(["GPT"]);
+    expect(footer()).toEqual([]);
+  });
+
+  it("drops the separator when there is no profile to sit above it", () => {
+    setupStores({ profiles: [], currentProfile: null });
+    render(<SelectModel locked />);
+    expect(items()).toEqual([]);
+    expect(footer().map((i) => i.text)).toEqual(["Effort"]);
+  });
+
+  it("wins over profilePickerReadOnly so Effort stays reachable", () => {
+    render(
+      <WidgetConfigProvider config={{ profilePickerReadOnly: true }}>
+        <SelectModel locked />
+      </WidgetConfigProvider>
+    );
+    expect(screen.queryByTestId("model-selector-readonly")).toBeNull();
+    expect(items().map((i) => i.text)).toEqual(["GPT"]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
   });
 });
