@@ -528,25 +528,41 @@ function hasRenderableContent(content: unknown): boolean {
   });
 }
 
-export const AssistantMessage = memo(() => {
-  const message = useMessage();
+/**
+ * Whether an assistant message renders to nothing at all.
+ *
+ * Two cases produce an empty assistant shell:
+ *   • a user-cancelled turn (stop pressed before any content streamed)
+ *     leaves an empty "incomplete" message; and
+ *   • the runtime's optimistic placeholder for an in-flight turn is an
+ *     empty "running" message — which would otherwise show an empty bubble
+ *     alongside our own "Analyzing" indicator.
+ * Error turns (reason === "error") still render so their banner shows even
+ * with no partial content.
+ *
+ * Exported because a message that renders nothing also mounts no
+ * `MessagePrimitive.Root`, and so none of the scroll machinery hung off it —
+ * `PendingTurnSlack` holds the turn's scroll room open for exactly as long as
+ * this is true.
+ */
+export function isEmptyAssistantMessage(message: {
+  content?: unknown;
+  status?: unknown;
+}): boolean {
   const status = message.status as
     | { type?: string; reason?: string }
     | undefined;
-
-  // Don't render an empty assistant shell. Two cases produce one:
-  //   • a user-cancelled turn (stop pressed before any content streamed)
-  //     leaves an empty "incomplete" message; and
-  //   • the runtime's optimistic placeholder for an in-flight turn is an
-  //     empty "running" message — which would otherwise show an empty bubble
-  //     alongside our own "Analyzing" indicator.
-  // Error turns (reason === "error") still render so their banner shows even
-  // with no partial content.
-  if (
+  return (
     !hasRenderableContent(message.content) &&
     ((status?.type === "incomplete" && status?.reason !== "error") ||
       status?.type === "running")
-  ) {
+  );
+}
+
+export const AssistantMessage = memo(() => {
+  const message = useMessage();
+
+  if (isEmptyAssistantMessage(message)) {
     return null;
   }
 
