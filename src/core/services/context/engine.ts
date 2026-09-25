@@ -38,4 +38,19 @@ export class ContextEngine {
     if (!storage.getRoomSkills) return [];
     return storage.getRoomSkills(cloud, roomId);
   }
+
+  /**
+   * One skill's body. `null` when the adapter does not implement
+   * `getRoomSkill` — the caller (the `read_skill` tool) turns that into a
+   * readable answer for the model rather than a thrown error.
+   */
+  async getRoomSkill(
+    cloud: string,
+    roomId: string,
+    skillId: string
+  ): Promise<string | null> {
+    const { storage } = this.deps;
+    if (!storage.getRoomSkill) return null;
+    return storage.getRoomSkill(cloud, roomId, skillId);
+  }
 }

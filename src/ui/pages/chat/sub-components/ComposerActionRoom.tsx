@@ -19,19 +19,11 @@ const ComposerActionRoom = () => {
   const selected = useCloudsStore((s) => s.selectedContextFolder);
   const roomSkills = useCloudsStore((s) => s.roomSkills);
   const disabledSkillIds = useCloudsStore((s) => s.disabledSkillIds);
-  const fetchRoomSkills = useCloudsStore((s) => s.fetchRoomSkills);
   const setSkillEnabled = useCloudsStore((s) => s.setSkillEnabled);
   const clearContextFolder = useCloudsStore((s) => s.clearContextFolder);
 
-  // Re-read whenever the connected room changes; the store resets the list
-  // on selection, so the menu never shows the previous room's skills.
-  const cloud = selected?.cloud;
-  const roomId = selected?.room.id;
-  React.useEffect(() => {
-    if (!cloud || !roomId) return;
-    void fetchRoomSkills();
-  }, [cloud, roomId, fetchRoomSkills]);
-
+  // The store reads the skills when the room is picked and resets the list
+  // on a switch, so the menu never shows the previous room's skills.
   if (!selected) return null;
 
   const items: DropDownItemProps[] = roomSkills.map((skill) => ({

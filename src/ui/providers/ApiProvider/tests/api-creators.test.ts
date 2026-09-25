@@ -90,8 +90,14 @@ describe("createContextApi", () => {
     const api = createContextApi(config, engines);
     api.getContextFolders();
     api.getRoomSkills("nct2.onlyoffice.com", "r1");
+    api.getRoomSkill("nct2.onlyoffice.com", "r1", "s1");
     expectCall(1, "context", "getContextFolders", []);
     expectCall(2, "context", "getRoomSkills", ["nct2.onlyoffice.com", "r1"]);
+    expectCall(3, "context", "getRoomSkill", [
+      "nct2.onlyoffice.com",
+      "r1",
+      "s1",
+    ]);
   });
 });
 

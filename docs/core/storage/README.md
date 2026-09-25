@@ -24,7 +24,8 @@ StorageAdapter
 ├── webSearch      web-search provider config (singleton)
 ├── attachments    user-message attachments (files + images, ref-only persistence)
 ├── getContextFolders()  optional — rooms grouped by cloud for the composer's context picker
-├── getRoomSkills()      optional — skills of a connected room, one switch each
+├── getRoomSkills()      optional — skills of a connected room (frontmatter), one switch each
+├── getRoomSkill()       optional — one skill's body, read when the model calls read_skill
 └── lifecycle      init() / close()
 ```
 

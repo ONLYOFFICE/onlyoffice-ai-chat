@@ -34,7 +34,8 @@ interface StorageAdapter {
   attachments: AttachmentsStorage;
 
   getContextFolders?(): Promise<ContextFolder[]>; // optional — composer context picker
-  getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>; // optional — skills of the connected room
+  getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>; // optional — skills of the connected room (frontmatter)
+  getRoomSkill?(cloud: string, roomId: string, skillId: string): Promise<string>; // optional — one skill's body, on demand
 
   init(): Promise<void>;   // open DB, run migrations
   close(): Promise<void>;  // flush + release resources
@@ -65,24 +66,40 @@ both membership and order.
 A host without rooms simply omits the method — the menu then shows
 no cloud rows at all.
 
-### `getRoomSkills` (optional)
+### `getRoomSkills` / `getRoomSkill` (optional)
 
 > Source: [`context-folders.ts`](../../../src/core/storage/context-folders.ts)
 
 ```ts
-type RoomSkill = { id: string; name: string };
+type RoomSkill = { id: string; name: string; description: string };
 
 getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>;
+getRoomSkill?(cloud: string, roomId: string, skillId: string): Promise<string>;
 ```
 
-Lists the skills configured in one room — the `cloud` and room `id`
-are exactly what `getContextFolders` returned. Read once the user
-connects that room as context; the composer then shows a menu under
-the room's name with one switch per skill (all on by default, toggled
-for the session only) and a "Disconnect room" entry. Omit the method
-when rooms carry no skills; the menu then only offers disconnecting.
+A skill is an Agent Skills Markdown file in the room: frontmatter with
+`name` and `description`, then the instructions. The two reads split the
+file the way the model consumes it:
 
----
+- `getRoomSkills` returns the frontmatter of every skill in the room —
+  never the bodies. The `cloud` and room `id` are exactly what
+  `getContextFolders` returned. It is read once, when the room is
+  connected (the composer lists each skill with a switch under the room's
+  name), and the list then travels with every round. An edit in the room
+  is picked up when the room is reconnected, or when the host calls the
+  clouds store's `fetchRoomSkills` itself. The enabled skills go into the
+  model's system prompt as a *skill index*: one entry per skill with its
+  id, name and description.
+- `getRoomSkill` returns one skill's body. It is called only when the
+  model asks for that skill through the built-in `read_skill` tool, so a
+  room with many skills costs the context window one index entry each,
+  not every body on every turn. Return the Markdown after the frontmatter
+  or the whole file — the model reads it as text either way.
+
+Both are optional. Without `getRoomSkills` a connected room lists no
+skills and the model sees no index; without `getRoomSkill` the index is
+still shown but `read_skill` answers that the skill cannot be read on
+this host.
 
 ## Entity scoping (`entityId`)
 

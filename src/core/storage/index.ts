@@ -1,7 +1,12 @@
 export type { StorageAdapter } from "./adapter";
 export type { AssignmentsStorage } from "./assignments";
 export type { Attachment, AttachmentsStorage } from "./attachments";
-export type { ContextFolder, ContextRoom, RoomSkill } from "./context-folders";
+export type {
+  ContextFolder,
+  ContextRoom,
+  ContextRoomRef,
+  RoomSkill,
+} from "./context-folders";
 export type { McpServerConfig, McpServersStorage } from "./mcp-servers";
 export type { MessagesStorage } from "./messages";
 export {

@@ -30,7 +30,8 @@ adapter itself, and the optional
 [`getContextFolders()`](./context-folders.ts) read that feeds the
 composer's settings menu with rooms grouped by cloud account, and
 [`getRoomSkills()`](./context-folders.ts) that lists a connected
-room's skills.
+room's skills (frontmatter only) plus `getRoomSkill()` that serves one
+skill's body to the model's `read_skill` tool.
 
 ## Entity scoping (`entityId`)
 

@@ -16,6 +16,14 @@ vi.mock("../../../core/services/ai/tool-call", () => ({
 }));
 
 const stores = {
+  cloudsState: {
+    selectedContextFolder: null as {
+      cloud: string;
+      room: { id: string; name: string };
+    } | null,
+    roomSkills: [] as { id: string; name: string; description: string }[],
+    disabledSkillIds: [] as string[],
+  },
   messageState: {
     messages: [] as unknown[],
     isStreamRunning: false,
@@ -151,6 +159,8 @@ vi.mock("../../store/context", () => ({
     useProfilesStore: (
       selector?: (s: typeof stores.profilesState) => unknown
     ) => (selector ? selector(stores.profilesState) : stores.profilesState),
+    useCloudsStore: (selector?: (s: typeof stores.cloudsState) => unknown) =>
+      selector ? selector(stores.cloudsState) : stores.cloudsState,
     api: { ai: apiAi, attachments: apiAttachments },
     callbacksManager,
     middlewareRunner,
@@ -179,6 +189,9 @@ beforeEach(() => {
   stores.messageState.messages = [];
   stores.messageState.hasMoreOlderMessages = false;
   stores.messageState._currentThreadId = "";
+  stores.cloudsState.selectedContextFolder = null;
+  stores.cloudsState.roomSkills = [];
+  stores.cloudsState.disabledSkillIds = [];
   stores.messageState._abortController = undefined;
   stores.threadsState.threadId = "";
   stores.threadsState.threads = [];
@@ -283,6 +296,53 @@ describe("useMessages.onNew", () => {
       "onStreamEnd",
       expect.any(Object)
     );
+  });
+
+  it("sends the connected room along with the user message", async () => {
+    stores.cloudsState.selectedContextFolder = {
+      cloud: "nct2.onlyoffice.com",
+      room: { id: "r1", name: "Vacations" },
+    };
+    stores.profilesState.chatProfile = profile;
+    apiAi.sendWithStream.mockReturnValue(
+      arr([
+        {
+          type: "message-start",
+          message: { role: "assistant", content: "hi" },
+          messageId: "m1",
+        },
+        {
+          type: "message-end",
+          message: { role: "assistant", content: "ok" },
+          messageId: "m1",
+        },
+      ])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hello" }],
+      } as never);
+    });
+    expect(stores.messageState.addMessage).toHaveBeenCalled();
+    expect(callbacksManager.emit).toHaveBeenCalledWith(
+      "onMessageSent",
+      expect.any(Object)
+    );
+    expect(callbacksManager.emit).toHaveBeenCalledWith(
+      "onStreamStart",
+      expect.any(Object)
+    );
+    expect(callbacksManager.emit).toHaveBeenCalledWith(
+      "onStreamEnd",
+      expect.any(Object)
+    );
+    expect(
+      apiAi.sendWithStream.mock.calls[0][0].actionArgs.contextRoom
+    ).toEqual({ cloud: "nct2.onlyoffice.com", id: "r1", skills: [] });
+    expect(
+      apiAi.sendWithStream.mock.calls[0][0].contextEntityId
+    ).toBeUndefined();
   });
 
   it("renders the user message optimistically before the stream yields", async () => {
@@ -1505,6 +1565,107 @@ describe("useMessages.regenerate", () => {
     expect(arg.actionArgs.isReasoning).toBe(true);
     expect(arg.actionArgs.reasoningLevel).toBe("high");
     expect(arg.actionArgs.tools).toEqual([{ name: "foo" }]);
+    // No room connected: the field is absent, not an empty object.
+    expect(arg.actionArgs.contextRoom).toBeUndefined();
+  });
+
+  it("names the connected room and ships its enabled skills in actionArgs", async () => {
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.cloudsState.selectedContextFolder = {
+      cloud: "nct2.onlyoffice.com",
+      room: { id: "r1", name: "Vacations" },
+    };
+    stores.cloudsState.roomSkills = [
+      { id: "s1", name: "Summaries", description: "How to summarise." },
+      { id: "s2", name: "Emails", description: "House style." },
+    ];
+    stores.cloudsState.disabledSkillIds = ["s2"];
+    stores.messageState.messages = [
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
+    ];
+    apiAi.regenerateStream.mockReturnValue(arr([]));
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate("u1");
+    });
+
+    const arg = apiAi.regenerateStream.mock.calls[0][0];
+    expect(arg.actionArgs.contextRoom).toEqual({
+      cloud: "nct2.onlyoffice.com",
+      id: "r1",
+      skills: [
+        { id: "s1", name: "Summaries", description: "How to summarise." },
+      ],
+    });
+    // Without the host's opt-in the room only contributes its skills; the
+    // round keeps the configured scope so local tool prefs stay reachable.
+    expect(arg.contextEntityId).toBeUndefined();
+  });
+
+  it("scopes the round to the host's contextEntityId while no room is connected", async () => {
+    widgetConfig.contextEntityId = "agent-ctx";
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.messageState.messages = [
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
+    ];
+    apiAi.regenerateStream.mockReturnValue(arr([]));
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate("u1");
+    });
+
+    expect(apiAi.regenerateStream.mock.calls[0][0].contextEntityId).toBe(
+      "agent-ctx"
+    );
+  });
+
+  it("with contextRoomScopesRounds but no room the configured scope stays", async () => {
+    widgetConfig.contextEntityId = "agent-ctx";
+    widgetConfig.contextRoomScopesRounds = true;
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.messageState.messages = [
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
+    ];
+    apiAi.regenerateStream.mockReturnValue(arr([]));
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate("u1");
+    });
+
+    expect(apiAi.regenerateStream.mock.calls[0][0].contextEntityId).toBe(
+      "agent-ctx"
+    );
+  });
+
+  it("with contextRoomScopesRounds the connected room becomes the round's scope", async () => {
+    widgetConfig.contextEntityId = "agent-ctx";
+    widgetConfig.contextRoomScopesRounds = true;
+    stores.profilesState.chatProfile = profile;
+    stores.threadsState.threadId = "t1";
+    stores.cloudsState.selectedContextFolder = {
+      cloud: "nct2.onlyoffice.com",
+      room: { id: "r1", name: "Vacations" },
+    };
+    stores.messageState.messages = [
+      { id: "u1", role: "user", content: [{ type: "text", text: "hi" }] },
+    ];
+    apiAi.regenerateStream.mockReturnValue(arr([]));
+
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.regenerate("u1");
+    });
+
+    const arg = apiAi.regenerateStream.mock.calls[0][0];
+    expect(arg.contextEntityId).toBe("r1");
+    // The thread itself stays where the user is.
+    expect(arg.entityId).toBe(widgetConfig.entityId);
   });
 });
 

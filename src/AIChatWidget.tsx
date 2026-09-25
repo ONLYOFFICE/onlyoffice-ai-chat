@@ -115,8 +115,10 @@ export interface AIChatWidgetProps {
   hiddenWebSearchProviders?: WebSearchProviderId[];
   /**
    * Controls the composer's model (profile) picker. An explicit `true` /
-   * `false` always wins; omitted falls back to hiding the picker only when
-   * `entityId` is set. See {@link WidgetConfig.hideProfilePicker}.
+   * `false` always wins; omitted falls back to locking the picker only when
+   * `entityId` is set. A locked picker stays on screen with just the
+   * current profile and the Effort row. See
+   * {@link WidgetConfig.hideProfilePicker}.
    */
   hideProfilePicker?: boolean;
   /**

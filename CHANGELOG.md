@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **A DocSpace room can be connected to the chat as context.** A new cog in the composer's bottom row lists the host's cloud accounts (one row each, the ONLYOFFICE icon) and their rooms one level down; picking a room connects it at once, and a room button next to the cog shows it, with a *Disconnect room* entry. The widget knows nothing about rooms itself: three optional `StorageAdapter` methods supply everything, and a host without them sees no cog at all.
+
+  ```ts
+  getContextFolders?(): Promise<{ cloud: string; rooms: { id: string; name: string }[] }[]>;
+  getRoomSkills?(cloud, roomId): Promise<{ id: string; name: string; description: string }[]>;
+  getRoomSkill?(cloud, roomId, skillId): Promise<string>;
+  ```
+
+  The reads go through a new `ContextEngine` and the `context` service of the API bridge (`DEFAULT_CONTEXT_ROUTES`), so they work in server mode too, where the browser holds a stub adapter and the real one answers over HTTP. The clouds store exposes `fetchContextFolders`, `fetchRoomSkills` and `clearContextFolder` for a host whose clouds change at runtime; the widget itself never polls.
+
+- **Skills of the connected room.** A skill is an Agent Skills Markdown file: frontmatter with `name` and `description`, then the instructions. The room button lists each skill with a switch. The enabled skills' names and descriptions go into the system prompt as a *skill index*, and the model reads a skill's body only when it needs it, through the built-in `read_skill` tool — so a room with many skills costs one index line each, not every body on every turn. The list is read once when the room is connected and travels with every round (`ActionArgs.contextRoom`); only `read_skill` reaches the host, and only on demand. Room-provided text is data, not authority: the index is framed as a catalogue, ids and names are escaped rather than rewritten, hidden (control, zero-width, bidi) characters are stripped, and a body is capped at 64 KB.
+
+- **`WidgetConfig.contextRoomScopesRounds`.** Off by default: a connected room contributes its skills and nothing else, so on the desktop editors, whose rooms live in remote clouds, the room id never points local storage at a scope it has never heard of. DocSpace turns it on and the room's id becomes the round's `contextEntityId` while connected — its tools, allow-always preferences, assignment fallback and the host's per-scope agent instruction — while the thread stays under `entityId`.
+
+- **`DropdownMenu` and `ComboBox` take `footerItems`.** Rows pinned below the list: the items scroll inside the menu's height cap, the footer stays in view. Root level only; in drill-down mode a drilled-in level replaces the whole menu.
+
+### Changed
+
+- **Effort lives in the model picker.** The reasoning depth applies to the model it is picked for, so the *Effort* row now sits at the foot of the profile picker, under a separator, pinned so it stays visible however many profiles there are. Web search is back in the paperclip menu, where it was.
+
+- **`hideProfilePicker: true` locks the picker instead of removing it.** The picker also carries the Effort row, which has nowhere else to live, so it now stays on screen with a menu of exactly three rows: the current profile as an inert checked row, a separator, Effort. No other profiles, no `profilePickerActions`. The same applies to the `entityId` default. `profilePickerReadOnly` still renders the static label, unless an explicit `hideProfilePicker: true` locks the picker instead — the label would leave Effort unreachable. A host that set the flag to clear the model out of the composer will now see the locked picker.
+
+### Removed
+
+- The old composer *Servers* menu (`ComposerActionServers`), unused since the tool switches moved to the settings pages.
+
 ## 0.5.118
 
 ### Fixed

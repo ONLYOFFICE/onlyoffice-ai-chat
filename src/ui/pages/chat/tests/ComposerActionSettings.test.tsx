@@ -1,54 +1,23 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import type { ContextFolder } from "../../../../core/storage";
-
-const mockChangeToolStatus = vi.fn();
-const mockSetReasoningLevel = vi.fn();
-const mockEmit = vi.fn();
 
 const mockFetchContextFolders = vi.fn();
 const mockSelectContextFolder = vi.fn();
 
-let mockWebSearchEnabled = false;
-let mockDisabledTools: Record<string, string[]> = {};
 let mockContextFolders: ContextFolder[] = [];
 let mockSelectedContextFolder: {
   cloud: string;
   room: { id: string; name: string };
 } | null = null;
-let mockReasoningLevel = "off";
-let mockReasoningSupport = {
-  thinks: true,
-  canDisable: true,
-  depths: ["low", "medium", "high", "max"],
-};
 
-vi.mock("../../../hooks/useReasoningSupport", () => ({
-  useReasoningSupport: () => mockReasoningSupport,
-}));
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
+vi.mock("../../../providers/LocalesProvider", () => ({
+  useI18n: () => ({ t: (k: string) => k }),
 }));
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: (selector?: (s: Record<string, unknown>) => unknown) => {
-      const state = {
-        changeToolStatus: mockChangeToolStatus,
-        webSearchEnabled: mockWebSearchEnabled,
-        disabledTools: mockDisabledTools,
-      };
-      return typeof selector === "function" ? selector(state) : state;
-    },
-    useProfilesStore: (selector?: (s: Record<string, unknown>) => unknown) => {
-      const state = {
-        reasoningLevel: mockReasoningLevel,
-        setReasoningLevel: mockSetReasoningLevel,
-      };
-      return typeof selector === "function" ? selector(state) : state;
-    },
     useCloudsStore: (selector?: (s: Record<string, unknown>) => unknown) => {
       const state = {
         contextFolders: mockContextFolders,
@@ -58,12 +27,6 @@ vi.mock("../../../store/context", () => ({
       };
       return typeof selector === "function" ? selector(state) : state;
     },
-  }),
-}));
-
-vi.mock("../../../tools/context", () => ({
-  useToolsContext: () => ({
-    eventBus: { emit: mockEmit },
   }),
 }));
 
@@ -126,39 +89,6 @@ vi.mock("../../../components/tooltip-icon-button", () => ({
   ),
 }));
 
-vi.mock("../sub-components/ConnectRoomDialog", () => ({
-  ConnectRoomDialog: ({
-    cloud,
-    room,
-    onConfirm,
-    onClose,
-  }: {
-    cloud: string;
-    room: { id: string; name: string };
-    onConfirm: () => void;
-    onClose: () => void;
-  }) => (
-    <div
-      data-testid="connect-room-dialog"
-      data-cloud={cloud}
-      data-room={room.id}
-    >
-      <button
-        data-testid="connect-room-confirm"
-        onClick={() => {
-          onConfirm();
-          onClose();
-        }}
-      >
-        connect
-      </button>
-      <button data-testid="connect-room-cancel" onClick={onClose}>
-        cancel
-      </button>
-    </div>
-  ),
-}));
-
 import { ComposerActionSettings } from "../sub-components/ComposerActionSettings";
 
 type MenuItem = {
@@ -180,28 +110,21 @@ type MenuItem = {
 const items = () => mockDropdownItems as MenuItem[];
 const cloudRows = () =>
   items().filter((i) => i.id?.startsWith("context-cloud:"));
-const webSearchItem = () => items().find((i) => i.text === "WebSearch");
-const effortItem = () => items().find((i) => i.text === "Effort");
 
 describe("ComposerActionSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockWebSearchEnabled = false;
-    mockDisabledTools = {};
     mockContextFolders = [];
     mockSelectedContextFolder = null;
-    mockReasoningLevel = "off";
-    mockReasoningSupport = {
-      thinks: true,
-      canDisable: true,
-      depths: ["low", "medium", "high", "max"],
-    };
     mockDropdownItems = [];
     mockOnOpenChange = undefined;
     mockDropdownOpen = undefined;
   });
 
   it("renders the settings cog with the Settings tooltip", () => {
+    mockContextFolders = [
+      { cloud: "a.example.com", rooms: [{ id: "r1", name: "Room 1" }] },
+    ];
     render(<ComposerActionSettings />);
     expect(screen.getByTestId("dropdown-menu")).toBeInTheDocument();
     const button = screen.getByTestId("composer-settings-button");
@@ -218,15 +141,14 @@ describe("ComposerActionSettings", () => {
     expect(mockFetchContextFolders).toHaveBeenCalledTimes(1);
   });
 
-  it("lists only web search and effort while no clouds came back", () => {
-    render(<ComposerActionSettings />);
-    expect(items().map((i) => i.text)).toEqual(["WebSearch", "Effort"]);
-    expect(items().find((i) => i.isSeparator)).toBeUndefined();
+  it("renders nothing at all while no clouds came back", () => {
+    const { container } = render(<ComposerActionSettings />);
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it("adds the cloud rows once the folders arrive, without fetching again", () => {
+  it("appears once the folders arrive, without fetching again", () => {
     const { rerender } = render(<ComposerActionSettings />);
-    expect(items().map((i) => i.text)).toEqual(["WebSearch", "Effort"]);
+    expect(screen.queryByTestId("dropdown-menu")).toBeNull();
     mockContextFolders = [
       { cloud: "a.example.com", rooms: [{ id: "r1", name: "Room 1" }] },
     ];
@@ -235,7 +157,7 @@ describe("ComposerActionSettings", () => {
     expect(mockFetchContextFolders).toHaveBeenCalledTimes(1);
   });
 
-  it("drops the cloud rows again when the folders go away", () => {
+  it("disappears again when the folders go away", () => {
     mockContextFolders = [
       { cloud: "a.example.com", rooms: [{ id: "r1", name: "Room 1" }] },
     ];
@@ -243,7 +165,7 @@ describe("ComposerActionSettings", () => {
     expect(items()[0].id).toBe("context-cloud:a.example.com");
     mockContextFolders = [];
     rerender(<ComposerActionSettings />);
-    expect(items().map((i) => i.text)).toEqual(["WebSearch", "Effort"]);
+    expect(screen.queryByTestId("dropdown-menu")).toBeNull();
   });
 
   describe("with context folders", () => {
@@ -260,16 +182,13 @@ describe("ComposerActionSettings", () => {
       ];
     });
 
-    it("puts one row per cloud at the root, separated from the switches", () => {
+    it("lists exactly one row per cloud, nothing else", () => {
       render(<ComposerActionSettings />);
       expect(items().map((i) => i.text)).toEqual([
         "a.example.com",
         "b.example.com",
-        "",
-        "WebSearch",
-        "Effort",
       ]);
-      expect(items()[2].isSeparator).toBe(true);
+      expect(items().find((i) => i.isSeparator)).toBeUndefined();
     });
 
     it("cloud rows carry the ONLYOFFICE icon and open one level of rooms", () => {
@@ -315,19 +234,19 @@ describe("ComposerActionSettings", () => {
       }
     });
 
-    it("clicking a room asks for confirmation instead of selecting", () => {
+    it("clicking a room stores it with its cloud right away", () => {
       render(<ComposerActionSettings />);
-      expect(screen.queryByTestId("connect-room-dialog")).toBeNull();
       act(() => {
         cloudRows()[1].subMenu![0].onClick!();
       });
-      const dialog = screen.getByTestId("connect-room-dialog");
-      expect(dialog.getAttribute("data-cloud")).toBe("b.example.com");
-      expect(dialog.getAttribute("data-room")).toBe("r3");
-      expect(mockSelectContextFolder).not.toHaveBeenCalled();
+      expect(mockSelectContextFolder).toHaveBeenCalledTimes(1);
+      expect(mockSelectContextFolder).toHaveBeenCalledWith("b.example.com", {
+        id: "r3",
+        name: "Room 3",
+      });
     });
 
-    it("closes the menu when the dialog opens", () => {
+    it("closes the menu on a room pick", () => {
       render(<ComposerActionSettings />);
       act(() => {
         mockOnOpenChange!(true);
@@ -339,51 +258,13 @@ describe("ComposerActionSettings", () => {
       expect(mockDropdownOpen).toBe(false);
     });
 
-    it("Connect stores the room with its cloud and dismisses the dialog", () => {
-      render(<ComposerActionSettings />);
-      act(() => {
-        cloudRows()[1].subMenu![0].onClick!();
-      });
-      fireEvent.click(screen.getByTestId("connect-room-confirm"));
-      expect(mockSelectContextFolder).toHaveBeenCalledTimes(1);
-      expect(mockSelectContextFolder).toHaveBeenCalledWith("b.example.com", {
-        id: "r3",
-        name: "Room 3",
-      });
-      expect(screen.queryByTestId("connect-room-dialog")).toBeNull();
-    });
-
-    it("Connect passes the room object through untouched", () => {
+    it("passes the room object through untouched", () => {
       render(<ComposerActionSettings />);
       act(() => {
         cloudRows()[0].subMenu![1].onClick!();
       });
-      fireEvent.click(screen.getByTestId("connect-room-confirm"));
       const [, room] = mockSelectContextFolder.mock.calls[0];
       expect(room).toBe(mockContextFolders[0].rooms[1]);
-    });
-
-    it("Cancel dismisses the dialog without selecting", () => {
-      render(<ComposerActionSettings />);
-      act(() => {
-        cloudRows()[0].subMenu![0].onClick!();
-      });
-      fireEvent.click(screen.getByTestId("connect-room-cancel"));
-      expect(mockSelectContextFolder).not.toHaveBeenCalled();
-      expect(screen.queryByTestId("connect-room-dialog")).toBeNull();
-    });
-
-    it("picking another room replaces the pending one", () => {
-      render(<ComposerActionSettings />);
-      act(() => {
-        cloudRows()[0].subMenu![0].onClick!();
-      });
-      act(() => {
-        cloudRows()[1].subMenu![0].onClick!();
-      });
-      expect(
-        screen.getByTestId("connect-room-dialog").getAttribute("data-room")
-      ).toBe("r3");
     });
 
     it("marks the selected room, matching on cloud and room id", () => {
@@ -425,89 +306,10 @@ describe("ComposerActionSettings", () => {
   });
 
   it("provides onOpenChange to the dropdown", () => {
+    mockContextFolders = [
+      { cloud: "a.example.com", rooms: [{ id: "r1", name: "Room 1" }] },
+    ];
     render(<ComposerActionSettings />);
     expect(mockOnOpenChange).toBeDefined();
-  });
-
-  describe("web search toggle", () => {
-    it("is disabled with a hint while web search is not configured", () => {
-      render(<ComposerActionSettings />);
-      expect(webSearchItem()?.withToggle).toBe(true);
-      expect(webSearchItem()?.toggleChecked).toBe(false);
-      expect(webSearchItem()?.toggleDisabled).toBe(true);
-      expect(webSearchItem()?.tooltipText).toBe("EnableWebSearch");
-    });
-
-    it("is on when configured and no web-search tool is disabled", () => {
-      mockWebSearchEnabled = true;
-      render(<ComposerActionSettings />);
-      expect(webSearchItem()?.toggleChecked).toBe(true);
-      expect(webSearchItem()?.toggleDisabled).toBe(false);
-      expect(webSearchItem()?.tooltipText).toBe("");
-    });
-
-    it("flips both tools off in one write and emits tools-changed", async () => {
-      mockWebSearchEnabled = true;
-      render(<ComposerActionSettings />);
-      await webSearchItem()!.onToggleChange!();
-      expect(mockChangeToolStatus).toHaveBeenCalledTimes(1);
-      expect(mockChangeToolStatus).toHaveBeenCalledWith(
-        "web-search",
-        ["web_search", "web_crawling"],
-        false
-      );
-      expect(mockEmit).toHaveBeenCalledWith("tools-changed");
-    });
-
-    it("flips both tools on when all are disabled", async () => {
-      mockWebSearchEnabled = true;
-      mockDisabledTools = { "web-search": ["web_search", "web_crawling"] };
-      render(<ComposerActionSettings />);
-      expect(webSearchItem()?.toggleChecked).toBe(false);
-      await webSearchItem()!.onToggleChange!();
-      expect(mockChangeToolStatus).toHaveBeenCalledWith(
-        "web-search",
-        ["web_search", "web_crawling"],
-        true
-      );
-    });
-
-    it("does nothing when web search is not configured", async () => {
-      render(<ComposerActionSettings />);
-      await webSearchItem()!.onToggleChange!();
-      expect(mockChangeToolStatus).not.toHaveBeenCalled();
-      expect(mockEmit).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("effort item", () => {
-    it("shows the current depth with a picker", () => {
-      mockReasoningLevel = "medium";
-      render(<ComposerActionSettings />);
-      expect(effortItem()?.trailingText).toBe("ThinkingLevelMedium");
-      expect(effortItem()?.subMenu?.map((i) => i.text)).toEqual([
-        "NoThinking",
-        "ThinkingLevelLow",
-        "ThinkingLevelMedium",
-        "ThinkingLevelHigh",
-        "ThinkingLevelMax",
-      ]);
-      expect(effortItem()?.subMenu?.find((i) => i.checked)?.text).toBe(
-        "ThinkingLevelMedium"
-      );
-    });
-
-    it("sets the picked level", () => {
-      render(<ComposerActionSettings />);
-      effortItem()!.subMenu![3].onClick!();
-      expect(mockSetReasoningLevel).toHaveBeenCalledWith("high");
-    });
-
-    it("omits the row for a model that cannot think", () => {
-      mockReasoningSupport = { thinks: false, canDisable: false, depths: [] };
-      render(<ComposerActionSettings />);
-      expect(effortItem()).toBeUndefined();
-      expect(items().map((i) => i.text)).toEqual(["WebSearch"]);
-    });
   });
 });

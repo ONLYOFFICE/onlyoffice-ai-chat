@@ -95,13 +95,31 @@ export interface StorageAdapter {
 
   /**
    * List the skills configured in one room, identified by the `cloud` and
-   * room `id` a {@link ContextFolder} carried. Read once a room is connected
-   * as context; the composer shows each skill with its own switch.
+   * room `id` a {@link ContextFolder} carried — frontmatter only (`name`,
+   * `description`), never the bodies. Read once a room is connected as
+   * context, and again before every round: the composer shows each skill
+   * with its own switch, and the model gets the enabled ones as an index
+   * in its system prompt.
    *
    * Optional, like `getContextFolders`: without it a connected room simply
    * lists no skills.
    */
   getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>;
+
+  /**
+   * The body of one skill — the Markdown after the frontmatter, or the
+   * whole file; the model reads it as text either way. Called only when the
+   * model asks for that skill through the built-in `read_skill` tool, so a
+   * room with many skills costs the context window one index line each,
+   * not every body on every turn.
+   *
+   * Optional; without it the tool answers that the skill cannot be read.
+   */
+  getRoomSkill?(
+    cloud: string,
+    roomId: string,
+    skillId: string
+  ): Promise<string>;
 
   /**
    * Initialize the storage backend (create DB/tables, run migrations).

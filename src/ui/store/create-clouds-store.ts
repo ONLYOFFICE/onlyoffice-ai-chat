@@ -31,18 +31,20 @@ export interface CloudsStoreState {
    */
   selectedContextFolder: SelectedContextFolder | null;
   /**
-   * Pick a room. Re-picking the connected room is a no-op — its skills and
-   * switches survive, since the room button only re-reads skills when the
-   * room *changes*. A different room starts the skill list over: the host
-   * is the source of truth for it, so a fresh `fetchRoomSkills` follows.
+   * Pick a room and read its skills once. Re-picking the connected room is
+   * a no-op — its skills and switches survive. A different room starts the
+   * skill list over with a fresh `fetchRoomSkills`. A host that wants the
+   * list re-read later (the room changed on its side) calls
+   * `fetchRoomSkills` itself; nothing in the widget polls.
    */
   selectContextFolder: (cloud: string, room: ContextRoom) => void;
   clearContextFolder: () => void;
   /**
    * Skills of the connected room, as `StorageAdapter.getRoomSkills` last
-   * returned them (via `ContextEngine`). Empty while no room is connected,
-   * until fetched, when the host has no such method, or when the read
-   * failed.
+   * returned them (via `ContextEngine`). Read once when the room is picked
+   * and sent along with every round — the engine does not read them again.
+   * Empty while no room is connected, until fetched, when the host has no
+   * such method, or when the read failed.
    */
   roomSkills: RoomSkill[];
   fetchRoomSkills: () => Promise<void>;
@@ -131,6 +133,7 @@ export function createCloudsStore({
         roomSkills: [],
         disabledSkillIds: [],
       });
+      void get().fetchRoomSkills();
     },
     clearContextFolder: () => {
       set({
@@ -160,7 +163,12 @@ export function createCloudsStore({
         ) {
           return;
         }
-        set({ roomSkills: skills });
+        // A switch for a skill the host no longer lists has nothing to hold.
+        const ids = new Set(skills.map((skill) => skill.id));
+        set({
+          roomSkills: skills,
+          disabledSkillIds: get().disabledSkillIds.filter((id) => ids.has(id)),
+        });
       } catch (error) {
         logger.error("[clouds-store] getRoomSkills failed", error);
         set({ roomSkills: [] });

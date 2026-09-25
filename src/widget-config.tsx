@@ -38,8 +38,26 @@ export interface WidgetConfig {
    * room while the chat history stays where the user is. Forwarded on
    * send / regenerate / tool-call resume; omitted → requests behave as
    * before (everything scopes by `entityId`).
+   *
+   * A room the user connects as context from the composer overrides this
+   * while {@link WidgetConfig.contextRoomScopesRounds} is on.
    */
   contextEntityId?: string;
+  /**
+   * Let a room connected as context become the round's `contextEntityId`
+   * for as long as it is connected: its tools and execution scope,
+   * allow-always tool preferences and assignment fallback take over from
+   * the configured value, and a host that keys extra behaviour on the scope
+   * (DocSpace appends the room's agent instruction) sees the room. The
+   * thread stays under `entityId`; disconnecting restores the configured
+   * scope.
+   *
+   * Off by default: on a host whose rooms live in remote clouds (the
+   * desktop editors) the room id means nothing to the local storage, so
+   * scoping tool preferences or assignments by it would only hide them.
+   * There the room contributes its skills alone. DocSpace turns this on.
+   */
+  contextRoomScopesRounds?: boolean;
   /**
    * Global cursor-pagination switch (default `false`). When enabled:
    *
@@ -58,10 +76,15 @@ export interface WidgetConfig {
   /**
    * Controls the composer's model (profile) picker. Tri-state:
    *
-   * - `true` — always hidden.
-   * - `false` — always shown, even when {@link WidgetConfig.entityId} is set.
-   * - omitted — hidden when `entityId` is set (legacy heuristic for
-   *   entity chats with a host-fixed profile), shown otherwise.
+   * - `true` — always locked.
+   * - `false` — always open, even when {@link WidgetConfig.entityId} is set.
+   * - omitted — locked when `entityId` is set (legacy heuristic for
+   *   entity chats with a host-fixed profile), open otherwise.
+   *
+   * A locked picker is still rendered, because it also carries the
+   * reasoning "Effort" row: its menu holds the current profile as an inert
+   * checked row and, under a separator, Effort — no other profiles and no
+   * {@link WidgetConfig.profilePickerActions}.
    */
   hideProfilePicker?: boolean;
   /**
@@ -70,10 +93,10 @@ export interface WidgetConfig {
    * dropdown arrow) and cannot be changed from the UI. The profile is still
    * resolved from the profiles store, so hosts that fix the profile
    * programmatically can surface which model answers without letting the
-   * user switch it. Implies the picker area is visible, so the
-   * {@link WidgetConfig.entityId} default-hide heuristic does not apply;
-   * an explicit {@link WidgetConfig.hideProfilePicker} `true` still hides
-   * everything.
+   * user switch it. Disables the {@link WidgetConfig.entityId} default-lock
+   * heuristic; an explicit {@link WidgetConfig.hideProfilePicker} `true`
+   * still wins and shows the locked picker instead of the label, so the
+   * Effort row stays reachable.
    */
   profilePickerReadOnly?: boolean;
   /**
@@ -235,7 +258,7 @@ export interface WidgetConfig {
    * rendered after a separator below the profile list. Each entry is either
    * an onClick item or, when `items` is set, a row opening a nested submenu
    * (presented per {@link WidgetConfig.dropdownNavigation}). Not rendered
-   * when the picker itself is hidden — see
+   * while the picker is locked — see
    * {@link WidgetConfig.hideProfilePicker}.
    */
   profilePickerActions?: ProfilePickerAction[];

@@ -14,10 +14,6 @@ const mockSelectContextFolder = vi.fn();
 
 let mockContextFolders: ContextFolder[] = [];
 
-vi.mock("../../../hooks/useReasoningSupport", () => ({
-  useReasoningSupport: () => ({ thinks: false, canDisable: false, depths: [] }),
-}));
-
 vi.mock("../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
@@ -28,18 +24,6 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
-    useServersStore: (selector?: (s: Record<string, unknown>) => unknown) => {
-      const state = {
-        changeToolStatus: vi.fn(),
-        webSearchEnabled: false,
-        disabledTools: {},
-      };
-      return typeof selector === "function" ? selector(state) : state;
-    },
-    useProfilesStore: (selector?: (s: Record<string, unknown>) => unknown) => {
-      const state = { reasoningLevel: "off", setReasoningLevel: vi.fn() };
-      return typeof selector === "function" ? selector(state) : state;
-    },
     useCloudsStore: (selector?: (s: Record<string, unknown>) => unknown) => {
       const state = {
         contextFolders: mockContextFolders,
@@ -52,10 +36,6 @@ vi.mock("../../../store/context", () => ({
   }),
 }));
 
-vi.mock("../../../tools/context", () => ({
-  useToolsContext: () => ({ eventBus: { emit: vi.fn() } }),
-}));
-
 vi.mock("../../../components/icon-button", () => ({
   IconButton: (props: Record<string, unknown>) => (
     <span
@@ -65,36 +45,6 @@ vi.mock("../../../components/icon-button", () => ({
     >
       {props.iconName as string}
     </span>
-  ),
-}));
-
-vi.mock("../sub-components/ConnectRoomDialog", () => ({
-  ConnectRoomDialog: ({
-    cloud,
-    room,
-    onConfirm,
-    onClose,
-  }: {
-    cloud: string;
-    room: { id: string; name: string };
-    onConfirm: () => void;
-    onClose: () => void;
-  }) => (
-    <div
-      data-testid="connect-room-dialog"
-      data-cloud={cloud}
-      data-room={room.id}
-    >
-      <button
-        data-testid="connect-room-confirm"
-        onClick={() => {
-          onConfirm();
-          onClose();
-        }}
-      >
-        connect
-      </button>
-    </div>
   ),
 }));
 
@@ -172,10 +122,10 @@ describe("ComposerActionSettings drill-down", () => {
     ];
   });
 
-  it("lists the clouds at the root, above the switches", () => {
+  it("lists the clouds at the root and nothing else", () => {
     render(<ComposerActionSettings />);
-    expect(rowTexts()).toEqual(["a.example.com", "b.example.com", "WebSearch"]);
-    expect(screen.getByTestId("separator")).toBeInTheDocument();
+    expect(rowTexts()).toEqual(["a.example.com", "b.example.com"]);
+    expect(screen.queryByTestId("separator")).toBeNull();
     expect(screen.queryByText("Room 1")).not.toBeInTheDocument();
   });
 
@@ -183,30 +133,17 @@ describe("ComposerActionSettings drill-down", () => {
     render(<ComposerActionSettings />);
     fireEvent.click(screen.getByTestId("drill-a.example.com"));
     expect(rowTexts()).toEqual(["Room 1", "Room 2"]);
-    expect(screen.queryByText("WebSearch")).not.toBeInTheDocument();
     expect(screen.queryByText("Room 3")).not.toBeInTheDocument();
   });
 
-  it("a room click opens the confirmation for that room and cloud", () => {
+  it("a room click stores the room with its cloud", () => {
     render(<ComposerActionSettings />);
     fireEvent.click(screen.getByTestId("drill-b.example.com"));
     fireEvent.click(screen.getByTestId("click-Room 3"));
-    const dialog = screen.getByTestId("connect-room-dialog");
-    expect(dialog.getAttribute("data-cloud")).toBe("b.example.com");
-    expect(dialog.getAttribute("data-room")).toBe("r3");
-    expect(mockSelectContextFolder).not.toHaveBeenCalled();
-  });
-
-  it("confirming stores the room with its cloud", () => {
-    render(<ComposerActionSettings />);
-    fireEvent.click(screen.getByTestId("drill-b.example.com"));
-    fireEvent.click(screen.getByTestId("click-Room 3"));
-    fireEvent.click(screen.getByTestId("connect-room-confirm"));
     expect(mockSelectContextFolder).toHaveBeenCalledWith("b.example.com", {
       id: "r3",
       name: "Room 3",
     });
-    expect(screen.queryByTestId("connect-room-dialog")).toBeNull();
   });
 
   it("walks back up to the root with ArrowLeft", () => {
@@ -217,13 +154,12 @@ describe("ComposerActionSettings drill-down", () => {
       .closest("[data-orientation='vertical']");
     expect(content).not.toBeNull();
     fireEvent.keyDown(content as Element, { key: "ArrowLeft" });
-    expect(rowTexts()).toEqual(["a.example.com", "b.example.com", "WebSearch"]);
+    expect(rowTexts()).toEqual(["a.example.com", "b.example.com"]);
   });
 
-  it("has no cloud rows at all without clouds", () => {
+  it("renders nothing without clouds", () => {
     mockContextFolders = [];
-    render(<ComposerActionSettings />);
-    expect(rowTexts()).toEqual(["WebSearch"]);
-    expect(screen.queryByTestId("separator")).not.toBeInTheDocument();
+    const { container } = render(<ComposerActionSettings />);
+    expect(container).toBeEmptyDOMElement();
   });
 });

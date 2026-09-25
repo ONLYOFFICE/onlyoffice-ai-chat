@@ -12,8 +12,8 @@ let mockSelected: { cloud: string; room: { id: string; name: string } } | null =
 let mockRoomSkills: RoomSkill[] = [];
 let mockDisabledSkillIds: string[] = [];
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
+vi.mock("../../../providers/LocalesProvider", () => ({
+  useI18n: () => ({ t: (k: string) => k }),
 }));
 
 vi.mock("../../../store/context", () => ({
@@ -94,10 +94,9 @@ describe("ComposerActionRoom", () => {
     mockOnOpenChange = undefined;
   });
 
-  it("renders nothing and fetches nothing while no room is connected", () => {
+  it("renders nothing while no room is connected", () => {
     const { container } = render(<ComposerActionRoom />);
     expect(container).toBeEmptyDOMElement();
-    expect(mockFetchRoomSkills).not.toHaveBeenCalled();
   });
 
   describe("with a connected room", () => {
@@ -107,9 +106,9 @@ describe("ComposerActionRoom", () => {
         room: { id: "r1", name: "Vacations" },
       };
       mockRoomSkills = [
-        { id: "s1", name: "Skill 1" },
-        { id: "s1b", name: "Skill 1" },
-        { id: "s2", name: "Skill 2" },
+        { id: "s1", name: "Skill 1", description: "" },
+        { id: "s1b", name: "Skill 1", description: "" },
+        { id: "s2", name: "Skill 2", description: "" },
       ];
     });
 
@@ -121,29 +120,17 @@ describe("ComposerActionRoom", () => {
       expect(screen.getByTestId("icon-btn-arrow")).toBeInTheDocument();
     });
 
-    it("reads the room's skills on mount, once", () => {
-      render(<ComposerActionRoom />);
-      expect(mockFetchRoomSkills).toHaveBeenCalledTimes(1);
-    });
-
-    it("re-reads when a different room gets connected", () => {
+    it("never reads the skills itself — the store does that on the pick", () => {
       const { rerender } = render(<ComposerActionRoom />);
       mockSelected = {
         cloud: "nct2.onlyoffice.com",
         room: { id: "r2", name: "Roadmaps" },
       };
       rerender(<ComposerActionRoom />);
-      expect(mockFetchRoomSkills).toHaveBeenCalledTimes(2);
+      expect(mockFetchRoomSkills).not.toHaveBeenCalled();
       expect(screen.getByTestId("composer-room-button").textContent).toContain(
         "Roadmaps"
       );
-    });
-
-    it("does not re-read on an unrelated re-render", () => {
-      const { rerender } = render(<ComposerActionRoom />);
-      mockDisabledSkillIds = ["s1"];
-      rerender(<ComposerActionRoom />);
-      expect(mockFetchRoomSkills).toHaveBeenCalledTimes(1);
     });
 
     it("lists one switch per skill, then a separator, then Disconnect room", () => {

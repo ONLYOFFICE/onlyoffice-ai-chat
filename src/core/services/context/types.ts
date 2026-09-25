@@ -22,6 +22,11 @@ export const DEFAULT_CONTEXT_ROUTES: Record<ContextEngineMethod, RouteSpec> = {
     path: "context/get-room-skills",
     params: ["cloud", "roomId"],
   },
+  getRoomSkill: {
+    method: "GET",
+    path: "context/get-room-skill",
+    params: ["cloud", "roomId", "skillId"],
+  },
 };
 
 /** Dependencies injected into a {@link ContextEngine} instance. */

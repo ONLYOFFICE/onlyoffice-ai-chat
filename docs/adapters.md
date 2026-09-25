@@ -72,6 +72,7 @@ interface StorageAdapter {
 
   getContextFolders?(): Promise<ContextFolder[]>; // optional
   getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>; // optional
+  getRoomSkill?(cloud: string, roomId: string, skillId: string): Promise<string>; // optional
 
   init():  Promise<void>;
   close(): Promise<void>;
@@ -103,8 +104,11 @@ to the conversation as context, grouped by cloud account
 (`{ cloud: string; rooms: { id: string; name: string }[] }`); the
 composer's settings menu lists them (one row per cloud, rooms inside).
 `getRoomSkills` is optional too: given a cloud and room id from that
-list it returns the room's skills (`{ id: string; name: string }[]`),
-shown with per-skill switches once the room is connected. Omit it when the
+list it returns the frontmatter of the room's skills
+(`{ id: string; name: string; description: string }[]`), shown with
+per-skill switches once the room is connected and listed to the model
+as a skill index. `getRoomSkill` returns one skill's Markdown body when
+the model asks for it through the built-in `read_skill` tool. Omit it when the
 host has no room concept.
 
 `init()` runs once before any other method (open DB, run

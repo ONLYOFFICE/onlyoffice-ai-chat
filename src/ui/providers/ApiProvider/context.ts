@@ -20,5 +20,13 @@ export function createContextApi(
       callRoute(config, "context", "getContextFolders", [], engines),
     getRoomSkills: (cloud, roomId) =>
       callRoute(config, "context", "getRoomSkills", [cloud, roomId], engines),
+    getRoomSkill: (cloud, roomId, skillId) =>
+      callRoute(
+        config,
+        "context",
+        "getRoomSkill",
+        [cloud, roomId, skillId],
+        engines
+      ),
   };
 }

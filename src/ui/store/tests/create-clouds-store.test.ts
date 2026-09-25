@@ -327,6 +327,30 @@ describe("createCloudsStore", () => {
       expect(store.getState().selectedContextFolder).toBeNull();
     });
 
+    it("reads the picked room's skills once, through the api", async () => {
+      const getRoomSkills = vi
+        .fn()
+        .mockResolvedValue([{ id: "s1", name: "S", description: "" }]);
+      const store = makeStore(null, { getRoomSkills });
+      store.getState().selectContextFolder("a.example.com", {
+        id: "r1",
+        name: "Room 1",
+      });
+      expect(getRoomSkills).toHaveBeenCalledTimes(1);
+      expect(getRoomSkills).toHaveBeenCalledWith("a.example.com", "r1");
+      await vi.waitFor(() =>
+        expect(store.getState().roomSkills).toEqual([
+          { id: "s1", name: "S", description: "" },
+        ])
+      );
+      // Re-picking the same room is not another read.
+      store.getState().selectContextFolder("a.example.com", {
+        id: "r1",
+        name: "Room 1",
+      });
+      expect(getRoomSkills).toHaveBeenCalledTimes(1);
+    });
+
     it("a fetch does not touch the selection", async () => {
       const store = makeStore();
       store.getState().selectContextFolder("a.example.com", {
@@ -355,7 +379,9 @@ describe("createCloudsStore", () => {
     });
 
     it("fetch is a no-op without a connected room", async () => {
-      const getRoomSkills = vi.fn().mockResolvedValue([{ id: "s", name: "S" }]);
+      const getRoomSkills = vi
+        .fn()
+        .mockResolvedValue([{ id: "s", name: "S", description: "" }]);
       const store = makeStore(null, { getRoomSkills });
       await store.getState().fetchRoomSkills();
       expect(getRoomSkills).not.toHaveBeenCalled();
@@ -371,8 +397,8 @@ describe("createCloudsStore", () => {
 
     it("reads the connected room's skills through the api with cloud and room id", async () => {
       const skills = [
-        { id: "s1", name: "Skill 1" },
-        { id: "s2", name: "Skill 2" },
+        { id: "s1", name: "Skill 1", description: "" },
+        { id: "s2", name: "Skill 2", description: "" },
       ];
       const getRoomSkills = vi.fn().mockResolvedValue(skills);
       const store = makeStore(null, { getRoomSkills });
@@ -389,19 +415,36 @@ describe("createCloudsStore", () => {
         .mockImplementationOnce(
           () => new Promise((resolve) => (resolveFirst = resolve))
         )
-        .mockResolvedValueOnce([{ id: "s2", name: "Second room skill" }]);
+        .mockResolvedValueOnce([
+          { id: "s2", name: "Second room skill", description: "" },
+        ]);
       const store = makeStore(null, { getRoomSkills });
+      // Picking reads by itself: the first room's read hangs, the second
+      // room's read answers at once.
       pick(store);
-      const first = store.getState().fetchRoomSkills();
       store
         .getState()
         .selectContextFolder("b.example.com", { id: "r2", name: "Room 2" });
+      const second = [{ id: "s2", name: "Second room skill", description: "" }];
+      await vi.waitFor(() =>
+        expect(store.getState().roomSkills).toEqual(second)
+      );
+      resolveFirst([{ id: "s1", name: "First room skill", description: "" }]);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(getRoomSkills).toHaveBeenCalledTimes(2);
+      expect(store.getState().roomSkills).toEqual(second);
+    });
+
+    it("drops a switch whose skill the host no longer lists", async () => {
+      const store = makeStore(null, {
+        getRoomSkills: vi
+          .fn()
+          .mockResolvedValue([{ id: "s1", name: "S1", description: "" }]),
+      });
+      pick(store);
+      store.setState({ disabledSkillIds: ["s1", "gone"] });
       await store.getState().fetchRoomSkills();
-      resolveFirst([{ id: "s1", name: "First room skill" }]);
-      await first;
-      expect(store.getState().roomSkills).toEqual([
-        { id: "s2", name: "Second room skill" },
-      ]);
+      expect(store.getState().disabledSkillIds).toEqual(["s1"]);
     });
 
     it("resets to empty and logs a failing read", async () => {
@@ -409,7 +452,9 @@ describe("createCloudsStore", () => {
         getRoomSkills: vi.fn().mockRejectedValue(new Error("boom")),
       });
       pick(store);
-      store.setState({ roomSkills: [{ id: "old", name: "Old" }] });
+      store.setState({
+        roomSkills: [{ id: "old", name: "Old", description: "" }],
+      });
       await expect(store.getState().fetchRoomSkills()).resolves.toBeUndefined();
       expect(store.getState().roomSkills).toEqual([]);
       expect(mockLoggerError).toHaveBeenCalledWith(
@@ -433,7 +478,9 @@ describe("createCloudsStore", () => {
     it("selecting a different room resets skills and switches", () => {
       const store = makeStore();
       pick(store);
-      store.setState({ roomSkills: [{ id: "s1", name: "S" }] });
+      store.setState({
+        roomSkills: [{ id: "s1", name: "S", description: "" }],
+      });
       store.getState().setSkillEnabled("s1", false);
       store
         .getState()
@@ -446,10 +493,14 @@ describe("createCloudsStore", () => {
       const store = makeStore();
       pick(store);
       const before = store.getState().selectedContextFolder;
-      store.setState({ roomSkills: [{ id: "s1", name: "S" }] });
+      store.setState({
+        roomSkills: [{ id: "s1", name: "S", description: "" }],
+      });
       store.getState().setSkillEnabled("s1", false);
       pick(store);
-      expect(store.getState().roomSkills).toEqual([{ id: "s1", name: "S" }]);
+      expect(store.getState().roomSkills).toEqual([
+        { id: "s1", name: "S", description: "" },
+      ]);
       expect(store.getState().disabledSkillIds).toEqual(["s1"]);
       // Same object, so subscribers keyed on it do not re-run.
       expect(store.getState().selectedContextFolder).toBe(before);
@@ -458,7 +509,9 @@ describe("createCloudsStore", () => {
     it("clearContextFolder resets skills and switches too", () => {
       const store = makeStore();
       pick(store);
-      store.setState({ roomSkills: [{ id: "s1", name: "S" }] });
+      store.setState({
+        roomSkills: [{ id: "s1", name: "S", description: "" }],
+      });
       store.getState().setSkillEnabled("s1", false);
       store.getState().clearContextFolder();
       expect(store.getState().roomSkills).toEqual([]);

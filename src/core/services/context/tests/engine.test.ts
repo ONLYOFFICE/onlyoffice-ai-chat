@@ -66,12 +66,36 @@ describe("ContextEngine", () => {
     });
   });
 
+  describe("getRoomSkill", () => {
+    it("returns null when the adapter has no getRoomSkill", async () => {
+      const engine = new ContextEngine({ storage: makeStorage() });
+      await expect(engine.getRoomSkill("a", "r1", "s1")).resolves.toBeNull();
+    });
+
+    it("forwards cloud, room and skill ids and returns the body", async () => {
+      const getRoomSkill = vi.fn().mockResolvedValue("# Skill\n\nDo this.");
+      const engine = new ContextEngine({
+        storage: makeStorage({ getRoomSkill }),
+      });
+      await expect(
+        engine.getRoomSkill("a.example.com", "r1", "s1")
+      ).resolves.toBe("# Skill\n\nDo this.");
+      expect(getRoomSkill).toHaveBeenCalledWith("a.example.com", "r1", "s1");
+    });
+  });
+
   describe("DEFAULT_CONTEXT_ROUTES", () => {
     it("declares a GET route per engine method, room skills keyed by cloud + roomId", () => {
       expect(Object.keys(DEFAULT_CONTEXT_ROUTES).sort()).toEqual([
         "getContextFolders",
+        "getRoomSkill",
         "getRoomSkills",
       ]);
+      expect(DEFAULT_CONTEXT_ROUTES.getRoomSkill).toEqual({
+        method: "GET",
+        path: "context/get-room-skill",
+        params: ["cloud", "roomId", "skillId"],
+      });
       expect(DEFAULT_CONTEXT_ROUTES.getContextFolders).toEqual({
         method: "GET",
         path: "context/get-context-folders",

@@ -132,6 +132,8 @@ export {
   DEFAULT_AI_ROUTES,
   DEFAULT_ASSIGNMENTS_ROUTES,
   DEFAULT_CONTEXT_ROUTES,
+  READ_SKILL_TOOL,
+  SKILLS_TYPE,
   DEFAULT_PREFERENCES,
   DEFAULT_PREFERENCES_ROUTES,
   DEFAULT_PROFILES_ROUTES,
@@ -210,6 +212,7 @@ export type {
   WebSearchMutationResult,
   ContextEngineDeps,
   ContextEngineMethod,
+  ResolvedRoomSkills,
 } from "./core/services";
 
 // ---------------------------------------------------------------------------
@@ -290,6 +293,7 @@ export type {
   PromptFoldersStorage,
   PromptsStorage,
   RoomSkill,
+  ContextRoomRef,
   StorageAdapter,
   ThreadsCursor,
   ThreadsStorage,

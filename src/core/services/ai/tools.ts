@@ -17,6 +17,13 @@ import {
   IMAGE_GENERATION_TYPE,
   type ProfileFetchResolver,
 } from "./sources/image-generation";
+import {
+  callSkillsTool,
+  getSkillsTools,
+  READ_SKILL_TOOL,
+  type ResolvedRoomSkills,
+  SKILLS_TYPE,
+} from "../context/skills";
 import { readToolCall, readToolCallArgs, resumeChat } from "./tool-call";
 import type { ChatEvent } from "./types";
 
@@ -85,7 +92,8 @@ export async function buildToolContext(
   entityId?: string,
   config?: { attachmentId: string[] },
   systemServerTypes: string[] = [],
-  disableBuiltinImageTool = false
+  disableBuiltinImageTool = false,
+  skills?: ResolvedRoomSkills
 ): Promise<ToolContext> {
   const [adapterCustom, webSearchTools, imageGenerationTools, disabled] =
     await Promise.all([
@@ -104,6 +112,9 @@ export async function buildToolContext(
     ...adapterCustom,
     [WEB_SEARCH_TYPE]: webSearchTools,
     [IMAGE_GENERATION_TYPE]: imageGenerationTools,
+    // Only while the round has enabled skills — the index in the prompt and
+    // this tool appear and disappear together.
+    [SKILLS_TYPE]: getSkillsTools(skills),
   };
   // Filter at the entry point so every derived field (mergedTools,
   // userToolNames) agrees: a disabled tool must not linger in the lookup
@@ -208,6 +219,8 @@ export type AdapterRunContext = {
   prompt?: ActionArgs["prompt"];
   /** MCP server notes; threaded so resume rounds keep them. */
   toolInstructions?: ActionArgs["toolInstructions"];
+  /** Skills of the connected room; `read_skill` reads their bodies from here. */
+  skills?: ResolvedRoomSkills;
   isReasoning?: boolean;
   reasoningLevel?: ReasoningLevel;
   signal?: AbortSignal;
@@ -273,7 +286,8 @@ export async function* executeAdapterTool(
     ctx.webSearchFetch,
     ctx.pickFetch,
     ctx.signal,
-    ctx.entityMeta?.source
+    ctx.entityMeta?.source,
+    ctx.skills
   );
 
   // Note: `generate_image` base64 → attachment-ref swap happens centrally
@@ -321,7 +335,8 @@ async function dispatchAdapterTool(
   webSearchFetch?: import("../../../shared/provider-credentials").ProviderFetch,
   pickFetch?: ProfileFetchResolver,
   signal?: AbortSignal,
-  source?: SourceMeta
+  source?: SourceMeta,
+  skills?: ResolvedRoomSkills
 ): Promise<unknown> {
   // Drop the synthetic `aiChatIntent` arg (injected into every tool schema
   // for the UI label) before the real tool ever sees it. Idempotent — the
@@ -337,6 +352,9 @@ async function dispatchAdapterTool(
       webSearchFetch,
       source
     );
+  }
+  if (toolName === READ_SKILL_TOOL) {
+    return callSkillsTool(storage, skills, cleanArgs);
   }
   if (toolName === "generate_image") {
     return callImageGenerationTool(

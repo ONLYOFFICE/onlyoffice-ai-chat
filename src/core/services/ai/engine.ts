@@ -39,6 +39,7 @@ import {
   resolveToolSource,
   type ToolContext,
 } from "./tools";
+import { resolveRoomSkills, withSkillsIndex } from "../context/skills";
 import type {
   AIEngineDeps,
   ApproveToolCallInput,
@@ -396,6 +397,12 @@ export class AIEngine {
       // chat request instead of paying a second attachments read.
     }
 
+    // The room's skills travel with the request; the index rides the prompt
+    // override, the tool the tool list, and both are absent when nothing is
+    // enabled.
+    const skills = resolveRoomSkills(input.actionArgs?.contextRoom);
+    const prompt = withSkillsIndex(input.actionArgs?.prompt, skills);
+
     const toolCtx = await buildToolContext(
       this.deps.storage,
       this.deps.toolsAdapter,
@@ -405,7 +412,8 @@ export class AIEngine {
         attachmentId: collectRefIds([...priorMessages, userMessage]),
       },
       this.getSystemServerTypes(),
-      this.isBuiltinImageToolDisabled()
+      this.isBuiltinImageToolDisabled(),
+      skills
     );
 
     const proxiedFetch = this.pickFetch(profile);
@@ -443,6 +451,7 @@ export class AIEngine {
 
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
+      prompt,
       profile,
       messages: resolvedMessages,
       tools: toolCtx.mergedTools,
@@ -468,8 +477,9 @@ export class AIEngine {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
-      prompt: input.actionArgs?.prompt,
+      prompt,
       toolInstructions: input.actionArgs?.toolInstructions,
+      skills,
       isReasoning: input.actionArgs?.isReasoning,
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
@@ -767,6 +777,9 @@ export class AIEngine {
       stored.slice(0, userIdx + 1)
     ).filter(hasSendableContent);
 
+    const skills = resolveRoomSkills(input.actionArgs?.contextRoom);
+    const prompt = withSkillsIndex(input.actionArgs?.prompt, skills);
+
     const toolCtx = await buildToolContext(
       this.deps.storage,
       this.deps.toolsAdapter,
@@ -774,13 +787,15 @@ export class AIEngine {
       contextScope,
       { attachmentId: collectRefIds(priorMessages) },
       this.getSystemServerTypes(),
-      this.isBuiltinImageToolDisabled()
+      this.isBuiltinImageToolDisabled(),
+      skills
     );
 
     const proxiedFetch = this.pickFetch(profile);
 
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
+      prompt,
       profile,
       messages: await resolveAttachmentRefs(
         priorMessages,
@@ -809,8 +824,9 @@ export class AIEngine {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
-      prompt: input.actionArgs?.prompt,
+      prompt,
       toolInstructions: input.actionArgs?.toolInstructions,
+      skills,
       isReasoning: input.actionArgs?.isReasoning,
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
@@ -867,6 +883,7 @@ export class AIEngine {
           contextScope,
           input.threadId
         );
+        const skills = resolveRoomSkills(input.actionArgs?.contextRoom);
         const toolCtx = await buildToolContext(
           this.deps.storage,
           this.deps.toolsAdapter,
@@ -874,7 +891,8 @@ export class AIEngine {
           contextScope,
           undefined,
           systemServerTypes,
-          this.isBuiltinImageToolDisabled()
+          this.isBuiltinImageToolDisabled(),
+          skills
         );
         if (toolCtx.systemToolNames.has(toolCall.toolName)) {
           const proxiedFetch = this.pickFetch(profile);
@@ -882,8 +900,9 @@ export class AIEngine {
             profile,
             profileId,
             tools: toolCtx.mergedTools,
-            prompt: input.actionArgs?.prompt,
+            prompt: withSkillsIndex(input.actionArgs?.prompt, skills),
             toolInstructions: input.actionArgs?.toolInstructions,
+            skills,
             isReasoning: input.actionArgs?.isReasoning,
             reasoningLevel: input.actionArgs?.reasoningLevel,
             signal: input.actionArgs?.signal,
@@ -952,6 +971,8 @@ export class AIEngine {
         input.actionArgs
       ));
 
+    const skills = resolveRoomSkills(input.actionArgs?.contextRoom);
+    const prompt = withSkillsIndex(input.actionArgs?.prompt, skills);
     const toolCtx = await buildToolContext(
       this.deps.storage,
       this.deps.toolsAdapter,
@@ -959,15 +980,17 @@ export class AIEngine {
       contextScope,
       undefined,
       this.getSystemServerTypes(),
-      this.isBuiltinImageToolDisabled()
+      this.isBuiltinImageToolDisabled(),
+      skills
     );
     const proxiedFetch = this.pickFetch(profile);
     const runCtx: AdapterRunContext = {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
-      prompt: input.actionArgs?.prompt,
+      prompt,
       toolInstructions: input.actionArgs?.toolInstructions,
+      skills,
       isReasoning: input.actionArgs?.isReasoning,
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
@@ -998,7 +1021,7 @@ export class AIEngine {
         reasoningLevel: input.actionArgs?.reasoningLevel,
         signal: input.actionArgs?.signal,
         tools: toolCtx.mergedTools,
-        prompt: input.actionArgs?.prompt,
+        prompt,
         toolInstructions: input.actionArgs?.toolInstructions,
         entityId: contextScope,
         entityMeta: meta,
