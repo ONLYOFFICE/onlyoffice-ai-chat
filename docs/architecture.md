@@ -83,7 +83,7 @@ inside `useMemo`, not in `useEffect`) and threaded into:
 
 - `createStores({ keys, ctx, api })` — the Zustand bundle
 - `Servers` — unified tool system
-- All nine engines via the `ApiProvider`
+- All ten engines via the `ApiProvider`
 
 There is no global singleton. Two widgets on the same page have
 two independent `AppContext` instances.

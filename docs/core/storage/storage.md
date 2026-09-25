@@ -33,6 +33,9 @@ interface StorageAdapter {
   webSearch: WebSearchStorage;
   attachments: AttachmentsStorage;
 
+  getContextFolders?(): Promise<ContextFolder[]>; // optional — composer context picker
+  getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>; // optional — skills of the connected room
+
   init(): Promise<void>;   // open DB, run migrations
   close(): Promise<void>;  // flush + release resources
 }
@@ -42,6 +45,42 @@ interface StorageAdapter {
 first mount. `close()` runs when `AIChatProvider` unmounts.
 Implementations are free to be lazy as long as the public methods
 behave correctly after `init` resolves.
+
+### `getContextFolders` (optional)
+
+> Source: [`context-folders.ts`](../../../src/core/storage/context-folders.ts)
+
+```ts
+type ContextRoom = { id: string; name: string };
+type ContextFolder = { cloud: string; rooms: ContextRoom[] };
+
+getContextFolders?(): Promise<ContextFolder[]>;
+```
+
+Lists the rooms the user can pull into the conversation as context,
+grouped by cloud account. `cloud` is the group heading the widget
+shows as a root row of that menu; `id` is the host's own room identifier and is only ever
+passed back, never parsed. Read when the composer's settings menu mounts, so the host decides
+both membership and order.
+A host without rooms simply omits the method — the menu then shows
+no cloud rows at all.
+
+### `getRoomSkills` (optional)
+
+> Source: [`context-folders.ts`](../../../src/core/storage/context-folders.ts)
+
+```ts
+type RoomSkill = { id: string; name: string };
+
+getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>;
+```
+
+Lists the skills configured in one room — the `cloud` and room `id`
+are exactly what `getContextFolders` returned. Read once the user
+connects that room as context; the composer then shows a menu under
+the room's name with one switch per skill (all on by default, toggled
+for the session only) and a "Disconnect room" entry. Omit the method
+when rooms carry no skills; the menu then only offers disconnecting.
 
 ---
 

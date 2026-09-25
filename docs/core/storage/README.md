@@ -23,6 +23,8 @@ StorageAdapter
 ├── toolPrefs      disabled / auto-approved tools
 ├── webSearch      web-search provider config (singleton)
 ├── attachments    user-message attachments (files + images, ref-only persistence)
+├── getContextFolders()  optional — rooms grouped by cloud for the composer's context picker
+├── getRoomSkills()      optional — skills of a connected room, one switch each
 └── lifecycle      init() / close()
 ```
 

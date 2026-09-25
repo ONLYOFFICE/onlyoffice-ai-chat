@@ -1,5 +1,6 @@
 import type { AssignmentsStorage } from "./assignments";
 import type { AttachmentsStorage } from "./attachments";
+import type { ContextFolder, RoomSkill } from "./context-folders";
 import type { McpServersStorage } from "./mcp-servers";
 import type { MessagesStorage } from "./messages";
 import type { PreferencesStorage } from "./preferences";
@@ -80,6 +81,27 @@ export interface StorageAdapter {
 
   /** User-message attachment storage (files + images). */
   attachments: AttachmentsStorage;
+
+  /**
+   * List the rooms the user may add to the conversation as context, grouped
+   * by cloud account. Read when the composer's settings menu mounts — one
+   * row per cloud, rooms inside — the host decides what is listed and in
+   * what order.
+   *
+   * Optional: a host with no room concept leaves it out and the menu
+   * shows no cloud rows.
+   */
+  getContextFolders?(): Promise<ContextFolder[]>;
+
+  /**
+   * List the skills configured in one room, identified by the `cloud` and
+   * room `id` a {@link ContextFolder} carried. Read once a room is connected
+   * as context; the composer shows each skill with its own switch.
+   *
+   * Optional, like `getContextFolders`: without it a connected room simply
+   * lists no skills.
+   */
+  getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>;
 
   /**
    * Initialize the storage backend (create DB/tables, run migrations).

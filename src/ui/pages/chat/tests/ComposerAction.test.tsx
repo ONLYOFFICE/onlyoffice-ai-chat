@@ -16,6 +16,10 @@ vi.mock("../sub-components/ComposerActionSettings", () => ({
   ComposerActionSettings: () => <div data-testid="composer-action-settings" />,
 }));
 
+vi.mock("../sub-components/ComposerActionRoom", () => ({
+  ComposerActionRoom: () => <div data-testid="composer-action-room" />,
+}));
+
 vi.mock("../sub-components/ComposerActionSend", () => ({
   ComposerActionSend: () => <div data-testid="composer-action-send" />,
 }));
@@ -59,6 +63,7 @@ describe("ComposerAction", () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId("composer-action-prompts")).toBeInTheDocument();
     expect(screen.getByTestId("composer-action-settings")).toBeInTheDocument();
+    expect(screen.getByTestId("composer-action-room")).toBeInTheDocument();
     expect(screen.getByTestId("composer-action-send")).toBeInTheDocument();
   });
 
@@ -76,6 +81,10 @@ describe("ComposerAction", () => {
     const settings = screen.getByTestId("composer-action-settings");
     expect(attachment.parentElement).toBe(prompts.parentElement);
     expect(settings.parentElement).toBe(prompts.parentElement);
+    const room = screen.getByTestId("composer-action-room");
+    expect(room.parentElement).toBe(prompts.parentElement);
+    // The room sits right after the cog that connected it.
+    expect(settings.nextElementSibling).toBe(room);
   });
 
   it("places send button in a separate container", () => {

@@ -26,6 +26,7 @@ never touches browser-only APIs.
 | [`PromptsEngine`](./prompts/engine.ts)           | `core/services/prompts`       | Saved prompts and folders CRUD with name uniqueness in folder scope, atomic move, and versioned import / export |
 | [`WebSearchEngine`](./web-search/engine.ts)      | `core/services/web-search`    | Web-search singleton config with live credential validation and atomic switch |
 | [`PreferencesEngine`](./preferences/engine.ts)   | `core/services/preferences`   | Scalar preferences (deep mode, …) with default fallback and idempotent writes |
+| [`ContextEngine`](./context/engine.ts)           | `core/services/context`       | Rooms offered as chat context (grouped by cloud) and the skills of a connected room — the optional `StorageAdapter` reads behind the `ServerAPI` bridge |
 
 `AIEngine` composes `AssignmentsEngine` + `ThreadsEngine` to keep
 its three public methods short. `ProfilesEngine.delete` composes
@@ -62,5 +63,6 @@ for the detailed reference:
   — singleton config with live `testConnection` and atomic
   switch.
 - [`PreferencesEngine`](../../../docs/core/services/preferences-engine.md)
+- [`ContextEngine`](../../../docs/core/services/context-engine.md)
   — scalar prefs with default-fallback `get` and idempotent
   `set`.

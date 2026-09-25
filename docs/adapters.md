@@ -70,6 +70,9 @@ interface StorageAdapter {
   webSearch:      WebSearchStorage;
   attachments:    AttachmentsStorage;
 
+  getContextFolders?(): Promise<ContextFolder[]>; // optional
+  getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>; // optional
+
   init():  Promise<void>;
   close(): Promise<void>;
 }
@@ -94,6 +97,15 @@ keyset-pagination parameters (`count`, `cursor`, plus `direction` on
 messages), used only when the widget runs with `enablePagination` — see
 [the storage contract](./core/storage/storage.md) for the exact
 semantics. Adapters that ignore them keep working (full-list reads).
+
+`getContextFolders` is optional. It lists the rooms the user can add
+to the conversation as context, grouped by cloud account
+(`{ cloud: string; rooms: { id: string; name: string }[] }`); the
+composer's settings menu lists them (one row per cloud, rooms inside).
+`getRoomSkills` is optional too: given a cloud and room id from that
+list it returns the room's skills (`{ id: string; name: string }[]`),
+shown with per-skill switches once the room is connected. Omit it when the
+host has no room concept.
 
 `init()` runs once before any other method (open DB, run
 migrations). `close()` runs on widget unmount.

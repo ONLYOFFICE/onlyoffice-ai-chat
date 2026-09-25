@@ -3,6 +3,7 @@ import { ComposerActionAttachment } from "./ComposerActionAttachments";
 import { ComposerActionPrompts } from "./ComposerActionPrompts";
 import { ComposerActionSend } from "./ComposerActionSend";
 import { ComposerActionSettings } from "./ComposerActionSettings";
+import { ComposerActionRoom } from "./ComposerActionRoom";
 import { SelectModel } from "./ComposerActionSelectModel";
 
 const ComposerAction = () => {
@@ -25,6 +26,7 @@ const ComposerAction = () => {
           <ComposerActionAttachment />
           <ComposerActionPrompts />
           <ComposerActionSettings />
+          <ComposerActionRoom />
         </div>
 
         <div className="flex items-center gap-[4px] flex-row min-w-0">

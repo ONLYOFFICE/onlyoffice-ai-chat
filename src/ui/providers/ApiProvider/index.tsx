@@ -3,6 +3,7 @@ import {
   DEFAULT_AI_ROUTES,
   DEFAULT_ASSIGNMENTS_ROUTES,
   DEFAULT_ATTACHMENTS_ROUTES,
+  DEFAULT_CONTEXT_ROUTES,
   DEFAULT_PREFERENCES_ROUTES,
   DEFAULT_PROFILES_ROUTES,
   DEFAULT_PROMPTS_ROUTES,
@@ -17,6 +18,8 @@ import type {
   AssignmentsEngineMethod,
   AttachmentsEngine,
   AttachmentsEngineMethod,
+  ContextEngine,
+  ContextEngineMethod,
   PreferencesEngine,
   PreferencesEngineMethod,
   ProfilesEngine,
@@ -34,6 +37,7 @@ import type {
 import { createAIApi, type AIApi } from "./ai";
 import { createAssignmentsApi, type AssignmentsApi } from "./assignments";
 import { createAttachmentsApi, type AttachmentsApi } from "./attachments";
+import { createContextApi, type ContextApi } from "./context";
 import { createPreferencesApi, type PreferencesApi } from "./preferences";
 import { createProfilesApi, type ProfilesApi } from "./profiles";
 import { createPromptsApi, type PromptsApi } from "./prompts";
@@ -45,6 +49,7 @@ export interface ServerAPIRoutes {
   ai: Record<AIEngineMethod, RouteSpec>;
   assignments: Record<AssignmentsEngineMethod, RouteSpec>;
   attachments: Record<AttachmentsEngineMethod, RouteSpec>;
+  context: Record<ContextEngineMethod, RouteSpec>;
   preferences: Record<PreferencesEngineMethod, RouteSpec>;
   profiles: Record<ProfilesEngineMethod, RouteSpec>;
   prompts: Record<PromptsEngineMethod, RouteSpec>;
@@ -58,6 +63,7 @@ export const DEFAULT_SERVER_API_ROUTES: ServerAPIRoutes = {
   ai: DEFAULT_AI_ROUTES,
   assignments: DEFAULT_ASSIGNMENTS_ROUTES,
   attachments: DEFAULT_ATTACHMENTS_ROUTES,
+  context: DEFAULT_CONTEXT_ROUTES,
   preferences: DEFAULT_PREFERENCES_ROUTES,
   profiles: DEFAULT_PROFILES_ROUTES,
   prompts: DEFAULT_PROMPTS_ROUTES,
@@ -82,6 +88,7 @@ export interface ServerAPIEngines {
   ai: AIEngine;
   assignments: AssignmentsEngine;
   attachments: AttachmentsEngine;
+  context: ContextEngine;
   preferences: PreferencesEngine;
   profiles: ProfilesEngine;
   prompts: PromptsEngine;
@@ -95,6 +102,7 @@ export interface ServerAPI {
   ai: AIApi;
   assignments: AssignmentsApi;
   attachments: AttachmentsApi;
+  context: ContextApi;
   preferences: PreferencesApi;
   profiles: ProfilesApi;
   prompts: PromptsApi;
@@ -114,6 +122,7 @@ export function createServerAPI(
     ai: createAIApi(config, engines),
     assignments: createAssignmentsApi(config, engines),
     attachments: createAttachmentsApi(config, engines),
+    context: createContextApi(config, engines),
     preferences: createPreferencesApi(config, engines),
     profiles: createProfilesApi(config, engines),
     prompts: createPromptsApi(config, engines),

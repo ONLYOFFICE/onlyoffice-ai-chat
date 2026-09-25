@@ -26,7 +26,11 @@ into a single object that gets passed through React context:
 | [`WebSearchStorage`](./web-search.ts)                   | Singleton web-search provider config              |
 
 Plus the lifecycle hooks `init()` and `close()` on the aggregate
-adapter itself.
+adapter itself, and the optional
+[`getContextFolders()`](./context-folders.ts) read that feeds the
+composer's settings menu with rooms grouped by cloud account, and
+[`getRoomSkills()`](./context-folders.ts) that lists a connected
+room's skills.
 
 ## Entity scoping (`entityId`)
 

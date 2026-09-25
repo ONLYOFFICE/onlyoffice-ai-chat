@@ -110,3 +110,6 @@ export type {
   PreferencesEngineDeps,
   PreferencesEngineMethod,
 } from "./preferences";
+
+export { ContextEngine, DEFAULT_CONTEXT_ROUTES } from "./context";
+export type { ContextEngineDeps, ContextEngineMethod } from "./context";
