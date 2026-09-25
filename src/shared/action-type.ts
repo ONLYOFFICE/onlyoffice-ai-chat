@@ -8,6 +8,7 @@ export const ActionType = {
   ImageGeneration: "ImageGeneration",
   OCR: "OCR",
   Vision: "Vision",
+  FormAnalysis: "FormAnalysis",
 } as const;
 
 export type ActionType = (typeof ActionType)[keyof typeof ActionType];
