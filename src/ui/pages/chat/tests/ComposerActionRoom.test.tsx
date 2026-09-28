@@ -16,6 +16,11 @@ vi.mock("../../../providers/LocalesProvider", () => ({
   useI18n: () => ({ t: (k: string) => k }),
 }));
 
+let mockHideDisconnect = false;
+vi.mock("../../../../widget-config", () => ({
+  useWidgetConfig: () => ({ hideContextRoomDisconnect: mockHideDisconnect }),
+}));
+
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useCloudsStore: (selector?: (s: Record<string, unknown>) => unknown) => {
@@ -89,6 +94,7 @@ describe("ComposerActionRoom", () => {
     mockSelected = null;
     mockRoomSkills = [];
     mockDisabledSkillIds = [];
+    mockHideDisconnect = false;
     mockDropdownItems = [];
     mockDropdownOpen = undefined;
     mockOnOpenChange = undefined;
@@ -197,6 +203,33 @@ describe("ComposerActionRoom", () => {
       render(<ComposerActionRoom />);
       expect(items().map((i) => i.text)).toEqual(["DisconnectRoom"]);
       expect(items().find((i) => i.isSeparator)).toBeUndefined();
+    });
+
+    describe("with hideContextRoomDisconnect", () => {
+      beforeEach(() => {
+        mockHideDisconnect = true;
+      });
+
+      it("lists the switches only — no separator, no Disconnect room", () => {
+        render(<ComposerActionRoom />);
+        expect(items().map((i) => i.text)).toEqual([
+          "Skill 1",
+          "Skill 1",
+          "Skill 2",
+        ]);
+        expect(items().find((i) => i.id === "disconnect-room")).toBeUndefined();
+        expect(screen.getByTestId("icon-btn-arrow")).toBeInTheDocument();
+      });
+
+      it("shows a room without skills as a plain label, not a menu", () => {
+        mockRoomSkills = [];
+        render(<ComposerActionRoom />);
+        expect(screen.queryByTestId("dropdown-menu")).not.toBeInTheDocument();
+        const label = screen.getByTestId("composer-room-button");
+        expect(label.textContent).toBe("Vacations");
+        expect(label.className).not.toContain("cursor-pointer");
+        expect(screen.queryByTestId("icon-btn-arrow")).not.toBeInTheDocument();
+      });
     });
 
     it("disappears once the room is disconnected", () => {

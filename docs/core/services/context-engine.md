@@ -172,6 +172,21 @@ appends the room's agent instruction). The thread stays under
 
 ---
 
+## A room the host connects itself (`hideContextRoomDisconnect`)
+
+A host may connect a room without the cog: `useCloudsStore.getState()
+.selectContextFolder(cloud, { id, name })` from the store bundle it built
+(headless mode), or from a component inside the widget tree. Without
+`getContextFolders` the cog never appears, so the room button is the only
+sign of the connection — and its *Disconnect room* entry would leave the
+user with no way back. `WidgetConfig.hideContextRoomDisconnect` drops that
+entry: the menu holds the skill switches alone, and a room without skills
+shows as a plain label instead of an empty menu. `clearContextFolder()`
+remains the host's way to disconnect, for example when the user leaves the
+room.
+
+---
+
 ## The menu's hint
 
 The context menu is headed "Add room context" with an "i" popover that
