@@ -97,7 +97,7 @@ const ThreadInner = () => {
 
   return (
     <div
-      className="aui-root relative flex h-full flex-col select-none"
+      className="aui-root relative flex h-full min-h-0 flex-1 flex-col select-none"
       onCopy={onCopy}
       onDragEnter={handlers.onDragEnter}
       onDragOver={handlers.onDragOver}
@@ -105,7 +105,7 @@ const ThreadInner = () => {
       onDrop={handlers.onDrop}
     >
       <ThreadPrimitive.Root
-        className="flex h-full flex-col bg-[var(--layout-background-color)]"
+        className="flex h-full min-h-0 flex-1 flex-col bg-[var(--layout-background-color)]"
         style={{
           ["--thread-max-width" as string]:
             "var(--chat-thread-max-width, 687px)",
@@ -161,7 +161,7 @@ const ThreadInner = () => {
               ref={viewportRef}
               autoScroll={autoScrollWhileStreaming ?? false}
               turnAnchor={autoScrollWhileStreaming ? "bottom" : "top"}
-              className="thread-viewport relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
+              className="thread-viewport relative flex min-h-0 min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
               data-auto-scroll={autoScrollWhileStreaming ? "on" : "off"}
             >
               {/* Pulls the previous page when the reader nears the top of
