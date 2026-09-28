@@ -78,7 +78,7 @@ const ComposerActionRoom = () => {
       title={selected.room.name}
       className={cn(
         "inline-flex items-center gap-[4px] min-w-0 box-border cursor-pointer select-none",
-        "h-[var(--chat-composer-room-height,26px)] max-w-[var(--chat-composer-room-max-width,220px)] ps-[6px] pe-[4px]",
+        "h-[var(--chat-composer-room-height,26px)] max-w-[var(--chat-composer-room-max-width,220px)] ps-[2px] pe-[4px]",
         "rounded-[var(--input-border-radius,4px)] border",
         "text-[var(--input-color)] text-[length:var(--chat-model-selector-font-size,var(--fs-12,12px))] leading-[var(--lh-16)]",
         isOpen
@@ -91,7 +91,7 @@ const ComposerActionRoom = () => {
           them washed out next to the white room name. */}
       <IconButton
         iconName="btn-room"
-        size={16}
+        size={24}
         color="var(--chat-composer-room-icon-color,var(--icon-normal))"
         insideElement
         disableHover
