@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.137
+
+### Fixed
+
+- **The connected-room chip's icon is drawn at its 24 px design size.** The glyph fills 15 of the asset's 24 px, so the 16 px box it was given left it at 10 px beside the room name.
+
 ## 0.5.136
 
 ### Fixed
