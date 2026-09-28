@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.135
+
+### Fixed
+
+- **The connected-room chip no longer stands out in the dark themes.** It was filled with `--input-background-color`, a different grey from the composer's own surface in the dark themes, so it read as a misplaced input. It is now transparent on the composer's surface, with the composer's border colour, the button highlight on hover and while open.
+
 ## 0.5.134
 
 ### Added
