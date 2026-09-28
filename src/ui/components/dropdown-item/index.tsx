@@ -341,7 +341,7 @@ const DropDownItem = ({
           // stopPropagation so the row's own onSelect (leaf action) doesn't
           // also fire.
           <div
-            className="opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+            className="pointer-coarse:opacity-100 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
             onClick={(e) => {
               e.stopPropagation();
               onDrill?.();
@@ -373,9 +373,11 @@ const DropDownItem = ({
           // The "more" trigger only reveals on row hover/focus (or while its
           // menu is open), kept in layout via opacity so the row doesn't shift.
           // The plain submenu chevron (no subMenuIcon) stays always visible.
+          // On touch devices there is no hover, so it stays visible there too —
+          // otherwise the submenu would be unreachable.
           className={
             subMenuIcon
-              ? "opacity-0 group-hover:opacity-100 focus-within:opacity-100 has-[[data-state=open]]:opacity-100"
+              ? "pointer-coarse:opacity-100 opacity-0 group-hover:opacity-100 focus-within:opacity-100 has-[[data-state=open]]:opacity-100"
               : undefined
           }
         >
