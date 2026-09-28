@@ -92,6 +92,8 @@ const ComboBox = ({
       trigger={
         <div
           data-testid={dataTestId}
+          role="combobox"
+          aria-expanded={isOpen}
           className={cn(
             "h-[var(--combo-box-height,24px)] rounded-[var(--input-border-radius)] ps-[var(--combo-box-padding-start,4px)] pe-[var(--combo-box-padding-end,0px)] box-border",
             "cursor-pointer flex items-center justify-between",
