@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.136
+
+### Fixed
+
+- **The connected-room chip's icon and chevron were washed out in the dark themes.** They were painted with `--icon-button-color`, a dimmer grey than the white room name next to them. Both now take `--icon-normal`, the paint the model picker's chevron already uses (`--chat-composer-room-icon-color` overrides it). The chip's fill is back to the input tokens — 0.5.135 had made it transparent, which was not the problem.
+
 ## 0.5.135
 
 ### Fixed
