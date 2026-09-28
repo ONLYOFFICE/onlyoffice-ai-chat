@@ -81,19 +81,18 @@ const ComposerActionRoom = () => {
         "h-[var(--chat-composer-room-height,26px)] max-w-[var(--chat-composer-room-max-width,220px)] ps-[6px] pe-[4px]",
         "rounded-[var(--input-border-radius,4px)] border",
         "text-[var(--input-color)] text-[length:var(--chat-model-selector-font-size,var(--fs-12,12px))] leading-[var(--lh-16)]",
-        // The chip sits on the composer's own surface, so it takes no fill of
-        // its own — `--input-background-color` is a different grey in the
-        // dark themes and read as a misplaced field. Its border is the
-        // composer's, the pressed/open fill is the button highlight.
-        "bg-transparent border-[var(--chat-composer-room-border-color,var(--chat-composer-border-color))]",
         isOpen
-          ? "bg-[var(--input-hover-background-color)] border-[var(--chat-composer-active-border-color)]"
-          : "hover:bg-[var(--input-hover-background-color)]"
+          ? "bg-[var(--input-background-color)] border-[var(--input-active-border-color)]"
+          : "bg-[var(--input-background-color)] border-[var(--input-border-color)] hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]"
       )}
     >
+      {/* Both glyphs take the same paint as the model picker's chevron:
+          `--icon-button-color` is a dimmer grey in the dark themes and left
+          them washed out next to the white room name. */}
       <IconButton
         iconName="btn-room"
         size={16}
+        color="var(--chat-composer-room-icon-color,var(--icon-normal))"
         insideElement
         disableHover
         className="shrink-0"
@@ -106,6 +105,7 @@ const ComposerActionRoom = () => {
         size={16}
         width={7}
         height={4}
+        color="var(--chat-composer-room-icon-color,var(--icon-normal))"
         isStroke
         insideElement
         disableHover
