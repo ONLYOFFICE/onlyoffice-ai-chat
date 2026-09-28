@@ -26,6 +26,9 @@ describe("ACTION_REQUIREMENTS", () => {
       CapabilitiesUI.Chat
     );
     expect(ACTION_REQUIREMENTS[ActionType.Code]).toBe(CapabilitiesUI.Chat);
+    expect(ACTION_REQUIREMENTS[ActionType.FormAnalysis]).toBe(
+      CapabilitiesUI.Chat
+    );
   });
 
   it("image-output action requires Image", () => {

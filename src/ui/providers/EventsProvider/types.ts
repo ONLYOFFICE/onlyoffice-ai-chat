@@ -192,7 +192,8 @@ export type ModelAssignmentTask =
   | "textAnalysis"
   | "imageGeneration"
   | "ocr"
-  | "vision";
+  | "vision"
+  | "formAnalysis";
 
 /**
  * Fired whenever a profile is bound to or cleared from a task slot.

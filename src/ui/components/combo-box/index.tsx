@@ -148,6 +148,13 @@ const ComboBox = ({
       items={visibleItems}
       footerItems={footerItems}
       variant="combobox"
+      // Radix menus are modal by default, which parks `pointer-events: none`
+      // on the body while the panel is open. Comboboxes sit side by side (the
+      // model assignment rows, the model config form), and there a click on
+      // the next trigger is swallowed: the first click only dismisses this
+      // panel, so opening the next one takes two. A combobox has nothing to
+      // guard against outside interaction, so it opts out of modality.
+      modal={false}
     />
   );
 };

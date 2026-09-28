@@ -29,6 +29,7 @@ const ModelAssignment = ({
   );
   const ocrProfile = useProfilesStore((s) => s.ocrProfile);
   const visionProfile = useProfilesStore((s) => s.visionProfile);
+  const formAnalysisProfile = useProfilesStore((s) => s.formAnalysisProfile);
   const setDefaultProfile = useProfilesStore((s) => s.setDefaultProfile);
   const setChatProfile = useProfilesStore((s) => s.setChatProfile);
   const setCodeProfile = useProfilesStore((s) => s.setCodeProfile);
@@ -46,6 +47,9 @@ const ModelAssignment = ({
   );
   const setOcrProfile = useProfilesStore((s) => s.setOcrProfile);
   const setVisionProfile = useProfilesStore((s) => s.setVisionProfile);
+  const setFormAnalysisProfile = useProfilesStore(
+    (s) => s.setFormAnalysisProfile
+  );
 
   const defaultItems = profiles.map((p) => ({
     text: p.name,
@@ -231,6 +235,20 @@ const ModelAssignment = ({
             className="w-full"
             value={visionProfile?.name ?? t("DefaultModel")}
             items={taskItems(setVisionProfile, CapabilitiesUI.Vision)}
+          />
+        </FieldContainer>
+
+        <FieldContainer
+          header={t("FormAnalysis")}
+          isHorizontal
+          reserveErrorSpace={false}
+          className="mb-[var(--model-assignment-task-margin-bottom,12px)]"
+          icon="text-analysis-ai"
+        >
+          <ComboBox
+            className="w-full"
+            value={formAnalysisProfile?.name ?? t("DefaultModel")}
+            items={taskItems(setFormAnalysisProfile, CapabilitiesUI.Chat)}
           />
         </FieldContainer>
       </div>

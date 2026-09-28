@@ -39,6 +39,7 @@ export interface ProfilesStoreState {
   imageGenerationProfile: Profile | null;
   ocrProfile: Profile | null;
   visionProfile: Profile | null;
+  formAnalysisProfile: Profile | null;
   sessionChatProfile: Profile | null;
   /** Whether extended thinking is on — `reasoningLevel !== "off"`. */
   extendedThinking: boolean;
@@ -64,6 +65,7 @@ export interface ProfilesStoreState {
   setImageGenerationProfile: (profile: Profile | null) => Promise<void>;
   setOcrProfile: (profile: Profile | null) => Promise<void>;
   setVisionProfile: (profile: Profile | null) => Promise<void>;
+  setFormAnalysisProfile: (profile: Profile | null) => Promise<void>;
   /**
    * Session-scoped chat profile pick (composer model picker, thread
    * open). `persistAssignment: true` — used by the composer's explicit
@@ -95,6 +97,7 @@ const FIELD_TO_ACTION = {
   imageGenerationProfile: ActionType.ImageGeneration,
   ocrProfile: ActionType.OCR,
   visionProfile: ActionType.Vision,
+  formAnalysisProfile: ActionType.FormAnalysis,
 } as const satisfies Partial<Record<keyof ProfilesStoreState, ActionType>>;
 
 const TASK_FIELDS = Object.keys(FIELD_TO_ACTION) as Array<
@@ -275,6 +278,7 @@ export function createProfilesStore(deps: {
       imageGenerationProfile: null,
       ocrProfile: null,
       visionProfile: null,
+      formAnalysisProfile: null,
       sessionChatProfile: null,
       extendedThinking: false,
       reasoningLevel: "off",
@@ -419,6 +423,7 @@ export function createProfilesStore(deps: {
             imageGenerationProfile: update(state.imageGenerationProfile),
             ocrProfile: update(state.ocrProfile),
             visionProfile: update(state.visionProfile),
+            formAnalysisProfile: update(state.formAnalysisProfile),
             sessionChatProfile: update(state.sessionChatProfile),
           };
         });
@@ -523,6 +528,10 @@ export function createProfilesStore(deps: {
       ),
       setOcrProfile: makeTaskSetter("ocrProfile", "ocr"),
       setVisionProfile: makeTaskSetter("visionProfile", "vision"),
+      setFormAnalysisProfile: makeTaskSetter(
+        "formAnalysisProfile",
+        "formAnalysis"
+      ),
 
       setSessionChatProfile: (profile, opts) => {
         const before = currentChat(get());
