@@ -50,6 +50,10 @@ vi.mock("../sub-components/ComposerAction", () => ({
   ComposerAction: () => <div data-testid="composer-action" />,
 }));
 
+vi.mock("../sub-components/ComposerActionRoom", () => ({
+  ComposerActionRoom: () => null,
+}));
+
 vi.mock("../../../components/file-item", () => ({
   FileItem: () => <div data-testid="file-item" />,
 }));

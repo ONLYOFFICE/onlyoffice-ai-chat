@@ -44,6 +44,10 @@ vi.mock("@assistant-ui/react", () => ({
   useComposerRuntime: () => ({ setText: vi.fn(), send: mockSend }),
 }));
 
+vi.mock("../sub-components/ComposerActionRoom", () => ({
+  ComposerActionRoom: () => null,
+}));
+
 vi.mock("../sub-components/ComposerAction", () => ({
   ComposerAction: () => <div data-testid="composer-action" />,
 }));
@@ -157,9 +161,9 @@ describe("Composer", () => {
     });
     render(<Composer />);
     mockSend.mockClear();
-    screen.getByTestId("composer-root").dispatchEvent(
-      new Event("submit", { bubbles: true, cancelable: true })
-    );
+    screen
+      .getByTestId("composer-root")
+      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     expect(mockSend).toHaveBeenCalledTimes(1);
   });
 
@@ -167,9 +171,9 @@ describe("Composer", () => {
     setupStores({ currentProfile: { id: "1", name: "GPT" } });
     render(<Composer />);
     mockSend.mockClear();
-    screen.getByTestId("composer-root").dispatchEvent(
-      new Event("submit", { bubbles: true, cancelable: true })
-    );
+    screen
+      .getByTestId("composer-root")
+      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     expect(mockSend).not.toHaveBeenCalled();
   });
 });

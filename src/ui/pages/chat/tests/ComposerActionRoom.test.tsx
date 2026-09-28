@@ -118,11 +118,12 @@ describe("ComposerActionRoom", () => {
       ];
     });
 
-    it("shows the room name with a chevron as the trigger", () => {
+    it("shows the room icon, name and a chevron as the trigger", () => {
       render(<ComposerActionRoom />);
       const button = screen.getByTestId("composer-room-button");
       expect(button.textContent).toContain("Vacations");
       expect(button.getAttribute("title")).toBe("Vacations");
+      expect(screen.getByTestId("icon-btn-btn-room")).toBeInTheDocument();
       expect(screen.getByTestId("icon-btn-arrow")).toBeInTheDocument();
     });
 

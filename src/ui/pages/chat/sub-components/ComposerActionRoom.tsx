@@ -69,19 +69,30 @@ const ComposerActionRoom = () => {
   // Nothing to switch and no way out: the room has nothing to show.
   if (items.length === 0) return null;
 
+  // A bordered chip in the composer box, above the input: room icon, name,
+  // chevron — the same metrics as a combobox trigger, so it reads as a
+  // control rather than a tag.
   const trigger = (
     <div
       data-testid="composer-room-button"
       title={selected.room.name}
       className={cn(
-        "h-[var(--combo-box-height,24px)] max-w-[var(--chat-composer-room-max-width,160px)] rounded-[4px] ps-[6px] pe-[4px] box-border",
-        "cursor-pointer flex items-center gap-[4px] min-w-0",
+        "inline-flex items-center gap-[4px] min-w-0 box-border cursor-pointer select-none",
+        "h-[var(--chat-composer-room-height,26px)] max-w-[var(--chat-composer-room-max-width,220px)] ps-[6px] pe-[4px]",
+        "rounded-[var(--input-border-radius,4px)] border",
         "text-[var(--input-color)] text-[length:var(--chat-model-selector-font-size,var(--fs-12,12px))] leading-[var(--lh-16)]",
         isOpen
-          ? "bg-[var(--icon-button-active-background-color,var(--input-hover-background-color))]"
-          : "hover:bg-[var(--input-hover-background-color)]"
+          ? "bg-[var(--input-background-color)] border-[var(--input-active-border-color)]"
+          : "bg-[var(--input-background-color)] border-[var(--input-border-color)] hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]"
       )}
     >
+      <IconButton
+        iconName="btn-room"
+        size={16}
+        insideElement
+        disableHover
+        className="shrink-0"
+      />
       <span dir="auto" className="min-w-0 truncate">
         {selected.room.name}
       </span>
@@ -100,14 +111,20 @@ const ComposerActionRoom = () => {
     </div>
   );
 
+  // The box is a column of stretched children; the chip must keep its own
+  // width, so it gets a row of its own.
   return (
-    <DropdownMenu
-      trigger={trigger}
-      items={items}
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      contentClassName="min-w-[var(--chat-composer-room-menu-min-width,240px)]"
-    />
+    <div className="flex flex-row min-w-0">
+      <DropdownMenu
+        trigger={trigger}
+        items={items}
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        side="bottom"
+        align="start"
+        contentClassName="min-w-[var(--chat-composer-room-menu-min-width,240px)]"
+      />
+    </div>
   );
 };
 
