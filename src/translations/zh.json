@@ -27,6 +27,7 @@
   "CreatingImage": "正在生成图像",
   "OCR": "OCR",
   "Vision": "视觉",
+  "FormAnalysis": "表单分析",
   "Provider": "提供商",
   "EnterName": "请输入名称",
   "EnterURL": "请输入 URL",

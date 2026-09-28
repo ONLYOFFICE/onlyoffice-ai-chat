@@ -27,6 +27,7 @@
   "CreatingImage": "이미지 생성 중",
   "OCR": "OCR",
   "Vision": "Vision",
+  "FormAnalysis": "양식 분석",
   "Provider": "제공자",
   "EnterName": "이름 입력",
   "EnterURL": "URL 입력",
