@@ -62,8 +62,8 @@ export interface WidgetConfig {
    * Drop the "Disconnect room" entry from the connected room's menu. For a
    * host that connects the room itself (DocSpace connects the room the user
    * is in) and offers no cog to pick another, disconnecting would leave no
-   * way back. With it off, a room without skills shows as a plain label: no
-   * menu with nothing in it.
+   * way back. With it on, a room without skills shows nothing at all: an
+   * empty skills folder is not worth a button.
    */
   hideContextRoomDisconnect?: boolean;
   /**

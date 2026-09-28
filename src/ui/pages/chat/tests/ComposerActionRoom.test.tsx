@@ -221,14 +221,10 @@ describe("ComposerActionRoom", () => {
         expect(screen.getByTestId("icon-btn-arrow")).toBeInTheDocument();
       });
 
-      it("shows a room without skills as a plain label, not a menu", () => {
+      it("renders nothing for a room without skills", () => {
         mockRoomSkills = [];
-        render(<ComposerActionRoom />);
-        expect(screen.queryByTestId("dropdown-menu")).not.toBeInTheDocument();
-        const label = screen.getByTestId("composer-room-button");
-        expect(label.textContent).toBe("Vacations");
-        expect(label.className).not.toContain("cursor-pointer");
-        expect(screen.queryByTestId("icon-btn-arrow")).not.toBeInTheDocument();
+        const { container } = render(<ComposerActionRoom />);
+        expect(container).toBeEmptyDOMElement();
       });
     });
 

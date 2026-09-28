@@ -181,7 +181,7 @@ A host may connect a room without the cog: `useCloudsStore.getState()
 sign of the connection — and its *Disconnect room* entry would leave the
 user with no way back. `WidgetConfig.hideContextRoomDisconnect` drops that
 entry: the menu holds the skill switches alone, and a room without skills
-shows as a plain label instead of an empty menu. `clearContextFolder()`
+shows nothing at all — an empty `.ai` folder is not worth a button. `clearContextFolder()`
 remains the host's way to disconnect, for example when the user leaves the
 room.
 

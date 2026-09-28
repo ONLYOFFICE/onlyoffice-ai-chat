@@ -18,7 +18,7 @@
 
 - **`WidgetConfig.contextRoomScopesRounds`.** Off by default: a connected room contributes its skills and nothing else, so on the desktop editors, whose rooms live in remote clouds, the room id never points local storage at a scope it has never heard of. DocSpace turns it on and the room's id becomes the round's `contextEntityId` while connected — its tools, allow-always preferences, assignment fallback and the host's per-scope agent instruction — while the thread stays under `entityId`.
 
-- **`WidgetConfig.hideContextRoomDisconnect`.** Drops the *Disconnect room* entry from the connected room's menu, for a host that connects the room itself (DocSpace connects the room the user is in) and offers no cog to pick another — disconnecting would leave no way back. With it on, a room without skills is a plain label rather than a menu with nothing in it.
+- **`WidgetConfig.hideContextRoomDisconnect`.** Drops the *Disconnect room* entry from the connected room's menu, for a host that connects the room itself (DocSpace connects the room the user is in) and offers no cog to pick another — disconnecting would leave no way back. With it on, a room without skills shows nothing at all: an empty `.ai` folder is not worth a button.
 
 - **`DropdownMenu` and `ComboBox` take `footerItems`.** Rows pinned below the list: the items scroll inside the menu's height cap, the footer stays in view. Root level only; in drill-down mode a drilled-in level replaces the whole menu.
 
