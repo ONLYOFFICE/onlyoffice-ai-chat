@@ -461,6 +461,7 @@ const ComposerActionPrompts = () => {
           .filter((f) => f.id !== prompt.folderId)
           .map((folder) => ({
             text: folder.name,
+            withTruncateTooltip: true,
             onClick: () => {
               closeMenu();
               editPrompt(prompt.id, { folderId: folder.id });
@@ -518,6 +519,7 @@ const ComposerActionPrompts = () => {
       result.push({
         id: `prompt:${prompt.id}`,
         text: prompt.name,
+        withTruncateTooltip: true,
         onClick: () => applyPrompt(prompt.text),
         subMenu: buildPromptContextMenu(prompt),
         subMenuIcon: "more",
@@ -541,11 +543,13 @@ const ComposerActionPrompts = () => {
       result.push({
         id: `folder:${folder.id}`,
         text: folder.name,
+        withTruncateTooltip: true,
         onClick: () => undefined,
         subMenu: [
           ...folderPrompts.map((prompt) => ({
             id: `prompt:${prompt.id}`,
             text: prompt.name,
+            withTruncateTooltip: true,
             onClick: () => applyPrompt(prompt.text),
             subMenu: buildPromptContextMenu(prompt),
             subMenuIcon: "more",
@@ -583,6 +587,7 @@ const ComposerActionPrompts = () => {
         onClick: () => undefined,
         subMenu: builtInPrompts.map((s) => ({
           text: s.name,
+          withTruncateTooltip: true,
           onClick: () => applyPrompt(s.prompt),
         })),
       });

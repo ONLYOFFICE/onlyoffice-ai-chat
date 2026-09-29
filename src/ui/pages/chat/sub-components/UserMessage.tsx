@@ -21,6 +21,21 @@ import { useWidgetConfig } from "../../../../widget-config";
 import logger from "../../../../shared/logger";
 
 /**
+ * Upper bound for a prompt name derived from the message text. The menu
+ * ellipsizes long names and shows the full one in a tooltip, so this only
+ * keeps a pasted wall of text from being stored twice (name + text).
+ */
+const PROMPT_NAME_MAX_LENGTH = 100;
+
+/**
+ * Default name for a prompt saved from a message: the text on one line
+ * (newlines and runs of whitespace collapsed), capped at
+ * `PROMPT_NAME_MAX_LENGTH`.
+ */
+const derivePromptName = (text: string) =>
+  text.replace(/\s+/g, " ").trim().slice(0, PROMPT_NAME_MAX_LENGTH);
+
+/**
  * The confirmation shown after a prompt is saved, in the two wordings the
  * design calls for: a bare "Prompt saved", or one naming the folder it landed
  * in. Shared by every save path (no folder / existing folder / a folder created
@@ -66,7 +81,7 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
     if (!name) return;
     const folderId = await addFolder(name);
     await addPrompt({
-      name: messageText.slice(0, 15),
+      name: derivePromptName(messageText),
       text: messageText,
       folderId: folderId ?? null,
     });
@@ -148,7 +163,7 @@ const UserActionBar = () => {
       if (!trimmed) return;
       const folderId = await addFolder(trimmed);
       await addPrompt({
-        name: text.slice(0, 15),
+        name: derivePromptName(text),
         text,
         folderId: folderId ?? null,
       });
@@ -173,7 +188,7 @@ const UserActionBar = () => {
   const requestCreatePrompt = useCallback(
     async (folderId: string | null) => {
       const text = getMessageText();
-      const draft = { name: text.slice(0, 15), text };
+      const draft = { name: derivePromptName(text), text };
       if (!onCreatePrompt) {
         await addPrompt({ ...draft, folderId });
         notifySaved(folderNameById(folderId));
