@@ -423,6 +423,37 @@ describe("openai/stream/processStream", () => {
     expect(last.responseMessage.status.reason).toBe("error");
   });
 
+  it("reports a stream cut after text had arrived as cancelled, not finished (bug 84028)", async () => {
+    const ac = new AbortController();
+    async function* cut(): AsyncGenerator<ChatCompletionChunk> {
+      yield createTextDeltaChunk("Once upon");
+      // The consumer hangs up here; the SDK ends the iterator without a
+      // finish_reason and without throwing.
+      ac.abort();
+    }
+    const out = await collect(processStream(cut(), ac.signal));
+    const last = out[out.length - 1] as unknown as {
+      isEnd: true;
+      responseMessage: { status?: { reason: string } };
+    };
+    expect(last.responseMessage.status?.reason).toBe("cancelled");
+  });
+
+  it("keeps a reply whose finish_reason arrived before the hang-up", async () => {
+    const ac = new AbortController();
+    async function* done(): AsyncGenerator<ChatCompletionChunk> {
+      yield createTextDeltaChunk("Done.");
+      yield createFinishChunk();
+      ac.abort();
+    }
+    const out = await collect(processStream(done(), ac.signal));
+    const last = out[out.length - 1] as unknown as {
+      isEnd: true;
+      responseMessage: { status?: { reason: string } };
+    };
+    expect(last.responseMessage.status).toBeUndefined();
+  });
+
   it("yields a cancelled (stop) response when ended empty after abort", async () => {
     const ac = new AbortController();
     ac.abort();

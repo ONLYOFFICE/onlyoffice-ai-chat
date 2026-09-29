@@ -431,6 +431,13 @@ export async function* processStream(
     : undefined;
 
   for await (const streamEvent of stream) {
+    // The caller hung up mid-reply. The SDK may keep the iterator alive for
+    // a moment (or close it without throwing) — stop here and report a
+    // cancellation, never a finished reply (DocSpace bug 84028).
+    if (signal?.aborted && !isStreamComplete) {
+      yield { isEnd: true, responseMessage: createStopResponse() };
+      return;
+    }
     const prev = responseMessage;
     for (const chunk of streamEvent.choices) {
       if (isStreamComplete) break;
@@ -542,13 +549,15 @@ export async function* processStream(
       ? responseMessage.content.length > 0
       : responseMessage.content.length > 0;
 
-  if (hasContent) {
-    yield { isEnd: true, responseMessage };
-  } else if (signal?.aborted) {
-    // User stopped before any content arrived — the SDK closes the
-    // iterator without throwing, so treat the empty end as a cancellation
-    // rather than an error.
+  if (signal?.aborted && !isStreamComplete) {
+    // User stopped — the SDK closes the iterator without throwing, so the
+    // end of the stream is a cancellation whether or not text had already
+    // arrived. Checked before `hasContent`: a partial reply that ended here
+    // used to be reported as a finished one, and was persisted with no
+    // status at all (DocSpace bug 84028).
     yield { isEnd: true, responseMessage: createStopResponse() };
+  } else if (hasContent) {
+    yield { isEnd: true, responseMessage };
   } else {
     yield {
       isEnd: true,
