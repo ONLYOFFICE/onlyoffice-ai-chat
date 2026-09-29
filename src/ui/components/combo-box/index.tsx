@@ -92,18 +92,12 @@ const ComboBox = ({
       trigger={
         <div
           data-testid={dataTestId}
-          // The trigger reaches Radix through `asChild`, so Radix clones this
-          // div instead of rendering its own button — and its `...triggerProps`
-          // spread puts the child's props last, so a `role`/`aria-expanded`
-          // declared here overwrites the ones Radix would set (handlers are
-          // composed, attributes are not). Without them the trigger is a plain
-          // div that announces nothing about itself. Both DocSpace and the
-          // desktop plugin run their own click-outside/focus management around
-          // the widget, and there the model panel was dismissed by the host on
-          // the same click that opened it; declaring the combobox
-          // role and its expanded state is what stops that. Verified by hand in
-          // both hosts — the host-side matcher itself lives outside this repo,
-          // so nothing in these sources explains the dismissal on its own.
+          // Radix clones this div through `asChild` and gives it no role, so
+          // without one it reads as a plain gap. The chat composer focuses its
+          // textarea on any click that doesn't land on a control (it matches
+          // `[role='combobox']`), and the menu is non-modal (see `modal`
+          // below), so it dismisses on focus leaving it: the click that opened
+          // the model panel closed it again (Bug 84070).
           role="combobox"
           aria-expanded={isOpen}
           className={cn(
