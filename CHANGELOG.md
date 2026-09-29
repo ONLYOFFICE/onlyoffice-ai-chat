@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1
+
+### Fixed
+
+- **A room renamed while connected shows its new name.** `selectContextFolder` for the already connected room used to be a full no-op; it now takes over a changed name and still keeps the room's skills and switches.
+
 ## 0.6.0
 
 The room-context line (0.5.134 – 0.5.139) merged with everything master

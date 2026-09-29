@@ -32,10 +32,12 @@ export interface CloudsStoreState {
   selectedContextFolder: SelectedContextFolder | null;
   /**
    * Pick a room and read its skills once. Re-picking the connected room is
-   * a no-op — its skills and switches survive. A different room starts the
-   * skill list over with a fresh `fetchRoomSkills`. A host that wants the
-   * list re-read later (the room changed on its side) calls
-   * `fetchRoomSkills` itself; nothing in the widget polls.
+   * a no-op — its skills and switches survive; only a new name is taken
+   * over, so a room renamed while connected shows its current name. A
+   * different room starts the skill list over with a fresh
+   * `fetchRoomSkills`. A host that wants the list re-read later (the room
+   * changed on its side) calls `fetchRoomSkills` itself; nothing in the
+   * widget polls.
    */
   selectContextFolder: (cloud: string, room: ContextRoom) => void;
   clearContextFolder: () => void;
@@ -127,7 +129,12 @@ export function createCloudsStore({
     selectedContextFolder: null,
     selectContextFolder: (cloud, room) => {
       const current = get().selectedContextFolder;
-      if (current?.cloud === cloud && current.room.id === room.id) return;
+      if (current?.cloud === cloud && current.room.id === room.id) {
+        if (current.room.name !== room.name) {
+          set({ selectedContextFolder: { cloud, room } });
+        }
+        return;
+      }
       set({
         selectedContextFolder: { cloud, room },
         roomSkills: [],

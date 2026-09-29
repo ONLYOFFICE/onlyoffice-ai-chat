@@ -301,6 +301,28 @@ describe("createCloudsStore", () => {
       });
     });
 
+    it("takes over a new name of the connected room and keeps its skills", () => {
+      const store = makeStore();
+      store.getState().selectContextFolder("a.example.com", {
+        id: "r1",
+        name: "Room 1",
+      });
+      store.setState({
+        roomSkills: [{ id: "s1", name: "Skill", description: "" }],
+        disabledSkillIds: ["s1"],
+      });
+      store.getState().selectContextFolder("a.example.com", {
+        id: "r1",
+        name: "Room 1 (renamed)",
+      });
+      expect(store.getState().selectedContextFolder).toEqual({
+        cloud: "a.example.com",
+        room: { id: "r1", name: "Room 1 (renamed)" },
+      });
+      expect(store.getState().roomSkills).toHaveLength(1);
+      expect(store.getState().disabledSkillIds).toEqual(["s1"]);
+    });
+
     it("replaces the previous pick — one room at a time", () => {
       const store = makeStore();
       store.getState().selectContextFolder("a.example.com", {
