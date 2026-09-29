@@ -150,5 +150,7 @@
   "DownloadTemplate": "テンプレートをダウンロード",
   "Permissions": "権限",
   "DropFilesHere": "ここにファイルをドロップして添付",
-  "Uploading": "アップロード中…"
+  "Uploading": "アップロード中…",
+  "PromptSaved": "プロンプトを保存しました",
+  "PromptSavedToFolder": "プロンプトを「{{folder}}」に保存しました"
 }

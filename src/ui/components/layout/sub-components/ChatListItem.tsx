@@ -8,6 +8,8 @@ import { DropdownMenu } from "../../dropdown";
 import { Icon } from "../../icon";
 import { IconButton } from "../../icon-button";
 import { Input } from "../../input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../tooltip";
+import { useIsTruncated } from "../../../hooks/useIsTruncated";
 import { DeleteChatDialog } from "./DeleteChatDialog";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
@@ -62,6 +64,10 @@ const ChatListItemComponent = ({
   const [newTitle, setNewTitle] = React.useState(thread.title);
 
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Only offer the tooltip when the title is actually clipped by `truncate`.
+  const { ref: titleRef, isTruncated: isTitleTruncated } =
+    useIsTruncated<HTMLParagraphElement>();
 
   const { t } = useI18n();
   const { onDeleteThread } = useWidgetConfig();
@@ -201,6 +207,33 @@ const ChatListItemComponent = ({
       : [separatorItem, deleteItem]),
   ];
 
+  const titleText = (
+    <p
+      ref={titleRef}
+      className="min-w-0 select-none text-[length:var(--chat-list-item-font-size,var(--fs-12))] text-[var(--chat-list-item-color)] [font-weight:var(--chat-list-item-font-weight,400)] truncate"
+    >
+      {thread.title}
+    </p>
+  );
+
+  // The title only gains a tooltip once `truncate` actually clips it (the
+  // callback ref measures at mount, so this is settled before any hover).
+  const title = isTitleTruncated ? (
+    <Tooltip>
+      <TooltipTrigger asChild>{titleText}</TooltipTrigger>
+      <TooltipContent
+        side="bottom"
+        align="start"
+        sideOffset={4}
+        className="max-w-[272px] whitespace-normal break-words"
+      >
+        {thread.title}
+      </TooltipContent>
+    </Tooltip>
+  ) : (
+    titleText
+  );
+
   return (
     <div
       key={thread.threadId}
@@ -239,9 +272,7 @@ const ChatListItemComponent = ({
         />
       ) : (
         <>
-          <p className="select-none text-[length:var(--chat-list-item-font-size,var(--fs-12))] text-[var(--chat-list-item-color)] [font-weight:var(--chat-list-item-font-weight,400)] truncate">
-            {thread.title}
-          </p>
+          {title}
           {(alwaysShowActions || isHovered) && !isRenameInputVisible ? (
             <DropdownMenu
               open={isOpen}

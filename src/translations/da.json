@@ -150,5 +150,7 @@
   "DownloadTemplate": "Download skabelon",
   "Permissions": "Tilladelser",
   "DropFilesHere": "Slip filer her for at vedhæfte",
-  "Uploading": "Uploader…"
+  "Uploading": "Uploader…",
+  "PromptSaved": "Prompten er gemt",
+  "PromptSavedToFolder": "Prompten er gemt i “{{folder}}”"
 }

@@ -92,6 +92,14 @@ const ComboBox = ({
       trigger={
         <div
           data-testid={dataTestId}
+          // Radix clones this div through `asChild` and gives it no role, so
+          // without one it reads as a plain gap. The chat composer focuses its
+          // textarea on any click that doesn't land on a control (it matches
+          // `[role='combobox']`), and the menu is non-modal (see `modal`
+          // below), so it dismisses on focus leaving it: the click that opened
+          // the model panel closed it again (Bug 84070).
+          role="combobox"
+          aria-expanded={isOpen}
           className={cn(
             "h-[var(--combo-box-height,24px)] rounded-[var(--input-border-radius)] ps-[var(--combo-box-padding-start,4px)] pe-[var(--combo-box-padding-end,0px)] box-border",
             "cursor-pointer flex items-center justify-between",

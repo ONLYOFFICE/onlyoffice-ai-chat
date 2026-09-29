@@ -15,6 +15,8 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("../../../providers/PlatformProvider", () => ({
   usePlatform: () => ({ copyToClipboard: undefined }),
+  // No host `showToast`, so toasts stay with the built-in stack.
+  useOptionalPlatform: () => ({ copyToClipboard: undefined }),
 }));
 
 vi.mock("../../../store/context", () => ({
@@ -568,8 +570,24 @@ describe("UserMessage", () => {
       }[];
       items[0].onClick();
       expect(mockAddPrompt).toHaveBeenCalledWith({
-        name: "Line 1\nLine 2".slice(0, 15),
+        name: "Line 1 Line 2",
         text: "Line 1\nLine 2",
+        folderId: null,
+      });
+    });
+
+    it("SaveAIPrompt keeps a long message's name whole for the menu to ellipsize", () => {
+      const text = "Generate a detailed story about a dragon and a knight";
+      mockMessageContent.current = [{ type: "text", text }];
+      render(<UserMessage />);
+      const items = mockDropdownItems as {
+        text: string;
+        onClick: () => void;
+      }[];
+      items[0].onClick();
+      expect(mockAddPrompt).toHaveBeenCalledWith({
+        name: text,
+        text,
         folderId: null,
       });
     });

@@ -150,5 +150,7 @@
   "DownloadTemplate": "Last ned mal",
   "Permissions": "Tillatelser",
   "DropFilesHere": "Slipp filer her for å legge ved",
-  "Uploading": "Laster opp…"
+  "Uploading": "Laster opp…",
+  "PromptSaved": "Prompten er lagret",
+  "PromptSavedToFolder": "Prompten er lagret i «{{folder}}»"
 }

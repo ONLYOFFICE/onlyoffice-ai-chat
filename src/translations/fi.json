@@ -150,5 +150,7 @@
   "DownloadTemplate": "Lataa malli",
   "Permissions": "Käyttöoikeudet",
   "DropFilesHere": "Lisää tiedostoja pudottamalla ne tähän",
-  "Uploading": "Ladataan…"
+  "Uploading": "Ladataan…",
+  "PromptSaved": "Kehote tallennettu",
+  "PromptSavedToFolder": "Kehote tallennettu kansioon ”{{folder}}”"
 }

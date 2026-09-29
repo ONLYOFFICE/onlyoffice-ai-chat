@@ -18,26 +18,24 @@ vi.mock("../ui/providers/LocalesProvider", () => ({
 }));
 
 // Global mock for ThemeProvider — components call useTheme() at render time.
+const themeContextValue = {
+  themeId: "theme-light",
+  themeType: "light" as const,
+  setThemeId: vi.fn(),
+  scale: 1,
+  portalContainer: null,
+};
+
 vi.mock("../ui/providers/ThemeProvider/context", () => ({
-  useTheme: () => ({
-    themeId: "theme-light",
-    themeType: "light" as const,
-    setThemeId: vi.fn(),
-    scale: 1,
-    portalContainer: null,
-  }),
+  useTheme: () => themeContextValue,
+  useOptionalTheme: () => themeContextValue,
   ThemeProvider: ({ children }: { children: unknown }) => children,
   getThemeType: () => "light" as const,
 }));
 
 vi.mock("../ui/providers/ThemeProvider", () => ({
-  useTheme: () => ({
-    themeId: "theme-light",
-    themeType: "light" as const,
-    setThemeId: vi.fn(),
-    scale: 1,
-    portalContainer: null,
-  }),
+  useTheme: () => themeContextValue,
+  useOptionalTheme: () => themeContextValue,
   ThemeProvider: ({ children }: { children: unknown }) => children,
 }));
 

@@ -11,6 +11,15 @@ export function usePlatform(): PlatformAdapter {
   return ctx;
 }
 
+/**
+ * Like {@link usePlatform}, but returns `null` outside a `PlatformProvider`
+ * instead of throwing — for components that stay useful without a host
+ * adapter and only consult it for optional hooks.
+ */
+export function useOptionalPlatform(): PlatformAdapter | null {
+  return useContext(PlatformContext);
+}
+
 interface PlatformProviderProps {
   /** Platform implementation. Required — no default provided */
   platform: PlatformAdapter;

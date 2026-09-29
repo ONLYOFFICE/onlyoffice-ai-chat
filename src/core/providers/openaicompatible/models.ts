@@ -32,5 +32,7 @@ export const listModels = async (
     name: m.id,
     provider: "openaicompatible" as const,
     capabilities: defaultCaps,
+    // Typed as required by the SDK, but many compatible servers omit it.
+    ...(typeof m.created === "number" ? { created: m.created } : {}),
   }));
 };

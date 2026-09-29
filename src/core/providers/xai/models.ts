@@ -60,7 +60,10 @@ export const listModels = async (
     provider: "xai" as const,
     reasoning: m.id.includes("reasoning"),
     capabilities: inferCapabilities(m.id),
+    ...(typeof m.created === "number" ? { created: m.created } : {}),
   }));
 
+  // Reversal stays as the ordering fallback for catalogues that report no
+  // `created` timestamp; where one is present the picker sorts on it.
   return models.reverse();
 };

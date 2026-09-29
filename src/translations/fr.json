@@ -150,5 +150,7 @@
   "DownloadTemplate": "Télécharger le modèle",
   "Permissions": "Autorisations",
   "DropFilesHere": "Déposez les fichiers ici pour les joindre",
-  "Uploading": "Envoi en cours…"
+  "Uploading": "Envoi en cours…",
+  "PromptSaved": "Prompt enregistré",
+  "PromptSavedToFolder": "Prompt enregistré dans « {{folder}} »"
 }

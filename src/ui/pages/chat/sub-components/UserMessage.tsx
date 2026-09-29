@@ -16,8 +16,51 @@ import { useStores } from "../../../store/context";
 import { selectImageBase64 } from "../../../store/create-attachments-store";
 import type { TAttachmentFile } from "../../../../types";
 import { PROMPT_DIALOG_CLASS } from "./ComposerActionPrompts";
+import { useToast } from "../../../components/toast";
 import { useWidgetConfig } from "../../../../widget-config";
 import logger from "../../../../shared/logger";
+
+/**
+ * Upper bound for a prompt name derived from the message text. The menu
+ * ellipsizes long names and shows the full one in a tooltip, so this only
+ * keeps a pasted wall of text from being stored twice (name + text).
+ */
+const PROMPT_NAME_MAX_LENGTH = 100;
+
+/**
+ * Default name for a prompt saved from a message: the text on one line
+ * (newlines and runs of whitespace collapsed), capped at
+ * `PROMPT_NAME_MAX_LENGTH`.
+ */
+const derivePromptName = (text: string) =>
+  text.replace(/\s+/g, " ").trim().slice(0, PROMPT_NAME_MAX_LENGTH);
+
+/**
+ * The confirmation shown after a prompt is saved, in the two wordings the
+ * design calls for: a bare "Prompt saved", or one naming the folder it landed
+ * in. Shared by every save path (no folder / existing folder / a folder created
+ * on the spot) so they can't drift apart.
+ */
+const useSavedPromptToast = () => {
+  const { showToast } = useToast();
+  const { t } = useI18n();
+
+  return useCallback(
+    (folderName?: string | null) => {
+      const folder = folderName?.trim();
+      if (!folder) {
+        showToast(t("PromptSaved"));
+        return;
+      }
+      // The library's `t` takes a key and nothing else — it drops i18next's
+      // options argument — so the folder name is substituted here rather than
+      // through interpolation. The replacer function keeps `$`-sequences in a
+      // user-typed folder name from being read as replacement patterns.
+      showToast(t("PromptSavedToFolder").replace("{{folder}}", () => folder));
+    },
+    [showToast, t]
+  );
+};
 
 type NewFolderDialogProps = {
   messageText: string;
@@ -31,17 +74,22 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
   const addFolder = usePromptsStore((s) => s.addFolder);
   const addPrompt = usePromptsStore((s) => s.addPrompt);
   const [folderName, setFolderName] = useState(t("NewFolder"));
+  const notifySaved = useSavedPromptToast();
 
   const onSave = useCallback(async () => {
-    if (!folderName.trim()) return;
-    const folderId = await addFolder(folderName.trim());
+    const name = folderName.trim();
+    if (!name) return;
+    const folderId = await addFolder(name);
     await addPrompt({
-      name: messageText.slice(0, 15),
+      name: derivePromptName(messageText),
       text: messageText,
       folderId: folderId ?? null,
     });
+    // `addFolder` returning nothing means the folder wasn't created, so the
+    // prompt went to the root — report where it actually landed.
+    notifySaved(folderId ? name : null);
     onClose();
-  }, [folderName, onClose, addFolder, addPrompt, messageText]);
+  }, [folderName, onClose, addFolder, addPrompt, messageText, notifySaved]);
 
   return (
     <Dialog open={true}>
@@ -97,6 +145,7 @@ const UserActionBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isNewFolderDialogVisible, setIsNewFolderDialogVisible] =
     useState(false);
+  const notifySaved = useSavedPromptToast();
 
   // When the host supplies `onCreatePromptFolder`, it owns the name-input UI
   // (its own modal) and resolves the folder name; the widget creates the
@@ -114,27 +163,35 @@ const UserActionBar = () => {
       if (!trimmed) return;
       const folderId = await addFolder(trimmed);
       await addPrompt({
-        name: text.slice(0, 15),
+        name: derivePromptName(text),
         text,
         folderId: folderId ?? null,
       });
+      notifySaved(folderId ? trimmed : null);
     } catch (err) {
       logger.error("onCreatePromptFolder handler failed:", err);
     }
     // getMessageText reads from `message`, captured fresh each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onCreatePromptFolder, addFolder, addPrompt, t]);
+  }, [onCreatePromptFolder, addFolder, addPrompt, t, notifySaved]);
 
   // When the host supplies `onCreatePrompt`, it owns the name/text input UI
   // (its own window) and resolves the prompt fields; the widget creates it
   // once the host returns a non-empty name. Otherwise the prompt is saved
   // directly with a name derived from the message text.
+  const folderNameById = useCallback(
+    (id: string | null) =>
+      id ? (folders.find((f) => f.id === id)?.name ?? null) : null,
+    [folders]
+  );
+
   const requestCreatePrompt = useCallback(
     async (folderId: string | null) => {
       const text = getMessageText();
-      const draft = { name: text.slice(0, 15), text };
+      const draft = { name: derivePromptName(text), text };
       if (!onCreatePrompt) {
         await addPrompt({ ...draft, folderId });
+        notifySaved(folderNameById(folderId));
         return;
       }
       try {
@@ -144,19 +201,26 @@ const UserActionBar = () => {
           folders: folders.map((f) => ({ id: f.id, name: f.name })),
         });
         const name = result?.name?.trim();
-        if (!name) return;
+        if (!name) {
+          return;
+        }
+        // The host window may have moved the prompt to another folder, so the
+        // toast names the folder it was saved to, not the one it started in.
+        const savedFolderId =
+          result?.folderId !== undefined ? result.folderId : folderId;
         await addPrompt({
           name,
           text: result?.text ?? "",
-          folderId: result?.folderId !== undefined ? result.folderId : folderId,
+          folderId: savedFolderId,
         });
+        notifySaved(folderNameById(savedFolderId));
       } catch (err) {
         logger.error("onCreatePrompt handler failed:", err);
       }
     },
     // getMessageText reads from `message`, captured fresh each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [onCreatePrompt, addPrompt, folders]
+    [onCreatePrompt, addPrompt, folders, notifySaved, folderNameById]
   );
 
   const getMessageText = () =>

@@ -177,6 +177,9 @@ vi.mock("../ui/providers/ThemeProvider", () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
+  // `ToastProvider` reads the portal container from here; a null one keeps
+  // the toast viewport rendering in-tree, which is all this suite asserts on.
+  useOptionalTheme: () => null,
 }));
 
 vi.mock("../widget-config", () => ({

@@ -8,6 +8,7 @@ import { HelpButton } from "../help-button";
 import { IconButton } from "../icon-button";
 import { ToggleButton } from "../toggle-button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../tooltip";
+import { useIsTruncated } from "../../hooks/useIsTruncated";
 import { useWidgetConfig } from "../../../widget-config";
 import type { DropDownItemProps } from "./DropDownItem.types";
 
@@ -51,6 +52,7 @@ const DropDownItem = ({
   subMenuIconSize,
   checked,
   tooltipText,
+  withTruncateTooltip,
   withSpace,
   withAbout,
   aboutContent,
@@ -71,6 +73,10 @@ const DropDownItem = ({
   const itemRef = useRef<HTMLDivElement | null>(null);
   const submenuRef = useRef<HTMLDivElement | null>(null);
   const mouseMoveRef = useRef<((e: MouseEvent) => void) | null>(null);
+
+  // Only offer the label tooltip when `truncate` actually clips the text.
+  const { ref: labelRef, isTruncated: isLabelTruncated } =
+    useIsTruncated<HTMLSpanElement>();
 
   useEffect(() => {
     return () => {
@@ -259,6 +265,45 @@ const DropDownItem = ({
 
   const paddingClass = cn(START_PADDING[startKind], END_PADDING[endKind]);
 
+  const labelText = (
+    <span
+      ref={withTruncateTooltip ? labelRef : undefined}
+      dir="auto"
+      className={cn(
+        "truncate font-normal text-[var(--drop-down-menu-item-color)]",
+        withSpace ? "ms-[var(--dropdown-item-label-space,28px)]" : "",
+        isElementIcon
+          ? "[.dd-leading:empty+&]:ms-[var(--dropdown-item-label-space,28px)]"
+          : "",
+        trailingIcon ? "flex-1" : ""
+      )}
+    >
+      {text}
+    </span>
+  );
+
+  // The label only gains a tooltip once `truncate` actually clips it. The
+  // trigger's `data-slot` is overridden so `isAboutClick` doesn't mistake a
+  // click on the label for a click on the row's about/help button.
+  const label =
+    withTruncateTooltip && !tooltipText && isLabelTruncated ? (
+      <Tooltip>
+        <TooltipTrigger asChild data-slot="dropdown-item-label">
+          {labelText}
+        </TooltipTrigger>
+        <TooltipContent
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          className="max-w-[272px] whitespace-normal break-words"
+        >
+          {text}
+        </TooltipContent>
+      </Tooltip>
+    ) : (
+      labelText
+    );
+
   const itemContent = (
     <Item
       className={cn(
@@ -293,19 +338,7 @@ const DropDownItem = ({
             (icon ?? null)
           )}
         </span>
-        <span
-          dir="auto"
-          className={cn(
-            "truncate font-normal text-[var(--drop-down-menu-item-color)]",
-            withSpace ? "ms-[var(--dropdown-item-label-space,28px)]" : "",
-            isElementIcon
-              ? "[.dd-leading:empty+&]:ms-[var(--dropdown-item-label-space,28px)]"
-              : "",
-            trailingIcon ? "flex-1" : ""
-          )}
-        >
-          {text}
-        </span>
+        {label}
         {trailingIcon && typeof trailingIcon === "string" ? (
           <IconButton
             iconName={trailingIcon}
@@ -341,7 +374,7 @@ const DropDownItem = ({
           // stopPropagation so the row's own onSelect (leaf action) doesn't
           // also fire.
           <div
-            className="opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+            className="pointer-coarse:opacity-100 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
             onClick={(e) => {
               e.stopPropagation();
               onDrill?.();
@@ -373,9 +406,11 @@ const DropDownItem = ({
           // The "more" trigger only reveals on row hover/focus (or while its
           // menu is open), kept in layout via opacity so the row doesn't shift.
           // The plain submenu chevron (no subMenuIcon) stays always visible.
+          // On touch devices there is no hover, so it stays visible there too —
+          // otherwise the submenu would be unreachable.
           className={
             subMenuIcon
-              ? "opacity-0 group-hover:opacity-100 focus-within:opacity-100 has-[[data-state=open]]:opacity-100"
+              ? "pointer-coarse:opacity-100 opacity-0 group-hover:opacity-100 focus-within:opacity-100 has-[[data-state=open]]:opacity-100"
               : undefined
           }
         >

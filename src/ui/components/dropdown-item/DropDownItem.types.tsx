@@ -41,6 +41,12 @@ export type DropDownItemProps = {
   checked?: boolean;
 
   tooltipText?: string;
+  /**
+   * Show the full `text` in a tooltip when the label is clipped by its
+   * ellipsis — for user-named rows (saved prompts, folders) whose names can
+   * outgrow the menu width. Ignored when `tooltipText` is set.
+   */
+  withTruncateTooltip?: boolean;
 
   withSpace?: boolean;
 

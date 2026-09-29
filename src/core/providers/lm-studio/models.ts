@@ -66,5 +66,6 @@ export const listModels = async (
     name: m.id,
     provider: "lm-studio" as const,
     capabilities: defaultCaps,
+    ...(typeof m.created === "number" ? { created: m.created } : {}),
   }));
 };

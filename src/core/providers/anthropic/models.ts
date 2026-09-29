@@ -39,14 +39,25 @@ export const listModels = async (
   const client = createAnthropicClient(creds);
   const { data: models } = await client.models.list();
 
-  return models.map((m) => ({
-    // `display_name` is guaranteed by the real API, but OpenAI-compatible
-    // proxies and test doubles serving `/v1/models` omit it — fall back to
-    // the id so the model is still displayable (Bug 83119).
-    id: m.id,
-    name: m.display_name ?? m.id,
-    provider: "anthropic" as const,
-    reasoning: anthropicInfo.thinkingModels.some((t) => m.id.includes(t)),
-    capabilities: inferCapabilities(m.id),
-  }));
+  return models.map((m) => {
+    // Anthropic reports an ISO `created_at` where the OpenAI-shaped
+    // catalogues report Unix seconds — normalise to seconds so the model
+    // picker can order every provider the same way. Proxies that omit or
+    // mangle the field simply leave the model without a timestamp.
+    const createdMs = m.created_at ? Date.parse(m.created_at) : NaN;
+
+    return {
+      // `display_name` is guaranteed by the real API, but OpenAI-compatible
+      // proxies and test doubles serving `/v1/models` omit it — fall back to
+      // the id so the model is still displayable (Bug 83119).
+      id: m.id,
+      name: m.display_name ?? m.id,
+      provider: "anthropic" as const,
+      reasoning: anthropicInfo.thinkingModels.some((t) => m.id.includes(t)),
+      capabilities: inferCapabilities(m.id),
+      ...(Number.isNaN(createdMs)
+        ? {}
+        : { created: Math.floor(createdMs / 1000) }),
+    };
+  });
 };

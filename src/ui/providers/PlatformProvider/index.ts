@@ -1,4 +1,8 @@
-export { PlatformProvider, usePlatform } from "./context";
+export {
+  PlatformProvider,
+  usePlatform,
+  useOptionalPlatform,
+} from "./context";
 export type { AttachmentPickFilter } from "../../../shared/attachment-formats";
 export {
   ATTACHMENT_ACCEPT,

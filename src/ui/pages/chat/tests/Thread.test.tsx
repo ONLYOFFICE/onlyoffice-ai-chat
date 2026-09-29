@@ -90,6 +90,19 @@ vi.mock("@assistant-ui/react", () => ({
   ),
   useExternalStoreRuntime: () => ({}),
   useComposerRuntime: () => ({ setText: vi.fn() }),
+  // `PendingTurnSlack` reads the viewport measurements from here; a zero
+  // viewport leaves it rendering nothing, which is what a jsdom layout is
+  // anyway.
+  useThreadViewport: (
+    selector: (s: {
+      turnAnchor: string;
+      height: { viewport: number; inset: number; userMessage: number };
+    }) => unknown
+  ) =>
+    selector({
+      turnAnchor: "top",
+      height: { viewport: 0, inset: 0, userMessage: 0 },
+    }),
   CompositeAttachmentAdapter: class {},
   SimpleImageAttachmentAdapter: class {},
   SimpleTextAttachmentAdapter: class {},
@@ -102,13 +115,22 @@ vi.mock("@assistant-ui/react", () => ({
     Viewport: ({
       children,
       autoScroll,
+      turnAnchor,
     }: {
       children: React.ReactNode;
       autoScroll?: boolean;
+      turnAnchor?: "top" | "bottom";
     }) => (
-      <div data-testid="viewport" data-auto-scroll-prop={String(autoScroll)}>
+      <div
+        data-testid="viewport"
+        data-auto-scroll-prop={String(autoScroll)}
+        data-turn-anchor-prop={String(turnAnchor)}
+      >
         {children}
       </div>
+    ),
+    ViewportFooter: ({ children }: { children?: React.ReactNode }) => (
+      <div data-testid="viewport-footer">{children}</div>
     ),
     If: ({
       children,
@@ -212,6 +234,34 @@ describe("ChatPage (Thread)", () => {
       "data-auto-scroll-prop",
       "true"
     );
+  });
+
+  it("anchors the turn at the top of the viewport by default", () => {
+    render(<Thread />);
+    expect(screen.getAllByTestId("viewport")[0]).toHaveAttribute(
+      "data-turn-anchor-prop",
+      "top"
+    );
+  });
+
+  it("anchors at the bottom when autoScrollWhileStreaming is set", () => {
+    render(
+      <WidgetConfigProvider config={{ autoScrollWhileStreaming: true }}>
+        <Thread />
+      </WidgetConfigProvider>
+    );
+    expect(screen.getAllByTestId("viewport")[0]).toHaveAttribute(
+      "data-turn-anchor-prop",
+      "bottom"
+    );
+  });
+
+  // The slack that lifts the last user message to the top is sized as
+  // `viewport - inset`, so the trailing content below the messages has to be
+  // measured as inset or it pushes the message that far off the top edge.
+  it("measures the trailing thread content as viewport inset", () => {
+    render(<Thread />);
+    expect(screen.getByTestId("viewport-footer")).toBeInTheDocument();
   });
 
   it("clears manageToolData when the dialog closes", () => {

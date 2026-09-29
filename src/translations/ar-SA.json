@@ -150,5 +150,7 @@
   "DownloadTemplate": "تنزيل القالب",
   "Permissions": "الأذونات",
   "DropFilesHere": "أسقط الملفات هنا للإرفاق",
-  "Uploading": "جارٍ الرفع…"
+  "Uploading": "جارٍ الرفع…",
+  "PromptSaved": "تم حفظ الموجّه",
+  "PromptSavedToFolder": "تم حفظ الموجّه في ”{{folder}}“"
 }

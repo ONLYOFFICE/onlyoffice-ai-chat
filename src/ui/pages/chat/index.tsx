@@ -27,11 +27,13 @@ import { ComposerHeader } from "./sub-components/ComposerHeader";
 import { Suggestions } from "./sub-components/Suggestions";
 import { SuggestionsHeader } from "./sub-components/SuggestionsHeader";
 import { OlderMessages } from "./sub-components/OlderMessages";
+import { PendingTurnSlack } from "./sub-components/PendingTurnSlack";
 import { PreserveScrollOnHide } from "./sub-components/PreserveScrollOnHide";
 import { UserMessage } from "./sub-components/UserMessage";
 import { useChatDropAttachments } from "./useChatDropAttachments";
 
 import InitialSetup from "../initial-setup";
+import { ToastProvider } from "../../components/toast";
 
 import "./Thread.css";
 
@@ -95,7 +97,7 @@ const ThreadInner = () => {
 
   return (
     <div
-      className="aui-root relative flex h-full flex-col select-none"
+      className="aui-root relative flex h-full min-h-0 flex-1 flex-col select-none"
       onCopy={onCopy}
       onDragEnter={handlers.onDragEnter}
       onDragOver={handlers.onDragOver}
@@ -103,7 +105,7 @@ const ThreadInner = () => {
       onDrop={handlers.onDrop}
     >
       <ThreadPrimitive.Root
-        className="flex h-full flex-col bg-[var(--layout-background-color)]"
+        className="flex h-full min-h-0 flex-1 flex-col bg-[var(--layout-background-color)]"
         style={{
           ["--thread-max-width" as string]:
             "var(--chat-thread-max-width, 687px)",
@@ -131,21 +133,35 @@ const ThreadInner = () => {
               top and bottom edges of the message area instead of scrolling
               away with the content inside the viewport. */}
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-            {/* `autoScroll` is the runtime's *follow* behavior: a resize
+            {/* `turnAnchor="top"` is the reading-first layout: the last user
+                message becomes the scroll anchor and the assistant message
+                under it is given a `min-height` of the remaining viewport
+                (`ThreadPrimitive.ViewportSlack`, applied by
+                `MessagePrimitive.Root`). That slack is the scroll room the
+                jump-to-bottom on send needs in order to land the question at
+                the *top* of the message area, with the answer growing into
+                the empty space below it — rather than leaving the question
+                pinned above the composer and the answer rendering off-screen.
+
+                `autoScroll` is the runtime's *follow* behavior: a resize
                 observer on the content that re-pins the viewport to the
-                bottom on every growth while `isAtBottom` holds. Sending
-                scrolls to the bottom, which sets that flag, so a streaming
-                answer used to drag the view down token by token and a long
-                one scrolled its own beginning off-screen. Off by default so
-                the reading position stays put and the answer grows below it;
+                bottom on every growth while `isAtBottom` holds, which made a
+                long answer scroll its own beginning away token by token. It
+                defaults to `false` under `turnAnchor="top"` — passed
+                explicitly here so the opt-in config still reaches it — and
                 `ScrollToBottom` below un-disables itself as soon as there is
                 content past the fold, which is the "more below" affordance.
-                `scrollToBottomOnRunStart` keeps its default — the jump to
-                the bottom on send is still wanted. */}
+                `scrollToBottomOnRunStart` keeps its default: the jump on send
+                is what puts the question at the top.
+
+                A host that opts into `autoScrollWhileStreaming` wants the
+                classic chat layout, so the anchor goes back to the bottom
+                with it. */}
             <ThreadPrimitive.Viewport
               ref={viewportRef}
               autoScroll={autoScrollWhileStreaming ?? false}
-              className="thread-viewport relative flex min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
+              turnAnchor={autoScrollWhileStreaming ? "bottom" : "top"}
+              className="thread-viewport relative flex min-h-0 min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
               data-auto-scroll={autoScrollWhileStreaming ? "on" : "off"}
             >
               {/* Pulls the previous page when the reader nears the top of
@@ -163,18 +179,33 @@ const ThreadInner = () => {
                 }}
               />
 
-              {showAnalyzing ? (
-                <div className="flex items-center justify-center">
-                  <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
-                    <Loader />
-                    <p className="font-normal text-[var(--chat-message-analyze-color)]">
-                      {t("Analyzing")}
-                    </p>
+              {/* Everything below the last message is content *inset*: the
+                  slack that lifts the last user message to the top is sized
+                  as `viewport - inset`, so anything rendered under the answer
+                  has to be measured or it pushes the question that far off
+                  the top edge. `ViewportFooter` registers its own height with
+                  the viewport store (heights of several footers are summed),
+                  which is why the indicator and the trailing gap share one. */}
+              <ThreadPrimitive.ViewportFooter className="flex shrink-0 flex-col gap-[10px]">
+                {showAnalyzing ? (
+                  <div className="flex items-center justify-center">
+                    <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
+                      <Loader />
+                      <p className="font-normal text-[var(--chat-message-analyze-color)]">
+                        {t("Analyzing")}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
 
-              <motion.div className="min-h-[8px] min-w-6 shrink-0" />
+                <motion.div className="min-h-[8px] min-w-6 shrink-0" />
+              </ThreadPrimitive.ViewportFooter>
+
+              {/* Deliberately *outside* the footer: this spacer is sized from
+                  `inset`, so measuring it as part of the inset would feed its
+                  own height back in and collapse it. See
+                  `PendingTurnSlack` for the window it covers. */}
+              <PendingTurnSlack />
             </ThreadPrimitive.Viewport>
 
             {/* Floating "scroll to bottom" button (shown by default; hide
@@ -322,17 +353,23 @@ const Thread = () => {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ThreadInner />
-      {/* Tool-approval dialog lives with the chat surface so every
-          consumer of ChatPage (not just AIChatWidget) shows it — e.g.
-          server-side system tools that pause for approval. */}
-      {manageToolData ? (
-        <ManageToolDialog
-          onAllow={approveToolCall}
-          onDeny={denyToolCall}
-          onClose={() => setManageToolData(undefined)}
-        />
-      ) : null}
+      {/* Same reasoning as the tool-approval dialog below: the "prompt saved"
+          toast is queued from `UserMessage`, so every consumer of ChatPage
+          needs a viewport, not just `AIChatWidget`. Nesting is a no-op when
+          the widget already mounted one above. */}
+      <ToastProvider>
+        <ThreadInner />
+        {/* Tool-approval dialog lives with the chat surface so every
+            consumer of ChatPage (not just AIChatWidget) shows it — e.g.
+            server-side system tools that pause for approval. */}
+        {manageToolData ? (
+          <ManageToolDialog
+            onAllow={approveToolCall}
+            onDeny={denyToolCall}
+            onClose={() => setManageToolData(undefined)}
+          />
+        ) : null}
+      </ToastProvider>
     </AssistantRuntimeProvider>
   );
 };

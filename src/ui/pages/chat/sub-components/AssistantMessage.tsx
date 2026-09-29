@@ -469,7 +469,7 @@ const AssistantActionBar = () => {
   return (
     <ActionBarPrimitive.Root
       hidden={isStreamRunning}
-      className="col-start-3 row-start-2 mt-[4px] flex gap-[var(--chat-assistant-message-actions-gap,2px)]"
+      className="col-span-2 col-start-2 row-start-2 mt-[4px] flex h-fit items-center self-start gap-[var(--chat-assistant-message-actions-gap,2px)]"
     >
       {platform.copyToClipboard ? (
         <PlatformCopyButton text={getMessageText(message)} />
@@ -528,35 +528,63 @@ function hasRenderableContent(content: unknown): boolean {
   });
 }
 
-export const AssistantMessage = memo(() => {
-  const message = useMessage();
+/**
+ * Whether an assistant message renders to nothing at all.
+ *
+ * Two cases produce an empty assistant shell:
+ *   • a user-cancelled turn (stop pressed before any content streamed)
+ *     leaves an empty "incomplete" message; and
+ *   • the runtime's optimistic placeholder for an in-flight turn is an
+ *     empty "running" message — which would otherwise show an empty bubble
+ *     alongside our own "Analyzing" indicator.
+ * Error turns (reason === "error") still render so their banner shows even
+ * with no partial content.
+ *
+ * Exported because a message that renders nothing also mounts no
+ * `MessagePrimitive.Root`, and so none of the scroll machinery hung off it —
+ * `PendingTurnSlack` holds the turn's scroll room open for exactly as long as
+ * this is true.
+ */
+export function isEmptyAssistantMessage(message: {
+  content?: unknown;
+  status?: unknown;
+}): boolean {
   const status = message.status as
     | { type?: string; reason?: string }
     | undefined;
-
-  // Don't render an empty assistant shell. Two cases produce one:
-  //   • a user-cancelled turn (stop pressed before any content streamed)
-  //     leaves an empty "incomplete" message; and
-  //   • the runtime's optimistic placeholder for an in-flight turn is an
-  //     empty "running" message — which would otherwise show an empty bubble
-  //     alongside our own "Analyzing" indicator.
-  // Error turns (reason === "error") still render so their banner shows even
-  // with no partial content.
-  if (
+  return (
     !hasRenderableContent(message.content) &&
     ((status?.type === "incomplete" && status?.reason !== "error") ||
       status?.type === "running")
-  ) {
+  );
+}
+
+export const AssistantMessage = memo(() => {
+  const message = useMessage();
+  const { useMessageStore } = useStores();
+  const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
+
+  if (isEmptyAssistantMessage(message)) {
     return null;
   }
 
   return (
     <MessagePrimitive.Root asChild>
       <motion.div
-        className="relative mx-auto grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] px-[var(--thread-padding-x)] py-[8px]"
+        className="relative mx-auto grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_auto] content-start px-[var(--thread-padding-x)] py-[8px]"
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
+        // `ThreadPrimitive.ViewportSlack` (via `MessagePrimitive.Root`) pins a
+        // `min-height` of roughly the whole viewport onto the last assistant
+        // message so the question it answers can sit at the top of the screen.
+        // That room is only worth holding while the turn is live: once the run
+        // ends it is dead whitespace under the final answer, and the reader
+        // scrolls through it to reach the composer. Releasing it here — rather
+        // than switching `turnAnchor` — keeps the scroll-to-top behaviour on
+        // send and only reclaims the space afterwards. Inline, because the
+        // runtime writes `min-height` as an inline style on this same element.
+        style={isStreamRunning ? undefined : { minHeight: 0 }}
       >
         <div className="col-span-2 col-start-2 row-start-1 break-words leading-7 text-[var(--chat-message-color)] select-text">
           <MessagePrimitive.Content

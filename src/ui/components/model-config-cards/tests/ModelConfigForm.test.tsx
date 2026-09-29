@@ -467,4 +467,117 @@ describe("ModelConfigForm", () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  describe("model ordering", () => {
+    /** Ids of the rendered model rows, in the order the picker lists them. */
+    const renderedModelIds = (): string[] =>
+      Array.from(
+        screen
+          .getByTestId("combo-SelectModel")
+          .querySelectorAll("[data-testid^='item-']")
+      ).map((el) => el.getAttribute("data-testid")!.replace("item-", ""));
+
+    it("puts the newest release first when the catalogue dates models", () => {
+      const dated: Model[] = [
+        { id: "old", name: "AAA Old", provider: "openai", created: 1000 },
+        { id: "new", name: "ZZZ New", provider: "openai", created: 3000 },
+        { id: "mid", name: "MMM Mid", provider: "openai", created: 2000 },
+      ];
+      render(
+        <ModelConfigForm
+          values={defaultValues}
+          onChange={vi.fn()}
+          models={dated}
+        />
+      );
+      expect(renderedModelIds()).toEqual(["new", "mid", "old"]);
+    });
+
+    it("falls back to alphabetical order when no model is dated", () => {
+      const undated: Model[] = [
+        { id: "c", name: "Charlie", provider: "openai" },
+        { id: "a", name: "alpha", provider: "openai" },
+        { id: "b", name: "Bravo", provider: "openai" },
+      ];
+      render(
+        <ModelConfigForm
+          values={defaultValues}
+          onChange={vi.fn()}
+          models={undated}
+        />
+      );
+      expect(renderedModelIds()).toEqual(["a", "b", "c"]);
+    });
+
+    it("sorts dated models above undated ones, alphabetical within each", () => {
+      const mixed: Model[] = [
+        { id: "z-undated", name: "Zulu", provider: "openai" },
+        { id: "a-undated", name: "Alpha", provider: "openai" },
+        { id: "older", name: "Older", provider: "openai", created: 1000 },
+        { id: "newer", name: "Newer", provider: "openai", created: 2000 },
+      ];
+      render(
+        <ModelConfigForm
+          values={defaultValues}
+          onChange={vi.fn()}
+          models={mixed}
+        />
+      );
+      expect(renderedModelIds()).toEqual([
+        "newer",
+        "older",
+        "a-undated",
+        "z-undated",
+      ]);
+    });
+
+    it("lists OpenRouter models in the order the server ranked them", () => {
+      // Deliberately adversarial: reverse-alphabetical, and the newest
+      // model is last. Neither fallback may disturb the server's ranking.
+      const ranked: Model[] = [
+        { id: "zulu", name: "Zulu", provider: "openrouter", created: 1000 },
+        { id: "alpha", name: "Alpha", provider: "openrouter", created: 2000 },
+        { id: "mike", name: "Mike", provider: "openrouter", created: 9000 },
+      ];
+      render(
+        <ModelConfigForm
+          values={{ ...defaultValues, provider: "openrouter" }}
+          onChange={vi.fn()}
+          models={ranked}
+        />
+      );
+      expect(renderedModelIds()).toEqual(["zulu", "alpha", "mike"]);
+    });
+
+    it("still sorts providers that do not rank their catalogue", () => {
+      const ranked: Model[] = [
+        { id: "zulu", name: "Zulu", provider: "openai", created: 1000 },
+        { id: "alpha", name: "Alpha", provider: "openai", created: 2000 },
+        { id: "mike", name: "Mike", provider: "openai", created: 9000 },
+      ];
+      render(
+        <ModelConfigForm
+          values={defaultValues}
+          onChange={vi.fn()}
+          models={ranked}
+        />
+      );
+      expect(renderedModelIds()).toEqual(["mike", "alpha", "zulu"]);
+    });
+
+    it("breaks a shared release date alphabetically", () => {
+      const sameDay: Model[] = [
+        { id: "b", name: "Bravo", provider: "openai", created: 5000 },
+        { id: "a", name: "Alpha", provider: "openai", created: 5000 },
+      ];
+      render(
+        <ModelConfigForm
+          values={defaultValues}
+          onChange={vi.fn()}
+          models={sameDay}
+        />
+      );
+      expect(renderedModelIds()).toEqual(["a", "b"]);
+    });
+  });
 });
