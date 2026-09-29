@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.6.0
+
+The room-context line (0.5.134 – 0.5.139) merged with everything master
+shipped since 0.5.118. The minor bump marks the two behaviour changes
+hosts must know about: `hideProfilePicker: true` now locks the picker
+instead of removing it, and `ServerAPIRoutes` / `createStores` require
+the new `context` service.
+
+### Added
+
+- **A toast on a saved prompt**, via a new `Toast` component. It needs `@radix-ui/react-toast`, declared as an optional peer like the other Radix packages — a host that never saves prompts can leave it out.
+- **Models are sorted** in the pickers and settings lists.
+- **Tooltips for long prompt names** and for long chat titles in the history, so a truncated label can still be read.
+- **Images from the clipboard and by hotkey** are attached to the composer.
+- **Debug export keeps the whole response**, with nothing omitted.
+
+### Fixed
+
+- Inserting a prompt no longer clears what was already typed (Bug 84055).
+- The model selection panel opens again, and stays open after the click that opened it (Bug 84070).
+- A click moves straight to the next combobox on pages that stack them: the combobox dropdown is no longer modal, so it stops parking `pointer-events: none` on the page behind it.
+- Dropdown menus render above overlays (Bug 84002); the actions icon shows on narrow devices (Bug 84073); the model setup layout is intact (Bug 84005); two layout regressions.
+- The chat scrolls to a new message and to the bottom when reopened, without auto-scrolling while the user reads (Bug 83921, Bug 83684).
+- Regenerate acts on the turn that was clicked, not the newest one.
+- Dropped files are filtered by the allowed formats and keep their names (Bug 83956, Bug 83963); RTL detection is correct (Bug 83500); the model's reasoning is no longer inserted into the document (Bug 83764); images generate with Google models (Bug 83901).
+- The caret lands correctly when walking the prompt history.
+
 ## 0.5.139
 
 ### Fixed
