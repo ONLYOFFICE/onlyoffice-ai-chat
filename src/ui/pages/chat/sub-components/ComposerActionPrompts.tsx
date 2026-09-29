@@ -315,9 +315,18 @@ const ComposerActionPrompts = () => {
     [isOpen, t, IconButton, TooltipIconButton]
   );
 
+  // Appends to the draft rather than replacing it, so saved prompts can be
+  // combined with each other and with what the user already typed. The
+  // prompt starts on its own line unless the draft already ends with one.
   const applyPrompt = useCallback(
     (text: string) => {
-      composerRuntime.setText(text);
+      const draft = composerRuntime.getState().text;
+      if (!draft.trim()) {
+        composerRuntime.setText(text);
+      } else {
+        const separator = draft.endsWith("\n") ? "" : "\n";
+        composerRuntime.setText(`${draft}${separator}${text}`);
+      }
       closeMenu();
     },
     [composerRuntime, closeMenu]
