@@ -124,6 +124,24 @@ describe("buildToolContext", () => {
     expect(ctx.adapterToolNames.has("web_search")).toBe(true);
   });
 
+  it("stamps adapter and built-in tools with their group's serverType (bug 84009)", async () => {
+    getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
+    getImageGenerationToolsMock.mockResolvedValue([]);
+    const adapter: ToolsAdapter = {
+      getTools: vi.fn().mockResolvedValue({
+        calculator: [tool("get_time"), { ...tool("own"), serverType: "kept" }],
+      }),
+      callTool: vi.fn(),
+    };
+
+    const ctx = await buildToolContext(makeStorage(), adapter, []);
+    const byName = new Map(ctx.mergedTools.map((t) => [t.name, t]));
+    expect(byName.get("get_time")?.serverType).toBe("calculator");
+    // A source that already attributed its tool wins over the group key.
+    expect(byName.get("own")?.serverType).toBe("kept");
+    expect(byName.get("web_search")?.serverType).toBe("web-search");
+  });
+
   it("drops caller tools carrying enabled: false (Bug 83162)", async () => {
     getWebSearchToolsMock.mockResolvedValue([]);
     getImageGenerationToolsMock.mockResolvedValue([]);

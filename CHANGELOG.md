@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.3
+
+### Fixed
+
+- **"Always allow" on a custom MCP server's tool now sticks.** The approval dialog saved the bare name the model calls the tool by (`get_time`), while `set-allow-always` / `is-allow-always` key the list per server (`calculator_get_time`), so the saved decision was never found and, for a name without an underscore, was not persisted at all. All three paths — the dialog, the settings routes and the live round's auto-allow check — now derive one `${serverType}_${toolName}` token (`allowAlwaysToken`), and the flattened tool list stamps each adapter tool with its group so the round can attribute a bare call name to its server (DocSpace bug 84009). Decisions stored under a bare name before this release no longer apply and have to be granted once more.
+
 ## 0.6.2
 
 ### Fixed

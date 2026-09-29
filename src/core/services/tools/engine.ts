@@ -5,6 +5,7 @@ import type {
   ToolsMutationResult,
   TSystemToolsListing,
 } from "./types";
+import { allowAlwaysToken } from "./allow-always";
 import { validateServerName, validateTransportConfig } from "./validation";
 
 /**
@@ -201,12 +202,11 @@ export class ToolsEngine {
     value: boolean,
     entityId?: string
   ): Promise<void> {
-    // The persisted list holds `${serverType}_${toolName}` tokens — the
-    // format the live round uses (see validateServerName) and what the
-    // approval dialog pins. Storing the bare tool name here let the
+    // One token format shared with the approval dialog and the live round
+    // (see allowAlwaysToken). Storing the bare tool name here let the
     // permission leak onto same-named tools of every other server
     // (DocSpace bug 83161).
-    const token = `${serverType}_${toolName}`;
+    const token = allowAlwaysToken(serverType, toolName);
     const current = await this.deps.storage.toolPrefs.readAllowAlways(entityId);
     const has = current.includes(token);
 
@@ -232,10 +232,10 @@ export class ToolsEngine {
     toolName: string,
     entityId?: string
   ): Promise<boolean> {
-    // Same `${serverType}_${toolName}` token as setAllowAlways above — a
-    // bare-name match answered `true` for any server carrying a tool with
-    // that name (DocSpace bug 83161).
+    // Same token as setAllowAlways above — a bare-name match answered
+    // `true` for any server carrying a tool with that name (DocSpace bug
+    // 83161).
     const list = await this.deps.storage.toolPrefs.readAllowAlways(entityId);
-    return list.includes(`${serverType}_${toolName}`);
+    return list.includes(allowAlwaysToken(serverType, toolName));
   }
 }

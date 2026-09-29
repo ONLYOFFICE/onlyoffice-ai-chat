@@ -162,6 +162,12 @@ function isDisabledByPrefs(
  * any tool carrying its own `enabled: false`. Each group's `serverType`
  * is the disabled-map key; the filter checks the bare tool name against
  * the group's disabled list.
+ *
+ * Every surviving tool is stamped with its group's `serverType` (a source
+ * that already set one wins), so the flat list stays attributable: the
+ * live round needs the group to key the always-allow list per server
+ * (see `allowAlwaysToken`), and adapters such as MCP servers expose bare
+ * tool names that carry no group of their own.
  */
 function flattenAndFilter(
   grouped: Record<string, TMCPItem[]>,
@@ -173,7 +179,7 @@ function flattenAndFilter(
     for (const tool of tools) {
       if (tool.enabled === false) continue;
       if (disabledForType?.includes(tool.name)) continue;
-      out.push(tool);
+      out.push(tool.serverType ? tool : { ...tool, serverType });
     }
   }
   return out;

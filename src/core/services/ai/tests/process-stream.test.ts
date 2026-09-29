@@ -167,12 +167,74 @@ describe("processStream", () => {
     expect((event as { autoAllow: boolean }).autoAllow).toBe(true);
   });
 
+  it("auto-allows an MCP tool pinned under its server's token (bug 84009)", async () => {
+    // The dialog and the settings routes store `${serverType}_${toolName}`;
+    // the model calls the tool by its bare name and the flat tool list
+    // carries the group — the check must compose the same token.
+    const { storage } = makeStorage({ allowList: ["calculator_get_time"] });
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        { type: "tool-call", toolCallId: "c1", toolName: "get_time", args: {} },
+      ],
+    } as ThreadMessageLike;
+    const stream = feed([{ isEnd: true, responseMessage: message }]);
+    let event;
+    for await (const e of processStream(stream, {
+      storage,
+      threadId: "t",
+      tools: [
+        {
+          name: "get_time",
+          description: "",
+          inputSchema: {},
+          serverType: "calculator",
+        },
+      ],
+    })) {
+      event = e;
+    }
+    expect((event as { autoAllow: boolean }).autoAllow).toBe(true);
+  });
+
+  it("does not let one server's pin auto-allow a same-named tool of another (bug 83161)", async () => {
+    const { storage } = makeStorage({ allowList: ["calculator_get_time"] });
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        { type: "tool-call", toolCallId: "c1", toolName: "get_time", args: {} },
+      ],
+    } as ThreadMessageLike;
+    const stream = feed([{ isEnd: true, responseMessage: message }]);
+    let event;
+    for await (const e of processStream(stream, {
+      storage,
+      threadId: "t",
+      tools: [
+        {
+          name: "get_time",
+          description: "",
+          inputSchema: {},
+          serverType: "clock",
+        },
+      ],
+    })) {
+      event = e;
+    }
+    expect((event as { autoAllow: boolean }).autoAllow).toBe(false);
+  });
+
   it("auto-allows tool-call when the tool opts in via requireApproval: false", async () => {
     const { storage } = makeStorage();
     const message: ThreadMessageLike = {
       role: "assistant",
       content: [
-        { type: "tool-call", toolCallId: "c1", toolName: "host_edit", args: {} },
+        {
+          type: "tool-call",
+          toolCallId: "c1",
+          toolName: "host_edit",
+          args: {},
+        },
       ],
     } as ThreadMessageLike;
     const stream = feed([{ isEnd: true, responseMessage: message }]);
@@ -199,7 +261,12 @@ describe("processStream", () => {
     const message: ThreadMessageLike = {
       role: "assistant",
       content: [
-        { type: "tool-call", toolCallId: "c1", toolName: "host_edit", args: {} },
+        {
+          type: "tool-call",
+          toolCallId: "c1",
+          toolName: "host_edit",
+          args: {},
+        },
       ],
     } as ThreadMessageLike;
     const stream = feed([{ isEnd: true, responseMessage: message }]);
@@ -226,7 +293,12 @@ describe("processStream", () => {
     const message: ThreadMessageLike = {
       role: "assistant",
       content: [
-        { type: "tool-call", toolCallId: "c1", toolName: "mcp_query", args: {} },
+        {
+          type: "tool-call",
+          toolCallId: "c1",
+          toolName: "mcp_query",
+          args: {},
+        },
       ],
     } as ThreadMessageLike;
     const stream = feed([{ isEnd: true, responseMessage: message }]);
