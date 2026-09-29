@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.2
+
+### Fixed
+
+- **Profile rows in the model picker are no longer indented by the Effort row's icon.** The pinned footer joins the menu's tree for navigation, and the icon column was reserved over that joined level, so every profile label sat a column in. The list and the footer are now judged apart: the profiles stay at the start, and an icon-less footer row still lines up with the footer's icon.
+
 ## 0.6.1
 
 ### Fixed
