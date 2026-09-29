@@ -61,8 +61,8 @@ const field = (thinking: ThinkingParam, effort?: Effort): ThinkingField => ({
  * The `thinking` (and `output_config`) request fields for one round, per
  * Anthropic's per-model table.
  *
- * - **Fable / Mythos** think always and reject both `"enabled"` and
- *   `"disabled"`: any level sends `adaptive` (accepted) plus the matching
+ * - **Fable / Mythos and Opus 5.5+** think always and reject both
+ *   `"enabled"` and `"disabled"`: any level sends `adaptive` (accepted) plus the matching
  *   `output_config.effort`; a stored off means the standard depth,
  *   `effort: "medium"` (the composer offers them no switch).
  * - **4.6 and newer** (Opus 4.6+, Sonnet 4.6+, Opus 5, Sonnet 5) run

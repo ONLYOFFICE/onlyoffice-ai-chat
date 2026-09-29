@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { getAnthropicReasoningSupport } from "../reasoning";
+import {
+  getAnthropicReasoningSupport,
+  isAlwaysThinking,
+  parseClaudeModel,
+} from "../reasoning";
 import { resolveThinkingParam } from "../thinking";
 
 describe("getAnthropicReasoningSupport", () => {
@@ -22,6 +26,17 @@ describe("getAnthropicReasoningSupport", () => {
     expect(getAnthropicReasoningSupport("claude-mythos-5-1").canDisable).toBe(
       false
     );
+  });
+
+  it("marks Opus 5.5 as impossible to switch off (bug 84082)", () => {
+    // `thinking.type.disabled` is a 400 on Opus 5.5 at every effort level.
+    expect(getAnthropicReasoningSupport("claude-opus-5-5").canDisable).toBe(
+      false
+    );
+    expect(isAlwaysThinking("claude-opus-5-5")).toBe(true);
+    // Opus 5 still takes the switch.
+    expect(isAlwaysThinking("claude-opus-5")).toBe(false);
+    expect(isAlwaysThinking("claude-sonnet-5-5")).toBe(false);
   });
 
   it("knows the pre-thinking generations", () => {
@@ -50,5 +65,24 @@ describe("resolveThinkingParam with an explicit support", () => {
       thinking: { type: "adaptive" },
       output_config: { effort: "medium" },
     });
+  });
+});
+
+describe("parseClaudeModel", () => {
+  it("reads the minor after a dash or a dot", () => {
+    expect(parseClaudeModel("claude-opus-5-5")).toEqual({
+      family: "opus",
+      version: 5.5,
+    });
+    expect(parseClaudeModel("anthropic/claude-opus-5.5")).toEqual({
+      family: "opus",
+      version: 5.5,
+    });
+    expect(parseClaudeModel("claude-sonnet-4-5-20250929")).toEqual({
+      family: "sonnet",
+      version: 4.5,
+    });
+    // A date suffix is not a minor.
+    expect(parseClaudeModel("claude-opus-5-20260401")?.version).toBe(5);
   });
 });

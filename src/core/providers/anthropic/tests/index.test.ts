@@ -167,6 +167,15 @@ describe("AnthropicProvider", () => {
           type: "adaptive",
         });
       });
+
+      it("never sends disabled to Opus 5.5, which rejects it (bug 84082)", async () => {
+        expect(await thinkingFor("claude-opus-5-5", false)).toEqual({
+          type: "adaptive",
+        });
+        expect(await thinkingFor("claude-opus-5-5", true)).toEqual({
+          type: "adaptive",
+        });
+      });
     });
 
     describe("thinking depth", () => {
