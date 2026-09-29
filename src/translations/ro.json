@@ -155,5 +155,7 @@
   "DownloadTemplate": "Descarcă șablonul",
   "Permissions": "Permisiuni",
   "DropFilesHere": "Trageți fișierele aici pentru a le atașa",
-  "Uploading": "Se încarcă…"
+  "Uploading": "Se încarcă…",
+  "PromptSaved": "Prompt salvat",
+  "PromptSavedToFolder": "Prompt salvat în „{{folder}}”"
 }

@@ -155,5 +155,7 @@
   "DownloadTemplate": "Shkarko shabllonin",
   "Permissions": "Lejet",
   "DropFilesHere": "Hidh skedarët këtu për t'i bashkëngjitur",
-  "Uploading": "Po ngarkohet…"
+  "Uploading": "Po ngarkohet…",
+  "PromptSaved": "Prompt-i u ruajt",
+  "PromptSavedToFolder": "Prompt-i u ruajt në “{{folder}}”"
 }

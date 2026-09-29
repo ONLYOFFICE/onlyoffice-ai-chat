@@ -315,9 +315,18 @@ const ComposerActionPrompts = () => {
     [isOpen, t, IconButton, TooltipIconButton]
   );
 
+  // Appends to the draft rather than replacing it, so saved prompts can be
+  // combined with each other and with what the user already typed. The
+  // prompt starts on its own line unless the draft already ends with one.
   const applyPrompt = useCallback(
     (text: string) => {
-      composerRuntime.setText(text);
+      const draft = composerRuntime.getState().text;
+      if (!draft.trim()) {
+        composerRuntime.setText(text);
+      } else {
+        const separator = draft.endsWith("\n") ? "" : "\n";
+        composerRuntime.setText(`${draft}${separator}${text}`);
+      }
       closeMenu();
     },
     [composerRuntime, closeMenu]
@@ -461,6 +470,7 @@ const ComposerActionPrompts = () => {
           .filter((f) => f.id !== prompt.folderId)
           .map((folder) => ({
             text: folder.name,
+            withTruncateTooltip: true,
             onClick: () => {
               closeMenu();
               editPrompt(prompt.id, { folderId: folder.id });
@@ -518,6 +528,7 @@ const ComposerActionPrompts = () => {
       result.push({
         id: `prompt:${prompt.id}`,
         text: prompt.name,
+        withTruncateTooltip: true,
         onClick: () => applyPrompt(prompt.text),
         subMenu: buildPromptContextMenu(prompt),
         subMenuIcon: "more",
@@ -541,11 +552,13 @@ const ComposerActionPrompts = () => {
       result.push({
         id: `folder:${folder.id}`,
         text: folder.name,
+        withTruncateTooltip: true,
         onClick: () => undefined,
         subMenu: [
           ...folderPrompts.map((prompt) => ({
             id: `prompt:${prompt.id}`,
             text: prompt.name,
+            withTruncateTooltip: true,
             onClick: () => applyPrompt(prompt.text),
             subMenu: buildPromptContextMenu(prompt),
             subMenuIcon: "more",
@@ -583,6 +596,7 @@ const ComposerActionPrompts = () => {
         onClick: () => undefined,
         subMenu: builtInPrompts.map((s) => ({
           text: s.name,
+          withTruncateTooltip: true,
           onClick: () => applyPrompt(s.prompt),
         })),
       });

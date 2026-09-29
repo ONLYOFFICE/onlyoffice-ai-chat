@@ -155,5 +155,7 @@
   "DownloadTemplate": "Unduh templat",
   "Permissions": "Izin",
   "DropFilesHere": "Seret file ke sini untuk melampirkan",
-  "Uploading": "Mengunggah…"
+  "Uploading": "Mengunggah…",
+  "PromptSaved": "Prompt disimpan",
+  "PromptSavedToFolder": "Prompt disimpan ke “{{folder}}”"
 }

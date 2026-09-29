@@ -211,5 +211,15 @@ export function useTheme(): ThemeContextValue {
   return ctx;
 }
 
+/**
+ * Like {@link useTheme}, but returns `null` outside a {@link ThemeProvider}
+ * instead of throwing — for components that can still render without a theme
+ * (a host mounting them standalone), and so only need the portal container
+ * when one happens to be there.
+ */
+export function useOptionalTheme(): ThemeContextValue | null {
+  return useContext(ThemeContext);
+}
+
 // Re-export for convenience
 export { getThemeType };

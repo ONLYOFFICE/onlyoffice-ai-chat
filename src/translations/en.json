@@ -155,5 +155,7 @@
   "DownloadTemplate": "Download template",
   "Permissions": "Permissions",
   "DropFilesHere": "Drop files here to attach",
-  "Uploading": "Uploading…"
+  "Uploading": "Uploading…",
+  "PromptSaved": "Prompt saved",
+  "PromptSavedToFolder": "Prompt saved to “{{folder}}”"
 }

@@ -155,5 +155,7 @@
   "DownloadTemplate": "ٹیمپلیٹ ڈاؤن لوڈ کریں",
   "Permissions": "اجازتیں",
   "DropFilesHere": "منسلک کرنے کے لیے فائلیں یہاں ڈراپ کریں",
-  "Uploading": "اپ لوڈ ہو رہا ہے…"
+  "Uploading": "اپ لوڈ ہو رہا ہے…",
+  "PromptSaved": "Prompt محفوظ ہو گیا",
+  "PromptSavedToFolder": "Prompt ”{{folder}}“ میں محفوظ ہو گیا"
 }

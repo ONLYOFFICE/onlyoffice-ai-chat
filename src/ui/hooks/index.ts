@@ -1,5 +1,6 @@
 export { useDebouncedCallback } from "./useDebouncedCallback";
 export { useDirection } from "./useDirection";
+export { useIsTruncated } from "./useIsTruncated";
 export { default as useMessages } from "./useMessages";
 export { default as useProfiles } from "./useProfiles";
 export { default as useServers } from "./useServers";

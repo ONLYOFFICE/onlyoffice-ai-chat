@@ -155,5 +155,7 @@
   "DownloadTemplate": "下载模板",
   "Permissions": "权限",
   "DropFilesHere": "将文件拖放至此以附加",
-  "Uploading": "正在上传…"
+  "Uploading": "正在上传…",
+  "PromptSaved": "提示词已保存",
+  "PromptSavedToFolder": "提示词已保存到“{{folder}}”"
 }

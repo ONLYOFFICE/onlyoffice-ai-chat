@@ -155,5 +155,7 @@
   "DownloadTemplate": "Scarica modello",
   "Permissions": "Permessi",
   "DropFilesHere": "Trascina qui i file da allegare",
-  "Uploading": "Caricamento…"
+  "Uploading": "Caricamento…",
+  "PromptSaved": "Prompt salvato",
+  "PromptSavedToFolder": "Prompt salvato in «{{folder}}»"
 }

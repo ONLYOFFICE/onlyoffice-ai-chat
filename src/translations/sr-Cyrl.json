@@ -155,5 +155,7 @@
   "DownloadTemplate": "Преузми шаблон",
   "Permissions": "Дозволе",
   "DropFilesHere": "Превуците датотеке овде да бисте их приложили",
-  "Uploading": "Отпремање…"
+  "Uploading": "Отпремање…",
+  "PromptSaved": "Упит је сачуван",
+  "PromptSavedToFolder": "Упит је сачуван у „{{folder}}”"
 }

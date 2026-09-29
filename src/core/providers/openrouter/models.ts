@@ -131,18 +131,47 @@ export const checkCredentials = async (
 };
 
 /**
+ * Build the `/models` request URL, carrying the catalogue query in a way
+ * that survives a `baseUrl` that already has its own query string.
+ *
+ * `sort=most-popular` asks OpenRouter to rank the catalogue by usage, the
+ * only popularity signal it offers — the response carries no per-model
+ * usage figure, so the ranking exists purely as the array order and is
+ * preserved by listing the models exactly as they arrive. `limit` is
+ * raised past the endpoint's 500 default because the catalogue is already
+ * ~460 entries and a silent truncation would drop real models.
+ *
+ * A base URL that isn't parseable (a relative proxy path, say) falls back
+ * to plain string concatenation with no query — the caller still gets an
+ * unranked catalogue rather than an exception.
+ */
+const buildModelsUrl = (baseUrl: string): string => {
+  try {
+    const url = new URL(`${baseUrl.replace(/\/+$/, "")}/models`);
+    url.searchParams.set("sort", "most-popular");
+    url.searchParams.set("limit", "1000");
+    return url.toString();
+  } catch {
+    return `${baseUrl}/models`;
+  }
+};
+
+/**
  * Fetch the OpenRouter catalogue and project each entry into {@link Model}.
  *
  * The catalogue's `reasoning` object says whether and how a model thinks;
  * {@link openrouterInfo.reasoningModels} is the fallback for catalogues that
  * predate the field. Capability inference runs through
  * {@link inferCapabilities}.
+ *
+ * The response order is the ranking — see {@link buildModelsUrl} — so the
+ * catalogue is projected as-is and no per-model ordering field is emitted.
  */
 export const listModels = async (
   creds: ProviderCredentials
 ): Promise<Model[]> => {
   const url = creds.baseUrl || openrouterInfo.baseUrl;
-  const response = await (creds.fetch ?? fetch)(`${url}/models`, {
+  const response = await (creds.fetch ?? fetch)(buildModelsUrl(url), {
     headers: creds.apiKey ? { Authorization: `Bearer ${creds.apiKey}` } : {},
   });
   if (!response.ok) return [];

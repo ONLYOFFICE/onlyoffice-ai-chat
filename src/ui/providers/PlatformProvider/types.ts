@@ -308,6 +308,20 @@ export interface PlatformAdapter {
    */
   copyToClipboard?: (text: string, meta?: CopyMeta) => void | Promise<void>;
 
+  /**
+   * Optional host-supplied notification. When set, the chat's own toasts
+   * (e.g. "Prompt saved") are handed to it instead of being rendered by the
+   * built-in stack — so a host with its own notification system (DocSpace's
+   * `toastr`) keeps one consistent look and, crucially, its own positioning:
+   * the built-in viewport sits above the chat composer, which is wrong for a
+   * host that anchors notifications to the whole page.
+   *
+   * Severity is left out on purpose: every toast the chat raises today is a
+   * success confirmation. Add a second argument when that stops being true
+   * rather than having hosts guess.
+   */
+  showToast?: (text: string) => void;
+
   /** Cloud accounts connected in the host application. If null — cloud provider features are unavailable */
   clouds: PlatformClouds | null;
 }

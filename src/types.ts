@@ -169,6 +169,15 @@ export type Model = {
    * Used to filter models per {@link ActionType}.
    */
   capabilities?: number;
+
+  /**
+   * Release date as a Unix timestamp in **seconds**, when the provider's
+   * catalogue reports one (OpenAI-shaped `/models` responses and
+   * OpenRouter carry `created`; Anthropic carries an ISO `created_at`).
+   * The model picker sorts on it so the newest releases come first;
+   * entries without it fall back to alphabetical order.
+   */
+  created?: number;
 };
 
 /**

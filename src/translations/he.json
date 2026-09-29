@@ -155,5 +155,7 @@
   "DownloadTemplate": "הורד תבנית",
   "Permissions": "הרשאות",
   "DropFilesHere": "גרור קבצים לכאן כדי לצרף",
-  "Uploading": "מעלה…"
+  "Uploading": "מעלה…",
+  "PromptSaved": "הפרומפט נשמר",
+  "PromptSavedToFolder": "הפרומפט נשמר בתיקייה „{{folder}}”"
 }

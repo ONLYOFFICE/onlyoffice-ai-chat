@@ -42,9 +42,11 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
+let mockDraft = "";
 vi.mock("@assistant-ui/react", () => ({
   useComposerRuntime: () => ({
     setText: mockSetText,
+    getState: () => ({ text: mockDraft }),
   }),
 }));
 
@@ -242,6 +244,7 @@ describe("ComposerActionPrompts", () => {
     vi.clearAllMocks();
     mockPrompts = [];
     mockFolders = [];
+    mockDraft = "";
     mockDropdownItems = [];
     mockOnOpenChange = undefined;
   });
@@ -358,6 +361,43 @@ describe("ComposerActionPrompts", () => {
       act(() => items[0].onClick());
       expect(mockSetText).toHaveBeenCalledWith("Apply this text");
       expect(isMenuOpen()).toBe(false);
+    });
+
+    it("appends the prompt on a new line instead of replacing the draft", () => {
+      mockPrompts = [
+        { id: "1", name: "Plan", text: "Make a plan", folderId: null },
+      ];
+      mockDraft = "Presentation on security basics.";
+      render(<ComposerActionPrompts />);
+      const items = mockDropdownItems as { onClick: () => void }[];
+      act(() => items[0].onClick());
+      expect(mockSetText).toHaveBeenCalledWith(
+        "Presentation on security basics.\nMake a plan"
+      );
+    });
+
+    it("does not add an extra newline when the draft already ends with one", () => {
+      mockPrompts = [
+        { id: "1", name: "Plan", text: "Make a plan", folderId: null },
+      ];
+      mockDraft = "Presentation on security basics.\n";
+      render(<ComposerActionPrompts />);
+      const items = mockDropdownItems as { onClick: () => void }[];
+      act(() => items[0].onClick());
+      expect(mockSetText).toHaveBeenCalledWith(
+        "Presentation on security basics.\nMake a plan"
+      );
+    });
+
+    it("replaces a whitespace-only draft", () => {
+      mockPrompts = [
+        { id: "1", name: "Plan", text: "Make a plan", folderId: null },
+      ];
+      mockDraft = "  \n ";
+      render(<ComposerActionPrompts />);
+      const items = mockDropdownItems as { onClick: () => void }[];
+      act(() => items[0].onClick());
+      expect(mockSetText).toHaveBeenCalledWith("Make a plan");
     });
 
     it("prompt has context menu with Edit, Delete, and separator", () => {

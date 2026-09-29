@@ -46,5 +46,6 @@ export const listModels = async (
       name: m.id,
       provider: "groq" as const,
       capabilities: inferCapabilities(m.id.toLowerCase()),
+      ...(typeof m.created === "number" ? { created: m.created } : {}),
     }));
 };

@@ -155,5 +155,7 @@
   "DownloadTemplate": "Stáhnout šablonu",
   "Permissions": "Oprávnění",
   "DropFilesHere": "Přetáhněte soubory sem pro připojení",
-  "Uploading": "Nahrávání…"
+  "Uploading": "Nahrávání…",
+  "PromptSaved": "Výzva byla uložena",
+  "PromptSavedToFolder": "Výzva byla uložena do „{{folder}}“"
 }

@@ -108,6 +108,8 @@ export type TranslationKey =
   | "ProfileName"
   | "ProfileUpdateFailed"
   | "PromptName"
+  | "PromptSaved"
+  | "PromptSavedToFolder"
   | "PromptText"
   | "Provider"
   | "ReadMore"

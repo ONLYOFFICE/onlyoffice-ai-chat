@@ -77,5 +77,6 @@ export const listModels = async (
     name: m.id ?? "Unknown",
     provider: "mistral" as const,
     capabilities: inferCapabilities(m),
+    ...(typeof m.created === "number" ? { created: m.created } : {}),
   }));
 };

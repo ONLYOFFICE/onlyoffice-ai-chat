@@ -57,5 +57,6 @@ export const listModels = async (
     name: m.id,
     provider: "gpt4all" as const,
     capabilities: defaultCaps,
+    ...(typeof m.created === "number" ? { created: m.created } : {}),
   }));
 };

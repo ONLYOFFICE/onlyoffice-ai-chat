@@ -24,19 +24,25 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div
-      className={`aui-root h-[100vh] ${isRTL ? "font-rtl" : ""}`}
+      className={`aui-root flex h-full min-h-0 flex-col ${isRTL ? "font-rtl" : ""}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
       <main
         id="app"
-        className="h-[100vh] bg-[var(--layout-background-color)] flex flex-col"
+        className="flex min-h-0 flex-1 flex-col bg-[var(--layout-background-color)]"
       >
         <Navigation />
-        <div
-          className="flex flex-row flex-1"
-          style={{ height: "calc(100vh - 56px)" }}
-        >
-          {isHistory ? <ChatList /> : <div className="w-full">{children}</div>}
+        {/* `min-h-0` keeps this row bounded by the host's height instead of
+            the browser viewport: the widget is embedded (DocSpace panel,
+            plugin, iframe) as often as it is full-page, and a `100vh`
+            measurement there oversizes the scroll viewport — which the
+            thread's viewport-sized spacers then amplify into blank gaps. */}
+        <div className="flex min-h-0 flex-1 flex-row">
+          {isHistory ? (
+            <ChatList />
+          ) : (
+            <div className="flex min-h-0 w-full flex-col">{children}</div>
+          )}
         </div>
       </main>
     </div>

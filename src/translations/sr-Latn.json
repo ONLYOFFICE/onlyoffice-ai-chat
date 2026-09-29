@@ -155,5 +155,7 @@
   "DownloadTemplate": "Preuzmi šablon",
   "Permissions": "Dozvole",
   "DropFilesHere": "Prevucite fajlove ovde da biste ih priložili",
-  "Uploading": "Otpremanje…"
+  "Uploading": "Otpremanje…",
+  "PromptSaved": "Prompt je sačuvan",
+  "PromptSavedToFolder": "Prompt je sačuvan u „{{folder}}”"
 }

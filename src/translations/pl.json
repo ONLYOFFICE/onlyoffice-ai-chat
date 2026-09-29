@@ -155,5 +155,7 @@
   "DownloadTemplate": "Pobierz szablon",
   "Permissions": "Uprawnienia",
   "DropFilesHere": "Upuść pliki tutaj, aby je załączyć",
-  "Uploading": "Przesyłanie…"
+  "Uploading": "Przesyłanie…",
+  "PromptSaved": "Monit zapisany",
+  "PromptSavedToFolder": "Monit zapisany w folderze „{{folder}}”"
 }

@@ -155,5 +155,7 @@
   "DownloadTemplate": "Descargar plantilla",
   "Permissions": "Permisos",
   "DropFilesHere": "Suelte los archivos aquí para adjuntarlos",
-  "Uploading": "Subiendo…"
+  "Uploading": "Subiendo…",
+  "PromptSaved": "Prompt guardado",
+  "PromptSavedToFolder": "Prompt guardado en «{{folder}}»"
 }

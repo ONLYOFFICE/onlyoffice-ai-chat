@@ -420,6 +420,57 @@ describe("DropDownItem", () => {
     expect(screen.queryByTestId("tooltip")).not.toBeInTheDocument();
   });
 
+  describe("withTruncateTooltip", () => {
+    // jsdom has no layout, so clipping is simulated by overriding the
+    // measurements `useIsTruncated` reads.
+    const mockLabelWidths = (scrollWidth: number, clientWidth: number) => {
+      const scroll = vi
+        .spyOn(HTMLElement.prototype, "scrollWidth", "get")
+        .mockReturnValue(scrollWidth);
+      const client = vi
+        .spyOn(HTMLElement.prototype, "clientWidth", "get")
+        .mockReturnValue(clientWidth);
+      return () => {
+        scroll.mockRestore();
+        client.mockRestore();
+      };
+    };
+
+    it("shows the full text in a tooltip when the label is clipped", () => {
+      const restore = mockLabelWidths(300, 150);
+      renderInDropdownContext(
+        <DropDownItem
+          text="A very long saved prompt name"
+          onClick={vi.fn()}
+          withTruncateTooltip
+        />
+      );
+      expect(screen.getByTestId("tooltip")).toBeInTheDocument();
+      expect(screen.getByTestId("tooltip-content")).toHaveTextContent(
+        "A very long saved prompt name"
+      );
+      restore();
+    });
+
+    it("renders no tooltip when the label fits", () => {
+      const restore = mockLabelWidths(100, 150);
+      renderInDropdownContext(
+        <DropDownItem text="Short" onClick={vi.fn()} withTruncateTooltip />
+      );
+      expect(screen.queryByTestId("tooltip")).not.toBeInTheDocument();
+      restore();
+    });
+
+    it("does nothing without the flag, even when clipped", () => {
+      const restore = mockLabelWidths(300, 150);
+      renderInDropdownContext(
+        <DropDownItem text="A very long label" onClick={vi.fn()} />
+      );
+      expect(screen.queryByTestId("tooltip")).not.toBeInTheDocument();
+      restore();
+    });
+  });
+
   it("renders about content when withAbout is true", () => {
     renderInDropdownContext(
       <DropDownItem

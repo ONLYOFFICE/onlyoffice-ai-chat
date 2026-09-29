@@ -41,6 +41,7 @@ import {
 } from "./ui/providers/ApiProvider";
 import { ComponentsProvider } from "./ui/providers/ComponentsProvider";
 import type { ComponentOverrides } from "./ui/providers/ComponentsProvider";
+import { ToastProvider } from "./ui/components/toast";
 import { ImagesProvider } from "./ui/providers/ImagesProvider";
 import type { ImageOverrides } from "./ui/providers/ImagesProvider";
 import { I18nProvider } from "./ui/providers/LocalesProvider";
@@ -133,8 +134,8 @@ export interface AIChatWidgetProps {
   hideThreadFade?: boolean;
   /**
    * Follow the streaming response by keeping the thread pinned to the
-   * bottom. Off by default — the reading position stays where it is and the
-   * answer grows below it. See
+   * bottom. Off by default — sending lifts the question to the top of the
+   * message area and the answer grows below it. See
    * {@link WidgetConfig.autoScrollWhileStreaming}.
    */
   autoScrollWhileStreaming?: boolean;
@@ -682,13 +683,18 @@ export const AIChatWidget = React.forwardRef<
                         overrides={images}
                         iconFormat={iconFormat}
                       >
-                        <AppWithTools
-                          hostToolGroupsProp={hostToolGroupsProp}
-                          onMigrate={onMigrate}
-                          servers={ctx.servers}
-                          eventBus={ctx.eventBus}
-                          widgetRef={ref}
-                        />
+                        {/* Inside ThemeProvider so the stack renders within
+                            the subtree the theme's `--toast-*` variables are
+                            scoped to. */}
+                        <ToastProvider>
+                          <AppWithTools
+                            hostToolGroupsProp={hostToolGroupsProp}
+                            onMigrate={onMigrate}
+                            servers={ctx.servers}
+                            eventBus={ctx.eventBus}
+                            widgetRef={ref}
+                          />
+                        </ToastProvider>
                       </ImagesProvider>
                     </ThemeProvider>
                   </StoresProvider>

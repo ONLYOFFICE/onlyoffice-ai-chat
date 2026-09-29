@@ -155,5 +155,7 @@
   "DownloadTemplate": "Vorlage herunterladen",
   "Permissions": "Berechtigungen",
   "DropFilesHere": "Dateien hier ablegen zum Anhängen",
-  "Uploading": "Wird hochgeladen…"
+  "Uploading": "Wird hochgeladen…",
+  "PromptSaved": "Prompt gespeichert",
+  "PromptSavedToFolder": "Prompt in „{{folder}}“ gespeichert"
 }

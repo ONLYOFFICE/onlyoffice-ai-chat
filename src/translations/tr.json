@@ -155,5 +155,7 @@
   "DownloadTemplate": "Şablonu indir",
   "Permissions": "İzinler",
   "DropFilesHere": "Eklemek için dosyaları buraya bırakın",
-  "Uploading": "Yükleniyor…"
+  "Uploading": "Yükleniyor…",
+  "PromptSaved": "İstem kaydedildi",
+  "PromptSavedToFolder": "İstem “{{folder}}” klasörüne kaydedildi"
 }

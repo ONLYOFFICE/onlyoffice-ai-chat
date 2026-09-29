@@ -155,5 +155,7 @@
   "DownloadTemplate": "Спампаваць шаблон",
   "Permissions": "Дазволы",
   "DropFilesHere": "Перацягніце файлы сюды, каб далучыць",
-  "Uploading": "Запампоўка…"
+  "Uploading": "Запампоўка…",
+  "PromptSaved": "Запыт захаваны",
+  "PromptSavedToFolder": "Запыт захаваны ў «{{folder}}»"
 }

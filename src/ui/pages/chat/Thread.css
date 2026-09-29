@@ -19,10 +19,10 @@
    the offset at once and the text visibly jumps instead of scrolling. There
    the runtime owns the position — turn the browser's half off.
 
-   In the default mode nothing re-pins the viewport, so the browser's
-   anchoring is exactly what should stay on: it keeps the text the reader is
-   looking at still while content grows, including when `OlderMessages`
-   prepends a page above. */
+   In the default mode (`turnAnchor="top"`) nothing re-pins the viewport, so
+   the browser's anchoring is exactly what should stay on: it keeps the text
+   the reader is looking at still while the answer grows out of the slack
+   below it, and when `OlderMessages` prepends a page above. */
 .thread-viewport[data-auto-scroll="on"] {
   overflow-anchor: none;
 }

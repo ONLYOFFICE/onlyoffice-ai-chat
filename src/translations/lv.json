@@ -155,5 +155,7 @@
   "DownloadTemplate": "Lejupielādēt veidni",
   "Permissions": "Atļaujas",
   "DropFilesHere": "Nometiet failus šeit, lai pievienotu",
-  "Uploading": "Notiek augšupielāde…"
+  "Uploading": "Notiek augšupielāde…",
+  "PromptSaved": "Uzvedne saglabāta",
+  "PromptSavedToFolder": "Uzvedne saglabāta mapē “{{folder}}”"
 }

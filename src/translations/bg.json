@@ -155,5 +155,7 @@
   "DownloadTemplate": "Изтегли шаблон",
   "Permissions": "Разрешения",
   "DropFilesHere": "Пуснете файлове тук, за да ги прикачите",
-  "Uploading": "Качване…"
+  "Uploading": "Качване…",
+  "PromptSaved": "Подканата е запазена",
+  "PromptSavedToFolder": "Подканата е запазена в „{{folder}}“"
 }

@@ -155,5 +155,7 @@
   "DownloadTemplate": "Descargar modelo",
   "Permissions": "Permisos",
   "DropFilesHere": "Solte os ficheiros aquí para adxuntalos",
-  "Uploading": "Subindo…"
+  "Uploading": "Subindo…",
+  "PromptSaved": "Indicación gardada",
+  "PromptSavedToFolder": "Indicación gardada en «{{folder}}»"
 }

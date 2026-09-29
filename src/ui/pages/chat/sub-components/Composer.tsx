@@ -75,7 +75,9 @@ const Composer = () => {
   // Make the whole composer area act as one big click target: a click on the
   // padding or any non-interactive gap focuses the textarea. Clicks that land
   // on a real control (buttons, the model selector, the input itself) are left
-  // alone so they keep their own behavior.
+  // alone so they keep their own behavior. Stealing focus from an open
+  // non-modal menu dismisses it, so every control must match here — the
+  // ComboBox trigger does through its `role`.
   const focusInputOnClick = (e: ReactMouseEvent<HTMLFormElement>) => {
     if (composerDisabled) return;
     const target = e.target as HTMLElement;

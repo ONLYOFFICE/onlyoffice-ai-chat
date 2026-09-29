@@ -211,4 +211,48 @@ describe("openrouter/models/listModels", () => {
     expect(out[2].reasoning).toBe(true);
     expect(out[2].reasoningSupport).toBeUndefined();
   });
+
+  it("requests the usage-ranked catalogue without truncating it", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [] }),
+    } as unknown as Response);
+    await listModels({ baseUrl: "https://openrouter.ai/api/v1" });
+
+    const requested = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requested.pathname).toBe("/api/v1/models");
+    expect(requested.searchParams.get("sort")).toBe("most-popular");
+    // The endpoint defaults to 500 and the catalogue is already ~460.
+    expect(requested.searchParams.get("limit")).toBe("1000");
+  });
+
+  it("keeps the query intact when baseUrl has a trailing slash", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [] }),
+    } as unknown as Response);
+    await listModels({ baseUrl: "https://openrouter.ai/api/v1/" });
+
+    const requested = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requested.pathname).toBe("/api/v1/models");
+    expect(requested.searchParams.get("sort")).toBe("most-popular");
+  });
+
+  it("preserves the server's ranking order", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          data: [{ id: "most/used" }, { id: "mid/used" }, { id: "least/used" }],
+        }),
+    } as unknown as Response);
+    const out = await listModels({ baseUrl: "https://x" });
+
+    // The ranking exists only as the array order — nothing may reorder it.
+    expect(out.map((m) => m.id)).toEqual([
+      "most/used",
+      "mid/used",
+      "least/used",
+    ]);
+  });
 });

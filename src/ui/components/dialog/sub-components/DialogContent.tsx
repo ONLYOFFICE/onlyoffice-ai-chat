@@ -88,7 +88,7 @@ const DialogContent = ({
 
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay isFullscreen={fullscreen} style={{ zIndex: 300 }} />
+      <DialogOverlay isFullscreen={fullscreen} style={{ zIndex: 400 }} />
       <DialogPrimitive.Content
         id="dialog-content"
         data-slot="dialog-content"
@@ -103,7 +103,7 @@ const DialogContent = ({
         )}
         onInteractOutside={(e) => e.preventDefault()}
         {...props}
-        style={{ zIndex: 300, ...props.style }}
+        style={{ zIndex: 400, ...props.style }}
       >
         <HiddenComponents />
         <div
