@@ -199,6 +199,33 @@ describe("DropdownMenu", () => {
       expect(content.className).not.toContain("overflow-y-auto");
     });
 
+    it("does not indent the list for an icon that only the footer has", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          footerItems={[
+            { text: "", onClick: vi.fn(), isSeparator: true },
+            {
+              text: "Effort",
+              icon: <span data-testid="effort-icon" />,
+              onClick: vi.fn(),
+            },
+            { text: "Plain footer", onClick: vi.fn() },
+          ]}
+          open={true}
+        />
+      );
+      // The profiles above the footer keep their labels at the start...
+      expect(screen.getByText("Profile 1").className).not.toContain(
+        "ms-[var(--dropdown-item-label-space,28px)]"
+      );
+      // ...while an icon-less footer row lines up with the footer's icon.
+      expect(screen.getByText("Plain footer").className).toContain(
+        "ms-[var(--dropdown-item-label-space,28px)]"
+      );
+    });
+
     it("keeps the content scrolling itself without a footer", () => {
       render(
         <DropdownMenu trigger={<button>Open</button>} items={items} open />

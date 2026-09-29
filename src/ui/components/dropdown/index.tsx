@@ -270,12 +270,20 @@ const DropdownMenuComponent = ({
   const atRoot = validPath.length === 0;
   const pinned = atRoot && footerItems?.length ? footerItems : null;
 
-  // Reserve the icon column on icon-less rows when the visible level has any
+  // Reserve the icon column on icon-less rows when their group has any
   // leading icon, so labels line up. Evaluated per visible level (in flyout
-  // mode the level is just `items`); a per-item `withSpace` still wins.
-  const hasLeadingIcon = level.some((item) => item.icon && !item.isSeparator);
-  const withSpaceOf = (item: DropDownItemProps) =>
-    item.withSpace ?? (hasLeadingIcon && !item.icon && !item.isSeparator);
+  // mode the level is just `items`), and at a root with a pinned footer the
+  // list and the footer are judged apart: an Effort row's icon must not
+  // indent every profile above it. A per-item `withSpace` still wins.
+  const hasIcon = (rows: DropDownItemProps[]) =>
+    rows.some((item) => item.icon && !item.isSeparator);
+  const listHasIcon = hasIcon(pinned ? items : level);
+  const footerHasIcon = pinned ? hasIcon(pinned) : false;
+  const withSpaceOf = (item: DropDownItemProps, inFooter = false) =>
+    item.withSpace ??
+    ((inFooter ? footerHasIcon : listHasIcon) &&
+      !item.icon &&
+      !item.isSeparator);
 
   const handleOpenChange = (isOpen: boolean) => {
     // Reset navigation on close so reopening starts at the root. Only fires
@@ -307,13 +315,17 @@ const DropdownMenuComponent = ({
   // action of the same name) that would collide as keys and swap handlers.
   // `index` is the row's position in the visible level — for a pinned
   // footer row that is its position in the joined tree, so `stepOf` finds it.
-  const renderRow = (item: DropDownItemProps, index: number) => (
+  const renderRow = (
+    item: DropDownItemProps,
+    index: number,
+    inFooter = false
+  ) => (
     <DropDownItem
       key={item.id ?? `item-${index}`}
       {...item}
       variant={variant}
       navigation={mode}
-      withSpace={withSpaceOf(item)}
+      withSpace={withSpaceOf(item, inFooter)}
       onDrill={
         isDrill ? () => setPath([...validPath, stepOf(item, index)]) : undefined
       }
@@ -382,7 +394,9 @@ const DropdownMenuComponent = ({
             {items.map((item, index) => renderRow(item, index))}
           </div>
           <div className="shrink-0 flex flex-col" data-testid="dropdown-footer">
-            {pinned.map((item, index) => renderRow(item, items.length + index))}
+            {pinned.map((item, index) =>
+              renderRow(item, items.length + index, true)
+            )}
           </div>
         </>
       ) : (
