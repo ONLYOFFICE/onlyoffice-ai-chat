@@ -561,6 +561,8 @@ export function isEmptyAssistantMessage(message: {
 
 export const AssistantMessage = memo(() => {
   const message = useMessage();
+  const { useMessageStore } = useStores();
+  const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
 
   if (isEmptyAssistantMessage(message)) {
     return null;
@@ -573,6 +575,16 @@ export const AssistantMessage = memo(() => {
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
+        // `ThreadPrimitive.ViewportSlack` (via `MessagePrimitive.Root`) pins a
+        // `min-height` of roughly the whole viewport onto the last assistant
+        // message so the question it answers can sit at the top of the screen.
+        // That room is only worth holding while the turn is live: once the run
+        // ends it is dead whitespace under the final answer, and the reader
+        // scrolls through it to reach the composer. Releasing it here — rather
+        // than switching `turnAnchor` — keeps the scroll-to-top behaviour on
+        // send and only reclaims the space afterwards. Inline, because the
+        // runtime writes `min-height` as an inline style on this same element.
+        style={isStreamRunning ? undefined : { minHeight: 0 }}
       >
         <div className="col-span-2 col-start-2 row-start-1 break-words leading-7 text-[var(--chat-message-color)] select-text">
           <MessagePrimitive.Content
