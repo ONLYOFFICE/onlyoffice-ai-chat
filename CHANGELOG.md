@@ -4,6 +4,18 @@
 
 ### Fixed
 
+- **The connected-room chip no longer melts into the composer on hosts with their own surfaces.** It borrowed the input tokens, which on DocSpace dark are a grey two shades from the composer's. It is a block on the composer surface like the attachment chips, so it now shares their paint by default and gets tokens of its own for a host to override:
+
+  ```css
+  --chat-composer-room-background-color        /* default: --file-items-chat-background-color */
+  --chat-composer-room-hover-background-color  /* default: --file-items-chat-hover-background-color */
+  --chat-composer-room-border-color            /* default: --file-items-border-color */
+  ```
+
+## 0.5.138
+
+### Fixed
+
 - **The chat's "Export to…" item keeps the icon its "Save" predecessor had.** A host declaring several export formats turned the single "Save" entry into a submenu, which lost the icon and left the export row as the only one in the menu without one.
 
 ## 0.5.137
