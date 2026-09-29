@@ -171,6 +171,15 @@
   --file-items-border-color: var(--border-divider);
   --file-items-chat-background-color: var(--background-normal-element);
   --file-items-chat-hover-background-color: var(--highlight-button-hover);
+  /* The connected-room chip in the composer: a block on the composer
+     surface like the attachment chips, so it shares their paint. */
+  --chat-composer-room-background-color: var(
+    --file-items-chat-background-color
+  );
+  --chat-composer-room-hover-background-color: var(
+    --file-items-chat-hover-background-color
+  );
+  --chat-composer-room-border-color: var(--file-items-border-color);
   --file-items-chat-pressed-background-color: var(--highlight-button-pressed);
 
   /* tooltip */

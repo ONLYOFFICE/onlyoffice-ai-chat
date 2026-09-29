@@ -81,9 +81,12 @@ const ComposerActionRoom = () => {
         "h-[var(--chat-composer-room-height,26px)] max-w-[var(--chat-composer-room-max-width,220px)] ps-[2px] pe-[4px]",
         "rounded-[var(--input-border-radius,4px)] border",
         "text-[var(--input-color)] text-[length:var(--chat-model-selector-font-size,var(--fs-12,12px))] leading-[var(--lh-16)]",
+        // A block on the composer surface, like the attachment chips: the
+        // input tokens are a different grey from the composer in the dark
+        // themes of hosts that give both their own surface.
         isOpen
-          ? "bg-[var(--input-background-color)] border-[var(--input-active-border-color)]"
-          : "bg-[var(--input-background-color)] border-[var(--input-border-color)] hover:bg-[var(--input-hover-background-color)] hover:border-[var(--input-hover-border-color)]"
+          ? "bg-[var(--chat-composer-room-hover-background-color)] border-[var(--input-active-border-color)]"
+          : "bg-[var(--chat-composer-room-background-color)] border-[var(--chat-composer-room-border-color)] hover:bg-[var(--chat-composer-room-hover-background-color)]"
       )}
     >
       {/* Both glyphs take the same paint as the model picker's chevron:
