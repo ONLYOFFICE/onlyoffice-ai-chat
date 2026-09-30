@@ -44,6 +44,23 @@ describe("HelpButton", () => {
     expect(screen.queryByText("Hint body")).not.toBeInTheDocument();
   });
 
+  it("closes when anything around it scrolls, not when its own content does", () => {
+    render(
+      <div data-testid="list" style={{ overflow: "auto" }}>
+        <HelpButton content={<div data-testid="body">Hint body</div>} />
+      </div>
+    );
+
+    fireEvent.click(getTrigger());
+    // A scroll inside the popover is the reader's.
+    fireEvent.scroll(screen.getAllByTestId("body")[0]);
+    expect(screen.getAllByText("Hint body").length).toBeGreaterThan(0);
+
+    // The list the trigger sits in scrolls: the popover goes.
+    fireEvent.scroll(screen.getByTestId("list"));
+    expect(screen.queryByText("Hint body")).not.toBeInTheDocument();
+  });
+
   it("closes on Escape", () => {
     render(<HelpButton content="Hint body" />);
 
@@ -97,7 +114,11 @@ describe("HelpButton", () => {
   it("honours the controlled open state and reports changes", () => {
     const onOpenChange = vi.fn();
     render(
-      <HelpButton content="Hint body" open={false} onOpenChange={onOpenChange} />
+      <HelpButton
+        content="Hint body"
+        open={false}
+        onOpenChange={onOpenChange}
+      />
     );
 
     expect(screen.queryByText("Hint body")).not.toBeInTheDocument();
