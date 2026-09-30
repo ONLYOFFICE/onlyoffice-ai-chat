@@ -4,7 +4,7 @@
 
 ### Added
 
-- **`WidgetConfig.hideContextClouds`.** Skips the cloud level of the composer's context menu: the rooms of every cloud are listed at the root, each still connected with its own cloud when picked. For a host that is one cloud to the widget (DocSpace is its own portal) the account row was a step with a single choice.
+- **`WidgetConfig.hideContextClouds`.** Skips the cloud level of the composer's context menu: the rooms of every cloud are listed at the root, each still connected with its own cloud when picked, and the button wears the room glyph instead of the cloud. For a host that is one cloud to the widget (DocSpace is its own portal) the account row was a step with a single choice.
 
 ### Fixed
 

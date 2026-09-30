@@ -35,10 +35,12 @@ const ComposerActionSettings = () => {
     void fetchContextFolders();
   }, [fetchContextFolders]);
 
+  // The glyph names the first level of the menu: a cloud where the rows are
+  // accounts, a room where the rooms are listed straight away.
   const trigger = (
     <TooltipIconButton tooltip={t("Settings")} visible={!isOpen}>
       <IconButton
-        iconName="btn-cloud"
+        iconName={hideContextClouds ? "btn-room" : "btn-cloud"}
         size={20}
         className="cursor-pointer rounded-[4px] outline-none text-[var(--composer-settings-button-color,var(--icon-button-color))] hover:enabled:text-[var(--composer-settings-button-hover-color,var(--text-normal))]"
         isActive={isOpen}

@@ -430,6 +430,13 @@ describe("ComposerActionSettings", () => {
       expect(items().map((i) => i.checked)).toEqual([false, false, true]);
     });
 
+    it("draws a room, not a cloud, on the button", () => {
+      render(<ComposerActionSettings />);
+      expect(screen.getByTestId("composer-settings-button").textContent).toBe(
+        "btn-room"
+      );
+    });
+
     it("keeps the heading above the room rows", () => {
       render(<ComposerActionSettings />);
       expect(
