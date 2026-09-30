@@ -67,6 +67,13 @@ export interface WidgetConfig {
    */
   hideContextRoomDisconnect?: boolean;
   /**
+   * Skip the cloud level of the context menu: the rooms of every cloud are
+   * listed at the root, each still carrying its cloud when picked. For a
+   * host that is one cloud to the widget (DocSpace is its own portal) the
+   * account row would be a step with a single choice.
+   */
+  hideContextClouds?: boolean;
+  /**
    * Where the "Read more" button in the context menu's hint points: the
    * host's article on connecting a room as chat context. Omitted → the
    * hint has no button, only its text.

@@ -16,6 +16,19 @@ vi.mock("../../../providers/LocalesProvider", () => ({
   useI18n: () => ({ t: (k: string) => k }),
 }));
 
+let mockWidgetConfig: Record<string, unknown> = {};
+vi.mock("../../../../widget-config", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../../../widget-config")>();
+  return {
+    ...actual,
+    useWidgetConfig: () => ({
+      ...actual.useWidgetConfig(),
+      ...mockWidgetConfig,
+    }),
+  };
+});
+
 vi.mock("../../../store/context", () => ({
   useStores: () => ({
     useCloudsStore: (selector?: (s: Record<string, unknown>) => unknown) => {
@@ -126,6 +139,7 @@ describe("ComposerActionSettings", () => {
     vi.clearAllMocks();
     mockContextFolders = [];
     mockSelectedContextFolder = null;
+    mockWidgetConfig = {};
     mockDropdownItems = [];
     mockOnOpenChange = undefined;
     mockDropdownOpen = undefined;
@@ -353,6 +367,74 @@ describe("ComposerActionSettings", () => {
       render(<ComposerActionSettings />);
       expect(cloudRows().map((c) => c.text)).toEqual(["only.example.com"]);
       expect(cloudRows()[0].subMenu!.map((r) => r.text)).toEqual(["Room"]);
+    });
+  });
+
+  describe("with hideContextClouds", () => {
+    beforeEach(() => {
+      mockWidgetConfig = { hideContextClouds: true };
+      mockContextFolders = [
+        {
+          cloud: "a.example.com",
+          rooms: [
+            { id: "r1", name: "Room 1" },
+            { id: "r2", name: "Room 2" },
+          ],
+        },
+        { cloud: "b.example.com", rooms: [{ id: "r1", name: "Room 3" }] },
+      ];
+    });
+
+    it("lists the rooms of every cloud at the root, no cloud rows", () => {
+      render(<ComposerActionSettings />);
+      expect(cloudRows()).toHaveLength(0);
+      expect(items().map((i) => i.text)).toEqual([
+        "Room 1",
+        "Room 2",
+        "Room 3",
+      ]);
+      // Same room id in two clouds stays two rows.
+      expect(items().map((i) => i.id)).toEqual([
+        "context-room:a.example.com:r1",
+        "context-room:a.example.com:r2",
+        "context-room:b.example.com:r1",
+      ]);
+      for (const row of items()) {
+        expect(row.subMenu).toBeUndefined();
+        const { container } = render(<>{row.icon}</>);
+        expect(container.textContent).toBe("btn-room");
+      }
+    });
+
+    it("a pick still carries the room's own cloud and closes the menu", () => {
+      render(<ComposerActionSettings />);
+      act(() => {
+        mockOnOpenChange!(true);
+      });
+      act(() => {
+        items()[2].onClick!();
+      });
+      expect(mockSelectContextFolder).toHaveBeenCalledWith("b.example.com", {
+        id: "r1",
+        name: "Room 3",
+      });
+      expect(mockDropdownOpen).toBe(false);
+    });
+
+    it("marks the selected room by cloud and id", () => {
+      mockSelectedContextFolder = {
+        cloud: "b.example.com",
+        room: { id: "r1", name: "Room 3" },
+      };
+      render(<ComposerActionSettings />);
+      expect(items().map((i) => i.checked)).toEqual([false, false, true]);
+    });
+
+    it("keeps the heading above the room rows", () => {
+      render(<ComposerActionSettings />);
+      expect(
+        screen.getByTestId("composer-settings-header")
+      ).toBeInTheDocument();
     });
   });
 

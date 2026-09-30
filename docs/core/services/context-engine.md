@@ -187,6 +187,18 @@ room.
 
 ---
 
+## One cloud, no cloud row (`hideContextClouds`)
+
+The menu mirrors the host's hierarchy: a row per cloud, its rooms one
+level down. A host that is a single cloud to the widget (DocSpace is its
+own portal; `getContextFolders` returns one entry) can set
+`WidgetConfig.hideContextClouds` and the rooms are listed at the root
+under the same heading. A pick still calls `selectContextFolder(cloud,
+room)` with the room's own cloud, so the room button, the skills and the
+`checked` mark work exactly as with the cloud rows.
+
+---
+
 ## The menu's hint
 
 The context menu is headed "Add room context" with an "i" popover that

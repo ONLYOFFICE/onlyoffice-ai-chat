@@ -4,10 +4,12 @@ import { useComponents } from "../../../providers/ComponentsProvider";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
+import type { ContextFolder } from "../../../../core/storage";
 
 /**
  * The composer's context picker: one row per cloud account the host reports,
- * that account's rooms one level down. Attachment entries and the web-search
+ * that account's rooms one level down — or, with `hideContextClouds`, the
+ * rooms straight at the root. Attachment entries and the web-search
  * switch live in the paperclip menu next door, the reasoning "Effort" picker
  * in the model picker — this menu is only about *which room the model sees*,
  * so with no clouds to offer it is not rendered at all.
@@ -15,7 +17,7 @@ import { useWidgetConfig } from "../../../../widget-config";
 const ComposerActionSettings = () => {
   const { Button, DropdownMenu, HelpButton, IconButton, TooltipIconButton } =
     useComponents();
-  const { roomContextHelpUrl } = useWidgetConfig();
+  const { roomContextHelpUrl, hideContextClouds } = useWidgetConfig();
   const [isOpen, setIsOpen] = React.useState(false);
   const { useCloudsStore } = useStores();
   const { t } = useI18n();
@@ -48,31 +50,44 @@ const ComposerActionSettings = () => {
   // Nothing to offer, nothing to open: the cog only ever lists clouds.
   if (contextFolders.length === 0) return null;
 
+  // Room ids are only unique within their cloud, so a row's id and the
+  // selected-match carry both halves.
+  const roomRow = (
+    cloud: string,
+    room: ContextFolder["rooms"][number]
+  ): DropDownItemProps => ({
+    id: hideContextClouds
+      ? `context-room:${cloud}:${room.id}`
+      : `context-room:${room.id}`,
+    text: room.name,
+    icon: <IconButton iconName="btn-room" size={24} disableHover />,
+    checked:
+      selectedContextFolder?.cloud === cloud &&
+      selectedContextFolder.room.id === room.id,
+    onClick: () => {
+      setIsOpen(false);
+      selectContextFolder(cloud, room);
+    },
+  });
+
   // Each cloud is a root row of its own — the host's hierarchy starts at
   // the account, so the menu does too: cloud → its rooms. Only clouds with
   // rooms make it into `contextFolders`, so an empty picker never shows.
-  const items: DropDownItemProps[] = contextFolders.map((folder) => ({
-    id: `context-cloud:${folder.cloud}`,
-    text: folder.cloud,
-    icon: <IconButton iconName="onlyoffice" size={24} disableHover />,
-    onClick: () => {
-      // ignore — the row only opens its submenu
-    },
-    subMenu: folder.rooms.map((room) => ({
-      id: `context-room:${room.id}`,
-      text: room.name,
-      icon: <IconButton iconName="btn-room" size={24} disableHover />,
-      // Room ids are only unique within their cloud, so the match
-      // needs both halves.
-      checked:
-        selectedContextFolder?.cloud === folder.cloud &&
-        selectedContextFolder.room.id === room.id,
-      onClick: () => {
-        setIsOpen(false);
-        selectContextFolder(folder.cloud, room);
-      },
-    })),
-  }));
+  // A host that is one cloud to the widget skips that level and lists the
+  // rooms at the root.
+  const items: DropDownItemProps[] = hideContextClouds
+    ? contextFolders.flatMap((folder) =>
+        folder.rooms.map((room) => roomRow(folder.cloud, room))
+      )
+    : contextFolders.map((folder) => ({
+        id: `context-cloud:${folder.cloud}`,
+        text: folder.cloud,
+        icon: <IconButton iconName="onlyoffice" size={24} disableHover />,
+        onClick: () => {
+          // ignore — the row only opens its submenu
+        },
+        subMenu: folder.rooms.map((room) => roomRow(folder.cloud, room)),
+      }));
 
   // The heading names the menu's job — rows below are accounts, not
   // settings — and the "i" explains what connecting a room does.

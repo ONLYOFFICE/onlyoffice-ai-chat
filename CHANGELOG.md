@@ -2,6 +2,10 @@
 
 ## 0.6.3
 
+### Added
+
+- **`WidgetConfig.hideContextClouds`.** Skips the cloud level of the composer's context menu: the rooms of every cloud are listed at the root, each still connected with its own cloud when picked. For a host that is one cloud to the widget (DocSpace is its own portal) the account row was a step with a single choice.
+
 ### Fixed
 
 - **Hanging up on a streaming reply leaves it marked as stopped.** When the client disconnected after text had started arriving, the OpenAI-compatible streams (chat completions and Responses, so the ONLYOFFICE gateway too) reached the end of the SDK iterator without a `finish_reason`, saw content and reported a *finished* reply: the partial text was persisted with no status at all, and a thread reload showed it as a normal answer. The abort is now checked before the content, on every event and at the end of the stream, so the turn is stored as `incomplete / cancelled` with the text streamed so far — the same shape Stop in the composer produces (DocSpace bug 84028).
