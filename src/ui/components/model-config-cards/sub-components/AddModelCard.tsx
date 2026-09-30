@@ -131,6 +131,7 @@ export const AddModelCard = ({
       <Link
         href="#"
         title={t("Import")}
+        data-testid="add-model-import-link"
         onClick={handleImportClick}
         className="!text-[var(--link-secondary-color)] truncate min-w-0"
       >
@@ -141,6 +142,7 @@ export const AddModelCard = ({
         size={aboutButtonSize}
         side="bottom"
         align="start"
+        data-testid="add-model-import-help-button"
         content={
           <div className="flex flex-col gap-[var(--add-model-card-tooltip-gap,6px)] max-w-[var(--add-model-card-tooltip-max-width,221px)]">
             <p className="leading-[var(--lh-16)] select-none">
@@ -150,6 +152,7 @@ export const AddModelCard = ({
               variant="primary"
               href="#"
               className="leading-[var(--lh-16)]"
+              data-testid="add-model-download-template-link"
               onClick={
                 onDownloadTemplate
                   ? (e) => {
@@ -170,13 +173,18 @@ export const AddModelCard = ({
   const footer = (
     <div className="flex flex-row justify-end items-center gap-[var(--add-model-card-footer-gap,12px)] mt-[var(--add-model-card-footer-margin-top,0px)]">
       {variant === "card" && (
-        <Button variant="default" onClick={onClose}>
+        <Button
+          variant="default"
+          data-testid="add-model-cancel-button"
+          onClick={onClose}
+        >
           {t("Cancel")}
         </Button>
       )}
       <Button
         disabled={!isFormValid}
         isLoading={isSubmitting}
+        data-testid="add-model-submit-button"
         onClick={handleAdd}
       >
         {t("AddModel")}
@@ -186,7 +194,10 @@ export const AddModelCard = ({
 
   if (variant === "standalone") {
     return (
-      <div className="flex flex-col gap-[var(--add-model-card-gap,8px)]">
+      <div
+        data-testid="add-model-card"
+        className="flex flex-col gap-[var(--add-model-card-gap,8px)]"
+      >
         <h3 className="select-none text-[length:var(--add-model-card-title-font-size-standalone,var(--fs-13,13px))] font-bold leading-[var(--lh-16)] text-[var(--text-normal)] [text-align:var(--add-model-card-title-align-standalone,start)]">
           {t("ConnectAIModelToEnableChat")}
         </h3>
@@ -207,7 +218,7 @@ export const AddModelCard = ({
   }
 
   return (
-    <ModelCardShell>
+    <ModelCardShell data-testid="add-model-card">
       <h3 className="select-none font-bold text-[length:var(--add-model-card-title-font-size-card,var(--fs-12,12px))] text-[var(--text-normal)] mb-[var(--add-model-card-title-margin-bottom,8px)] [text-align:var(--add-model-card-title-align-card,start)]">
         {t("ConnectNewAIModel")}
       </h3>

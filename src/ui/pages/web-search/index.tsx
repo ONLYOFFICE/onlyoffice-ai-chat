@@ -22,6 +22,7 @@ const WebSearchPage = ({
 
   return (
     <div
+      data-testid="web-search-page"
       className={cn(
         "aui-root select-text flex min-h-full w-full px-[var(--web-search-padding-x,0px)] py-[var(--web-search-padding-y,0px)] [justify-content:var(--web-search-justify,flex-start)] bg-[var(--layout-background-color)]",
         className

@@ -97,6 +97,7 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
         header={t("NewAIPromptFolder")}
         onClose={onClose}
         className={PROMPT_DIALOG_CLASS}
+        data-testid="new-folder-dialog"
       >
         <form
           className="flex flex-col justify-between h-full"
@@ -111,6 +112,7 @@ const NewFolderDialog = ({ messageText, onClose }: NewFolderDialogProps) => {
               onChange={(e) => setFolderName(e.target.value)}
               className="w-full"
               autoFocus
+              data-testid="new-folder-name-input"
             />
           </div>
           <DialogFooter
@@ -256,7 +258,10 @@ const UserActionBar = () => {
 
   return (
     <>
-      <ActionBarPrimitive.Root className="col-start-2 mt-[4px] flex justify-end gap-[var(--chat-user-message-actions-gap,2px)]">
+      <ActionBarPrimitive.Root
+        data-testid="user-message-actions"
+        className="col-start-2 mt-[4px] flex justify-end gap-[var(--chat-user-message-actions-gap,2px)]"
+      >
         <TooltipIconButton
           tooltip={copied ? t("Copied") : t("CopyToClipboard")}
           onClick={onCopy}
@@ -271,6 +276,7 @@ const UserActionBar = () => {
               isStroke
               color="var(--icon-gray-secondary)"
               disableHover
+              data-testid="user-message-copied-indicator"
             />
           ) : (
             <IconButton
@@ -278,6 +284,7 @@ const UserActionBar = () => {
               size={chatMessageActionsIconSize}
               isStroke
               color="var(--icon-gray-secondary)"
+              data-testid="user-message-copy-button"
             />
           )}
         </TooltipIconButton>
@@ -291,17 +298,21 @@ const UserActionBar = () => {
               isActive={isOpen}
               insideElement
               color="var(--icon-gray-secondary)"
+              data-testid="user-message-more-button"
             />
           }
+          data-testid="user-message-menu"
           items={[
             {
               text: t("SaveAIPrompt"),
+              "data-testid": "user-message-menu-save-prompt",
               onClick: () => {
                 void requestCreatePrompt(null);
               },
             },
             {
               text: t("SaveAIPromptToFolder"),
+              "data-testid": "user-message-menu-save-to-folder",
               onClick: () => {
                 // TODO
               },
@@ -309,6 +320,7 @@ const UserActionBar = () => {
               subMenu: [
                 ...folders.map((folder) => ({
                   text: folder.name,
+                  "data-testid": "user-message-menu-folder",
                   onClick: () => {
                     void requestCreatePrompt(folder.id);
                   },
@@ -318,6 +330,7 @@ const UserActionBar = () => {
                   : []),
                 {
                   text: t("NewFolder"),
+                  "data-testid": "user-message-menu-new-folder",
                   trailingIcon: "btn-zoomup",
                   trailingIconSize: 16,
                   onClick: () => {
@@ -368,9 +381,13 @@ export const UserMessage = memo(() => {
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         data-role="user"
+        data-testid="user-message"
       >
         {images.length > 0 || files.length > 0 ? (
-          <div className="col-span-full col-start-1 row-start-1 mb-[8px] overflow-x-auto">
+          <div
+            data-testid="user-message-attachments"
+            className="col-span-full col-start-1 row-start-1 mb-[8px] overflow-x-auto"
+          >
             <div className="flex flex-row gap-[8px] w-max justify-end ms-auto">
               {images.map((img, i) => (
                 <ImagePreview
@@ -387,6 +404,7 @@ export const UserMessage = memo(() => {
 
         {hasText ? (
           <div
+            data-testid="user-message-content"
             className={cn(
               "bg-[var(--chat-user-message-background)] text-[var(--chat-user-message-color)] col-start-2 wrap-anywhere rounded-[var(--chat-user-message-border-radius,16px)] px-[12px] py-[8px] select-text",
               isRTL ? "rounded-bl-[0px]" : "rounded-br-[0px]"
@@ -488,13 +506,17 @@ const ImagePreview = ({ item }: { item: ImageItem }) => {
 
   if (!src) {
     return (
-      <div className="h-[72px] w-[72px] rounded-[8px] bg-[var(--background-tertiary)]" />
+      <div
+        data-testid="user-message-image"
+        className="h-[72px] w-[72px] rounded-[8px] bg-[var(--background-tertiary)]"
+      />
     );
   }
   return (
     <img
       src={src}
       alt=""
+      data-testid="user-message-image"
       className="h-[72px] w-[72px] rounded-[8px] object-cover"
     />
   );

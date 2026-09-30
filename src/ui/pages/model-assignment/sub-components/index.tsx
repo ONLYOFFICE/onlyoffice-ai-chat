@@ -54,6 +54,7 @@ const ModelAssignment = ({
   const defaultItems = profiles.map((p) => ({
     text: p.name,
     id: p.id,
+    "data-testid": "model-assignment-option",
     onClick: () => setDefaultProfile(p),
   }));
 
@@ -69,11 +70,13 @@ const ModelAssignment = ({
     {
       text: t("DefaultModel"),
       id: "default",
+      "data-testid": "model-assignment-option-default",
       onClick: () => setter(null),
     },
     ...filterByCapability(requiredCap).map((p) => ({
       text: p.name,
       id: p.id,
+      "data-testid": "model-assignment-option",
       onClick: () => setter(p),
     })),
   ];
@@ -82,6 +85,7 @@ const ModelAssignment = ({
 
   const defaultModelField = (
     <FieldContainer
+      data-testid="model-assignment-default-field"
       header={defaultModelLabel ?? t("DefaultModel")}
       isHorizontal={!hasDefaultSetup}
       reserveErrorSpace={false}
@@ -97,12 +101,13 @@ const ModelAssignment = ({
         placeholder={t("SelectProvider")}
         value={defaultProfile?.name ?? ""}
         items={defaultItems}
+        data-testid="model-assignment-default-select"
       />
     </FieldContainer>
   );
 
   return (
-    <div className="w-full">
+    <div data-testid="model-assignment" className="w-full">
       <p className="font-normal leading-[var(--lh-16)] text-[var(--settings-description-color)] mb-[var(--model-assignment-description-margin-bottom,24px)]">
         {t("ModelAssignmentDescription")}
       </p>
@@ -124,6 +129,7 @@ const ModelAssignment = ({
         </p>
 
         <FieldContainer
+          data-testid="model-assignment-chat-field"
           header={t("AIChat")}
           isHorizontal
           reserveErrorSpace={false}
@@ -134,11 +140,13 @@ const ModelAssignment = ({
           <ComboBox
             className="w-full"
             value={chatProfile?.name ?? t("DefaultModel")}
+            data-testid="model-assignment-chat-select"
             items={taskItems(setChatProfile, CapabilitiesUI.Chat)}
           />
         </FieldContainer>
 
         <FieldContainer
+          data-testid="model-assignment-code-field"
           header={t("Code")}
           isHorizontal
           reserveErrorSpace={false}
@@ -149,11 +157,13 @@ const ModelAssignment = ({
           <ComboBox
             className="w-full"
             value={codeProfile?.name ?? t("DefaultModel")}
+            data-testid="model-assignment-code-select"
             items={taskItems(setCodeProfile, CapabilitiesUI.Chat)}
           />
         </FieldContainer>
 
         <FieldContainer
+          data-testid="model-assignment-summarization-field"
           header={t("Summarization")}
           isHorizontal
           reserveErrorSpace={false}
@@ -164,11 +174,13 @@ const ModelAssignment = ({
           <ComboBox
             className="w-full"
             value={summarizationProfile?.name ?? t("DefaultModel")}
+            data-testid="model-assignment-summarization-select"
             items={taskItems(setSummarizationProfile, CapabilitiesUI.Chat)}
           />
         </FieldContainer>
 
         <FieldContainer
+          data-testid="model-assignment-translation-field"
           header={t("Translation")}
           isHorizontal
           reserveErrorSpace={false}
@@ -178,11 +190,13 @@ const ModelAssignment = ({
           <ComboBox
             className="w-full"
             value={translationProfile?.name ?? t("DefaultModel")}
+            data-testid="model-assignment-translation-select"
             items={taskItems(setTranslationProfile, CapabilitiesUI.Chat)}
           />
         </FieldContainer>
 
         <FieldContainer
+          data-testid="model-assignment-text-analysis-field"
           header={t("TextAnalysis")}
           isHorizontal
           reserveErrorSpace={false}
@@ -192,11 +206,13 @@ const ModelAssignment = ({
           <ComboBox
             className="w-full"
             value={textAnalysisProfile?.name ?? t("DefaultModel")}
+            data-testid="model-assignment-text-analysis-select"
             items={taskItems(setTextAnalysisProfile, CapabilitiesUI.Chat)}
           />
         </FieldContainer>
 
         <FieldContainer
+          data-testid="model-assignment-image-generation-field"
           header={t("ImageGeneration")}
           isHorizontal
           reserveErrorSpace={false}
@@ -206,11 +222,13 @@ const ModelAssignment = ({
           <ComboBox
             className="w-full"
             value={imageGenerationProfile?.name ?? t("DefaultModel")}
+            data-testid="model-assignment-image-generation-select"
             items={taskItems(setImageGenerationProfile, CapabilitiesUI.Image)}
           />
         </FieldContainer>
 
         <FieldContainer
+          data-testid="model-assignment-ocr-field"
           header={t("OCR")}
           isHorizontal
           reserveErrorSpace={false}
@@ -220,11 +238,13 @@ const ModelAssignment = ({
           <ComboBox
             className="w-full"
             value={ocrProfile?.name ?? t("DefaultModel")}
+            data-testid="model-assignment-ocr-select"
             items={taskItems(setOcrProfile, CapabilitiesUI.Vision)}
           />
         </FieldContainer>
 
         <FieldContainer
+          data-testid="model-assignment-vision-field"
           header={t("Vision")}
           isHorizontal
           reserveErrorSpace={false}
@@ -234,11 +254,13 @@ const ModelAssignment = ({
           <ComboBox
             className="w-full"
             value={visionProfile?.name ?? t("DefaultModel")}
+            data-testid="model-assignment-vision-select"
             items={taskItems(setVisionProfile, CapabilitiesUI.Vision)}
           />
         </FieldContainer>
 
         <FieldContainer
+          data-testid="model-assignment-form-analysis-field"
           header={t("FormAnalysis")}
           isHorizontal
           reserveErrorSpace={false}
@@ -248,6 +270,7 @@ const ModelAssignment = ({
           <ComboBox
             className="w-full"
             value={formAnalysisProfile?.name ?? t("DefaultModel")}
+            data-testid="model-assignment-form-analysis-select"
             items={taskItems(setFormAnalysisProfile, CapabilitiesUI.Chat)}
           />
         </FieldContainer>

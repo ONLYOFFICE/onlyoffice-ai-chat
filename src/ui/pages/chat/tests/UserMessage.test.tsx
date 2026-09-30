@@ -327,13 +327,13 @@ describe("UserMessage", () => {
 
   it("renders with data-role user", () => {
     render(<UserMessage />);
-    const motionDiv = screen.getByTestId("motion-div");
+    const motionDiv = screen.getByTestId("user-message");
     expect(motionDiv.getAttribute("data-role")).toBe("user");
   });
 
   it("renders with ltr direction", () => {
     render(<UserMessage />);
-    const motionDiv = screen.getByTestId("motion-div");
+    const motionDiv = screen.getByTestId("user-message");
     expect(motionDiv.getAttribute("dir")).toBe("ltr");
   });
 

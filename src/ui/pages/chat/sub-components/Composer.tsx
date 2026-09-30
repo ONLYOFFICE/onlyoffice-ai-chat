@@ -104,9 +104,13 @@ const Composer = () => {
   }, [composerBridge, composerRuntime]);
 
   return (
-    <div className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[var(--chat-composer-wrapper-gap,8px)] px-[var(--chat-composer-wrapper-padding-x,12px)] pb-[var(--chat-composer-wrapper-padding-bottom,4px)]">
+    <div
+      data-testid="composer"
+      className="relative mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-[var(--chat-composer-wrapper-gap,8px)] px-[var(--chat-composer-wrapper-padding-x,12px)] pb-[var(--chat-composer-wrapper-padding-bottom,4px)]"
+    >
       <ComposerPrimitive.Root
         ref={rootRef}
+        data-testid="composer-root"
         onClick={focusInputOnClick}
         onSubmit={(e) => {
           // assistant-ui's own submit handler no-ops when its runtime-level
@@ -129,7 +133,10 @@ const Composer = () => {
         {attachmentFiles.length ||
         attachmentImages.length ||
         pendingAttachments.length ? (
-          <div className="flex flex-row gap-[8px] overflow-x-auto">
+          <div
+            data-testid="composer-attachments"
+            className="flex flex-row gap-[8px] overflow-x-auto"
+          >
             {attachmentFiles.map((file) => (
               <FileItem key={file.id} file={file} />
             ))}
@@ -238,7 +245,10 @@ const Composer = () => {
         />
         <ComposerAction />
       </ComposerPrimitive.Root>
-      <p className="text-center font-normal text-[length:var(--chat-composer-disclaimer-font-size,var(--fs-10,10px))] leading-[var(--lh-16)] text-[var(--text-tertiary)]">
+      <p
+        data-testid="composer-disclaimer"
+        className="text-center font-normal text-[length:var(--chat-composer-disclaimer-font-size,var(--fs-10,10px))] leading-[var(--lh-16)] text-[var(--text-tertiary)]"
+      >
         {t("CheckInfo")}
       </p>
     </div>

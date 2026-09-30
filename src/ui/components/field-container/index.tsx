@@ -21,12 +21,17 @@ export type FieldContainerProps = {
   reserveActionSpace?: boolean;
   className?: string;
   headerClassName?: string;
+  /** Test hook for the field wrapper; the error line gets `<id>-error`. */
+  "data-testid"?: string;
 };
 
-const ErrorBlock = ({ error }: { error: string }) => (
+const ErrorBlock = ({ error, testId }: { error: string; testId?: string }) => (
   <Tooltip>
     <TooltipTrigger asChild>
-      <p className="text-[var(--field-container-error-color)] truncate">
+      <p
+        data-testid={testId}
+        className="text-[var(--field-container-error-color)] truncate"
+      >
         {error}
       </p>
     </TooltipTrigger>
@@ -52,11 +57,13 @@ const FieldContainer = ({
   reserveActionSpace,
   className,
   headerClassName,
+  "data-testid": dataTestId,
 }: FieldContainerProps) => {
   const { fieldContainerIconSize = 20 } = useWidgetConfig();
 
   return (
     <div
+      data-testid={dataTestId}
       className={cn(
         className,
         "flex flex-col w-full min-w-0 gap-[var(--field-container-row-gap,2px)]"
@@ -150,7 +157,12 @@ const FieldContainer = ({
               "ps-[calc(var(--field-container-label-width,160px)+var(--field-container-control-gap-horizontal,8px))]"
           )}
         >
-          {error && <ErrorBlock error={error} />}
+          {error && (
+            <ErrorBlock
+              error={error}
+              testId={dataTestId ? `${dataTestId}-error` : undefined}
+            />
+          )}
         </div>
       )}
     </div>

@@ -18,6 +18,8 @@ export type DropDownItemProps = {
   trailingText?: string;
 
   id?: string;
+  /** Test hook for the row. Defaults to `"dropdown-item"`. */
+  "data-testid"?: string;
   isActive?: boolean;
   isSeparator?: boolean;
 

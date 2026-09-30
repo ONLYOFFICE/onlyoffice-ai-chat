@@ -24,6 +24,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div
+      data-testid="ai-chat-root"
       className={`aui-root flex h-full min-h-0 flex-col ${isRTL ? "font-rtl" : ""}`}
       dir={isRTL ? "rtl" : "ltr"}
     >

@@ -6,7 +6,10 @@ const EmptyScreen = () => {
   const goToChat = useRouter((s) => s.goToChat);
 
   return (
-    <div className="aui-root flex h-full bg-[var(--layout-background-color)]">
+    <div
+      data-testid="empty-screen-page"
+      className="aui-root flex h-full bg-[var(--layout-background-color)]"
+    >
       <div className="max-w-[480px] w-full">
         <AddModelCard variant="standalone" onSuccess={goToChat} />
       </div>

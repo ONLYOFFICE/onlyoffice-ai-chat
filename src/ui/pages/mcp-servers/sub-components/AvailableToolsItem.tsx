@@ -92,8 +92,14 @@ const AvailableToolsItem = ({
   const isLoadingAction = isStoped ? false : isLoading;
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} className="flex flex-col">
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className="flex flex-col"
+      data-testid="mcp-server"
+      data-server-name={name}
+    >
       <div
+        data-testid="mcp-server-header"
         className={cn(
           "h-[var(--servers-available-tools-item-height,32px)] px-[var(--servers-available-tools-item-padding-x,8px)] rounded-[var(--servers-available-tools-item-border-radius)] flex items-center justify-between",
           isLoadingAction ? "" : "cursor-pointer",
@@ -123,7 +129,10 @@ const AvailableToolsItem = ({
           >
             <Icon name="chevron" width={6} height={3} isStroke />
           </div>
-          <p className="text-[var(--servers-available-tools-item-name-color)] font-bold">
+          <p
+            data-testid="mcp-server-name"
+            className="text-[var(--servers-available-tools-item-name-color)] font-bold"
+          >
             {displayName ?? name}
           </p>
           {!isLoadingAction && (isStoped || !!failedText) ? (
@@ -132,12 +141,13 @@ const AvailableToolsItem = ({
               size={16}
               disableHover
               noColor
+              data-testid="mcp-server-error-icon"
             />
           ) : null}
         </div>
         <div>
           {isLoadingAction ? (
-            <Loader />
+            <Loader data-testid="mcp-server-loader" />
           ) : mcpItems.length > 0 ? (
             // The toggle sits inside the clickable row header — swallow the
             // click so flipping it does not also expand/collapse the row.
@@ -148,6 +158,7 @@ const AvailableToolsItem = ({
               <ToggleButton
                 checked={someToolEnabled}
                 onCheckedChange={onToggleAllTools}
+                data-testid="mcp-server-toggle"
               />
             </div>
           ) : null}
@@ -165,6 +176,7 @@ const AvailableToolsItem = ({
           )}
         >
           <pre
+            data-testid="mcp-server-logs"
             className={cn(
               "m-[var(--servers-available-tools-logs-text-margin,0)]",
               "whitespace-pre-wrap break-words font-mono",
@@ -177,11 +189,16 @@ const AvailableToolsItem = ({
         </div>
       ) : null}
       {opened && !isStoped && !failedText ? (
-        <div className="flex flex-col gap-[var(--servers-available-tools-sublist-gap,8px)] mt-[var(--servers-available-tools-sublist-margin-top,4px)]">
+        <div
+          data-testid="mcp-server-tools"
+          className="flex flex-col gap-[var(--servers-available-tools-sublist-gap,8px)] mt-[var(--servers-available-tools-sublist-margin-top,4px)]"
+        >
           {mcpItems.map((tool) => {
             return (
               <div
                 key={tool.name}
+                data-testid="mcp-tool"
+                data-tool-name={tool.name}
                 className={cn(
                   "rounded-[var(--servers-available-tools-item-border-radius)] cursor-pointer flex flex-col hover:bg-[var(--servers-available-tools-item-hover-background-color)] ps-[var(--servers-available-tools-tool-padding-start,28px)] pe-[var(--servers-available-tools-tool-padding-end,8px)] h-[var(--servers-available-tools-tool-height,26px)]"
                 )}
@@ -190,11 +207,15 @@ const AvailableToolsItem = ({
                 }}
               >
                 <div className="flex items-center justify-between w-full h-full">
-                  <p className="text-[var(--servers-available-tools-item-name-color)]">
+                  <p
+                    data-testid="mcp-tool-name"
+                    className="text-[var(--servers-available-tools-item-name-color)]"
+                  >
                     {tool.displayName ?? tool.name}
                   </p>
                   <ToggleButton
                     checked={tool.enabled ?? false}
+                    data-testid="mcp-tool-toggle"
                     onCheckedChange={() => {
                       // empty change because change will be applied in onClick at div element
                     }}

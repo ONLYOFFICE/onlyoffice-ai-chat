@@ -74,17 +74,24 @@ const Settings = ({
   );
 
   return (
-    <div className="aui-root select-text flex justify-center h-full bg-[var(--layout-background-color)]">
+    <div
+      data-testid="settings-page"
+      className="aui-root select-text flex justify-center h-full bg-[var(--layout-background-color)]"
+    >
       <div
         className="flex flex-col gap-[16px] box-border w-full max-w-[var(--ai-settings-max-width)] min-w-0 overflow-hidden"
         style={frameStyle}
       >
         {!hideHeader && (
-          <h1 className="select-none font-bold text-fs-20 leading-[var(--lh-28)] text-[var(--settings-header-color)]">
+          <h1
+            data-testid="settings-title"
+            className="select-none font-bold text-fs-20 leading-[var(--lh-28)] text-[var(--settings-header-color)]"
+          >
             {t("Settings")}
           </h1>
         )}
         <Tabs
+          data-testid="settings"
           value={activeTab}
           onValueChange={handleTabChange}
           listClassName="[padding-inline:var(--ai-settings-tabs-list-padding)]"

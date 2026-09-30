@@ -18,7 +18,10 @@ const AiModelsPage = ({
   useEnsureProfiles();
 
   return (
-    <div className="aui-root select-text flex min-h-full w-full px-[var(--ai-models-padding-x,0px)] py-[var(--ai-models-padding-y,0px)] [justify-content:var(--ai-models-justify,flex-start)] bg-[var(--layout-background-color)]">
+    <div
+      data-testid="ai-models-page"
+      className="aui-root select-text flex min-h-full w-full px-[var(--ai-models-padding-x,0px)] py-[var(--ai-models-padding-y,0px)] [justify-content:var(--ai-models-justify,flex-start)] bg-[var(--layout-background-color)]"
+    >
       <div className="w-full max-w-[var(--ai-models-max-width,560px)] min-w-0">
         <>
           {!hideHeader && (

@@ -38,7 +38,12 @@ const DeleteChatDialog = ({ id, onClose }: DeleteChatDialogProps) => {
 
   return (
     <Dialog open={true}>
-      <DialogContent header={t("Warning")} onClose={onClose} withWarningIcon>
+      <DialogContent
+        header={t("Warning")}
+        onClose={onClose}
+        withWarningIcon
+        data-testid="delete-chat-dialog"
+      >
         <div className="flex flex-col justify-between h-full">
           <p className="select-none h-[var(--delete-chat-dialog-message-height,40px)] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">
             {t("WantDeleteChat")}

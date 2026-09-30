@@ -240,6 +240,9 @@ const WebSearch = ({
   const comboItems = allProviders.map((p) => ({
     text: p.label,
     id: p.id,
+    "data-testid": p.isCloudProvider
+      ? "web-search-engine-option-cloud"
+      : `web-search-engine-option-${p.id}`,
     onClick: () => handleSelect(p),
   }));
 
@@ -251,6 +254,7 @@ const WebSearch = ({
 
   return (
     <div
+      data-testid="web-search"
       className={cn(
         "web-search-root flex flex-col w-full",
         isPage
@@ -267,6 +271,7 @@ const WebSearch = ({
       </p>
       <div className="web-search-fields flex flex-col gap-[var(--web-search-fields-gap,8px)]">
         <FieldContainer
+          data-testid="web-search-engine-field"
           header={t("WebSearchEngine")}
           headerClassName="web-search-field-header"
           isHorizontal={fieldIsHorizontal}
@@ -275,10 +280,12 @@ const WebSearch = ({
             className="w-full"
             value={provider?.label ?? t("SelectEngine")}
             items={comboItems}
+            data-testid="web-search-engine-select"
           />
         </FieldContainer>
         {!provider?.baseUrl && (
           <FieldContainer
+            data-testid="web-search-base-url-field"
             header={t("BaseURL")}
             headerClassName="web-search-field-header"
             isHorizontal={fieldIsHorizontal}
@@ -293,11 +300,13 @@ const WebSearch = ({
                 setBaseUrlError("");
               }}
               onBlur={handleBaseUrlBlur}
+              data-testid="web-search-base-url-input"
             />
           </FieldContainer>
         )}
         {!provider?.isCloudProvider && (
           <FieldContainer
+            data-testid="web-search-api-key-field"
             header={t("APIKey")}
             headerClassName="web-search-field-header"
             isHorizontal={fieldIsHorizontal}
@@ -307,6 +316,7 @@ const WebSearch = ({
                   href={getApiKeyLink(selectedId)}
                   target="_blank"
                   className="!text-[var(--link-secondary-color)]"
+                  data-testid="web-search-get-api-key-link"
                 >
                   {t("GetAPIKey")}
                 </Link>
@@ -321,6 +331,7 @@ const WebSearch = ({
               onChange={(e) => setApiKey(e.target.value)}
               onBlur={handleApiKeyBlur}
               disabled={!selectedId}
+              data-testid="web-search-api-key-input"
             />
           </FieldContainer>
         )}
@@ -329,6 +340,7 @@ const WebSearch = ({
         <div className="web-search-actions flex gap-[var(--web-search-actions-gap,8px)]">
           <Button
             className="web-search-save-button"
+            data-testid="web-search-save-button"
             onClick={() => void handleSave()}
             isLoading={isSaving}
             disabled={!provider || !isDirty || isResetting}
@@ -337,6 +349,7 @@ const WebSearch = ({
           </Button>
           <Button
             className="web-search-reset-button"
+            data-testid="web-search-reset-button"
             variant="default"
             onClick={() => void handleReset()}
             isLoading={isResetting}

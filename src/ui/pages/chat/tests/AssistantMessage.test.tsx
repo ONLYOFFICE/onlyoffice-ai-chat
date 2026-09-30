@@ -339,7 +339,7 @@ describe("AssistantMessage", () => {
 
   it("renders with data-role assistant", () => {
     render(<AssistantMessage />);
-    const motionDiv = screen.getByTestId("motion-div");
+    const motionDiv = screen.getByTestId("assistant-message");
     expect(motionDiv.getAttribute("data-role")).toBe("assistant");
   });
 

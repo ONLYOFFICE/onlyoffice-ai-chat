@@ -58,6 +58,7 @@ const SelectModel = () => {
     const profileItems: DropDownItemProps[] = chatProfiles.map((p) => ({
       text: p.name,
       id: p.id,
+      "data-testid": "model-selector-option",
       onClick: () => {
         // Explicit user pick only — the auto-select effect above goes
         // through onSelectProfile directly and must neither notify the
@@ -75,6 +76,7 @@ const SelectModel = () => {
 
     const toItem = (action: ProfilePickerAction): DropDownItemProps => ({
       id: action.id,
+      "data-testid": `model-selector-action-${action.id}`,
       text: action.text,
       icon:
         typeof action.icon === "string" ? (

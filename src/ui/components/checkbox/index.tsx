@@ -8,6 +8,8 @@ export type CheckboxProps = {
   disabled?: boolean;
   id?: string;
   className?: string;
+  /** Test hook, placed on the native `<input>` so tests can read `checked`. */
+  "data-testid"?: string;
 };
 
 const Checkbox = ({
@@ -16,6 +18,7 @@ const Checkbox = ({
   disabled = false,
   id,
   className = "",
+  "data-testid": dataTestId,
 }: CheckboxProps) => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (onChange && !disabled) {
@@ -62,6 +65,7 @@ const Checkbox = ({
       <input
         type="checkbox"
         id={id}
+        data-testid={dataTestId}
         checked={checked}
         onChange={handleChange}
         disabled={disabled}

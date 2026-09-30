@@ -41,4 +41,6 @@ export type DropdownMenuProps = {
    * rows — and the controls on them — stay clickable while it is open.
    */
   modal?: boolean;
+  /** Test hook for the menu panel (the portalled Radix content). */
+  "data-testid"?: string;
 };

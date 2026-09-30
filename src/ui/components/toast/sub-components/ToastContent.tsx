@@ -29,6 +29,7 @@ const ToastContent = ({ className, title, ...props }: ToastContentProps) => {
     <ToastPrimitive.Root
       dir={direction}
       data-slot="toast"
+      data-testid="toast"
       className={cn(
         "pointer-events-auto select-none w-max max-w-full",
         "px-[var(--toast-padding-x,16px)] py-[var(--toast-padding-y,8px)]",

@@ -108,13 +108,17 @@ const ManageToolDialog = ({
         header={t("Confirmation")}
         onClose={isApprovingTool ? () => {} : onDeny}
         isHuge
+        data-testid="manage-tool-dialog"
       >
         <div className="flex flex-col justify-between h-full mb-[16px] text-[var(--tool-fallback-color)]">
           <p className="mt-[8px] font-[14px] font-normal text-[var(--tool-fallback-color)]">
             {t("AIWouldLikeUseThisTool")}
           </p>
           <div className="mt-[16px] flex flex-col gap-[4px]">
-            <p className="font-bold text-[var(--tool-fallback-color)]">
+            <p
+              data-testid="manage-tool-dialog-tool-name"
+              className="font-bold text-[var(--tool-fallback-color)]"
+            >
               {displayName}
             </p>
             <p
@@ -134,19 +138,29 @@ const ManageToolDialog = ({
               color="var(--tool-fallback-color)"
               isStroke
             />
-            <span className="min-w-0 truncate">{intent ?? name}</span>
+            <span
+              data-testid="manage-tool-dialog-intent"
+              className="min-w-0 truncate"
+            >
+              {intent ?? name}
+            </span>
           </p>
           <p className="font-[14px] font-normal text-[var(--tool-fallback-color)]">
             {t("ReviewEachAction")}
           </p>
           {hideAllowAlways ? null : (
             <p
+              data-testid="manage-tool-dialog-allow-always"
               onClick={() =>
                 !isApprovingTool && setIsAllowAlways((val) => !val)
               }
               className="cursor-pointer flex items-center gap-[8px] mt-[24px] font-[14px] font-normal text-[var(--tool-fallback-color)]"
             >
-              <Checkbox checked={isAllowAlways} id="allow-always-checkbox" />
+              <Checkbox
+                checked={isAllowAlways}
+                id="allow-always-checkbox"
+                data-testid="manage-tool-dialog-allow-always-checkbox"
+              />
               {t("AlwaysAllow")}
             </p>
           )}
