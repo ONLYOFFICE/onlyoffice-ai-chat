@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.10
+
+### Changed
+
+- **The thread always follows the stream (Bug 84123).** The message area is anchored at the bottom and re-pins itself on every streamed token, the classic chat layout. Auto-scroll had been off by default in favour of the reading-first layout, which lifted the question to the top and let the answer grow below it; that layout confused users who expected the view to follow the answer.
+
+### Removed
+
+- **`WidgetConfig.autoScrollWhileStreaming` / `AIChatWidgetProps.autoScrollWhileStreaming`.** With the reading-first layout gone the flag had nothing left to switch; the `PendingTurnSlack` placeholder and the `data-auto-scroll` viewport attribute went with it. Hosts still passing the option get a type error and should drop it.
+
 ## 0.6.6
 
 ### Fixed
