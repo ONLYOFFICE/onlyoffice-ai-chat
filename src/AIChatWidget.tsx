@@ -129,13 +129,6 @@ export interface AIChatWidgetProps {
    * default. See {@link WidgetConfig.hideThreadFade}.
    */
   hideThreadFade?: boolean;
-  /**
-   * Follow the streaming response by keeping the thread pinned to the
-   * bottom. Off by default — sending lifts the question to the top of the
-   * message area and the answer grows below it. See
-   * {@link WidgetConfig.autoScrollWhileStreaming}.
-   */
-  autoScrollWhileStreaming?: boolean;
   hideSettingsButton?: boolean;
   /**
    * Icon name for the chat-history panel's close button. Defaults to
@@ -388,7 +381,6 @@ export const AIChatWidget = React.forwardRef<
       hideProfilePicker,
       hideScrollToBottomButton,
       hideThreadFade,
-      autoScrollWhileStreaming,
       hideSettingsButton,
       chatHistoryCloseIcon,
       inputIconPosition,
@@ -437,7 +429,6 @@ export const AIChatWidget = React.forwardRef<
         hideProfilePicker,
         hideScrollToBottomButton,
         hideThreadFade,
-        autoScrollWhileStreaming,
         hideSettingsButton,
         chatHistoryCloseIcon,
         inputIconPosition,
@@ -480,7 +471,6 @@ export const AIChatWidget = React.forwardRef<
         hideProfilePicker,
         hideScrollToBottomButton,
         hideThreadFade,
-        autoScrollWhileStreaming,
         hideSettingsButton,
         chatHistoryCloseIcon,
         inputIconPosition,

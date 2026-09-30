@@ -557,43 +557,25 @@ function hasRenderableContent(content: unknown): boolean {
   });
 }
 
-/**
- * Whether an assistant message renders to nothing at all.
- *
- * Two cases produce an empty assistant shell:
- *   • a user-cancelled turn (stop pressed before any content streamed)
- *     leaves an empty "incomplete" message; and
- *   • the runtime's optimistic placeholder for an in-flight turn is an
- *     empty "running" message — which would otherwise show an empty bubble
- *     alongside our own "Analyzing" indicator.
- * Error turns (reason === "error") still render so their banner shows even
- * with no partial content.
- *
- * Exported because a message that renders nothing also mounts no
- * `MessagePrimitive.Root`, and so none of the scroll machinery hung off it —
- * `PendingTurnSlack` holds the turn's scroll room open for exactly as long as
- * this is true.
- */
-export function isEmptyAssistantMessage(message: {
-  content?: unknown;
-  status?: unknown;
-}): boolean {
+export const AssistantMessage = memo(() => {
+  const message = useMessage();
   const status = message.status as
     | { type?: string; reason?: string }
     | undefined;
-  return (
+
+  // Don't render an empty assistant shell. Two cases produce one:
+  //   • a user-cancelled turn (stop pressed before any content streamed)
+  //     leaves an empty "incomplete" message; and
+  //   • the runtime's optimistic placeholder for an in-flight turn is an
+  //     empty "running" message — which would otherwise show an empty bubble
+  //     alongside our own "Analyzing" indicator.
+  // Error turns (reason === "error") still render so their banner shows even
+  // with no partial content.
+  if (
     !hasRenderableContent(message.content) &&
     ((status?.type === "incomplete" && status?.reason !== "error") ||
       status?.type === "running")
-  );
-}
-
-export const AssistantMessage = memo(() => {
-  const message = useMessage();
-  const { useMessageStore } = useStores();
-  const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
-
-  if (isEmptyAssistantMessage(message)) {
+  ) {
     return null;
   }
 
@@ -605,16 +587,6 @@ export const AssistantMessage = memo(() => {
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
         data-testid="assistant-message"
-        // `ThreadPrimitive.ViewportSlack` (via `MessagePrimitive.Root`) pins a
-        // `min-height` of roughly the whole viewport onto the last assistant
-        // message so the question it answers can sit at the top of the screen.
-        // That room is only worth holding while the turn is live: once the run
-        // ends it is dead whitespace under the final answer, and the reader
-        // scrolls through it to reach the composer. Releasing it here — rather
-        // than switching `turnAnchor` — keeps the scroll-to-top behaviour on
-        // send and only reclaims the space afterwards. Inline, because the
-        // runtime writes `min-height` as an inline style on this same element.
-        style={isStreamRunning ? undefined : { minHeight: 0 }}
       >
         <div
           data-testid="assistant-message-content"

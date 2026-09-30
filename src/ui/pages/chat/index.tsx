@@ -27,7 +27,6 @@ import { ComposerHeader } from "./sub-components/ComposerHeader";
 import { Suggestions } from "./sub-components/Suggestions";
 import { SuggestionsHeader } from "./sub-components/SuggestionsHeader";
 import { OlderMessages } from "./sub-components/OlderMessages";
-import { PendingTurnSlack } from "./sub-components/PendingTurnSlack";
 import { PreserveScrollOnHide } from "./sub-components/PreserveScrollOnHide";
 import { UserMessage } from "./sub-components/UserMessage";
 import { useChatDropAttachments } from "./useChatDropAttachments";
@@ -49,8 +48,7 @@ const ThreadInner = () => {
   // the browser's own clipboard HTML inlines the computed background and
   // colour of everything it copies.
   const onCopy = useSanitizedCopy();
-  const { hideScrollToBottomButton, hideThreadFade, autoScrollWhileStreaming } =
-    useWidgetConfig();
+  const { hideScrollToBottomButton, hideThreadFade } = useWidgetConfig();
   // The scrolling message area: `OlderMessages` observes the top of it
   // and keeps the reading position steady when a page is prepended.
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -137,37 +135,10 @@ const ThreadInner = () => {
               top and bottom edges of the message area instead of scrolling
               away with the content inside the viewport. */}
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-            {/* `turnAnchor="top"` is the reading-first layout: the last user
-                message becomes the scroll anchor and the assistant message
-                under it is given a `min-height` of the remaining viewport
-                (`ThreadPrimitive.ViewportSlack`, applied by
-                `MessagePrimitive.Root`). That slack is the scroll room the
-                jump-to-bottom on send needs in order to land the question at
-                the *top* of the message area, with the answer growing into
-                the empty space below it — rather than leaving the question
-                pinned above the composer and the answer rendering off-screen.
-
-                `autoScroll` is the runtime's *follow* behavior: a resize
-                observer on the content that re-pins the viewport to the
-                bottom on every growth while `isAtBottom` holds, which made a
-                long answer scroll its own beginning away token by token. It
-                defaults to `false` under `turnAnchor="top"` — passed
-                explicitly here so the opt-in config still reaches it — and
-                `ScrollToBottom` below un-disables itself as soon as there is
-                content past the fold, which is the "more below" affordance.
-                `scrollToBottomOnRunStart` keeps its default: the jump on send
-                is what puts the question at the top.
-
-                A host that opts into `autoScrollWhileStreaming` wants the
-                classic chat layout, so the anchor goes back to the bottom
-                with it. */}
             <ThreadPrimitive.Viewport
               ref={viewportRef}
               data-testid="chat-messages"
-              autoScroll={autoScrollWhileStreaming ?? false}
-              turnAnchor={autoScrollWhileStreaming ? "bottom" : "top"}
               className="thread-viewport relative flex min-h-0 min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
-              data-auto-scroll={autoScrollWhileStreaming ? "on" : "off"}
             >
               {/* Pulls the previous page when the reader nears the top of
                   a paginated thread — see `OlderMessages`. */}
@@ -184,36 +155,21 @@ const ThreadInner = () => {
                 }}
               />
 
-              {/* Everything below the last message is content *inset*: the
-                  slack that lifts the last user message to the top is sized
-                  as `viewport - inset`, so anything rendered under the answer
-                  has to be measured or it pushes the question that far off
-                  the top edge. `ViewportFooter` registers its own height with
-                  the viewport store (heights of several footers are summed),
-                  which is why the indicator and the trailing gap share one. */}
-              <ThreadPrimitive.ViewportFooter className="flex shrink-0 flex-col gap-[10px]">
-                {showAnalyzing ? (
-                  <div
-                    data-testid="chat-analyzing-indicator"
-                    className="flex items-center justify-center"
-                  >
-                    <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
-                      <Loader />
-                      <p className="font-normal text-[var(--chat-message-analyze-color)]">
-                        {t("Analyzing")}
-                      </p>
-                    </div>
+              {showAnalyzing ? (
+                <div
+                  data-testid="chat-analyzing-indicator"
+                  className="flex items-center justify-center"
+                >
+                  <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
+                    <Loader />
+                    <p className="font-normal text-[var(--chat-message-analyze-color)]">
+                      {t("Analyzing")}
+                    </p>
                   </div>
-                ) : null}
+                </div>
+              ) : null}
 
-                <motion.div className="min-h-[8px] min-w-6 shrink-0" />
-              </ThreadPrimitive.ViewportFooter>
-
-              {/* Deliberately *outside* the footer: this spacer is sized from
-                  `inset`, so measuring it as part of the inset would feed its
-                  own height back in and collapse it. See
-                  `PendingTurnSlack` for the window it covers. */}
-              <PendingTurnSlack />
+              <motion.div className="min-h-[8px] min-w-6 shrink-0" />
             </ThreadPrimitive.Viewport>
 
             {/* Floating "scroll to bottom" button (shown by default; hide
