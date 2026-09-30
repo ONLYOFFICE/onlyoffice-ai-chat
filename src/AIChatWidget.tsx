@@ -131,8 +131,8 @@ export interface AIChatWidgetProps {
   hideThreadFade?: boolean;
   /**
    * Follow the streaming response by keeping the thread pinned to the
-   * bottom. Off by default — sending lifts the question to the top of the
-   * message area and the answer grows below it. See
+   * bottom. On by default; `false` lifts the question to the top of the
+   * message area and lets the answer grow below it. See
    * {@link WidgetConfig.autoScrollWhileStreaming}.
    */
   autoScrollWhileStreaming?: boolean;

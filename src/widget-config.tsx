@@ -93,17 +93,17 @@ export interface WidgetConfig {
    * Keep the thread pinned to the bottom while a response streams, so the
    * view follows the text as it is generated.
    *
-   * Off by default, in favour of the reading-first layout: sending lifts the
-   * question to the *top* of the message area and the answer grows into the
-   * space below it, with the reading position staying put from there. A long
+   * On by default — the classic chat layout, where each turn starts at the
+   * bottom against the composer and every streamed token drags the viewport
+   * down.
+   *
+   * Set to `false` for the reading-first layout: sending lifts the question
+   * to the *top* of the message area and the answer grows into the space
+   * below it, with the reading position staying put from there. A long
    * answer is then read from its beginning instead of scrolling itself away,
    * and the floating "scroll to bottom" button (see
    * {@link WidgetConfig.hideScrollToBottomButton}) surfaces on its own to
    * signal there is more content below.
-   *
-   * Set to `true` for the classic chat layout, where each turn starts at the
-   * bottom against the composer and every streamed token drags the viewport
-   * down.
    */
   autoScrollWhileStreaming?: boolean;
   /**

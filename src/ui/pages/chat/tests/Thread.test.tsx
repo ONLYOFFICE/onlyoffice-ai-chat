@@ -216,43 +216,43 @@ describe("ChatPage (Thread)", () => {
     serversState.manageToolData = undefined;
   });
 
-  it("does not follow the stream down the viewport by default", () => {
+  it("follows the stream down the viewport by default", () => {
     render(<Thread />);
-    expect(screen.getAllByTestId("viewport")[0]).toHaveAttribute(
-      "data-auto-scroll-prop",
-      "false"
-    );
-  });
-
-  it("follows the stream when autoScrollWhileStreaming is set", () => {
-    render(
-      <WidgetConfigProvider config={{ autoScrollWhileStreaming: true }}>
-        <Thread />
-      </WidgetConfigProvider>
-    );
     expect(screen.getAllByTestId("viewport")[0]).toHaveAttribute(
       "data-auto-scroll-prop",
       "true"
     );
   });
 
-  it("anchors the turn at the top of the viewport by default", () => {
-    render(<Thread />);
+  it("does not follow the stream when autoScrollWhileStreaming is false", () => {
+    render(
+      <WidgetConfigProvider config={{ autoScrollWhileStreaming: false }}>
+        <Thread />
+      </WidgetConfigProvider>
+    );
     expect(screen.getAllByTestId("viewport")[0]).toHaveAttribute(
-      "data-turn-anchor-prop",
-      "top"
+      "data-auto-scroll-prop",
+      "false"
     );
   });
 
-  it("anchors at the bottom when autoScrollWhileStreaming is set", () => {
+  it("anchors the turn at the bottom of the viewport by default", () => {
+    render(<Thread />);
+    expect(screen.getAllByTestId("viewport")[0]).toHaveAttribute(
+      "data-turn-anchor-prop",
+      "bottom"
+    );
+  });
+
+  it("anchors at the top when autoScrollWhileStreaming is false", () => {
     render(
-      <WidgetConfigProvider config={{ autoScrollWhileStreaming: true }}>
+      <WidgetConfigProvider config={{ autoScrollWhileStreaming: false }}>
         <Thread />
       </WidgetConfigProvider>
     );
     expect(screen.getAllByTestId("viewport")[0]).toHaveAttribute(
       "data-turn-anchor-prop",
-      "bottom"
+      "top"
     );
   });
 

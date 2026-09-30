@@ -49,8 +49,11 @@ const ThreadInner = () => {
   // the browser's own clipboard HTML inlines the computed background and
   // colour of everything it copies.
   const onCopy = useSanitizedCopy();
-  const { hideScrollToBottomButton, hideThreadFade, autoScrollWhileStreaming } =
-    useWidgetConfig();
+  const {
+    hideScrollToBottomButton,
+    hideThreadFade,
+    autoScrollWhileStreaming = true,
+  } = useWidgetConfig();
   // The scrolling message area: `OlderMessages` observes the top of it
   // and keeps the reading position steady when a page is prepended.
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -137,7 +140,12 @@ const ThreadInner = () => {
               top and bottom edges of the message area instead of scrolling
               away with the content inside the viewport. */}
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-            {/* `turnAnchor="top"` is the reading-first layout: the last user
+            {/* `autoScrollWhileStreaming` defaults to on — the classic chat
+                layout, anchored at the bottom and following the stream. A
+                host that sets it to `false` gets the reading-first layout
+                described below.
+
+                `turnAnchor="top"` is the reading-first layout: the last user
                 message becomes the scroll anchor and the assistant message
                 under it is given a `min-height` of the remaining viewport
                 (`ThreadPrimitive.ViewportSlack`, applied by
@@ -149,22 +157,17 @@ const ThreadInner = () => {
 
                 `autoScroll` is the runtime's *follow* behavior: a resize
                 observer on the content that re-pins the viewport to the
-                bottom on every growth while `isAtBottom` holds, which made a
-                long answer scroll its own beginning away token by token. It
-                defaults to `false` under `turnAnchor="top"` — passed
-                explicitly here so the opt-in config still reaches it — and
-                `ScrollToBottom` below un-disables itself as soon as there is
-                content past the fold, which is the "more below" affordance.
+                bottom on every growth while `isAtBottom` holds, which makes a
+                long answer scroll its own beginning away token by token. In
+                the reading-first layout it is off, and `ScrollToBottom` below
+                un-disables itself as soon as there is content past the fold,
+                which is the "more below" affordance.
                 `scrollToBottomOnRunStart` keeps its default: the jump on send
-                is what puts the question at the top.
-
-                A host that opts into `autoScrollWhileStreaming` wants the
-                classic chat layout, so the anchor goes back to the bottom
-                with it. */}
+                is what puts the question at the top. */}
             <ThreadPrimitive.Viewport
               ref={viewportRef}
               data-testid="chat-messages"
-              autoScroll={autoScrollWhileStreaming ?? false}
+              autoScroll={autoScrollWhileStreaming}
               turnAnchor={autoScrollWhileStreaming ? "bottom" : "top"}
               className="thread-viewport relative flex min-h-0 min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
               data-auto-scroll={autoScrollWhileStreaming ? "on" : "off"}
