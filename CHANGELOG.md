@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.4
+
+### Fixed
+
+- **Disconnect room no longer scrolls away under a long skill list.** A room with many skills pushed the way out past the menu's height cap. The separator and Disconnect room now ride the menu's pinned footer, like Effort under the profiles: the switches scroll, the exit stays in view.
+
 ## 0.6.3
 
 ### Added
