@@ -29,6 +29,10 @@ export type ComboBoxProps = {
    * `comboBoxArrowIcon` widget config and then to the bundled `"arrow"`.
    */
   arrowIcon?: string;
+  /**
+   * Test hook for the trigger; the panel gets `<id>-menu` and the search field
+   * `<id>-search-input`. Defaults to `"combo-box"`.
+   */
   "data-testid"?: string;
 };
 
@@ -46,7 +50,7 @@ const ComboBox = ({
   contentClassName,
   maxWidth,
   arrowIcon,
-  "data-testid": dataTestId,
+  "data-testid": dataTestId = "combo-box",
 }: ComboBoxProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -71,6 +75,7 @@ const ComboBox = ({
     <div className="px-[var(--combo-box-search-padding-x,8px)] pb-[var(--combo-box-search-padding-bottom,4px)]">
       <input
         autoFocus
+        data-testid={`${dataTestId}-search-input`}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         onKeyDown={(e) => e.stopPropagation()}
@@ -146,6 +151,7 @@ const ComboBox = ({
       matchTriggerWidth={matchTriggerWidth}
       contentClassName={contentClassName}
       maxWidth={maxWidth}
+      data-testid={`${dataTestId}-menu`}
       headerContent={searchHeader}
       items={visibleItems}
       variant="combobox"

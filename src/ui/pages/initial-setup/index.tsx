@@ -16,14 +16,20 @@ const InitialSetup = () => {
   const [activeCard, setActiveCard] = useState<ActiveCard>(null);
 
   return (
-    <div className="aui-root flex h-full w-full [justify-content:var(--initial-setup-justify,flex-start)] bg-[var(--layout-background-color)]">
+    <div
+      data-testid="initial-setup-page"
+      className="aui-root flex h-full w-full [justify-content:var(--initial-setup-justify,flex-start)] bg-[var(--layout-background-color)]"
+    >
       <div className="max-w-[var(--initial-setup-max-width,560px)] flex flex-col m-[var(--initial-setup-margin,12px)] overflow-hidden select-none">
         <AddModelCard
           variant="standalone"
           isHorizontal={isAddModelCardHorizontal}
         />
 
-        <div className="flex flex-col gap-[var(--initial-setup-list-gap,8px)]">
+        <div
+          data-testid="initial-setup-models-list"
+          className="flex flex-col gap-[var(--initial-setup-list-gap,8px)]"
+        >
           {profiles.map((profile) => (
             <ModelCard
               key={profile.id}

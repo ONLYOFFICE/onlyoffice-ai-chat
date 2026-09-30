@@ -70,6 +70,7 @@ const AvailableTools = ({
 
   return (
     <div
+      data-testid="mcp-available-tools"
       className={cn(
         "available-tools w-full flex flex-col",
         bordered &&

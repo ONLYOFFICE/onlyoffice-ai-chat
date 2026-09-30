@@ -179,6 +179,7 @@ const ComposerActionAttachment = () => {
                   : (file.path.split("/").pop() ?? ""),
                 key: file.path,
                 id: file.path,
+                "data-testid": "attachment-menu-recent-file",
                 icon: (
                   <IconButton
                     iconName={iconName}
@@ -238,12 +239,17 @@ const ComposerActionAttachment = () => {
   // Gate each entry on its specific capability instead of the whole
   // `file` object, so a host can expose e.g. only image upload / export.
   if (platform.file?.pickFiles) {
-    items.push({ text: t("AddLocalFile"), onClick: () => selectLocalFile() });
+    items.push({
+      text: t("AddLocalFile"),
+      "data-testid": "attachment-menu-add-local-file",
+      onClick: () => selectLocalFile(),
+    });
   }
 
   if (addLocalImageEnabled) {
     items.push({
       text: t("AddLocalImage"),
+      "data-testid": "attachment-menu-add-local-image",
       onClick: () => imageInputRef.current?.click(),
     });
   }
@@ -251,6 +257,7 @@ const ComposerActionAttachment = () => {
   if (platform.file?.getRecentFiles && recentFiles.length > 0) {
     items.push({
       text: t("RecentFiles"),
+      "data-testid": "attachment-menu-recent-files",
       onClick: () => {
         // ignore
       },
@@ -262,6 +269,7 @@ const ComposerActionAttachment = () => {
     for (const action of composerActions) {
       items.push({
         id: action.id,
+        "data-testid": `attachment-menu-action-${action.id}`,
         text: action.text,
         icon:
           typeof action.icon === "string" ? (
@@ -288,6 +296,7 @@ const ComposerActionAttachment = () => {
 
   items.push({
     text: t("WebSearch"),
+    "data-testid": "attachment-menu-web-search",
     onClick: () => {
       // ignore
     },
@@ -369,11 +378,13 @@ const ComposerActionAttachment = () => {
         multiple
         onChange={handleImageSelect}
         className="hidden"
+        data-testid="attachment-image-input"
       />
       <DropdownMenu
         trigger={trigger}
         items={items}
         onOpenChange={onOpenChange}
+        data-testid="attachment-menu"
       />
     </>
   );

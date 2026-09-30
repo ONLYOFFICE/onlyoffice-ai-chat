@@ -138,7 +138,7 @@ export const EditModelCard = ({
   };
 
   return (
-    <ModelCardShell>
+    <ModelCardShell data-testid="edit-model-card">
       <h3 className="select-none font-bold text-[var(--text-normal)] mb-[var(--edit-model-card-title-margin-bottom,12px)]">
         {t("EditAIModel")}
       </h3>
@@ -160,16 +160,25 @@ export const EditModelCard = ({
       />
 
       <div className="flex flex-row justify-between items-center mt-[var(--edit-model-card-footer-margin-top,0px)]">
-        <Button variant="default" onClick={onDelete}>
+        <Button
+          variant="default"
+          data-testid="edit-model-delete-button"
+          onClick={onDelete}
+        >
           {t("Delete")}
         </Button>
         <div className="flex flex-row gap-[var(--edit-model-card-footer-gap,12px)]">
-          <Button variant="default" onClick={onClose}>
+          <Button
+            variant="default"
+            data-testid="edit-model-cancel-button"
+            onClick={onClose}
+          >
             {t("Cancel")}
           </Button>
           <Button
             disabled={!isFormValid}
             isLoading={isSubmitting}
+            data-testid="edit-model-save-button"
             onClick={handleSave}
           >
             {t("SaveChanges")}

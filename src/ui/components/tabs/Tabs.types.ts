@@ -18,4 +18,9 @@ export type TabsProps = {
   listClassName?: string;
   /** Class on each scrollable panel (`TabsPrimitive.Content`). */
   contentClassName?: string;
+  /**
+   * Test hook for the root. Each trigger and panel derives its own from it:
+   * `<id>-tab-<value>` and `<id>-panel-<value>`. Defaults to `"tabs"`.
+   */
+  "data-testid"?: string;
 };

@@ -12,7 +12,10 @@ const ComposerHeader = () => {
   if (!composerHeader) return null;
 
   return (
-    <div className="composer-header mx-auto w-full max-w-[var(--thread-max-width)] px-[12px] mb-[12px]">
+    <div
+      data-testid="composer-header"
+      className="composer-header mx-auto w-full max-w-[var(--thread-max-width)] px-[12px] mb-[12px]"
+    >
       {composerHeader}
     </div>
   );

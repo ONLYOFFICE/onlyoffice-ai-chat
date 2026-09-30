@@ -11,11 +11,13 @@ const Tabs = ({
   className,
   listClassName,
   contentClassName,
+  "data-testid": dataTestId = "tabs",
 }: TabsProps) => {
   const { direction } = useI18n();
 
   return (
     <TabsPrimitive.Root
+      data-testid={dataTestId}
       dir={direction}
       defaultValue={defaultValue || items[0]?.value}
       value={value}
@@ -33,6 +35,7 @@ const Tabs = ({
             key={item.value}
             value={item.value}
             disabled={item.disabled}
+            data-testid={`${dataTestId}-tab-${item.value}`}
             className={cn(
               "font-semibold cursor-pointer select-none whitespace-nowrap px-[12px] h-[24px] border-[length:var(--tabs-border-width)] border-[color:var(--tabs-border-color)] border-solid -ms-px first:ms-0 transition-colors",
               "text-[var(--text-secondary)] bg-[var(--background-normal)]",
@@ -49,6 +52,7 @@ const Tabs = ({
         <TabsPrimitive.Content
           key={item.value}
           value={item.value}
+          data-testid={`${dataTestId}-panel-${item.value}`}
           className={cn(
             "mt-[8px] flex-1 min-h-0 overflow-y-auto",
             contentClassName

@@ -8,6 +8,7 @@ const ToggleButton = ({
   disabled = false,
   id,
   className,
+  "data-testid": dataTestId,
 }: ToggleButtonProps) => {
   // Base styles
   const baseStyles =
@@ -40,6 +41,7 @@ const ToggleButton = ({
       <Switch.Root
         dir="ltr"
         id={id}
+        data-testid={dataTestId}
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}

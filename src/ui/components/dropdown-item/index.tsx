@@ -59,6 +59,7 @@ const DropDownItem = ({
   variant = "menu",
   navigation = "flyout",
   onDrill,
+  "data-testid": dataTestId = "dropdown-item",
 }: DropDownItemProps) => {
   const { isRTL } = useI18n();
   const { portalContainer } = useTheme();
@@ -322,6 +323,7 @@ const DropDownItem = ({
       onMouseEnter={!isDrill && !subMenuIcon ? handleMouseEnter : undefined}
       ref={itemRef}
       dir={isRTL ? "rtl" : "ltr"}
+      data-testid={dataTestId}
     >
       <div
         className={cn(
@@ -356,6 +358,7 @@ const DropDownItem = ({
             align="center"
             sideOffset={4}
             content={aboutContent}
+            data-testid={`${dataTestId}-help-button`}
           />
         ) : null}
         {trailingText ? (
@@ -384,6 +387,7 @@ const DropDownItem = ({
               iconName={subMenuIcon}
               size={subMenuIconSize ?? 12}
               insideElement
+              data-testid={`${dataTestId}-submenu-button`}
             />
           </div>
         ) : (
@@ -422,6 +426,7 @@ const DropDownItem = ({
                 insideElement
                 isStroke={!subMenuIcon}
                 className={!subMenuIcon && isRTL ? "rotate-180" : ""}
+                data-testid={`${dataTestId}-submenu-button`}
               />
             }
             items={subMenu}
@@ -440,6 +445,7 @@ const DropDownItem = ({
             contentClassName={cn("max-w-[300px]", subMenuClassName)}
             maxHeight={subMenuMaxHeight}
             dropdownRef={submenuRef}
+            data-testid={`${dataTestId}-submenu`}
           />
         </div>
       ) : null}
@@ -452,6 +458,7 @@ const DropDownItem = ({
             checked={toggleChecked ?? false}
             onCheckedChange={onToggleChange}
             disabled={toggleDisabled}
+            data-testid={`${dataTestId}-toggle`}
           />
         </div>
       ) : null}

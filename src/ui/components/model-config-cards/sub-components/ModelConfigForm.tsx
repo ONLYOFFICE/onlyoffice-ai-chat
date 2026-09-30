@@ -147,6 +147,7 @@ export const ModelConfigForm = ({
     ...cloudProviders.map((cp) => ({
       text: cp.label,
       id: cp.url,
+      "data-testid": "model-form-provider-option-cloud",
       onClick: () =>
         onChange("provider", {
           type: "onlyoffice" as ProviderType,
@@ -158,6 +159,7 @@ export const ModelConfigForm = ({
     ...providersInfo.map((p) => ({
       text: p.name,
       id: p.type,
+      "data-testid": `model-form-provider-option-${p.type}`,
       onClick: () => {
         if (p.type === "onlyoffice" && externalOnlyofficeConfig) {
           onChange("provider", {
@@ -206,6 +208,7 @@ export const ModelConfigForm = ({
     .map((m) => ({
       text: m.name,
       id: m.id,
+      "data-testid": "model-form-model-option",
       onClick: () => onChange("model", m.id),
       trailingIcon: showCapabilityIcons ? (
         <ModelCapabilityIcons model={m} />
@@ -245,8 +248,12 @@ export const ModelConfigForm = ({
       : undefined;
 
   return (
-    <div className="flex flex-col gap-[var(--model-config-form-gap,8px)]">
+    <div
+      data-testid="model-form"
+      className="flex flex-col gap-[var(--model-config-form-gap,8px)]"
+    >
       <FieldContainer
+        data-testid="model-form-provider-field"
         header={t("Provider")}
         isHorizontal={isHorizontal}
         reserveActionSpace
@@ -267,6 +274,7 @@ export const ModelConfigForm = ({
                   // still reaches the portal settings page.
                   href={onlyofficeAISettingsHref}
                   target="_blank"
+                  data-testid="model-form-onlyoffice-ai-settings-link"
                   onClick={(e) => {
                     e.preventDefault();
                     setIsSetupTooltipOpen((v) => !v);
@@ -280,6 +288,7 @@ export const ModelConfigForm = ({
                 side="bottom"
                 align="end"
                 isAbout
+                data-testid="model-form-finish-ai-setup-popover"
               >
                 <div className="flex flex-col gap-[var(--model-config-form-tooltip-gap,8px)] max-w-[var(--model-config-form-tooltip-max-width,280px)]">
                   <p className="font-bold text-[var(--text-normal)] select-none">
@@ -290,6 +299,7 @@ export const ModelConfigForm = ({
                   </p>
                   <Button
                     className="self-start"
+                    data-testid="model-form-go-to-ai-settings-button"
                     onClick={() => {
                       setIsSetupTooltipOpen(false);
                       window.open(
@@ -314,11 +324,13 @@ export const ModelConfigForm = ({
           placeholder={t("SelectProvider")}
           value={selectedProviderText}
           items={providerItems}
+          data-testid="model-form-provider-select"
         />
       </FieldContainer>
 
       {!hideCredentials && (
         <FieldContainer
+          data-testid="model-form-api-key-field"
           className={
             isHorizontal
               ? "mb-[var(--model-config-form-field-margin-bottom,10px)]"
@@ -333,6 +345,7 @@ export const ModelConfigForm = ({
                 href={getApiKeyLink(values.provider)}
                 target="_blank"
                 className="!text-[var(--link-secondary-color)]"
+                data-testid="model-form-get-api-key-link"
               >
                 {t("GetAPIKey")}
               </Link>
@@ -348,12 +361,14 @@ export const ModelConfigForm = ({
             disabled={isFieldsDisabled}
             onChange={(e) => onChange("apiKey", e.target.value)}
             value={values.apiKey}
+            data-testid="model-form-api-key-input"
           />
         </FieldContainer>
       )}
 
       {!hideCredentials && (
         <FieldContainer
+          data-testid="model-form-base-url-field"
           className={
             isHorizontal
               ? "mb-[var(--model-config-form-field-margin-bottom,10px)]"
@@ -371,11 +386,13 @@ export const ModelConfigForm = ({
             disabled={isFieldsDisabled}
             onChange={(e) => onChange("baseUrl", e.target.value)}
             value={values.baseUrl}
+            data-testid="model-form-base-url-input"
           />
         </FieldContainer>
       )}
 
       <FieldContainer
+        data-testid="model-form-model-field"
         className={isHorizontal ? "mb-[10px]" : ""}
         header={t("Model")}
         isHorizontal={isHorizontal}
@@ -395,10 +412,12 @@ export const ModelConfigForm = ({
           searchable={models.length > 50}
           searchPlaceholder={t("Search")}
           items={modelItems}
+          data-testid="model-form-model-select"
         />
       </FieldContainer>
 
       <FieldContainer
+        data-testid="model-form-profile-name-field"
         className={
           isHorizontal
             ? undefined
@@ -416,6 +435,7 @@ export const ModelConfigForm = ({
           disabled={isFieldsDisabled}
           onChange={(e) => onChange("profileName", e.target.value)}
           value={values.profileName}
+          data-testid="model-form-profile-name-input"
         />
       </FieldContainer>
     </div>

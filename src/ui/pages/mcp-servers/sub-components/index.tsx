@@ -56,7 +56,11 @@ const Servers = () => {
             "flex mb-[var(--mcp-servers-actions-margin-bottom,8px)]"
           )}
         >
-          <Button className="w-fit" onClick={() => setIsOpen(true)}>
+          <Button
+            className="w-fit"
+            data-testid="mcp-edit-configuration-button"
+            onClick={() => setIsOpen(true)}
+          >
             {t("EditConfiguration")}
           </Button>
         </div>

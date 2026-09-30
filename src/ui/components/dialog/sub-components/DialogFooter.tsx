@@ -63,6 +63,7 @@ const DialogFooter = ({
       <Button
         type={cancelType}
         variant="default"
+        data-testid="dialog-cancel-button"
         onClick={onCancel}
         disabled={cancelDisabled}
         className={buttonClassName}
@@ -71,6 +72,7 @@ const DialogFooter = ({
       </Button>
       <Button
         type={submitType}
+        data-testid="dialog-submit-button"
         onClick={onSubmit}
         disabled={submitDisabled}
         isLoading={submitLoading}

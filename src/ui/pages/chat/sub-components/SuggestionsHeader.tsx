@@ -15,7 +15,10 @@ const SuggestionsHeader = () => {
   if (!suggestionsHeader) return null;
 
   return (
-    <div className="mx-auto w-full max-w-[var(--thread-max-width)] px-[12px] pt-[12px]">
+    <div
+      data-testid="suggestions-header"
+      className="mx-auto w-full max-w-[var(--thread-max-width)] px-[12px] pt-[12px]"
+    >
       {suggestionsHeader}
     </div>
   );

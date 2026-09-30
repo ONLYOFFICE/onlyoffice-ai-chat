@@ -27,6 +27,7 @@ type ShellProps = {
   dropdownRef?: React.RefObject<HTMLDivElement | null>;
   onContentKeyDown?: (e: React.KeyboardEvent) => void;
   modal?: boolean;
+  contentTestId?: string;
   children: React.ReactNode;
 };
 
@@ -45,6 +46,7 @@ const Shell = ({
   dropdownRef,
   onContentKeyDown,
   modal,
+  contentTestId,
   children,
 }: ShellProps) => {
   const { isRTL } = useI18n();
@@ -101,6 +103,7 @@ const Shell = ({
       <DropdownMenu.Portal container={portalContainer ?? undefined}>
         <DropdownMenu.Content
           ref={dropdownRef}
+          data-testid={contentTestId}
           side={effectiveSide}
           align={effectiveAlign}
           sideOffset={sideOffset ?? 6}
@@ -193,6 +196,7 @@ const BackRow = ({ onBack }: { onBack: () => void }) => {
         "bg-transparent hover:bg-transparent data-[highlighted]:bg-transparent"
       )}
       dir={isRTL ? "rtl" : "ltr"}
+      data-testid="dropdown-back-button"
     >
       <IconButton
         iconName="arrow.right"
@@ -224,6 +228,7 @@ const DropdownMenuComponent = ({
   variant = "menu",
   navigation,
   modal,
+  "data-testid": dataTestId,
 }: DropdownMenuProps) => {
   const { isRTL } = useI18n();
   const config = useWidgetConfig();
@@ -308,6 +313,7 @@ const DropdownMenuComponent = ({
       dropdownRef={dropdownRef}
       onContentKeyDown={onContentKeyDown}
       modal={modal}
+      contentTestId={dataTestId}
     >
       {canGoBack ? (
         <>

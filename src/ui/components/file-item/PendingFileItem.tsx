@@ -66,6 +66,7 @@ const PendingFileItem = ({ item, onCancel }: PendingFileItemProps) => {
           iconName="btn-close.small"
           size={16}
           aria-label={t("Cancel")}
+          data-testid="pending-file-item-cancel-button"
           onClick={() => onCancel?.(item.id)}
         />
       ) : (
