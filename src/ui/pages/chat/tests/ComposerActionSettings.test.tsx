@@ -125,6 +125,7 @@ type MenuItem = {
   trailingText?: string;
   isSeparator?: boolean;
   onToggleChange?: () => Promise<void> | void;
+  "data-testid"?: string;
   subMenu?: MenuItem[];
   checked?: boolean;
   onClick?: () => void;
@@ -278,6 +279,16 @@ describe("ComposerActionSettings", () => {
       expect(clouds[1].subMenu!.map((r) => r.text)).toEqual(["Room 3"]);
       // Rooms are leaves: no further level.
       expect(clouds[1].subMenu![0].subMenu).toBeUndefined();
+    });
+
+    it("marks cloud and room rows with their test ids", () => {
+      render(<ComposerActionSettings />);
+      for (const cloud of cloudRows()) {
+        expect(cloud["data-testid"]).toBe("context-menu-cloud");
+        for (const room of cloud.subMenu!) {
+          expect(room["data-testid"]).toBe("context-menu-room");
+        }
+      }
     });
 
     it("clicking a cloud row selects nothing", () => {

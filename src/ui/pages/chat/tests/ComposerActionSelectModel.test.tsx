@@ -537,6 +537,9 @@ describe("SelectModel locked", () => {
     expect(items().map((i) => i.text)).toEqual(["GPT"]);
     expect(items()[0].checked).toBe(true);
     expect(items()[0].id).toBe("p1");
+    expect((items()[0] as { "data-testid"?: string })["data-testid"]).toBe(
+      "model-selector-current"
+    );
     expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
     expect(footer()[0].isSeparator).toBe(true);
     expect(footer()[1].trailingText).toBe("ThinkingLevelMedium");

@@ -34,6 +34,7 @@ const ComposerActionRoom = () => {
   const items: DropDownItemProps[] = roomSkills.map((skill) => ({
     id: `room-skill:${skill.id}`,
     text: skill.name,
+    "data-testid": "composer-room-skill",
     icon: <IconButton iconName="code.small" size={24} disableHover />,
     onClick: () => {
       // ignore — the switch is the control
@@ -59,6 +60,7 @@ const ComposerActionRoom = () => {
     items.push({
       id: "disconnect-room",
       text: t("DisconnectRoom"),
+      "data-testid": "composer-room-disconnect",
       onClick: () => {
         setIsOpen(false);
         clearContextFolder();
@@ -130,6 +132,7 @@ const ComposerActionRoom = () => {
         onOpenChange={setIsOpen}
         side="bottom"
         align="start"
+        data-testid="composer-room-menu"
         contentClassName="min-w-[var(--chat-composer-room-menu-min-width,240px)]"
       />
     </div>

@@ -85,6 +85,7 @@ type MenuItem = {
   toggleChecked?: boolean;
   onToggleChange?: (checked: boolean) => void;
   onClick?: () => void;
+  "data-testid"?: string;
 };
 const items = () => mockDropdownItems as MenuItem[];
 
@@ -156,6 +157,17 @@ describe("ComposerActionRoom", () => {
           .slice(0, 3)
           .map((i) => i.id)
       ).toEqual(["room-skill:s1", "room-skill:s1b", "room-skill:s2"]);
+    });
+
+    it("marks skill rows and Disconnect room with their test ids", () => {
+      render(<ComposerActionRoom />);
+      expect(items().map((i) => i["data-testid"])).toEqual([
+        "composer-room-skill",
+        "composer-room-skill",
+        "composer-room-skill",
+        undefined,
+        "composer-room-disconnect",
+      ]);
     });
 
     it("skill rows carry the code icon and are on unless disabled", () => {

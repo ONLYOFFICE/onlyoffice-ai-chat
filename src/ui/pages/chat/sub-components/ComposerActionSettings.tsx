@@ -62,6 +62,7 @@ const ComposerActionSettings = () => {
       ? `context-room:${cloud}:${room.id}`
       : `context-room:${room.id}`,
     text: room.name,
+    "data-testid": "context-menu-room",
     icon: <IconButton iconName="btn-room" size={24} disableHover />,
     checked:
       selectedContextFolder?.cloud === cloud &&
@@ -84,6 +85,7 @@ const ComposerActionSettings = () => {
     : contextFolders.map((folder) => ({
         id: `context-cloud:${folder.cloud}`,
         text: folder.cloud,
+        "data-testid": "context-menu-cloud",
         icon: <IconButton iconName="onlyoffice" size={24} disableHover />,
         onClick: () => {
           // ignore — the row only opens its submenu
@@ -106,6 +108,7 @@ const ComposerActionSettings = () => {
         align="start"
         sideOffset={4}
         aria-label={t("AddRoomContext")}
+        data-testid="composer-settings-help"
         content={
           <div className="flex flex-col items-start gap-[12px] p-[16px] max-w-[var(--composer-settings-hint-max-width,280px)] leading-[var(--lh-16)] text-[var(--text-normal)]">
             <p>{t("AddRoomContextDescription")}</p>
@@ -135,6 +138,7 @@ const ComposerActionSettings = () => {
       backRowLabel
       open={isOpen}
       onOpenChange={setIsOpen}
+      data-testid="composer-settings-menu"
     />
   );
 };

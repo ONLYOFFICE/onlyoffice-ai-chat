@@ -84,6 +84,7 @@ const SelectModel = ({ locked = false }: SelectModelProps) => {
         {
           text: currentProfile.name,
           id: currentProfile.id,
+          "data-testid": "model-selector-current",
           checked: true,
           onClick: () => {
             // ignore — the profile is the host's to change
