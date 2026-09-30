@@ -46,9 +46,13 @@ const ComposerActionRoom = () => {
     },
   }));
 
+  // Disconnect room is pinned below the skills, like Effort under the
+  // profiles: a room with many skills scrolls its switches, the way out
+  // stays in view. The separator goes only when there is a list above it.
+  const footerItems: DropDownItemProps[] = [];
   if (!hideContextRoomDisconnect) {
     if (items.length > 0) {
-      items.push({
+      footerItems.push({
         text: "",
         onClick: () => {
           // ignore
@@ -56,8 +60,7 @@ const ComposerActionRoom = () => {
         isSeparator: true,
       });
     }
-
-    items.push({
+    footerItems.push({
       id: "disconnect-room",
       text: t("DisconnectRoom"),
       "data-testid": "composer-room-disconnect",
@@ -69,7 +72,7 @@ const ComposerActionRoom = () => {
   }
 
   // Nothing to switch and no way out: the room has nothing to show.
-  if (items.length === 0) return null;
+  if (items.length === 0 && footerItems.length === 0) return null;
 
   // A bordered chip in the composer box, above the input: room icon, name,
   // chevron — the same metrics as a combobox trigger, so it reads as a
@@ -128,6 +131,7 @@ const ComposerActionRoom = () => {
       <DropdownMenu
         trigger={trigger}
         items={items}
+        footerItems={footerItems}
         open={isOpen}
         onOpenChange={setIsOpen}
         side="bottom"

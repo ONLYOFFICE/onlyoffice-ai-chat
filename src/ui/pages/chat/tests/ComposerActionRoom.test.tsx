@@ -38,21 +38,25 @@ vi.mock("../../../store/context", () => ({
 }));
 
 let mockDropdownItems: unknown[] = [];
+let mockDropdownFooter: unknown[] = [];
 let mockDropdownOpen: boolean | undefined;
 let mockOnOpenChange: ((open: boolean) => void) | undefined;
 vi.mock("../../../components/dropdown", () => ({
   DropdownMenu: ({
     trigger,
     items,
+    footerItems,
     open,
     onOpenChange,
   }: {
     trigger: React.ReactNode;
     items: unknown[];
+    footerItems?: unknown[];
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
   }) => {
     mockDropdownItems = items;
+    mockDropdownFooter = footerItems ?? [];
     mockDropdownOpen = open;
     mockOnOpenChange = onOpenChange;
     return (
@@ -88,6 +92,7 @@ type MenuItem = {
   "data-testid"?: string;
 };
 const items = () => mockDropdownItems as MenuItem[];
+const footer = () => mockDropdownFooter as MenuItem[];
 
 describe("ComposerActionRoom", () => {
   beforeEach(() => {
@@ -141,22 +146,22 @@ describe("ComposerActionRoom", () => {
       );
     });
 
-    it("lists one switch per skill, then a separator, then Disconnect room", () => {
+    it("lists one switch per skill, with a separator and Disconnect room pinned below", () => {
       render(<ComposerActionRoom />);
       expect(items().map((i) => i.text)).toEqual([
         "Skill 1",
         "Skill 1",
         "Skill 2",
-        "",
-        "DisconnectRoom",
       ]);
-      expect(items()[3].isSeparator).toBe(true);
       // Duplicate names stay apart through the id.
-      expect(
-        items()
-          .slice(0, 3)
-          .map((i) => i.id)
-      ).toEqual(["room-skill:s1", "room-skill:s1b", "room-skill:s2"]);
+      expect(items().map((i) => i.id)).toEqual([
+        "room-skill:s1",
+        "room-skill:s1b",
+        "room-skill:s2",
+      ]);
+      // The way out never scrolls away with a long skill list.
+      expect(footer().map((i) => i.text)).toEqual(["", "DisconnectRoom"]);
+      expect(footer()[0].isSeparator).toBe(true);
     });
 
     it("marks skill rows and Disconnect room with their test ids", () => {
@@ -165,9 +170,8 @@ describe("ComposerActionRoom", () => {
         "composer-room-skill",
         "composer-room-skill",
         "composer-room-skill",
-        undefined,
-        "composer-room-disconnect",
       ]);
+      expect(footer()[1]["data-testid"]).toBe("composer-room-disconnect");
     });
 
     it("skill rows carry the code icon and are on unless disabled", () => {
@@ -205,7 +209,7 @@ describe("ComposerActionRoom", () => {
       });
       expect(mockDropdownOpen).toBe(true);
       act(() => {
-        items().find((i) => i.id === "disconnect-room")!.onClick!();
+        footer().find((i) => i.id === "disconnect-room")!.onClick!();
       });
       expect(mockClearContextFolder).toHaveBeenCalledTimes(1);
       expect(mockDropdownOpen).toBe(false);
@@ -214,8 +218,10 @@ describe("ComposerActionRoom", () => {
     it("offers only Disconnect room when the room has no skills", () => {
       mockRoomSkills = [];
       render(<ComposerActionRoom />);
-      expect(items().map((i) => i.text)).toEqual(["DisconnectRoom"]);
-      expect(items().find((i) => i.isSeparator)).toBeUndefined();
+      expect(items()).toEqual([]);
+      // With nothing above it the separator would separate nothing.
+      expect(footer().map((i) => i.text)).toEqual(["DisconnectRoom"]);
+      expect(footer().find((i) => i.isSeparator)).toBeUndefined();
     });
 
     describe("with hideContextRoomDisconnect", () => {
@@ -230,7 +236,8 @@ describe("ComposerActionRoom", () => {
           "Skill 1",
           "Skill 2",
         ]);
-        expect(items().find((i) => i.id === "disconnect-room")).toBeUndefined();
+        expect(items().find((i) => i.isSeparator)).toBeUndefined();
+        expect(footer()).toEqual([]);
         expect(screen.getByTestId("icon-btn-arrow")).toBeInTheDocument();
       });
 
