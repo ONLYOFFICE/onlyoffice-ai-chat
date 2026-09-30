@@ -12,6 +12,11 @@
 - **Claude Opus 5.5 no longer fails with `"thinking.type.disabled" is not supported for this model`.** Opus 5.5 thinks always, like Fable and Mythos: `disabled` is a 400 at every effort level and `output_config.effort` is the only knob. The model is now marked as impossible to switch off (`canDisable: false`), a stored off sends adaptive thinking at the standard depth, and the composer offers no switch for it. The Claude id parser also reads a dotted minor (`anthropic/claude-opus-5.5`), so the OpenRouter route gets the same treatment (DocSpace bug 84082).
 - **"Always allow" on a custom MCP server's tool now sticks.** The approval dialog saved the bare name the model calls the tool by (`get_time`), while `set-allow-always` / `is-allow-always` key the list per server (`calculator_get_time`), so the saved decision was never found and, for a name without an underscore, was not persisted at all. All three paths — the dialog, the settings routes and the live round's auto-allow check — now derive one `${serverType}_${toolName}` token (`allowAlwaysToken`), and the flattened tool list stamps each adapter tool with its group so the round can attribute a bare call name to its server (DocSpace bug 84009). Decisions stored under a bare name before this release no longer apply and have to be granted once more.
 
+### Changed
+
+- **Test ids on the room-context controls**, in the naming master's `chore: add missed test ids` pass established: the context menu (`composer-settings-menu`, `context-menu-cloud`, `context-menu-room`, `composer-settings-help`), the room chip's menu (`composer-room-menu`, `composer-room-skill`, `composer-room-disconnect`) and the locked picker's current-profile row (`model-selector-current`). The drill-down back button is `dropdown-back-button` on every menu, labelled or not.
+- Master merged in: the missed test ids across the settings pages.
+
 ## 0.6.2
 
 ### Fixed
