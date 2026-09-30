@@ -168,6 +168,74 @@ describe("anthropic/messages/convertMessages", () => {
       expect(toolResult.tool_use_id).toBe("t1");
     });
 
+    it("attaches MCP result images as image blocks inside tool_result", () => {
+      const out = convertMessages([
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "c1",
+              toolName: "screenshot",
+              args: {},
+              result: JSON.stringify({
+                content: [
+                  { type: "text", text: "shot" },
+                  { type: "image", data: "AAAA", mimeType: "image/jpeg" },
+                ],
+              }),
+            },
+          ],
+        } as ThreadMessageLike,
+      ]);
+      const toolResult = (
+        out[1].content as Array<{ type: string; content: unknown }>
+      )[0];
+      expect(toolResult.type).toBe("tool_result");
+      expect(toolResult.content).toEqual([
+        {
+          type: "text",
+          text: JSON.stringify({
+            content: [
+              { type: "text", text: "shot" },
+              { type: "text", text: "[image attached]" },
+            ],
+          }),
+        },
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: "image/jpeg",
+            data: "AAAA",
+          },
+        },
+      ]);
+    });
+
+    it("keeps a text-only tool result as a plain string", () => {
+      const out = convertMessages([
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "c1",
+              toolName: "echo",
+              args: {},
+              result: '{"content":[{"type":"text","text":"x"}]}',
+            },
+          ],
+        } as ThreadMessageLike,
+      ]);
+      const toolResult = (
+        out[1].content as Array<{ type: string; content: unknown }>
+      )[0];
+      expect(toolResult.content).toBe(
+        '{"content":[{"type":"text","text":"x"}]}'
+      );
+    });
+
     it("emits a tool_use without a tool_result entry when there's no result", () => {
       const out = convertMessages([
         {

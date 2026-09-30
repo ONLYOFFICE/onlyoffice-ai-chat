@@ -98,6 +98,45 @@ describe("genai/messages/convertMessages", () => {
     expect(out[0].parts?.[0]).toEqual({ text: "t", thought: true });
   });
 
+  it("adds the tool's images as inlineData parts next to the functionResponse", () => {
+    const out = convertMessages([
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "tool-call",
+            toolCallId: "c1",
+            toolName: "screenshot",
+            args: {},
+            result: JSON.stringify({
+              content: [
+                { type: "text", text: "shot" },
+                { type: "image", data: "AAAA", mimeType: "image/jpeg" },
+              ],
+            }),
+          },
+        ],
+      } as ThreadMessageLike,
+    ]);
+    expect(out[1].role).toBe("user");
+    expect(out[1].parts).toEqual([
+      {
+        functionResponse: {
+          name: "screenshot",
+          response: {
+            result: JSON.stringify({
+              content: [
+                { type: "text", text: "shot" },
+                { type: "text", text: "[image attached]" },
+              ],
+            }),
+          },
+        },
+      },
+      { inlineData: { mimeType: "image/jpeg", data: "AAAA" } },
+    ]);
+  });
+
   it("emits functionCall + functionResponse across two wire entries", () => {
     const out = convertMessages([
       {

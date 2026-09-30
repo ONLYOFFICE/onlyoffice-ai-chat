@@ -5,6 +5,7 @@ import type {
 } from "@anthropic-ai/sdk/resources/index.mjs";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
+import { splitToolResultImages } from "../../../shared/mcp-result";
 import { isThinkingSignature } from "./signature";
 
 type ImageMimeType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
@@ -113,6 +114,25 @@ const convertSystemMessage = (message: ThreadMessageLike): MessageParam[] => {
 };
 
 /**
+ * Build the `content` of a `tool_result` block. A plain string result is
+ * passed through. An MCP result carrying inline images (a screenshot
+ * tool, a chart renderer) becomes a block list — the text envelope with
+ * `[image attached]` placeholders followed by one `image` block per
+ * picture, so the model actually sees what the tool returned.
+ */
+const convertToolResultContent = (
+  result: unknown
+): ToolResultBlockParam["content"] => {
+  const text = typeof result === "string" ? result : JSON.stringify(result);
+  const { text: body, images } = splitToolResultImages(text);
+  if (images.length === 0) return body;
+  return [
+    { type: "text", text: body },
+    ...images.map((img) => convertImageToBlock(img.dataUrl)),
+  ] as ToolResultBlockParam["content"];
+};
+
+/**
  * Translate an assistant turn, potentially splitting it into multiple
  * wire messages when tool-use blocks have attached results — Anthropic
  * expects `tool_result` blocks to arrive as a subsequent user message.
@@ -164,7 +184,7 @@ const convertAssistantMessage = (
       if (part.result) {
         toolResults.push({
           type: "tool_result",
-          content: part.result,
+          content: convertToolResultContent(part.result),
           tool_use_id: part.toolCallId ?? "",
         });
       }

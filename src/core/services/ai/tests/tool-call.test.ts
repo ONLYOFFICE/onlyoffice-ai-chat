@@ -241,6 +241,189 @@ describe("tool-call helpers", () => {
       );
     });
 
+    it("persists MCP image blocks to attachments and keeps refs in the envelope", async () => {
+      processStreamMock.mockImplementation(async function* () {});
+      const update = vi.fn().mockResolvedValue(undefined);
+      const readByThread = vi.fn().mockResolvedValue([]);
+      const create = vi
+        .fn()
+        .mockResolvedValueOnce({ id: "att-1" })
+        .mockResolvedValueOnce({ id: "att-2" });
+      const ctx = {
+        storage: {
+          messages: { update, readByThread },
+          attachments: { create },
+        },
+      } as never;
+
+      const gen = resumeChat(ctx, {
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: message([toolCallPart({ toolName: "screenshot" })]),
+        result: JSON.stringify({
+          content: [
+            { type: "text", text: "Captured" },
+            { type: "image", data: "AAAA", mimeType: "image/jpeg" },
+            { type: "image", data: "BBBB" },
+          ],
+          isError: false,
+        }),
+        profile: { id: "p" } as never,
+        profileId: "p",
+        entityId: "room-1",
+      });
+      for await (const _ of gen) void _;
+
+      // Each block stored as a data URL, tool-sourced, linked for cascade.
+      expect(create).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          kind: "image",
+          source: "tool",
+          title: "screenshot-image-1",
+          base64: "data:image/jpeg;base64,AAAA",
+          messageId: "m",
+          threadId: "t",
+          entityId: "room-1",
+        })
+      );
+      expect(create).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ base64: "data:image/png;base64,BBBB" })
+      );
+      // Envelope kept; image payloads replaced by refs.
+      expect(update).toHaveBeenCalledWith(
+        "m",
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            expect.objectContaining({
+              result: JSON.stringify({
+                content: [
+                  { type: "text", text: "Captured" },
+                  { type: "image", ref: "att-1", mimeType: "image/jpeg" },
+                  { type: "image", ref: "att-2" },
+                ],
+                isError: false,
+              }),
+            }),
+          ]),
+        })
+      );
+    });
+
+    it("recognises the MCP image shape in an object result from a host adapter", async () => {
+      processStreamMock.mockImplementation(async function* () {});
+      const update = vi.fn().mockResolvedValue(undefined);
+      const readByThread = vi.fn().mockResolvedValue([]);
+      const create = vi.fn().mockResolvedValue({ id: "att-1" });
+      const ctx = {
+        storage: {
+          messages: { update, readByThread },
+          attachments: { create },
+        },
+      } as never;
+
+      const gen = resumeChat(ctx, {
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: message([toolCallPart({ toolName: "shot" })]),
+        result: { content: [{ type: "image", data: "AAAA" }] },
+        profile: { id: "p" } as never,
+        profileId: "p",
+        entityId: undefined,
+      });
+      for await (const _ of gen) void _;
+
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(update).toHaveBeenCalledWith(
+        "m",
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            expect.objectContaining({
+              result: JSON.stringify({
+                content: [{ type: "image", ref: "att-1" }],
+              }),
+            }),
+          ]),
+        })
+      );
+    });
+
+    it("keeps an MCP result with only text blocks untouched", async () => {
+      processStreamMock.mockImplementation(async function* () {});
+      const update = vi.fn().mockResolvedValue(undefined);
+      const readByThread = vi.fn().mockResolvedValue([]);
+      const create = vi.fn();
+      const ctx = {
+        storage: {
+          messages: { update, readByThread },
+          attachments: { create },
+        },
+      } as never;
+      const result = JSON.stringify({
+        content: [{ type: "text", text: "no image here" }],
+      });
+
+      const gen = resumeChat(ctx, {
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: message([toolCallPart()]),
+        result,
+        profile: { id: "p" } as never,
+        profileId: "p",
+      });
+      for await (const _ of gen) void _;
+
+      expect(create).not.toHaveBeenCalled();
+      expect(update).toHaveBeenCalledWith(
+        "m",
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            expect.objectContaining({ result }),
+          ]),
+        })
+      );
+    });
+
+    it("keeps the original MCP result when attachment persistence throws", async () => {
+      processStreamMock.mockImplementation(async function* () {});
+      const update = vi.fn().mockResolvedValue(undefined);
+      const readByThread = vi.fn().mockResolvedValue([]);
+      const create = vi.fn().mockRejectedValue(new Error("disk full"));
+      const ctx = {
+        storage: {
+          messages: { update, readByThread },
+          attachments: { create },
+        },
+      } as never;
+      const result = JSON.stringify({
+        content: [{ type: "image", data: "AAAA", mimeType: "image/png" }],
+      });
+
+      const gen = resumeChat(ctx, {
+        threadId: "t",
+        messageId: "m",
+        idx: 0,
+        message: message([toolCallPart()]),
+        result,
+        profile: { id: "p" } as never,
+        profileId: "p",
+      });
+      for await (const _ of gen) void _;
+
+      expect(update).toHaveBeenCalledWith(
+        "m",
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            expect.objectContaining({ result }),
+          ]),
+        })
+      );
+    });
+
     it("keeps the original result when attachment persistence throws", async () => {
       processStreamMock.mockImplementation(async function* () {});
       const update = vi.fn().mockResolvedValue(undefined);

@@ -1,4 +1,10 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
+import { parseImageDataUrl } from "../../shared/image-data-url";
+import {
+  isMcpImageBlock,
+  parseMcpEnvelope,
+  type McpToolResultEnvelope,
+} from "../../shared/mcp-result";
 import type { Attachment, AttachmentsStorage } from "../storage";
 
 /**
@@ -139,18 +145,82 @@ export function extractRefIdsFromMessage(msg: ThreadMessageLike): string[] {
 export function collectRefIds(messages: ThreadMessageLike[]): string[] {
   const ids: string[] = [];
   const seen = new Set<string>();
+  const add = (ref: string) => {
+    if (seen.has(ref)) return;
+    seen.add(ref);
+    ids.push(ref);
+  };
   for (const msg of messages) {
     const content = msg.content;
     if (typeof content === "string" || !Array.isArray(content)) continue;
     for (const part of content) {
       const meta = extractRefFromPart(part);
-      if (meta && !seen.has(meta.ref)) {
-        seen.add(meta.ref);
-        ids.push(meta.ref);
-      }
+      if (meta) add(meta.ref);
+      for (const ref of extractToolResultImageRefs(part)) add(ref);
     }
   }
   return ids;
+}
+
+/**
+ * Persisted MCP tool result carrying image refs — see
+ * `persistGeneratedImage`. Returns the parsed envelope and the refs it
+ * holds, or `null` when the part is not a tool-call with such a result.
+ */
+function parseToolResultImageRefs(
+  part: unknown
+): { envelope: McpToolResultEnvelope; refs: string[] } | null {
+  if (!part || typeof part !== "object") return null;
+  const p = part as { type?: string; result?: unknown };
+  if (p.type !== "tool-call" || typeof p.result !== "string") return null;
+  // Persisted image blocks carry `"ref"`; a result without it has nothing
+  // to hydrate, so skip the JSON.parse.
+  if (!p.result.includes('"ref"')) return null;
+  const envelope = parseMcpEnvelope(p.result);
+  if (!envelope) return null;
+  const refs: string[] = [];
+  for (const block of envelope.content ?? []) {
+    if (isMcpImageBlock(block) && typeof block.ref === "string") {
+      refs.push(block.ref);
+    }
+  }
+  return refs.length ? { envelope, refs } : null;
+}
+
+function extractToolResultImageRefs(part: unknown): string[] {
+  return parseToolResultImageRefs(part)?.refs ?? [];
+}
+
+/**
+ * Hydrate the image refs inside a tool-call part's MCP result back to
+ * the wire form (`{ type: "image", data: <raw base64>, mimeType }`) so
+ * the provider converters can attach the picture to the tool result.
+ * A missing attachment collapses to a `[image unavailable]` text block.
+ * Parts without image refs are returned unchanged.
+ */
+function hydrateToolResultImages(
+  part: unknown,
+  map: Map<string, Attachment>
+): unknown {
+  const parsed = parseToolResultImageRefs(part);
+  if (!parsed) return part;
+  const content = (parsed.envelope.content ?? []).map((block) => {
+    if (!isMcpImageBlock(block) || typeof block.ref !== "string") return block;
+    const rec = map.get(block.ref);
+    const dataUrl = rec?.base64 ? parseImageDataUrl(rec.base64) : null;
+    if (!rec?.base64) {
+      return { type: "text", text: "[image unavailable]" };
+    }
+    return {
+      type: "image",
+      data: dataUrl ? dataUrl.base64 : rec.base64,
+      mimeType: dataUrl?.mimeType ?? block.mimeType ?? "image/png",
+    };
+  });
+  return {
+    ...(part as object),
+    result: JSON.stringify({ ...parsed.envelope, content }),
+  };
 }
 
 function extractRefFromPart(part: unknown): RefMeta | null {
@@ -170,7 +240,7 @@ function hydrateMessage(
 
   const next = content.map((part) => {
     const meta = extractRefFromPart(part);
-    if (!meta) return part;
+    if (!meta) return hydrateToolResultImages(part, map);
     const rec = map.get(meta.ref);
     if (!rec) return makeUnavailableBlock(meta.title);
     return meta.kind === "file"

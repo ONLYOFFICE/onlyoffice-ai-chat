@@ -176,4 +176,50 @@ describe("openai/messages/convertMessages — tool-call rounds", () => {
       expect(out[0].role).toBe("user");
     });
   });
+
+  it("follows the tool messages with a user message carrying the tool's images", () => {
+    const withImage = {
+      role: "assistant",
+      content: [
+        toolCall(
+          "c1",
+          JSON.stringify({
+            content: [
+              { type: "text", text: "shot" },
+              { type: "image", data: "AAAA", mimeType: "image/jpeg" },
+            ],
+          })
+        ),
+        { type: "text", text: "Here it is." },
+      ],
+    } as ThreadMessageLike;
+
+    const out = convertMessages([withImage]) as WireAssistant[];
+    expect(out.map((m) => m.role)).toEqual([
+      "assistant",
+      "tool",
+      "user",
+      "assistant",
+    ]);
+    expect(out[1].content).toBe(
+      JSON.stringify({
+        content: [
+          { type: "text", text: "shot" },
+          { type: "text", text: "[image attached]" },
+        ],
+      })
+    );
+    expect(out[2].content).toEqual([
+      { type: "text", text: 'Image(s) returned by the tool "tool_c1":' },
+      {
+        type: "image_url",
+        image_url: { url: "data:image/jpeg;base64,AAAA", detail: "high" },
+      },
+    ]);
+  });
+
+  it("emits no user message when the tool results carry no images", () => {
+    const out = convertMessages([threeRounds]) as WireAssistant[];
+    expect(out.some((m) => m.role === "user")).toBe(false);
+  });
 });

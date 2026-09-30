@@ -1,6 +1,10 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { Content, Part } from "@google/genai";
-import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
+import {
+  parseGuardedImageDataUrl,
+  parseImageDataUrl,
+} from "../../../shared/image-data-url";
+import { splitToolResultImages } from "../../../shared/mcp-result";
 
 /** Extract the filename from a Unix- or Windows-style path. */
 const extractFilename = (path: string): string => {
@@ -65,6 +69,7 @@ const convertAssistantMessage = (message: ThreadMessageLike): Content[] => {
 
   const parts: Part[] = [];
   const functionResponses: Part[] = [];
+  const toolImages: Part[] = [];
 
   for (const part of message.content) {
     if (part.type === "text") {
@@ -86,12 +91,28 @@ const convertAssistantMessage = (message: ThreadMessageLike): Content[] => {
       } as Part);
 
       if (part.result) {
+        const raw =
+          typeof part.result === "string"
+            ? part.result
+            : JSON.stringify(part.result);
+        const { text, images } = splitToolResultImages(raw);
         functionResponses.push({
           functionResponse: {
             name: part.toolName,
-            response: { result: part.result },
+            response: { result: text },
           },
         });
+        // Images a tool returned ride in the same `user` content as the
+        // function responses, as `inlineData` parts: GenAI has no image
+        // channel on `functionResponse`, and the response turn must
+        // directly follow the call turn.
+        for (const img of images) {
+          const parsed = parseImageDataUrl(img.dataUrl);
+          if (!parsed) continue;
+          toolImages.push({
+            inlineData: { mimeType: parsed.mimeType, data: parsed.base64 },
+          });
+        }
       }
     }
   }
@@ -101,7 +122,10 @@ const convertAssistantMessage = (message: ThreadMessageLike): Content[] => {
   }
 
   if (functionResponses.length) {
-    results.push({ role: "user", parts: functionResponses });
+    results.push({
+      role: "user",
+      parts: [...functionResponses, ...toolImages],
+    });
   }
 
   return results;

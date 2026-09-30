@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -10,9 +10,12 @@ vi.mock("../../../../hooks/useDirection", () => ({
   useDirection: () => ({ isRTL: false, direction: "ltr" }),
 }));
 
+const attachmentGetSpy = vi.fn(
+  (_ref: string): Promise<unknown> => Promise.resolve(null)
+);
 vi.mock("../../../providers/ApiProvider", () => ({
   useApi: () => ({
-    attachments: { get: () => Promise.resolve(null) },
+    attachments: { get: (ref: string) => attachmentGetSpy(ref) },
   }),
 }));
 
@@ -636,5 +639,98 @@ describe("ToolFallback", () => {
       screen.getByText("test").closest("[class*='cursor-pointer']")!
     );
     expect(screen.getByText("API Error")).toBeInTheDocument();
+  });
+
+  describe("tool result images", () => {
+    it("renders inline MCP image blocks as pictures and hides the base64 in the raw view", () => {
+      render(
+        <ToolFallback
+          {...defaultProps}
+          status={{ type: "complete" as const }}
+          result={JSON.stringify({
+            content: [
+              { type: "text", text: "shot" },
+              { type: "image", data: "AAAA", mimeType: "image/jpeg" },
+              { type: "image", data: "BBBB" },
+            ],
+          })}
+        />
+      );
+      const imgs = screen.getAllByTestId("tool-call-generated-image");
+      expect(imgs.map((img) => img.getAttribute("src"))).toEqual([
+        "data:image/jpeg;base64,AAAA",
+        "data:image/png;base64,BBBB",
+      ]);
+
+      fireEvent.click(screen.getByTestId("tool-call-header"));
+      const raw = screen.getByTestId("tool-call-result").textContent ?? "";
+      expect(raw).toContain("<base64 omitted>");
+      expect(raw).not.toContain("AAAA");
+    });
+
+    it("hydrates persisted MCP image refs through api.attachments", async () => {
+      attachmentGetSpy.mockImplementation((ref: string) =>
+        Promise.resolve(
+          ref === "att-1" ? { base64: "data:image/png;base64,REF1" } : null
+        )
+      );
+      render(
+        <ToolFallback
+          {...defaultProps}
+          status={{ type: "complete" as const }}
+          result={JSON.stringify({
+            content: [
+              { type: "image", ref: "att-1", mimeType: "image/png" },
+              { type: "image", ref: "att-missing" },
+            ],
+          })}
+        />
+      );
+      // Placeholder while the refs hydrate.
+      expect(screen.getByLabelText("CreatingImage")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getAllByTestId("tool-call-generated-image")).toHaveLength(
+          1
+        );
+      });
+      expect(
+        screen.getByTestId("tool-call-generated-image").getAttribute("src")
+      ).toBe("data:image/png;base64,REF1");
+      expect(attachmentGetSpy).toHaveBeenCalledWith("att-1");
+      expect(attachmentGetSpy).toHaveBeenCalledWith("att-missing");
+    });
+
+    it("renders the legacy generate_image ref marker for any tool name", async () => {
+      attachmentGetSpy.mockImplementation(() =>
+        Promise.resolve({ base64: "RAW64" })
+      );
+      render(
+        <ToolFallback
+          {...defaultProps}
+          toolName="docspace_render_chart"
+          status={{ type: "complete" as const }}
+          result={JSON.stringify({ data: { ref: "att-9" } })}
+        />
+      );
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("tool-call-generated-image").getAttribute("src")
+        ).toBe("data:image/png;base64,RAW64");
+      });
+    });
+
+    it("shows no picture for a text-only result", () => {
+      render(
+        <ToolFallback
+          {...defaultProps}
+          status={{ type: "complete" as const }}
+          result={JSON.stringify({
+            content: [{ type: "text", text: "hello" }],
+          })}
+        />
+      );
+      expect(screen.queryByTestId("tool-call-generated-image")).toBeNull();
+      expect(screen.queryByLabelText("CreatingImage")).toBeNull();
+    });
   });
 });

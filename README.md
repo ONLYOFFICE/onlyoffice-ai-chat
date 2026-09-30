@@ -192,6 +192,8 @@ Four tool sources unified by the `Servers` class:
 - **Image Generation** — Built-in `generate_image` tool routed to the profile assigned to `ActionType.ImageGeneration`
 - **Custom MCP Servers** — JSON-RPC 2.0 over HTTP or STDIO
 
+Tool results may carry images: MCP `{ type: "image", data, mimeType }` content blocks (and the `{ data: { base64 } }` payload of `generate_image`) are stored in `storage.attachments`, shown in the tool card, and forwarded to the model as native image input on every provider that has one.
+
 ```tsx
 const editorTools: HostToolGroup = {
   id: "editor",
