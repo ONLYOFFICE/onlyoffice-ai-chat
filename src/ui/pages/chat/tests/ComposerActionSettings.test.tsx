@@ -46,6 +46,7 @@ vi.mock("../../../store/context", () => ({
 let mockDropdownItems: unknown[] = [];
 let mockOnOpenChange: ((open: boolean) => void) | undefined;
 let mockDropdownOpen: boolean | undefined;
+let mockDropdownMaxWidth: string | number | undefined;
 vi.mock("../../../components/dropdown", () => ({
   DropdownMenu: ({
     trigger,
@@ -53,14 +54,17 @@ vi.mock("../../../components/dropdown", () => ({
     headerContent,
     open,
     onOpenChange,
+    maxWidth,
   }: {
     trigger: React.ReactNode;
     items: unknown[];
     headerContent?: React.ReactNode;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    maxWidth?: string | number;
   }) => {
     mockDropdownItems = items;
+    mockDropdownMaxWidth = maxWidth;
     mockOnOpenChange = onOpenChange;
     mockDropdownOpen = open;
     return (
@@ -198,6 +202,14 @@ describe("ComposerActionSettings", () => {
       "noopener"
     );
     open.mockRestore();
+  });
+
+  it("caps the panel width so a long room name truncates on its row", () => {
+    mockContextFolders = [
+      { cloud: "a.example.com", rooms: [{ id: "r1", name: "Room 1" }] },
+    ];
+    render(<ComposerActionSettings />);
+    expect(mockDropdownMaxWidth).toContain("--dropdown-context-menu-max-width");
   });
 
   it("reads the context folders on mount", () => {

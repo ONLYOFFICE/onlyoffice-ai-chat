@@ -39,6 +39,7 @@ vi.mock("../../../store/context", () => ({
 
 let mockDropdownItems: unknown[] = [];
 let mockDropdownFooter: unknown[] = [];
+let mockDropdownMaxWidth: string | number | undefined;
 let mockDropdownOpen: boolean | undefined;
 let mockOnOpenChange: ((open: boolean) => void) | undefined;
 vi.mock("../../../components/dropdown", () => ({
@@ -48,14 +49,17 @@ vi.mock("../../../components/dropdown", () => ({
     footerItems,
     open,
     onOpenChange,
+    maxWidth,
   }: {
     trigger: React.ReactNode;
     items: unknown[];
     footerItems?: unknown[];
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    maxWidth?: string | number;
   }) => {
     mockDropdownItems = items;
+    mockDropdownMaxWidth = maxWidth;
     mockDropdownFooter = footerItems ?? [];
     mockDropdownOpen = open;
     mockOnOpenChange = onOpenChange;
@@ -162,6 +166,13 @@ describe("ComposerActionRoom", () => {
       // The way out never scrolls away with a long skill list.
       expect(footer().map((i) => i.text)).toEqual(["", "DisconnectRoom"]);
       expect(footer()[0].isSeparator).toBe(true);
+    });
+
+    it("caps the menu width so a long skill name truncates", () => {
+      render(<ComposerActionRoom />);
+      expect(mockDropdownMaxWidth).toContain(
+        "--chat-composer-room-menu-max-width"
+      );
     });
 
     it("marks skill rows and Disconnect room with their test ids", () => {

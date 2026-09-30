@@ -60,6 +60,10 @@
      overflowing. Integrators can override either on `.aui-root`. */
   --dropdown-model-selector-min-width: 150px;
   --dropdown-model-selector-max-width: 300px;
+  /* The composer's context menu (clouds / rooms): a long room name truncates
+     instead of stretching the panel to fit. */
+  --dropdown-context-menu-min-width: 240px;
+  --dropdown-context-menu-max-width: 320px;
 
   /* Toggle (switch) geometry. Colors live in the theme files
      (`--toggle-button-*-color`); these tokens are the structural sizes.

@@ -138,6 +138,10 @@ const ComposerActionSettings = () => {
       backRowLabel
       open={isOpen}
       onOpenChange={setIsOpen}
+      // Capped like the model picker, so a long room name truncates on its
+      // row instead of stretching the panel to fit it.
+      contentClassName="min-w-[var(--dropdown-context-menu-min-width)]"
+      maxWidth="min(var(--dropdown-context-menu-max-width), var(--radix-dropdown-menu-content-available-width))"
       data-testid="composer-settings-menu"
     />
   );
