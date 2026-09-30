@@ -1,10 +1,20 @@
 # Changelog
 
+## 0.6.6
+
+### Fixed
+
+- **Long room and skill names truncate instead of stretching the menu.** The root-level room list had no width cap, so the panel grew to fit the longest name and the rows' truncation never applied. The context menu is capped through `--dropdown-context-menu-min-width` / `--dropdown-context-menu-max-width` (240 / 320 px) and the room chip's menu through `--chat-composer-room-menu-max-width` (320 px), both clipped to the space Radix reports, like the model picker.
+
 ## 0.6.5
 
 ### Added
 
 - **Tool results can carry images.** An MCP server (custom, system or host-executed) that answers `tools/call` with `{ type: "image", data, mimeType }` content blocks — a screenshot tool, a chart renderer — now has its pictures seen by the model and shown in the chat. Before, the block was passed to the model as base64 inside the JSON text: unreadable to it, expensive in tokens, and rendered as raw JSON in the tool card. Now the base64 is moved to `storage.attachments` (`source: "tool"`, cascade-deleted with the message) and the message keeps `{ type: "image", ref, mimeType }`; on the way to the provider the ref is hydrated and the picture is sent natively — an `image` block inside Anthropic's `tool_result`, a `user` message with `image_url` / `input_image` parts after the tool output for OpenAI Chat Completions and Responses (the `tool` role is text-only there), an `inlineData` part beside the `functionResponse` for Gemini. The tool card renders every image below the call, for any tool, and the raw-result view shows `<base64 omitted>` in place of the payload. Detection is by result shape, so the built-in `generate_image` payload and an integrator's own image tools are unchanged.
+
+### Fixed
+
+- **The context menu's hint closes when the room list scrolls.** The popover stayed open and floated over rows its trigger had left; `HelpButton` now dismisses on any scroll outside its own content.
 
 ## 0.6.4
 
