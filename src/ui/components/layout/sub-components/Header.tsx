@@ -20,9 +20,15 @@ const Navigation = () => {
     : () => setCurrentPage(currentPage === "settings" ? "chat" : "settings");
 
   return (
-    <nav className="w-full flex justify-between items-center h-[56px] min-h-[56px] box-border border-b-[1px] border-[var(--header-border-color)] bg-[var(--header-background-color)] px-[32px]">
+    <nav
+      data-testid="header"
+      className="w-full flex justify-between items-center h-[56px] min-h-[56px] box-border border-b-[1px] border-[var(--header-border-color)] bg-[var(--header-background-color)] px-[32px]"
+    >
       <div className="flex items-center gap-[12px]">
-        <h3 className="text-[var(--header-color)] font-bold text-fs-16 leading-[var(--lh-24)]">
+        <h3
+          data-testid="header-title"
+          className="text-[var(--header-color)] font-bold text-fs-16 leading-[var(--lh-24)]"
+        >
           {t("AIAgent")}
         </h3>
         <TooltipIconButton tooltip={t("NewChat")}>

@@ -213,20 +213,32 @@ const ConfigEditor = ({ open, onClose }: ConfigEditorProps) => {
             <div
               ref={editorRef}
               dir="ltr"
+              data-testid="config-editor-input"
               className="border border-[var(--servers-edit-config-json-editor-border-color)] bg-[var(--servers-edit-config-json-editor-background-color)] rounded-[4px]"
             />
             {error ? (
-              <p className="text-[var(--text-negative)] font-normal whitespace-pre-line">
+              <p
+                data-testid="config-editor-error"
+                className="text-[var(--text-negative)] font-normal whitespace-pre-line"
+              >
                 {error}
               </p>
             ) : null}
           </div>
         </div>
         <div className="flex flex-row items-center justify-end gap-[var(--config-editor-footer-gap,8px)] h-[var(--config-editor-footer-height,24px)] mx-[calc(-1*var(--config-editor-content-padding-x,16px))] px-[var(--config-editor-content-padding-x,16px)]">
-          <Button onClick={onClose} variant="default">
+          <Button
+            onClick={onClose}
+            variant="default"
+            data-testid="config-editor-cancel-button"
+          >
             {t("Cancel")}
           </Button>
-          <Button disabled={!isValidJson} onClick={onSubmitAction}>
+          <Button
+            disabled={!isValidJson}
+            onClick={onSubmitAction}
+            data-testid="config-editor-save-button"
+          >
             {t("Save")}
           </Button>
         </div>

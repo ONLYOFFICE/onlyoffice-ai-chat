@@ -62,11 +62,15 @@ const ThinkingMarkdownText = memo(
     return (
       <>
         {type === "reasoning" ? (
-          <div className="my-[8px] flex w-full flex-col">
+          <div
+            data-testid="assistant-reasoning"
+            className="my-[8px] flex w-full flex-col"
+          >
             {/* Unlike a tool call, this row stays interactive while running:
                 the thinking already streamed so far is worth reading before
                 the block closes. */}
             <div
+              data-testid="assistant-reasoning-toggle"
               className="flex items-center gap-[10px] cursor-pointer mb-[8px]"
               onClick={() => setIsCollapsed((val) => !val)}
             >
@@ -87,7 +91,10 @@ const ThinkingMarkdownText = memo(
               </span>
             </div>
             {!isCollapsed && (
-              <div className="ps-[12px] ms-[13px] border-l-[var(--border-divider)] border-l-[1px]">
+              <div
+                data-testid="assistant-reasoning-content"
+                className="ps-[12px] ms-[13px] border-l-[var(--border-divider)] border-l-[1px]"
+              >
                 <MarkdownContent>{text}</MarkdownContent>
               </div>
             )}
@@ -188,13 +195,21 @@ const MessageError = () => {
     // through `customTheme` without the widget needing a second layout.
     <div
       role="alert"
+      data-testid="chat-error"
+      data-error-code={code}
       className="bg-[var(--chat-message-error-background-color)] border border-[var(--chat-message-error-border-color)] rounded-[4px] px-[12px] py-[8px] flex items-center gap-[12px]"
     >
       <div className="min-w-0 flex-1">
-        <div className="text-[var(--chat-message-error-color)] font-semibold">
+        <div
+          data-testid="chat-error-title"
+          className="text-[var(--chat-message-error-color)] font-semibold"
+        >
           {title}
         </div>
-        <div className="text-[var(--chat-message-error-color)] leading-[var(--lh-16)] font-normal opacity-60 mt-[2px]">
+        <div
+          data-testid="chat-error-description"
+          className="text-[var(--chat-message-error-color)] leading-[var(--lh-16)] font-normal opacity-60 mt-[2px]"
+        >
           {description}
         </div>
       </div>
@@ -206,6 +221,7 @@ const MessageError = () => {
           <Button
             variant="default"
             className="shrink-0"
+            data-testid="chat-error-action-button"
             onClick={() => {
               try {
                 onAction();
@@ -223,7 +239,11 @@ const MessageError = () => {
           // disappears. Sending from the composer is untouched and still
           // queues after the error.
           <ActionBarPrimitive.Reload asChild>
-            <Button variant="default" className="shrink-0">
+            <Button
+              variant="default"
+              className="shrink-0"
+              data-testid="chat-error-retry-button"
+            >
               {actionText}
             </Button>
           </ActionBarPrimitive.Reload>
@@ -269,10 +289,12 @@ const CustomActionButton = ({
             size={24}
             onClick={onClick}
             isStroke
+            data-testid={`assistant-action-${action.id}`}
           />
         ) : isValidElement(action.icon) ? (
           <button
             type="button"
+            data-testid={`assistant-action-${action.id}`}
             onClick={onClick}
             aria-label={action.tooltip}
             className="bg-transparent border-0 p-0 cursor-pointer"
@@ -326,6 +348,7 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
           isStroke
           color="var(--icon-gray-secondary)"
           disableHover
+          data-testid="assistant-message-copied-indicator"
         />
       ) : (
         <IconButton
@@ -333,6 +356,7 @@ const PlatformCopyButton = ({ text }: { text: string }) => {
           size={chatMessageActionsIconSize}
           isStroke
           color="var(--icon-gray-secondary)"
+          data-testid="assistant-message-copy-button"
         />
       )}
     </TooltipIconButton>
@@ -364,6 +388,7 @@ const RuntimeCopyButton = () => {
             isStroke
             color="var(--icon-gray-secondary)"
             disableHover
+            data-testid="assistant-message-copied-indicator"
           />
         ) : (
           <IconButton
@@ -371,6 +396,7 @@ const RuntimeCopyButton = () => {
             size={chatMessageActionsIconSize}
             isStroke
             color="var(--icon-gray-secondary)"
+            data-testid="assistant-message-copy-button"
           />
         )}
       </TooltipIconButton>
@@ -469,6 +495,7 @@ const AssistantActionBar = () => {
   return (
     <ActionBarPrimitive.Root
       hidden={isStreamRunning}
+      data-testid="assistant-message-actions"
       className="col-span-2 col-start-2 row-start-2 mt-[4px] flex h-fit items-center self-start gap-[var(--chat-assistant-message-actions-gap,2px)]"
     >
       {platform.copyToClipboard ? (
@@ -483,6 +510,7 @@ const AssistantActionBar = () => {
             size={chatMessageActionsIconSize}
             isStroke
             color="var(--icon-gray-secondary)"
+            data-testid="assistant-message-regenerate-button"
           />
         </TooltipIconButton>
       </ActionBarPrimitive.Reload>
@@ -497,6 +525,7 @@ const AssistantActionBar = () => {
               onClick={onDownload}
               isStroke
               color="var(--icon-gray-secondary)"
+              data-testid="assistant-message-download-button"
             />
           </TooltipIconButton>
         </div>
@@ -575,6 +604,7 @@ export const AssistantMessage = memo(() => {
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         data-role="assistant"
+        data-testid="assistant-message"
         // `ThreadPrimitive.ViewportSlack` (via `MessagePrimitive.Root`) pins a
         // `min-height` of roughly the whole viewport onto the last assistant
         // message so the question it answers can sit at the top of the screen.
@@ -586,7 +616,10 @@ export const AssistantMessage = memo(() => {
         // runtime writes `min-height` as an inline style on this same element.
         style={isStreamRunning ? undefined : { minHeight: 0 }}
       >
-        <div className="col-span-2 col-start-2 row-start-1 break-words leading-7 text-[var(--chat-message-color)] select-text">
+        <div
+          data-testid="assistant-message-content"
+          className="col-span-2 col-start-2 row-start-1 break-words leading-7 text-[var(--chat-message-color)] select-text"
+        >
           <MessagePrimitive.Content
             components={{
               tools: { Fallback: ToolFallback },

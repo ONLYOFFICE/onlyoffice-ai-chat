@@ -155,9 +155,11 @@ const ChatListItemComponent = ({
           // the only one without one, next to Open / Rename / Delete.
           icon: <DownloadIcon />,
           text: t("ExportTo"),
+          "data-testid": "chat-item-menu-export",
           onClick: () => undefined,
           subMenu: exportFormats.map((format) => ({
             text: format.label,
+            "data-testid": `chat-item-menu-export-${format.id}`,
             onClick: () => {
               onExportThread(thread.threadId, format.id, thread.title);
               setIsOpen(false);
@@ -167,6 +169,7 @@ const ChatListItemComponent = ({
       : {
           icon: <DownloadIcon />,
           text: t("Save"),
+          "data-testid": "chat-item-menu-save",
           onClick: onDownloadClick,
         };
 
@@ -179,6 +182,7 @@ const ChatListItemComponent = ({
   const deleteItem: DropDownItemProps = {
     icon: <RemoveIcon />,
     text: t("Delete"),
+    "data-testid": "chat-item-menu-delete",
     onClick: onDeleteClick,
   };
 
@@ -190,12 +194,14 @@ const ChatListItemComponent = ({
     {
       icon: <OpenIcon />,
       text: t("Open"),
+      "data-testid": "chat-item-menu-open",
       onClick: onOpenClick,
     },
     exportMenuItem,
     {
       icon: <RenameIcon />,
       text: t("Rename"),
+      "data-testid": "chat-item-menu-rename",
       onClick: onRenameClick,
     },
     ...(showClearHistory
@@ -205,6 +211,7 @@ const ChatListItemComponent = ({
           {
             icon: <ClearHistoryIcon />,
             text: t("ClearHistory"),
+            "data-testid": "chat-item-menu-clear-history",
             onClick: onClearHistoryClick,
           },
         ]
@@ -214,6 +221,7 @@ const ChatListItemComponent = ({
   const titleText = (
     <p
       ref={titleRef}
+      data-testid="chat-item-title"
       className="min-w-0 select-none text-[length:var(--chat-list-item-font-size,var(--fs-12))] text-[var(--chat-list-item-color)] [font-weight:var(--chat-list-item-font-weight,400)] truncate"
     >
       {thread.title}
@@ -241,6 +249,9 @@ const ChatListItemComponent = ({
   return (
     <div
       key={thread.threadId}
+      data-testid="chat-item"
+      data-thread-id={thread.threadId}
+      data-active={isActive || undefined}
       className={`cursor-pointer rounded-[4px] h-[var(--chat-list-item-height,28px)] min-h-[var(--chat-list-item-height,28px)] px-[var(--chat-list-item-padding-x,8px)] flex items-center justify-between hover:bg-[var(--chat-list-item-hover-background-color)] ${
         isRenameInputVisible
           ? "px-[0px]"
@@ -273,6 +284,7 @@ const ChatListItemComponent = ({
           autoFocus
           className="w-full"
           maxLength={128}
+          data-testid="chat-item-rename-input"
         />
       ) : (
         <>
@@ -287,10 +299,12 @@ const ChatListItemComponent = ({
                   size={24}
                   isActive={isOpen}
                   insideElement
+                  data-testid="chat-item-menu-button"
                 />
               }
               items={menuItems}
               sideOffset={0}
+              data-testid="chat-item-menu"
             />
           ) : null}
         </>

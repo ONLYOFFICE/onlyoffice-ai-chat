@@ -84,6 +84,8 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
 
   const chip = (
     <div
+      data-testid="file-item"
+      data-kind={isImage ? "image" : "file"}
       className={chipClassName({ isImage, withoutClose, isRTL })}
       onClick={() => {
         if (!withoutClose) return;
@@ -125,6 +127,7 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
         <IconButton
           iconName="btn-close.small"
           size={16}
+          data-testid="file-item-remove-button"
           onClick={handleDelete}
         />
       ) : null}

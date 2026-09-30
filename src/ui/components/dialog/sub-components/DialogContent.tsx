@@ -122,7 +122,12 @@ const DialogContent = ({
             </DialogTitle>
           </div>
           {!fullscreen ? (
-            <IconButton iconName="btn-close" size={24} onClick={onClose} />
+            <IconButton
+              iconName="btn-close"
+              size={24}
+              data-testid="dialog-close-button"
+              onClick={onClose}
+            />
           ) : null}
         </div>
         <div

@@ -82,6 +82,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {showClear && (
           <button
             type="button"
+            data-testid="input-clear-button"
             onClick={onClear}
             className="shrink-0 w-[24px] h-[24px] flex items-center justify-center cursor-pointer border-none bg-transparent"
           >

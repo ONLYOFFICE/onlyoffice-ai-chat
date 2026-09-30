@@ -141,7 +141,7 @@ describe("ComposerActionSettings drill-down", () => {
     expect(screen.queryByText("Room 3")).not.toBeInTheDocument();
     // The level is headed "‹ cloud"; the root heading and the separator
     // under a bare chevron are gone.
-    expect(screen.getByTestId("dropdown-back-row").textContent).toContain(
+    expect(screen.getByTestId("dropdown-back-button").textContent).toContain(
       "a.example.com"
     );
     expect(screen.queryByTestId("composer-settings-header")).toBeNull();

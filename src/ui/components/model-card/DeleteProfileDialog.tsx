@@ -45,6 +45,7 @@ const DeleteProfileDialog = ({
         header={t("DeleteModel")}
         onClose={onClose}
         withWarningIcon
+        data-testid="delete-model-dialog"
       >
         <div className="flex flex-col justify-between h-full">
           <p className="select-none h-[var(--delete-profile-dialog-message-height,40px)] flex items-center leading-[var(--lh-16)] text-[var(--text-normal)]">

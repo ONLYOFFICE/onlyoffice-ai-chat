@@ -97,6 +97,7 @@ const ThreadInner = () => {
 
   return (
     <div
+      data-testid="chat-page"
       className="aui-root relative flex h-full min-h-0 flex-1 flex-col select-none"
       onCopy={onCopy}
       onDragEnter={handlers.onDragEnter}
@@ -114,7 +115,10 @@ const ThreadInner = () => {
         }}
       >
         <ThreadPrimitive.If empty>
-          <div className="chat-viewport--empty relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+          <div
+            data-testid="chat-empty-state"
+            className="chat-viewport--empty relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
+          >
             <div className="shrink-0">
               <SuggestionsHeader />
             </div>
@@ -159,6 +163,7 @@ const ThreadInner = () => {
                 with it. */}
             <ThreadPrimitive.Viewport
               ref={viewportRef}
+              data-testid="chat-messages"
               autoScroll={autoScrollWhileStreaming ?? false}
               turnAnchor={autoScrollWhileStreaming ? "bottom" : "top"}
               className="thread-viewport relative flex min-h-0 min-w-0 flex-1 flex-col gap-[10px] overflow-y-auto"
@@ -188,7 +193,10 @@ const ThreadInner = () => {
                   which is why the indicator and the trailing gap share one. */}
               <ThreadPrimitive.ViewportFooter className="flex shrink-0 flex-col gap-[10px]">
                 {showAnalyzing ? (
-                  <div className="flex items-center justify-center">
+                  <div
+                    data-testid="chat-analyzing-indicator"
+                    className="flex items-center justify-center"
+                  >
                     <div className="flex items-center gap-[8px] w-[var(--thread-max-width)] max-w-[var(--thread-max-width)] ps-[var(--thread-padding-x)]">
                       <Loader />
                       <p className="font-normal text-[var(--chat-message-analyze-color)]">
@@ -219,6 +227,7 @@ const ThreadInner = () => {
                   <button
                     type="button"
                     aria-label={t("ScrollToBottom")}
+                    data-testid="scroll-to-bottom-button"
                     className="scroll-to-bottom-btn pointer-events-auto m-0 box-border flex items-center justify-center border p-0 leading-none transition-opacity duration-150 disabled:pointer-events-none disabled:opacity-0"
                   >
                     <Icon
@@ -254,7 +263,10 @@ const ThreadInner = () => {
         </ThreadPrimitive.If>
       </ThreadPrimitive.Root>
       {isDragOver ? (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-[var(--layout-background-color)]/80 backdrop-blur-sm">
+        <div
+          data-testid="chat-drop-overlay"
+          className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-[var(--layout-background-color)]/80 backdrop-blur-sm"
+        >
           <div className="m-[16px] flex h-full w-full items-center justify-center rounded-[16px] border-2 border-dashed border-[var(--input-active-border-color)]">
             <p className="select-none text-fs-18 font-bold leading-[var(--lh-24)] text-[var(--text-normal)]">
               {t("DropFilesHere")}

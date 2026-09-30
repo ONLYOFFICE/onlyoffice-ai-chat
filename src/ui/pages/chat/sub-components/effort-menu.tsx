@@ -70,6 +70,7 @@ export function useEffortMenuItem(): DropDownItemProps | null {
 
     return {
       text: t("Effort"),
+      "data-testid": "effort-menu-item",
       icon: (
         <IconButton iconName="btn-extended-thinking" size={24} disableHover />
       ),
@@ -90,6 +91,7 @@ export function useEffortMenuItem(): DropDownItemProps | null {
       subMenuMaxHeight: "var(--radix-dropdown-menu-content-available-height)",
       subMenu: options.map((o) => ({
         text: o.label,
+        "data-testid": `effort-menu-option-${o.level}`,
         checked: o.level === current,
         onClick: () => {
           void setReasoningLevel(o.level);

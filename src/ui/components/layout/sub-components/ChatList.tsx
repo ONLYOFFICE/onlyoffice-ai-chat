@@ -180,6 +180,7 @@ const ChatList = ({
   return (
     <div
       ref={scrollRootRef}
+      data-testid="chat-list"
       className={cn(
         "w-full h-full max-h-full flex flex-col overflow-y-auto",
         className
@@ -194,6 +195,7 @@ const ChatList = ({
             <IconButton
               iconName={closeIconName}
               size={24}
+              data-testid="chat-list-close-button"
               onClick={() => setCurrentPage("chat")}
             />
           </div>
@@ -209,13 +211,17 @@ const ChatList = ({
               value={searchValue}
               onChange={onChangeSearchValue}
               onClear={onClearSearch}
+              data-testid="chat-list-search-input"
             />
           </div>
         )}
       </div>
       <div className="flex flex-col px-[var(--chat-list-padding-x,12px)] pb-[var(--chat-list-content-padding-bottom,8px)]">
         {isEmptyList ? (
-          <p className="select-none text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[var(--chat-list-items-margin-top,8px)]">
+          <p
+            data-testid="chat-list-empty"
+            className="select-none text-[var(--chat-list-empty-color)] font-normal w-full text-center mt-[var(--chat-list-items-margin-top,8px)]"
+          >
             {t("NoChatYet")}
           </p>
         ) : (
@@ -224,6 +230,7 @@ const ChatList = ({
               groups.map((group) => (
                 <div
                   key={group.key}
+                  data-testid="chat-list-group"
                   className="flex flex-col mb-[var(--chat-list-group-margin-bottom,8px)]"
                 >
                   <p className="select-none [font-weight:var(--chat-list-group-header-font-weight,400)] text-[length:var(--chat-list-group-header-font-size,var(--fs-11))] leading-[var(--lh-20)] text-[var(--chat-list-group-header-color)] px-[var(--chat-list-group-header-padding-x,8px)]">
@@ -255,7 +262,10 @@ const ChatList = ({
                 <Loader size={16} />
               </div>
             ) : (
-              <p className="select-none text-[var(--chat-list-empty-color)] font-normal w-full">
+              <p
+                data-testid="chat-list-not-found"
+                className="select-none text-[var(--chat-list-empty-color)] font-normal w-full"
+              >
                 {t("NoChatsFound")}
               </p>
             )}

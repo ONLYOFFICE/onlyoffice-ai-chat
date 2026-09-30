@@ -29,4 +29,9 @@ export type HelpButtonProps = {
    * `content`, which otherwise duplicates any focusable node inside it.
    */
   "aria-label"?: string;
+  /**
+   * Test hook for the trigger; the popover gets `<id>-content`. Defaults to
+   * `"help-button"`.
+   */
+  "data-testid"?: string;
 };

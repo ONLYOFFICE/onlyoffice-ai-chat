@@ -29,6 +29,7 @@ const HelpButton = ({
   defaultOpen,
   onOpenChange,
   "aria-label": ariaLabel,
+  "data-testid": dataTestId = "help-button",
 }: HelpButtonProps) => {
   const { aboutButtonSize = 20 } = useWidgetConfig();
   const [internalOpen, setInternalOpen] = useState(defaultOpen ?? false);
@@ -62,6 +63,7 @@ const HelpButton = ({
             aria-label={ariaLabel}
             aria-expanded={isOpen}
             aria-haspopup="dialog"
+            data-testid={dataTestId}
             onClick={() => setOpen(!isOpen)}
           />
         </TooltipTrigger>
@@ -73,6 +75,7 @@ const HelpButton = ({
         sideOffset={sideOffset}
         isAbout
         aria-label={ariaLabel}
+        data-testid={`${dataTestId}-content`}
         onEscapeKeyDown={() => setOpen(false)}
         onPointerDownOutside={(event) => {
           // A press on the trigger counts as outside the popover, but the

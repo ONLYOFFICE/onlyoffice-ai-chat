@@ -33,6 +33,7 @@ type ShellProps = {
    * would scroll away with everything else.
    */
   scrollInside?: boolean;
+  contentTestId?: string;
   children: React.ReactNode;
 };
 
@@ -52,6 +53,7 @@ const Shell = ({
   onContentKeyDown,
   modal,
   scrollInside,
+  contentTestId,
   children,
 }: ShellProps) => {
   const { isRTL } = useI18n();
@@ -108,6 +110,7 @@ const Shell = ({
       <DropdownMenu.Portal container={portalContainer ?? undefined}>
         <DropdownMenu.Content
           ref={dropdownRef}
+          data-testid={contentTestId}
           side={effectiveSide}
           align={effectiveAlign}
           sideOffset={sideOffset ?? 6}
@@ -204,7 +207,7 @@ const BackRow = ({ onBack, label }: { onBack: () => void; label?: string }) => {
         "bg-transparent hover:bg-transparent data-[highlighted]:bg-transparent"
       )}
       dir={isRTL ? "rtl" : "ltr"}
-      data-testid={label ? "dropdown-back-row" : undefined}
+      data-testid="dropdown-back-button"
     >
       <IconButton
         iconName="arrow.right"
@@ -247,6 +250,7 @@ const DropdownMenuComponent = ({
   variant = "menu",
   navigation,
   modal,
+  "data-testid": dataTestId,
 }: DropdownMenuProps) => {
   const { isRTL } = useI18n();
   const config = useWidgetConfig();
@@ -370,6 +374,7 @@ const DropdownMenuComponent = ({
       onContentKeyDown={onContentKeyDown}
       modal={modal}
       scrollInside={pinned !== null}
+      contentTestId={dataTestId}
     >
       {canGoBack ? (
         backRowLabel && parent ? (

@@ -82,6 +82,8 @@ const ModelCard = ({
 
   return (
     <div
+      data-testid="model-card"
+      data-profile-id={profile.id}
       className={cn(
         "flex justify-between gap-[var(--model-card-gap,8px)] p-[var(--model-card-padding,8px)] w-full rounded-[var(--model-card-border-radius)] bg-[var(--model-card-background-color)] border border-[var(--model-card-border-color)]"
       )}
@@ -103,6 +105,7 @@ const ModelCard = ({
           <div className="flex min-w-0">
             <p
               dir="auto"
+              data-testid="model-card-name"
               className="min-w-0 font-normal text-[var(--model-card-color)] truncate"
             >
               {profile?.name}
@@ -111,6 +114,7 @@ const ModelCard = ({
           <div className="flex min-w-0">
             <p
               dir="auto"
+              data-testid="model-card-provider"
               className={cn(
                 "min-w-0 text-fs-10 leading-[var(--lh-14)] text-[var(--model-card-description-color)] truncate"
               )}
@@ -124,7 +128,15 @@ const ModelCard = ({
         <div className="flex items-center justify-end">
           <DropdownMenu
             onOpenChange={setIsOpen}
-            trigger={<IconButton iconName="more" size={24} isActive={isOpen} />}
+            trigger={
+              <IconButton
+                iconName="more"
+                size={24}
+                isActive={isOpen}
+                data-testid="model-card-menu-button"
+              />
+            }
+            data-testid="model-card-menu"
             items={[
               {
                 icon: (
@@ -136,6 +148,7 @@ const ModelCard = ({
                   />
                 ),
                 text: t("Edit"),
+                "data-testid": "model-card-menu-edit",
                 // Selecting "Edit" swaps this card into <EditModelCard>,
                 // which unmounts the dropdown. Doing that synchronously yanks
                 // the Radix menu out mid-close: the trigger stays highlighted
@@ -159,6 +172,7 @@ const ModelCard = ({
                   <IconButton iconName="btn-remove" size={20} disableHover />
                 ),
                 text: t("Delete"),
+                "data-testid": "model-card-menu-delete",
                 onClick: requestDelete,
               },
             ]}

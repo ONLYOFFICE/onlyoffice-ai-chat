@@ -25,6 +25,7 @@ const ModelAssignmentPage = ({
 
   return (
     <div
+      data-testid="model-assignment-page"
       className={cn(
         "aui-root select-text flex min-h-full w-full px-[var(--model-assignment-padding-x,0px)] py-[var(--model-assignment-padding-y,0px)] [justify-content:var(--model-assignment-justify,flex-start)] bg-[var(--layout-background-color)]",
         className

@@ -23,7 +23,7 @@ const ComposerAction = () => {
     hideProfilePicker ?? (entityId !== undefined && !profilePickerReadOnly);
 
   return (
-    <div className="relative flex flex-col">
+    <div data-testid="composer-actions" className="relative flex flex-col">
       <div className="relative flex items-center justify-between gap-[8px] min-h-[var(--chat-input-actions-height,24px)]">
         <div className="flex items-center gap-[var(--action-gap,4px)] flex-row">
           <ComposerActionAttachment />

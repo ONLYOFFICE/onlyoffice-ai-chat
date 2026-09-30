@@ -251,7 +251,7 @@ describe("AvailableToolsItem", () => {
     act(() => {
       vi.advanceTimersByTime(1000);
     });
-    expect(screen.getByTestId("icon-btn-status.error")).toBeInTheDocument();
+    expect(screen.getByTestId("mcp-server-error-icon")).toBeInTheDocument();
   });
 
   it("opens the crash log (not tools) when a stopped server is clicked, even with no tools", () => {
@@ -290,7 +290,7 @@ describe("AvailableToolsItem", () => {
     act(() => {
       vi.advanceTimersByTime(1000);
     });
-    fireEvent.click(screen.getByTestId("icon-btn-status.error"));
+    fireEvent.click(screen.getByTestId("mcp-server-error-icon"));
     expect(screen.getByText(/crashed/)).toBeInTheDocument();
   });
 

@@ -17,6 +17,7 @@ const Permissions = ({ dimmed }: PermissionsProps) => {
 
   return (
     <div
+      data-testid="mcp-permissions"
       className={cn(
         "servers-permissions flex flex-col w-full mt-[var(--servers-permissions-margin-top,8px)] py-[var(--servers-permissions-padding-y,8px)] rounded-[8px] border border-[var(--servers-edit-config-buttons-border-color)] bg-[var(--modal-dialog-background-color)]",
         dimmed && "opacity-40 pointer-events-none"

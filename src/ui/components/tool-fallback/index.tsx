@@ -153,6 +153,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           : `data:image/png;base64,${imageData}`
       }
       alt={t("ToolCallResult")}
+      data-testid="tool-call-generated-image"
       className="block max-w-full rounded-[8px]"
     />
   ) : isImagePending ? (
@@ -160,8 +161,13 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   ) : null;
 
   return (
-    <div className="my-[8px] flex w-full flex-col gap-[8px]">
+    <div
+      data-testid="tool-call"
+      data-tool-name={name}
+      className="my-[8px] flex w-full flex-col gap-[8px]"
+    >
       <div
+        data-testid="tool-call-header"
         className={`flex items-center gap-[10px] ${isLoading && !isWebCrawling ? "" : "cursor-pointer"}`}
         onClick={() => {
           if (isWebCrawling) {
@@ -187,7 +193,10 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
         ) : (
           <Icon name="code" size={24} color={INTENT_COLOR} isStroke />
         )}
-        <span className="min-w-0 truncate font-normal text-[var(--text-tertiary)]">
+        <span
+          data-testid="tool-call-label"
+          className="min-w-0 truncate font-normal text-[var(--text-tertiary)]"
+        >
           {isWebSearch
             ? webSearchName
             : isWebCrawling
@@ -213,7 +222,10 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
         )}
       </div>
       {!isCollapsed ? (
-        <div className="flex flex-col gap-[8px] mt-[8px] px-[12px] py-[8px] bg-[var(--chat-message-tool-call-body-background-color)] rounded-[12px]">
+        <div
+          data-testid="tool-call-body"
+          className="flex flex-col gap-[8px] mt-[8px] px-[12px] py-[8px] bg-[var(--chat-message-tool-call-body-background-color)] rounded-[12px]"
+        >
           <div className="flex flex-col gap-[4px]">
             <p
               data-testid="tool-call-title"
@@ -233,6 +245,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
               <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] font-bold">
                 {t("ToolCallArguments")}
                 <span
+                  data-testid="tool-call-copy-arguments-button"
                   onClick={() => copyArgs(argsTextFinal ? argsTextFinal : "{}")}
                   className="cursor-pointer"
                 >
@@ -244,7 +257,10 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                   />
                 </span>
               </p>
-              <pre className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]">
+              <pre
+                data-testid="tool-call-arguments"
+                className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]"
+              >
                 {argsTextFinal ? argsTextFinal : "{}"}
               </pre>
             </div>
@@ -281,6 +297,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                             }) => (
                               <div
                                 key={item.id}
+                                data-testid="tool-call-web-search-result"
                                 className="group h-[36px] px-[8px] rounded-[4px] flex flex-row items-center justify-between cursor-pointer hover:bg-[var(--drop-down-menu-item-hover-color)] transition-colors"
                                 onClick={() => window.open(item.url, "_blank")}
                               >
@@ -328,6 +345,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                   <p className="flex flex-row items-center justify-between text-[var(--chat-message-tool-call-header-color)] font-bold">
                     {t("ToolCallResult")}
                     <span
+                      data-testid="tool-call-copy-result-button"
                       onClick={() =>
                         copyResult(
                           typeof result === "string"
@@ -345,7 +363,10 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                       />
                     </span>
                   </p>
-                  <pre className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]">
+                  <pre
+                    data-testid="tool-call-result"
+                    className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]"
+                  >
                     {typeof result === "string"
                       ? result
                       : JSON.stringify(result, null, 2)}

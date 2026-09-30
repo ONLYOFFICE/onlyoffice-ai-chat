@@ -31,16 +31,28 @@ export const Models = ({ isAddModelCardHorizontal }: ModelsProps) => {
         />
       ) : (
         <div className="flex gap-[var(--ai-models-actions-gap,8px)] self-start">
-          <Button onClick={() => setActiveCard("add")}>{t("AddModel")}</Button>
+          <Button
+            data-testid="ai-models-add-button"
+            onClick={() => setActiveCard("add")}
+          >
+            {t("AddModel")}
+          </Button>
           {onOpenCustomProvider && (
-            <Button variant="default" onClick={onOpenCustomProvider}>
+            <Button
+              variant="default"
+              data-testid="ai-models-custom-providers-button"
+              onClick={onOpenCustomProvider}
+            >
               {t("CustomProviders")}
             </Button>
           )}
         </div>
       )}
 
-      <div className="flex flex-col gap-[var(--ai-models-list-gap,8px)]">
+      <div
+        data-testid="ai-models-list"
+        className="flex flex-col gap-[var(--ai-models-list-gap,8px)]"
+      >
         {profiles.map((profile) => (
           <ModelCard
             key={profile.id}

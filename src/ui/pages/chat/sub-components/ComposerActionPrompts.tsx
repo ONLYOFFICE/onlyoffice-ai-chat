@@ -63,19 +63,28 @@ const EditPromptDialog = ({
         header={t("EditAIPrompt")}
         onClose={onClose}
         className={PROMPT_DIALOG_CLASS}
+        data-testid="edit-prompt-dialog"
       >
         <div className="flex flex-col justify-between h-full">
           <div className="flex flex-col gap-[12px] py-[var(--edit-prompt-dialog-body-padding-y,32px)]">
-            <FieldContainer header={t("PromptName")}>
+            <FieldContainer
+              header={t("PromptName")}
+              data-testid="edit-prompt-name-field"
+            >
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full"
                 autoFocus
+                data-testid="edit-prompt-name-input"
               />
             </FieldContainer>
-            <FieldContainer header={t("PromptText")}>
+            <FieldContainer
+              header={t("PromptText")}
+              data-testid="edit-prompt-text-field"
+            >
               <textarea
+                data-testid="edit-prompt-text-input"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 dir={isRTL ? "rtl" : "ltr"}
@@ -136,6 +145,7 @@ const RenameFolderDialog = ({
         header={t("RenameFolder")}
         onClose={onClose}
         className={PROMPT_DIALOG_CLASS}
+        data-testid="rename-folder-dialog"
       >
         <form
           className="flex flex-col justify-between h-full"
@@ -150,6 +160,7 @@ const RenameFolderDialog = ({
               onChange={(e) => setName(e.target.value)}
               className="w-full"
               autoFocus
+              data-testid="rename-folder-name-input"
             />
           </div>
           <DialogFooter
@@ -185,7 +196,12 @@ const DeleteFolderDialog = ({ folderId, onClose }: DeleteFolderDialogProps) => {
 
   return (
     <Dialog open={true}>
-      <DialogContent header={t("Warning")} onClose={onClose} withWarningIcon>
+      <DialogContent
+        header={t("Warning")}
+        onClose={onClose}
+        withWarningIcon
+        data-testid="delete-folder-dialog"
+      >
         <div
           className="flex flex-col justify-between h-full"
           onKeyDown={(e) => {
@@ -236,6 +252,7 @@ const DeletePromptDialog = ({ promptId, onClose }: DeletePromptDialogProps) => {
         header={t("DeletePrompt")}
         onClose={onClose}
         withWarningIcon
+        data-testid="delete-prompt-dialog"
       >
         <div
           className="flex flex-col justify-between h-full"
@@ -309,6 +326,7 @@ const ComposerActionPrompts = () => {
           size={20}
           isActive={isOpen}
           isStroke
+          data-testid="prompts-button"
         />
       </TooltipIconButton>
     ),
@@ -459,6 +477,7 @@ const ComposerActionPrompts = () => {
           ? [
               {
                 text: t("SavedPrompts"),
+                "data-testid": "prompt-menu-move-to-root",
                 onClick: () => {
                   closeMenu();
                   editPrompt(prompt.id, { folderId: null });
@@ -470,6 +489,7 @@ const ComposerActionPrompts = () => {
           .filter((f) => f.id !== prompt.folderId)
           .map((folder) => ({
             text: folder.name,
+            "data-testid": "prompt-menu-move-to-folder",
             withTruncateTooltip: true,
             onClick: () => {
               closeMenu();
@@ -481,6 +501,7 @@ const ComposerActionPrompts = () => {
       return [
         {
           id: `edit:${prompt.id}`,
+          "data-testid": "prompt-menu-edit",
           text: t("EditAIPrompt"),
           onClick: () => {
             void requestEditPrompt(prompt);
@@ -490,6 +511,7 @@ const ComposerActionPrompts = () => {
           ? [
               {
                 id: `move:${prompt.id}`,
+                "data-testid": "prompt-menu-move",
                 text: t("MoveToFolder"),
                 onClick: () => undefined,
                 subMenu: moveToFolderItems,
@@ -503,6 +525,7 @@ const ComposerActionPrompts = () => {
         },
         {
           id: `delete:${prompt.id}`,
+          "data-testid": "prompt-menu-delete",
           text: t("Delete"),
           onClick: () => {
             void requestDeletePrompt(prompt);
@@ -527,6 +550,7 @@ const ComposerActionPrompts = () => {
     for (const prompt of rootPrompts) {
       result.push({
         id: `prompt:${prompt.id}`,
+        "data-testid": "prompts-menu-prompt",
         text: prompt.name,
         withTruncateTooltip: true,
         onClick: () => applyPrompt(prompt.text),
@@ -551,12 +575,14 @@ const ComposerActionPrompts = () => {
       const folderPrompts = prompts.filter((p) => p.folderId === folder.id);
       result.push({
         id: `folder:${folder.id}`,
+        "data-testid": "prompts-menu-folder",
         text: folder.name,
         withTruncateTooltip: true,
         onClick: () => undefined,
         subMenu: [
           ...folderPrompts.map((prompt) => ({
             id: `prompt:${prompt.id}`,
+            "data-testid": "prompts-menu-prompt",
             text: prompt.name,
             withTruncateTooltip: true,
             onClick: () => applyPrompt(prompt.text),
@@ -569,12 +595,14 @@ const ComposerActionPrompts = () => {
             : []),
           {
             id: `rename-folder:${folder.id}`,
+            "data-testid": "prompts-menu-rename-folder",
             text: t("RenameFolder"),
             icon: "btn-rename",
             onClick: () => requestRenameFolder(folder),
           },
           {
             id: `delete-folder:${folder.id}`,
+            "data-testid": "prompts-menu-delete-folder",
             text: t("DeleteFolder"),
             icon: "btn-remove",
             onClick: () => requestDeleteFolder(folder),
@@ -592,10 +620,12 @@ const ComposerActionPrompts = () => {
     if (builtInPrompts.length > 0) {
       result.push({
         id: `folder:${BUILT_IN_PROMPTS_FOLDER}`,
+        "data-testid": "prompts-menu-built-in-folder",
         text: BUILT_IN_PROMPTS_FOLDER,
         onClick: () => undefined,
         subMenu: builtInPrompts.map((s) => ({
           text: s.name,
+          "data-testid": "prompts-menu-built-in-prompt",
           withTruncateTooltip: true,
           onClick: () => applyPrompt(s.prompt),
         })),
@@ -629,6 +659,7 @@ const ComposerActionPrompts = () => {
         open={isOpen}
         onOpenChange={setIsOpen}
         contentClassName="w-[225px]"
+        data-testid="prompts-menu"
       />
       {editingPrompt ? (
         <EditPromptDialog

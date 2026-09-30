@@ -96,7 +96,7 @@ describe("DropdownMenu drill-down", () => {
   it("labels the back row with the parent and drops its separator on request", () => {
     renderMenu({ backRowLabel: true });
     fireEvent.click(screen.getByTestId("drill-Folder"));
-    const back = screen.getByTestId("dropdown-back-row");
+    const back = screen.getByTestId("dropdown-back-button");
     expect(back.textContent).toContain("Folder");
     expect(
       back.querySelector("[data-testid='icon-btn-arrow.right']")
@@ -110,7 +110,10 @@ describe("DropdownMenu drill-down", () => {
   it("keeps the bare chevron and its separator by default", () => {
     renderMenu();
     fireEvent.click(screen.getByTestId("drill-Folder"));
-    expect(screen.queryByTestId("dropdown-back-row")).toBeNull();
+    // The back button holds only the chevron, no parent label.
+    expect(
+      screen.getByTestId("dropdown-back-button").textContent
+    ).not.toContain("Folder");
     expect(screen.getByTestId("dropdown-back-separator")).toBeInTheDocument();
   });
 
