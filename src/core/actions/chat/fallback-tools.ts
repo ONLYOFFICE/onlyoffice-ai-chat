@@ -38,9 +38,6 @@ export const buildToolsBlock = (tools: TMCPItem[]): string => {
   lines.push("");
   lines.push("Rules:");
   lines.push(
-    "- Before the block, write exactly one short sentence, in the same language as the conversation, describing what the tool call will do."
-  );
-  lines.push(
     "- Output the block at most ONCE per turn, with nothing after it."
   );
   lines.push("- If you don't need a tool, answer normally without the block.");
