@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.6.12
+
+### Breaking
+
+- **Picked and recent files are attached by path only.** "Add local file" and "Recent files" no longer call `platform.file.convertFileToText`; the model gets `[attached file: <title>]` plus the path and reads the file through a tool the host registers (`hostTools` or MCP). Without such a tool the model sees only the name and path. Attachments that carry `content` (drag-and-drop text, DocSpace, `addAttachmentFile({ content })`) are still inlined. `convertFileToText` is deprecated.
+
+### Added
+
+- **A tool call shows its intent while its arguments still stream.** The intent is the first schema field, so the card is labelled before the real arguments arrive, on the prompt-emulated path too.
+
+### Fixed
+
+- **Message actions stay hidden while a tool call awaits approval**, since the reply resumes after allow or deny.
+- **No "Analyzing" flash under a streaming reasoning block**; the approval dialog's "Always allow" no longer carries over to the next call.
+
 ## 0.6.11
 
 ### Changed
