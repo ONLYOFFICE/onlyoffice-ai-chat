@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.14
+
+### Fixed
+
+- **Claude Sonnet 5.5 no longer fails with `"thinking.type.disabled" is not supported for this model`.** Its off switch is spelled `thinking: {type: "between_tools"}` — the model does no extended thinking, only its short notes between tool calls come back as thinking blocks. It is accepted by that model alone, so Sonnet 5 and the rest still get `disabled`.
+- **Groq profiles stay on chat completions.** The live probe moved them onto `/v1/responses`, where the OpenAI request shape adds `reasoning.summary` and Groq answers 400 on every round. Like OpenRouter, Groq skips the probe; xAI on Responses now uses its own reasoning table; any other endpoint that rejects `reasoning.summary` is retried once without it and remembered.
+- **The capability probe tries chat completions only when the Responses API probe fails.** Firing both at once meant a guaranteed, logged and billed 400 on every profile save for models that cannot stop thinking (gpt-6, gpt-5.0, o-series, pro).
+
 ## 0.6.13
 
 ### Changed
