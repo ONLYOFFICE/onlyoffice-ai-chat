@@ -24,15 +24,45 @@ class XAIProvider extends OpenAIProvider {
    * disabled, so a stored off means the standard depth, `"medium"` (`"high"`
    * on grok-3-mini, which has no medium).
    */
+  private reasoningEffort(
+    model: string,
+    level: ReasoningLevel
+  ): string | undefined {
+    const support = this.reasoningSupportFor(model, getXAIReasoningSupport);
+    if (support.depths.length === 0) return undefined;
+    const effective = effectiveReasoningLevel(level, support);
+    if (effective === "off") return undefined;
+    return effective === "max" ? "xhigh" : effective;
+  }
+
   protected override reasoningRequestFields(
     model: string,
     level: ReasoningLevel
   ): Record<string, unknown> {
-    const support = this.reasoningSupportFor(model, getXAIReasoningSupport);
-    if (support.depths.length === 0) return {};
-    const effective = effectiveReasoningLevel(level, support);
-    if (effective === "off") return {};
-    return { reasoning_effort: effective === "max" ? "xhigh" : effective };
+    const effort = this.reasoningEffort(model, level);
+    return effort ? { reasoning_effort: effort } : {};
+  }
+
+  /**
+   * Responses API counterpart, for profiles the live probe moved onto
+   * `/v1/responses`. The inherited OpenAI table sent `reasoning.effort` to
+   * grok-4 and the other knob-less models, which 400 on it there too; this
+   * keeps the xAI table on both transports. The summary is still asked for
+   * when thinking is on — an endpoint that rejects it is retried without.
+   */
+  protected override reasoningResponsesFields(
+    model: string,
+    level: ReasoningLevel,
+    opts?: { summary?: boolean }
+  ): Record<string, unknown> {
+    const effort = this.reasoningEffort(model, level);
+    if (!effort) return {};
+    return {
+      reasoning:
+        level !== "off" && opts?.summary
+          ? { effort, summary: "auto" }
+          : { effort },
+    };
   }
 
   static override getName(): string {

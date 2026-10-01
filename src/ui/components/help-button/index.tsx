@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "../../../shared/utils";
 import { useWidgetConfig } from "../../../widget-config";
 import { IconButton } from "../icon-button";
@@ -46,6 +46,28 @@ const HelpButton = ({
     if (!isControlled) setInternalOpen(next);
     onOpenChange?.(next);
   };
+
+  // A popover anchored to a row in a scrolling list must go when the list
+  // scrolls: Radix repositions it, but it stays open floating over rows the
+  // trigger has already left. Scroll events do not bubble, so they are
+  // caught in the capture phase on the document; a scroll inside the
+  // popover's own content is the reader's and is left alone.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onScroll = (event: Event) => {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.closest(`[data-testid="${dataTestId}-content"]`)
+      )
+        return;
+      setOpen(false);
+    };
+    document.addEventListener("scroll", onScroll, true);
+    return () => document.removeEventListener("scroll", onScroll, true);
+    // `setOpen` is recreated per render but only forwards to stable setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, dataTestId]);
 
   return (
     // Always driven as controlled: an uncontrolled `Tooltip` opens on hover and

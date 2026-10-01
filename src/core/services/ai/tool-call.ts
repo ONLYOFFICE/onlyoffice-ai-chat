@@ -18,6 +18,11 @@ import {
   stripUnresolvedToolCalls,
 } from "./stream";
 import type { ChatEvent } from "./types";
+import {
+  isMcpImageBlock,
+  mcpImageToDataUrl,
+  parseMcpEnvelope,
+} from "../../../shared/mcp-result";
 
 /**
  * Shared context threaded through the tool-call helpers — bundled so
@@ -115,21 +120,28 @@ export function patchToolCallResult(
 }
 
 /**
- * If `result` is an image-tool payload carrying inline base64, persist
- * the image to `storage.attachments` — linked to the owning
- * message/thread so the existing cascade deletes reclaim it — and swap
- * the inline body for a lightweight `{ data: { ref } }` marker.
+ * If `result` carries inline image data, persist the image(s) to
+ * `storage.attachments` — linked to the owning message/thread so the
+ * existing cascade deletes reclaim them — and swap the inline body for
+ * a lightweight ref marker.
  *
- * Detection is by RESULT SHAPE (`{ data: { base64 } }`, the library's
- * canonical image-result format) rather than by tool name. That keeps it
- * working for the built-in `generate_image`, for an integrator's own
- * image tool exposed via `HostToolSource` (whose name is group-prefixed,
- * e.g. `"<group>_generate_image"`), and for any MCP tool that follows
- * the same shape — no per-integrator wiring required.
+ * Two result shapes are recognised, both by SHAPE rather than by tool
+ * name:
  *
- * Keeps the megabyte-scale base64 out of `storage.messages` and out of
- * every subsequent provider request: the model only ever sees the tiny
- * marker, while the UI hydrates the ref through `api.attachments`.
+ * - `{ data: { base64 } }` — the library's canonical image-generation
+ *   payload (built-in `generate_image`, an integrator's own image tool
+ *   exposed via `HostToolSource`). Becomes `{ data: { ref } }`.
+ * - An MCP `tools/call` envelope whose `content` holds
+ *   `{ type: "image", data, mimeType }` blocks (a screenshot tool, a
+ *   chart renderer, …). Each block becomes `{ type: "image", ref,
+ *   mimeType }`; text blocks and the rest of the envelope are kept.
+ *   `resolveAttachmentRefs` hydrates the refs back to inline base64 on
+ *   the way to the provider, so the model does see the picture — the
+ *   base64 just never lands in `storage.messages`.
+ *
+ * Keeps the megabyte-scale base64 out of the message store and out of
+ * the UI's message list: the UI hydrates the refs through
+ * `api.attachments`.
  *
  * Any non-matching result — web-search payloads, error envelopes, plain
  * strings, an already-swapped ref marker — or a storage write that
@@ -143,6 +155,9 @@ export async function persistGeneratedImage(
   scope: { messageId: string; threadId: string; entityId?: string }
 ): Promise<unknown> {
   if (typeof result !== "string") return result;
+
+  const mcp = parseMcpEnvelope(result);
+  if (mcp) return persistMcpImages(storage, toolName, result, mcp, scope);
 
   let base64: string | undefined;
   try {
@@ -166,6 +181,55 @@ export async function persistGeneratedImage(
     return JSON.stringify({ data: { ref: record.id } });
   } catch (e) {
     logger.error("[image] failed to persist generated image attachment", e);
+    return result;
+  }
+}
+
+/**
+ * MCP branch of {@link persistGeneratedImage}: every inline `image`
+ * block of the envelope is stored as a tool-sourced image attachment
+ * (as a data URL, the form `Attachment.base64` documents) and replaced
+ * by its ref. A result with no inline image blocks is returned as is.
+ */
+async function persistMcpImages(
+  storage: StorageAdapter,
+  toolName: string,
+  result: string,
+  envelope: NonNullable<ReturnType<typeof parseMcpEnvelope>>,
+  scope: { messageId: string; threadId: string; entityId?: string }
+): Promise<string> {
+  const content = envelope.content ?? [];
+  if (!content.some((b) => isMcpImageBlock(b) && mcpImageToDataUrl(b))) {
+    return result;
+  }
+  try {
+    const next: unknown[] = [];
+    let index = 0;
+    for (const block of content) {
+      const dataUrl = isMcpImageBlock(block) ? mcpImageToDataUrl(block) : null;
+      if (!isMcpImageBlock(block) || !dataUrl) {
+        next.push(block);
+        continue;
+      }
+      index += 1;
+      const record = await storage.attachments.create({
+        kind: "image",
+        source: "tool",
+        title: `${toolName || "tool"}-image-${index}`,
+        base64: dataUrl,
+        messageId: scope.messageId,
+        threadId: scope.threadId,
+        entityId: scope.entityId,
+      });
+      next.push({
+        type: "image",
+        ref: record.id,
+        ...(block.mimeType ? { mimeType: block.mimeType } : {}),
+      });
+    }
+    return JSON.stringify({ ...envelope, content: next });
+  } catch (e) {
+    logger.error("[image] failed to persist MCP image attachment", e);
     return result;
   }
 }
@@ -231,22 +295,22 @@ export async function* resumeChat(
   // every tool-result path — engine auto-exec (`executeAdapterTool`),
   // UI approve, and deny all funnel through here — so the megabyte-scale
   // base64 never lands in the message and is never re-sent to the model.
-  const persisted = await persistGeneratedImage(
+  //
+  // A tool result must reach the provider as a string; a raw object is
+  // rejected by the gateway when it deserializes messages.content (Bug
+  // 82862). Serialize any non-string result first, so that an object-
+  // shaped host result is both persisted as a string and recognised by
+  // the image detection below.
+  const result = await persistGeneratedImage(
     ctx.storage,
     toolCall.toolName,
-    input.result,
+    normalizeToolResult(input.result),
     {
       messageId: input.messageId,
       threadId: input.threadId,
       entityId: input.entityId,
     }
   );
-
-  // A tool result must reach the provider as a string; a raw object is
-  // rejected by the gateway when it deserializes messages.content (Bug
-  // 82862). Serialize any non-string result before it is persisted and
-  // replayed into the resumed history.
-  const result = normalizeToolResult(persisted);
 
   // Persist the tool result onto the assistant message that issued the
   // call. The UI has already displayed it locally — see the post-

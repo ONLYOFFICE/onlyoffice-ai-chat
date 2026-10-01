@@ -5,6 +5,7 @@ import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import logger from "../../../shared/logger";
 import type { Profile } from "../../types";
+import { allowAlwaysToken } from "../tools/allow-always";
 import { readToolCall } from "./tool-call";
 import type { ChatEvent } from "./types";
 
@@ -295,10 +296,16 @@ export async function* processStream(
             // "always-allow" list OR the tool itself opts in via
             // `requireApproval === false` (host tools default to this). A tool
             // that never sets the flag (MCP / custom servers) keeps prompting.
+            // The list is keyed per server, so the lookup composes the same
+            // `${serverType}_${toolName}` token the settings routes and the
+            // approval dialog write (DocSpace bug 84009).
             const tool = ctx.tools?.find((t) => t.name === toolName);
             const autoAllow =
               !!toolName &&
-              (allowList.includes(toolName) || tool?.requireApproval === false);
+              (allowList.includes(
+                allowAlwaysToken(tool?.serverType, toolName)
+              ) ||
+                tool?.requireApproval === false);
 
             yield {
               type: "tool-call-pending",

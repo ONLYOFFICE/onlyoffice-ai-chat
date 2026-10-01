@@ -39,7 +39,11 @@ import {
 } from "./create-threads-store";
 
 export type { AttachmentsStoreState } from "./create-attachments-store";
-export type { CloudsStoreState } from "./create-clouds-store";
+export type {
+  CloudsStoreState,
+  CreateCloudsStoreConfig,
+  SelectedContextFolder,
+} from "./create-clouds-store";
 export type { MessageStoreState } from "./create-message-store";
 export type { ProfilesStoreState } from "./create-profiles-store";
 export type { PromptsStoreState } from "./create-prompts-store";
@@ -152,7 +156,7 @@ export function createStores(config: CreateStoresConfig): Stores {
   });
   const useThemeStore = createThemeStore(ctx);
   const useRouter = createRouterStore();
-  const useCloudsStore = createCloudsStore(ctx);
+  const useCloudsStore = createCloudsStore({ ctx, api });
 
   const selectCurrentChatProfile = (s: ProfilesStoreState) =>
     s.sessionChatProfile ?? s.chatProfile ?? s.defaultProfile;

@@ -312,6 +312,64 @@ describe("OpenAIProvider", () => {
       });
     });
 
+    it("retries without reasoning.summary when the endpoint rejects it, then stops asking", async () => {
+      responsesCreateMock
+        .mockRejectedValueOnce(
+          Object.assign(
+            new Error("400 Field 'reasoning.summary' is not supported"),
+            { status: 400 }
+          )
+        )
+        .mockResolvedValueOnce(responsesIter([minimalCompletion()]))
+        .mockResolvedValueOnce(responsesIter([minimalCompletion()]));
+      const send = () =>
+        drain(
+          new OpenAIProvider({
+            baseUrl: "https://no-summary.example",
+            apiKey: "sk",
+          }).sendMessage({
+            messages: [],
+            model: "gpt-5.5",
+            systemPrompt: "",
+            useResponsesApi: true,
+            withReasoning: true,
+          })
+        );
+
+      const [first] = await send();
+      expect(first).toMatchObject({ isEnd: true });
+      expect(
+        responsesCreateMock.mock.calls.map((c) => c[0]?.reasoning)
+      ).toEqual([{ effort: "medium", summary: "auto" }, { effort: "medium" }]);
+
+      // A fresh instance on the same endpoint skips the doomed attempt.
+      await send();
+      expect(responsesCreateMock).toHaveBeenCalledTimes(3);
+      expect(responsesCreateMock.mock.calls[2]?.[0]?.reasoning).toEqual({
+        effort: "medium",
+      });
+    });
+
+    it("does not retry on an unrelated 400", async () => {
+      responsesCreateMock.mockRejectedValueOnce(
+        Object.assign(new Error("400 model not found"), { status: 400 })
+      );
+      const out = await drain(
+        new OpenAIProvider({
+          baseUrl: "https://other.example",
+          apiKey: "sk",
+        }).sendMessage({
+          messages: [],
+          model: "gpt-5.5",
+          systemPrompt: "",
+          useResponsesApi: true,
+          withReasoning: true,
+        })
+      );
+      expect(responsesCreateMock).toHaveBeenCalledTimes(1);
+      expect(out).toHaveLength(1);
+    });
+
     it("sends reasoning.effort=none on Responses when off for gpt-5.5", async () => {
       responsesCreateMock.mockResolvedValueOnce(
         responsesIter([minimalCompletion()])

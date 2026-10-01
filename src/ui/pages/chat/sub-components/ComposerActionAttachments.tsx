@@ -12,12 +12,10 @@ import {
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
 import logger from "../../../../shared/logger";
-import { useEffortMenuItem } from "./effort-menu";
 
-// Mirrored from `ComposerActionServers.tsx`. The engine resolves these
-// on the fly per-request, so they never appear in the UI's `servers`
-// aggregator — the composer toggle has to flip them through
-// `disabledTools["web-search"]` directly.
+// The engine resolves the web-search tools on the fly per-request, so they
+// never appear in the UI's `servers` aggregator — the composer toggle has
+// to flip them through `disabledTools["web-search"]` directly.
 const WEB_SEARCH_TYPE = "web-search";
 const WEB_SEARCH_TOOL_NAMES = ["web_search", "web_crawling"];
 
@@ -55,8 +53,8 @@ const ComposerActionAttachment = () => {
   const webSearchActive =
     webSearchEnabled &&
     WEB_SEARCH_TOOL_NAMES.some((n) => !webSearchDisabledNames.includes(n));
-  const effortItem = useEffortMenuItem();
-  const { composerActions, addLocalImageEnabled } = useWidgetConfig();
+  const { composerActions, addLocalImageEnabled, attachFilesByPath } =
+    useWidgetConfig();
 
   const onOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -64,6 +62,16 @@ const ComposerActionAttachment = () => {
 
   const selectRecentFile = React.useCallback(
     async (path: string, type: number) => {
+      // Path only: reading the file is left to the model, through a tool
+      // the host registers (see `WidgetConfig.attachFilesByPath`).
+      if (attachFilesByPath) {
+        try {
+          await addAttachmentFile({ path, type });
+        } catch (err) {
+          logger.error("[ComposerActionAttachment] attach failed", err);
+        }
+        return;
+      }
       if (!platform.file?.convertFileToText) return;
       // Reserve the loading chip before the conversion — on desktop the
       // convert is the slow part, and the whole point is instant feedback.
@@ -87,6 +95,7 @@ const ComposerActionAttachment = () => {
       }
     },
     [
+      attachFilesByPath,
       platform.file,
       addAttachmentFile,
       beginPendingAttachments,
@@ -113,6 +122,22 @@ const ComposerActionAttachment = () => {
       return false;
     });
     if (files.length === 0) return;
+
+    // Path only — see selectRecentFile. The store reserves the loading
+    // chips and applies the 5-item cap itself.
+    if (attachFilesByPath) {
+      try {
+        await addAttachmentFile(
+          files.map((file) => ({
+            path: file.path,
+            type: fileApi.getFileType?.(file.path) ?? 0,
+          }))
+        );
+      } catch (err) {
+        logger.error("[ComposerActionAttachment] attach failed", err);
+      }
+      return;
+    }
 
     // Reserve loading chips first: the reservation is the cap check
     // (replacing the old hardcoded slice-to-5), so we never pay for a
@@ -314,8 +339,6 @@ const ComposerActionAttachment = () => {
       eventBus.emit("tools-changed");
     },
   });
-
-  if (effortItem) items.push(effortItem);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;

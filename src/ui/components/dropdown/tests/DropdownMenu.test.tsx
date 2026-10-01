@@ -154,4 +154,98 @@ describe("DropdownMenu", () => {
       )
     ).not.toThrow();
   });
+
+  describe("footerItems", () => {
+    const items = [
+      { text: "Profile 1", onClick: vi.fn() },
+      { text: "Profile 2", onClick: vi.fn() },
+    ];
+    const footer = [
+      { text: "", onClick: vi.fn(), isSeparator: true },
+      { text: "Effort", onClick: vi.fn() },
+    ];
+
+    it("renders the list in a scroll area and the footer pinned outside it", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          footerItems={footer}
+          open
+        />
+      );
+      const scroll = screen.getByTestId("dropdown-scroll-area");
+      const pinned = screen.getByTestId("dropdown-footer");
+      expect(scroll).toContainElement(screen.getByText("Profile 1"));
+      expect(scroll).toContainElement(screen.getByText("Profile 2"));
+      expect(pinned).toContainElement(screen.getByText("Effort"));
+      expect(scroll).not.toContainElement(screen.getByText("Effort"));
+      // The list scrolls, the footer does not.
+      expect(scroll.className).toContain("overflow-y-auto");
+      expect(pinned.className).toContain("shrink-0");
+    });
+
+    it("moves scrolling off the content so the footer cannot scroll away", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          footerItems={footer}
+          open
+        />
+      );
+      const content = document.querySelector(".dropdown-menu") as HTMLElement;
+      expect(content.className).toContain("overflow-hidden");
+      expect(content.className).not.toContain("overflow-y-auto");
+    });
+
+    it("does not indent the list for an icon that only the footer has", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          footerItems={[
+            { text: "", onClick: vi.fn(), isSeparator: true },
+            {
+              text: "Effort",
+              icon: <span data-testid="effort-icon" />,
+              onClick: vi.fn(),
+            },
+            { text: "Plain footer", onClick: vi.fn() },
+          ]}
+          open={true}
+        />
+      );
+      // The profiles above the footer keep their labels at the start...
+      expect(screen.getByText("Profile 1").className).not.toContain(
+        "ms-[var(--dropdown-item-label-space,28px)]"
+      );
+      // ...while an icon-less footer row lines up with the footer's icon.
+      expect(screen.getByText("Plain footer").className).toContain(
+        "ms-[var(--dropdown-item-label-space,28px)]"
+      );
+    });
+
+    it("keeps the content scrolling itself without a footer", () => {
+      render(
+        <DropdownMenu trigger={<button>Open</button>} items={items} open />
+      );
+      const content = document.querySelector(".dropdown-menu") as HTMLElement;
+      expect(content.className).toContain("overflow-y-auto");
+      expect(screen.queryByTestId("dropdown-footer")).toBeNull();
+      expect(screen.queryByTestId("dropdown-scroll-area")).toBeNull();
+    });
+
+    it("treats an empty footer like no footer", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          footerItems={[]}
+          open
+        />
+      );
+      expect(screen.queryByTestId("dropdown-footer")).toBeNull();
+    });
+  });
 });

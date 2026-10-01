@@ -1,5 +1,229 @@
 # Changelog
 
+## 0.6.18
+
+### Changed
+
+- **A picture a tool returns is capped at 300px high under its card.** A tall screenshot pushed the reply far down; the height comes from `--chat-message-tool-call-image-max-height`, and `generate_image` results keep their full size.
+
+## 0.6.17
+
+### Fixed
+
+- **A collapsed thinking block is followed by the same gap as a tool call.** Its header row carried its own bottom margin on top of the block's, so the next part sat 8px lower; the gap now comes from the block's flex gap and appears only when the reasoning is expanded.
+
+## 0.6.16
+
+### Changed
+
+- **Picked and recent files inline their text again by default.** Attaching by path only (0.6.12) is now opt-in through `WidgetConfig.attachFilesByPath`, for a host that registers its own file-reading tool; without it the file is converted with `convertFileToText` and its text goes into the prompt, as before 0.6.12.
+
+```tsx
+<WidgetConfigProvider config={{ ...config, attachFilesByPath: true }} />
+```
+
+## 0.6.15
+
+### Fixed
+
+- **A Claude model that rejects `thinking: disabled` is retried once with `between_tools` and remembered.** Anthropic's per-model table lags the live API: Sonnet 5 took `disabled` by the docs and answers the same 400 in practice. Because the capability probe runs with thinking off, that 400 also left such profiles with a false `canUseTool: false`; re-save the profile (or switch its model and back) to re-probe.
+
+## 0.6.14
+
+### Fixed
+
+- **Claude Sonnet 5.5 no longer fails with `"thinking.type.disabled" is not supported for this model`.** Its off switch is spelled `thinking: {type: "between_tools"}` — the model does no extended thinking, only its short notes between tool calls come back as thinking blocks. It is accepted by that model alone, so Sonnet 5 and the rest still get `disabled`.
+- **Groq profiles stay on chat completions.** The live probe moved them onto `/v1/responses`, where the OpenAI request shape adds `reasoning.summary` and Groq answers 400 on every round. Like OpenRouter, Groq skips the probe; xAI on Responses now uses its own reasoning table; any other endpoint that rejects `reasoning.summary` is retried once without it and remembered.
+- **The capability probe tries chat completions only when the Responses API probe fails.** Firing both at once meant a guaranteed, logged and billed 400 on every profile save for models that cannot stop thinking (gpt-6, gpt-5.0, o-series, pro).
+
+## 0.6.13
+
+### Changed
+
+- **Tool-result images are re-sent only within the current turn.** The model saw each picture in the round that produced it; resending every screenshot with each later message grew the context by its full size. Images before the last user message now reach the model as `[image from an earlier tool result, not resent]`.
+- **A tool card shows at most 5 pictures.** A screenshot loop can return any number of them; the rest are not fetched. The model still gets them all.
+
+### Fixed
+
+- **Prompt-emulated tool calls no longer paste image base64 into `<TOOL_RESULT>`.** The text protocol cannot carry images, so the megabytes of base64 were noise; they are replaced by `[image attached]`.
+
+## 0.6.12
+
+### Breaking
+
+- **Picked and recent files are attached by path only.** "Add local file" and "Recent files" no longer call `platform.file.convertFileToText`; the model gets `[attached file: <title>]` plus the path and reads the file through a tool the host registers (`hostTools` or MCP). Without such a tool the model sees only the name and path. Attachments that carry `content` (drag-and-drop text, DocSpace, `addAttachmentFile({ content })`) are still inlined. `convertFileToText` is deprecated.
+
+### Added
+
+- **A tool call shows its intent while its arguments still stream.** The intent is the first schema field, so the card is labelled before the real arguments arrive, on the prompt-emulated path too.
+
+### Fixed
+
+- **Message actions stay hidden while a tool call awaits approval**, since the reply resumes after allow or deny.
+- **No "Analyzing" flash under a streaming reasoning block**; the approval dialog's "Always allow" no longer carries over to the next call.
+
+## 0.6.11
+
+### Changed
+
+- **Prompt-emulated tool calls no longer require a lead-in sentence.** The fallback tools block (for models without native tool calling) dropped the rule asking for one short sentence before the `<tool_call>` block.
+
+## 0.6.10
+
+### Changed
+
+- **The thread always follows the stream (Bug 84123).** The message area is anchored at the bottom and re-pins itself on every streamed token, the classic chat layout. Auto-scroll had been off by default in favour of the reading-first layout, which lifted the question to the top and let the answer grow below it; that layout confused users who expected the view to follow the answer.
+
+### Removed
+
+- **`WidgetConfig.autoScrollWhileStreaming` / `AIChatWidgetProps.autoScrollWhileStreaming`.** With the reading-first layout gone the flag had nothing left to switch; the `PendingTurnSlack` placeholder and the `data-auto-scroll` viewport attribute went with it. Hosts still passing the option get a type error and should drop it.
+
+## 0.6.6
+
+### Fixed
+
+- **Long room and skill names truncate instead of stretching the menu.** The root-level room list had no width cap, so the panel grew to fit the longest name and the rows' truncation never applied. The context menu is capped through `--dropdown-context-menu-min-width` / `--dropdown-context-menu-max-width` (240 / 320 px) and the room chip's menu through `--chat-composer-room-menu-max-width` (320 px), both clipped to the space Radix reports, like the model picker.
+
+## 0.6.5
+
+### Added
+
+- **Tool results can carry images.** An MCP server (custom, system or host-executed) that answers `tools/call` with `{ type: "image", data, mimeType }` content blocks — a screenshot tool, a chart renderer — now has its pictures seen by the model and shown in the chat. Before, the block was passed to the model as base64 inside the JSON text: unreadable to it, expensive in tokens, and rendered as raw JSON in the tool card. Now the base64 is moved to `storage.attachments` (`source: "tool"`, cascade-deleted with the message) and the message keeps `{ type: "image", ref, mimeType }`; on the way to the provider the ref is hydrated and the picture is sent natively — an `image` block inside Anthropic's `tool_result`, a `user` message with `image_url` / `input_image` parts after the tool output for OpenAI Chat Completions and Responses (the `tool` role is text-only there), an `inlineData` part beside the `functionResponse` for Gemini. The tool card renders every image below the call, for any tool, and the raw-result view shows `<base64 omitted>` in place of the payload. Detection is by result shape, so the built-in `generate_image` payload and an integrator's own image tools are unchanged.
+
+### Fixed
+
+- **The context menu's hint closes when the room list scrolls.** The popover stayed open and floated over rows its trigger had left; `HelpButton` now dismisses on any scroll outside its own content.
+
+## 0.6.4
+
+### Fixed
+
+- **Disconnect room no longer scrolls away under a long skill list.** A room with many skills pushed the way out past the menu's height cap. The separator and Disconnect room now ride the menu's pinned footer, like Effort under the profiles: the switches scroll, the exit stays in view.
+
+## 0.6.3
+
+### Added
+
+- **`WidgetConfig.hideContextClouds`.** Skips the cloud level of the composer's context menu: the rooms of every cloud are listed at the root, each still connected with its own cloud when picked, and the button wears the room glyph instead of the cloud. For a host that is one cloud to the widget (DocSpace is its own portal) the account row was a step with a single choice.
+
+### Fixed
+
+- **Hanging up on a streaming reply leaves it marked as stopped.** When the client disconnected after text had started arriving, the OpenAI-compatible streams (chat completions and Responses, so the ONLYOFFICE gateway too) reached the end of the SDK iterator without a `finish_reason`, saw content and reported a *finished* reply: the partial text was persisted with no status at all, and a thread reload showed it as a normal answer. The abort is now checked before the content, on every event and at the end of the stream, so the turn is stored as `incomplete / cancelled` with the text streamed so far — the same shape Stop in the composer produces (DocSpace bug 84028).
+- **Claude Opus 5.5 no longer fails with `"thinking.type.disabled" is not supported for this model`.** Opus 5.5 thinks always, like Fable and Mythos: `disabled` is a 400 at every effort level and `output_config.effort` is the only knob. The model is now marked as impossible to switch off (`canDisable: false`), a stored off sends adaptive thinking at the standard depth, and the composer offers no switch for it. The Claude id parser also reads a dotted minor (`anthropic/claude-opus-5.5`), so the OpenRouter route gets the same treatment (DocSpace bug 84082).
+- **"Always allow" on a custom MCP server's tool now sticks.** The approval dialog saved the bare name the model calls the tool by (`get_time`), while `set-allow-always` / `is-allow-always` key the list per server (`calculator_get_time`), so the saved decision was never found and, for a name without an underscore, was not persisted at all. All three paths — the dialog, the settings routes and the live round's auto-allow check — now derive one `${serverType}_${toolName}` token (`allowAlwaysToken`), and the flattened tool list stamps each adapter tool with its group so the round can attribute a bare call name to its server (DocSpace bug 84009). Decisions stored under a bare name before this release no longer apply and have to be granted once more.
+
+### Changed
+
+- **Test ids on the room-context controls**, in the naming master's `chore: add missed test ids` pass established: the context menu (`composer-settings-menu`, `context-menu-cloud`, `context-menu-room`, `composer-settings-help`), the room chip's menu (`composer-room-menu`, `composer-room-skill`, `composer-room-disconnect`) and the locked picker's current-profile row (`model-selector-current`). The drill-down back button is `dropdown-back-button` on every menu, labelled or not.
+- Master merged in: the missed test ids across the settings pages.
+
+## 0.6.2
+
+### Fixed
+
+- **Profile rows in the model picker are no longer indented by the Effort row's icon.** The pinned footer joins the menu's tree for navigation, and the icon column was reserved over that joined level, so every profile label sat a column in. The list and the footer are now judged apart: the profiles stay at the start, and an icon-less footer row still lines up with the footer's icon.
+
+## 0.6.1
+
+### Fixed
+
+- **A room renamed while connected shows its new name.** `selectContextFolder` for the already connected room used to be a full no-op; it now takes over a changed name and still keeps the room's skills and switches.
+
+## 0.6.0
+
+The room-context line (0.5.134 – 0.5.139) merged with everything master
+shipped since 0.5.118. The minor bump marks the two behaviour changes
+hosts must know about: `hideProfilePicker: true` now locks the picker
+instead of removing it, and `ServerAPIRoutes` / `createStores` require
+the new `context` service.
+
+### Added
+
+- **A toast on a saved prompt**, via a new `Toast` component. It needs `@radix-ui/react-toast`, declared as an optional peer like the other Radix packages — a host that never saves prompts can leave it out.
+- **Models are sorted** in the pickers and settings lists.
+- **Tooltips for long prompt names** and for long chat titles in the history, so a truncated label can still be read.
+- **Images from the clipboard and by hotkey** are attached to the composer.
+- **Debug export keeps the whole response**, with nothing omitted.
+
+### Fixed
+
+- Inserting a prompt no longer clears what was already typed (Bug 84055).
+- The model selection panel opens again, and stays open after the click that opened it (Bug 84070).
+- A click moves straight to the next combobox on pages that stack them: the combobox dropdown is no longer modal, so it stops parking `pointer-events: none` on the page behind it.
+- Dropdown menus render above overlays (Bug 84002); the actions icon shows on narrow devices (Bug 84073); the model setup layout is intact (Bug 84005); two layout regressions.
+- The chat scrolls to a new message and to the bottom when reopened, without auto-scrolling while the user reads (Bug 83921, Bug 83684).
+- Regenerate acts on the turn that was clicked, not the newest one.
+- Dropped files are filtered by the allowed formats and keep their names (Bug 83956, Bug 83963); RTL detection is correct (Bug 83500); the model's reasoning is no longer inserted into the document (Bug 83764); images generate with Google models (Bug 83901).
+- The caret lands correctly when walking the prompt history.
+
+## 0.5.139
+
+### Fixed
+
+- **The connected-room chip no longer melts into the composer on hosts with their own surfaces.** It borrowed the input tokens, which on DocSpace dark are a grey two shades from the composer's. It is a block on the composer surface like the attachment chips, so it now shares their paint by default and gets tokens of its own for a host to override:
+
+  ```css
+  --chat-composer-room-background-color        /* default: --file-items-chat-background-color */
+  --chat-composer-room-hover-background-color  /* default: --file-items-chat-hover-background-color */
+  --chat-composer-room-border-color            /* default: --file-items-border-color */
+  ```
+
+## 0.5.138
+
+### Fixed
+
+- **The chat's "Export to…" item keeps the icon its "Save" predecessor had.** A host declaring several export formats turned the single "Save" entry into a submenu, which lost the icon and left the export row as the only one in the menu without one.
+
+## 0.5.137
+
+### Fixed
+
+- **The connected-room chip's icon is drawn at its 24 px design size.** The glyph fills 15 of the asset's 24 px, so the 16 px box it was given left it at 10 px beside the room name.
+
+## 0.5.136
+
+### Fixed
+
+- **The connected-room chip's icon and chevron were washed out in the dark themes.** They were painted with `--icon-button-color`, a dimmer grey than the white room name next to them. Both now take `--icon-normal`, the paint the model picker's chevron already uses (`--chat-composer-room-icon-color` overrides it). The chip's fill is back to the input tokens — 0.5.135 had made it transparent, which was not the problem.
+
+## 0.5.135
+
+### Fixed
+
+- **The connected-room chip no longer stands out in the dark themes.** It was filled with `--input-background-color`, a different grey from the composer's own surface in the dark themes, so it read as a misplaced input. It is now transparent on the composer's surface, with the composer's border colour, the button highlight on hover and while open.
+
+## 0.5.134
+
+### Added
+
+- **A DocSpace room can be connected to the chat as context.** A new cog in the composer's bottom row lists the host's cloud accounts (one row each, the ONLYOFFICE icon) and their rooms one level down; picking a room connects it at once, and a room button next to the cog shows it, with a *Disconnect room* entry. The widget knows nothing about rooms itself: three optional `StorageAdapter` methods supply everything, and a host without them sees no cog at all.
+
+  ```ts
+  getContextFolders?(): Promise<{ cloud: string; rooms: { id: string; name: string }[] }[]>;
+  getRoomSkills?(cloud, roomId): Promise<{ id: string; name: string; description: string }[]>;
+  getRoomSkill?(cloud, roomId, skillId): Promise<string>;
+  ```
+
+  The reads go through a new `ContextEngine` and the `context` service of the API bridge (`DEFAULT_CONTEXT_ROUTES`), so they work in server mode too, where the browser holds a stub adapter and the real one answers over HTTP. The clouds store exposes `fetchContextFolders`, `fetchRoomSkills` and `clearContextFolder` for a host whose clouds change at runtime; the widget itself never polls.
+
+- **Skills of the connected room.** A skill is an Agent Skills Markdown file: frontmatter with `name` and `description`, then the instructions. The room button lists each skill with a switch. The enabled skills' names and descriptions go into the system prompt as a *skill index*, and the model reads a skill's body only when it needs it, through the built-in `read_skill` tool — so a room with many skills costs one index line each, not every body on every turn. The list is read once when the room is connected and travels with every round (`ActionArgs.contextRoom`); only `read_skill` reaches the host, and only on demand. Room-provided text is data, not authority: the index is framed as a catalogue, ids and names are escaped rather than rewritten, hidden (control, zero-width, bidi) characters are stripped, and a body is capped at 64 KB.
+
+- **`WidgetConfig.contextRoomScopesRounds`.** Off by default: a connected room contributes its skills and nothing else, so on the desktop editors, whose rooms live in remote clouds, the room id never points local storage at a scope it has never heard of. DocSpace turns it on and the room's id becomes the round's `contextEntityId` while connected — its tools, allow-always preferences, assignment fallback and the host's per-scope agent instruction — while the thread stays under `entityId`.
+
+- **`WidgetConfig.hideContextRoomDisconnect`.** Drops the *Disconnect room* entry from the connected room's menu, for a host that connects the room itself (DocSpace connects the room the user is in) and offers no cog to pick another — disconnecting would leave no way back. With it on, a room without skills shows nothing at all: an empty `.ai` folder is not worth a button.
+
+- **`DropdownMenu` and `ComboBox` take `footerItems`.** Rows pinned below the list: the items scroll inside the menu's height cap, the footer stays in view. Root level only; in drill-down mode a drilled-in level replaces the whole menu.
+
+### Changed
+
+- **Effort lives in the model picker.** The reasoning depth applies to the model it is picked for, so the *Effort* row now sits at the foot of the profile picker, under a separator, pinned so it stays visible however many profiles there are. Web search is back in the paperclip menu, where it was.
+
+- **`hideProfilePicker: true` locks the picker instead of removing it.** The picker also carries the Effort row, which has nowhere else to live, so it now stays on screen with a menu of exactly three rows: the current profile as an inert checked row, a separator, Effort. No other profiles, no `profilePickerActions`. The same applies to the `entityId` default. `profilePickerReadOnly` still renders the static label, unless an explicit `hideProfilePicker: true` locks the picker instead — the label would leave Effort unreachable. A host that set the flag to clear the model out of the composer will now see the locked picker.
+
+### Removed
+
+- The old composer *Servers* menu (`ComposerActionServers`), unused since the tool switches moved to the settings pages.
+
 ## 0.5.118
 
 ### Fixed

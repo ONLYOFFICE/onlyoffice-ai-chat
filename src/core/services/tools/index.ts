@@ -1,4 +1,5 @@
 export { ToolsEngine } from "./engine";
+export { allowAlwaysToken } from "./allow-always";
 export { DEFAULT_TOOLS_ROUTES } from "./types";
 export { validateServerName, validateTransportConfig } from "./validation";
 export { SystemToolsSource } from "./system-tools-source";

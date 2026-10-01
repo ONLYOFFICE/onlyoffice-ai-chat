@@ -271,6 +271,19 @@ describe("processResponsesStream", () => {
     expect(msg.status?.reason).toBe("error");
   });
 
+  it("stream cut after text had arrived — surfaces a cancellation, not a finished reply (bug 84028)", async () => {
+    const ac = new AbortController();
+    async function* cut(): AsyncGenerator<ResponseStreamEvent> {
+      yield textDelta("Once upon");
+      ac.abort();
+    }
+    const results = await collect(processResponsesStream(cut(), ac.signal));
+    const final = lastTerminal(results);
+    if (!("isEnd" in final)) throw new Error("expected terminal");
+    const msg = final.responseMessage as { status?: { reason?: string } };
+    expect(msg.status?.reason).toBe("cancelled");
+  });
+
   it("stream ends empty after abort — surfaces a cancellation, not an error", async () => {
     const ac = new AbortController();
     ac.abort();

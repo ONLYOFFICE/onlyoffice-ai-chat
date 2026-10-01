@@ -347,6 +347,15 @@ sending a value the API would reject:
 | Zhipu GLM-4.5+ | `thinking.type` | `disabled` | `enabled` | `enabled` | `enabled` | `enabled` |
 | Mistral | model swap | original model | Magistral | Magistral | Magistral | Magistral |
 
+On the Responses API (`/v1/responses`, chosen by the live probe) the same
+value goes into `reasoning.effort`, and OpenAI-family providers also ask
+for `reasoning.summary: "auto"` so the thinking streams. Groq, OpenRouter
+and ONLYOFFICE never use that transport — they skip the probe and steer
+probed profiles back to `/chat/completions` (Groq's Responses API rejects
+`reasoning.summary`). xAI keeps its own table there as well. Any other
+endpoint that answers 400 on `reasoning.summary` is retried once without
+it and then remembered for the session.
+
 Ollama, LM Studio, GPT4All, Together and the generic OpenAI-compatible
 provider inherit the OpenAI row; ONLYOFFICE, a one-to-one proxy in front
 of OpenRouter, inherits the OpenRouter row. Models without thinking

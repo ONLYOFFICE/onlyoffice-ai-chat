@@ -35,20 +35,26 @@ vi.mock("../../tooltip", () => ({
 }));
 
 // Mock DropdownMenu that invokes onOpenChange to exercise the isOpen state
+let lastDropdownProps: Record<string, unknown> = {};
 vi.mock("../../dropdown", () => ({
-  DropdownMenu: ({
-    trigger,
-    onOpenChange,
-  }: {
-    trigger: React.ReactNode;
-    onOpenChange?: (value: boolean) => void;
-  }) => (
+  DropdownMenu: (
+    props: {
+      trigger: React.ReactNode;
+      onOpenChange?: (value: boolean) => void;
+    } & Record<string, unknown>
+  ) => (
     <div data-testid="dropdown-menu">
       <div
         data-testid="dropdown-trigger-wrapper"
-        onClick={() => onOpenChange?.(true)}
+        onClick={() => {
+          lastDropdownProps = props;
+          props.onOpenChange?.(true);
+        }}
+        ref={() => {
+          lastDropdownProps = props;
+        }}
       >
-        {trigger}
+        {props.trigger}
       </div>
     </div>
   ),
@@ -199,5 +205,39 @@ describe("ComboBox", () => {
     const combo = screen.getByTestId("combo");
     expect(combo).toHaveClass("pointer-events-none");
     expect(combo).toHaveClass("opacity-50");
+  });
+
+  describe("footerItems", () => {
+    it("passes footer rows through to the dropdown untouched", () => {
+      const footer = [{ text: "Effort", onClick: vi.fn() }];
+      render(
+        <ComboBox
+          data-testid="combo"
+          items={[{ text: "A", onClick: vi.fn() }]}
+          footerItems={footer}
+        />
+      );
+      expect(lastDropdownProps.footerItems).toBe(footer);
+    });
+
+    it("is not disabled when only footer rows exist", () => {
+      render(
+        <ComboBox
+          data-testid="combo"
+          items={[]}
+          footerItems={[{ text: "Effort", onClick: vi.fn() }]}
+        />
+      );
+      expect(screen.getByTestId("combo").className).not.toContain(
+        "pointer-events-none"
+      );
+    });
+
+    it("is disabled with neither items nor footer rows", () => {
+      render(<ComboBox data-testid="combo" items={[]} footerItems={[]} />);
+      expect(screen.getByTestId("combo").className).toContain(
+        "pointer-events-none"
+      );
+    });
   });
 });

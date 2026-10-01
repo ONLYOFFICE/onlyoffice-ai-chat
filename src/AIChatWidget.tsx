@@ -16,6 +16,7 @@ import {
   AIEngine,
   AssignmentsEngine,
   AttachmentsEngine,
+  ContextEngine,
   PreferencesEngine,
   ProfilesEngine,
   PromptsEngine,
@@ -115,8 +116,10 @@ export interface AIChatWidgetProps {
   hiddenWebSearchProviders?: WebSearchProviderId[];
   /**
    * Controls the composer's model (profile) picker. An explicit `true` /
-   * `false` always wins; omitted falls back to hiding the picker only when
-   * `entityId` is set. See {@link WidgetConfig.hideProfilePicker}.
+   * `false` always wins; omitted falls back to locking the picker only when
+   * `entityId` is set. A locked picker stays on screen with just the
+   * current profile and the Effort row. See
+   * {@link WidgetConfig.hideProfilePicker}.
    */
   hideProfilePicker?: boolean;
   /**
@@ -526,6 +529,7 @@ export const AIChatWidget = React.forwardRef<
       const prompts = new PromptsEngine({ storage });
       const preferences = new PreferencesEngine({ storage });
       const attachments = new AttachmentsEngine({ storage });
+      const context = new ContextEngine({ storage });
 
       const servers = new Servers(platform, eventBus);
 
@@ -597,6 +601,7 @@ export const AIChatWidget = React.forwardRef<
         ai,
         assignments,
         attachments,
+        context,
         preferences,
         profiles,
         prompts,

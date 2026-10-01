@@ -50,6 +50,9 @@ export interface ThemeTokens {
   "--chat-composer-border-color"?: string;
   "--chat-composer-hover-border-color"?: string;
   "--chat-composer-placeholder-color"?: string;
+  "--chat-composer-room-background-color"?: string;
+  "--chat-composer-room-border-color"?: string;
+  "--chat-composer-room-hover-background-color"?: string;
   "--chat-composer-text-color"?: string;
   "--chat-list-border-right"?: string;
   "--chat-list-color"?: string;

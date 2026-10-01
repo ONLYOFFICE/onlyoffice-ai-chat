@@ -30,8 +30,9 @@ vi.mock("../../../store/context", () => {
   const profile = { id: "1", name: "GPT" };
   return {
     useStores: () => ({
-      useAttachmentsStore: (selector: (s: typeof attachmentsState) => unknown) =>
-        selector(attachmentsState),
+      useAttachmentsStore: (
+        selector: (s: typeof attachmentsState) => unknown
+      ) => selector(attachmentsState),
       useProfilesStore: () => profile,
       useMessageStore: (selector: (s: typeof messageState) => unknown) =>
         selector(messageState),
@@ -55,6 +56,12 @@ vi.mock("@assistant-ui/react", () => ({
 // The real ComboBox (and through it the real Radix menu) stands in for the
 // action bar: the bug lives in how the composer's click-to-focus handler and
 // the non-modal menu's focus-outside dismissal meet, which a mock would hide.
+// The connected-room chip reads the clouds store, which this test's store
+// mock does not carry; it is not what is under test here.
+vi.mock("../sub-components/ComposerActionRoom", () => ({
+  ComposerActionRoom: () => null,
+}));
+
 vi.mock("../sub-components/ComposerAction", async () => {
   const { ComboBox } = await import("../../../components/combo-box");
   return {

@@ -93,6 +93,44 @@ describe("DropdownMenu drill-down", () => {
     expect(screen.getByTestId("icon-btn-arrow.right")).toBeInTheDocument();
   });
 
+  it("labels the back row with the parent and drops its separator on request", () => {
+    renderMenu({ backRowLabel: true });
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    const back = screen.getByTestId("dropdown-back-button");
+    expect(back.textContent).toContain("Folder");
+    expect(
+      back.querySelector("[data-testid='icon-btn-arrow.right']")
+    ).not.toBeNull();
+    expect(screen.queryByTestId("dropdown-back-separator")).toBeNull();
+    // Selecting the labelled row goes back up.
+    fireEvent.click(back);
+    expect(screen.getByText("Leaf")).toBeInTheDocument();
+  });
+
+  it("keeps the bare chevron and its separator by default", () => {
+    renderMenu();
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    // The back button holds only the chevron, no parent label.
+    expect(
+      screen.getByTestId("dropdown-back-button").textContent
+    ).not.toContain("Folder");
+    expect(screen.getByTestId("dropdown-back-separator")).toBeInTheDocument();
+  });
+
+  it("keeps the header at the root only when asked, on every level otherwise", () => {
+    const { unmount } = renderMenu({
+      headerContent: <div data-testid="hdr" />,
+      headerAtRootOnly: true,
+    });
+    expect(screen.getByTestId("hdr")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    expect(screen.queryByTestId("hdr")).toBeNull();
+    unmount();
+    renderMenu({ headerContent: <div data-testid="hdr" /> });
+    fireEvent.click(screen.getByTestId("drill-Folder"));
+    expect(screen.getByTestId("hdr")).toBeInTheDocument();
+  });
+
   it("goes back a level via ArrowLeft", () => {
     renderMenu();
     fireEvent.click(screen.getByTestId("drill-Folder"));
@@ -298,5 +336,49 @@ describe("DropdownMenu drill-down", () => {
     expect(screen.getAllByTestId("row")[0].getAttribute("data-nav")).toBe(
       "flyout"
     );
+  });
+
+  describe("footerItems", () => {
+    const footer: DropDownItemProps[] = [
+      { text: "", onClick: vi.fn(), isSeparator: true },
+      {
+        text: "Effort",
+        onClick: vi.fn(),
+        subMenu: [
+          { text: "Low", onClick: vi.fn() },
+          { text: "High", onClick: vi.fn() },
+        ],
+      },
+    ];
+
+    it("shows the footer on the root level only", () => {
+      renderMenu({ footerItems: footer });
+      expect(screen.getByTestId("dropdown-footer")).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId("drill-Folder"));
+      expect(screen.queryByTestId("dropdown-footer")).toBeNull();
+      expect(screen.queryByText("Effort")).not.toBeInTheDocument();
+      expect(screen.getByText("ChildLeaf")).toBeInTheDocument();
+    });
+
+    it("drills into a footer row like any other row", () => {
+      renderMenu({ footerItems: footer });
+      fireEvent.click(screen.getByTestId("drill-Effort"));
+      expect(screen.getByText("Low")).toBeInTheDocument();
+      expect(screen.getByText("High")).toBeInTheDocument();
+      expect(screen.queryByText("Leaf")).not.toBeInTheDocument();
+    });
+
+    it("comes back to the root with the footer in place", () => {
+      renderMenu({ footerItems: footer });
+      fireEvent.click(screen.getByTestId("drill-Effort"));
+      const content = screen
+        .getByText("Low")
+        .closest("[data-orientation='vertical']");
+      fireEvent.keyDown(content as Element, { key: "ArrowLeft" });
+      expect(screen.getByTestId("dropdown-footer")).toContainElement(
+        screen.getByText("Effort")
+      );
+      expect(screen.getByText("Leaf")).toBeInTheDocument();
+    });
   });
 });

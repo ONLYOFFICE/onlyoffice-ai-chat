@@ -70,6 +70,10 @@ interface StorageAdapter {
   webSearch:      WebSearchStorage;
   attachments:    AttachmentsStorage;
 
+  getContextFolders?(): Promise<ContextFolder[]>; // optional
+  getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>; // optional
+  getRoomSkill?(cloud: string, roomId: string, skillId: string): Promise<string>; // optional
+
   init():  Promise<void>;
   close(): Promise<void>;
 }
@@ -94,6 +98,18 @@ keyset-pagination parameters (`count`, `cursor`, plus `direction` on
 messages), used only when the widget runs with `enablePagination` — see
 [the storage contract](./core/storage/storage.md) for the exact
 semantics. Adapters that ignore them keep working (full-list reads).
+
+`getContextFolders` is optional. It lists the rooms the user can add
+to the conversation as context, grouped by cloud account
+(`{ cloud: string; rooms: { id: string; name: string }[] }`); the
+composer's settings menu lists them (one row per cloud, rooms inside).
+`getRoomSkills` is optional too: given a cloud and room id from that
+list it returns the frontmatter of the room's skills
+(`{ id: string; name: string; description: string }[]`), shown with
+per-skill switches once the room is connected and listed to the model
+as a skill index. `getRoomSkill` returns one skill's Markdown body when
+the model asks for it through the built-in `read_skill` tool. Omit it when the
+host has no room concept.
 
 `init()` runs once before any other method (open DB, run
 migrations). `close()` runs on widget unmount.
@@ -182,6 +198,42 @@ pickFiles: (filters = ATTACHMENT_PICK_FILTERS) =>
 
 Images are **not** in this list: "Add local image" rides an internal
 `<input accept="image/*">` and never reaches `pickFiles`.
+
+### Attaching by path
+
+By default a file picked through `pickFiles` or the recent-files submenu is
+converted with `convertFileToText` and its text goes into the prompt. A host
+that would rather let the model read files on demand sets
+`WidgetConfig.attachFilesByPath: true`: the file is attached **by path
+only**, and the model receives a text block instead of the content:
+
+```
+[attached file: report.docx]
+Path: C:\Docs\report.docx
+The file content is not included. Use an available tool to read it from this path when it is needed to answer.
+```
+
+Reading the file is then the host's job: register a tool that takes the path
+and returns the text, through `hostToolGroups` or an MCP server. Without such
+a tool the model only sees the file name and path.
+
+```ts
+const readFile: HostTool = {
+  name: "read_file",
+  description: "Read the text content of a file the user attached, by its path",
+  inputSchema: {
+    type: "object",
+    properties: { path: { type: "string", description: "Absolute file path" } },
+    required: ["path"],
+  },
+  handler: async ({ path }) => editor.convertToText(path as string),
+};
+```
+
+Restrict the handler to paths the user actually attached — the model chooses
+the argument, so an unrestricted reader exposes the whole disk to prompt
+injection. Attachments that carry `content` (drag-and-drop text files,
+`addAttachmentFile` called with `content`) are inlined either way.
 
 A **web host that opens its own file dialog** — a `composerActions` entry, a
 portal upload flow — never reaches `pickFiles` either, so the filter groups

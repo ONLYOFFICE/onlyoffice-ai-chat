@@ -8,6 +8,7 @@ import type {
   ChatCompletionToolMessageParam,
 } from "openai/resources/chat/completions";
 import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
+import { splitToolResultImages } from "../../../shared/mcp-result";
 
 /**
  * Produce a unique fallback tool-call identifier when the SDK chunk
@@ -112,6 +113,12 @@ interface AssistantRound {
   reasoning: string[];
   toolCalls: ChatCompletionMessageFunctionToolCall[];
   toolResults: ChatCompletionToolMessageParam[];
+  /**
+   * Images the round's tools returned. A `tool` message's `content` is
+   * text-only in Chat Completions, so they travel in a `user` message
+   * that follows the tool results — see {@link buildToolImagesMessage}.
+   */
+  toolImages: ChatCompletionContentPart[];
 }
 
 const createRound = (): AssistantRound => ({
@@ -119,6 +126,21 @@ const createRound = (): AssistantRound => ({
   reasoning: [],
   toolCalls: [],
   toolResults: [],
+  toolImages: [],
+});
+
+/**
+ * Wrap the images a round's tools returned into one `user` message:
+ * a short label naming the tool, then an `image_url` part per picture.
+ * Chat Completions has no image channel on the `tool` role, and a user
+ * turn placed right after the tool results is how the model gets to see
+ * a screenshot or a rendered chart a tool produced.
+ */
+const buildToolImagesMessage = (
+  parts: ChatCompletionContentPart[]
+): ChatCompletionMessageParam => ({
+  role: "user",
+  content: parts,
 });
 
 /**
@@ -173,11 +195,30 @@ const splitAssistantRounds = (
     const toolCallId = part.toolCallId ?? generateFallbackToolCallId();
 
     if (part.result) {
+      const raw =
+        typeof part.result === "string"
+          ? part.result
+          : JSON.stringify(part.result);
+      const { text, images } = splitToolResultImages(raw);
       round.toolResults.push({
         role: "tool",
-        content: part.result,
+        content: text,
         tool_call_id: toolCallId,
       });
+      if (images.length > 0) {
+        round.toolImages.push(
+          {
+            type: "text",
+            text: `Image(s) returned by the tool "${part.toolName}":`,
+          },
+          ...images.map(
+            (img): ChatCompletionContentPart => ({
+              type: "image_url",
+              image_url: { url: img.dataUrl, detail: "high" },
+            })
+          )
+        );
+      }
     }
 
     round.toolCalls.push({
@@ -293,6 +334,9 @@ export const convertMessages = (
 
       if (round.toolResults.length > 0) {
         result.push(...round.toolResults);
+      }
+      if (round.toolImages.length > 0) {
+        result.push(buildToolImagesMessage(round.toolImages));
       }
     }
   }

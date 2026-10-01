@@ -107,6 +107,12 @@ export async function* processResponsesStream(
   const toolCallIndexByItemId = new Map<string, number>();
 
   for await (const event of stream) {
+    // Same as the chat-completions stream: a hang-up mid-reply is a
+    // cancellation, not a finished reply (DocSpace bug 84028).
+    if (signal?.aborted) {
+      yield { isEnd: true, responseMessage: createStopResponse() };
+      return;
+    }
     let mutated = true;
 
     switch (event.type) {
@@ -242,16 +248,16 @@ export async function* processResponsesStream(
       ? responseMessage.content.length > 0
       : responseMessage.content.length > 0;
 
-  if (hasContent) {
+  if (signal?.aborted) {
+    // User stopped — the SDK closes the iterator without throwing, so the
+    // end of the stream is a cancellation whether or not text had already
+    // arrived (DocSpace bug 84028).
+    yield { isEnd: true, responseMessage: createStopResponse() };
+  } else if (hasContent) {
     if (hasUnfinalizedReasoning) {
       responseMessage = finalizeReasoning(responseMessage, true);
     }
     yield { isEnd: true, responseMessage };
-  } else if (signal?.aborted) {
-    // User stopped before any content arrived — the SDK closes the
-    // iterator without throwing, so treat the empty end as a cancellation
-    // rather than an error.
-    yield { isEnd: true, responseMessage: createStopResponse() };
   } else {
     yield {
       isEnd: true,

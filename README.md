@@ -192,6 +192,8 @@ Four tool sources unified by the `Servers` class:
 - **Image Generation** — Built-in `generate_image` tool routed to the profile assigned to `ActionType.ImageGeneration`
 - **Custom MCP Servers** — JSON-RPC 2.0 over HTTP or STDIO
 
+Tool results may carry images: MCP `{ type: "image", data, mimeType }` content blocks (and the `{ data: { base64 } }` payload of `generate_image`) are stored in `storage.attachments`, shown in the tool card, and forwarded to the model as native image input on every provider that has one.
+
 ```tsx
 const editorTools: HostToolGroup = {
   id: "editor",
@@ -262,8 +264,8 @@ Runtime toggles to adjust built-in UI. Pass directly as `AIChatWidget` props:
 |------|------|--------|
 | `hiddenProviders` | `ProviderType[]` | Hide specific providers from the Add/Edit model dropdowns. |
 | `enablePagination` | `boolean` | Cursor-paginate threads and messages (pages of 100): the sidebar infinite-scrolls, and every full-history read is fetched page by page. Requires a storage adapter / backend that honors the `count`/`cursor` params on `threads.readAll` / `messages.readByThread`. Default `false` — no pagination parameters are sent at all. |
-| `hideProfilePicker` | `boolean` | Hide the `Ask <profile>` profile picker row inside the chat composer. The current chat profile is still resolved from the profiles store. |
-| `profilePickerReadOnly` | `boolean` | Show the composer's profile picker as a read-only label: the current profile name is rendered as plain static text (secondary color, no dropdown arrow) and cannot be changed from the UI. Implies the picker area is visible, so the `entityId` default-hide heuristic does not apply; an explicit `hideProfilePicker: true` still hides everything. |
+| `hideProfilePicker` | `boolean` | Lock the composer's profile picker: it stays on screen but its menu holds only the current profile (an inert, checked row) and, under a separator, the Effort row — no other profiles, no `profilePickerActions`. The current chat profile is still resolved from the profiles store. |
+| `profilePickerReadOnly` | `boolean` | Show the composer's profile picker as a read-only label: the current profile name is rendered as plain static text (secondary color, no dropdown arrow) and cannot be changed from the UI. Disables the `entityId` default-lock heuristic; an explicit `hideProfilePicker: true` still wins and shows the locked picker instead of the label. |
 | `hideSettingsButton` | `boolean` | Hide the gear button in the header. The settings page stays reachable via `router.setCurrentPage("settings")`. |
 | `onSettingsClick` | `() => void` | Fully override the click on the header settings button — the built-in `setCurrentPage` toggle is not invoked when this is set. |
 | `isSettingsActive` | `boolean` | Force the header settings button into its active (highlighted) state. When `undefined`, falls back to `currentPage === "settings"`. |

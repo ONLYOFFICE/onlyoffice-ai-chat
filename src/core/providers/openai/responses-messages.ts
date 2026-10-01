@@ -6,6 +6,7 @@ import type {
 } from "openai/resources/responses/responses";
 import { parseGuardedImageDataUrl } from "../../../shared/image-data-url";
 import type { TMCPItem } from "../../../shared/mcp-item";
+import { splitToolResultImages } from "../../../shared/mcp-result";
 
 /**
  * Produce a unique fallback tool-call identifier when a tool-call part
@@ -96,6 +97,10 @@ const splitAssistantMessage = (
   let assistantText = "";
   const functionCalls: ResponseInputItem[] = [];
   const functionOutputs: ResponseInputItem[] = [];
+  // Images the tools returned. `function_call_output.output` is a string
+  // in this SDK, so they follow the outputs as a `user` item with
+  // `input_image` parts — mirrors the chat-completions converter.
+  const toolImages: ResponseInputContent[] = [];
 
   for (const part of message.content) {
     if (part.type === "text") {
@@ -120,15 +125,31 @@ const splitAssistantMessage = (
     });
 
     if (part.result !== undefined && part.result !== null) {
-      const output =
+      const raw =
         typeof part.result === "string"
           ? part.result
           : JSON.stringify(part.result);
+      const { text: output, images } = splitToolResultImages(raw);
       functionOutputs.push({
         type: "function_call_output",
         call_id: callId,
         output,
       });
+      if (images.length > 0) {
+        toolImages.push(
+          {
+            type: "input_text",
+            text: `Image(s) returned by the tool "${part.toolName}":`,
+          },
+          ...images.map(
+            (img): ResponseInputContent => ({
+              type: "input_image",
+              image_url: img.dataUrl,
+              detail: "high",
+            })
+          )
+        );
+      }
     }
   }
 
@@ -139,6 +160,9 @@ const splitAssistantMessage = (
   // emit them in the order calls→outputs to keep the model's view of the
   // exchange in sync.
   items.push(...functionCalls, ...functionOutputs);
+  if (toolImages.length > 0) {
+    items.push({ role: "user", content: toolImages });
+  }
 
   return items;
 };

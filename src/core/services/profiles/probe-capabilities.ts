@@ -14,17 +14,20 @@ export type ProbedCapabilities = {
  * supports tools only through the Responses API used to come back as
  * `canUseTool: false` + `useResponsesApi: true`).
  *
- * Fires both transports in parallel — total latency is the slower of the
- * two, not their sum:
+ * Probes the transports in order, stopping at the first that emits a
+ * `tool-call`:
  *
- * - **A** — tool probe through the Responses API (`/v1/responses`). Catches
- *   gpt-5+ reasoning models that reject `tools` + `reasoning_effort` on
- *   chat completions. For non-OpenAI backends this 404s and is ignored.
- * - **B** — tool probe through chat completions (`/v1/chat/completions`).
- *   The classic path for everything else.
+ * - **A** — tool probe through the Responses API (`/v1/responses`), only
+ *   when the provider reports one. Catches gpt-5+ reasoning models that
+ *   reject `tools` + `reasoning_effort` on chat completions.
+ * - **B** — tool probe through chat completions (`/v1/chat/completions`),
+ *   when A was skipped or failed. The classic path for everything else.
  *
- * Whichever emitted a `tool-call` wins; the Responses API takes precedence
- * when both succeed. Neither succeeding means the model can't call tools.
+ * Sequential rather than parallel: for the models A exists for, B is a
+ * guaranteed 400 (a model that cannot stop thinking always carries
+ * `reasoning_effort`), which the provider logs as an error on every
+ * profile save and bills as a request. Neither succeeding means the model
+ * can't call tools.
  */
 export async function probeCapabilities(
   profile: Pick<Profile, "providerType" | "modelId" | "baseUrl" | "key">,
@@ -47,14 +50,14 @@ export async function probeCapabilities(
     supportsResponses = false;
   }
 
-  const [viaResponses, viaChat] = await Promise.all([
-    supportsResponses
-      ? probeToolCapability(profile, creds, true, externalSignal)
-      : Promise.resolve(false),
-    probeToolCapability(profile, creds, false, externalSignal),
-  ]);
-
-  if (viaResponses) return { canUseTool: true, useResponsesApi: true };
-  if (viaChat) return { canUseTool: true, useResponsesApi: false };
+  if (
+    supportsResponses &&
+    (await probeToolCapability(profile, creds, true, externalSignal))
+  ) {
+    return { canUseTool: true, useResponsesApi: true };
+  }
+  if (await probeToolCapability(profile, creds, false, externalSignal)) {
+    return { canUseTool: true, useResponsesApi: false };
+  }
   return { canUseTool: false, useResponsesApi: false };
 }

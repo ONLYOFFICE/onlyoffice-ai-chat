@@ -27,6 +27,18 @@ vi.mock("../../web-search", () => ({
   WEB_SEARCH_TYPE: "web-search",
 }));
 
+const { callSkillsToolMock, getSkillsToolsMock } = vi.hoisted(() => ({
+  callSkillsToolMock: vi.fn(),
+  getSkillsToolsMock: vi.fn().mockReturnValue([]),
+}));
+
+vi.mock("../../context/skills", () => ({
+  callSkillsTool: callSkillsToolMock,
+  getSkillsTools: getSkillsToolsMock,
+  READ_SKILL_TOOL: "read_skill",
+  SKILLS_TYPE: "skills",
+}));
+
 vi.mock("../sources/image-generation", () => ({
   callImageGenerationTool: callImageGenerationToolMock,
   getImageGenerationTools: getImageGenerationToolsMock,
@@ -110,6 +122,24 @@ describe("buildToolContext", () => {
     );
     expect(ctx.userToolNames.has("user_tool")).toBe(true);
     expect(ctx.adapterToolNames.has("web_search")).toBe(true);
+  });
+
+  it("stamps adapter and built-in tools with their group's serverType (bug 84009)", async () => {
+    getWebSearchToolsMock.mockResolvedValue([tool("web_search")]);
+    getImageGenerationToolsMock.mockResolvedValue([]);
+    const adapter: ToolsAdapter = {
+      getTools: vi.fn().mockResolvedValue({
+        calculator: [tool("get_time"), { ...tool("own"), serverType: "kept" }],
+      }),
+      callTool: vi.fn(),
+    };
+
+    const ctx = await buildToolContext(makeStorage(), adapter, []);
+    const byName = new Map(ctx.mergedTools.map((t) => [t.name, t]));
+    expect(byName.get("get_time")?.serverType).toBe("calculator");
+    // A source that already attributed its tool wins over the group key.
+    expect(byName.get("own")?.serverType).toBe("kept");
+    expect(byName.get("web_search")?.serverType).toBe("web-search");
   });
 
   it("drops caller tools carrying enabled: false (Bug 83162)", async () => {
@@ -597,5 +627,85 @@ describe("executeAdapterTool source", () => {
       undefined,
       SOURCE
     );
+  });
+
+  describe("room skills", () => {
+    const storage = {
+      toolPrefs: { readDisabled: vi.fn().mockResolvedValue({}) },
+    } as never;
+    const skills = {
+      cloud: "nct2.onlyoffice.com",
+      roomId: "r1",
+      items: [{ id: "s1", name: "Summaries", description: "" }],
+    };
+
+    it("groups read_skill under the skills type, from the resolved skills", async () => {
+      getSkillsToolsMock.mockReturnValueOnce([
+        {
+          name: "read_skill",
+          serverType: "skills",
+          description: "",
+          inputSchema: {},
+        },
+      ]);
+      const ctx = await buildToolContext(
+        storage,
+        undefined,
+        [],
+        undefined,
+        undefined,
+        [],
+        false,
+        skills
+      );
+      expect(getSkillsToolsMock).toHaveBeenCalledWith(skills);
+      const tool = ctx.adapterTools.find((t) => t.name === "read_skill");
+      expect(tool?.serverType).toBe("skills");
+      expect(ctx.adapterToolNames.has("read_skill")).toBe(true);
+    });
+
+    it("offers nothing when no skills were resolved", async () => {
+      getSkillsToolsMock.mockReturnValueOnce([]);
+      const ctx = await buildToolContext(storage, undefined, []);
+      expect(getSkillsToolsMock).toHaveBeenCalledWith(undefined);
+      expect(ctx.adapterToolNames.has("read_skill")).toBe(false);
+    });
+
+    it("dispatches read_skill to the skills source with the round's skills", async () => {
+      callSkillsToolMock.mockResolvedValueOnce("# Summaries");
+      resumeChatMock.mockImplementationOnce(async function* () {});
+      const event = {
+        type: "tool-call-pending" as const,
+        threadId: "t1",
+        messageId: "m1",
+        idx: 0,
+        autoAllow: true,
+        message: {
+          role: "assistant" as const,
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "c1",
+              toolName: "read_skill",
+              args: { id: "s1", aiChatIntent: "reading" },
+            },
+          ],
+        },
+      };
+      const gen = executeAdapterTool(storage, undefined, event as never, {
+        profile: {} as never,
+        profileId: "p1",
+        tools: [],
+        skills,
+      });
+      for await (const _ of gen) void _;
+      expect(callSkillsToolMock).toHaveBeenCalledWith(storage, skills, {
+        id: "s1",
+      });
+      expect(resumeChatMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ result: "# Summaries" })
+      );
+    });
   });
 });

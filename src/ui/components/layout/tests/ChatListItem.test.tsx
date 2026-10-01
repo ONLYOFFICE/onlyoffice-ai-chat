@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, within } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -9,6 +9,7 @@ vi.mock("react-i18next", () => ({
 type MockItem = {
   text: string;
   onClick: () => void;
+  icon?: React.ReactNode;
   isSeparator?: boolean;
   subMenu?: MockItem[];
 };
@@ -34,6 +35,7 @@ vi.mock("../../dropdown", () => ({
           ) : (
             <li key={i}>
               <button data-testid={`menu-${item.text}`} onClick={item.onClick}>
+                {item.icon}
                 {item.text}
               </button>
               {item.subMenu ? (
@@ -401,6 +403,24 @@ describe("ChatListItem", () => {
     expect(screen.getByTestId("menu-ExportTo")).toBeInTheDocument();
     expect(screen.getByTestId("submenu-item-Word (.docx)")).toBeInTheDocument();
     expect(screen.getByTestId("submenu-item-PDF (.pdf)")).toBeInTheDocument();
+  });
+
+  it("keeps the Save icon on the Export submenu it replaces", () => {
+    const props = {
+      ...defaultProps,
+      exportFormats: [
+        { id: "docx", label: "Word (.docx)", extension: "docx" },
+        { id: "pdf", label: "PDF (.pdf)", extension: "pdf" },
+      ],
+    };
+    render(<ChatListItem {...props} />);
+    const container = screen.getByText("Test Thread").closest("div")!;
+    fireEvent.mouseEnter(container);
+
+    // Without it the export row is the only one in the menu with no icon.
+    expect(
+      within(screen.getByTestId("menu-ExportTo")).getByTestId("icon")
+    ).toHaveTextContent("btn-save");
   });
 
   it("calls onExportThread with the chosen format id from the submenu", () => {

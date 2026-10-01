@@ -3,17 +3,28 @@ import { useEffect, useState } from "react";
 import { useApi } from "../../providers/ApiProvider";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useToolCallSource } from "./use-tool-source";
-import { readToolIntent, stripToolIntent } from "../../../shared/tool-intent";
+import {
+  readPartialToolIntent,
+  readToolIntent,
+  stripToolIntent,
+} from "../../../shared/tool-intent";
 import { Icon } from "../icon";
 import { LoadingDots } from "../loading-dots";
 import { IconButton } from "../icon-button";
 import useCopyToClipboard from "../markdown/hooks/useCopyToClipboard";
 import { ImageGeneratingPlaceholder } from "./image-generating";
+import {
+  collectResultImages,
+  redactResultImages,
+  toImageSrc,
+} from "./result-images";
 
 const TOOL_CALL_COLOR = "var(--chat-message-tool-call-name-color)";
 // The header row (tool glyph + intent + chevron) reads as a muted aside, not
 // as a labelled chip — see the tool-call mockups.
 const INTENT_COLOR = "var(--text-tertiary)";
+// Pictures rendered under one tool card.
+const MAX_SHOWN_IMAGES = 5;
 
 export const ToolFallback: ToolCallMessagePartComponent = ({
   toolName,
@@ -62,7 +73,9 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           : ""
       : "";
   } catch {
-    //ignore
+    // Arguments still streaming: not valid JSON yet, but the intent (listed
+    // first in the schema) is usually complete long before the rest.
+    toolIntent = readPartialToolIntent(argsText);
   }
 
   let parsedResult = result;
@@ -72,70 +85,78 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
     // ignore
   }
 
-  const imageBase64: string | undefined =
-    isImageGeneration &&
-    parsedResult &&
-    typeof parsedResult === "object" &&
-    "data" in parsedResult &&
-    parsedResult.data &&
-    typeof parsedResult.data === "object" &&
-    "base64" in parsedResult.data &&
-    typeof parsedResult.data.base64 === "string"
-      ? (parsedResult.data.base64 as string)
-      : undefined;
-
-  // Newer threads store the generated image in `storage.attachments` and
-  // keep only a lightweight `{ data: { ref } }` marker in the message —
-  // so the megabyte-scale base64 isn't re-sent to the model every turn.
-  // Hydrate it through `api.attachments`, which routes in-process or over
-  // HTTP depending on the deployment mode. Legacy inline `base64` results
-  // still render directly via the branch above.
-  const imageRef: string | undefined =
-    isImageGeneration &&
-    parsedResult &&
-    typeof parsedResult === "object" &&
-    "data" in parsedResult &&
-    parsedResult.data &&
-    typeof parsedResult.data === "object" &&
-    "ref" in parsedResult.data &&
-    typeof parsedResult.data.ref === "string"
-      ? (parsedResult.data.ref as string)
-      : undefined;
-
-  const [refImageBase64, setRefImageBase64] = useState<string | undefined>(
-    undefined
-  );
+  // Pictures the tool returned — the built-in `generate_image` payload or
+  // MCP `image` content blocks, either inline or as `storage.attachments`
+  // refs once persisted (see `collectResultImages`). Refs are hydrated
+  // through `api.attachments`, which routes in-process or over HTTP
+  // depending on the deployment mode, so the megabyte-scale base64 is
+  // never re-sent to the model or kept in the message list.
+  const resultImages = collectResultImages(parsedResult);
+  // A screenshot loop can return any number of pictures; the card shows the
+  // first few and leaves the rest unfetched. The model still gets them all.
+  const shownImages = resultImages.slice(0, MAX_SHOWN_IMAGES);
+  const refKey = shownImages
+    .map((img) => (img.kind === "ref" ? img.ref : ""))
+    .join("|");
+  const [refImages, setRefImages] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!imageRef) {
-      setRefImageBase64(undefined);
+    if (!refKey.replace(/\|/g, "")) {
+      // Keep the same (empty) object: a fresh `{}` would re-render, and a
+      // host whose `useApi` returns a new object per render would loop.
+      setRefImages((prev) => (Object.keys(prev).length ? {} : prev));
       return;
     }
     let cancelled = false;
-    api.attachments
-      .get(imageRef)
-      .then((record) => {
-        if (!cancelled) setRefImageBase64(record?.base64 ?? undefined);
-      })
-      .catch(() => {
-        if (!cancelled) setRefImageBase64(undefined);
-      });
+    const refs = refKey.split("|").filter(Boolean);
+    Promise.all(
+      refs.map((ref) =>
+        api.attachments
+          .get(ref)
+          .then((record) => [ref, record?.base64] as const)
+          .catch(() => [ref, undefined] as const)
+      )
+    ).then((entries) => {
+      if (cancelled) return;
+      const next: Record<string, string> = {};
+      for (const [ref, base64] of entries) if (base64) next[ref] = base64;
+      setRefImages(next);
+    });
     return () => {
       cancelled = true;
     };
-  }, [api, imageRef]);
+  }, [api, refKey]);
 
-  const imageData = imageBase64 ?? refImageBase64;
+  const imageSources = shownImages
+    .map((img) =>
+      img.kind === "inline"
+        ? img.src
+        : refImages[img.ref]
+          ? toImageSrc(refImages[img.ref])
+          : undefined
+    )
+    .filter((src): src is string => Boolean(src));
 
   // While an image is being generated (or its stored ref is still hydrating)
   // show a placeholder box with a loader, then swap in the finished image —
   // ChatGPT-style. The `error` guard prevents an infinite placeholder when
-  // generation failed.
+  // generation failed. A hydrating ref of any tool shows the same box.
+  const hasPendingRef = shownImages.some(
+    (img) => img.kind === "ref" && !refImages[img.ref]
+  );
   const isImagePending =
-    isImageGeneration &&
-    !imageData &&
+    imageSources.length === 0 &&
     !parsedResult?.data?.error &&
-    (isLoading || imageRef !== undefined);
+    ((isImageGeneration && isLoading) || hasPendingRef);
+
+  // The raw-result view hides inline base64 behind a placeholder; the
+  // picture itself renders below the card.
+  const displayResult =
+    resultImages.some((img) => img.kind === "inline") && parsedResult !== result
+      ? JSON.stringify(redactResultImages(parsedResult), null, 2)
+      : typeof result === "string"
+        ? result
+        : JSON.stringify(result, null, 2);
 
   // The model describes each call in one line via the synthetic `aiChatIntent`
   // field. When it did, that sentence is a better chip label than the raw tool
@@ -145,20 +166,29 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   // dropped: the running dots already carry the "still working" cue.
   const chipLabel = toolIntent?.replace(/[.…\s]+$/, "") || undefined;
 
-  const imageSlot = imageData ? (
-    <img
-      src={
-        imageData.startsWith("data:")
-          ? imageData
-          : `data:image/png;base64,${imageData}`
-      }
-      alt={t("ToolCallResult")}
-      data-testid="tool-call-generated-image"
-      className="block max-w-full rounded-[8px]"
-    />
-  ) : isImagePending ? (
-    <ImageGeneratingPlaceholder />
-  ) : null;
+  const imageSlot =
+    imageSources.length > 0 ? (
+      <div className="flex flex-col gap-[8px]">
+        {imageSources.map((src, i) => (
+          <img
+            key={i}
+            src={src}
+            alt={t("ToolCallResult")}
+            data-testid="tool-call-generated-image"
+            className={`block max-w-full rounded-[8px] ${
+              // A generated image is the answer itself and keeps its size;
+              // a picture another tool returns (a screenshot, a chart) is a
+              // preview, capped so a tall one doesn't push the reply away.
+              isImageGeneration
+                ? ""
+                : "max-h-[var(--chat-message-tool-call-image-max-height)]"
+            }`}
+          />
+        ))}
+      </div>
+    ) : isImagePending ? (
+      <ImageGeneratingPlaceholder />
+    ) : null;
 
   return (
     <div
@@ -367,9 +397,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
                     data-testid="tool-call-result"
                     className="max-h-[200px] overflow-y-auto whitespace-pre-wrap text-[var(--chat-message-tool-call-pre-color)] border border-[var(--chat-message-tool-call-pre-border-color)] bg-[var(--chat-message-tool-call-pre-background-color)] px-[8px] py-[2px] rounded-[4px]"
                   >
-                    {typeof result === "string"
-                      ? result
-                      : JSON.stringify(result, null, 2)}
+                    {displayResult}
                   </pre>
                 </>
               )}

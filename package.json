@@ -1,6 +1,6 @@
 {
   "name": "@onlyoffice/ai-chat",
-  "version": "0.5.118",
+  "version": "0.6.18",
   "description": "Headless AI chat widget with 16 providers, MCP tools, and pluggable adapters",
   "license": "AGPL-3.0-only",
   "bugs": {
@@ -262,6 +262,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-toast": "^1.2.15",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/vite": "^4.1.12",
     "@testing-library/jest-dom": "^6.9.1",

@@ -4,7 +4,28 @@ import type { DropDownItemProps } from "../dropdown-item/DropDownItem.types";
 export type DropdownMenuProps = {
   trigger: React.ReactNode;
   items: DropDownItemProps[];
+  /**
+   * Rows pinned below the list. `items` scroll inside the menu's height
+   * cap; these stay in view at the bottom, so a long list (many profiles)
+   * never hides them. Root level only — in drill-down mode a drilled-in
+   * level replaces the whole menu, footer included, and a footer row with a
+   * `subMenu` drills like any other row.
+   */
+  footerItems?: DropDownItemProps[];
   headerContent?: React.ReactNode;
+  /**
+   * Render `headerContent` at the root level only. A heading that names the
+   * root list ("Add room context") has nothing to say about a drilled-in
+   * level; the search box of a combobox, by contrast, stays on every level.
+   */
+  headerAtRootOnly?: boolean;
+  /**
+   * Label the drill-down back row with the parent row's text, so a drilled-in
+   * level is headed "‹ nct2.onlyoffice.com" rather than a bare chevron. The
+   * labelled row takes a regular row's height and is the level's heading, so
+   * the separator under the bare chevron is dropped.
+   */
+  backRowLabel?: boolean;
   side?: "bottom" | "top" | "left" | "right";
   align?: "start" | "center" | "end";
   sideOffset?: number;

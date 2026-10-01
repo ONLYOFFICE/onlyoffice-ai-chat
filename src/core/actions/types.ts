@@ -56,6 +56,14 @@ export type ActionArgs = {
    */
   toolInstructions?: Record<string, string>;
   /**
+   * The room connected as context in the composer, with the skills the
+   * round may use. Consumed by the engine, not the action: it folds the
+   * skill index into {@link prompt} and offers the built-in `read_skill`
+   * tool. Rides in `actionArgs` so every resume path carries it without
+   * further plumbing.
+   */
+  contextRoom?: import("../storage").ContextRoomRef;
+  /**
    * Thread the round belongs to. Threaded into
    * {@link ProviderCredentials.sessionId} by {@link providerFor}, which
    * turns it into an `x-session-id` header on the ONLYOFFICE provider.

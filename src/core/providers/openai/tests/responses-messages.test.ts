@@ -145,6 +145,57 @@ describe("openai/responses-messages/convertMessagesToResponses", () => {
       expect(JSON.parse(output)).toEqual({ ok: true });
     });
 
+    it("follows function_call_output with a user item carrying the tool's images", () => {
+      const out = convertMessagesToResponses([
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "c1",
+              toolName: "screenshot",
+              argsText: "{}",
+              args: {},
+              result: JSON.stringify({
+                content: [
+                  { type: "image", data: "AAAA", mimeType: "image/png" },
+                ],
+              }),
+            },
+          ],
+        } as ThreadMessageLike,
+      ]);
+      expect(out).toEqual([
+        {
+          type: "function_call",
+          call_id: "c1",
+          name: "screenshot",
+          arguments: "{}",
+        },
+        {
+          type: "function_call_output",
+          call_id: "c1",
+          output: JSON.stringify({
+            content: [{ type: "text", text: "[image attached]" }],
+          }),
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: 'Image(s) returned by the tool "screenshot":',
+            },
+            {
+              type: "input_image",
+              image_url: "data:image/png;base64,AAAA",
+              detail: "high",
+            },
+          ],
+        },
+      ]);
+    });
+
     it("emits function_call without function_call_output when result is missing", () => {
       const out = convertMessagesToResponses([
         {

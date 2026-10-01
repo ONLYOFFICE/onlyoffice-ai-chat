@@ -19,6 +19,33 @@ describe("XAIProvider", () => {
     expect(XAIProvider.getBaseUrl()).toBe(xaiInfo.baseUrl);
   });
 
+  describe("reasoning Responses fields", () => {
+    const fieldsOf = (model: string, level: ReasoningLevel) =>
+      (
+        new XAIProvider({ baseUrl: "https://x", apiKey: "sk" }) as unknown as {
+          reasoningResponsesFields: (
+            model: string,
+            level: ReasoningLevel,
+            opts?: { summary?: boolean }
+          ) => Record<string, unknown>;
+        }
+      ).reasoningResponsesFields(model, level, { summary: true });
+
+    it("sends nothing to the models that reject the parameter", () => {
+      expect(fieldsOf("grok-4", "high")).toEqual({});
+      expect(fieldsOf("grok-code-fast-1", "medium")).toEqual({});
+    });
+
+    it("uses the xAI table, with a summary only while thinking is on", () => {
+      expect(fieldsOf("grok-4.6", "max")).toEqual({
+        reasoning: { effort: "xhigh", summary: "auto" },
+      });
+      expect(fieldsOf("grok-4.5", "off")).toEqual({
+        reasoning: { effort: "medium" },
+      });
+    });
+  });
+
   it("delegates getProviderModels", async () => {
     modelsListMock.mockResolvedValueOnce({ data: [{ id: "grok-beta" }] });
     const out = await XAIProvider.getProviderModels({

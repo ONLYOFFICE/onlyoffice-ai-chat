@@ -10,6 +10,7 @@ import { useComposerBridge } from "../../../providers/ImperativeProvider";
 import { useWidgetConfig } from "../../../../widget-config";
 import { useChatPasteAttachments } from "../useChatPasteAttachments";
 import { ComposerAction } from "./ComposerAction";
+import { ComposerActionRoom } from "./ComposerActionRoom";
 
 // Coarse-pointer devices (phones, tablets) must not autofocus the input:
 // focusing on mount pops the virtual keyboard over the chat before the user
@@ -130,6 +131,7 @@ const Composer = () => {
             : "cursor-text"
         }`}
       >
+        <ComposerActionRoom />
         {attachmentFiles.length ||
         attachmentImages.length ||
         pendingAttachments.length ? (

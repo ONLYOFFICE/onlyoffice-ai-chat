@@ -7,8 +7,27 @@ import { useWidgetConfig } from "../../../../widget-config";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
 import type { ProfilePickerAction } from "../profile-picker-actions";
 import type { Profile } from "../../../../types";
+import { useEffortMenuItem } from "./effort-menu";
 
-const SelectModel = () => {
+const SEPARATOR: DropDownItemProps = {
+  text: "",
+  onClick: () => {
+    // ignore
+  },
+  isSeparator: true,
+};
+
+type SelectModelProps = {
+  /**
+   * The host fixes the profile (`hideProfilePicker`, or an entity chat by
+   * default): the menu offers no other profile and no host actions — just
+   * the current profile as a checked, inert row and, pinned below a
+   * separator, the Effort picker, which has nowhere else to live.
+   */
+  locked?: boolean;
+};
+
+const SelectModel = ({ locked = false }: SelectModelProps) => {
   const { ComboBox, IconButton } = useComponents();
   const {
     profilePickerActions,
@@ -24,6 +43,10 @@ const SelectModel = () => {
   const getProfileById = useProfilesStore((s) => s.getProfileById);
   const currentProfile = useProfilesStore(selectCurrentChatProfile);
   const { t } = useI18n();
+  // The reasoning depth belongs with the model it applies to, so the row
+  // sits at the foot of the model picker rather than among the composer's
+  // request switches. `null` for a model that cannot think — no row then.
+  const effortItem = useEffortMenuItem();
 
   const chatProfiles = React.useMemo(
     () =>
@@ -55,6 +78,21 @@ const SelectModel = () => {
   }, [currentProfile, chatProfiles, onSelectProfile]);
 
   const items = React.useMemo(() => {
+    if (locked) {
+      if (!currentProfile) return [];
+      return [
+        {
+          text: currentProfile.name,
+          id: currentProfile.id,
+          "data-testid": "model-selector-current",
+          checked: true,
+          onClick: () => {
+            // ignore — the profile is the host's to change
+          },
+        },
+      ];
+    }
+
     const profileItems: DropDownItemProps[] = chatProfiles.map((p) => ({
       text: p.name,
       id: p.id,
@@ -107,17 +145,7 @@ const SelectModel = () => {
       subMenu: action.items?.length ? action.items.map(toItem) : undefined,
     });
 
-    return [
-      ...profileItems,
-      {
-        text: "",
-        onClick: () => {
-          // ignore
-        },
-        isSeparator: true,
-      },
-      ...profilePickerActions.map(toItem),
-    ];
+    return [...profileItems, SEPARATOR, ...profilePickerActions.map(toItem)];
   }, [
     chatProfiles,
     currentProfile,
@@ -127,12 +155,23 @@ const SelectModel = () => {
     getProfileById,
     setSessionChatProfile,
     IconButton,
+    locked,
   ]);
+
+  // Effort is pinned below the list under its own separator: however many
+  // profiles there are, only they scroll and the depth stays in view. With
+  // nothing above it (locked, no profile yet) the separator would separate
+  // nothing, so it goes too.
+  const footerItems = React.useMemo<DropDownItemProps[]>(() => {
+    if (!effortItem) return [];
+    return items.length > 0 ? [SEPARATOR, effortItem] : [effortItem];
+  }, [effortItem, items]);
 
   // Read-only mode: the current profile is a plain, non-interactive label
   // (no dropdown, no arrow) for hosts that fix the profile themselves.
   // Text metrics match the ComboBox trigger; color drops to secondary.
-  if (profilePickerReadOnly) {
+  // A lock wins over it: the label would leave Effort unreachable.
+  if (profilePickerReadOnly && !locked) {
     if (!currentProfile?.name) return null;
     return (
       <span
@@ -150,6 +189,7 @@ const SelectModel = () => {
       placeholder={t("SelectModel")}
       value={currentProfile?.name ?? ""}
       items={items}
+      footerItems={footerItems}
       withoutBg
       matchTriggerWidth={false}
       contentClassName="min-w-[var(--dropdown-model-selector-min-width)]"

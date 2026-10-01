@@ -74,7 +74,10 @@ export interface PlatformFileOperations {
   /** Show a native image picker dialog and return the image as base64, or null if cancelled */
   pickImage?(): Promise<{ name: string; base64: string } | null>;
 
-  /** Convert a file at the given path to plain text (e.g. DOCX/PDF → text). Returns content and ONLYOFFICE file type code */
+  /**
+   * Convert a file at the given path to plain text (e.g. DOCX/PDF → text).
+   * Not called when `WidgetConfig.attachFilesByPath` is on.
+   */
   convertFileToText?(path: string, format: number): Promise<string>;
 
   /** Determine the ONLYOFFICE file type code for a file at the given path */

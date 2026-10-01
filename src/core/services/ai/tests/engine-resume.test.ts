@@ -179,7 +179,19 @@ describe("AIEngine.approveToolCall", () => {
       idx: 0,
       message: toolCallMessage,
       result: "ok",
-      actionArgs: { toolInstructions: { docspace: "SERVER NOTE" } },
+      actionArgs: {
+        toolInstructions: { docspace: "SERVER NOTE" },
+        // Notes are kept only for servers represented in the round, and every
+        // tool in the merged list now carries its group.
+        tools: [
+          {
+            name: "search",
+            description: "",
+            inputSchema: {},
+            serverType: "docspace",
+          },
+        ],
+      },
     })) {
       void _;
     }
@@ -219,6 +231,47 @@ describe("AIEngine.approveToolCall", () => {
     }
     expect(storage.toolPrefs.upsertAllowAlways).toHaveBeenCalledWith(
       ["search"],
+      undefined
+    );
+  });
+
+  it("pins an MCP tool under its server's token, not its bare name (bug 84009)", async () => {
+    sendMessageMock.mockReturnValueOnce(
+      arrayToStream([
+        {
+          isEnd: true,
+          responseMessage: {
+            role: "assistant",
+            content: [{ type: "text", text: "x" }],
+          },
+        },
+      ])
+    );
+    const { storage } = makeStorage();
+    await storage.messages.create("t1", toolCallMessage);
+    const engine = new AIEngine({ storage });
+    for await (const _ of engine.approveToolCall({
+      threadId: "t1",
+      messageId: "m1",
+      idx: 0,
+      message: toolCallMessage,
+      result: "ok",
+      allowAlways: true,
+      actionArgs: {
+        tools: [
+          {
+            name: "search",
+            description: "",
+            inputSchema: {},
+            serverType: "calculator",
+          },
+        ],
+      },
+    })) {
+      void _;
+    }
+    expect(storage.toolPrefs.upsertAllowAlways).toHaveBeenCalledWith(
+      ["calculator_search"],
       undefined
     );
   });

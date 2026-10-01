@@ -4,6 +4,11 @@ import {
   effectiveReasoningLevel,
   type ReasoningLevel,
 } from "../../../shared/reasoning-level";
+import type {
+  SendMessageArgs,
+  SendMessageResult,
+} from "../../../shared/send-message-args";
+import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args";
 import { OpenAIProvider } from "../openai";
 import { groqInfo } from "./info";
 import { listModels } from "./models";
@@ -43,6 +48,33 @@ class GroqProvider extends OpenAIProvider {
       };
     }
     return { reasoning_effort: effective };
+  }
+
+  /**
+   * Groq stays on `/chat/completions`. It answers `/v1/responses`, so the
+   * inherited live probe flipped its profiles onto the Responses transport,
+   * where the OpenAI request shape 400s (`reasoning.summary` is not
+   * supported). Nothing Groq serves needs Responses — the chat endpoint
+   * takes `reasoning_effort` with tools and streams GPT-OSS / Qwen thinking
+   * as `delta.reasoning` — so the probe is skipped outright…
+   */
+  override async checkResponsesApi(): Promise<boolean> {
+    return false;
+  }
+
+  /**
+   * …and profiles already probed onto it are steered back:
+   * `useResponsesApi` is stored on the profile and re-probed only when the
+   * model, provider or base URL changes.
+   */
+  override sendMessage(
+    args: SendMessageArgs
+  ): AsyncGenerator<SendMessageResult> {
+    return super.sendMessage({ ...args, useResponsesApi: false });
+  }
+
+  override sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
+    return super.sendMessageSync({ ...args, useResponsesApi: false });
   }
 
   static override getName(): string {

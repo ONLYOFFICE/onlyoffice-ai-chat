@@ -21,6 +21,10 @@ describe("getOpenRouterReasoningSupport", () => {
     expect(
       getOpenRouterReasoningSupport("anthropic/claude-fable-5.1").canDisable
     ).toBe(false);
+    // Opus 5.5 rejects `thinking: disabled` upstream too (bug 84082).
+    expect(
+      getOpenRouterReasoningSupport("anthropic/claude-opus-5.5").canDisable
+    ).toBe(false);
     expect(
       getOpenRouterReasoningSupport("google/gemini-3-pro-preview")
     ).toEqual({

@@ -1,12 +1,13 @@
 import type { AppendMessage, ThreadMessageLike } from "@assistant-ui/react";
 import type { ReadonlyJSONObject } from "assistant-stream/utils";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   buildFileRefBlock,
   buildImageRefBlock,
 } from "../../core/actions/attachment-resolution";
 import { toChatError } from "../../core/services";
 import type { ChatErrorPayload, ChatEvent } from "../../core/services";
+import type { ContextRoomRef } from "../../core/storage";
 import {
   patchToolCallArgs,
   patchToolCallResult,
@@ -104,6 +105,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
     useServersStore,
     useAttachmentsStore,
     useProfilesStore,
+    useCloudsStore,
     api,
     callbacksManager,
     middlewareRunner,
@@ -162,8 +164,45 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
   const extendedThinking = useProfilesStore((s) => s.extendedThinking);
   const reasoningLevel = useProfilesStore((s) => s.reasoningLevel);
   const { servers } = useToolsContext();
-  const { entityId, contextEntityId, systemPrompt, onToolCallApproveResult } =
-    useWidgetConfig();
+  const {
+    entityId,
+    contextEntityId: configuredContextEntityId,
+    contextRoomScopesRounds,
+    systemPrompt,
+    onToolCallApproveResult,
+  } = useWidgetConfig();
+  const selectedContextFolder = useCloudsStore((s) => s.selectedContextFolder);
+  const roomSkills = useCloudsStore((s) => s.roomSkills);
+  const disabledSkillIds = useCloudsStore((s) => s.disabledSkillIds);
+  // Where the host asks for it, a connected room *is* the round's context:
+  // its tools, allow-always preferences and assignment fallback take over
+  // from the configured scope, while the thread stays where the user is
+  // (`entityId`). Elsewhere (the desktop editors) the room id would only
+  // point local storage at a scope it has never heard of, so the room
+  // contributes its skills and nothing else. Disconnecting hands the scope
+  // back to the host's value either way.
+  const contextEntityId =
+    contextRoomScopesRounds && selectedContextFolder
+      ? selectedContextFolder.room.id
+      : configuredContextEntityId;
+  // The connected room, as the engine wants it: the reference plus the
+  // skills the round may use — the list the store read when the room was
+  // picked, minus the switched-off ones. The engine builds the index and
+  // the `read_skill` tool from this, with no read of its own. `undefined`
+  // while no room is connected — the field then stays out of `actionArgs`.
+  const contextRoom = useMemo<ContextRoomRef | undefined>(
+    () =>
+      selectedContextFolder
+        ? {
+            cloud: selectedContextFolder.cloud,
+            id: selectedContextFolder.room.id,
+            skills: roomSkills.filter(
+              (skill) => !disabledSkillIds.includes(skill.id)
+            ),
+          }
+        : undefined,
+    [selectedContextFolder, roomSkills, disabledSkillIds]
+  );
 
   // Fields every request that *resumes the same thread* must carry — tool
   // approve/deny and the in-stream auto-continue paths alike. Critically this
@@ -182,6 +221,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         tools: currentTools(),
         toolInstructions: currentToolInstructions(),
         prompt: systemPrompt,
+        contextRoom,
         signal: ensureAbortSignal(),
       },
     }),
@@ -194,6 +234,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       currentTools,
       currentToolInstructions,
       systemPrompt,
+      contextRoom,
       ensureAbortSignal,
     ]
   );
@@ -1035,6 +1076,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
         // servers — before it, a server's notes may not have arrived yet.
         toolInstructions: currentToolInstructions(),
         prompt: systemPrompt,
+        contextRoom,
       },
     });
 
@@ -1291,6 +1333,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           tools: freshTools.length > 0 ? freshTools : undefined,
           toolInstructions: currentToolInstructions(),
           prompt: systemPrompt,
+          contextRoom,
         },
       });
 
@@ -1307,6 +1350,7 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       processStream,
       setAbortController,
       systemPrompt,
+      contextRoom,
       threadId,
       truncateMessagesAfter,
       useMessageStore,

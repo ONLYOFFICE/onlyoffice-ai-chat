@@ -33,6 +33,10 @@ interface StorageAdapter {
   webSearch: WebSearchStorage;
   attachments: AttachmentsStorage;
 
+  getContextFolders?(): Promise<ContextFolder[]>; // optional — composer context picker
+  getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>; // optional — skills of the connected room (frontmatter)
+  getRoomSkill?(cloud: string, roomId: string, skillId: string): Promise<string>; // optional — one skill's body, on demand
+
   init(): Promise<void>;   // open DB, run migrations
   close(): Promise<void>;  // flush + release resources
 }
@@ -43,7 +47,59 @@ first mount. `close()` runs when `AIChatProvider` unmounts.
 Implementations are free to be lazy as long as the public methods
 behave correctly after `init` resolves.
 
----
+### `getContextFolders` (optional)
+
+> Source: [`context-folders.ts`](../../../src/core/storage/context-folders.ts)
+
+```ts
+type ContextRoom = { id: string; name: string };
+type ContextFolder = { cloud: string; rooms: ContextRoom[] };
+
+getContextFolders?(): Promise<ContextFolder[]>;
+```
+
+Lists the rooms the user can pull into the conversation as context,
+grouped by cloud account. `cloud` is the group heading the widget
+shows as a root row of that menu; `id` is the host's own room identifier and is only ever
+passed back, never parsed. Read when the composer's settings menu mounts, so the host decides
+both membership and order.
+A host without rooms simply omits the method — the menu then shows
+no cloud rows at all.
+
+### `getRoomSkills` / `getRoomSkill` (optional)
+
+> Source: [`context-folders.ts`](../../../src/core/storage/context-folders.ts)
+
+```ts
+type RoomSkill = { id: string; name: string; description: string };
+
+getRoomSkills?(cloud: string, roomId: string): Promise<RoomSkill[]>;
+getRoomSkill?(cloud: string, roomId: string, skillId: string): Promise<string>;
+```
+
+A skill is an Agent Skills Markdown file in the room: frontmatter with
+`name` and `description`, then the instructions. The two reads split the
+file the way the model consumes it:
+
+- `getRoomSkills` returns the frontmatter of every skill in the room —
+  never the bodies. The `cloud` and room `id` are exactly what
+  `getContextFolders` returned. It is read once, when the room is
+  connected (the composer lists each skill with a switch under the room's
+  name), and the list then travels with every round. An edit in the room
+  is picked up when the room is reconnected, or when the host calls the
+  clouds store's `fetchRoomSkills` itself. The enabled skills go into the
+  model's system prompt as a *skill index*: one entry per skill with its
+  id, name and description.
+- `getRoomSkill` returns one skill's body. It is called only when the
+  model asks for that skill through the built-in `read_skill` tool, so a
+  room with many skills costs the context window one index entry each,
+  not every body on every turn. Return the Markdown after the frontmatter
+  or the whole file — the model reads it as text either way.
+
+Both are optional. Without `getRoomSkills` a connected room lists no
+skills and the model sees no index; without `getRoomSkill` the index is
+still shown but `read_skill` answers that the skill cannot be read on
+this host.
 
 ## Entity scoping (`entityId`)
 

@@ -24,7 +24,7 @@ the [imperative ref](./ui/providers/imperative.md) instead.
 
 ## Constructing engines
 
-All nine engines take a `{ storage, … }` deps object. They hold no
+All ten engines take a `{ storage, … }` deps object. They hold no
 per-call state — re-use is safe.
 
 ```ts

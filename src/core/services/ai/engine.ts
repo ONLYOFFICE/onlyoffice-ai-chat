@@ -31,6 +31,7 @@ import {
   processStream,
   stripUnresolvedToolCalls,
 } from "./stream";
+import { allowAlwaysToken } from "../tools/allow-always";
 import { readToolCall, resumeChat } from "./tool-call";
 import {
   type AdapterRunContext,
@@ -39,6 +40,7 @@ import {
   resolveToolSource,
   type ToolContext,
 } from "./tools";
+import { resolveRoomSkills, withSkillsIndex } from "../context/skills";
 import type {
   AIEngineDeps,
   ApproveToolCallInput,
@@ -396,6 +398,12 @@ export class AIEngine {
       // chat request instead of paying a second attachments read.
     }
 
+    // The room's skills travel with the request; the index rides the prompt
+    // override, the tool the tool list, and both are absent when nothing is
+    // enabled.
+    const skills = resolveRoomSkills(input.actionArgs?.contextRoom);
+    const prompt = withSkillsIndex(input.actionArgs?.prompt, skills);
+
     const toolCtx = await buildToolContext(
       this.deps.storage,
       this.deps.toolsAdapter,
@@ -405,7 +413,8 @@ export class AIEngine {
         attachmentId: collectRefIds([...priorMessages, userMessage]),
       },
       this.getSystemServerTypes(),
-      this.isBuiltinImageToolDisabled()
+      this.isBuiltinImageToolDisabled(),
+      skills
     );
 
     const proxiedFetch = this.pickFetch(profile);
@@ -443,6 +452,7 @@ export class AIEngine {
 
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
+      prompt,
       profile,
       messages: resolvedMessages,
       tools: toolCtx.mergedTools,
@@ -468,8 +478,9 @@ export class AIEngine {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
-      prompt: input.actionArgs?.prompt,
+      prompt,
       toolInstructions: input.actionArgs?.toolInstructions,
+      skills,
       isReasoning: input.actionArgs?.isReasoning,
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
@@ -767,6 +778,9 @@ export class AIEngine {
       stored.slice(0, userIdx + 1)
     ).filter(hasSendableContent);
 
+    const skills = resolveRoomSkills(input.actionArgs?.contextRoom);
+    const prompt = withSkillsIndex(input.actionArgs?.prompt, skills);
+
     const toolCtx = await buildToolContext(
       this.deps.storage,
       this.deps.toolsAdapter,
@@ -774,13 +788,15 @@ export class AIEngine {
       contextScope,
       { attachmentId: collectRefIds(priorMessages) },
       this.getSystemServerTypes(),
-      this.isBuiltinImageToolDisabled()
+      this.isBuiltinImageToolDisabled(),
+      skills
     );
 
     const proxiedFetch = this.pickFetch(profile);
 
     const actionArgs: ActionArgs = {
       ...input.actionArgs,
+      prompt,
       profile,
       messages: await resolveAttachmentRefs(
         priorMessages,
@@ -809,8 +825,9 @@ export class AIEngine {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
-      prompt: input.actionArgs?.prompt,
+      prompt,
       toolInstructions: input.actionArgs?.toolInstructions,
+      skills,
       isReasoning: input.actionArgs?.isReasoning,
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
@@ -841,76 +858,89 @@ export class AIEngine {
       { entityId: contextScope, threadId: input.threadId },
       input.actionArgs
     );
-    if (input.allowAlways) {
-      const toolCall = readToolCall(input.message, input.idx);
-      if (toolCall) {
-        const current =
-          await this.deps.storage.toolPrefs.readAllowAlways(contextScope);
-        if (!current.includes(toolCall.toolName)) {
-          await this.deps.storage.toolPrefs.upsertAllowAlways(
-            [...current, toolCall.toolName],
-            contextScope
-          );
-        }
+    const toolCall = readToolCall(input.message, input.idx);
+    const systemServerTypes = this.getSystemServerTypes();
+    const skills = resolveRoomSkills(input.actionArgs?.contextRoom);
+    // The merged tool list is needed to attribute the approved call to its
+    // server (for the always-allow token) and to tell a system tool apart;
+    // built once, only when either consumer asks for it.
+    const toolCtx =
+      toolCall && (input.allowAlways || systemServerTypes.length > 0)
+        ? await buildToolContext(
+            this.deps.storage,
+            this.deps.toolsAdapter,
+            input.actionArgs?.tools ?? [],
+            contextScope,
+            undefined,
+            systemServerTypes,
+            this.isBuiltinImageToolDisabled(),
+            skills
+          )
+        : undefined;
+
+    if (input.allowAlways && toolCall && toolCtx) {
+      // Pinned under the same `${serverType}_${toolName}` token the live
+      // round checks and the settings routes read — the bare call name an
+      // MCP server's tool goes by was saved before, which the per-server
+      // lookup never found (DocSpace bug 84009).
+      const tool = toolCtx.mergedTools.find(
+        (t) => t.name === toolCall.toolName
+      );
+      const token = allowAlwaysToken(tool?.serverType, toolCall.toolName);
+      const current =
+        await this.deps.storage.toolPrefs.readAllowAlways(contextScope);
+      if (!current.includes(token)) {
+        await this.deps.storage.toolPrefs.upsertAllowAlways(
+          [...current, token],
+          contextScope
+        );
       }
     }
 
     // System (server-executed) tools: the consumer ran nothing — execute
     // the tool in-engine and resume, ignoring any client-supplied result.
     // Skipped entirely when no system source is configured (no overhead).
-    const systemServerTypes = this.getSystemServerTypes();
-    if (systemServerTypes.length > 0) {
-      const toolCall = readToolCall(input.message, input.idx);
-      if (toolCall) {
-        const { profile, profileId } = await this.resolveChatProfile(
-          input.profileId,
-          contextScope,
-          input.threadId
-        );
-        const toolCtx = await buildToolContext(
+    if (systemServerTypes.length > 0 && toolCall && toolCtx) {
+      const { profile, profileId } = await this.resolveChatProfile(
+        input.profileId,
+        contextScope,
+        input.threadId
+      );
+      if (toolCtx.systemToolNames.has(toolCall.toolName)) {
+        const proxiedFetch = this.pickFetch(profile);
+        const runCtx: AdapterRunContext = {
+          profile,
+          profileId,
+          tools: toolCtx.mergedTools,
+          prompt: withSkillsIndex(input.actionArgs?.prompt, skills),
+          toolInstructions: input.actionArgs?.toolInstructions,
+          skills,
+          isReasoning: input.actionArgs?.isReasoning,
+          reasoningLevel: input.actionArgs?.reasoningLevel,
+          signal: input.actionArgs?.signal,
+          entityId: contextScope,
+          entityMeta: meta,
+          fetch: proxiedFetch,
+          webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
+          pickFetch: (p) => this.pickFetch(p),
+          pagination: this.deps.pagination,
+          persistIntervalMs: this.deps.persistIntervalMs,
+        };
+        const resumed = executeAdapterTool(
           this.deps.storage,
           this.deps.toolsAdapter,
-          input.actionArgs?.tools ?? [],
-          contextScope,
-          undefined,
-          systemServerTypes,
-          this.isBuiltinImageToolDisabled()
+          {
+            type: "tool-call-pending",
+            message: input.message,
+            idx: input.idx,
+            messageId: input.messageId,
+            threadId: input.threadId,
+            autoAllow: false,
+          },
+          runCtx
         );
-        if (toolCtx.systemToolNames.has(toolCall.toolName)) {
-          const proxiedFetch = this.pickFetch(profile);
-          const runCtx: AdapterRunContext = {
-            profile,
-            profileId,
-            tools: toolCtx.mergedTools,
-            prompt: input.actionArgs?.prompt,
-            toolInstructions: input.actionArgs?.toolInstructions,
-            isReasoning: input.actionArgs?.isReasoning,
-            reasoningLevel: input.actionArgs?.reasoningLevel,
-            signal: input.actionArgs?.signal,
-            entityId: contextScope,
-            entityMeta: meta,
-            fetch: proxiedFetch,
-            webSearchFetch: this.deps.webSearchFetch ?? this.deps.fetchProxy,
-            pickFetch: (p) => this.pickFetch(p),
-            pagination: this.deps.pagination,
-            persistIntervalMs: this.deps.persistIntervalMs,
-          };
-          const resumed = executeAdapterTool(
-            this.deps.storage,
-            this.deps.toolsAdapter,
-            {
-              type: "tool-call-pending",
-              message: input.message,
-              idx: input.idx,
-              messageId: input.messageId,
-              threadId: input.threadId,
-              autoAllow: false,
-            },
-            runCtx
-          );
-          yield* this.runChatStream(resumed, toolCtx, runCtx);
-          return;
-        }
+        yield* this.runChatStream(resumed, toolCtx, runCtx);
+        return;
       }
     }
 
@@ -952,6 +982,8 @@ export class AIEngine {
         input.actionArgs
       ));
 
+    const skills = resolveRoomSkills(input.actionArgs?.contextRoom);
+    const prompt = withSkillsIndex(input.actionArgs?.prompt, skills);
     const toolCtx = await buildToolContext(
       this.deps.storage,
       this.deps.toolsAdapter,
@@ -959,15 +991,17 @@ export class AIEngine {
       contextScope,
       undefined,
       this.getSystemServerTypes(),
-      this.isBuiltinImageToolDisabled()
+      this.isBuiltinImageToolDisabled(),
+      skills
     );
     const proxiedFetch = this.pickFetch(profile);
     const runCtx: AdapterRunContext = {
       profile,
       profileId,
       tools: toolCtx.mergedTools,
-      prompt: input.actionArgs?.prompt,
+      prompt,
       toolInstructions: input.actionArgs?.toolInstructions,
+      skills,
       isReasoning: input.actionArgs?.isReasoning,
       reasoningLevel: input.actionArgs?.reasoningLevel,
       signal: input.actionArgs?.signal,
@@ -998,7 +1032,7 @@ export class AIEngine {
         reasoningLevel: input.actionArgs?.reasoningLevel,
         signal: input.actionArgs?.signal,
         tools: toolCtx.mergedTools,
-        prompt: input.actionArgs?.prompt,
+        prompt,
         toolInstructions: input.actionArgs?.toolInstructions,
         entityId: contextScope,
         entityMeta: meta,

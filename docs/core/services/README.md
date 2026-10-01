@@ -9,7 +9,7 @@ action call cannot express on its own: profile resolution, thread
 lifecycle, credential validation, capability checks, assignment
 cascade.
 
-There are nine services today:
+There are ten services today:
 
 | Document                                                | Class             | Topic |
 | ------------------------------------------------------- | ----------------- | ----- |
@@ -22,6 +22,7 @@ There are nine services today:
 | [`web-search-engine.md`](./web-search-engine.md)        | `WebSearchEngine` | Singleton web-search config with live credential validation and atomic switch |
 | [`preferences-engine.md`](./preferences-engine.md)      | `PreferencesEngine` | Scalar preferences with default-fallback `get` and idempotent `set` |
 | [`attachments-engine.md`](./attachments-engine.md)      | `AttachmentsEngine` | Local-only draft attachments — saves files / images to `storage.attachments` and binds them to messages |
+| [`context-engine.md`](./context-engine.md)              | `ContextEngine`   | Rooms offered as chat context and the skills configured in a connected room |
 
 ## How they compose
 
@@ -150,7 +151,7 @@ These services do **not** own:
 
 ## Construction
 
-All nine services take a single dependency object:
+All ten services take a single dependency object:
 
 ```ts
 import {

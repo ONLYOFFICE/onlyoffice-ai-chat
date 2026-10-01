@@ -12,12 +12,21 @@ vi.mock("../sub-components/ComposerActionPrompts", () => ({
   ComposerActionPrompts: () => <div data-testid="composer-action-prompts" />,
 }));
 
+vi.mock("../sub-components/ComposerActionSettings", () => ({
+  ComposerActionSettings: () => <div data-testid="composer-action-settings" />,
+}));
+
 vi.mock("../sub-components/ComposerActionSend", () => ({
   ComposerActionSend: () => <div data-testid="composer-action-send" />,
 }));
 
 vi.mock("../sub-components/ComposerActionSelectModel", () => ({
-  SelectModel: () => <div data-testid="composer-action-select-model" />,
+  SelectModel: ({ locked }: { locked?: boolean }) => (
+    <div
+      data-testid="composer-action-select-model"
+      data-locked={String(locked ?? false)}
+    />
+  ),
 }));
 
 const mockUseWidgetConfig = vi.fn();
@@ -54,6 +63,9 @@ describe("ComposerAction", () => {
       screen.getByTestId("composer-action-attachment")
     ).toBeInTheDocument();
     expect(screen.getByTestId("composer-action-prompts")).toBeInTheDocument();
+    expect(screen.getByTestId("composer-action-settings")).toBeInTheDocument();
+    // The connected room lives at the top of the composer box, not here.
+    expect(screen.queryByTestId("composer-room-button")).toBeNull();
     expect(screen.getByTestId("composer-action-send")).toBeInTheDocument();
   });
 
@@ -64,11 +76,15 @@ describe("ComposerAction", () => {
     expect(root.className).toContain("flex-col");
   });
 
-  it("groups attachment and prompts on the left", () => {
+  it("groups attachment, prompts and settings on the left", () => {
     render(<ComposerAction />);
     const attachment = screen.getByTestId("composer-action-attachment");
     const prompts = screen.getByTestId("composer-action-prompts");
+    const settings = screen.getByTestId("composer-action-settings");
     expect(attachment.parentElement).toBe(prompts.parentElement);
+    expect(settings.parentElement).toBe(prompts.parentElement);
+    // The cloud cog closes the left group.
+    expect(settings.nextElementSibling).toBeNull();
   });
 
   it("places send button in a separate container", () => {
@@ -78,68 +94,57 @@ describe("ComposerAction", () => {
     expect(send.parentElement).not.toBe(attachment.parentElement);
   });
 
-  it("shows the model selector by default", () => {
+  const lockedAttr = () =>
+    screen
+      .getByTestId("composer-action-select-model")
+      .getAttribute("data-locked");
+
+  it("shows the model selector open by default", () => {
     render(<ComposerAction />);
-    expect(
-      screen.getByTestId("composer-action-select-model")
-    ).toBeInTheDocument();
+    expect(lockedAttr()).toBe("false");
   });
 
-  it("hides the model selector when hideProfilePicker is true", () => {
+  it("locks (but keeps) the model selector when hideProfilePicker is true", () => {
     setupWidgetConfig({ hideProfilePicker: true });
     render(<ComposerAction />);
-    expect(
-      screen.queryByTestId("composer-action-select-model")
-    ).not.toBeInTheDocument();
+    expect(lockedAttr()).toBe("true");
   });
 
-  it("hides the model selector in entity (room) mode when the flag is omitted", () => {
+  it("locks the model selector in entity (room) mode when the flag is omitted", () => {
     setupWidgetConfig({ entityId: "e1" });
     render(<ComposerAction />);
-    expect(
-      screen.queryByTestId("composer-action-select-model")
-    ).not.toBeInTheDocument();
+    expect(lockedAttr()).toBe("true");
   });
 
-  it("shows the model selector in entity mode when hideProfilePicker is false", () => {
+  it("keeps the selector open in entity mode when hideProfilePicker is false", () => {
     setupWidgetConfig({ entityId: "e1", hideProfilePicker: false });
     render(<ComposerAction />);
-    expect(
-      screen.getByTestId("composer-action-select-model")
-    ).toBeInTheDocument();
+    expect(lockedAttr()).toBe("false");
   });
 
-  it("hides the model selector in entity mode when hideProfilePicker is true", () => {
+  it("locks the selector in entity mode when hideProfilePicker is true", () => {
     setupWidgetConfig({ entityId: "e1", hideProfilePicker: true });
     render(<ComposerAction />);
-    expect(
-      screen.queryByTestId("composer-action-select-model")
-    ).not.toBeInTheDocument();
+    expect(lockedAttr()).toBe("true");
   });
 
-  it("shows the model selector when hideProfilePicker is false without entityId", () => {
+  it("keeps the selector open when hideProfilePicker is false without entityId", () => {
     setupWidgetConfig({ hideProfilePicker: false });
     render(<ComposerAction />);
-    expect(
-      screen.getByTestId("composer-action-select-model")
-    ).toBeInTheDocument();
+    expect(lockedAttr()).toBe("false");
   });
 
-  it("shows the selector in entity mode when profilePickerReadOnly is true", () => {
+  it("keeps the selector open in entity mode when profilePickerReadOnly is true", () => {
     // Read-only mode means "display the profile", so it overrides the
-    // entity default-hide heuristic.
+    // entity default-lock heuristic; SelectModel renders the label itself.
     setupWidgetConfig({ entityId: "e1", profilePickerReadOnly: true });
     render(<ComposerAction />);
-    expect(
-      screen.getByTestId("composer-action-select-model")
-    ).toBeInTheDocument();
+    expect(lockedAttr()).toBe("false");
   });
 
-  it("hides the selector when hideProfilePicker is true despite profilePickerReadOnly", () => {
+  it("locks the selector when hideProfilePicker is true despite profilePickerReadOnly", () => {
     setupWidgetConfig({ hideProfilePicker: true, profilePickerReadOnly: true });
     render(<ComposerAction />);
-    expect(
-      screen.queryByTestId("composer-action-select-model")
-    ).not.toBeInTheDocument();
+    expect(lockedAttr()).toBe("true");
   });
 });

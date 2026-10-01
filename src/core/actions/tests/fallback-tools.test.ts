@@ -302,6 +302,29 @@ describe("wrapStream", () => {
     expect(finalText).toBe("thinking ");
   });
 
+  it("exposes the running call with its intent before the close tag", async () => {
+    const out = await collect(
+      wrapStream(
+        fakeStream(
+          text('hi <TOOL_CALL>{"name":"save"'),
+          text(
+            'hi <TOOL_CALL>{"name":"save","arguments":{"aiChatIntent":"Saving","body":"lor'
+          )
+        )
+      )
+    );
+    const [first, second] = out.map((r) =>
+      partsOf("isEnd" in r ? r.responseMessage : r).find(
+        (p) => p.type === "tool-call"
+      )
+    );
+    expect(first?.toolName).toBe("save");
+    expect(first?.args).toEqual({});
+    expect(second?.args).toEqual({ aiChatIntent: "Saving" });
+    expect(lastTextOf(out)).toBe("hi ");
+    expect(out.some((r) => "isEnd" in r)).toBe(false);
+  });
+
   it("falls back to plain text when the JSON inside TOOL_CALL is broken", async () => {
     const out = await collect(
       wrapStream(fakeStream(textEnd("<TOOL_CALL>not json</TOOL_CALL>")))

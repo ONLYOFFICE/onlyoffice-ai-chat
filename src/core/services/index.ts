@@ -110,3 +110,20 @@ export type {
   PreferencesEngineDeps,
   PreferencesEngineMethod,
 } from "./preferences";
+
+export {
+  ContextEngine,
+  DEFAULT_CONTEXT_ROUTES,
+  READ_SKILL_TOOL,
+  SKILLS_TYPE,
+  callSkillsTool,
+  formatSkillsIndex,
+  getSkillsTools,
+  resolveRoomSkills,
+  withSkillsIndex,
+} from "./context";
+export type {
+  ContextEngineDeps,
+  ContextEngineMethod,
+  ResolvedRoomSkills,
+} from "./context";

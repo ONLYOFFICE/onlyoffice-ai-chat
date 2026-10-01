@@ -7,6 +7,7 @@ vi.mock("../fetcher", () => ({
 import { callRoute } from "../fetcher";
 import { createAIApi } from "../ai";
 import { createAssignmentsApi } from "../assignments";
+import { createContextApi } from "../context";
 import { createPreferencesApi } from "../preferences";
 import { createProfilesApi } from "../profiles";
 import { createPromptsApi } from "../prompts";
@@ -81,6 +82,22 @@ describe("createAssignmentsApi", () => {
     expectCall(6, "assignments", "getAssignment", ["Chat"]);
     expectCall(7, "assignments", "getAllAssignments", ["e1"]);
     expectCall(8, "assignments", "cascadeProfileDelete", ["p1"]);
+  });
+});
+
+describe("createContextApi", () => {
+  it("routes both reads through callRoute with positional args", () => {
+    const api = createContextApi(config, engines);
+    api.getContextFolders();
+    api.getRoomSkills("nct2.onlyoffice.com", "r1");
+    api.getRoomSkill("nct2.onlyoffice.com", "r1", "s1");
+    expectCall(1, "context", "getContextFolders", []);
+    expectCall(2, "context", "getRoomSkills", ["nct2.onlyoffice.com", "r1"]);
+    expectCall(3, "context", "getRoomSkill", [
+      "nct2.onlyoffice.com",
+      "r1",
+      "s1",
+    ]);
   });
 });
 

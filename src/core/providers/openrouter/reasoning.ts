@@ -21,8 +21,8 @@ import { extractErrorMessage, getErrorStatus } from "../errors";
  * Anthropic's own effort scale, not the unified one) — so most routes take
  * the full scale. The exceptions:
  *
- * - `anthropic/claude-fable*` / `claude-mythos*` think always; the
- *   disabled switch they would receive is a 400 upstream.
+ * - `anthropic/claude-fable*` / `claude-mythos*` and `claude-opus-5.5`+
+ *   think always; the disabled switch they would receive is a 400 upstream.
  * - `google/*` maps `xhigh` down to `high`, so `max` is not a distinct
  *   depth.
  * - `x-ai/*` cannot be disabled upstream.
