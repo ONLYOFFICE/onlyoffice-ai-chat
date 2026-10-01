@@ -693,6 +693,38 @@ describe("ToolFallback", () => {
       expect(raw).not.toContain("AAAA");
     });
 
+    it("shows at most 5 pictures and leaves the rest unfetched", async () => {
+      attachmentGetSpy.mockImplementation(() =>
+        Promise.resolve({ base64: "data:image/png;base64,REF" })
+      );
+      render(
+        <ToolFallback
+          {...defaultProps}
+          status={{ type: "complete" as const }}
+          result={JSON.stringify({
+            content: Array.from({ length: 8 }, (_, i) => ({
+              type: "image",
+              ref: `shot-${i}`,
+            })),
+          })}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getAllByTestId("tool-call-generated-image")).toHaveLength(
+          5
+        );
+      });
+      const fetched = new Set(attachmentGetSpy.mock.calls.map(([ref]) => ref));
+      expect([...fetched].sort()).toEqual([
+        "shot-0",
+        "shot-1",
+        "shot-2",
+        "shot-3",
+        "shot-4",
+      ]);
+    });
+
     it("hydrates persisted MCP image refs through api.attachments", async () => {
       attachmentGetSpy.mockImplementation((ref: string) =>
         Promise.resolve(

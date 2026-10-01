@@ -23,6 +23,8 @@ const TOOL_CALL_COLOR = "var(--chat-message-tool-call-name-color)";
 // The header row (tool glyph + intent + chevron) reads as a muted aside, not
 // as a labelled chip — see the tool-call mockups.
 const INTENT_COLOR = "var(--text-tertiary)";
+// Pictures rendered under one tool card.
+const MAX_SHOWN_IMAGES = 5;
 
 export const ToolFallback: ToolCallMessagePartComponent = ({
   toolName,
@@ -90,7 +92,10 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   // depending on the deployment mode, so the megabyte-scale base64 is
   // never re-sent to the model or kept in the message list.
   const resultImages = collectResultImages(parsedResult);
-  const refKey = resultImages
+  // A screenshot loop can return any number of pictures; the card shows the
+  // first few and leaves the rest unfetched. The model still gets them all.
+  const shownImages = resultImages.slice(0, MAX_SHOWN_IMAGES);
+  const refKey = shownImages
     .map((img) => (img.kind === "ref" ? img.ref : ""))
     .join("|");
   const [refImages, setRefImages] = useState<Record<string, string>>({});
@@ -122,7 +127,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
     };
   }, [api, refKey]);
 
-  const imageSources = resultImages
+  const imageSources = shownImages
     .map((img) =>
       img.kind === "inline"
         ? img.src
@@ -136,7 +141,7 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   // show a placeholder box with a loader, then swap in the finished image —
   // ChatGPT-style. The `error` guard prevents an infinite placeholder when
   // generation failed. A hydrating ref of any tool shows the same box.
-  const hasPendingRef = resultImages.some(
+  const hasPendingRef = shownImages.some(
     (img) => img.kind === "ref" && !refImages[img.ref]
   );
   const isImagePending =
