@@ -387,4 +387,4 @@ Available subpaths: `/core`, `/providers`, `/services`, `/storage`, `/middleware
 
 ## License
 
-MIT
+[AGPL-3.0](LICENSE)
