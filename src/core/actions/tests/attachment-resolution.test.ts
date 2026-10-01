@@ -94,6 +94,53 @@ describe("attachment-resolution — tool-result image refs", () => {
     });
   });
 
+  it("hydrates images of the current turn only, earlier ones become text", async () => {
+    const userMsg = { role: "user", content: "next" } as ThreadMessageLike;
+    const storage = storageWith([
+      { id: "att-1", kind: "image", base64: "data:image/jpeg;base64,AAAA" },
+      { id: "att-2", kind: "image", base64: "BBBB" },
+    ]);
+    // Every persisted tool image gets its own attachment id.
+    const earlierResult = persisted
+      .replace("att-1", "old-1")
+      .replace("att-2", "old-2");
+    const [earlier, , current] = await resolveAttachmentRefs(
+      [
+        assistant([toolCall(earlierResult)]),
+        userMsg,
+        assistant([toolCall(persisted)]),
+      ],
+      storage
+    );
+    const resultOf = (msg: ThreadMessageLike) =>
+      JSON.parse(
+        (msg.content as unknown as Array<{ result: string }>)[0].result
+      ) as { content: unknown[] };
+
+    expect(resultOf(earlier).content).toEqual([
+      { type: "text", text: "Captured" },
+      { type: "text", text: "[image from an earlier tool result, not resent]" },
+      { type: "text", text: "[image from an earlier tool result, not resent]" },
+    ]);
+    expect(resultOf(current).content[1]).toEqual({
+      type: "image",
+      data: "AAAA",
+      mimeType: "image/jpeg",
+    });
+  });
+
+  it("does not read earlier-turn images from storage", async () => {
+    const storage = storageWith([]);
+    await resolveAttachmentRefs(
+      [
+        assistant([toolCall(persisted)]),
+        { role: "user", content: "next" } as ThreadMessageLike,
+      ],
+      storage
+    );
+    expect(storage.readManyByIds).not.toHaveBeenCalled();
+  });
+
   it("leaves a tool-call without image refs untouched", async () => {
     const plain = toolCall(
       JSON.stringify({ content: [{ type: "text", text: "no image" }] })

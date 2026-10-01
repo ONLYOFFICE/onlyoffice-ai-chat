@@ -1,5 +1,6 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { TMCPItem } from "../../../shared/mcp-item";
+import { splitToolResultImages } from "../../../shared/mcp-result";
 import type { SendMessageResult } from "../../../shared/send-message-args";
 import {
   augmentToolsWithIntent,
@@ -64,8 +65,11 @@ const stringifyToolCall = (toolName: string, argsObj: unknown): string => {
   return `${OPEN}${JSON.stringify({ name: toolName, arguments: safeArgs })}${CLOSE}`;
 };
 
+// The text protocol has no image channel: a hydrated screenshot would land
+// in `<TOOL_RESULT>` as megabytes of base64 the model cannot see, so inline
+// images are swapped for the `[image attached]` placeholder.
 const stringifyResult = (result: unknown): string => {
-  if (typeof result === "string") return result;
+  if (typeof result === "string") return splitToolResultImages(result).text;
   try {
     return JSON.stringify(result);
   } catch {
