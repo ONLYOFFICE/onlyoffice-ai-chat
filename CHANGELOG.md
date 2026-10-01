@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.15
+
+### Fixed
+
+- **A Claude model that rejects `thinking: disabled` is retried once with `between_tools` and remembered.** Anthropic's per-model table lags the live API: Sonnet 5 took `disabled` by the docs and answers the same 400 in practice. Because the capability probe runs with thinking off, that 400 also left such profiles with a false `canUseTool: false`; re-save the profile (or switch its model and back) to re-probe.
+
 ## 0.6.14
 
 ### Fixed
