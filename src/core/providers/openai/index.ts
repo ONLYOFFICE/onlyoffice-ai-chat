@@ -57,6 +57,23 @@ type OpenAIImageSize =
   | "1792x1024"
   | "1024x1792";
 
+/**
+ * Base URLs whose Responses API rejected `reasoning.summary`. Module-wide
+ * because a provider instance is short-lived, while the endpoint's answer
+ * holds for the whole session.
+ */
+const summaryUnsupported = new Set<string>();
+
+/** A 400 naming `reasoning.summary` — the field, not the request, is the problem. */
+const isSummaryRejection = (error: unknown): boolean => {
+  const e = error as { status?: unknown; message?: unknown } | null;
+  return (
+    e?.status === 400 &&
+    typeof e.message === "string" &&
+    e.message.includes("reasoning.summary")
+  );
+};
+
 class OpenAIProvider extends AbstractBaseProvider {
   protected client: OpenAI;
 
@@ -173,22 +190,44 @@ class OpenAIProvider extends AbstractBaseProvider {
     try {
       const input = convertMessagesToResponses(messages, this.downgradeSystem);
       const responsesTools = convertToolsToResponses(tools ?? []);
-      const stream = await this.client.responses.create(
-        {
-          model,
-          instructions: systemPrompt,
-          input,
-          tools: responsesTools.length > 0 ? responsesTools : undefined,
-          // Force one tool call per turn. Only valid when tools are present.
-          ...(responsesTools.length > 0 ? { parallel_tool_calls: false } : {}),
-          ...this.reasoningResponsesFields(model, reasoningLevel, {
-            summary: true,
-          }),
-          stream: true,
-          ...this.extraBody(model),
-        } as OpenAI.Responses.ResponseCreateParamsStreaming,
-        { signal }
-      );
+      const create = (summary: boolean) =>
+        this.client.responses.create(
+          {
+            model,
+            instructions: systemPrompt,
+            input,
+            tools: responsesTools.length > 0 ? responsesTools : undefined,
+            // Force one tool call per turn. Only valid when tools are present.
+            ...(responsesTools.length > 0
+              ? { parallel_tool_calls: false }
+              : {}),
+            ...this.reasoningResponsesFields(model, reasoningLevel, {
+              summary,
+            }),
+            stream: true,
+            ...this.extraBody(model),
+          } as OpenAI.Responses.ResponseCreateParamsStreaming,
+          { signal }
+        );
+
+      // Gateways that serve `/v1/responses` without `reasoning.summary`
+      // 400 the whole request (Groq did, before it was kept on chat
+      // completions). Retry once without it and remember the endpoint, so
+      // a backend we don't know yet keeps working instead of failing every
+      // round.
+      const endpoint = this.creds.baseUrl;
+      const wantSummary = !summaryUnsupported.has(endpoint);
+      let stream: Awaited<ReturnType<typeof create>>;
+      try {
+        stream = await create(wantSummary);
+      } catch (error) {
+        if (!wantSummary || !isSummaryRejection(error)) throw error;
+        logger.warn(
+          `OpenAI sendMessageResponses: ${endpoint} rejects reasoning.summary, retrying without it`
+        );
+        summaryUnsupported.add(endpoint);
+        stream = await create(false);
+      }
 
       yield* processResponsesStream(stream, signal);
     } catch (error) {
@@ -281,11 +320,14 @@ class OpenAIProvider extends AbstractBaseProvider {
    * backends, 400 = model unsupported there, etc.) returns `false` so the
    * profile keeps using Chat Completions.
    *
-   * Providers that don't extend this class inherit `AbstractBaseProvider`'s
-   * `false` and never pay for the probe (Together, xAI, …). Subclasses of
-   * *this* provider do inherit the live probe — ONLYOFFICE included — so a
-   * gateway that answers `/v1/responses` switches its profiles onto the
-   * Responses transport.
+   * Providers that don't extend this class (Anthropic, Gemini, Mistral, …)
+   * inherit `AbstractBaseProvider`'s `false` and never pay for the probe.
+   * Subclasses of *this* provider do inherit the live probe (Groq, xAI,
+   * Together, the local and generic OpenAI-compatible ones; OpenRouter and
+   * ONLYOFFICE override it), so a gateway that answers `/v1/responses`
+   * switches its profiles onto the Responses transport — and a subclass
+   * with its own reasoning spelling must override
+   * {@link reasoningResponsesFields} too, not only the chat hook.
    */
   async checkResponsesApi(
     modelId: string,
