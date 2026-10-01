@@ -64,14 +64,14 @@ const ThinkingMarkdownText = memo(
         {type === "reasoning" ? (
           <div
             data-testid="assistant-reasoning"
-            className="my-[8px] flex w-full flex-col"
+            className="my-[8px] flex w-full flex-col gap-[8px]"
           >
             {/* Unlike a tool call, this row stays interactive while running:
                 the thinking already streamed so far is worth reading before
                 the block closes. */}
             <div
               data-testid="assistant-reasoning-toggle"
-              className="flex items-center gap-[10px] cursor-pointer mb-[8px]"
+              className="flex items-center gap-[10px] cursor-pointer"
               onClick={() => setIsCollapsed((val) => !val)}
             >
               <Icon name="btn-thinking" size={24} />
