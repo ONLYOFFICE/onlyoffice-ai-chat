@@ -175,7 +175,14 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
             src={src}
             alt={t("ToolCallResult")}
             data-testid="tool-call-generated-image"
-            className="block max-w-full rounded-[8px]"
+            className={`block max-w-full rounded-[8px] ${
+              // A generated image is the answer itself and keeps its size;
+              // a picture another tool returns (a screenshot, a chart) is a
+              // preview, capped so a tall one doesn't push the reply away.
+              isImageGeneration
+                ? ""
+                : "max-h-[var(--chat-message-tool-call-image-max-height)]"
+            }`}
           />
         ))}
       </div>

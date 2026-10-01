@@ -411,6 +411,10 @@
   --chat-assistant-message-actions-gap: 2px;
   --chat-user-message-actions-gap: 2px;
 
+  /* Max height of a picture a tool returns (screenshot, chart) under its
+     card. Generated images (`generate_image`) keep their own size. */
+  --chat-message-tool-call-image-max-height: 300px;
+
   /* Top margin of the chat-history search field (gap below the header). */
   --chat-list-search-margin-top: 8px;
 

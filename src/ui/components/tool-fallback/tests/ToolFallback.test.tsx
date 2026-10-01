@@ -693,6 +693,34 @@ describe("ToolFallback", () => {
       expect(raw).not.toContain("AAAA");
     });
 
+    it("caps a tool picture's height but leaves a generated image as is", () => {
+      const { unmount } = render(
+        <ToolFallback
+          {...defaultProps}
+          status={{ type: "complete" as const }}
+          result={JSON.stringify({
+            content: [{ type: "image", data: "AAAA", mimeType: "image/png" }],
+          })}
+        />
+      );
+      expect(
+        screen.getByTestId("tool-call-generated-image").className
+      ).toContain("max-h-[var(--chat-message-tool-call-image-max-height)]");
+      unmount();
+
+      render(
+        <ToolFallback
+          {...defaultProps}
+          toolName="generate_image"
+          status={{ type: "complete" as const }}
+          result={JSON.stringify({ data: { base64: "BBBB" } })}
+        />
+      );
+      expect(
+        screen.getByTestId("tool-call-generated-image").className
+      ).not.toContain("max-h-");
+    });
+
     it("shows at most 5 pictures and leaves the rest unfetched", async () => {
       attachmentGetSpy.mockImplementation(() =>
         Promise.resolve({ base64: "data:image/png;base64,REF" })
