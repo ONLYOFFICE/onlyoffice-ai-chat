@@ -76,10 +76,7 @@ export interface PlatformFileOperations {
 
   /**
    * Convert a file at the given path to plain text (e.g. DOCX/PDF → text).
-   *
-   * @deprecated The widget no longer calls it: a picked or recent file is
-   * attached by path only, and the model reads it through a tool the host
-   * registers (see `hostTools`).
+   * Not called when `WidgetConfig.attachFilesByPath` is on.
    */
   convertFileToText?(path: string, format: number): Promise<string>;
 

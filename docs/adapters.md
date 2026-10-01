@@ -162,7 +162,7 @@ interface PlatformFileOperations {
   pickFiles(filters?: readonly AttachmentPickFilter[]):
     Promise<{ path: string; name: string }[] | null>;
   pickImage():  Promise<{ name: string; base64: string } | null>;
-  convertFileToText(path: string, format: number): Promise<string>; // deprecated, unused
+  convertFileToText(path: string, format: number): Promise<string>;
   getFileType(path: string):                       number;
   getRecentFiles():                                Promise<string>;
   onRecentFilesChange?(callback: () => void): () => void;
@@ -201,9 +201,11 @@ Images are **not** in this list: "Add local image" rides an internal
 
 ### Attaching by path
 
-A file picked through `pickFiles` or the recent-files submenu is attached **by
-path only** — the widget does not read it. The model receives a text block
-instead of the content:
+By default a file picked through `pickFiles` or the recent-files submenu is
+converted with `convertFileToText` and its text goes into the prompt. A host
+that would rather let the model read files on demand sets
+`WidgetConfig.attachFilesByPath: true`: the file is attached **by path
+only**, and the model receives a text block instead of the content:
 
 ```
 [attached file: report.docx]
@@ -211,9 +213,9 @@ Path: C:\Docs\report.docx
 The file content is not included. Use an available tool to read it from this path when it is needed to answer.
 ```
 
-Reading the file is the host's job: register a tool that takes the path and
-returns the text, through `hostTools` or an MCP server. Without such a tool the
-model only sees the file name and path.
+Reading the file is then the host's job: register a tool that takes the path
+and returns the text, through `hostToolGroups` or an MCP server. Without such
+a tool the model only sees the file name and path.
 
 ```ts
 const readFile: HostTool = {
@@ -230,8 +232,8 @@ const readFile: HostTool = {
 
 Restrict the handler to paths the user actually attached — the model chooses
 the argument, so an unrestricted reader exposes the whole disk to prompt
-injection. Attachments that do carry `content` (drag-and-drop text files,
-`addAttachmentFile` called with `content`) are still inlined as before.
+injection. Attachments that carry `content` (drag-and-drop text files,
+`addAttachmentFile` called with `content`) are inlined either way.
 
 A **web host that opens its own file dialog** — a `composerActions` entry, a
 portal upload flow — never reaches `pickFiles` either, so the filter groups

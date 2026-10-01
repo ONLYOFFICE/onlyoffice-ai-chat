@@ -287,6 +287,15 @@ export interface WidgetConfig {
    */
   addLocalImageEnabled?: boolean;
   /**
+   * Attach files picked through "Add local file" / "Recent files" by path
+   * only, without reading them. The model then gets the file name and path
+   * instead of the text and must read the file through a tool the host
+   * registers (`hostToolGroups` or an MCP server). Opt-in: `false` /
+   * omitted converts each file with `PlatformAdapter.file.convertFileToText`
+   * and inlines the text, as before.
+   */
+  attachFilesByPath?: boolean;
+  /**
    * Pixel size of the send / stop glyph inside the composer's action button.
    * Defaults to `17`. Use this in hosts that need a larger or smaller send
    * icon; the button box around it is `composerActionSendBoxSize`.
