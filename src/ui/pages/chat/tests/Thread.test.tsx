@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));
 
 const messageState = {
-  messages: [],
+  messages: [] as unknown[],
   stopMessage: vi.fn(),
   isStreamRunning: false,
   isRequestRunning: false,
@@ -57,15 +57,28 @@ vi.mock("../../../hooks", () => ({
   useSanitizedCopy: () => vi.fn(),
 }));
 
-vi.mock("../../../components/manage-tool-dialog", () => ({
-  ManageToolDialog: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="manage-tool-dialog">
-      <button data-testid="manage-tool-close" onClick={onClose}>
-        close
-      </button>
-    </div>
-  ),
-}));
+vi.mock("../../../components/manage-tool-dialog", async () => {
+  const { useState } = await import("react");
+  return {
+    ManageToolDialog: ({ onClose }: { onClose: () => void }) => {
+      // Stands in for the real dialog's local "Always allow" state.
+      const [checked, setChecked] = useState(false);
+      return (
+        <div data-testid="manage-tool-dialog">
+          <button data-testid="manage-tool-close" onClick={onClose}>
+            close
+          </button>
+          <input
+            type="checkbox"
+            data-testid="manage-tool-allow-always"
+            checked={checked}
+            onChange={() => setChecked((v) => !v)}
+          />
+        </div>
+      );
+    },
+  };
+});
 
 vi.mock("../../../hooks/useEnsureProfiles", () => ({
   default: () => {},
@@ -191,5 +204,72 @@ describe("ChatPage (Thread)", () => {
     fireEvent.click(screen.getByTestId("manage-tool-close"));
     expect(serversState.setManageToolData).toHaveBeenCalledWith(undefined);
     serversState.manageToolData = undefined;
+  });
+
+  it("resets the dialog's local state when the next tool call replaces it", () => {
+    serversState.manageToolData = { messageId: "m1", idx: 0 };
+    const { rerender } = render(<Thread />);
+    fireEvent.click(screen.getByTestId("manage-tool-allow-always"));
+    expect(screen.getByTestId("manage-tool-allow-always")).toBeChecked();
+
+    serversState.manageToolData = { messageId: "m1", idx: 1 };
+    rerender(<Thread />);
+    expect(screen.getByTestId("manage-tool-allow-always")).not.toBeChecked();
+    serversState.manageToolData = undefined;
+  });
+  describe("Analyzing indicator", () => {
+    const streamIdle = (messages: unknown[]) => {
+      messageState.messages = messages;
+      messageState.isStreamRunning = true;
+      messageState.isRequestRunning = false;
+    };
+
+    afterEach(() => {
+      vi.useRealTimers();
+      messageState.messages = [];
+      messageState.isStreamRunning = false;
+    });
+
+    it("surfaces when the stream goes idle", () => {
+      vi.useFakeTimers();
+      streamIdle([
+        { role: "assistant", content: [{ type: "text", text: "Hi" }] },
+      ]);
+      render(<Thread />);
+      act(() => vi.advanceTimersByTime(400));
+      expect(
+        screen.getByTestId("chat-analyzing-indicator")
+      ).toBeInTheDocument();
+    });
+
+    it("stays hidden while a trailing reasoning block is still open", () => {
+      vi.useFakeTimers();
+      streamIdle([
+        {
+          role: "assistant",
+          content: [{ type: "reasoning", text: "Let me think" }],
+        },
+      ]);
+      render(<Thread />);
+      act(() => vi.advanceTimersByTime(400));
+      expect(
+        screen.queryByTestId("chat-analyzing-indicator")
+      ).not.toBeInTheDocument();
+    });
+
+    it("surfaces again once the reasoning block is finalized", () => {
+      vi.useFakeTimers();
+      streamIdle([
+        {
+          role: "assistant",
+          content: [{ type: "reasoning", text: "Done", parentId: "sig" }],
+        },
+      ]);
+      render(<Thread />);
+      act(() => vi.advanceTimersByTime(400));
+      expect(
+        screen.getByTestId("chat-analyzing-indicator")
+      ).toBeInTheDocument();
+    });
   });
 });

@@ -53,32 +53,40 @@ const ThreadInner = () => {
   // and keeps the reading position steady when a page is prepended.
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  // Derive "tool is running" from the last assistant message — adapter
-  // tools are executed inside the engine and never surface as
-  // `tool-call-pending` to the UI, so `isToolPending` from the store
-  // misses them. Reading the message itself catches both paths: a
-  // tool-call part without a `result` means the tool hasn't returned.
+  // Derive "something already shows its own loader" from the last
+  // assistant message:
+  // - a tool-call part without a `result` — adapter tools are executed
+  //   inside the engine and never surface as `tool-call-pending` to the
+  //   UI, so `isToolPending` from the store misses them;
+  // - a trailing reasoning part that is still streaming (no `parentId`
+  //   yet, see `AssistantMessage`) — its "Thinking" row carries running
+  //   dots, and a slow thinker pausing between chunks would otherwise
+  //   flash "Analyzing" under a block that keeps growing in place.
   // Subscribe to the derived boolean, not the whole `messages` array, so
   // this component re-renders only when the flag flips — not on every
   // streamed token.
-  const hasUnresolvedToolCall = useMessageStore((s) => {
+  const hasOwnLoader = useMessageStore((s) => {
     const last = s.messages[s.messages.length - 1];
     if (!last || last.role !== "assistant") return false;
     if (!Array.isArray(last.content)) return false;
-    return last.content.some(
+    const parts = last.content as {
+      type?: string;
+      result?: unknown;
+      parentId?: string;
+    }[];
+    const tail = parts[parts.length - 1];
+    if (tail && tail.type === "reasoning" && !tail.parentId) return true;
+    return parts.some(
       (p) =>
         p &&
         typeof p === "object" &&
-        (p as { type?: string }).type === "tool-call" &&
-        (p as { result?: unknown }).result === undefined
+        p.type === "tool-call" &&
+        p.result === undefined
     );
   });
 
   const analyzingReady =
-    !isRequestRunning &&
-    isStreamRunning &&
-    !isToolPending &&
-    !hasUnresolvedToolCall;
+    !isRequestRunning && isStreamRunning && !isToolPending && !hasOwnLoader;
 
   // Defer the "Analyzing" indicator by 400ms so it doesn't flash for
   // very fast responses. When the condition flips off, hide
@@ -332,6 +340,10 @@ const Thread = () => {
             server-side system tools that pause for approval. */}
         {manageToolData ? (
           <ManageToolDialog
+            // Keyed per tool call: while an approval is pending the next
+            // call's data replaces this one without unmounting, and the
+            // dialog's local "Always allow" state would carry over.
+            key={`${manageToolData.messageId}:${manageToolData.idx}`}
             onAllow={approveToolCall}
             onDeny={denyToolCall}
             onClose={() => setManageToolData(undefined)}
