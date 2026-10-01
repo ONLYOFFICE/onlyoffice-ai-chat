@@ -680,6 +680,36 @@ describe("AssistantMessage", () => {
     expect(actionBar.getAttribute("data-hidden")).toBe("false");
   });
 
+  it("hides action bar while a tool call awaits approval", () => {
+    // The stream ends when the round pauses on the approval dialog, but the
+    // reply resumes after allow / deny — it isn't finished yet.
+    mockIsStreamRunning = false;
+    mockMessageContent = [
+      { type: "text", text: "Let me check" },
+      { type: "tool-call", toolCallId: "c1", toolName: "t", args: {} },
+    ];
+    render(<AssistantMessage />);
+    const actionBar = screen.getByTestId("action-bar");
+    expect(actionBar.getAttribute("data-hidden")).toBe("true");
+  });
+
+  it("shows action bar once every tool call has a result", () => {
+    mockIsStreamRunning = false;
+    mockMessageContent = [
+      {
+        type: "tool-call",
+        toolCallId: "c1",
+        toolName: "t",
+        args: {},
+        result: "User deny tool call",
+      },
+      { type: "text", text: "Ok" },
+    ];
+    render(<AssistantMessage />);
+    const actionBar = screen.getByTestId("action-bar");
+    expect(actionBar.getAttribute("data-hidden")).toBe("false");
+  });
+
   it("does not render action bar when status is incomplete with error", () => {
     mockMessageStatus = { type: "incomplete", error: "some error" };
     render(<AssistantMessage />);

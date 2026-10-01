@@ -460,6 +460,14 @@ const AssistantActionBar = () => {
 
   if (message.status?.type === "incomplete" && message.status?.error) return;
 
+  // A tool call without a `result` hasn't resolved yet — typically the
+  // round is paused on the approval dialog. The stream has already ended
+  // (`isStreamRunning` is false), but the reply isn't finished: it resumes
+  // once the user allows or denies (deny writes a result too).
+  const hasUnresolvedToolCall = message.content.some(
+    (p) => p.type === "tool-call" && p.result === undefined
+  );
+
   const onDownload = async () => {
     if (!platform.file?.saveAsFile) return;
 
@@ -494,7 +502,7 @@ const AssistantActionBar = () => {
 
   return (
     <ActionBarPrimitive.Root
-      hidden={isStreamRunning}
+      hidden={isStreamRunning || hasUnresolvedToolCall}
       data-testid="assistant-message-actions"
       className="col-span-2 col-start-2 row-start-2 mt-[4px] flex h-fit items-center self-start gap-[var(--chat-assistant-message-actions-gap,2px)]"
     >
