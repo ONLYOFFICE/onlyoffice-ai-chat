@@ -168,6 +168,83 @@ describe("AnthropicProvider", () => {
         });
       });
 
+      it("spells off as between_tools on Sonnet 5.5, which rejects disabled", async () => {
+        expect(await thinkingFor("claude-sonnet-5-5", false)).toEqual({
+          type: "between_tools",
+        });
+        expect(await thinkingFor("claude-sonnet-5-5", true)).toEqual({
+          type: "adaptive",
+        });
+      });
+
+      it("retries a between_tools 400 once with that spelling and remembers it", async () => {
+        // The docs' table lags the API: a model it lists as taking
+        // `disabled` may already demand `between_tools`. Use a model id no
+        // other test touches — the answer is remembered module-wide.
+        const model = "claude-sonnet-5-20260901";
+        const rejection = Object.assign(new Error("400"), {
+          status: 400,
+          error: {
+            type: "error",
+            error: {
+              type: "invalid_request_error",
+              message:
+                'To turn thinking off on this model, send "thinking": {"type": "between_tools"} instead of {"type": "disabled"}.',
+            },
+          },
+        });
+        messagesCreateMock
+          .mockRejectedValueOnce(rejection)
+          .mockResolvedValueOnce(iter([makeEv({ type: "message_stop" })]));
+        const p = new AnthropicProvider({
+          baseUrl: "https://api.anthropic.com",
+          apiKey: "sk",
+        });
+        const frames = await drain(
+          p.sendMessage({ messages: [], model, systemPrompt: "" })
+        );
+        expect(messagesCreateMock).toHaveBeenCalledTimes(2);
+        expect(messagesCreateMock.mock.calls[0]?.[0]?.thinking).toEqual({
+          type: "disabled",
+        });
+        expect(messagesCreateMock.mock.calls[1]?.[0]?.thinking).toEqual({
+          type: "between_tools",
+        });
+        const last = frames.at(-1) as {
+          responseMessage: { status?: { type: string } };
+        };
+        expect(last.responseMessage.status?.type).not.toBe("incomplete");
+
+        // Remembered: the next round goes straight to between_tools.
+        expect(await thinkingFor(model, false)).toEqual({
+          type: "between_tools",
+        });
+      });
+
+      it("does not retry other 400s", async () => {
+        messagesCreateMock.mockRejectedValueOnce(
+          Object.assign(new Error("400"), {
+            status: 400,
+            error: {
+              type: "error",
+              error: { message: "max_tokens too large" },
+            },
+          })
+        );
+        const p = new AnthropicProvider({
+          baseUrl: "https://api.anthropic.com",
+          apiKey: "sk",
+        });
+        await drain(
+          p.sendMessage({
+            messages: [],
+            model: "claude-opus-5",
+            systemPrompt: "",
+          })
+        );
+        expect(messagesCreateMock).toHaveBeenCalledTimes(1);
+      });
+
       it("never sends disabled to Opus 5.5, which rejects it (bug 84082)", async () => {
         expect(await thinkingFor("claude-opus-5-5", false)).toEqual({
           type: "adaptive",

@@ -7,6 +7,8 @@ import type { ProviderCredentials } from "../../../shared/provider-credentials";
 import {
   effectiveReasoningLevel,
   resolveReasoningLevel,
+  type ReasoningLevel,
+  type ReasoningSupport,
 } from "../../../shared/reasoning-level";
 import type {
   SendMessageArgs,
@@ -25,8 +27,44 @@ import {
   createStopResponse,
   processStream,
 } from "./stream";
-import { resolveThinkingParam, THINKING_MAX_TOKENS } from "./thinking";
+import {
+  isBetweenToolsRejection,
+  rememberBetweenToolsOff,
+  resolveThinkingParam,
+  sendsDisabledThinking,
+  THINKING_MAX_TOKENS,
+} from "./thinking";
 import { convertTools } from "./tools";
+
+/**
+ * Run one `messages.create` built from the thinking fields of `model`.
+ * A model that answers `thinking: disabled` with the 400 naming
+ * `between_tools` is retried once with that spelling and remembered, so a
+ * model the per-model table doesn't know yet (Sonnet 5 did this before
+ * the docs said so) keeps working instead of failing every round — and
+ * the capability probe, which runs with thinking off, doesn't stick the
+ * profile with a false `canUseTool: false`.
+ */
+async function createWithThinking<T>(
+  model: string,
+  level: ReasoningLevel,
+  support: ReasoningSupport,
+  create: (thinking: ReturnType<typeof resolveThinkingParam>) => Promise<T>
+): Promise<T> {
+  const first = resolveThinkingParam(model, level, support);
+  try {
+    return await create(first);
+  } catch (error) {
+    if (!sendsDisabledThinking(first) || !isBetweenToolsRejection(error)) {
+      throw error;
+    }
+    logger.warn(
+      `Anthropic: ${model} rejects thinking: disabled, retrying with between_tools`
+    );
+    rememberBetweenToolsOff(model);
+    return create(resolveThinkingParam(model, level, support));
+  }
+}
 
 class AnthropicProvider extends AbstractBaseProvider {
   protected client: Anthropic;
@@ -47,20 +85,26 @@ class AnthropicProvider extends AbstractBaseProvider {
     try {
       const convertedTools = convertTools(tools ?? []);
 
-      const stream = await this.client.messages.create(
-        {
-          messages: convertMessages(messages),
-          model,
-          system: systemPrompt,
-          tools: convertedTools.length > 0 ? convertedTools : undefined,
-          stream: true,
-          max_tokens: level !== "off" ? THINKING_MAX_TOKENS : 30000,
-          ...(convertedTools.length > 0 && {
-            tool_choice: { disable_parallel_tool_use: true, type: "auto" },
-          }),
-          ...resolveThinkingParam(model, level, support),
-        },
-        { signal }
+      const stream = await createWithThinking(
+        model,
+        level,
+        support,
+        (thinking) =>
+          this.client.messages.create(
+            {
+              messages: convertMessages(messages),
+              model,
+              system: systemPrompt,
+              tools: convertedTools.length > 0 ? convertedTools : undefined,
+              stream: true,
+              max_tokens: level !== "off" ? THINKING_MAX_TOKENS : 30000,
+              ...(convertedTools.length > 0 && {
+                tool_choice: { disable_parallel_tool_use: true, type: "auto" },
+              }),
+              ...thinking,
+            },
+            { signal }
+          )
       );
 
       yield* processStream(stream);
@@ -81,17 +125,23 @@ class AnthropicProvider extends AbstractBaseProvider {
       getAnthropicReasoningSupport
     );
     const level = effectiveReasoningLevel(resolveReasoningLevel(args), support);
-    const response = await this.client.messages.create(
-      {
-        model,
-        system: systemPrompt,
-        messages: convertMessages(messages),
-        // Thinking needs headroom above its own budget for the visible reply.
-        max_tokens: level !== "off" ? THINKING_MAX_TOKENS : 4096,
-        stream: false,
-        ...resolveThinkingParam(model, level, support),
-      },
-      { signal }
+    const response = await createWithThinking(
+      model,
+      level,
+      support,
+      (thinking) =>
+        this.client.messages.create(
+          {
+            model,
+            system: systemPrompt,
+            messages: convertMessages(messages),
+            // Thinking needs headroom above its own budget for the visible reply.
+            max_tokens: level !== "off" ? THINKING_MAX_TOKENS : 4096,
+            stream: false,
+            ...thinking,
+          },
+          { signal }
+        )
     );
     return response.content
       .filter(
