@@ -2,21 +2,47 @@
   "name": "@onlyoffice/ai-chat",
   "version": "0.6.18",
   "description": "Headless AI chat widget with 16 providers, MCP tools, and pluggable adapters",
-  "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/ONLYOFFICE/onlyoffice-ai-chat/issues",
+    "email": "support@onlyoffice.com"
+  },
+  "homepage": "https://github.com/ONLYOFFICE/onlyoffice-ai-chat#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicedoc/onlyoffice-ai-chat"
+    "url": "https://github.com/ONLYOFFICE/onlyoffice-ai-chat"
   },
+  "author": "Ascensio System SIA",
+  "maintainers": [
+    "Ascensio System SIA <integration@onlyoffice.com> (https://www.onlyoffice.com)"
+  ],
   "keywords": [
+    "onlyoffice",
     "ai",
     "chat",
     "widget",
     "react",
     "mcp",
-    "onlyoffice",
     "llm"
   ],
+  "scripts": {
+    "generate:i18n": "node scripts/generate-i18n-types.mjs",
+    "generate:theme": "node scripts/generate-theme-types.mjs",
+    "generate:icons": "node scripts/generate-icon-types.mjs",
+    "prebuild": "npm run generate:i18n && npm run generate:theme && npm run generate:icons",
+    "build": "vite build && node scripts/copy-themes.mjs && node scripts/scope-preflight.mjs",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
+    "typecheck": "tsc --noEmit",
+    "pack:pre": "node scripts/pack-pre.mjs",
+    "pack:docs": "node scripts/pack-pre.mjs --preid docs",
+    "pack:docspace": "node scripts/pack-pre.mjs --preid docspace"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -94,24 +120,6 @@
   "sideEffects": [
     "**/*.css"
   ],
-  "scripts": {
-    "generate:i18n": "node scripts/generate-i18n-types.mjs",
-    "generate:theme": "node scripts/generate-theme-types.mjs",
-    "generate:icons": "node scripts/generate-icon-types.mjs",
-    "prebuild": "npm run generate:i18n && npm run generate:theme && npm run generate:icons",
-    "build": "vite build && node scripts/copy-themes.mjs && node scripts/scope-preflight.mjs",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
-    "typecheck": "tsc --noEmit",
-    "pack:pre": "node scripts/pack-pre.mjs",
-    "pack:docs": "node scripts/pack-pre.mjs --preid docs",
-    "pack:docspace": "node scripts/pack-pre.mjs --preid docspace"
-  },
   "dependencies": {
     "lodash.clonedeep": "^4.5.0"
   },
@@ -300,5 +308,6 @@
     "vite-plugin-svgr": "^5.2.0",
     "vitest": "^4.0.14",
     "zustand": "^5.0.7"
-  }
+  },
+  "type": "module"
 }
