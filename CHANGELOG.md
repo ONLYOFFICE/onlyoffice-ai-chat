@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.13
+
+### Changed
+
+- **Tool-result images are re-sent only within the current turn.** The model saw each picture in the round that produced it; resending every screenshot with each later message grew the context by its full size. Images before the last user message now reach the model as `[image from an earlier tool result, not resent]`.
+- **A tool card shows at most 5 pictures.** A screenshot loop can return any number of them; the rest are not fetched. The model still gets them all.
+
+### Fixed
+
+- **Prompt-emulated tool calls no longer paste image base64 into `<TOOL_RESULT>`.** The text protocol cannot carry images, so the megabytes of base64 were noise; they are replaced by `[image attached]`.
+
 ## 0.6.12
 
 ### Breaking
