@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getAnthropicReasoningSupport,
   isAlwaysThinking,
+  isBetweenToolsOff,
   parseClaudeModel,
 } from "../reasoning";
 import { resolveThinkingParam } from "../thinking";
@@ -47,6 +48,27 @@ describe("getAnthropicReasoningSupport", () => {
       false
     );
     expect(getAnthropicReasoningSupport("claude-2.1").thinks).toBe(false);
+  });
+});
+
+describe("resolveThinkingParam", () => {
+  it("spells off as between_tools on Sonnet 5.5, disabled elsewhere", () => {
+    // Sonnet 5.5 answers `disabled` with a 400 pointing at `between_tools`.
+    expect(isBetweenToolsOff("claude-sonnet-5-5")).toBe(true);
+    expect(isBetweenToolsOff("anthropic/claude-sonnet-5.5")).toBe(true);
+    expect(isBetweenToolsOff("claude-sonnet-5")).toBe(false);
+    expect(isBetweenToolsOff("claude-opus-5-5")).toBe(false);
+    expect(resolveThinkingParam("claude-sonnet-5-5", "off")).toEqual({
+      thinking: { type: "between_tools" },
+    });
+    expect(resolveThinkingParam("claude-sonnet-5", "off")).toEqual({
+      thinking: { type: "disabled" },
+    });
+    // On, it is the usual adaptive + effort pair.
+    expect(resolveThinkingParam("claude-sonnet-5-5", "low")).toEqual({
+      thinking: { type: "adaptive" },
+      output_config: { effort: "low" },
+    });
   });
 });
 

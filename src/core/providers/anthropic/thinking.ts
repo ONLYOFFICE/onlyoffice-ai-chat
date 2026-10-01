@@ -8,6 +8,7 @@ import {
   getAnthropicReasoningSupport,
   isAdaptiveThinking,
   isAlwaysThinking,
+  isBetweenToolsOff,
 } from "./reasoning";
 
 /**
@@ -38,6 +39,7 @@ const MANUAL_BUDGETS: Record<Exclude<ReasoningLevel, "off">, number> = {
 type ThinkingParam =
   | { type: "adaptive" }
   | { type: "disabled" }
+  | { type: "between_tools" }
   | { type: "enabled"; budget_tokens: number };
 
 /** `output_config.effort` — the depth knob that goes with adaptive thinking. */
@@ -71,7 +73,9 @@ const field = (thinking: ThinkingParam, effort?: Effort): ThinkingField => ({
  *   + `budget_tokens` is deprecated on 4.6 and a 400 from 4.7 on. Off is
  *   sent explicitly as `"disabled"`: Opus 5 and Sonnet 5 think *by
  *   default*, so omitting the field would leave them reasoning with the
- *   toggle off.
+ *   toggle off — except Sonnet 5.5+, whose off is spelled
+ *   `"between_tools"` (`"disabled"` is a 400 there). It takes no other
+ *   field and no `output_config.effort` above `high`; off sends neither.
  * - **4.5 and earlier** know only manual extended thinking: the level
  *   picks a `budget_tokens` from {@link MANUAL_BUDGETS}; off omits the
  *   field (their default is off and they don't accept `"disabled"`).
@@ -93,6 +97,10 @@ export function resolveThinkingParam(
       ? field({ type: "adaptive" }, effective)
       : field({ type: "enabled", budget_tokens: MANUAL_BUDGETS[effective] });
   }
-  if (adaptive && !alwaysOn) return field({ type: "disabled" });
+  if (adaptive && !alwaysOn) {
+    return field({
+      type: isBetweenToolsOff(model) ? "between_tools" : "disabled",
+    });
+  }
   return {};
 }

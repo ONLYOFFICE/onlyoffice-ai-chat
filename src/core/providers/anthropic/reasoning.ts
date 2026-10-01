@@ -37,6 +37,22 @@ export function isAlwaysThinking(model: string): boolean {
   return parsed.family === "opus" && parsed.version >= 5.5;
 }
 
+/**
+ * Models whose off switch is `thinking: {type: "between_tools"}` rather
+ * than `disabled`: Sonnet from 5.5 on. Sonnet 5.5 answers `disabled` with
+ * `"thinking.type.disabled" is not supported for this model. Use
+ * "thinking.type.between_tools" for the lowest thinking setting` (a 400);
+ * under `between_tools` it does no extended thinking and only its short
+ * notes between tool calls come back as thinking blocks. Every other
+ * model rejects `between_tools`, so this is the only place it is sent.
+ */
+export function isBetweenToolsOff(model: string): boolean {
+  const parsed = parseClaudeModel(model);
+  return (
+    parsed !== undefined && parsed.family === "sonnet" && parsed.version >= 5.5
+  );
+}
+
 /** 4.6 and newer run adaptive thinking with `output_config.effort`. */
 export function isAdaptiveThinking(model: string): boolean {
   const parsed = parseClaudeModel(model);
