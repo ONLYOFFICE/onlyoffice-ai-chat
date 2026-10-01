@@ -16,10 +16,10 @@ export const getProviderModelsMock = vi.fn();
 /**
  * Drives the tool-capability probe. Receives the `sendMessage` args and
  * returns `true` to make the stub emit a `probe_echo` tool-call (i.e. the
- * model "supports tools" on that transport). The probe fires twice — once
- * with `useResponsesApi: true`, once `false` — so a test can simulate a
- * model that only calls tools through the Responses API by keying off the
- * flag. Defaults to `false` (no tool support on either transport).
+ * model "supports tools" on that transport). The probe tries
+ * `useResponsesApi: true` first and falls back to `false`, so a test can
+ * simulate a model that only calls tools through one transport by keying
+ * off the flag. Defaults to `false` (no tool support on either transport).
  */
 export const sendMessageProbeMock = vi.fn(
   (_args: SendMessageArgs): boolean => false
@@ -48,7 +48,7 @@ export class StubProfileProvider extends AbstractBaseProvider {
     return "";
   }
   // Behave like a Responses-capable (OpenAI-family) provider so the probe
-  // still fires both transports; `probeCapabilities` gates the Responses
+  // still tries both transports; `probeCapabilities` gates the Responses
   // probe on this, and the base default (`false`) would otherwise skip it.
   async checkResponsesApi(): Promise<boolean> {
     return true;

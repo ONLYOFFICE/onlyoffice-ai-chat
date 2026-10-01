@@ -246,6 +246,10 @@ describe("ProfilesEngine probes (canUseTool + useResponsesApi)", () => {
     const saved = snapshot().profiles[0];
     expect(saved.canUseTool).toBe(true);
     expect(saved.useResponsesApi).toBe(true);
+    // The chat-completions probe is skipped once Responses succeeded — for
+    // a model that cannot stop thinking it is a guaranteed, logged 400.
+    expect(sendMessageProbeMock).toHaveBeenCalledTimes(1);
+    expect(sendMessageProbeMock.mock.calls[0]?.[0]?.useResponsesApi).toBe(true);
   });
 
   it("sets canUseTool true / useResponsesApi false when tools work on chat completions", async () => {
