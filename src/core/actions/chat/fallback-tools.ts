@@ -1,7 +1,11 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { TMCPItem } from "../../../shared/mcp-item";
 import type { SendMessageResult } from "../../../shared/send-message-args";
-import { augmentToolsWithIntent } from "../../../shared/tool-intent";
+import {
+  augmentToolsWithIntent,
+  readPartialToolIntent,
+  TOOL_INTENT_FIELD,
+} from "../../../shared/tool-intent";
 import { providerFor } from "../provider";
 import { resolveSystemPrompt } from "../system-prompt";
 import type { ActionArgs } from "../types";
@@ -200,6 +204,31 @@ const toolCallResult = (
   return rebuild(source, parts, isEnd);
 };
 
+// `"name": "<closed JSON string>"` at the head of a still-streaming body.
+const PARTIAL_NAME_RE = /^\s*\{\s*"name"\s*:\s*("(?:[^"\\]|\\.)*")/;
+
+/**
+ * Peek at a `<TOOL_CALL>` body whose close tag hasn't arrived yet: the tool
+ * name and, once streamed, the intent. Lets the UI render the running call
+ * (labelled with its intent) while the rest of the arguments are still being
+ * generated, instead of only after `</TOOL_CALL>`.
+ */
+const peekPartialCall = (
+  body: string
+): { name: string; args: Record<string, unknown> } | null => {
+  const match = PARTIAL_NAME_RE.exec(body);
+  if (!match) return null;
+  let name: unknown;
+  try {
+    name = JSON.parse(match[1]);
+  } catch {
+    return null;
+  }
+  if (typeof name !== "string" || !name) return null;
+  const intent = readPartialToolIntent(body);
+  return { name, args: intent ? { [TOOL_INTENT_FIELD]: intent } : {} };
+};
+
 const indexOfTag = (text: string, tag: RegExp, from = 0): number => {
   const match = tag.exec(text.slice(from));
   return match ? from + match.index : -1;
@@ -268,9 +297,21 @@ export const wrapStream = async function* (
         if (isEnd) {
           state = "broken";
           yield textOnlyResult(message, rawText, true);
-        } else {
-          yield textOnlyResult(message, textBefore, false);
+          continue;
         }
+        // Not terminal, so nothing executes it yet: the engine dispatches
+        // tools only on `isEnd`, by which point the full call replaces this.
+        const partial = peekPartialCall(rawText.slice(idx + OPEN.length));
+        yield partial
+          ? toolCallResult(
+              message,
+              textBefore,
+              partial.name,
+              partial.args,
+              toolCallId,
+              false
+            )
+          : textOnlyResult(message, textBefore, false);
         continue;
       }
 

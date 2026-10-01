@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { useApi } from "../../providers/ApiProvider";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useToolCallSource } from "./use-tool-source";
-import { readToolIntent, stripToolIntent } from "../../../shared/tool-intent";
+import {
+  readPartialToolIntent,
+  readToolIntent,
+  stripToolIntent,
+} from "../../../shared/tool-intent";
 import { Icon } from "../icon";
 import { LoadingDots } from "../loading-dots";
 import { IconButton } from "../icon-button";
@@ -67,7 +71,9 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
           : ""
       : "";
   } catch {
-    //ignore
+    // Arguments still streaming: not valid JSON yet, but the intent (listed
+    // first in the schema) is usually complete long before the rest.
+    toolIntent = readPartialToolIntent(argsText);
   }
 
   let parsedResult = result;

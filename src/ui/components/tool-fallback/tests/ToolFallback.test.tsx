@@ -214,7 +214,7 @@ describe("ToolFallback", () => {
   it("renders the card while the args are still streaming", () => {
     // Providers stream tool-call arguments fragment by fragment, so mid-call
     // `argsText` is an unparsable JSON prefix. The row shows regardless — the
-    // intent label just replaces the tool name once the closing brace arrives.
+    // tool name stands in until the intent string has streamed in.
     const { container } = render(
       <ToolFallback
         {...defaultProps}
@@ -224,6 +224,31 @@ describe("ToolFallback", () => {
     );
     expect(screen.getByText(/my_tool/)).toBeInTheDocument();
     expect(container.textContent).toContain("...");
+  });
+
+  it("labels a still-streaming call with its intent once that string closes", () => {
+    render(
+      <ToolFallback
+        {...defaultProps}
+        argsText={
+          '{"aiChatIntent":"Saving the \\"draft\\"","content":"lorem ip'
+        }
+        result={undefined}
+      />
+    );
+    expect(screen.getByText(/Saving the "draft"/)).toBeInTheDocument();
+    expect(screen.queryByText(/my_tool/)).not.toBeInTheDocument();
+  });
+
+  it("keeps the tool name while the intent string is still open", () => {
+    render(
+      <ToolFallback
+        {...defaultProps}
+        argsText={'{"aiChatIntent":"Saving th'}
+        result={undefined}
+      />
+    );
+    expect(screen.getByText(/my_tool/)).toBeInTheDocument();
   });
 
   it("shows the image placeholder while generate_image args are streaming", () => {
