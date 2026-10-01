@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.6.18
+
+### Changed
+
+- **A picture a tool returns is capped at 300px high under its card.** A tall screenshot pushed the reply far down; the height comes from `--chat-message-tool-call-image-max-height`, and `generate_image` results keep their full size.
+
+## 0.6.17
+
+### Fixed
+
+- **A collapsed thinking block is followed by the same gap as a tool call.** Its header row carried its own bottom margin on top of the block's, so the next part sat 8px lower; the gap now comes from the block's flex gap and appears only when the reasoning is expanded.
+
+## 0.6.16
+
+### Changed
+
+- **Picked and recent files inline their text again by default.** Attaching by path only (0.6.12) is now opt-in through `WidgetConfig.attachFilesByPath`, for a host that registers its own file-reading tool; without it the file is converted with `convertFileToText` and its text goes into the prompt, as before 0.6.12.
+
+```tsx
+<WidgetConfigProvider config={{ ...config, attachFilesByPath: true }} />
+```
+
 ## 0.6.15
 
 ### Fixed
