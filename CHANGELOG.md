@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.11
+
+### Changed
+
+- **Prompt-emulated tool calls no longer require a lead-in sentence.** The fallback tools block (for models without native tool calling) dropped the rule asking for one short sentence before the `<tool_call>` block.
+
 ## 0.6.10
 
 ### Changed
