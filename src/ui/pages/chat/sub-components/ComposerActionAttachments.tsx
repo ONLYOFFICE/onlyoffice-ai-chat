@@ -4,7 +4,7 @@ import { usePlatform } from "../../../providers/PlatformProvider/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import type { DropDownItemProps } from "../../../components/dropdown-item/DropDownItem.types";
 import { useToolsContext } from "../../../tools/context";
-import { getFileIconName, isSpreadsheet } from "../../../../shared/utils";
+import { getFileIconName } from "../../../../shared/utils";
 import {
   ATTACHMENT_PICK_FILTERS,
   isSupportedAttachmentPath,
@@ -59,36 +59,17 @@ const ComposerActionAttachment = () => {
     setIsOpen(open);
   };
 
+  // Only the path is attached: reading the file is left to the model,
+  // through a tool the integrator registers (host tools or MCP).
   const selectRecentFile = React.useCallback(
     async (path: string, type: number) => {
-      if (!platform.file?.convertFileToText) return;
-      // Reserve the loading chip before the conversion — on desktop the
-      // convert is the slow part, and the whole point is instant feedback.
-      const [pendingId] = beginPendingAttachments([
-        { title: path.split(/[\\/]/).pop() ?? path, kind: "file", type },
-      ]);
-      if (!pendingId) return; // cap reached
       try {
-        const isSpreadsheetFile = isSpreadsheet(type);
-        const content = await platform.file.convertFileToText(
-          path,
-          isSpreadsheetFile ? 260 : 69
-        );
-        await addAttachmentFile(
-          { path, content, type },
-          { pendingIds: [pendingId] }
-        );
+        await addAttachmentFile({ path, type });
       } catch (err) {
-        failPendingAttachments([pendingId]);
-        throw err;
+        logger.error("[ComposerActionAttachment] attach failed", err);
       }
     },
-    [
-      platform.file,
-      addAttachmentFile,
-      beginPendingAttachments,
-      failPendingAttachments,
-    ]
+    [addAttachmentFile]
   );
 
   const selectLocalFile = async () => {
@@ -99,8 +80,7 @@ const ComposerActionAttachment = () => {
 
     // The filter argument is a hint: a host predating it ignores it, and even
     // a host that honours it lets the user type a name by hand. Drop anything
-    // we can't convert here, before a chip is reserved — attaching it would
-    // produce an empty-content attachment that looks like it worked.
+    // outside the supported set before it reaches the store.
     const files = picked.filter((file) => {
       if (isSupportedAttachmentPath(file.path)) return true;
       logger.warn(
@@ -111,40 +91,17 @@ const ComposerActionAttachment = () => {
     });
     if (files.length === 0) return;
 
-    // Reserve loading chips first: the reservation is the cap check
-    // (replacing the old hardcoded slice-to-5), so we never pay for a
-    // convert the store would drop, and the chips appear before the
-    // conversion — the slow part on desktop. Ids and files stay aligned
-    // by building both from the same accepted slice.
-    const pendingIds = beginPendingAttachments(
-      files.map((file) => ({
-        title: file.path.split(/[\\/]/).pop() ?? file.path,
-        kind: "file" as const,
-        type: fileApi.getFileType?.(file.path) ?? 0,
-      }))
-    );
-    const accepted = files.slice(0, pendingIds.length);
-    if (accepted.length === 0) return;
-
+    // Path only, no content — see selectRecentFile. The store reserves the
+    // loading chips and applies the 5-item cap itself.
     try {
-      // Convert every picked file in parallel, then push the whole batch
-      // to the store in one call.
-      const inputs = await Promise.all(
-        accepted.map(async (file) => {
-          const type = fileApi.getFileType?.(file.path) ?? 0;
-          const isSpreadsheetFile = isSpreadsheet(type);
-          const content =
-            (await fileApi.convertFileToText?.(
-              file.path,
-              isSpreadsheetFile ? 260 : 69
-            )) ?? "";
-          return { path: file.path, content: content || "", type };
-        })
+      await addAttachmentFile(
+        files.map((file) => ({
+          path: file.path,
+          type: fileApi.getFileType?.(file.path) ?? 0,
+        }))
       );
-      await addAttachmentFile(inputs, { pendingIds });
     } catch (err) {
-      failPendingAttachments(pendingIds);
-      throw err;
+      logger.error("[ComposerActionAttachment] attach failed", err);
     }
   };
 

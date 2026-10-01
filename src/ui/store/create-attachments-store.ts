@@ -30,7 +30,11 @@ import type { Attachment } from "../../core";
  */
 export interface FileAttachmentInput {
   path: string;
-  content: string;
+  /**
+   * Text to inline into the prompt. Omit it to attach the path only — the
+   * model then reads the file through an integrator-provided tool.
+   */
+  content?: string;
   type: number;
   title?: string;
 }

@@ -93,7 +93,8 @@ function parseRef(value: unknown): RefMeta | null {
  * Walk a list of `ThreadMessageLike`s, replace every ref-block with
  * its hydrated inline form (`{data: content, mimeType: JSON({path,type})}`
  * for files; `{image: base64, name: title}` for images). Legacy inline
- * blocks pass through untouched.
+ * blocks pass through untouched. A file stored without `content` becomes
+ * a text block carrying its path, for the model to read via a tool.
  *
  * Missing refs (deleted / orphaned attachments) collapse to a text
  * block with a `[attachment unavailable: <title>]` notice so the
@@ -252,13 +253,27 @@ function hydrateMessage(
 }
 
 function hydrateFileBlock(rec: Attachment, meta: RefMeta) {
+  const path = rec.path ?? meta.path ?? rec.title;
+  // Path-only attachment: the content is never read on attach, so the
+  // model gets the path and reads the file through an integrator tool.
+  if (!rec.content) return makePathOnlyBlock(rec.title ?? meta.title, path);
   return {
     type: "file" as const,
     mimeType: JSON.stringify({
-      path: rec.path ?? meta.path ?? rec.title,
+      path,
       type: rec.type ?? meta.type ?? 0,
     }),
-    data: rec.content ?? "",
+    data: rec.content,
+  };
+}
+
+function makePathOnlyBlock(title: string, path: string) {
+  return {
+    type: "text" as const,
+    text:
+      `[attached file: ${title}]\n` +
+      `Path: ${path}\n` +
+      "The file content is not included. Use an available tool to read it from this path when it is needed to answer.",
   };
 }
 

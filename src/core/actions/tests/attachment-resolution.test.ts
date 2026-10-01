@@ -1,6 +1,7 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildFileRefBlock,
   buildImageRefBlock,
   collectRefIds,
   resolveAttachmentRefs,
@@ -101,5 +102,58 @@ describe("attachment-resolution — tool-result image refs", () => {
     const [msg] = await resolveAttachmentRefs([assistant([plain])], storage);
     expect((msg.content as unknown[])[0]).toBe(plain);
     expect(storage.readManyByIds).not.toHaveBeenCalled();
+  });
+});
+
+describe("attachment-resolution — file refs", () => {
+  const user = (parts: unknown[]): ThreadMessageLike =>
+    ({ role: "user", content: parts }) as ThreadMessageLike;
+  const ref = buildFileRefBlock({
+    id: "f-1",
+    title: "report.docx",
+    path: "/docs/report.docx",
+    type: 7,
+  });
+
+  it("inlines the stored content when there is one", async () => {
+    const [msg] = await resolveAttachmentRefs(
+      [user([ref])],
+      storageWith([
+        {
+          id: "f-1",
+          kind: "file",
+          title: "report.docx",
+          path: "/docs/report.docx",
+          type: 7,
+          content: "hello",
+        },
+      ])
+    );
+    expect((msg.content as unknown[])[0]).toEqual({
+      type: "file",
+      mimeType: JSON.stringify({ path: "/docs/report.docx", type: 7 }),
+      data: "hello",
+    });
+  });
+
+  it("hands the model the path when the file was attached without content", async () => {
+    const [msg] = await resolveAttachmentRefs(
+      [user([ref])],
+      storageWith([
+        {
+          id: "f-1",
+          kind: "file",
+          title: "report.docx",
+          path: "/docs/report.docx",
+          type: 7,
+        },
+      ])
+    );
+    const part = (
+      msg.content as unknown as { type: string; text: string }[]
+    )[0];
+    expect(part.type).toBe("text");
+    expect(part.text).toContain("[attached file: report.docx]");
+    expect(part.text).toContain("Path: /docs/report.docx");
   });
 });

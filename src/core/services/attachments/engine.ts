@@ -22,9 +22,9 @@ export class AttachmentsEngine {
   }
 
   /**
-   * Persist a file attachment as a draft. The `content` field carries
-   * the host-extracted text — the same payload that used to live inline
-   * in `ThreadMessageLike.content[].data`.
+   * Persist a file attachment as a draft. `content`, when present, is
+   * inlined into the prompt; without it only the path reaches the model,
+   * which reads the file through an integrator-provided tool.
    *
    * Single-input convenience over {@link saveFilesMany}; prefer the
    * batch form when adding more than one file at once so it lands on
@@ -33,7 +33,7 @@ export class AttachmentsEngine {
   async saveFile(
     input: {
       path: string;
-      content: string;
+      content?: string;
       type: number;
       title?: string;
     },
@@ -50,7 +50,7 @@ export class AttachmentsEngine {
   saveFilesMany(
     inputs: {
       path: string;
-      content: string;
+      content?: string;
       type: number;
       title?: string;
     }[],

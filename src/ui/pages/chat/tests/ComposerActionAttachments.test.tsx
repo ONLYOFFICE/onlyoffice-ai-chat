@@ -421,7 +421,6 @@ describe("ComposerActionAttachment", () => {
     it("selectLocalFile picks files and adds them", async () => {
       mockPickFiles.mockResolvedValue([{ path: "/docs/file1.docx" }]);
       mockGetFileType.mockReturnValue(7);
-      mockConvertFileToText.mockResolvedValue("file content");
 
       await act(async () => {
         render(<ComposerActionAttachment />);
@@ -438,41 +437,12 @@ describe("ComposerActionAttachment", () => {
 
       await waitFor(() => {
         expect(mockPickFiles).toHaveBeenCalled();
-        expect(mockConvertFileToText).toHaveBeenCalledWith(
-          "/docs/file1.docx",
-          69
-        );
-        expect(mockAddAttachmentFile).toHaveBeenCalledWith(
-          [{ path: "/docs/file1.docx", content: "file content", type: 7 }],
-          { pendingIds: ["pending-0"] }
-        );
+        expect(mockAddAttachmentFile).toHaveBeenCalledWith([
+          { path: "/docs/file1.docx", type: 7 },
+        ]);
       });
-    });
-
-    it("selectLocalFile uses 260 for spreadsheet type", async () => {
-      mockPickFiles.mockResolvedValue([{ path: "/docs/sheet.xlsx" }]);
-      mockGetFileType.mockReturnValue(8); // spreadsheet
-      mockConvertFileToText.mockResolvedValue("sheet content");
-
-      await act(async () => {
-        render(<ComposerActionAttachment />);
-      });
-      const items = mockDropdownItems as {
-        text: string;
-        onClick: () => void;
-      }[];
-      const addLocalFile = items.find((i) => i.text === "AddLocalFile")!;
-
-      await act(async () => {
-        addLocalFile.onClick();
-      });
-
-      await waitFor(() => {
-        expect(mockConvertFileToText).toHaveBeenCalledWith(
-          "/docs/sheet.xlsx",
-          260
-        );
-      });
+      // Only the path is attached — the model reads the file via a tool.
+      expect(mockConvertFileToText).not.toHaveBeenCalled();
     });
 
     it("selectLocalFile handles null result from pickFiles", async () => {
@@ -541,8 +511,6 @@ describe("ComposerActionAttachment", () => {
         addLocalFile.onClick();
       });
 
-      expect(mockBeginPendingAttachments).not.toHaveBeenCalled();
-      expect(mockConvertFileToText).not.toHaveBeenCalled();
       expect(mockAddAttachmentFile).not.toHaveBeenCalled();
     });
 
@@ -552,7 +520,6 @@ describe("ComposerActionAttachment", () => {
         { path: "/docs/report.docx" },
       ]);
       mockGetFileType.mockReturnValue(7);
-      mockConvertFileToText.mockResolvedValue("content");
 
       await act(async () => {
         render(<ComposerActionAttachment />);
@@ -567,27 +534,19 @@ describe("ComposerActionAttachment", () => {
         addLocalFile.onClick();
       });
 
-      // Only the .docx converts, and the pending ids stay aligned with it.
       await waitFor(() => {
-        expect(mockConvertFileToText).toHaveBeenCalledTimes(1);
+        expect(mockAddAttachmentFile).toHaveBeenCalledWith([
+          { path: "/docs/report.docx", type: 7 },
+        ]);
       });
-      expect(mockConvertFileToText).toHaveBeenCalledWith(
-        "/docs/report.docx",
-        69
-      );
-      expect(mockAddAttachmentFile).toHaveBeenCalledWith(
-        [{ path: "/docs/report.docx", content: "content", type: 7 }],
-        { pendingIds: ["pending-0"] }
-      );
     });
 
-    it("limits picked files to 5", async () => {
+    it("forwards the whole batch — the store applies the 5-item cap", async () => {
       const files = Array.from({ length: 10 }, (_, i) => ({
         path: `/docs/file${i}.docx`,
       }));
       mockPickFiles.mockResolvedValue(files);
       mockGetFileType.mockReturnValue(7);
-      mockConvertFileToText.mockResolvedValue("content");
 
       await act(async () => {
         render(<ComposerActionAttachment />);
@@ -604,12 +563,11 @@ describe("ComposerActionAttachment", () => {
 
       await waitFor(() => {
         expect(mockAddAttachmentFile).toHaveBeenCalledTimes(1);
-        expect(mockAddAttachmentFile.mock.calls[0][0]).toHaveLength(5);
+        expect(mockAddAttachmentFile.mock.calls[0][0]).toHaveLength(10);
       });
     });
 
-    it("selectRecentFile calls convertFileToText and addAttachmentFile", async () => {
-      mockConvertFileToText.mockResolvedValue("recent content");
+    it("selectRecentFile attaches the path without reading the file", async () => {
       mockGetRecentFiles.mockResolvedValue(
         JSON.stringify({
           files: [{ path: "/docs/recent.docx", type: 7, url: "" }],
@@ -640,19 +598,12 @@ describe("ComposerActionAttachment", () => {
       });
 
       await waitFor(() => {
-        expect(mockConvertFileToText).toHaveBeenCalledWith(
-          "/docs/recent.docx",
-          69
-        );
-        expect(mockAddAttachmentFile).toHaveBeenCalledWith(
-          {
-            path: "/docs/recent.docx",
-            content: "recent content",
-            type: 7,
-          },
-          { pendingIds: ["pending-0"] }
-        );
+        expect(mockAddAttachmentFile).toHaveBeenCalledWith({
+          path: "/docs/recent.docx",
+          type: 7,
+        });
       });
+      expect(mockConvertFileToText).not.toHaveBeenCalled();
     });
 
     it("extracts filename from path with backslashes (Windows)", async () => {

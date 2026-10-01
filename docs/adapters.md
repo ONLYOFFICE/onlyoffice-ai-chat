@@ -162,7 +162,7 @@ interface PlatformFileOperations {
   pickFiles(filters?: readonly AttachmentPickFilter[]):
     Promise<{ path: string; name: string }[] | null>;
   pickImage():  Promise<{ name: string; base64: string } | null>;
-  convertFileToText(path: string, format: number): Promise<string>;
+  convertFileToText(path: string, format: number): Promise<string>; // deprecated, unused
   getFileType(path: string):                       number;
   getRecentFiles():                                Promise<string>;
   onRecentFilesChange?(callback: () => void): () => void;
@@ -198,6 +198,40 @@ pickFiles: (filters = ATTACHMENT_PICK_FILTERS) =>
 
 Images are **not** in this list: "Add local image" rides an internal
 `<input accept="image/*">` and never reaches `pickFiles`.
+
+### Attaching by path
+
+A file picked through `pickFiles` or the recent-files submenu is attached **by
+path only** — the widget does not read it. The model receives a text block
+instead of the content:
+
+```
+[attached file: report.docx]
+Path: C:\Docs\report.docx
+The file content is not included. Use an available tool to read it from this path when it is needed to answer.
+```
+
+Reading the file is the host's job: register a tool that takes the path and
+returns the text, through `hostTools` or an MCP server. Without such a tool the
+model only sees the file name and path.
+
+```ts
+const readFile: HostTool = {
+  name: "read_file",
+  description: "Read the text content of a file the user attached, by its path",
+  inputSchema: {
+    type: "object",
+    properties: { path: { type: "string", description: "Absolute file path" } },
+    required: ["path"],
+  },
+  handler: async ({ path }) => editor.convertToText(path as string),
+};
+```
+
+Restrict the handler to paths the user actually attached — the model chooses
+the argument, so an unrestricted reader exposes the whole disk to prompt
+injection. Attachments that do carry `content` (drag-and-drop text files,
+`addAttachmentFile` called with `content`) are still inlined as before.
 
 A **web host that opens its own file dialog** — a `composerActions` entry, a
 portal upload flow — never reaches `pickFiles` either, so the filter groups
