@@ -157,5 +157,8 @@
   "DropFilesHere": "Húzza ide a fájlokat a csatoláshoz",
   "Uploading": "Feltöltés…",
   "PromptSaved": "A prompt mentve",
-  "PromptSavedToFolder": "A prompt mentve a(z) „{{folder}}” mappába"
+  "PromptSavedToFolder": "A prompt mentve a(z) „{{folder}}” mappába",
+  "WebSearchKeySaved": "API kulcs mentve.",
+  "WebSearchAvailable": "A webes keresés elérhető az AI Chat szolgáltatásban.",
+  "Close": "Bezárás"
 }

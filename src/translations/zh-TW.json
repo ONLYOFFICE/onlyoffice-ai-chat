@@ -157,5 +157,8 @@
   "DropFilesHere": "將檔案拖曳至此以附加",
   "Uploading": "正在上傳…",
   "PromptSaved": "提示詞已儲存",
-  "PromptSavedToFolder": "提示詞已儲存至「{{folder}}」"
+  "PromptSavedToFolder": "提示詞已儲存至「{{folder}}」",
+  "WebSearchKeySaved": "已儲存 API 金鑰。",
+  "WebSearchAvailable": "現在可以在 AI Chat 中使用網頁搜尋。",
+  "Close": "關閉"
 }

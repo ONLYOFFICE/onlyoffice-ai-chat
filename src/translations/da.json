@@ -157,5 +157,8 @@
   "DropFilesHere": "Slip filer her for at vedhæfte",
   "Uploading": "Uploader…",
   "PromptSaved": "Prompten er gemt",
-  "PromptSavedToFolder": "Prompten er gemt i “{{folder}}”"
+  "PromptSavedToFolder": "Prompten er gemt i “{{folder}}”",
+  "WebSearchKeySaved": "API-nøglen er gemt.",
+  "WebSearchAvailable": "Websøgning er tilgængelig i AI Chat.",
+  "Close": "Luk"
 }

@@ -157,5 +157,8 @@
   "DropFilesHere": "Hidh skedarët këtu për t'i bashkëngjitur",
   "Uploading": "Po ngarkohet…",
   "PromptSaved": "Prompt-i u ruajt",
-  "PromptSavedToFolder": "Prompt-i u ruajt në “{{folder}}”"
+  "PromptSavedToFolder": "Prompt-i u ruajt në “{{folder}}”",
+  "WebSearchKeySaved": "Çelësi API u ruajt.",
+  "WebSearchAvailable": "Kërkimi në ueb është i disponueshëm në AI Chat.",
+  "Close": "Mbyll"
 }

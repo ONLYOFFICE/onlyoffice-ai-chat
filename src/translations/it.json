@@ -157,5 +157,8 @@
   "DropFilesHere": "Trascina qui i file da allegare",
   "Uploading": "Caricamento…",
   "PromptSaved": "Prompt salvato",
-  "PromptSavedToFolder": "Prompt salvato in «{{folder}}»"
+  "PromptSavedToFolder": "Prompt salvato in «{{folder}}»",
+  "WebSearchKeySaved": "Chiave API salvata.",
+  "WebSearchAvailable": "La ricerca web è disponibile in AI Chat.",
+  "Close": "Chiudi"
 }

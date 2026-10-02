@@ -157,5 +157,8 @@
   "DropFilesHere": "Drop files here to attach",
   "Uploading": "Uploading…",
   "PromptSaved": "Prompt saved",
-  "PromptSavedToFolder": "Prompt saved to “{{folder}}”"
+  "PromptSavedToFolder": "Prompt saved to “{{folder}}”",
+  "WebSearchKeySaved": "API key saved.",
+  "WebSearchAvailable": "Web search is available in AI Chat.",
+  "Close": "Close"
 }

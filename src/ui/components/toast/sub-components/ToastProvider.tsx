@@ -21,6 +21,7 @@ export const DEFAULT_TOAST_DURATION = 3000;
 type ToastItem = {
   id: number;
   title: ReactNode;
+  heading?: string;
   duration: number;
   open: boolean;
 };
@@ -28,6 +29,8 @@ type ToastItem = {
 export type ShowToastOptions = {
   /** Milliseconds the toast stays up. Defaults to {@link DEFAULT_TOAST_DURATION}. */
   duration?: number;
+  /** Bold line shown above `title`, for two-line toasts. */
+  heading?: string;
 };
 
 type ToastContextValue = {
@@ -90,6 +93,7 @@ const ToastProviderImpl = ({
         {
           id,
           title,
+          heading: options?.heading,
           duration: options?.duration ?? duration,
           open: true,
         },
@@ -136,6 +140,7 @@ const ToastProviderImpl = ({
           <ToastContent
             key={toast.id}
             title={toast.title}
+            heading={toast.heading}
             duration={toast.duration}
             open={toast.open}
             onOpenChange={(open) => {
@@ -183,7 +188,8 @@ const useToast = (): ToastContextValue => {
         // that, so they stay with the built-in stack rather than being
         // stringified into `[object Object]`.
         if (typeof title !== "string") return fallback.showToast(title, options);
-        hostToast(title);
+        if (options?.heading) hostToast(title, { heading: options.heading });
+        else hostToast(title);
         // Nothing local to dismiss — the host owns the toast's lifetime.
         return -1;
       },

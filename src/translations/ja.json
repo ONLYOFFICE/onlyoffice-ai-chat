@@ -157,5 +157,8 @@
   "DropFilesHere": "ここにファイルをドロップして添付",
   "Uploading": "アップロード中…",
   "PromptSaved": "プロンプトを保存しました",
-  "PromptSavedToFolder": "プロンプトを「{{folder}}」に保存しました"
+  "PromptSavedToFolder": "プロンプトを「{{folder}}」に保存しました",
+  "WebSearchKeySaved": "APIキーを保存しました。",
+  "WebSearchAvailable": "AI チャットでWeb検索を利用できます。",
+  "Close": "閉じる"
 }

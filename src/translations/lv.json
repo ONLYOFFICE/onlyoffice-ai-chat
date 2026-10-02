@@ -157,5 +157,8 @@
   "DropFilesHere": "Nometiet failus šeit, lai pievienotu",
   "Uploading": "Notiek augšupielāde…",
   "PromptSaved": "Uzvedne saglabāta",
-  "PromptSavedToFolder": "Uzvedne saglabāta mapē “{{folder}}”"
+  "PromptSavedToFolder": "Uzvedne saglabāta mapē “{{folder}}”",
+  "WebSearchKeySaved": "API atslēga saglabāta.",
+  "WebSearchAvailable": "Tīmekļa meklēšana ir pieejama: AI tērzēšana.",
+  "Close": "Aizvērt"
 }

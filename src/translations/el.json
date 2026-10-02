@@ -157,5 +157,8 @@
   "DropFilesHere": "Αποθέστε εδώ αρχεία για επισύναψη",
   "Uploading": "Μεταφόρτωση…",
   "PromptSaved": "Η οδηγία αποθηκεύτηκε",
-  "PromptSavedToFolder": "Η οδηγία αποθηκεύτηκε στον φάκελο «{{folder}}»"
+  "PromptSavedToFolder": "Η οδηγία αποθηκεύτηκε στον φάκελο «{{folder}}»",
+  "WebSearchKeySaved": "Το κλειδί API αποθηκεύτηκε.",
+  "WebSearchAvailable": "Η αναζήτηση στο διαδίκτυο είναι διαθέσιμη στο AI Chat.",
+  "Close": "Κλείσιμο"
 }

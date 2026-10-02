@@ -157,5 +157,8 @@
   "DropFilesHere": "Пуснете файлове тук, за да ги прикачите",
   "Uploading": "Качване…",
   "PromptSaved": "Подканата е запазена",
-  "PromptSavedToFolder": "Подканата е запазена в „{{folder}}“"
+  "PromptSavedToFolder": "Подканата е запазена в „{{folder}}“",
+  "WebSearchKeySaved": "API ключът е запазен.",
+  "WebSearchAvailable": "Търсенето в мрежата е достъпно в AI Chat.",
+  "Close": "Затвори"
 }

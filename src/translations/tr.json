@@ -157,5 +157,8 @@
   "DropFilesHere": "Eklemek için dosyaları buraya bırakın",
   "Uploading": "Yükleniyor…",
   "PromptSaved": "İstem kaydedildi",
-  "PromptSavedToFolder": "İstem “{{folder}}” klasörüne kaydedildi"
+  "PromptSavedToFolder": "İstem “{{folder}}” klasörüne kaydedildi",
+  "WebSearchKeySaved": "API anahtarı kaydedildi.",
+  "WebSearchAvailable": "Web araması AI Sohbet içinde kullanılabilir.",
+  "Close": "Kapat"
 }

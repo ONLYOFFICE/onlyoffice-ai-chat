@@ -157,5 +157,8 @@
   "DropFilesHere": "Перацягніце файлы сюды, каб далучыць",
   "Uploading": "Запампоўка…",
   "PromptSaved": "Запыт захаваны",
-  "PromptSavedToFolder": "Запыт захаваны ў «{{folder}}»"
+  "PromptSavedToFolder": "Запыт захаваны ў «{{folder}}»",
+  "WebSearchKeySaved": "API-ключ захаваны.",
+  "WebSearchAvailable": "Вэб-пошук даступны ў AI Chat.",
+  "Close": "Закрыць"
 }

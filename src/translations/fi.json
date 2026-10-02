@@ -157,5 +157,8 @@
   "DropFilesHere": "Lisää tiedostoja pudottamalla ne tähän",
   "Uploading": "Ladataan…",
   "PromptSaved": "Kehote tallennettu",
-  "PromptSavedToFolder": "Kehote tallennettu kansioon ”{{folder}}”"
+  "PromptSavedToFolder": "Kehote tallennettu kansioon ”{{folder}}”",
+  "WebSearchKeySaved": "API-avain tallennettu.",
+  "WebSearchAvailable": "Verkkohaku on käytettävissä: AI-chat.",
+  "Close": "Sulje"
 }

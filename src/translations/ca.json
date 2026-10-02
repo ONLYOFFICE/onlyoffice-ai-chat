@@ -157,5 +157,8 @@
   "DropFilesHere": "Arrossegueu els fitxers aquí per adjuntar-los",
   "Uploading": "S'està penjant…",
   "PromptSaved": "S'ha desat el missatge",
-  "PromptSavedToFolder": "S'ha desat el missatge a «{{folder}}»"
+  "PromptSavedToFolder": "S'ha desat el missatge a «{{folder}}»",
+  "WebSearchKeySaved": "S'ha desat la clau API.",
+  "WebSearchAvailable": "La cerca web està disponible al Xat d'IA.",
+  "Close": "Tanca"
 }

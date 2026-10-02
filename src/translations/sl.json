@@ -157,5 +157,8 @@
   "DropFilesHere": "Povlecite datoteke sem za prilogo",
   "Uploading": "Nalaganje…",
   "PromptSaved": "Poziv je shranjen",
-  "PromptSavedToFolder": "Poziv je shranjen v »{{folder}}«"
+  "PromptSavedToFolder": "Poziv je shranjen v »{{folder}}«",
+  "WebSearchKeySaved": "API ključ je shranjen.",
+  "WebSearchAvailable": "Spletno iskanje je na voljo v storitvi AI klepet.",
+  "Close": "Zapri"
 }

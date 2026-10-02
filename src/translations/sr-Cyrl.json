@@ -157,5 +157,8 @@
   "DropFilesHere": "Превуците датотеке овде да бисте их приложили",
   "Uploading": "Отпремање…",
   "PromptSaved": "Упит је сачуван",
-  "PromptSavedToFolder": "Упит је сачуван у „{{folder}}”"
+  "PromptSavedToFolder": "Упит је сачуван у „{{folder}}”",
+  "WebSearchKeySaved": "API кључ је сачуван.",
+  "WebSearchAvailable": "Претрага веба је доступна у AI Chat.",
+  "Close": "Затвори"
 }

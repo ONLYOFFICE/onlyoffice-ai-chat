@@ -157,5 +157,8 @@
   "DropFilesHere": "Trageți fișierele aici pentru a le atașa",
   "Uploading": "Se încarcă…",
   "PromptSaved": "Prompt salvat",
-  "PromptSavedToFolder": "Prompt salvat în „{{folder}}”"
+  "PromptSavedToFolder": "Prompt salvat în „{{folder}}”",
+  "WebSearchKeySaved": "Cheia API a fost salvată.",
+  "WebSearchAvailable": "Căutarea pe web este disponibilă în AI Chat.",
+  "Close": "Închide"
 }

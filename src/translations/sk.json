@@ -157,5 +157,8 @@
   "DropFilesHere": "Sem presuňte súbory na priloženie",
   "Uploading": "Nahrávanie…",
   "PromptSaved": "Výzva bola uložená",
-  "PromptSavedToFolder": "Výzva bola uložená do „{{folder}}“"
+  "PromptSavedToFolder": "Výzva bola uložená do „{{folder}}“",
+  "WebSearchKeySaved": "API kľúč bol uložený.",
+  "WebSearchAvailable": "Vyhľadávanie na webe je dostupné v AI Chat.",
+  "Close": "Zavrieť"
 }

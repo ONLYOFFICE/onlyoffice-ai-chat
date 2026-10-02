@@ -157,5 +157,8 @@
   "DropFilesHere": "Povucite datoteke ovdje za prilaganje",
   "Uploading": "Učitavanje…",
   "PromptSaved": "Upit je spremljen",
-  "PromptSavedToFolder": "Upit je spremljen u „{{folder}}”"
+  "PromptSavedToFolder": "Upit je spremljen u „{{folder}}”",
+  "WebSearchKeySaved": "API ključ je spremljen.",
+  "WebSearchAvailable": "Pretraživanje weba dostupno je u AI Chat.",
+  "Close": "Zatvori"
 }

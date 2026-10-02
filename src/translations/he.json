@@ -157,5 +157,8 @@
   "DropFilesHere": "גרור קבצים לכאן כדי לצרף",
   "Uploading": "מעלה…",
   "PromptSaved": "הפרומפט נשמר",
-  "PromptSavedToFolder": "הפרומפט נשמר בתיקייה „{{folder}}”"
+  "PromptSavedToFolder": "הפרומפט נשמר בתיקייה „{{folder}}”",
+  "WebSearchKeySaved": "מפתח ה-API נשמר.",
+  "WebSearchAvailable": "חיפוש באינטרנט זמין בצ'אט AI.",
+  "Close": "סגירה"
 }

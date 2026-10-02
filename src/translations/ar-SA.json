@@ -157,5 +157,8 @@
   "DropFilesHere": "أسقط الملفات هنا للإرفاق",
   "Uploading": "جارٍ الرفع…",
   "PromptSaved": "تم حفظ الموجّه",
-  "PromptSavedToFolder": "تم حفظ الموجّه في ”{{folder}}“"
+  "PromptSavedToFolder": "تم حفظ الموجّه في ”{{folder}}“",
+  "WebSearchKeySaved": "تم حفظ مفتاح API.",
+  "WebSearchAvailable": "البحث على الويب متاح في محادثة الذكاء الاصطناعي.",
+  "Close": "إغلاق"
 }

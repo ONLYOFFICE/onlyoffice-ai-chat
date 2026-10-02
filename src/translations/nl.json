@@ -157,5 +157,8 @@
   "DropFilesHere": "Sleep bestanden hierheen om toe te voegen",
   "Uploading": "Uploaden…",
   "PromptSaved": "Prompt opgeslagen",
-  "PromptSavedToFolder": "Prompt opgeslagen in “{{folder}}”"
+  "PromptSavedToFolder": "Prompt opgeslagen in “{{folder}}”",
+  "WebSearchKeySaved": "API-sleutel opgeslagen.",
+  "WebSearchAvailable": "Zoeken op het web is beschikbaar in AI Chat.",
+  "Close": "Sluiten"
 }

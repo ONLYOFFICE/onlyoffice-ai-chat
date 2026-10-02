@@ -157,5 +157,8 @@
   "DropFilesHere": "Slipp filer her for å legge ved",
   "Uploading": "Laster opp…",
   "PromptSaved": "Prompten er lagret",
-  "PromptSavedToFolder": "Prompten er lagret i «{{folder}}»"
+  "PromptSavedToFolder": "Prompten er lagret i «{{folder}}»",
+  "WebSearchKeySaved": "API-nøkkelen er lagret.",
+  "WebSearchAvailable": "Nettsøk er tilgjengelig i AI Chat.",
+  "Close": "Lukk"
 }

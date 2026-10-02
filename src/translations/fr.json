@@ -157,5 +157,8 @@
   "DropFilesHere": "Déposez les fichiers ici pour les joindre",
   "Uploading": "Envoi en cours…",
   "PromptSaved": "Prompt enregistré",
-  "PromptSavedToFolder": "Prompt enregistré dans « {{folder}} »"
+  "PromptSavedToFolder": "Prompt enregistré dans « {{folder}} »",
+  "WebSearchKeySaved": "Clé API enregistrée.",
+  "WebSearchAvailable": "La recherche web est disponible dans Chat IA.",
+  "Close": "Fermer"
 }

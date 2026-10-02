@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockSetWebSearchData = vi.fn();
 const mockGetWebSearchData = vi.fn().mockReturnValue(null);
@@ -183,6 +183,11 @@ vi.mock("../../../components/button", () => ({
   ),
 }));
 
+const mockShowToast = vi.fn();
+vi.mock("../../../components/toast", () => ({
+  useToast: () => ({ showToast: mockShowToast, dismissToast: vi.fn() }),
+}));
+
 import { WebSearch } from "../sub-components";
 
 describe("WebSearch", () => {
@@ -191,6 +196,7 @@ describe("WebSearch", () => {
     mockApi.webSearch.clear.mockClear();
     mockApi.webSearch.getActiveConfig.mockResolvedValue(null);
     mockCallbacksManager.emit.mockClear();
+    mockShowToast.mockClear();
     mockCloudProviders.length = 0;
     mockStoreState.externalOnlyofficeConfig = undefined;
     mockWidgetConfig.entityId = undefined;
@@ -266,6 +272,46 @@ describe("WebSearch", () => {
       },
       undefined
     );
+  });
+
+  it("confirms a saved API key with a toast", async () => {
+    render(<WebSearch />);
+    const apiInput = screen.getByTestId("input-EnterKey");
+    fireEvent.change(apiInput, { target: { value: "my-api-key" } });
+    fireEvent.blur(apiInput);
+
+    await waitFor(() =>
+      expect(mockShowToast).toHaveBeenCalledWith("WebSearchAvailable", {
+        heading: "WebSearchKeySaved",
+      })
+    );
+  });
+
+  it("does not toast again when a blur saves nothing new", async () => {
+    render(<WebSearch />);
+    // Let the initial load from storage land first — it would otherwise
+    // reset the key typed below and turn the second blur into a clear.
+    await act(async () => {});
+    const apiInput = screen.getByTestId("input-EnterKey");
+    fireEvent.change(apiInput, { target: { value: "my-api-key" } });
+    fireEvent.blur(apiInput);
+    await waitFor(() => expect(mockShowToast).toHaveBeenCalledTimes(1));
+
+    fireEvent.blur(apiInput);
+    await waitFor(() =>
+      expect(mockApi.webSearch.setActiveConfig).toHaveBeenCalledTimes(2)
+    );
+    expect(mockShowToast).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not toast when the key is cleared", async () => {
+    render(<WebSearch />);
+    const apiInput = screen.getByTestId("input-EnterKey");
+    fireEvent.change(apiInput, { target: { value: "" } });
+    fireEvent.blur(apiInput);
+
+    await waitFor(() => expect(mockApi.webSearch.clear).toHaveBeenCalled());
+    expect(mockShowToast).not.toHaveBeenCalled();
   });
 
   it("clears web search data when API key is empty on blur", () => {

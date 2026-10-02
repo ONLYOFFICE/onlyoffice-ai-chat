@@ -157,5 +157,8 @@
   "DropFilesHere": "Կցելու համար թափեք ֆայլերն այստեղ",
   "Uploading": "Վերբեռնում…",
   "PromptSaved": "Հրահանգը պահվեց",
-  "PromptSavedToFolder": "Հրահանգը պահվեց «{{folder}}» թղթապանակում"
+  "PromptSavedToFolder": "Հրահանգը պահվեց «{{folder}}» թղթապանակում",
+  "WebSearchKeySaved": "API բանալին պահպանված է։",
+  "WebSearchAvailable": "Վեբ որոնումը հասանելի է AI Chat-ում։",
+  "Close": "Փակել"
 }

@@ -157,5 +157,8 @@
   "DropFilesHere": "Upuść pliki tutaj, aby je załączyć",
   "Uploading": "Przesyłanie…",
   "PromptSaved": "Monit zapisany",
-  "PromptSavedToFolder": "Monit zapisany w folderze „{{folder}}”"
+  "PromptSavedToFolder": "Monit zapisany w folderze „{{folder}}”",
+  "WebSearchKeySaved": "Klucz API został zapisany.",
+  "WebSearchAvailable": "Wyszukiwanie w sieci jest dostępne w AI Chat.",
+  "Close": "Zamknij"
 }

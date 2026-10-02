@@ -157,5 +157,8 @@
   "DropFilesHere": "Solte os ficheiros aquí para adxuntalos",
   "Uploading": "Subindo…",
   "PromptSaved": "Indicación gardada",
-  "PromptSavedToFolder": "Indicación gardada en «{{folder}}»"
+  "PromptSavedToFolder": "Indicación gardada en «{{folder}}»",
+  "WebSearchKeySaved": "Gardouse a clave API.",
+  "WebSearchAvailable": "A busca web está dispoñible no Chat de IA.",
+  "Close": "Pechar"
 }

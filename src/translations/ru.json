@@ -157,5 +157,8 @@
   "DropFilesHere": "Перетащите файлы сюда, чтобы прикрепить",
   "Uploading": "Загрузка…",
   "PromptSaved": "AI-запрос сохранён",
-  "PromptSavedToFolder": "AI-запрос сохранён в папку «{{folder}}»"
+  "PromptSavedToFolder": "AI-запрос сохранён в папку «{{folder}}»",
+  "WebSearchKeySaved": "Ключ API сохранён.",
+  "WebSearchAvailable": "Веб-поиск доступен в AI Chat.",
+  "Close": "Закрыть"
 }

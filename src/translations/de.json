@@ -157,5 +157,8 @@
   "DropFilesHere": "Dateien hier ablegen zum Anhängen",
   "Uploading": "Wird hochgeladen…",
   "PromptSaved": "Prompt gespeichert",
-  "PromptSavedToFolder": "Prompt in „{{folder}}“ gespeichert"
+  "PromptSavedToFolder": "Prompt in „{{folder}}“ gespeichert",
+  "WebSearchKeySaved": "API-Schlüssel gespeichert.",
+  "WebSearchAvailable": "Die Websuche ist im AI-Chat verfügbar.",
+  "Close": "Schließen"
 }

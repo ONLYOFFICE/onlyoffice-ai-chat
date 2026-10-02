@@ -157,5 +157,8 @@
   "DropFilesHere": "Seret file ke sini untuk melampirkan",
   "Uploading": "Mengunggah…",
   "PromptSaved": "Prompt disimpan",
-  "PromptSavedToFolder": "Prompt disimpan ke “{{folder}}”"
+  "PromptSavedToFolder": "Prompt disimpan ke “{{folder}}”",
+  "WebSearchKeySaved": "Kunci API disimpan.",
+  "WebSearchAvailable": "Pencarian web tersedia di AI Chat.",
+  "Close": "Tutup"
 }

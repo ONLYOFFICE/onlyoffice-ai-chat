@@ -18,4 +18,5 @@ export type {
   PlatformFileOperations,
   PlatformHostTools,
   PlatformProcessRunner,
+  ToastMeta,
 } from "./types";
