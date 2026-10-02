@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.21
+
+### Changed
+
+- **Auto approve honours MCP tool annotations.** MCP tools never set `requireApproval`, so under `Auto approve` every one of them kept prompting even when the server declared it harmless. A tool annotated `readOnlyHint: true` or an explicit `destructiveHint: false` now runs without the dialog; a destructive or unannotated tool still asks, matching the protocol's default. `Ask every time` keeps ignoring the hints. `TMCPItem.annotations` is typed as `ToolAnnotations` and exported from the root and `/core` entries.
+
 ## 0.6.20
 
 ### Added

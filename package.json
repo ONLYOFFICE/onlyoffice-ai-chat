@@ -1,6 +1,6 @@
 {
   "name": "@onlyoffice/ai-chat",
-  "version": "0.6.20",
+  "version": "0.6.21",
   "description": "Headless AI chat widget with 16 providers, MCP tools, and pluggable adapters",
   "license": "AGPL-3.0-only",
   "bugs": {
