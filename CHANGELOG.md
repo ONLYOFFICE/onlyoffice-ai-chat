@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.19
+
+### Fixed
+
+- **DeepSeek stays on `/chat/completions`.** DeepSeek answers `/v1/responses`, so the live probe moved its profiles onto the Responses transport, where the history replay drops reasoning; after the second tool round of a thinking-mode reply the model refused the request with `400 The reasoning_text in the thinking mode must be passed back to the API` (Bug 83335). The chat endpoint carries the thinking switch and `reasoning_content` on every round, and profiles already probed onto Responses are steered back.
+
 ## 0.6.18
 
 ### Changed
