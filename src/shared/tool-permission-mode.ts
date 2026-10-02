@@ -4,9 +4,10 @@
  * - `"ask"` — every call waits for the user's approval, except the tools
  *   the user has already marked "always allow". A tool's own
  *   `requireApproval: false` does not count here.
- * - `"auto"` — the always-allow list, plus every tool that opted out of
- *   approval through `requireApproval: false` (host tools default to it);
- *   MCP tools, which never set the flag, keep asking.
+ * - `"auto"` — the always-allow list, every tool that opted out of
+ *   approval through `requireApproval: false` (host tools default to it),
+ *   and every MCP tool annotated `readOnlyHint: true` or
+ *   `destructiveHint: false`; a destructive or unannotated tool asks.
  * - `"allow"` — every call runs without asking.
  *
  * Resolved per call by `core/services/tools/auto-allow.ts`.

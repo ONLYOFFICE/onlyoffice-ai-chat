@@ -139,6 +139,11 @@ Tool names are namespaced by group id when exposed to the model:
 - `true` — show approval dialog. The user can approve once, deny,
   or pick "always allow" to auto-approve future calls.
 
+MCP tools never set `requireApproval`; under `"auto"` their
+`annotations` decide instead: `readOnlyHint: true` or an explicit
+`destructiveHint: false` runs without the dialog, a destructive or
+unannotated tool asks (the protocol's default is destructive).
+
 The permission mode (`"ask" | "auto" | "allow"`, the composer's
 "Permissions" row) sits above both: `"allow"` runs every tool without
 asking. See [`preferences-engine.md`](../core/services/preferences-engine.md).

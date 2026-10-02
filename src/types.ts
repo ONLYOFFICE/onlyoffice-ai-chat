@@ -1,4 +1,7 @@
 import type { ReasoningSupport } from "./shared/reasoning-level";
+import type { ToolAnnotations } from "./shared/mcp-item";
+
+export type { ToolAnnotations };
 
 /**
  * Descriptor for a tool exposed by an MCP server.
@@ -54,6 +57,16 @@ export type TMCPItem = {
    * custom-server tools leave it unset and keep prompting.
    */
   requireApproval?: boolean;
+
+  /**
+   * The MCP tool annotations as the server declared them in `tools/list`
+   * (kept verbatim on the descriptor; never sent to the model). The
+   * approval flow reads two of them under the "auto" permission mode:
+   * `readOnlyHint: true` and `destructiveHint: false` run without the
+   * dialog, a destructive or unannotated tool keeps asking — see
+   * `resolveAutoAllow`. Wire-serializable.
+   */
+  annotations?: ToolAnnotations;
 };
 
 /**

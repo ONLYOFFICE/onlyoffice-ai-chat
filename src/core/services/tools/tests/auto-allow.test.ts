@@ -25,6 +25,29 @@ describe("resolveAutoAllow", () => {
     expect(resolveAutoAllow("auto", { allowListed: false })).toBe(false);
   });
 
+  it("auto: read-only or explicitly non-destructive annotations run, destructive or missing ask", () => {
+    const run = (annotations?: Record<string, unknown>) =>
+      resolveAutoAllow("auto", { allowListed: false, annotations });
+    expect(run({ readOnlyHint: true })).toBe(true);
+    expect(run({ readOnlyHint: false, destructiveHint: false })).toBe(true);
+    expect(run({ destructiveHint: false })).toBe(true);
+    expect(run({ readOnlyHint: false, destructiveHint: true })).toBe(false);
+    expect(run({ readOnlyHint: false })).toBe(false);
+    expect(run({})).toBe(false);
+    expect(run(undefined)).toBe(false);
+    // Only literal booleans count.
+    expect(run({ readOnlyHint: "true" })).toBe(false);
+  });
+
+  it("ask: annotations never skip the dialog", () => {
+    expect(
+      resolveAutoAllow("ask", {
+        allowListed: false,
+        annotations: { readOnlyHint: true },
+      })
+    ).toBe(false);
+  });
+
   it("allow: everything runs", () => {
     expect(
       resolveAutoAllow("allow", { allowListed: false, requireApproval: true })

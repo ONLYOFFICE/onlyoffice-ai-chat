@@ -358,6 +358,7 @@ export type {
   TAttachmentRef,
   Thread,
   TMCPItem,
+  ToolAnnotations,
   TProcess,
   TProvider,
   TCloud,

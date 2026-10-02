@@ -1,11 +1,18 @@
 import type { BuiltinProviderType } from "../shared/builtin-provider-type";
-import type { TMCPItem } from "../shared/mcp-item";
+import type { TMCPItem, ToolAnnotations } from "../shared/mcp-item";
 import type { Model } from "../shared/model";
 import type { TProvider } from "../shared/provider";
 import type { ProviderType } from "../shared/provider-type";
 import type { ReasoningSupport } from "../shared/reasoning-level";
 
-export type { BuiltinProviderType, Model, ProviderType, TMCPItem, TProvider };
+export type {
+  BuiltinProviderType,
+  Model,
+  ProviderType,
+  TMCPItem,
+  ToolAnnotations,
+  TProvider,
+};
 
 /**
  * Chat conversation metadata. Represents a single chat session (thread).

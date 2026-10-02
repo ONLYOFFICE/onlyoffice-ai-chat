@@ -178,7 +178,7 @@ consumer side, around this generator.
      `tool-call-pending` with `autoAllow` derived from the tool
      permission mode (`storage.preferences.readToolPermissionMode()`,
      default `"ask"`), `storage.toolPrefs.readAllowAlways()` and the
-     tool's `requireApproval` — see `resolveAutoAllow` in
+     tool's `requireApproval` and MCP `annotations` — see `resolveAutoAllow` in
      [`auto-allow.ts`](../../../src/core/services/tools/auto-allow.ts).
 6. **Wrap in [`runChatStream`](../../../src/core/services/ai/engine.ts).**
    For every `tool-call-pending`:

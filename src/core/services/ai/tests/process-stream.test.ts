@@ -369,6 +369,41 @@ describe("processStream", () => {
     expect((event as { autoAllow: boolean }).autoAllow).toBe(true);
   });
 
+  it("under auto, a read-only annotated MCP tool skips the dialog and a destructive one asks", async () => {
+    const run = async (annotations: Record<string, unknown>) => {
+      const { storage } = makeStorage({ mode: "auto" });
+      const message: ThreadMessageLike = {
+        role: "assistant",
+        content: [
+          {
+            type: "tool-call",
+            toolCallId: "c1",
+            toolName: "mcp_tool",
+            args: {},
+          },
+        ],
+      } as ThreadMessageLike;
+      let event;
+      for await (const e of processStream(
+        feed([{ isEnd: true, responseMessage: message }]),
+        {
+          storage,
+          threadId: "t",
+          tools: [
+            { name: "mcp_tool", description: "", inputSchema: {}, annotations },
+          ],
+        }
+      )) {
+        event = e;
+      }
+      return (event as { autoAllow: boolean }).autoAllow;
+    };
+    expect(await run({ readOnlyHint: true })).toBe(true);
+    expect(await run({ readOnlyHint: false, destructiveHint: true })).toBe(
+      false
+    );
+  });
+
   it("under allow, every tool runs without asking", async () => {
     const { storage } = makeStorage({ mode: "allow" });
     const message: ThreadMessageLike = {

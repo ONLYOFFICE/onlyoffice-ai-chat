@@ -355,6 +355,17 @@ type TMCPItem = {
   description: string;                   // shown to the model + UI
   inputSchema: Record<string, unknown>;  // JSON Schema
   enabled?: boolean;                     // disabled tools are hidden from the model
+  serverType?: string;                   // the group the disabled / always-allow maps key on
+  requireApproval?: boolean;             // host tools: false skips the dialog under "auto"
+  annotations?: ToolAnnotations;         // MCP hints as declared; read under "auto"
+};
+
+type ToolAnnotations = {
+  title?: string;
+  readOnlyHint?: boolean;      // true → runs without the dialog under "auto"
+  destructiveHint?: boolean;   // false → same; true or absent → asks
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
 };
 ```
 
@@ -518,8 +529,10 @@ function isToolPermissionMode(value: unknown): value is ToolPermissionMode;
 How a tool call the model makes is approved: `"ask"` waits for the user
 every time (bar the tools already marked "always allow" — a tool's own
 `requireApproval: false` does not count), `"auto"` also skips the dialog
-for a tool that opted out through `requireApproval: false`, `"allow"`
-runs every call without asking. `resolveAutoAllow` in
+for a tool that opted out through `requireApproval: false` or whose MCP
+annotations say `readOnlyHint: true` or `destructiveHint: false`
+(destructive or unannotated tools still ask), `"allow"` runs every call
+without asking. `resolveAutoAllow` in
 [`auto-allow.ts`](../../src/core/services/tools/auto-allow.ts) is the
 one place the rule lives. Persisted through the
 [preferences engine](../core/services/preferences-engine.md) and
