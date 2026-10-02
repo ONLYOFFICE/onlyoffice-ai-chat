@@ -66,28 +66,28 @@ describe("readToolPermissionMode", () => {
     expect(read).toHaveBeenCalledWith("room");
   });
 
-  it("falls back to ask when nothing is stored or the adapter has no mode methods", async () => {
+  it("falls back to auto when nothing is stored or the adapter has no mode methods", async () => {
     const none = {
       preferences: { readToolPermissionMode: vi.fn().mockResolvedValue(null) },
     } as unknown as StorageAdapter;
-    expect(await readToolPermissionMode(none)).toBe("ask");
+    expect(await readToolPermissionMode(none)).toBe("auto");
     const legacy = { preferences: {} } as unknown as StorageAdapter;
-    expect(await readToolPermissionMode(legacy)).toBe("ask");
+    expect(await readToolPermissionMode(legacy)).toBe("auto");
     const bare = {} as unknown as StorageAdapter;
-    expect(await readToolPermissionMode(bare)).toBe("ask");
+    expect(await readToolPermissionMode(bare)).toBe("auto");
   });
 
   it("honours the host's fallback and ignores a value that is not a mode", async () => {
     const none = {
       preferences: { readToolPermissionMode: vi.fn().mockResolvedValue(null) },
     } as unknown as StorageAdapter;
-    expect(await readToolPermissionMode(none, undefined, "auto")).toBe("auto");
+    expect(await readToolPermissionMode(none, undefined, "ask")).toBe("ask");
     const junk = {
       preferences: {
         readToolPermissionMode: vi.fn().mockResolvedValue("yolo"),
       },
     } as unknown as StorageAdapter;
-    expect(await readToolPermissionMode(junk)).toBe("ask");
-    expect(await readToolPermissionMode(junk, undefined, "auto")).toBe("auto");
+    expect(await readToolPermissionMode(junk)).toBe("auto");
+    expect(await readToolPermissionMode(junk, undefined, "ask")).toBe("ask");
   });
 });

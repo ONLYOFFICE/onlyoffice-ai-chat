@@ -267,8 +267,8 @@ describe("PreferencesEngine tool permission mode", () => {
     };
   }
 
-  it("defaults to asking", () => {
-    expect(DEFAULT_PREFERENCES.toolPermissionMode).toBe("ask");
+  it("defaults to auto approve", () => {
+    expect(DEFAULT_PREFERENCES.toolPermissionMode).toBe("auto");
   });
 
   it("returns the stored mode", async () => {
@@ -281,12 +281,12 @@ describe("PreferencesEngine tool permission mode", () => {
     const none = new PreferencesEngine({
       storage: makeModeStorage({ mode: null }).storage,
     });
-    expect(await none.getToolPermissionMode()).toBe("ask");
+    expect(await none.getToolPermissionMode()).toBe("auto");
     const legacy = new PreferencesEngine(
       { storage: makeModeStorage({ withModeMethods: false }).storage },
-      { toolPermissionMode: "auto" }
+      { toolPermissionMode: "ask" }
     );
-    expect(await legacy.getToolPermissionMode()).toBe("auto");
+    expect(await legacy.getToolPermissionMode()).toBe("ask");
   });
 
   it("setToolPermissionMode round-trips and forwards the entity", async () => {

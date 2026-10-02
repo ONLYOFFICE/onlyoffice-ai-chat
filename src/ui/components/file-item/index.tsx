@@ -96,8 +96,9 @@ const FileItem = ({ file, withoutClose }: FileItemProps) => {
       {isImage ? (
         imageSrc ? (
           <img
+            // Cropped to the square, not stretched into it.
             className={cn(
-              "w-[36px] h-[36px] shrink-0",
+              "w-[36px] h-[36px] shrink-0 object-cover",
               isRTL ? "rounded-r-[8px]" : "rounded-l-[8px]"
             )}
             src={imageSrc}

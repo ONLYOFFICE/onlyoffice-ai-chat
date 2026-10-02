@@ -6,8 +6,8 @@ import {
 } from "../tool-permission-mode";
 
 describe("tool permission mode", () => {
-  it("defaults to asking", () => {
-    expect(DEFAULT_TOOL_PERMISSION_MODE).toBe("ask");
+  it("defaults to auto approve", () => {
+    expect(DEFAULT_TOOL_PERMISSION_MODE).toBe("auto");
     expect(TOOL_PERMISSION_MODES).toEqual(["ask", "auto", "allow"]);
   });
 

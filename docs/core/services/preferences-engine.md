@@ -264,7 +264,7 @@ init and writes every pick.
 async getToolPermissionMode(entityId?: string): Promise<ToolPermissionMode>;
 ```
 
-The persisted mode in scope, or `defaults.toolPermissionMode` (`"ask"`)
+The persisted mode in scope, or `defaults.toolPermissionMode` (`"auto"`)
 when none was stored — or when the storage adapter has no
 `readToolPermissionMode` (the mode methods on `PreferencesStorage` are
 optional).

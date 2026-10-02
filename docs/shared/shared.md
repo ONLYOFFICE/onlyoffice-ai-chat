@@ -522,7 +522,7 @@ module graph flat and lets callers import only what they use.
 type ToolPermissionMode = "ask" | "auto" | "allow";
 
 const TOOL_PERMISSION_MODES: readonly ToolPermissionMode[]; // most cautious first
-const DEFAULT_TOOL_PERMISSION_MODE = "ask";
+const DEFAULT_TOOL_PERMISSION_MODE = "auto";
 function isToolPermissionMode(value: unknown): value is ToolPermissionMode;
 ```
 

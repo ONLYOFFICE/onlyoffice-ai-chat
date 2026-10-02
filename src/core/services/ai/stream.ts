@@ -105,7 +105,7 @@ export type ProcessStreamContext = {
   /**
    * The permission mode assumed while none is persisted in scope — the
    * host's `PreferenceDefaults.toolPermissionMode` where it overrides one.
-   * Defaults to `"ask"`.
+   * Defaults to `"auto"`.
    */
   defaultToolPermissionMode?: ToolPermissionMode;
   /**

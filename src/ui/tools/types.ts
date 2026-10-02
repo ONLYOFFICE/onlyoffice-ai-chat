@@ -56,8 +56,8 @@ export interface HostTool {
 
   /**
    * Whether to show an approval dialog before executing. Default: false —
-   * no dialog while the user's permission mode is "auto"; under "ask"
-   * (the default mode) the dialog shows unless the tool is always-allowed.
+   * no dialog while the user's permission mode is "auto" (the default);
+   * under "ask" the dialog shows unless the tool is always-allowed.
    */
   requireApproval?: boolean;
 }

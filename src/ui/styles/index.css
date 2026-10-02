@@ -415,6 +415,10 @@
      card. Generated images (`generate_image`) keep their own size. */
   --chat-message-tool-call-image-max-height: 300px;
 
+  /* Max height of an image attached to a user message; the width follows the
+     image's own proportions, bounded by the row. */
+  --chat-message-image-max-height: 300px;
+
   /* Top margin of the chat-history search field (gap below the header). */
   --chat-list-search-margin-top: 8px;
 

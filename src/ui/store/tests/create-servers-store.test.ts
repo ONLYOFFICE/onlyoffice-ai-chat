@@ -15,7 +15,7 @@ function makeDeps(overrides?: {
   const grouped = overrides?.grouped ?? {};
   const disabled = overrides?.disabled ?? {};
   const webSearchEnabled = overrides?.webSearchEnabled ?? false;
-  const toolPermissionMode = overrides?.toolPermissionMode ?? "ask";
+  const toolPermissionMode = overrides?.toolPermissionMode ?? "auto";
   const systemTools = overrides?.systemTools ?? {};
 
   const servers = {
@@ -64,7 +64,7 @@ describe("createServersStore", () => {
     expect(st.tools).toEqual([]);
     expect(st.disabledTools).toEqual({});
     expect(st.webSearchEnabled).toBe(false);
-    expect(st.toolPermissionMode).toBe("ask");
+    expect(st.toolPermissionMode).toBe("auto");
     expect(st.manageToolData).toBeUndefined();
   });
 
@@ -549,7 +549,7 @@ describe("createServersStore", () => {
       const deps = makeDeps({ toolPermissionMode: "whatever" });
       const s = createServersStore(deps);
       await s.getState().initServers();
-      expect(s.getState().toolPermissionMode).toBe("ask");
+      expect(s.getState().toolPermissionMode).toBe("auto");
     });
 
     it("a failed mode read never blocks the servers from starting", async () => {
@@ -560,7 +560,7 @@ describe("createServersStore", () => {
       const s = createServersStore(deps);
       await s.getState().initServers();
       expect(s.getState().registeredServers).toEqual(["a"]);
-      expect(s.getState().toolPermissionMode).toBe("ask");
+      expect(s.getState().toolPermissionMode).toBe("auto");
       expect(deps.callbacksManager.emit).not.toHaveBeenCalled();
     });
 
@@ -575,7 +575,7 @@ describe("createServersStore", () => {
       ).mockRejectedValue(missing);
       const s = createServersStore(deps);
       await s.getState().initServers();
-      expect(s.getState().toolPermissionMode).toBe("ask");
+      expect(s.getState().toolPermissionMode).toBe("auto");
       expect(deps.callbacksManager.emit).not.toHaveBeenCalled();
       // The pick still lands in memory for the session.
       await s.getState().setToolPermissionMode("allow");

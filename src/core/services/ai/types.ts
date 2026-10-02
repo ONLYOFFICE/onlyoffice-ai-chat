@@ -152,7 +152,7 @@ export type AIEngineDeps = {
    * The tool permission mode assumed while the user has persisted none —
    * pass the same value as `PreferenceDefaults.toolPermissionMode` when
    * the host overrides that default, so the approval flow and the
-   * composer's "Permissions" row agree. Defaults to `"ask"`.
+   * composer's "Permissions" row agree. Defaults to `"auto"`.
    */
   defaultToolPermissionMode?: ToolPermissionMode;
 

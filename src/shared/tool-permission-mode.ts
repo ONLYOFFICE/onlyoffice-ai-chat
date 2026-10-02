@@ -24,8 +24,12 @@ export const TOOL_PERMISSION_MODES: readonly ToolPermissionMode[] = [
   "allow",
 ];
 
-/** The mode in force until the user picks another. */
-export const DEFAULT_TOOL_PERMISSION_MODE: ToolPermissionMode = "ask";
+/**
+ * The mode in force until the user picks another: "auto", so a tool that
+ * opted out of approval (host tools by default, read-only MCP tools) keeps
+ * running without a dialog the way it did before the mode existed.
+ */
+export const DEFAULT_TOOL_PERMISSION_MODE: ToolPermissionMode = "auto";
 
 /** Type guard for {@link ToolPermissionMode}. */
 export function isToolPermissionMode(

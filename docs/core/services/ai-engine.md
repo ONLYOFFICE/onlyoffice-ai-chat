@@ -54,7 +54,7 @@ type AIEngineDeps = {
   /**
    * The tool permission mode assumed while the user has persisted none.
    * Pass the same value as `PreferenceDefaults.toolPermissionMode` when
-   * the host overrides that default. Defaults to `"ask"`.
+   * the host overrides that default. Defaults to `"auto"`.
    */
   defaultToolPermissionMode?: ToolPermissionMode;
 
@@ -177,7 +177,7 @@ consumer side, around this generator.
    - unresolved tool call in the terminal message → emit
      `tool-call-pending` with `autoAllow` derived from the tool
      permission mode (`storage.preferences.readToolPermissionMode()`,
-     default `"ask"`), `storage.toolPrefs.readAllowAlways()` and the
+     default `"auto"`), `storage.toolPrefs.readAllowAlways()` and the
      tool's `requireApproval` and MCP `annotations` — see `resolveAutoAllow` in
      [`auto-allow.ts`](../../../src/core/services/tools/auto-allow.ts).
 6. **Wrap in [`runChatStream`](../../../src/core/services/ai/engine.ts).**

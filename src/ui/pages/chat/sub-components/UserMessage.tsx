@@ -388,7 +388,9 @@ export const UserMessage = memo(() => {
             data-testid="user-message-attachments"
             className="col-span-full col-start-1 row-start-1 mb-[8px] overflow-x-auto"
           >
-            <div className="flex flex-row gap-[8px] w-max justify-end ms-auto">
+            {/* Wraps rather than scrolls: an image keeps its own proportions
+                (see `ImagePreview`), so a wide one may take the whole row. */}
+            <div className="flex flex-row flex-wrap gap-[8px] justify-end">
               {images.map((img, i) => (
                 <ImagePreview
                   key={img.refId ?? `${img.inline}-${i}`}
@@ -512,12 +514,14 @@ const ImagePreview = ({ item }: { item: ImageItem }) => {
       />
     );
   }
+  // Natural proportions, capped in height: a portrait page stays a page and
+  // a wide screenshot is bounded by the row, neither is cropped or squashed.
   return (
     <img
       src={src}
       alt=""
       data-testid="user-message-image"
-      className="h-[72px] w-[72px] rounded-[8px] object-cover"
+      className="h-auto w-auto max-h-[var(--chat-message-image-max-height)] max-w-full rounded-[8px]"
     />
   );
 };

@@ -293,7 +293,7 @@ describe("processStream", () => {
     expect((event as { autoAllow: boolean }).autoAllow).toBe(false);
   });
 
-  it("under ask (the default), requireApproval: false still prompts unless always-allowed", async () => {
+  it("under ask, requireApproval: false still prompts unless always-allowed", async () => {
     const hostTool = {
       name: "host_edit",
       description: "",
@@ -322,11 +322,11 @@ describe("processStream", () => {
       }
       return (event as { autoAllow: boolean }).autoAllow;
     };
-    // Nothing stored → ask.
+    // Nothing stored → the default, auto: the opt-out runs.
     const none = makeStorage();
-    expect(await run(none.storage)).toBe(false);
+    expect(await run(none.storage)).toBe(true);
     expect(none.readToolPermissionMode).toHaveBeenCalledWith("room");
-    // Stored ask, same answer.
+    // Stored ask: the opt-out no longer counts.
     expect(await run(makeStorage({ mode: "ask" }).storage)).toBe(false);
     // The always-allow pin still wins under ask.
     expect(
@@ -334,7 +334,7 @@ describe("processStream", () => {
     ).toBe(true);
   });
 
-  it("a host default of auto applies while nothing is persisted", async () => {
+  it("a host default of ask applies while nothing is persisted", async () => {
     const { storage } = makeStorage();
     const message: ThreadMessageLike = {
       role: "assistant",
@@ -353,7 +353,7 @@ describe("processStream", () => {
       {
         storage,
         threadId: "t",
-        defaultToolPermissionMode: "auto",
+        defaultToolPermissionMode: "ask",
         tools: [
           {
             name: "host_edit",
@@ -366,7 +366,7 @@ describe("processStream", () => {
     )) {
       event = e;
     }
-    expect((event as { autoAllow: boolean }).autoAllow).toBe(true);
+    expect((event as { autoAllow: boolean }).autoAllow).toBe(false);
   });
 
   it("under auto, a read-only annotated MCP tool skips the dialog and a destructive one asks", async () => {

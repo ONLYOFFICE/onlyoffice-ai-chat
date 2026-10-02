@@ -134,7 +134,7 @@ Tool names are namespaced by group id when exposed to the model:
 
 `requireApproval`:
 - `false` (default) — execute immediately while the permission mode is
-  `"auto"`. Under `"ask"` (the default mode) the dialog shows anyway,
+  `"auto"` (the default mode). Under `"ask"` the dialog shows anyway,
   unless the user has picked "always allow" for the tool.
 - `true` — show approval dialog. The user can approve once, deny,
   or pick "always allow" to auto-approve future calls.
