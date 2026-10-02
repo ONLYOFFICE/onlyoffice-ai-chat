@@ -8,6 +8,8 @@ vi.mock("react-i18next", () => ({
 
 const mockSetSessionChatProfile = vi.fn();
 const mockSetReasoningLevel = vi.fn();
+const mockSetToolPermissionMode = vi.fn();
+let mockToolPermissionMode = "ask";
 let mockReasoningLevel = "off";
 // Off by default so the existing item counts hold; the effort describe
 // switches it on.
@@ -75,6 +77,11 @@ function setupStores(overrides?: {
     reasoningLevel: mockReasoningLevel,
     setReasoningLevel: mockSetReasoningLevel,
   };
+  const serversState = {
+    tools: [],
+    toolPermissionMode: mockToolPermissionMode,
+    setToolPermissionMode: mockSetToolPermissionMode,
+  };
   const selectCurrentChatProfile = (s: typeof profilesState) =>
     s.sessionChatProfile ?? s.chatProfile ?? s.defaultProfile;
   mockUseStores.mockReturnValue({
@@ -82,9 +89,10 @@ function setupStores(overrides?: {
       if (typeof selector === "function") return selector(profilesState);
       return profilesState;
     },
-    useServersStore: () => ({
-      tools: [],
-    }),
+    useServersStore: (selector?: (s: typeof serversState) => unknown) => {
+      if (typeof selector === "function") return selector(serversState);
+      return serversState;
+    },
     useMessageStore: () => ({
       messages: [],
     }),
@@ -455,7 +463,7 @@ describe("SelectModel effort row", () => {
     render(<SelectModel />);
     // Only the profiles scroll; Effort is a footer row and stays in view.
     expect(items().map((i) => i.text)).toEqual(["GPT", "Claude"]);
-    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort", "Permissions"]);
     expect(footer()[0].isSeparator).toBe(true);
     expect(effortRow()?.trailingText).toBe("ThinkingLevelMedium");
     expect(effortRow()?.subMenu?.map((i) => i.text)).toEqual([
@@ -484,7 +492,7 @@ describe("SelectModel effort row", () => {
       "Agent A",
       "Agent B",
     ]);
-    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort", "Permissions"]);
   });
 
   it("sets the picked level", () => {
@@ -493,11 +501,11 @@ describe("SelectModel effort row", () => {
     expect(mockSetReasoningLevel).toHaveBeenCalledWith("high");
   });
 
-  it("has no footer at all for a model that cannot think", () => {
+  it("drops Effort but keeps Permissions for a model that cannot think", () => {
     mockReasoningSupport = { thinks: false, canDisable: false, depths: [] };
     render(<SelectModel />);
     expect(items().map((i) => i.text)).toEqual(["GPT", "Claude"]);
-    expect(footer()).toEqual([]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Permissions"]);
   });
 });
 
@@ -540,7 +548,7 @@ describe("SelectModel locked", () => {
     expect((items()[0] as { "data-testid"?: string })["data-testid"]).toBe(
       "model-selector-current"
     );
-    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort", "Permissions"]);
     expect(footer()[0].isSeparator).toBe(true);
     expect(footer()[1].trailingText).toBe("ThinkingLevelMedium");
   });
@@ -565,7 +573,7 @@ describe("SelectModel locked", () => {
       </WidgetConfigProvider>
     );
     expect(items().map((i) => i.text)).toEqual(["GPT"]);
-    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort", "Permissions"]);
   });
 
   it("Effort still sets the level", () => {
@@ -578,14 +586,14 @@ describe("SelectModel locked", () => {
     mockReasoningSupport = { thinks: false, canDisable: false, depths: [] };
     render(<SelectModel locked />);
     expect(items().map((i) => i.text)).toEqual(["GPT"]);
-    expect(footer()).toEqual([]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Permissions"]);
   });
 
   it("drops the separator when there is no profile to sit above it", () => {
     setupStores({ profiles: [], currentProfile: null });
     render(<SelectModel locked />);
     expect(items()).toEqual([]);
-    expect(footer().map((i) => i.text)).toEqual(["Effort"]);
+    expect(footer().map((i) => i.text)).toEqual(["Effort", "Permissions"]);
   });
 
   it("wins over profilePickerReadOnly so Effort stays reachable", () => {
@@ -596,6 +604,42 @@ describe("SelectModel locked", () => {
     );
     expect(screen.queryByTestId("model-selector-readonly")).toBeNull();
     expect(items().map((i) => i.text)).toEqual(["GPT"]);
-    expect(footer().map((i) => i.text)).toEqual(["", "Effort"]);
+    expect(footer().map((i) => i.text)).toEqual(["", "Effort", "Permissions"]);
+  });
+});
+
+describe("SelectModel permissions row", () => {
+  const footer = () => lastComboBoxProps.footerItems as DropDownItemProps[];
+  const row = () => footer().find((i) => i.text === "Permissions");
+
+  beforeEach(() => {
+    mockSetToolPermissionMode.mockClear();
+    mockToolPermissionMode = "ask";
+    setupStores({
+      profiles: [{ id: "p1", name: "GPT", capabilities: 0x01 }],
+      currentProfile: { id: "p1", name: "GPT" },
+    });
+  });
+
+  it("shows the current mode and lists the three modes", () => {
+    mockToolPermissionMode = "auto";
+    setupStores({
+      profiles: [{ id: "p1", name: "GPT", capabilities: 0x01 }],
+      currentProfile: { id: "p1", name: "GPT" },
+    });
+    render(<SelectModel />);
+    expect(row()?.trailingText).toBe("PermissionsAutoApprove");
+    expect(row()?.subMenu?.map((i) => i.text)).toEqual([
+      "PermissionsAskEveryTime",
+      "PermissionsAutoApprove",
+      "PermissionsAllowWithoutAsking",
+    ]);
+    expect(row()?.subMenu?.map((i) => i.checked)).toEqual([false, true, false]);
+  });
+
+  it("a pick persists the mode", () => {
+    render(<SelectModel />);
+    row()!.subMenu![2].onClick(new Event("click"));
+    expect(mockSetToolPermissionMode).toHaveBeenCalledWith("allow");
   });
 });

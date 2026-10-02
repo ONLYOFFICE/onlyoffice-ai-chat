@@ -168,8 +168,11 @@ consumer side, around this generator.
    - subsequent deltas → `storage.messages.update(...)` + emit `message-delta`,
    - terminal `isEnd` → emit `message-end` (or `message-incomplete`),
    - unresolved tool call in the terminal message → emit
-     `tool-call-pending` with `autoAllow` derived from
-     `storage.toolPrefs.readAllowAlways()`.
+     `tool-call-pending` with `autoAllow` derived from the tool
+     permission mode (`storage.preferences.readToolPermissionMode()`,
+     default `"ask"`), `storage.toolPrefs.readAllowAlways()` and the
+     tool's `requireApproval` — see `resolveAutoAllow` in
+     [`auto-allow.ts`](../../../src/core/services/tools/auto-allow.ts).
 6. **Wrap in [`runChatStream`](../../../src/core/services/ai/engine.ts).**
    For every `tool-call-pending`:
    - If the tool came from `toolsAdapter` / built-in source **and is
@@ -377,7 +380,7 @@ adapter tool calls in the resumed round still auto-execute.
 When `allowAlways: true`, the engine appends the prefixed tool
 name to `storage.toolPrefs.allowAlways`; subsequent rounds surface
 `tool-call-pending` with `autoAllow: true` and the consumer skips
-the dialog.
+the dialog — in every permission mode, `"ask"` included.
 
 ## `denyToolCall`
 
@@ -617,7 +620,7 @@ when reading or extending the engine.
 | ------------------------------------------------------------------------------ | -------------------------------------- | ---- |
 | [`engine.ts`](../../../src/core/services/ai/engine.ts)                          | `AIEngine`                             | Public class — `sendWithStream` / `approveToolCall` / `denyToolCall` / `send` / `sendCustom`, plus the private `runChatStream` interceptor for adapter tool calls. |
 | [`types.ts`](../../../src/core/services/ai/types.ts)                            | `AIEngineDeps`, `SendStreamInput`, `SendInput`, `SendCustomInput`, `SendResult`, `ApproveToolCallInput`, `DenyToolCallInput`, `ToolCallData`, `ChatEvent` | Type definitions for every public input / output |
-| [`stream.ts`](../../../src/core/services/ai/stream.ts)                          | `processStream`, `persistTerminal`     | Drive a `SendMessageResult` stream end-to-end into `ChatEvent`s. Persist deltas + terminal message; emit `tool-call-pending` with `autoAllow` set from `storage.toolPrefs`. |
+| [`stream.ts`](../../../src/core/services/ai/stream.ts)                          | `processStream`, `persistTerminal`     | Drive a `SendMessageResult` stream end-to-end into `ChatEvent`s. Persist deltas + terminal message; emit `tool-call-pending` with `autoAllow` set from the permission mode, `storage.toolPrefs` and the tool's `requireApproval`. |
 | [`tool-call.ts`](../../../src/core/services/ai/tool-call.ts)                    | `ToolCallPart`, `readToolCall`, `readToolCallArgs`, `replaceContentPart`, `patchToolCallArgs`, `patchToolCallResult`, `resumeChat` | Tool-call message-part helpers + `resumeChat` (persists result, resumes a fresh `processStream` merged into the same assistant bubble). |
 | [`tools.ts`](../../../src/core/services/ai/tools.ts)                            | `ToolContext`, `buildToolContext`, `executeAdapterTool`, `resolveToolSource`, `mergeToolsByName` | Tool-list aggregation and adapter-tool dispatch. Used by `sendWithStream` / `approveToolCall` / `denyToolCall`. |
 | [`sources/image-generation.ts`](../../../src/core/services/ai/sources/image-generation.ts) | `getImageGenerationTools`, `callImageGenerationTool`, `IMAGE_GENERATION_TYPE` | Built-in image-generation source — `getTools` gated by an explicit `ActionType.ImageGeneration` assignment; `callTool` resolves the profile + provider at call time. |

@@ -110,12 +110,16 @@ describe("createPreferencesApi", () => {
     api.isDeepModeSet();
     api.getReasoningLevel();
     api.setReasoningLevel("high" as never);
+    api.getToolPermissionMode();
+    api.setToolPermissionMode("allow");
     expectCall(1, "preferences", "getDeepMode", [undefined]);
     expectCall(2, "preferences", "setDeepMode", [true, undefined]);
     expectCall(3, "preferences", "clearDeepMode", [undefined]);
     expectCall(4, "preferences", "isDeepModeSet", [undefined]);
     expectCall(5, "preferences", "getReasoningLevel", [undefined]);
     expectCall(6, "preferences", "setReasoningLevel", ["high", undefined]);
+    expectCall(7, "preferences", "getToolPermissionMode", [undefined]);
+    expectCall(8, "preferences", "setToolPermissionMode", ["allow", undefined]);
   });
 });
 

@@ -6,6 +6,7 @@ import type { StorageAdapter } from "../../storage";
 import logger from "../../../shared/logger";
 import type { Profile } from "../../types";
 import { allowAlwaysToken } from "../tools/allow-always";
+import { readToolPermissionMode, resolveAutoAllow } from "../tools/auto-allow";
 import { readToolCall } from "./tool-call";
 import type { ChatEvent } from "./types";
 
@@ -96,7 +97,8 @@ export type ProcessStreamContext = {
   isResume?: boolean;
   /**
    * Opaque scope token forwarded to scoped storage reads (e.g.
-   * `toolPrefs.readAllowAlways`). Engine never inspects it.
+   * `toolPrefs.readAllowAlways`, `preferences.readToolPermissionMode`).
+   * Engine never inspects it.
    */
   entityId?: string;
   /**
@@ -289,23 +291,27 @@ export async function* processStream(
             await persistFinal(final);
 
             const toolName = readToolCall(final, toolIdx)?.toolName ?? null;
-            const allowList = await storage.toolPrefs.readAllowAlways(
-              ctx.entityId
-            );
-            // A tool auto-allows when the user pinned it to the persisted
-            // "always-allow" list OR the tool itself opts in via
-            // `requireApproval === false` (host tools default to this). A tool
-            // that never sets the flag (MCP / custom servers) keeps prompting.
-            // The list is keyed per server, so the lookup composes the same
-            // `${serverType}_${toolName}` token the settings routes and the
-            // approval dialog write (DocSpace bug 84009).
+            const [allowList, mode] = await Promise.all([
+              storage.toolPrefs.readAllowAlways(ctx.entityId),
+              readToolPermissionMode(storage, ctx.entityId),
+            ]);
+            // Whether the call skips the dialog is the permission mode's
+            // call (see `resolveAutoAllow`): under "ask" only a tool the
+            // user pinned to the persisted "always-allow" list does; "auto"
+            // also lets a tool opt in via `requireApproval === false`;
+            // "allow" runs everything. The list is keyed per server, so the
+            // lookup composes the same `${serverType}_${toolName}` token the
+            // settings routes and the approval dialog write (DocSpace bug
+            // 84009).
             const tool = ctx.tools?.find((t) => t.name === toolName);
             const autoAllow =
               !!toolName &&
-              (allowList.includes(
-                allowAlwaysToken(tool?.serverType, toolName)
-              ) ||
-                tool?.requireApproval === false);
+              resolveAutoAllow(mode, {
+                allowListed: allowList.includes(
+                  allowAlwaysToken(tool?.serverType, toolName)
+                ),
+                requireApproval: tool?.requireApproval,
+              });
 
             yield {
               type: "tool-call-pending",

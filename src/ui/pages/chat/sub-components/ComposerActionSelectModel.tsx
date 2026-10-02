@@ -8,6 +8,7 @@ import type { DropDownItemProps } from "../../../components/dropdown-item/DropDo
 import type { ProfilePickerAction } from "../profile-picker-actions";
 import type { Profile } from "../../../../types";
 import { useEffortMenuItem } from "./effort-menu";
+import { usePermissionsMenuItem } from "./permissions-menu";
 
 const SEPARATOR: DropDownItemProps = {
   text: "",
@@ -22,7 +23,8 @@ type SelectModelProps = {
    * The host fixes the profile (`hideProfilePicker`, or an entity chat by
    * default): the menu offers no other profile and no host actions — just
    * the current profile as a checked, inert row and, pinned below a
-   * separator, the Effort picker, which has nowhere else to live.
+   * separator, the Effort and Permissions rows, which have nowhere else
+   * to live.
    */
   locked?: boolean;
 };
@@ -47,6 +49,8 @@ const SelectModel = ({ locked = false }: SelectModelProps) => {
   // sits at the foot of the model picker rather than among the composer's
   // request switches. `null` for a model that cannot think — no row then.
   const effortItem = useEffortMenuItem();
+  // Permissions follows Effort in the same pinned footer.
+  const permissionsItem = usePermissionsMenuItem();
 
   const chatProfiles = React.useMemo(
     () =>
@@ -158,14 +162,14 @@ const SelectModel = ({ locked = false }: SelectModelProps) => {
     locked,
   ]);
 
-  // Effort is pinned below the list under its own separator: however many
-  // profiles there are, only they scroll and the depth stays in view. With
-  // nothing above it (locked, no profile yet) the separator would separate
-  // nothing, so it goes too.
+  // Effort and Permissions are pinned below the list under their own
+  // separator: however many profiles there are, only they scroll and the
+  // two rows stay in view. With nothing above them (locked, no profile yet)
+  // the separator would separate nothing, so it goes too.
   const footerItems = React.useMemo<DropDownItemProps[]>(() => {
-    if (!effortItem) return [];
-    return items.length > 0 ? [SEPARATOR, effortItem] : [effortItem];
-  }, [effortItem, items]);
+    const rows = effortItem ? [effortItem, permissionsItem] : [permissionsItem];
+    return items.length > 0 ? [SEPARATOR, ...rows] : rows;
+  }, [effortItem, permissionsItem, items]);
 
   // Read-only mode: the current profile is a plain, non-interactive label
   // (no dropdown, no arrow) for hosts that fix the profile themselves.

@@ -253,6 +253,12 @@ export {
   type ReasoningLevel,
   type ReasoningSupport,
 } from "./shared/reasoning-level";
+export {
+  DEFAULT_TOOL_PERMISSION_MODE,
+  TOOL_PERMISSION_MODES,
+  isToolPermissionMode,
+  type ToolPermissionMode,
+} from "./shared/tool-permission-mode";
 
 // ---------------------------------------------------------------------------
 // Settings (key/value adapter contract — implemented by the host)

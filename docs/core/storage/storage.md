@@ -445,6 +445,21 @@ upsertReasoningLevel?(value: ReasoningLevel, entityId?: string): Promise<void>;
 deleteReasoningLevel?(entityId?: string): Promise<void>;
 ```
 
+The **tool permission mode** — how a tool call the model makes is
+approved (`"ask"` every time bar the always-allow list, `"auto"` also
+skips the dialog for a tool with `requireApproval: false`, `"allow"`
+never asks). Optional for the same reason; the engine
+falls back to `"ask"` when they are absent and only ever calls
+`read` / `upsert`:
+
+```ts
+createToolPermissionMode?(value: ToolPermissionMode, entityId?: string): Promise<void>;
+readToolPermissionMode?(entityId?: string): Promise<ToolPermissionMode | null>;
+updateToolPermissionMode?(value: ToolPermissionMode, entityId?: string): Promise<void>;
+upsertToolPermissionMode?(value: ToolPermissionMode, entityId?: string): Promise<void>;
+deleteToolPermissionMode?(entityId?: string): Promise<void>;
+```
+
 Each method takes an optional `entityId` last argument — when
 provided, the read/write is scoped to that entity, otherwise it
 operates on the unscoped (global) value. See

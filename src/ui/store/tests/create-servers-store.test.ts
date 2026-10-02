@@ -2,17 +2,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppContext } from "../../../app-context";
 import type { CallbacksManager } from "../../providers/EventsProvider";
 import type { ServerAPI } from "../../providers/ApiProvider";
+import { RouteError } from "../../providers/ApiProvider/fetcher";
 import { createServersStore } from "../create-servers-store";
 
 function makeDeps(overrides?: {
   grouped?: Record<string, { name: string; enabled?: boolean }[]>;
   disabled?: Record<string, string[]>;
   webSearchEnabled?: boolean;
+  toolPermissionMode?: string;
   systemTools?: Record<string, { name: string; enabled?: boolean }[]>;
 }) {
   const grouped = overrides?.grouped ?? {};
   const disabled = overrides?.disabled ?? {};
   const webSearchEnabled = overrides?.webSearchEnabled ?? false;
+  const toolPermissionMode = overrides?.toolPermissionMode ?? "ask";
   const systemTools = overrides?.systemTools ?? {};
 
   const servers = {
@@ -40,6 +43,10 @@ function makeDeps(overrides?: {
     webSearch: {
       isConfigured: vi.fn().mockResolvedValue(webSearchEnabled),
     },
+    preferences: {
+      getToolPermissionMode: vi.fn().mockResolvedValue(toolPermissionMode),
+      setToolPermissionMode: vi.fn().mockResolvedValue(undefined),
+    },
   } as unknown as ServerAPI;
 
   const callbacksManager = { emit: vi.fn() } as unknown as CallbacksManager;
@@ -57,6 +64,7 @@ describe("createServersStore", () => {
     expect(st.tools).toEqual([]);
     expect(st.disabledTools).toEqual({});
     expect(st.webSearchEnabled).toBe(false);
+    expect(st.toolPermissionMode).toBe("ask");
     expect(st.manageToolData).toBeUndefined();
   });
 
@@ -129,7 +137,9 @@ describe("createServersStore", () => {
     const st = s.getState();
     // Cards see the system server...
     expect(st.servers.docspace.map((t) => t.name)).toEqual(["getmy_folder"]);
-    expect(st.systemTools.docspace.map((t) => t.name)).toEqual(["getmy_folder"]);
+    expect(st.systemTools.docspace.map((t) => t.name)).toEqual([
+      "getmy_folder",
+    ]);
     // ...but `tools` must NOT list it — the engine injects and executes
     // system tools server-side.
     expect(st.tools.map((t) => t.name)).toEqual(["client_tool"]);
@@ -260,11 +270,14 @@ describe("createServersStore", () => {
       "web_crawling",
     ]);
     // Multi-tool flip omits `toolName`.
-    expect(deps.callbacksManager.emit).toHaveBeenCalledWith("onServersUpdated", {
-      kind: "tool-toggled",
-      toolType: "web-search",
-      enabled: false,
-    });
+    expect(deps.callbacksManager.emit).toHaveBeenCalledWith(
+      "onServersUpdated",
+      {
+        kind: "tool-toggled",
+        toolType: "web-search",
+        enabled: false,
+      }
+    );
   });
 
   it("changeToolStatus dedupes when disabling already-disabled tool", async () => {
@@ -508,5 +521,62 @@ describe("createServersStore", () => {
     const deps = makeDeps({ webSearchEnabled: true });
     const s = createServersStore(deps);
     expect(await s.getState().getWebSearchEnabled()).toBe(true);
+  });
+
+  describe("tool permission mode", () => {
+    it("initServers reads the persisted mode", async () => {
+      const deps = makeDeps({ toolPermissionMode: "allow" });
+      const s = createServersStore(deps);
+      await s.getState().initServers();
+      expect(deps.api.preferences.getToolPermissionMode).toHaveBeenCalledWith(
+        undefined
+      );
+      expect(s.getState().toolPermissionMode).toBe("allow");
+    });
+
+    it("setToolPermissionMode persists then applies", async () => {
+      const deps = makeDeps();
+      const s = createServersStore(deps);
+      await s.getState().setToolPermissionMode("auto");
+      expect(deps.api.preferences.setToolPermissionMode).toHaveBeenCalledWith(
+        "auto",
+        undefined
+      );
+      expect(s.getState().toolPermissionMode).toBe("auto");
+    });
+
+    it("a failed mode read never blocks the servers from starting", async () => {
+      const deps = makeDeps();
+      (
+        deps.api.preferences.getToolPermissionMode as ReturnType<typeof vi.fn>
+      ).mockRejectedValue(new Error("network"));
+      const s = createServersStore(deps);
+      await s.getState().initServers();
+      expect(s.getState().registeredServers).toEqual(["a"]);
+      expect(s.getState().toolPermissionMode).toBe("ask");
+      expect(deps.callbacksManager.emit).not.toHaveBeenCalled();
+    });
+
+    it("keeps the default and stops asking when the host has no route", async () => {
+      const deps = makeDeps();
+      const missing = new RouteError(404, "Not Found");
+      (
+        deps.api.preferences.getToolPermissionMode as ReturnType<typeof vi.fn>
+      ).mockRejectedValue(missing);
+      (
+        deps.api.preferences.setToolPermissionMode as ReturnType<typeof vi.fn>
+      ).mockRejectedValue(missing);
+      const s = createServersStore(deps);
+      await s.getState().initServers();
+      expect(s.getState().toolPermissionMode).toBe("ask");
+      expect(deps.callbacksManager.emit).not.toHaveBeenCalled();
+      // The pick still lands in memory for the session.
+      await s.getState().setToolPermissionMode("allow");
+      expect(s.getState().toolPermissionMode).toBe("allow");
+      await s.getState().reload();
+      expect(deps.api.preferences.getToolPermissionMode).toHaveBeenCalledTimes(
+        1
+      );
+    });
   });
 });

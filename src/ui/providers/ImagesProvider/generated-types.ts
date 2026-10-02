@@ -25,6 +25,7 @@ export type IconName =
   | "btn-menu-navigation"
   | "btn-menu-search"
   | "btn-more.small"
+  | "btn-permission"
   | "btn-previtem"
   | "btn-prompt"
   | "btn-remove"
