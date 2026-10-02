@@ -368,22 +368,16 @@ describe("UserMessage", () => {
     expect(images[1].getAttribute("src")).toBe("data:image/png;base64,def");
   });
 
-  it("keeps an image's own proportions, capped at 300px in height", () => {
+  it("keeps an image's own proportions, capped at the height variable", () => {
     mockMessageContent.current = [
       { type: "text", text: "Portrait page" },
       { type: "image", image: "data:image/png;base64,abc" },
     ];
     render(<UserMessage />);
-    const image = screen.getByTestId("user-message-image");
-    expect(image.className).toContain(
-      "max-h-[var(--chat-message-image-max-height)]"
-    );
+    const image = screen.getByTestId("user-message-image") as HTMLImageElement;
+    expect(image.style.maxHeight).toBe("var(--chat-message-image-max-height)");
     expect(image.className).not.toMatch(/\bh-\[72px\]/);
     expect(image.className).not.toContain("object-cover");
-    // Without this the preflight's max-width clamps the width on its own and
-    // the proportions are lost for anything taller than the cap.
-    expect(image.className).toContain("max-w-none");
-    expect(image.className).not.toContain("max-w-full");
   });
 
   it("renders files when content has file items", () => {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.24
+
+### Fixed
+
+- **Pictures a tool returns, and attached images, keep their proportions.** A `max-width: 100%` and a `max-height` on one `<img>` do not compose: when a picture violates both the browser clamps each axis on its own, so a portrait page under a tool card (and, since 0.6.22, in a sent message) rendered as a 696×300 strip. Both now go through `BoundedImage`, which derives the width cap from the height cap and the picture's own ratio once it has loaded (`min(100%, cap × ratio)`), so only one axis is ever clamped. The attachments row of a message wraps again instead of scrolling. `generate_image` results are unchanged.
+
 ## 0.6.23
 
 ### Fixed

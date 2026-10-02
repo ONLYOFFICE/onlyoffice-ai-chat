@@ -18,6 +18,7 @@ import type { TAttachmentFile } from "../../../../types";
 import { PROMPT_DIALOG_CLASS } from "./ComposerActionPrompts";
 import { useToast } from "../../../components/toast";
 import { useWidgetConfig } from "../../../../widget-config";
+import { BoundedImage } from "../../../components/bounded-image";
 import logger from "../../../../shared/logger";
 
 /**
@@ -388,9 +389,9 @@ export const UserMessage = memo(() => {
             data-testid="user-message-attachments"
             className="col-span-full col-start-1 row-start-1 mb-[8px] overflow-x-auto"
           >
-            {/* Scrolls rather than wraps: an image keeps its own proportions
-                (see `ImagePreview`), so a wide one may outgrow the row. */}
-            <div className="flex flex-row gap-[8px] w-max justify-end ms-auto">
+            {/* Wraps rather than scrolls: an image keeps its own proportions
+                (see `ImagePreview`), so a wide one may take the whole row. */}
+            <div className="flex flex-row flex-wrap gap-[8px] justify-end">
               {images.map((img, i) => (
                 <ImagePreview
                   key={img.refId ?? `${img.inline}-${i}`}
@@ -514,17 +515,16 @@ const ImagePreview = ({ item }: { item: ImageItem }) => {
       />
     );
   }
-  // Natural proportions, capped in height only. `max-w-none` undoes the
-  // preflight's `max-width: 100%`: with both a max-width and a max-height in
-  // force the browser clamps each axis on its own and a portrait page comes
-  // out as a wide strip (CSS 2.1 §10.4). A wider-than-the-row image scrolls
-  // in the attachments row instead.
+  // Natural proportions, capped in height; the width cap follows the ratio
+  // (see `BoundedImage`), so a portrait page stays a page and a wide shot is
+  // bounded by the row.
   return (
-    <img
+    <BoundedImage
       src={src}
       alt=""
       data-testid="user-message-image"
-      className="h-auto w-auto max-w-none shrink-0 max-h-[var(--chat-message-image-max-height)] rounded-[8px]"
+      maxHeightVar="--chat-message-image-max-height"
+      className="rounded-[8px]"
     />
   );
 };
