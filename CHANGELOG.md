@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.22
+
+### Changed
+
+- **The permission mode defaults to `Auto approve`.** 0.6.20 shipped with `Ask every time`, which made every host tool that used to run silently show the dialog until the user found the new row. `auto` is the behaviour the widget had before the mode existed, so an upgrade changes nothing until the user picks otherwise. `DEFAULT_TOOL_PERMISSION_MODE`, `DEFAULT_PREFERENCES.toolPermissionMode` and the fallback of `AIEngineDeps.defaultToolPermissionMode` all follow.
+
+## 0.6.22
+
+### Fixed
+
+- **Attached images keep their proportions.** An image in a sent message was forced into a 72px square and cropped, and the composer chip stretched it into 36px without cropping, so a portrait page came out squashed. The message preview now renders at the image's own aspect ratio, capped at `--chat-message-image-max-height` (300px) and the row's width, with the attachments row wrapping instead of scrolling; the chip keeps its square and crops into it (`object-cover`).
+
 ## 0.6.21
 
 ### Changed
