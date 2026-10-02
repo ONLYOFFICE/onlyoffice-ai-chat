@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.20
+
+### Added
+
+- **A "Permissions" row under Effort in the model picker.** It switches how a tool call the model makes is approved: `Ask every time` prompts for every call bar the tools pinned with "always allow", `Auto approve` keeps the previous behaviour (the pins plus a tool's own `requireApproval: false`), `Allow without asking` runs everything. The default is `Ask every time`, so a host tool that used to run silently now shows the dialog until the user picks `Auto approve` or pins it. The pick is persisted as a preference next to the thinking depth: optional `*ToolPermissionMode` methods on `PreferencesStorage`, `get`/`setToolPermissionMode` on `PreferencesEngine`, two `preferences/*-tool-permission-mode` routes, and `AIEngineDeps.defaultToolPermissionMode` for a host that overrides the default. `processStream` folds the mode into `tool-call-pending.autoAllow`, the one flag the UI, middleware and server-executed tools already obey. The mode type and its helpers are exported from both the root and the `/core` entry.
+
+```ts
+type ToolPermissionMode = "ask" | "auto" | "allow";
+```
+
 ## 0.6.19
 
 ### Fixed
