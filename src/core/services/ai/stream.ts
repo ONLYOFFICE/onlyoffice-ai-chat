@@ -1,6 +1,7 @@
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { SendMessageResult } from "../../../shared/send-message-args";
 import type { ReasoningLevel } from "../../../shared/reasoning-level";
+import type { ToolPermissionMode } from "../../../shared/tool-permission-mode";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import logger from "../../../shared/logger";
@@ -101,6 +102,12 @@ export type ProcessStreamContext = {
    * Engine never inspects it.
    */
   entityId?: string;
+  /**
+   * The permission mode assumed while none is persisted in scope — the
+   * host's `PreferenceDefaults.toolPermissionMode` where it overrides one.
+   * Defaults to `"ask"`.
+   */
+  defaultToolPermissionMode?: ToolPermissionMode;
   /**
    * How often the in-flight assistant message is flushed to storage while
    * streaming, in milliseconds. The UI still receives every delta; storage
@@ -293,7 +300,11 @@ export async function* processStream(
             const toolName = readToolCall(final, toolIdx)?.toolName ?? null;
             const [allowList, mode] = await Promise.all([
               storage.toolPrefs.readAllowAlways(ctx.entityId),
-              readToolPermissionMode(storage, ctx.entityId),
+              readToolPermissionMode(
+                storage,
+                ctx.entityId,
+                ctx.defaultToolPermissionMode
+              ),
             ]);
             // Whether the call skips the dialog is the permission mode's
             // call (see `resolveAutoAllow`): under "ask" only a tool the

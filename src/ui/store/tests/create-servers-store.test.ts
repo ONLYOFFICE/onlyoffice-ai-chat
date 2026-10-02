@@ -545,6 +545,13 @@ describe("createServersStore", () => {
       expect(s.getState().toolPermissionMode).toBe("auto");
     });
 
+    it("ignores a host answer that is not a mode", async () => {
+      const deps = makeDeps({ toolPermissionMode: "whatever" });
+      const s = createServersStore(deps);
+      await s.getState().initServers();
+      expect(s.getState().toolPermissionMode).toBe("ask");
+    });
+
     it("a failed mode read never blocks the servers from starting", async () => {
       const deps = makeDeps();
       (

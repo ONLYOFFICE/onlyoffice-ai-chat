@@ -11,6 +11,7 @@ import { chat } from "../../actions/chat";
 import type { ActionArgs } from "../../actions/types";
 import type { ReasoningLevel } from "../../../shared/reasoning-level";
 import type { StorageAdapter } from "../../storage";
+import type { ToolPermissionMode } from "../../../shared/tool-permission-mode";
 import type { Profile } from "../../types";
 import {
   hasSendableContent,
@@ -35,6 +36,8 @@ export type ToolCallContext = {
   pagination?: boolean | (() => boolean);
   /** Mirrors {@link AIEngineDeps.persistIntervalMs} for the resumed stream. */
   persistIntervalMs?: number;
+  /** Mirrors {@link AIEngineDeps.defaultToolPermissionMode} for the resumed stream. */
+  defaultToolPermissionMode?: ToolPermissionMode;
 };
 
 /**
@@ -365,6 +368,7 @@ export async function* resumeChat(
     signal: input.signal,
     entityId: input.entityId,
     persistIntervalMs: ctx.persistIntervalMs,
+    defaultToolPermissionMode: ctx.defaultToolPermissionMode,
     isResume: true,
     resumeMessageId: input.messageId,
     resumeBaseMessage: updatedMessage,

@@ -52,6 +52,13 @@ type AIEngineDeps = {
   systemServerTypes?: string[] | (() => string[]);
 
   /**
+   * The tool permission mode assumed while the user has persisted none.
+   * Pass the same value as `PreferenceDefaults.toolPermissionMode` when
+   * the host overrides that default. Defaults to `"ask"`.
+   */
+  defaultToolPermissionMode?: ToolPermissionMode;
+
+  /**
    * Names the entry a round is billed to — a `SourceMeta`
    * (`{ id, type?, title? }`). Called once per entry point with the
    * round's context scope and thread; the answer reaches every provider

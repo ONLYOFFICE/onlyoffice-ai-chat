@@ -252,7 +252,9 @@ every time (only the persisted always-allow list skips the dialog), also
 skips it for a tool that opted out through `requireApproval: false`, or
 runs without asking. `processStream` reads the mode next to the
 always-allow list and sets `tool-call-pending.autoAllow` from both — see
-[`ai-engine.md`](./ai-engine.md). The composer's "Permissions" row at the foot of
+[`ai-engine.md`](./ai-engine.md). A host that overrides this default
+passes the same value as `AIEngineDeps.defaultToolPermissionMode`, so
+the approval flow and the composer's row agree. The composer's "Permissions" row at the foot of
 the model picker switches it; the widget's servers store reads it on
 init and writes every pick.
 

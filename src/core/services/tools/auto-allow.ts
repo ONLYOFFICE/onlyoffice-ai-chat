@@ -1,5 +1,6 @@
 import {
   DEFAULT_TOOL_PERMISSION_MODE,
+  isToolPermissionMode,
   type ToolPermissionMode,
 } from "../../../shared/tool-permission-mode";
 import type { StorageAdapter } from "../../storage";
@@ -30,14 +31,18 @@ export function resolveAutoAllow(
 }
 
 /**
- * The permission mode in force for one scope: the persisted mode, or the
- * default where none was stored or the adapter predates the mode methods.
+ * The permission mode in force for one scope: the persisted mode, or
+ * `fallback` where none was stored, the adapter predates the mode
+ * methods, or the stored value is not a mode at all (a host answering
+ * the route with something unexpected must not switch the dialog off).
+ * `fallback` is the host's `PreferenceDefaults.toolPermissionMode`
+ * where it overrides one, so the engine and the UI agree on the default.
  */
 export async function readToolPermissionMode(
   storage: StorageAdapter,
-  entityId?: string
+  entityId?: string,
+  fallback: ToolPermissionMode = DEFAULT_TOOL_PERMISSION_MODE
 ): Promise<ToolPermissionMode> {
-  const stored =
-    (await storage.preferences?.readToolPermissionMode?.(entityId)) ?? null;
-  return stored ?? DEFAULT_TOOL_PERMISSION_MODE;
+  const stored = await storage.preferences?.readToolPermissionMode?.(entityId);
+  return isToolPermissionMode(stored) ? stored : fallback;
 }

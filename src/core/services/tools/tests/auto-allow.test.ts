@@ -53,4 +53,18 @@ describe("readToolPermissionMode", () => {
     const bare = {} as unknown as StorageAdapter;
     expect(await readToolPermissionMode(bare)).toBe("ask");
   });
+
+  it("honours the host's fallback and ignores a value that is not a mode", async () => {
+    const none = {
+      preferences: { readToolPermissionMode: vi.fn().mockResolvedValue(null) },
+    } as unknown as StorageAdapter;
+    expect(await readToolPermissionMode(none, undefined, "auto")).toBe("auto");
+    const junk = {
+      preferences: {
+        readToolPermissionMode: vi.fn().mockResolvedValue("yolo"),
+      },
+    } as unknown as StorageAdapter;
+    expect(await readToolPermissionMode(junk)).toBe("ask");
+    expect(await readToolPermissionMode(junk, undefined, "auto")).toBe("auto");
+  });
 });

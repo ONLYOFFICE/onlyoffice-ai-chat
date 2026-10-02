@@ -334,6 +334,41 @@ describe("processStream", () => {
     ).toBe(true);
   });
 
+  it("a host default of auto applies while nothing is persisted", async () => {
+    const { storage } = makeStorage();
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        {
+          type: "tool-call",
+          toolCallId: "c1",
+          toolName: "host_edit",
+          args: {},
+        },
+      ],
+    } as ThreadMessageLike;
+    let event;
+    for await (const e of processStream(
+      feed([{ isEnd: true, responseMessage: message }]),
+      {
+        storage,
+        threadId: "t",
+        defaultToolPermissionMode: "auto",
+        tools: [
+          {
+            name: "host_edit",
+            description: "",
+            inputSchema: {},
+            requireApproval: false,
+          },
+        ],
+      }
+    )) {
+      event = e;
+    }
+    expect((event as { autoAllow: boolean }).autoAllow).toBe(true);
+  });
+
   it("under allow, every tool runs without asking", async () => {
     const { storage } = makeStorage({ mode: "allow" });
     const message: ThreadMessageLike = {

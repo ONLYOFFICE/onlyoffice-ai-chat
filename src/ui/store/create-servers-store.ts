@@ -7,6 +7,7 @@ import type { TMCPItem } from "../../types";
 import type { TSystemToolsListing } from "../../core/services";
 import {
   DEFAULT_TOOL_PERMISSION_MODE,
+  isToolPermissionMode,
   type ToolPermissionMode,
 } from "../../shared/tool-permission-mode";
 import logger from "../../shared/logger";
@@ -293,7 +294,15 @@ export function createServersStore(deps: {
   const readMode = async (): Promise<ToolPermissionMode | null> => {
     if (modeRouteMissing) return null;
     try {
-      return await api.preferences.getToolPermissionMode(entity());
+      const mode: unknown =
+        await api.preferences.getToolPermissionMode(entity());
+      // A host answering with something that is not a mode would leave
+      // the row without a label and a checked item; keep the default.
+      if (!isToolPermissionMode(mode)) {
+        logger.warn("Ignoring an unknown tool permission mode:", mode);
+        return null;
+      }
+      return mode;
     } catch (error) {
       if (!isRouteUnavailable(error)) throw error;
       modeRouteMissing = true;
