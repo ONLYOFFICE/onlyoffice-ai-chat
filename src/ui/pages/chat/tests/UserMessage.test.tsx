@@ -380,6 +380,10 @@ describe("UserMessage", () => {
     );
     expect(image.className).not.toMatch(/\bh-\[72px\]/);
     expect(image.className).not.toContain("object-cover");
+    // Without this the preflight's max-width clamps the width on its own and
+    // the proportions are lost for anything taller than the cap.
+    expect(image.className).toContain("max-w-none");
+    expect(image.className).not.toContain("max-w-full");
   });
 
   it("renders files when content has file items", () => {

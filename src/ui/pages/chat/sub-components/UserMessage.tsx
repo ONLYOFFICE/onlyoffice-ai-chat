@@ -388,9 +388,9 @@ export const UserMessage = memo(() => {
             data-testid="user-message-attachments"
             className="col-span-full col-start-1 row-start-1 mb-[8px] overflow-x-auto"
           >
-            {/* Wraps rather than scrolls: an image keeps its own proportions
-                (see `ImagePreview`), so a wide one may take the whole row. */}
-            <div className="flex flex-row flex-wrap gap-[8px] justify-end">
+            {/* Scrolls rather than wraps: an image keeps its own proportions
+                (see `ImagePreview`), so a wide one may outgrow the row. */}
+            <div className="flex flex-row gap-[8px] w-max justify-end ms-auto">
               {images.map((img, i) => (
                 <ImagePreview
                   key={img.refId ?? `${img.inline}-${i}`}
@@ -514,14 +514,17 @@ const ImagePreview = ({ item }: { item: ImageItem }) => {
       />
     );
   }
-  // Natural proportions, capped in height: a portrait page stays a page and
-  // a wide screenshot is bounded by the row, neither is cropped or squashed.
+  // Natural proportions, capped in height only. `max-w-none` undoes the
+  // preflight's `max-width: 100%`: with both a max-width and a max-height in
+  // force the browser clamps each axis on its own and a portrait page comes
+  // out as a wide strip (CSS 2.1 §10.4). A wider-than-the-row image scrolls
+  // in the attachments row instead.
   return (
     <img
       src={src}
       alt=""
       data-testid="user-message-image"
-      className="h-auto w-auto max-h-[var(--chat-message-image-max-height)] max-w-full rounded-[8px]"
+      className="h-auto w-auto max-w-none shrink-0 max-h-[var(--chat-message-image-max-height)] rounded-[8px]"
     />
   );
 };

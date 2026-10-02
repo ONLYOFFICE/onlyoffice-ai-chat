@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.23
+
+### Fixed
+
+- **Attached portrait images no longer render as a wide strip.** 0.6.22 capped the message preview at 300px high but left the preflight's `max-width: 100%` on it; with both limits hit the browser clamps each axis separately, so a tall page came out 696×300. The preview now has `max-width: none` and only the height cap, and the attachments row scrolls horizontally again (as before 0.6.22) for an image wider than the row.
+
 ## 0.6.22
 
 ### Changed
