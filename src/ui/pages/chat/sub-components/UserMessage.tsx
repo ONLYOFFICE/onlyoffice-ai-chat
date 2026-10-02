@@ -18,7 +18,6 @@ import type { TAttachmentFile } from "../../../../types";
 import { PROMPT_DIALOG_CLASS } from "./ComposerActionPrompts";
 import { useToast } from "../../../components/toast";
 import { useWidgetConfig } from "../../../../widget-config";
-import { BoundedImage } from "../../../components/bounded-image";
 import logger from "../../../../shared/logger";
 
 /**
@@ -389,9 +388,7 @@ export const UserMessage = memo(() => {
             data-testid="user-message-attachments"
             className="col-span-full col-start-1 row-start-1 mb-[8px] overflow-x-auto"
           >
-            {/* Wraps rather than scrolls: an image keeps its own proportions
-                (see `ImagePreview`), so a wide one may take the whole row. */}
-            <div className="flex flex-row flex-wrap gap-[8px] justify-end">
+            <div className="flex flex-row gap-[8px] w-max justify-end ms-auto">
               {images.map((img, i) => (
                 <ImagePreview
                   key={img.refId ?? `${img.inline}-${i}`}
@@ -515,16 +512,12 @@ const ImagePreview = ({ item }: { item: ImageItem }) => {
       />
     );
   }
-  // Natural proportions, capped in height; the width cap follows the ratio
-  // (see `BoundedImage`), so a portrait page stays a page and a wide shot is
-  // bounded by the row.
   return (
-    <BoundedImage
+    <img
       src={src}
       alt=""
       data-testid="user-message-image"
-      maxHeightVar="--chat-message-image-max-height"
-      className="rounded-[8px]"
+      className="h-[72px] w-[72px] rounded-[8px] object-cover"
     />
   );
 };

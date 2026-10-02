@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.25
+
+### Changed
+
+- **Only tool-result pictures are resized; attached images are back to 0.6.21.** The proportional, 300px-capped preview that 0.6.22–0.6.24 gave an image attached to a user message, the composer chip's `object-cover`, and `--chat-message-image-max-height` are withdrawn — the message preview is the 72px square and the chip the 36px square again. `BoundedImage` stays on the pictures a tool returns under its card, which is where the stretched portrait page was seen.
+
 ## 0.6.24
 
 ### Fixed

@@ -120,8 +120,6 @@ describe("FileItem", () => {
       const img = container.querySelector("img");
       expect(img).not.toBeNull();
       expect(img?.getAttribute("src")).toBe("data:image/png;base64,abc");
-      // A portrait image is cropped into the square thumbnail, not squashed.
-      expect(img?.className).toContain("object-cover");
     });
   });
 
