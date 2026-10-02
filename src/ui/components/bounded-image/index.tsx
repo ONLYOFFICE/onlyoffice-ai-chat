@@ -12,7 +12,7 @@ import { cn } from "../../../shared/utils";
 type BoundedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "style"> & {
   /**
    * CSS custom property holding the height cap, e.g.
-   * `--chat-message-image-max-height`. Read by the browser, not here, so a
+   * `--chat-message-tool-call-image-max-height`. Read by the browser, not here, so a
    * host theme that overrides it is honoured.
    */
   maxHeightVar: string;
