@@ -230,7 +230,7 @@ Two complementary mechanisms:
      │     └── (UI never sees tool-call-pending for these)
      │
      └── user-side (host / MCP):
-           ├── emit tool-call-pending (with autoAllow flag)
+           ├── emit tool-call-pending (autoAllow: permission mode × always-allow list × requireApproval)
            ├── ui middlewareRunner.runBeforeToolCall(ctx) — deny / approve / modify args
            ├── if autoAllow or middleware approve → servers.callTools(...)
            │   else → approval dialog → user decides

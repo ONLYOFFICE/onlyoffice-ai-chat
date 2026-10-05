@@ -241,3 +241,71 @@ describe("PreferencesEngine reasoning level", () => {
     expect(s.deep).toBe(true);
   });
 });
+
+describe("PreferencesEngine tool permission mode", () => {
+  function makeModeStorage(seed: {
+    mode?: string | null;
+    withModeMethods?: boolean;
+  }) {
+    let mode: string | null = seed.mode ?? null;
+    const preferences: Record<string, unknown> = {
+      readDeepMode: vi.fn(async () => null),
+      upsertDeepMode: vi.fn(async () => undefined),
+    };
+    if (seed.withModeMethods !== false) {
+      preferences.readToolPermissionMode = vi.fn(async () => mode);
+      preferences.upsertToolPermissionMode = vi.fn(async (v: string) => {
+        mode = v;
+      });
+    }
+    return {
+      storage: { preferences } as unknown as StorageAdapter,
+      preferences,
+      get mode() {
+        return mode;
+      },
+    };
+  }
+
+  it("defaults to auto approve", () => {
+    expect(DEFAULT_PREFERENCES.toolPermissionMode).toBe("auto");
+  });
+
+  it("returns the stored mode", async () => {
+    const s = makeModeStorage({ mode: "allow" });
+    const engine = new PreferencesEngine({ storage: s.storage });
+    expect(await engine.getToolPermissionMode()).toBe("allow");
+  });
+
+  it("falls back to the default when none is stored or the adapter has no mode methods", async () => {
+    const none = new PreferencesEngine({
+      storage: makeModeStorage({ mode: null }).storage,
+    });
+    expect(await none.getToolPermissionMode()).toBe("auto");
+    const legacy = new PreferencesEngine(
+      { storage: makeModeStorage({ withModeMethods: false }).storage },
+      { toolPermissionMode: "ask" }
+    );
+    expect(await legacy.getToolPermissionMode()).toBe("ask");
+  });
+
+  it("setToolPermissionMode round-trips and forwards the entity", async () => {
+    const s = makeModeStorage({});
+    const engine = new PreferencesEngine({ storage: s.storage });
+    await engine.setToolPermissionMode("auto", "room-1");
+    expect(s.preferences.upsertToolPermissionMode).toHaveBeenCalledWith(
+      "auto",
+      "room-1"
+    );
+    expect(await engine.getToolPermissionMode("room-1")).toBe("auto");
+    expect(s.preferences.readToolPermissionMode).toHaveBeenCalledWith("room-1");
+  });
+
+  it("setToolPermissionMode is a no-op on adapters without mode methods", async () => {
+    const s = makeModeStorage({ withModeMethods: false });
+    const engine = new PreferencesEngine({ storage: s.storage });
+    await expect(
+      engine.setToolPermissionMode("allow")
+    ).resolves.toBeUndefined();
+  });
+});

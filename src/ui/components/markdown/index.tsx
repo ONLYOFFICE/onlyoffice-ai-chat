@@ -17,6 +17,7 @@ import "@assistant-ui/react-markdown/styles/dot.css";
 import "katex/dist/katex.min.css";
 
 import { normalizeMathDelimiters } from "./normalize-math";
+import { markdownUrlTransform } from "./url-transform";
 
 const LazyMarkdownText = lazy(async () => {
   const [
@@ -38,6 +39,7 @@ const LazyMarkdownText = lazy(async () => {
         preprocess={normalizeMathDelimiters}
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
+        urlTransform={markdownUrlTransform}
         className="aui-md"
         components={defaultComponents}
       />
@@ -69,6 +71,7 @@ const LazyMarkdownContent = lazy(async () => {
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeKatex]}
+          urlTransform={markdownUrlTransform}
           components={plainComponents}
         >
           {normalizeMathDelimiters(children)}

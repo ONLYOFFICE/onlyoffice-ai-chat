@@ -1,6 +1,11 @@
 import type { Model } from "../../../shared/model";
 import type { ProviderCredentials } from "../../../shared/provider-credentials";
 import type { ReasoningLevel } from "../../../shared/reasoning-level";
+import type {
+  SendMessageArgs,
+  SendMessageResult,
+} from "../../../shared/send-message-args";
+import type { SendMessageSyncArgs } from "../../../shared/send-message-sync-args";
 import { OpenAIProvider } from "../openai";
 import { deepseekInfo } from "./info";
 import { listModels } from "./models";
@@ -17,6 +22,34 @@ class DeepSeekProvider extends OpenAIProvider {
    * empty one — and answers a missing field with a 400 (Bug 83335).
    */
   protected override reasoningContentMode = "always" as const;
+
+  /**
+   * DeepSeek stays on `/chat/completions`. It answers `/v1/responses`, so
+   * the inherited live probe flipped its profiles onto the Responses
+   * transport — where the history replay drops reasoning and thinking
+   * mode answers the next round with `400 The reasoning_text in the
+   * thinking mode must be passed back to the API` (Bug 83335). The chat
+   * endpoint carries the thinking switch, `reasoning_content` and tools,
+   * so the probe is skipped outright…
+   */
+  override async checkResponsesApi(): Promise<boolean> {
+    return false;
+  }
+
+  /**
+   * …and profiles already probed onto it are steered back:
+   * `useResponsesApi` is stored on the profile and re-probed only when the
+   * model, provider or base URL changes.
+   */
+  override sendMessage(
+    args: SendMessageArgs
+  ): AsyncGenerator<SendMessageResult> {
+    return super.sendMessage({ ...args, useResponsesApi: false });
+  }
+
+  override sendMessageSync(args: SendMessageSyncArgs): Promise<string> {
+    return super.sendMessageSync({ ...args, useResponsesApi: false });
+  }
 
   /**
    * DeepSeek toggles thinking through its own `thinking.type` field, and

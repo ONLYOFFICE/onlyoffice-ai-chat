@@ -355,6 +355,17 @@ type TMCPItem = {
   description: string;                   // shown to the model + UI
   inputSchema: Record<string, unknown>;  // JSON Schema
   enabled?: boolean;                     // disabled tools are hidden from the model
+  serverType?: string;                   // the group the disabled / always-allow maps key on
+  requireApproval?: boolean;             // host tools: false skips the dialog under "auto"
+  annotations?: ToolAnnotations;         // MCP hints as declared; read under "auto"
+};
+
+type ToolAnnotations = {
+  title?: string;
+  readOnlyHint?: boolean;      // true → runs without the dialog under "auto"
+  destructiveHint?: boolean;   // false → same; true or absent → asks
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
 };
 ```
 
@@ -502,6 +513,30 @@ logging plumbing on the host side, layer it on by replacing
 When you need a new shared symbol, prefer a **new file** with a
 narrow export over expanding an existing one — it keeps the
 module graph flat and lets callers import only what they use.
+
+### `ToolPermissionMode`
+
+> Source: [`tool-permission-mode.ts`](../../src/shared/tool-permission-mode.ts)
+
+```ts
+type ToolPermissionMode = "ask" | "auto" | "allow";
+
+const TOOL_PERMISSION_MODES: readonly ToolPermissionMode[]; // most cautious first
+const DEFAULT_TOOL_PERMISSION_MODE = "auto";
+function isToolPermissionMode(value: unknown): value is ToolPermissionMode;
+```
+
+How a tool call the model makes is approved: `"ask"` waits for the user
+every time (bar the tools already marked "always allow" — a tool's own
+`requireApproval: false` does not count), `"auto"` also skips the dialog
+for a tool that opted out through `requireApproval: false` or whose MCP
+annotations say `readOnlyHint: true` or `destructiveHint: false`
+(destructive or unannotated tools still ask), `"allow"` runs every call
+without asking. `resolveAutoAllow` in
+[`auto-allow.ts`](../../src/core/services/tools/auto-allow.ts) is the
+one place the rule lives. Persisted through the
+[preferences engine](../core/services/preferences-engine.md) and
+switched from the composer's "Permissions" row.
 
 ### `ReasoningLevel`
 

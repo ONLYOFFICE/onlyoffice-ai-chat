@@ -1,4 +1,7 @@
 import type { ReasoningSupport } from "./shared/reasoning-level";
+import type { ToolAnnotations } from "./shared/mcp-item";
+
+export type { ToolAnnotations };
 
 /**
  * Descriptor for a tool exposed by an MCP server.
@@ -45,13 +48,25 @@ export type TMCPItem = {
 
   /**
    * Whether the consumer must show an approval dialog before this tool
-   * runs. Drives the `autoAllow` flag on a `tool-call-pending` event:
-   * `false` auto-allows (no dialog), `true` always prompts, `undefined`
-   * defers to the persisted "always-allow" list. Host tools set it (see
+   * runs. Feeds the `autoAllow` flag on a `tool-call-pending` event
+   * together with the user's tool permission mode: `false` skips the
+   * dialog under the "auto" mode, the default (under "ask" only the
+   * persisted "always-allow" list does), `true` and `undefined` defer to
+   * that list; "allow" skips it for every tool. Host tools set it (see
    * {@link import("./ui/tools/types").HostTool.requireApproval}); MCP /
    * custom-server tools leave it unset and keep prompting.
    */
   requireApproval?: boolean;
+
+  /**
+   * The MCP tool annotations as the server declared them in `tools/list`
+   * (kept verbatim on the descriptor; never sent to the model). The
+   * approval flow reads two of them under the "auto" permission mode:
+   * `readOnlyHint: true` and `destructiveHint: false` run without the
+   * dialog, a destructive or unannotated tool keeps asking — see
+   * `resolveAutoAllow`. Wire-serializable.
+   */
+  annotations?: ToolAnnotations;
 };
 
 /**

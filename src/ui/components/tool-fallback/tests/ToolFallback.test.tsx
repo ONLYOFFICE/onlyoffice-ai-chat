@@ -704,8 +704,9 @@ describe("ToolFallback", () => {
         />
       );
       expect(
-        screen.getByTestId("tool-call-generated-image").className
-      ).toContain("max-h-[var(--chat-message-tool-call-image-max-height)]");
+        (screen.getByTestId("tool-call-generated-image") as HTMLImageElement)
+          .style.maxHeight
+      ).toBe("var(--chat-message-tool-call-image-max-height)");
       unmount();
 
       render(
@@ -717,8 +718,9 @@ describe("ToolFallback", () => {
         />
       );
       expect(
-        screen.getByTestId("tool-call-generated-image").className
-      ).not.toContain("max-h-");
+        (screen.getByTestId("tool-call-generated-image") as HTMLImageElement)
+          .style.maxHeight
+      ).toBe("");
     });
 
     it("shows at most 5 pictures and leaves the rest unfetched", async () => {

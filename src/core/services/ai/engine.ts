@@ -472,6 +472,7 @@ export class AIEngine {
       signal: input.actionArgs?.signal,
       entityId: contextScope,
       persistIntervalMs: this.deps.persistIntervalMs,
+      defaultToolPermissionMode: this.deps.defaultToolPermissionMode,
     });
 
     const chatEvents = this.runChatStream(stream, toolCtx, {
@@ -819,6 +820,7 @@ export class AIEngine {
       signal: input.actionArgs?.signal,
       entityId: contextScope,
       persistIntervalMs: this.deps.persistIntervalMs,
+      defaultToolPermissionMode: this.deps.defaultToolPermissionMode,
     });
 
     yield* this.runChatStream(stream, toolCtx, {
@@ -925,6 +927,7 @@ export class AIEngine {
           pickFetch: (p) => this.pickFetch(p),
           pagination: this.deps.pagination,
           persistIntervalMs: this.deps.persistIntervalMs,
+          defaultToolPermissionMode: this.deps.defaultToolPermissionMode,
         };
         const resumed = executeAdapterTool(
           this.deps.storage,
@@ -1012,6 +1015,7 @@ export class AIEngine {
       pickFetch: (p) => this.pickFetch(p),
       pagination: this.deps.pagination,
       persistIntervalMs: this.deps.persistIntervalMs,
+      defaultToolPermissionMode: this.deps.defaultToolPermissionMode,
     };
 
     const resumed = resumeChat(
@@ -1019,6 +1023,7 @@ export class AIEngine {
         storage: this.deps.storage,
         pagination: this.deps.pagination,
         persistIntervalMs: this.deps.persistIntervalMs,
+        defaultToolPermissionMode: this.deps.defaultToolPermissionMode,
       },
       {
         threadId: input.threadId,
