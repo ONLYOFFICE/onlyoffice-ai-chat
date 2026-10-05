@@ -37,13 +37,37 @@ export type TMCPItem = {
 
   /**
    * Whether the consumer must show an approval dialog before this tool
-   * runs. The engine reads it when deciding the `autoAllow` flag on a
-   * `tool-call-pending` event: `requireApproval === false` auto-allows the
-   * call (no dialog), `true` always prompts. `undefined` leaves the
-   * decision to the persisted "always-allow" list alone — so MCP /
-   * custom-server tools (which never set it) keep prompting as before,
-   * while host tools opt into auto-allow by default. Wire-serializable, so
-   * it survives a remote (server-side) engine.
+   * runs. Feeds the `autoAllow` flag on a `tool-call-pending` event
+   * together with the user's tool permission mode: `false` skips the
+   * dialog under the "auto" mode, the default (under "ask" only the
+   * persisted "always-allow" list does), `true` and `undefined` defer to
+   * that list; "allow" skips it for every tool. Host tools set it and
+   * default to `false`; MCP / custom-server tools leave it unset.
+   * Wire-serializable, so it survives a remote (server-side) engine.
    */
   requireApproval?: boolean;
+
+  /**
+   * The MCP tool annotations as the server declared them in `tools/list`
+   * (kept verbatim on the descriptor; never sent to the model). The
+   * approval flow reads two of them under the "auto" permission mode:
+   * `readOnlyHint: true` and `destructiveHint: false` run without the
+   * dialog, a destructive or unannotated tool keeps asking — see
+   * `resolveAutoAllow`. Wire-serializable.
+   */
+  annotations?: ToolAnnotations;
+};
+
+/**
+ * MCP tool annotations (`Tool.annotations` in the protocol). All hints are
+ * advisory and optional; the protocol's defaults are `readOnlyHint: false`
+ * and `destructiveHint: true`, which is why an unannotated tool is treated
+ * as one that may destroy state.
+ */
+export type ToolAnnotations = {
+  title?: string;
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
 };

@@ -8,7 +8,7 @@ import {
 } from "../stream";
 import type { StorageAdapter } from "../../../storage";
 
-function makeStorage(opts?: { allowList?: string[] }) {
+function makeStorage(opts?: { allowList?: string[]; mode?: string | null }) {
   let nextId = 0;
   const create = vi.fn(
     async (_threadId: string, message: ThreadMessageLike) => ({
@@ -18,14 +18,19 @@ function makeStorage(opts?: { allowList?: string[] }) {
   );
   const update = vi.fn().mockResolvedValue(undefined);
   const readAllowAlways = vi.fn().mockResolvedValue(opts?.allowList ?? []);
+  const readToolPermissionMode = vi
+    .fn()
+    .mockResolvedValue(opts?.mode === undefined ? null : opts.mode);
   return {
     storage: {
       messages: { create, update },
       toolPrefs: { readAllowAlways },
+      preferences: { readToolPermissionMode },
     } as unknown as StorageAdapter,
     create,
     update,
     readAllowAlways,
+    readToolPermissionMode,
   };
 }
 
@@ -224,8 +229,8 @@ describe("processStream", () => {
     expect((event as { autoAllow: boolean }).autoAllow).toBe(false);
   });
 
-  it("auto-allows tool-call when the tool opts in via requireApproval: false", async () => {
-    const { storage } = makeStorage();
+  it("under auto, a tool that opts in via requireApproval: false skips the dialog", async () => {
+    const { storage } = makeStorage({ mode: "auto" });
     const message: ThreadMessageLike = {
       role: "assistant",
       content: [
@@ -256,8 +261,8 @@ describe("processStream", () => {
     expect((event as { autoAllow: boolean }).autoAllow).toBe(true);
   });
 
-  it("keeps prompting when the tool sets requireApproval: true", async () => {
-    const { storage } = makeStorage();
+  it("under auto, a tool that sets requireApproval: true keeps prompting", async () => {
+    const { storage } = makeStorage({ mode: "auto" });
     const message: ThreadMessageLike = {
       role: "assistant",
       content: [
@@ -286,6 +291,146 @@ describe("processStream", () => {
       event = e;
     }
     expect((event as { autoAllow: boolean }).autoAllow).toBe(false);
+  });
+
+  it("under ask, requireApproval: false still prompts unless always-allowed", async () => {
+    const hostTool = {
+      name: "host_edit",
+      description: "",
+      inputSchema: {},
+      requireApproval: false,
+      serverType: "host",
+    };
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        {
+          type: "tool-call",
+          toolCallId: "c1",
+          toolName: "host_edit",
+          args: {},
+        },
+      ],
+    } as ThreadMessageLike;
+    const run = async (storage: StorageAdapter) => {
+      let event;
+      for await (const e of processStream(
+        feed([{ isEnd: true, responseMessage: message }]),
+        { storage, threadId: "t", tools: [hostTool], entityId: "room" }
+      )) {
+        event = e;
+      }
+      return (event as { autoAllow: boolean }).autoAllow;
+    };
+    // Nothing stored → the default, auto: the opt-out runs.
+    const none = makeStorage();
+    expect(await run(none.storage)).toBe(true);
+    expect(none.readToolPermissionMode).toHaveBeenCalledWith("room");
+    // Stored ask: the opt-out no longer counts.
+    expect(await run(makeStorage({ mode: "ask" }).storage)).toBe(false);
+    // The always-allow pin still wins under ask.
+    expect(
+      await run(makeStorage({ mode: "ask", allowList: ["host_edit"] }).storage)
+    ).toBe(true);
+  });
+
+  it("a host default of ask applies while nothing is persisted", async () => {
+    const { storage } = makeStorage();
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        {
+          type: "tool-call",
+          toolCallId: "c1",
+          toolName: "host_edit",
+          args: {},
+        },
+      ],
+    } as ThreadMessageLike;
+    let event;
+    for await (const e of processStream(
+      feed([{ isEnd: true, responseMessage: message }]),
+      {
+        storage,
+        threadId: "t",
+        defaultToolPermissionMode: "ask",
+        tools: [
+          {
+            name: "host_edit",
+            description: "",
+            inputSchema: {},
+            requireApproval: false,
+          },
+        ],
+      }
+    )) {
+      event = e;
+    }
+    expect((event as { autoAllow: boolean }).autoAllow).toBe(false);
+  });
+
+  it("under auto, a read-only annotated MCP tool skips the dialog and a destructive one asks", async () => {
+    const run = async (annotations: Record<string, unknown>) => {
+      const { storage } = makeStorage({ mode: "auto" });
+      const message: ThreadMessageLike = {
+        role: "assistant",
+        content: [
+          {
+            type: "tool-call",
+            toolCallId: "c1",
+            toolName: "mcp_tool",
+            args: {},
+          },
+        ],
+      } as ThreadMessageLike;
+      let event;
+      for await (const e of processStream(
+        feed([{ isEnd: true, responseMessage: message }]),
+        {
+          storage,
+          threadId: "t",
+          tools: [
+            { name: "mcp_tool", description: "", inputSchema: {}, annotations },
+          ],
+        }
+      )) {
+        event = e;
+      }
+      return (event as { autoAllow: boolean }).autoAllow;
+    };
+    expect(await run({ readOnlyHint: true })).toBe(true);
+    expect(await run({ readOnlyHint: false, destructiveHint: true })).toBe(
+      false
+    );
+  });
+
+  it("under allow, every tool runs without asking", async () => {
+    const { storage } = makeStorage({ mode: "allow" });
+    const message: ThreadMessageLike = {
+      role: "assistant",
+      content: [
+        { type: "tool-call", toolCallId: "c1", toolName: "mcp_tool", args: {} },
+      ],
+    } as ThreadMessageLike;
+    let event;
+    for await (const e of processStream(
+      feed([{ isEnd: true, responseMessage: message }]),
+      {
+        storage,
+        threadId: "t",
+        tools: [
+          {
+            name: "mcp_tool",
+            description: "",
+            inputSchema: {},
+            requireApproval: true,
+          },
+        ],
+      }
+    )) {
+      event = e;
+    }
+    expect((event as { autoAllow: boolean }).autoAllow).toBe(true);
   });
 
   it("keeps prompting for a tool that never sets requireApproval (MCP)", async () => {

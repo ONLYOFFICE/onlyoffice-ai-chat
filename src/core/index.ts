@@ -15,3 +15,5 @@ export * from "./middleware";
 export * from "./tools-adapter";
 
 export * from "../shared/source-meta";
+
+export * from "../shared/tool-permission-mode";

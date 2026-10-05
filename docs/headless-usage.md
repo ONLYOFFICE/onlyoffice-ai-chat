@@ -100,8 +100,9 @@ for await (const event of stream) {
       // event.message is a ThreadMessageLike
       break;
     case "tool-call-pending":
-      // event.autoAllow tells you whether the user already opted into
-      // auto-approve. In headless mode you typically dispatch the tool
+      // event.autoAllow tells you whether the call skips approval: the
+      // permission mode, the always-allow list and the tool's
+      // requireApproval decide. In headless mode you typically dispatch the tool
       // yourself, then call ai.approveToolCall({ ..., result }).
       break;
     case "thread-title":
