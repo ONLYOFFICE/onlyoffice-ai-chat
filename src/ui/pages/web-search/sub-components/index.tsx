@@ -6,6 +6,7 @@ import { cn } from "../../../../shared/utils";
 import { useStores } from "../../../store/context";
 import { useComponents } from "../../../providers/ComponentsProvider";
 import { useWidgetConfig } from "../../../../widget-config";
+import { useToast } from "../../../components/toast";
 
 type WebSearchProps = {
   variant?: "tab" | "page";
@@ -54,6 +55,7 @@ const WebSearch = ({
   const { eventBus } = useToolsContext();
   const { useCloudsStore, api, callbacksManager } = useStores();
   const { entityId, webSearchSaveMode } = useWidgetConfig();
+  const { showToast } = useToast();
 
   const saveMode = saveModeProp ?? webSearchSaveMode ?? "blur";
   const isButtonMode = saveMode === "button";
@@ -99,8 +101,15 @@ const WebSearch = ({
       };
       if (changed) callbacksManager.emit("onWebSearchUpdated", event);
       callbacksManager.emit("onWebSearchSaved", event);
+      // Confirm only a save that changed something: blur mode persists on
+      // every blur, and a toast per unchanged blur would be noise.
+      if (changed && data) {
+        showToast(t("WebSearchAvailable"), {
+          heading: t("WebSearchKeySaved"),
+        });
+      }
     },
-    [api, callbacksManager, eventBus, entityId]
+    [api, callbacksManager, eventBus, entityId, showToast, t]
   );
 
   const allProviders = React.useMemo<WebSearchProvider[]>(

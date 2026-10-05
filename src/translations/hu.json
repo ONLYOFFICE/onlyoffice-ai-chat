@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Adja meg az AI modell API konfigurációját JS formátumban. Adja meg a modell nevét, végponti URL-eket és fejléceket.",
   "DownloadTemplate": "Sablon letöltése",
   "Permissions": "Engedélyek",
+  "PermissionsAskEveryTime": "Kérdezzen minden alkalommal",
+  "PermissionsAutoApprove": "Automatikus jóváhagyás",
+  "PermissionsAllowWithoutAsking": "Engedélyezés kérdés nélkül",
   "DropFilesHere": "Húzza ide a fájlokat a csatoláshoz",
   "Uploading": "Feltöltés…",
   "PromptSaved": "A prompt mentve",
-  "PromptSavedToFolder": "A prompt mentve a(z) „{{folder}}” mappába"
+  "PromptSavedToFolder": "A prompt mentve a(z) „{{folder}}” mappába",
+  "WebSearchKeySaved": "API kulcs mentve.",
+  "WebSearchAvailable": "A webes keresés elérhető az AI Chat szolgáltatásban.",
+  "Close": "Bezárás"
 }

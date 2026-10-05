@@ -54,7 +54,11 @@ export interface HostTool {
    */
   handler: (args: Record<string, unknown>) => Promise<unknown>;
 
-  /** Whether to show an approval dialog before executing. Default: false (auto-allow) */
+  /**
+   * Whether to show an approval dialog before executing. Default: false —
+   * no dialog while the user's permission mode is "auto" (the default);
+   * under "ask" the dialog shows unless the tool is always-allowed.
+   */
   requireApproval?: boolean;
 }
 

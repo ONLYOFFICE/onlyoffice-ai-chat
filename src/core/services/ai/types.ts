@@ -2,6 +2,7 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { ActionType } from "../../../shared/action-type";
 import type { SendMessageResult } from "../../../shared/send-message-args";
 import type { SourceResolver } from "../../../shared/source-meta";
+import type { ToolPermissionMode } from "../../../shared/tool-permission-mode";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
 import type { ToolsAdapter } from "../../tools-adapter";
@@ -146,6 +147,14 @@ export type AIEngineDeps = {
    * seconds.
    */
   persistIntervalMs?: number;
+
+  /**
+   * The tool permission mode assumed while the user has persisted none —
+   * pass the same value as `PreferenceDefaults.toolPermissionMode` when
+   * the host overrides that default, so the approval flow and the
+   * composer's "Permissions" row agree. Defaults to `"auto"`.
+   */
+  defaultToolPermissionMode?: ToolPermissionMode;
 
   /**
    * Names the entry a round is billed to — see {@link SourceResolver}.
@@ -464,9 +473,11 @@ export type ChatEvent =
       threadId: string;
       /**
        * The consumer should execute the tool without prompting the user.
-       * True when the tool is in the persisted "always-allow" list, or the
-       * tool itself opts in via `TMCPItem.requireApproval === false` (host
-       * tools default to this). For a client-side tool with a server-side
+       * Decided by the tool permission mode (`resolveAutoAllow`): under
+       * "ask" never; under "auto" a tool in the persisted "always-allow"
+       * list or one that opts in via `TMCPItem.requireApproval === false`
+       * (host tools default to this); under "allow" every tool.
+       * For a client-side tool with a server-side
        * engine, this lets the engine return the pending call already
        * flagged auto-allow so the client runs it and streams the result
        * back without a dialog round-trip.

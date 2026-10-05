@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Introduza a configuración da API do modelo de IA en formato JS. Proporcione o nome do modelo, os URL dos extremos e as cabeceiras.",
   "DownloadTemplate": "Descargar modelo",
   "Permissions": "Permisos",
+  "PermissionsAskEveryTime": "Preguntar cada vez",
+  "PermissionsAutoApprove": "Aprobar automaticamente",
+  "PermissionsAllowWithoutAsking": "Permitir sen preguntar",
   "DropFilesHere": "Solte os ficheiros aquí para adxuntalos",
   "Uploading": "Subindo…",
   "PromptSaved": "Indicación gardada",
-  "PromptSavedToFolder": "Indicación gardada en «{{folder}}»"
+  "PromptSavedToFolder": "Indicación gardada en «{{folder}}»",
+  "WebSearchKeySaved": "Gardouse a clave API.",
+  "WebSearchAvailable": "A busca web está dispoñible no Chat de IA.",
+  "Close": "Pechar"
 }

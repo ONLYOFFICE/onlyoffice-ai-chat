@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Skriv inn konfigurasjonen for AI-modell-API-et i JS-format. Oppgi modellnavn, endepunkt-URLer og hoder.",
   "DownloadTemplate": "Last ned mal",
   "Permissions": "Tillatelser",
+  "PermissionsAskEveryTime": "Spør hver gang",
+  "PermissionsAutoApprove": "Godkjenn automatisk",
+  "PermissionsAllowWithoutAsking": "Tillat uten å spørre",
   "DropFilesHere": "Slipp filer her for å legge ved",
   "Uploading": "Laster opp…",
   "PromptSaved": "Prompten er lagret",
-  "PromptSavedToFolder": "Prompten er lagret i «{{folder}}»"
+  "PromptSavedToFolder": "Prompten er lagret i «{{folder}}»",
+  "WebSearchKeySaved": "API-nøkkelen er lagret.",
+  "WebSearchAvailable": "Nettsøk er tilgjengelig i AI Chat.",
+  "Close": "Lukk"
 }

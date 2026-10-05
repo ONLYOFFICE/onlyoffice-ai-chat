@@ -92,3 +92,35 @@ describe("MarkdownContent code blocks", () => {
     expect(screen.queryByTestId("copy-button")).not.toBeInTheDocument();
   });
 });
+
+describe("MarkdownContent links", () => {
+  it("keeps a file:// target so a host can open the file", () => {
+    const md = "[report](file:///C:/Users/me/ai-tools-out/report.docx)";
+    const { container } = render(<MarkdownContent>{md}</MarkdownContent>);
+    const anchor = container.querySelector("a");
+    expect(anchor).toBeTruthy();
+    expect(anchor!.getAttribute("href")).toBe(
+      "file:///C:/Users/me/ai-tools-out/report.docx"
+    );
+    expect(anchor!.getAttribute("target")).toBe("_blank");
+  });
+
+  it("renders a link with a blanked scheme as an inert anchor", () => {
+    const md =
+      "[C:\\\\Users\\\\me\\\\report.docx](sandbox:/C:/Users/me/report.docx)";
+    const { container } = render(<MarkdownContent>{md}</MarkdownContent>);
+    const anchor = container.querySelector("a");
+    expect(anchor).toBeTruthy();
+    expect(anchor!.textContent).toBe("C:\\Users\\me\\report.docx");
+    expect(anchor!.hasAttribute("href")).toBe(false);
+    expect(anchor!.hasAttribute("target")).toBe(false);
+  });
+
+  it("still opens an https link in a new tab", () => {
+    const md = "[site](https://example.com)";
+    const { container } = render(<MarkdownContent>{md}</MarkdownContent>);
+    const anchor = container.querySelector("a");
+    expect(anchor!.getAttribute("href")).toBe("https://example.com");
+    expect(anchor!.getAttribute("target")).toBe("_blank");
+  });
+});

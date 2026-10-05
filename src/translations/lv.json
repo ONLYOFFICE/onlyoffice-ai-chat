@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Ievadiet AI modeļa API konfigurāciju JS formātā. Norādiet modeļa nosaukumu, galapunktu URL un galvenes.",
   "DownloadTemplate": "Lejupielādēt veidni",
   "Permissions": "Atļaujas",
+  "PermissionsAskEveryTime": "Jautāt katru reizi",
+  "PermissionsAutoApprove": "Apstiprināt automātiski",
+  "PermissionsAllowWithoutAsking": "Atļaut bez jautāšanas",
   "DropFilesHere": "Nometiet failus šeit, lai pievienotu",
   "Uploading": "Notiek augšupielāde…",
   "PromptSaved": "Uzvedne saglabāta",
-  "PromptSavedToFolder": "Uzvedne saglabāta mapē “{{folder}}”"
+  "PromptSavedToFolder": "Uzvedne saglabāta mapē “{{folder}}”",
+  "WebSearchKeySaved": "API atslēga saglabāta.",
+  "WebSearchAvailable": "Tīmekļa meklēšana ir pieejama: AI tērzēšana.",
+  "Close": "Aizvērt"
 }

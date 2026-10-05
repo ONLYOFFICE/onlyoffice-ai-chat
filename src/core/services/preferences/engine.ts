@@ -1,4 +1,5 @@
 import type { ReasoningLevel } from "../../../shared/reasoning-level";
+import type { ToolPermissionMode } from "../../../shared/tool-permission-mode";
 import {
   DEFAULT_PREFERENCES,
   type PreferenceDefaults,
@@ -112,5 +113,36 @@ export class PreferencesEngine {
     await this.setDeepMode(value !== "off", entityId);
     if (value === "off") return;
     await this.deps.storage.preferences.upsertReasoningLevel?.(value, entityId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tool permission mode
+  // ---------------------------------------------------------------------------
+
+  /**
+   * How a tool call is approved in scope: the persisted mode, or
+   * `defaults.toolPermissionMode` when none was stored or the adapter
+   * predates the mode methods.
+   */
+  async getToolPermissionMode(entityId?: string): Promise<ToolPermissionMode> {
+    const stored =
+      (await this.deps.storage.preferences.readToolPermissionMode?.(
+        entityId
+      )) ?? null;
+    return stored ?? this.defaults.toolPermissionMode;
+  }
+
+  /**
+   * Persist the mode in scope. Idempotent. Silently a no-op on adapters
+   * without the optional methods.
+   */
+  async setToolPermissionMode(
+    value: ToolPermissionMode,
+    entityId?: string
+  ): Promise<void> {
+    await this.deps.storage.preferences.upsertToolPermissionMode?.(
+      value,
+      entityId
+    );
   }
 }

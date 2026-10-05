@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Zadajte konfiguráciu API rozhrania AI modelu vo formáte JS. Uveďte názov modelu, URL adresy endpointov a hlavičky.",
   "DownloadTemplate": "Stiahnuť šablónu",
   "Permissions": "Oprávnenia",
+  "PermissionsAskEveryTime": "Vždy sa opýtať",
+  "PermissionsAutoApprove": "Schvaľovať automaticky",
+  "PermissionsAllowWithoutAsking": "Povoliť bez pýtania",
   "DropFilesHere": "Sem presuňte súbory na priloženie",
   "Uploading": "Nahrávanie…",
   "PromptSaved": "Výzva bola uložená",
-  "PromptSavedToFolder": "Výzva bola uložená do „{{folder}}“"
+  "PromptSavedToFolder": "Výzva bola uložená do „{{folder}}“",
+  "WebSearchKeySaved": "API kľúč bol uložený.",
+  "WebSearchAvailable": "Vyhľadávanie na webe je dostupné v AI Chat.",
+  "Close": "Zavrieť"
 }

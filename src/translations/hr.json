@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Unesite konfiguraciju za API AI modela u JS formatu. Navedite naziv modela, URL-ove krajnjih točaka i zaglavlja.",
   "DownloadTemplate": "Preuzmi predložak",
   "Permissions": "Dozvole",
+  "PermissionsAskEveryTime": "Pitaj svaki put",
+  "PermissionsAutoApprove": "Automatski odobri",
+  "PermissionsAllowWithoutAsking": "Dopusti bez pitanja",
   "DropFilesHere": "Povucite datoteke ovdje za prilaganje",
   "Uploading": "Učitavanje…",
   "PromptSaved": "Upit je spremljen",
-  "PromptSavedToFolder": "Upit je spremljen u „{{folder}}”"
+  "PromptSavedToFolder": "Upit je spremljen u „{{folder}}”",
+  "WebSearchKeySaved": "API ključ je spremljen.",
+  "WebSearchAvailable": "Pretraživanje weba dostupno je u AI Chat.",
+  "Close": "Zatvori"
 }

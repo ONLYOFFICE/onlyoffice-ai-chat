@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Въведете конфигурацията за AI Model API в JS формат. Посочете името на модела, крайните URL адреси и хедърите.",
   "DownloadTemplate": "Изтегли шаблон",
   "Permissions": "Разрешения",
+  "PermissionsAskEveryTime": "Питай всеки път",
+  "PermissionsAutoApprove": "Одобрявай автоматично",
+  "PermissionsAllowWithoutAsking": "Разрешавай без питане",
   "DropFilesHere": "Пуснете файлове тук, за да ги прикачите",
   "Uploading": "Качване…",
   "PromptSaved": "Подканата е запазена",
-  "PromptSavedToFolder": "Подканата е запазена в „{{folder}}“"
+  "PromptSavedToFolder": "Подканата е запазена в „{{folder}}“",
+  "WebSearchKeySaved": "API ключът е запазен.",
+  "WebSearchAvailable": "Търсенето в мрежата е достъпно в AI Chat.",
+  "Close": "Затвори"
 }

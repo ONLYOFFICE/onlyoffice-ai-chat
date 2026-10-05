@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Введіть конфігурацію API AI-моделі у форматі JS. Вкажіть назву моделі, URL-адреси кінцевих точок і заголовки.",
   "DownloadTemplate": "Завантажити шаблон",
   "Permissions": "Дозволи",
+  "PermissionsAskEveryTime": "Запитувати щоразу",
+  "PermissionsAutoApprove": "Схвалювати автоматично",
+  "PermissionsAllowWithoutAsking": "Дозволяти без запиту",
   "DropFilesHere": "Перетягніть файли сюди для прикріплення",
   "Uploading": "Завантаження…",
   "PromptSaved": "AI-запит збережено",
-  "PromptSavedToFolder": "AI-запит збережено до папки «{{folder}}»"
+  "PromptSavedToFolder": "AI-запит збережено до папки «{{folder}}»",
+  "WebSearchKeySaved": "API-ключ збережено.",
+  "WebSearchAvailable": "Вебпошук доступний в AI Chat.",
+  "Close": "Закрити"
 }

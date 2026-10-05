@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Introduïu la configuració per a l'API del model d'IA en format JS. Proporcioneu el nom del model, les URL dels punts d'accés i les capçaleres.",
   "DownloadTemplate": "Baixa la plantilla",
   "Permissions": "Permisos",
+  "PermissionsAskEveryTime": "Pregunta cada vegada",
+  "PermissionsAutoApprove": "Aprova automàticament",
+  "PermissionsAllowWithoutAsking": "Permet sense preguntar",
   "DropFilesHere": "Arrossegueu els fitxers aquí per adjuntar-los",
   "Uploading": "S'està penjant…",
   "PromptSaved": "S'ha desat el missatge",
-  "PromptSavedToFolder": "S'ha desat el missatge a «{{folder}}»"
+  "PromptSavedToFolder": "S'ha desat el missatge a «{{folder}}»",
+  "WebSearchKeySaved": "S'ha desat la clau API.",
+  "WebSearchAvailable": "La cerca web està disponible al Xat d'IA.",
+  "Close": "Tanca"
 }

@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Geben Sie die Konfiguration für die KI-Modell-API im JS-Format ein. Stellen Sie den Modellnamen, Endpunkt-URLs und Header bereit.",
   "DownloadTemplate": "Vorlage herunterladen",
   "Permissions": "Berechtigungen",
+  "PermissionsAskEveryTime": "Jedes Mal fragen",
+  "PermissionsAutoApprove": "Automatisch genehmigen",
+  "PermissionsAllowWithoutAsking": "Ohne Nachfrage erlauben",
   "DropFilesHere": "Dateien hier ablegen zum Anhängen",
   "Uploading": "Wird hochgeladen…",
   "PromptSaved": "Prompt gespeichert",
-  "PromptSavedToFolder": "Prompt in „{{folder}}“ gespeichert"
+  "PromptSavedToFolder": "Prompt in „{{folder}}“ gespeichert",
+  "WebSearchKeySaved": "API-Schlüssel gespeichert.",
+  "WebSearchAvailable": "Die Websuche ist im AI-Chat verfügbar.",
+  "Close": "Schließen"
 }

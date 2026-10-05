@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "הזן את התצורה עבור API של מודל ה-AI בפורמט JS. ספק את שם המודל, כתובות ה-URL של נקודות הקצה והכותרות.",
   "DownloadTemplate": "הורד תבנית",
   "Permissions": "הרשאות",
+  "PermissionsAskEveryTime": "לשאול בכל פעם",
+  "PermissionsAutoApprove": "אישור אוטומטי",
+  "PermissionsAllowWithoutAsking": "לאפשר ללא שאלה",
   "DropFilesHere": "גרור קבצים לכאן כדי לצרף",
   "Uploading": "מעלה…",
   "PromptSaved": "הפרומפט נשמר",
-  "PromptSavedToFolder": "הפרומפט נשמר בתיקייה „{{folder}}”"
+  "PromptSavedToFolder": "הפרומפט נשמר בתיקייה „{{folder}}”",
+  "WebSearchKeySaved": "מפתח ה-API נשמר.",
+  "WebSearchAvailable": "חיפוש באינטרנט זמין בצ'אט AI.",
+  "Close": "סגירה"
 }

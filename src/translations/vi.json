@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Nhập cấu hình cho API mô hình AI theo định dạng JS. Cung cấp tên mô hình, URL endpoint và header.",
   "DownloadTemplate": "Tải mẫu",
   "Permissions": "Quyền",
+  "PermissionsAskEveryTime": "Hỏi mỗi lần",
+  "PermissionsAutoApprove": "Tự động phê duyệt",
+  "PermissionsAllowWithoutAsking": "Cho phép mà không hỏi",
   "DropFilesHere": "Thả tệp vào đây để đính kèm",
   "Uploading": "Đang tải lên…",
   "PromptSaved": "Đã lưu prompt",
-  "PromptSavedToFolder": "Đã lưu prompt vào “{{folder}}”"
+  "PromptSavedToFolder": "Đã lưu prompt vào “{{folder}}”",
+  "WebSearchKeySaved": "Đã lưu khóa API.",
+  "WebSearchAvailable": "Tìm kiếm web đã khả dụng trong AI Chat.",
+  "Close": "Đóng"
 }

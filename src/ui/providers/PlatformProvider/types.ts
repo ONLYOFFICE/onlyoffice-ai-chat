@@ -39,6 +39,18 @@ export interface CopyMeta {
 }
 
 /**
+ * Extra parts of a toast, passed as the second argument to
+ * {@link PlatformAdapter.showToast}.
+ */
+export interface ToastMeta {
+  /**
+   * Bold line shown above `text`, e.g. "API key saved." over "Web search is
+   * available in AI Chat.". Maps onto the title of the host's own toast.
+   */
+  heading?: string;
+}
+
+/**
  * File-system operations delegated to the host application.
  *
  * Covers picking files/images, converting document formats, and opening or
@@ -322,8 +334,12 @@ export interface PlatformAdapter {
    * Severity is left out on purpose: every toast the chat raises today is a
    * success confirmation. Add a second argument when that stops being true
    * rather than having hosts guess.
+   *
+   * The optional second argument {@link ToastMeta} carries a heading for
+   * two-line toasts ("API key saved." over its explanation). It is additive:
+   * a host that ignores it still shows `text`.
    */
-  showToast?: (text: string) => void;
+  showToast?: (text: string, meta?: ToastMeta) => void;
 
   /** Cloud accounts connected in the host application. If null — cloud provider features are unavailable */
   clouds: PlatformClouds | null;

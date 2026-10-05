@@ -7,11 +7,17 @@ vi.mock("react-i18next", () => ({
 }));
 
 // `showToast` is set per-test to exercise the host-delegation path.
-const platform: { showToast?: (text: string) => void } = {};
+const platform: {
+  showToast?: (text: string, meta?: { heading?: string }) => void;
+} = {};
 
 vi.mock("../../../providers/PlatformProvider", () => ({
   usePlatform: () => platform,
   useOptionalPlatform: () => platform,
+}));
+
+vi.mock("../../icon", () => ({
+  Icon: ({ name }: { name: string }) => <span data-testid="icon">{name}</span>,
 }));
 
 import { I18nProvider } from "../../../providers/LocalesProvider";
@@ -21,13 +27,18 @@ import { ToastProvider, useToast } from "../index";
 const Trigger = ({
   title,
   duration,
+  heading,
 }: {
   title: string;
   duration?: number;
+  heading?: string;
 }) => {
   const { showToast } = useToast();
   return (
-    <button type="button" onClick={() => showToast(title, { duration })}>
+    <button
+      type="button"
+      onClick={() => showToast(title, { duration, heading })}
+    >
       show
     </button>
   );
@@ -62,6 +73,23 @@ describe("ToastProvider", () => {
   // `AIChatWidget` and `ChatPage` both mount a provider, so the widget path
   // nests them. The inner one must defer to the outer rather than open a
   // second viewport, or the toast lands in a stack nobody is showing.
+  it("renders a heading above the text when one is given", () => {
+    renderWithProvider(
+      <Trigger
+        title="Web search is available in AI Chat."
+        heading="API key saved."
+      />
+    );
+    act(() => {
+      screen.getByRole("button", { name: "show" }).click();
+    });
+
+    const toast = screen.getByTestId("toast");
+    expect(toast.textContent).toContain(
+      "API key saved.Web search is available in AI Chat."
+    );
+  });
+
   it("renders a single toast when providers are nested", () => {
     render(
       <I18nProvider locale="en">
@@ -96,6 +124,21 @@ describe("ToastProvider", () => {
 
     expect(screen.getByText("first")).toBeTruthy();
     expect(screen.getByText("second")).toBeTruthy();
+  });
+
+  it("closes a toast from its close button", () => {
+    renderWithProvider(<Trigger title="Prompt saved" />);
+    act(() => {
+      screen.getByRole("button", { name: "show" }).click();
+    });
+
+    act(() => {
+      screen.getByRole("button", { name: "Close" }).click();
+    });
+
+    // As with the timer, jsdom never fires the exit animation that unmounts it.
+    const toast = screen.queryByText("Prompt saved")?.closest("li");
+    expect(toast?.getAttribute("data-state")).not.toBe("open");
   });
 
   it("closes a toast once its duration elapses", () => {
@@ -152,6 +195,26 @@ describe("ToastProvider", () => {
       // The host owns the notification, so the built-in stack stays empty —
       // otherwise the user would see the same message twice.
       expect(screen.queryByText("Prompt saved")).toBeNull();
+    });
+
+    it("passes the heading to the host as its toast title", () => {
+      const hostToast = vi.fn();
+      platform.showToast = hostToast;
+
+      renderWithProvider(
+        <Trigger
+          title="Web search is available in AI Chat."
+          heading="API key saved."
+        />
+      );
+      act(() => {
+        screen.getByRole("button", { name: "show" }).click();
+      });
+
+      expect(hostToast).toHaveBeenCalledWith(
+        "Web search is available in AI Chat.",
+        { heading: "API key saved." }
+      );
     });
 
     it("keeps a non-string title in the built-in stack", () => {

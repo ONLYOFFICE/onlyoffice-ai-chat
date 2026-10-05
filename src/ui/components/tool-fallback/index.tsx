@@ -13,6 +13,7 @@ import { LoadingDots } from "../loading-dots";
 import { IconButton } from "../icon-button";
 import useCopyToClipboard from "../markdown/hooks/useCopyToClipboard";
 import { ImageGeneratingPlaceholder } from "./image-generating";
+import { BoundedImage } from "../bounded-image";
 import {
   collectResultImages,
   redactResultImages,
@@ -169,22 +170,29 @@ export const ToolFallback: ToolCallMessagePartComponent = ({
   const imageSlot =
     imageSources.length > 0 ? (
       <div className="flex flex-col gap-[8px]">
-        {imageSources.map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            alt={t("ToolCallResult")}
-            data-testid="tool-call-generated-image"
-            className={`block max-w-full rounded-[8px] ${
-              // A generated image is the answer itself and keeps its size;
-              // a picture another tool returns (a screenshot, a chart) is a
-              // preview, capped so a tall one doesn't push the reply away.
-              isImageGeneration
-                ? ""
-                : "max-h-[var(--chat-message-tool-call-image-max-height)]"
-            }`}
-          />
-        ))}
+        {imageSources.map((src, i) =>
+          // A generated image is the answer itself and keeps its size; a
+          // picture another tool returns (a screenshot, a chart) is a
+          // preview, capped so a tall one doesn't push the reply away.
+          isImageGeneration ? (
+            <img
+              key={i}
+              src={src}
+              alt={t("ToolCallResult")}
+              data-testid="tool-call-generated-image"
+              className="block max-w-full rounded-[8px]"
+            />
+          ) : (
+            <BoundedImage
+              key={i}
+              src={src}
+              alt={t("ToolCallResult")}
+              data-testid="tool-call-generated-image"
+              maxHeightVar="--chat-message-tool-call-image-max-height"
+              className="rounded-[8px]"
+            />
+          )
+        )}
       </div>
     ) : isImagePending ? (
       <ImageGeneratingPlaceholder />

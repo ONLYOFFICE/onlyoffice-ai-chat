@@ -1,0 +1,42 @@
+/**
+ * How the chat treats a tool call the model makes.
+ *
+ * - `"ask"` — every call waits for the user's approval. Neither the
+ *   "always allow" list nor a tool's own `requireApproval: false` counts
+ *   here; the list only matters again under `"auto"`.
+ * - `"auto"` — the always-allow list, every tool that opted out of
+ *   approval through `requireApproval: false` (host tools default to it),
+ *   and every MCP tool annotated `readOnlyHint: true` or
+ *   `destructiveHint: false`; a destructive or unannotated tool asks.
+ * - `"allow"` — every call runs without asking.
+ *
+ * Resolved per call by `core/services/tools/auto-allow.ts`.
+ *
+ * Stored as a user preference next to the thinking depth; the composer's
+ * "Permissions" row at the foot of the model picker switches it.
+ */
+export type ToolPermissionMode = "ask" | "auto" | "allow";
+
+/** Every {@link ToolPermissionMode}, most cautious first. */
+export const TOOL_PERMISSION_MODES: readonly ToolPermissionMode[] = [
+  "ask",
+  "auto",
+  "allow",
+];
+
+/**
+ * The mode in force until the user picks another: "auto", so a tool that
+ * opted out of approval (host tools by default, read-only MCP tools) keeps
+ * running without a dialog the way it did before the mode existed.
+ */
+export const DEFAULT_TOOL_PERMISSION_MODE: ToolPermissionMode = "auto";
+
+/** Type guard for {@link ToolPermissionMode}. */
+export function isToolPermissionMode(
+  value: unknown
+): value is ToolPermissionMode {
+  return (
+    typeof value === "string" &&
+    (TOOL_PERMISSION_MODES as readonly string[]).includes(value)
+  );
+}

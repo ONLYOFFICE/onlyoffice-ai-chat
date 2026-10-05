@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Syötä AI-mallin API-määritykset JS-muodossa. Anna mallin nimi, päätepisteen URL-osoitteet ja otsikot.",
   "DownloadTemplate": "Lataa malli",
   "Permissions": "Käyttöoikeudet",
+  "PermissionsAskEveryTime": "Kysy joka kerta",
+  "PermissionsAutoApprove": "Hyväksy automaattisesti",
+  "PermissionsAllowWithoutAsking": "Salli kysymättä",
   "DropFilesHere": "Lisää tiedostoja pudottamalla ne tähän",
   "Uploading": "Ladataan…",
   "PromptSaved": "Kehote tallennettu",
-  "PromptSavedToFolder": "Kehote tallennettu kansioon ”{{folder}}”"
+  "PromptSavedToFolder": "Kehote tallennettu kansioon ”{{folder}}”",
+  "WebSearchKeySaved": "API-avain tallennettu.",
+  "WebSearchAvailable": "Verkkohaku on käytettävissä: AI-chat.",
+  "Close": "Sulje"
 }

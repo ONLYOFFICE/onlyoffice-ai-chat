@@ -2,6 +2,10 @@ import {
   DEFAULT_REASONING_LEVEL,
   type ReasoningLevel,
 } from "../../../shared/reasoning-level";
+import {
+  DEFAULT_TOOL_PERMISSION_MODE,
+  type ToolPermissionMode,
+} from "../../../shared/tool-permission-mode";
 import type { StorageAdapter } from "../../storage";
 import type { RouteSpec } from "../types";
 import type { PreferencesEngine } from "./engine";
@@ -45,6 +49,15 @@ export const DEFAULT_PREFERENCES_ROUTES: Record<
     method: "PUT",
     path: "preferences/set-reasoning-level",
   },
+  getToolPermissionMode: {
+    method: "GET",
+    path: "preferences/get-tool-permission-mode",
+    params: ["entityId"],
+  },
+  setToolPermissionMode: {
+    method: "PUT",
+    path: "preferences/set-tool-permission-mode",
+  },
 };
 
 /** Dependencies injected into a {@link PreferencesEngine} instance. */
@@ -68,10 +81,13 @@ export type PreferenceDefaults = {
    * also what the legacy boolean toggle alone stands for.
    */
   reasoningLevel: Exclude<ReasoningLevel, "off">;
+  /** How a tool call is approved when no mode has been persisted. */
+  toolPermissionMode: ToolPermissionMode;
 };
 
 /** Built-in defaults — read by the engine when none are passed. */
 export const DEFAULT_PREFERENCES: PreferenceDefaults = {
   deepMode: false,
   reasoningLevel: DEFAULT_REASONING_LEVEL,
+  toolPermissionMode: DEFAULT_TOOL_PERMISSION_MODE,
 };

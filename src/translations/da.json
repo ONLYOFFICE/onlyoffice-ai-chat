@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Angiv konfigurationen for AI-model-API'en i JS-format. Angiv modelnavnet, endpoint-URL'er og headers.",
   "DownloadTemplate": "Download skabelon",
   "Permissions": "Tilladelser",
+  "PermissionsAskEveryTime": "Spørg hver gang",
+  "PermissionsAutoApprove": "Godkend automatisk",
+  "PermissionsAllowWithoutAsking": "Tillad uden at spørge",
   "DropFilesHere": "Slip filer her for at vedhæfte",
   "Uploading": "Uploader…",
   "PromptSaved": "Prompten er gemt",
-  "PromptSavedToFolder": "Prompten er gemt i “{{folder}}”"
+  "PromptSavedToFolder": "Prompten er gemt i “{{folder}}”",
+  "WebSearchKeySaved": "API-nøglen er gemt.",
+  "WebSearchAvailable": "Websøgning er tilgængelig i AI Chat.",
+  "Close": "Luk"
 }

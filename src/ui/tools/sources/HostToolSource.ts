@@ -5,7 +5,8 @@ import type { HostTool, HostToolGroup } from "../types";
  * Convert a {@link HostTool} to the wire {@link TMCPItem}, qualifying the
  * name with its group id and carrying `requireApproval` through so the
  * engine can honour it when computing auto-allow. Defaults to `false`
- * (auto-allow) per the {@link HostTool.requireApproval} contract.
+ * per the {@link HostTool.requireApproval} contract — no dialog under the
+ * "auto" permission mode; "ask" still prompts unless always-allowed.
  */
 const toItem = (group: HostToolGroup, tool: HostTool): TMCPItem => ({
   name: emittedName(group, tool),
@@ -124,8 +125,6 @@ export class HostToolSource {
    * emitted names must not be prefix-stripped before {@link callTool}.
    */
   emitsBareNames(groupId: string): boolean {
-    return (
-      this.groups.find((g) => g.id === groupId)?.qualifyNames === false
-    );
+    return this.groups.find((g) => g.id === groupId)?.qualifyNames === false;
   }
 }

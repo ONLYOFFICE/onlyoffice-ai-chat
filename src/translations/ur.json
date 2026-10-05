@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "AI ماڈل API کی ترتیب JS فارمیٹ میں درج کریں۔ ماڈل کا نام، endpoint URLs اور headers فراہم کریں۔",
   "DownloadTemplate": "ٹیمپلیٹ ڈاؤن لوڈ کریں",
   "Permissions": "اجازتیں",
+  "PermissionsAskEveryTime": "ہر بار پوچھیں",
+  "PermissionsAutoApprove": "خودکار منظوری",
+  "PermissionsAllowWithoutAsking": "بغیر پوچھے اجازت دیں",
   "DropFilesHere": "منسلک کرنے کے لیے فائلیں یہاں ڈراپ کریں",
   "Uploading": "اپ لوڈ ہو رہا ہے…",
   "PromptSaved": "Prompt محفوظ ہو گیا",
-  "PromptSavedToFolder": "Prompt ”{{folder}}“ میں محفوظ ہو گیا"
+  "PromptSavedToFolder": "Prompt ”{{folder}}“ میں محفوظ ہو گیا",
+  "WebSearchKeySaved": "API کلید محفوظ ہو گئی۔",
+  "WebSearchAvailable": "ویب سرچ AI Chat میں دستیاب ہے۔",
+  "Close": "بند کریں"
 }

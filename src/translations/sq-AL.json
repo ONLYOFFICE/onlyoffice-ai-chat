@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Vendos konfigurimin për API-n e modelit AI në format JS. Jep emrin e modelit, URL-të e pikave fundore dhe kokëzat.",
   "DownloadTemplate": "Shkarko shabllonin",
   "Permissions": "Lejet",
+  "PermissionsAskEveryTime": "Pyet çdo herë",
+  "PermissionsAutoApprove": "Mirato automatikisht",
+  "PermissionsAllowWithoutAsking": "Lejo pa pyetur",
   "DropFilesHere": "Hidh skedarët këtu për t'i bashkëngjitur",
   "Uploading": "Po ngarkohet…",
   "PromptSaved": "Prompt-i u ruajt",
-  "PromptSavedToFolder": "Prompt-i u ruajt në “{{folder}}”"
+  "PromptSavedToFolder": "Prompt-i u ruajt në “{{folder}}”",
+  "WebSearchKeySaved": "Çelësi API u ruajt.",
+  "WebSearchAvailable": "Kërkimi në ueb është i disponueshëm në AI Chat.",
+  "Close": "Mbyll"
 }

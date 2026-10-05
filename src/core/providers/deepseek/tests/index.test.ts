@@ -3,16 +3,35 @@ import { deepseekInfo } from "../info";
 import { DeepSeekProvider } from "../index";
 import type { ReasoningLevel } from "../../../../shared/reasoning-level";
 
-const { modelsListMock } = vi.hoisted(() => ({ modelsListMock: vi.fn() }));
+const { modelsListMock, chatCreateMock, responsesCreateMock } = vi.hoisted(
+  () => ({
+    modelsListMock: vi.fn(),
+    chatCreateMock: vi.fn(),
+    responsesCreateMock: vi.fn(),
+  })
+);
 
 vi.mock("openai", () => ({
   default: class MockOpenAI {
     models = { list: modelsListMock };
+    chat = { completions: { create: chatCreateMock } };
+    responses = { create: responsesCreateMock };
   },
 }));
 
+/** A finished chat-completions stream: one empty chunk with a stop. */
+async function* completedChat() {
+  yield {
+    choices: [{ delta: {}, finish_reason: "stop", index: 0 }],
+  };
+}
+
 describe("DeepSeekProvider", () => {
-  beforeEach(() => modelsListMock.mockReset());
+  beforeEach(() => {
+    modelsListMock.mockReset();
+    chatCreateMock.mockReset();
+    responsesCreateMock.mockReset();
+  });
 
   it("returns canonical name/baseUrl", () => {
     expect(DeepSeekProvider.getName()).toBe(deepseekInfo.name);
@@ -33,6 +52,49 @@ describe("DeepSeekProvider", () => {
     });
     expect(out[0].provider).toBe("deepseek");
   });
+
+  // Bug 83335: thinking mode on the Responses transport 400s because the
+  // history replay there drops reasoning — DeepSeek must stay on chat.
+  describe("transport", () => {
+    const provider = () =>
+      new DeepSeekProvider({ baseUrl: "https://x", apiKey: "sk" });
+
+    it("reports no Responses API without probing the network", async () => {
+      await expect(provider().checkResponsesApi()).resolves.toBe(false);
+      expect(responsesCreateMock).not.toHaveBeenCalled();
+    });
+
+    it("streams a profile probed onto Responses through chat completions", async () => {
+      chatCreateMock.mockResolvedValueOnce(completedChat());
+      for await (const _ of provider().sendMessage({
+        messages: [],
+        model: "deepseek-v4-flash",
+        systemPrompt: "",
+        useResponsesApi: true,
+        withReasoning: true,
+      }))
+        void _;
+      expect(responsesCreateMock).not.toHaveBeenCalled();
+      const payload = chatCreateMock.mock.calls[0]?.[0];
+      expect(payload.thinking).toEqual({ type: "enabled" });
+      expect(payload).not.toHaveProperty("reasoning");
+    });
+
+    it("keeps one-shot calls on chat completions too", async () => {
+      chatCreateMock.mockResolvedValueOnce({
+        choices: [{ message: { content: "t" } }],
+      });
+      await provider().sendMessageSync({
+        messages: [{ role: "user", content: "q" }],
+        model: "deepseek-v4-flash",
+        systemPrompt: "s",
+        useResponsesApi: true,
+      });
+      expect(responsesCreateMock).not.toHaveBeenCalled();
+      expect(chatCreateMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("reasoning request fields", () => {
     const fieldsOf = (model: string, level: ReasoningLevel) =>
       (

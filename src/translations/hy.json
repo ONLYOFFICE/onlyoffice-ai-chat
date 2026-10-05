@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Մուտքագրեք AI Model API-ի կարգավորումը JS ձևաչափով։ Նշեք մոդելի անվանումը, endpoint URL-ները և headers-ը։",
   "DownloadTemplate": "Ներբեռնել ձևանմուշ",
   "Permissions": "Թույլտվություններ",
+  "PermissionsAskEveryTime": "Հարցնել ամեն անգամ",
+  "PermissionsAutoApprove": "Ավտոմատ հաստատել",
+  "PermissionsAllowWithoutAsking": "Թույլատրել առանց հարցնելու",
   "DropFilesHere": "Կցելու համար թափեք ֆայլերն այստեղ",
   "Uploading": "Վերբեռնում…",
   "PromptSaved": "Հրահանգը պահվեց",
-  "PromptSavedToFolder": "Հրահանգը պահվեց «{{folder}}» թղթապանակում"
+  "PromptSavedToFolder": "Հրահանգը պահվեց «{{folder}}» թղթապանակում",
+  "WebSearchKeySaved": "API բանալին պահպանված է։",
+  "WebSearchAvailable": "Վեբ որոնումը հասանելի է AI Chat-ում։",
+  "Close": "Փակել"
 }

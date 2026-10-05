@@ -45,6 +45,8 @@ type PreferenceDefaults = {
   deepMode: boolean;
   // depth used while deep mode is on and none was persisted
   reasoningLevel: "low" | "medium" | "high" | "max";
+  // how a tool call is approved when none was persisted
+  toolPermissionMode: "ask" | "auto" | "allow";
 };
 ```
 
@@ -64,6 +66,8 @@ for any preference. Unspecified keys fall back to
 | [`isDeepModeSet`](#isdeepmodeset)       | `boolean`                | ❌                              | —        |
 | [`getReasoningLevel`](#getreasoninglevel) | `ReasoningLevel`       | ❌                              | ✅ default depth while on |
 | [`setReasoningLevel`](#setreasoninglevel) | `void`                 | `upsertDeepMode` + `upsertReasoningLevel` | — |
+| [`getToolPermissionMode`](#gettoolpermissionmode) | `ToolPermissionMode` | ❌                        | ✅ falls back to default |
+| [`setToolPermissionMode`](#settoolpermissionmode) | `void`         | `upsertToolPermissionMode`      | — |
 
 ---
 
@@ -237,3 +241,44 @@ and `PUT preferences/set-reasoning-level`. A host that serves only the
 deep-mode routes is fine: the widget's profiles store falls back to
 `getDeepMode` / `setDeepMode` after the first failed call and keeps the
 chosen depth in memory for the session.
+
+---
+
+## Tool permission mode
+
+`ToolPermissionMode` is `"ask" | "auto" | "allow"` (exported from the
+package root): whether a tool call the model makes waits for the user
+every time (the persisted always-allow list does not skip the dialog
+either), skips it for an always-allowed tool, one that opted out through
+`requireApproval: false` or one annotated read-only / non-destructive, or
+runs without asking. `processStream` reads the mode next to the
+always-allow list and sets `tool-call-pending.autoAllow` from both — see
+[`ai-engine.md`](./ai-engine.md). A host that overrides this default
+passes the same value as `AIEngineDeps.defaultToolPermissionMode`, so
+the approval flow and the composer's row agree. The composer's "Permissions" row at the foot of
+the model picker switches it; the widget's servers store reads it on
+init and writes every pick.
+
+### `getToolPermissionMode`
+
+```ts
+async getToolPermissionMode(entityId?: string): Promise<ToolPermissionMode>;
+```
+
+The persisted mode in scope, or `defaults.toolPermissionMode` (`"auto"`)
+when none was stored — or when the storage adapter has no
+`readToolPermissionMode` (the mode methods on `PreferencesStorage` are
+optional).
+
+### `setToolPermissionMode`
+
+```ts
+async setToolPermissionMode(value: ToolPermissionMode, entityId?: string): Promise<void>;
+```
+
+Idempotent `upsertToolPermissionMode`; a no-op on adapters without it.
+
+Default HTTP routes: `GET preferences/get-tool-permission-mode?entityId=`
+and `PUT preferences/set-tool-permission-mode`. A host without them is
+fine: the servers store keeps the default after the first failed call
+and holds the user's pick in memory for the session.

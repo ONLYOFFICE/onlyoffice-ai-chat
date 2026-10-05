@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Wprowadź konfigurację API modelu AI w formacie JS. Podaj nazwę modelu, adresy URL punktów końcowych i nagłówki.",
   "DownloadTemplate": "Pobierz szablon",
   "Permissions": "Uprawnienia",
+  "PermissionsAskEveryTime": "Pytaj za każdym razem",
+  "PermissionsAutoApprove": "Zatwierdzaj automatycznie",
+  "PermissionsAllowWithoutAsking": "Zezwalaj bez pytania",
   "DropFilesHere": "Upuść pliki tutaj, aby je załączyć",
   "Uploading": "Przesyłanie…",
   "PromptSaved": "Monit zapisany",
-  "PromptSavedToFolder": "Monit zapisany w folderze „{{folder}}”"
+  "PromptSavedToFolder": "Monit zapisany w folderze „{{folder}}”",
+  "WebSearchKeySaved": "Klucz API został zapisany.",
+  "WebSearchAvailable": "Wyszukiwanie w sieci jest dostępne w AI Chat.",
+  "Close": "Zamknij"
 }

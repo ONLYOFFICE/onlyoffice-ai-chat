@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Ange konfigurationen för AI-modellens API i JS-format. Ange modellnamn, slutpunkts-URL:er och rubriker.",
   "DownloadTemplate": "Ladda ned mall",
   "Permissions": "Behörigheter",
+  "PermissionsAskEveryTime": "Fråga varje gång",
+  "PermissionsAutoApprove": "Godkänn automatiskt",
+  "PermissionsAllowWithoutAsking": "Tillåt utan att fråga",
   "DropFilesHere": "Släpp filer här för att bifoga",
   "Uploading": "Laddar upp…",
   "PromptSaved": "Prompten har sparats",
-  "PromptSavedToFolder": "Prompten har sparats i ”{{folder}}”"
+  "PromptSavedToFolder": "Prompten har sparats i ”{{folder}}”",
+  "WebSearchKeySaved": "API-nyckeln har sparats.",
+  "WebSearchAvailable": "Webbsökning är tillgänglig i AI Chat.",
+  "Close": "Stäng"
 }

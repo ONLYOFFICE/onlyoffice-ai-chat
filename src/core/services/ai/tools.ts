@@ -4,6 +4,7 @@ import type { SourceMeta } from "../../../shared/source-meta";
 import { stripToolIntent } from "../../../shared/tool-intent";
 import type { ActionArgs } from "../../actions/types";
 import type { StorageAdapter } from "../../storage";
+import type { ToolPermissionMode } from "../../../shared/tool-permission-mode";
 import type { ToolsAdapter } from "../../tools-adapter";
 import type { Profile } from "../../types";
 import {
@@ -261,6 +262,8 @@ export type AdapterRunContext = {
   pagination?: boolean | (() => boolean);
   /** Mirrors {@link AIEngineDeps.persistIntervalMs} for the resumed stream. */
   persistIntervalMs?: number;
+  /** Mirrors {@link AIEngineDeps.defaultToolPermissionMode} for the resumed stream. */
+  defaultToolPermissionMode?: ToolPermissionMode;
 };
 
 /**
@@ -303,6 +306,7 @@ export async function* executeAdapterTool(
       storage,
       pagination: ctx.pagination,
       persistIntervalMs: ctx.persistIntervalMs,
+      defaultToolPermissionMode: ctx.defaultToolPermissionMode,
     },
     {
       threadId: event.threadId,

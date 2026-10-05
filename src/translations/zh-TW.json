@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "以 JS 格式輸入 AI 模型 API 的設定，包含模型名稱、端點 URL 及標頭。",
   "DownloadTemplate": "下載範本",
   "Permissions": "權限",
+  "PermissionsAskEveryTime": "每次詢問",
+  "PermissionsAutoApprove": "自動核准",
+  "PermissionsAllowWithoutAsking": "無需詢問即允許",
   "DropFilesHere": "將檔案拖曳至此以附加",
   "Uploading": "正在上傳…",
   "PromptSaved": "提示詞已儲存",
-  "PromptSavedToFolder": "提示詞已儲存至「{{folder}}」"
+  "PromptSavedToFolder": "提示詞已儲存至「{{folder}}」",
+  "WebSearchKeySaved": "已儲存 API 金鑰。",
+  "WebSearchAvailable": "現在可以在 AI Chat 中使用網頁搜尋。",
+  "Close": "關閉"
 }

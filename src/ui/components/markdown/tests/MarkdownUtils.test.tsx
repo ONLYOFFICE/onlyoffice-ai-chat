@@ -117,6 +117,18 @@ describe("defaultComponents", () => {
     expect(anchor!.getAttribute("href")).toBe("https://example.com");
   });
 
+  it("renders a link without an href as an inert anchor", () => {
+    const A = defaultComponents.a as React.FC<
+      React.AnchorHTMLAttributes<HTMLAnchorElement>
+    >;
+    const { container } = render(<A href="">C:\\Users\\me\\report.docx</A>);
+    const anchor = container.querySelector("a");
+    expect(anchor).toBeTruthy();
+    expect(anchor!.hasAttribute("href")).toBe(false);
+    expect(anchor!.hasAttribute("target")).toBe(false);
+    expect(anchor!.hasAttribute("rel")).toBe(false);
+  });
+
   it("renders ul as unordered list", () => {
     const UL = defaultComponents.ul as React.FC<
       React.HTMLAttributes<HTMLUListElement>

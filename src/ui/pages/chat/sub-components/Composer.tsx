@@ -78,9 +78,16 @@ const Composer = () => {
   // alone so they keep their own behavior. Stealing focus from an open
   // non-modal menu dismisses it, so every control must match here — the
   // ComboBox trigger does through its `role`.
+  //
+  // React bubbles events out of a portal along the component tree, so clicks
+  // in the menus and dialogs the composer's actions open (the prompts menu,
+  // the prompt dialogs) arrive here too. Ignore them: focusing the textarea
+  // there steals focus from the dialog's own field and leaves the virtual
+  // keyboard up behind the dialog.
   const focusInputOnClick = (e: ReactMouseEvent<HTMLFormElement>) => {
     if (composerDisabled) return;
     const target = e.target as HTMLElement;
+    if (!e.currentTarget.contains(target)) return;
     if (
       target.closest(
         "button, a, input, textarea, select, [role='button'], [role='combobox'], [contenteditable='true']"
@@ -114,6 +121,9 @@ const Composer = () => {
         data-testid="composer-root"
         onClick={focusInputOnClick}
         onSubmit={(e) => {
+          // A form inside a portaled dialog (renaming a prompt folder)
+          // bubbles its submit here through the React tree; it is not ours.
+          if (e.target !== e.currentTarget) return;
           // assistant-ui's own submit handler no-ops when its runtime-level
           // `composer.isEmpty` is true — text blank *and* its own (unused)
           // attachment list empty. It never sees our `useAttachmentsStore`,

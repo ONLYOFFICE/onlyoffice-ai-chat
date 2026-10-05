@@ -5,6 +5,13 @@ import type { CallbacksManager } from "../providers/EventsProvider";
 import type { ServerAPI } from "../providers/ApiProvider";
 import type { TMCPItem } from "../../types";
 import type { TSystemToolsListing } from "../../core/services";
+import {
+  DEFAULT_TOOL_PERMISSION_MODE,
+  isToolPermissionMode,
+  type ToolPermissionMode,
+} from "../../shared/tool-permission-mode";
+import logger from "../../shared/logger";
+import { isRouteUnavailable } from "../providers/ApiProvider/fetcher";
 import { reportStoreError } from "./report-error";
 
 /**
@@ -64,6 +71,13 @@ export interface ServersStoreState {
   isApprovingTool: boolean;
   setIsApprovingTool: (value: boolean) => void;
   webSearchEnabled: boolean;
+  /**
+   * How a tool call the model makes is approved — the composer's
+   * "Permissions" row. Read from the host on init; a host without the
+   * route keeps the default.
+   */
+  toolPermissionMode: ToolPermissionMode;
+  setToolPermissionMode: (mode: ToolPermissionMode) => Promise<void>;
   /**
    * `true` while the inline MCP config editor holds unsaved edits (the
    * document diverges from the last-loaded/saved config). Consumed by the
@@ -272,6 +286,57 @@ export function createServersStore(deps: {
     );
   };
 
+  // A host built before the mode existed answers the route with a 404:
+  // keep the default and stop asking for the rest of this store's life.
+  // A transient failure is rethrown like any other, so a flaky network
+  // never downgrades the host.
+  let modeRouteMissing = false;
+  const readMode = async (): Promise<ToolPermissionMode | null> => {
+    if (modeRouteMissing) return null;
+    try {
+      const mode: unknown =
+        await api.preferences.getToolPermissionMode(entity());
+      // A host answering with something that is not a mode would leave
+      // the row without a label and a checked item; keep the default.
+      if (!isToolPermissionMode(mode)) {
+        logger.warn("Ignoring an unknown tool permission mode:", mode);
+        return null;
+      }
+      return mode;
+    } catch (error) {
+      if (!isRouteUnavailable(error)) throw error;
+      modeRouteMissing = true;
+      logger.warn(
+        "Tool permission mode is not served by the host; keeping the default:",
+        error
+      );
+      return null;
+    }
+  };
+  const writeMode = async (mode: ToolPermissionMode): Promise<void> => {
+    if (modeRouteMissing) return;
+    try {
+      await api.preferences.setToolPermissionMode(mode, entity());
+    } catch (error) {
+      if (!isRouteUnavailable(error)) throw error;
+      modeRouteMissing = true;
+      logger.warn(
+        "Tool permission mode is not served by the host; keeping it in memory only:",
+        error
+      );
+    }
+  };
+  // Never lets a failed read hold up the servers it is loaded next to:
+  // the mode keeps its last value and the failure is only logged.
+  const loadMode = async () => {
+    try {
+      const mode = await readMode();
+      if (mode !== null) store.setState({ toolPermissionMode: mode });
+    } catch (error) {
+      logger.error("Failed to read the tool permission mode:", error);
+    }
+  };
+
   // Coalesces concurrent `getTools()` calls (mount + `tools-changed` bursts
   // as MCP servers connect), each of which fans out to three reads. While one run is active, extra calls flag a
   // single trailing re-run so the final state still reflects the latest
@@ -279,7 +344,7 @@ export function createServersStore(deps: {
   let toolsInFlight: Promise<void> | null = null;
   let toolsDirty = false;
 
-  return create<ServersStoreState>((set, get) => ({
+  const store = create<ServersStoreState>((set, get) => ({
     servers: {},
     tools: [],
     systemTools: {},
@@ -289,6 +354,7 @@ export function createServersStore(deps: {
     manageToolData: undefined,
     isApprovingTool: false,
     webSearchEnabled: false,
+    toolPermissionMode: DEFAULT_TOOL_PERMISSION_MODE,
     mcpConfigDirty: false,
 
     setMcpConfigDirty: (dirty) => set({ mcpConfigDirty: dirty }),
@@ -297,7 +363,10 @@ export function createServersStore(deps: {
       // Called without an await from the mount effects (`useServers`,
       // `useEnsureTools`) — see `reportStoreError`.
       try {
-        const registeredServers = await loadAndStartCustomServers();
+        const [registeredServers] = await Promise.all([
+          loadAndStartCustomServers(),
+          loadMode(),
+        ]);
         set({ registeredServers });
       } catch (error) {
         reportStoreError(callbacksManager, "servers:init", error);
@@ -333,10 +402,18 @@ export function createServersStore(deps: {
     getToolInstructions: () => ctx.servers.getToolInstructions(),
 
     reload: async () => {
-      const registeredServers = await loadAndStartCustomServers();
+      const [registeredServers] = await Promise.all([
+        loadAndStartCustomServers(),
+        loadMode(),
+      ]);
       set({ registeredServers });
       const result = await buildToolsList();
       set(result);
+    },
+
+    setToolPermissionMode: async (mode) => {
+      await writeMode(mode);
+      set({ toolPermissionMode: mode });
     },
 
     changeToolStatus: async (type, name, enabled) => {
@@ -458,4 +535,6 @@ export function createServersStore(deps: {
 
     getWebSearchEnabled: () => api.webSearch.isConfigured(entity()),
   }));
+
+  return store;
 }

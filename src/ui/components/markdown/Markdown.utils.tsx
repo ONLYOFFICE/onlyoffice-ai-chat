@@ -88,17 +88,30 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  a: ({ className, ...props }) => (
-    <a
-      className={cn(
-        "text-[var(--chat-link-color)] font-medium underline underline-offset-4",
-        className
-      )}
-      {...props}
-      target="_blank"
-      rel="noopener noreferrer"
-    />
-  ),
+  // A target the sanitizer blanked (`sandbox:`, a bare `C:/…` drive path,
+  // …) must not become `<a href="" target="_blank">`: an empty href is the
+  // page itself, and a host that routes popups to the OS then asks the
+  // system to open the page's own URL (Bug 83951). Such a link stays an
+  // anchor — its text may still be a path a host click handler can read —
+  // but with no href and no target it does nothing on its own.
+  a: ({ className, href, ...props }) => {
+    const styles = cn(
+      "text-[var(--chat-link-color)] font-medium underline underline-offset-4",
+      className
+    );
+    if (!href) {
+      return <a className={styles} {...props} />;
+    }
+    return (
+      <a
+        className={styles}
+        {...props}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+      />
+    );
+  },
   blockquote: ({ className, ...props }) => (
     <blockquote
       dir="auto"

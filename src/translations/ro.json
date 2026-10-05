@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Introduceți configurația pentru API-ul modelului AI în format JS. Furnizați numele modelului, URL-urile endpoint și antetele.",
   "DownloadTemplate": "Descarcă șablonul",
   "Permissions": "Permisiuni",
+  "PermissionsAskEveryTime": "Întreabă de fiecare dată",
+  "PermissionsAutoApprove": "Aprobă automat",
+  "PermissionsAllowWithoutAsking": "Permite fără a întreba",
   "DropFilesHere": "Trageți fișierele aici pentru a le atașa",
   "Uploading": "Se încarcă…",
   "PromptSaved": "Prompt salvat",
-  "PromptSavedToFolder": "Prompt salvat în „{{folder}}”"
+  "PromptSavedToFolder": "Prompt salvat în „{{folder}}”",
+  "WebSearchKeySaved": "Cheia API a fost salvată.",
+  "WebSearchAvailable": "Căutarea pe web este disponibilă în AI Chat.",
+  "Close": "Închide"
 }

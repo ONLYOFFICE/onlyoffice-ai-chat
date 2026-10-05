@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Unesite konfiguraciju za AI Model API u JS formatu. Navedite naziv modela, URL adrese krajnjih tačaka i zaglavlja.",
   "DownloadTemplate": "Preuzmi šablon",
   "Permissions": "Dozvole",
+  "PermissionsAskEveryTime": "Pitaj svaki put",
+  "PermissionsAutoApprove": "Automatski odobri",
+  "PermissionsAllowWithoutAsking": "Dozvoli bez pitanja",
   "DropFilesHere": "Prevucite fajlove ovde da biste ih priložili",
   "Uploading": "Otpremanje…",
   "PromptSaved": "Prompt je sačuvan",
-  "PromptSavedToFolder": "Prompt je sačuvan u „{{folder}}”"
+  "PromptSavedToFolder": "Prompt je sačuvan u „{{folder}}”",
+  "WebSearchKeySaved": "API ključ je sačuvan.",
+  "WebSearchAvailable": "Pretraga veba je dostupna u AI Chat.",
+  "Close": "Zatvori"
 }

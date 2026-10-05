@@ -55,8 +55,9 @@ The chat lifecycle:
    executes it server-side and resumes — UI never sees a pending
    event for those.
 5. When the model picks a host or MCP tool, the engine emits
-   `tool-call-pending` with `autoAllow` derived from
-   `storage.toolPrefs.allowAlways`. UI dispatches via
+   `tool-call-pending` with `autoAllow` derived from the tool
+   permission mode (the composer's "Permissions" row),
+   `storage.toolPrefs.allowAlways` and the tool's `requireApproval`. UI dispatches via
    `servers.callTools(...)` and resumes via
    `api.ai.approveToolCall({ result })`.
 
@@ -108,7 +109,7 @@ const editorTools: HostToolGroup = {
       description: "Get the currently selected text",
       inputSchema: { type: "object", properties: {} },
       handler: async () => ({ text: editor.getSelection() }),
-      // requireApproval defaults to false — auto-allowed
+      // requireApproval defaults to false — auto-allowed under the "auto" mode
     },
     {
       name: "insert_text",
@@ -132,9 +133,21 @@ Tool names are namespaced by group id when exposed to the model:
 `desktop_editor_get_selection`, `desktop_editor_insert_text`.
 
 `requireApproval`:
-- `false` (default) — execute immediately.
+- `false` (default) — execute immediately while the permission mode is
+  `"auto"` (the default mode). Under `"ask"` the dialog shows anyway,
+  even for a tool the user has marked "always allow".
 - `true` — show approval dialog. The user can approve once, deny,
-  or pick "always allow" to auto-approve future calls.
+  or pick "always allow" to auto-approve future calls under `"auto"`
+  (under `"ask"` the dialog keeps showing on every call).
+
+MCP tools never set `requireApproval`; under `"auto"` their
+`annotations` decide instead: `readOnlyHint: true` or an explicit
+`destructiveHint: false` runs without the dialog, a destructive or
+unannotated tool asks (the protocol's default is destructive).
+
+The permission mode (`"ask" | "auto" | "allow"`, the composer's
+"Permissions" row) sits above both: `"allow"` runs every tool without
+asking. See [`preferences-engine.md`](../core/services/preferences-engine.md).
 
 ## Custom MCP servers
 

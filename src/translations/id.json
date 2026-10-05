@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Masukkan konfigurasi untuk API Model AI dalam format JS. Berikan nama model, URL endpoint, dan header.",
   "DownloadTemplate": "Unduh templat",
   "Permissions": "Izin",
+  "PermissionsAskEveryTime": "Tanya setiap kali",
+  "PermissionsAutoApprove": "Setujui otomatis",
+  "PermissionsAllowWithoutAsking": "Izinkan tanpa bertanya",
   "DropFilesHere": "Seret file ke sini untuk melampirkan",
   "Uploading": "Mengunggah…",
   "PromptSaved": "Prompt disimpan",
-  "PromptSavedToFolder": "Prompt disimpan ke “{{folder}}”"
+  "PromptSavedToFolder": "Prompt disimpan ke “{{folder}}”",
+  "WebSearchKeySaved": "Kunci API disimpan.",
+  "WebSearchAvailable": "Pencarian web tersedia di AI Chat.",
+  "Close": "Tutup"
 }

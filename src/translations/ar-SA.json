@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "أدخل تكوين API لنموذج الذكاء الاصطناعي بصيغة JS. قدّم اسم النموذج وعناوين URL للنقاط النهائية والترويسات.",
   "DownloadTemplate": "تنزيل القالب",
   "Permissions": "الأذونات",
+  "PermissionsAskEveryTime": "اسأل في كل مرة",
+  "PermissionsAutoApprove": "الموافقة تلقائيًا",
+  "PermissionsAllowWithoutAsking": "السماح دون سؤال",
   "DropFilesHere": "أسقط الملفات هنا للإرفاق",
   "Uploading": "جارٍ الرفع…",
   "PromptSaved": "تم حفظ الموجّه",
-  "PromptSavedToFolder": "تم حفظ الموجّه في ”{{folder}}“"
+  "PromptSavedToFolder": "تم حفظ الموجّه في ”{{folder}}“",
+  "WebSearchKeySaved": "تم حفظ مفتاح API.",
+  "WebSearchAvailable": "البحث على الويب متاح في محادثة الذكاء الاصطناعي.",
+  "Close": "إغلاق"
 }

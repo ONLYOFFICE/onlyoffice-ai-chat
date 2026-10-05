@@ -1,5 +1,81 @@
 # Changelog
 
+## 0.6.32
+
+### Changed
+
+- **"Ask every time" now asks on every tool call, the always-allow list included.** Under the `"ask"` permission mode a tool the user had once marked "always allow" still skipped the dialog, so the mode did not mean what its label said. The list is no longer consulted under `"ask"`; a pinned tool keeps its pin and skips the dialog again once the mode is switched back to `"auto"`.
+
+## 0.6.31
+
+### Fixed
+
+- **The model no longer claims it cannot see an attached image** (Bug 83837). The default chat prompt said only that the model has MCP tools and should rarely use them; with no tool named for viewing pictures, the model inferred it could not look at a standalone image and told the user so, although the image was delivered inline with the message. The prompt now states that attached images and files arrive with the message, that an image needs no tool, and that a path-only file is read through a file-reading tool. Hosts that `append` their own prompt keep the note; a `replace` override is unchanged.
+
+## 0.6.30
+
+### Added
+
+- **A toast confirms a saved web-search API key** (Bug 83757). `PlatformAdapter.showToast` takes an optional second argument, `ToastMeta`, whose `heading` is the bold line above the text; a host that ignores it still shows the text. `WebSearchPage` now mounts its own `ToastProvider`, so a host that renders the page alone still sees the toast.
+
+### Fixed
+
+- **The composer no longer steals focus from a dialog it opened** (Bug 84143). Clicks and submits inside the portaled prompt menus and dialogs bubble through the React tree to the composer, which refocused its textarea and left the on-screen keyboard up behind the dialog; events that did not originate in the composer are ignored now.
+- **Suggestion chips show a pointer cursor** (Bug 84210).
+- **A link to a local file no longer opens the chat page itself.** react-markdown blanks every target outside `http(s)`/`mailto`, so `file:///…`, `sandbox:/…` and bare `C:/…` paths rendered as `<a href="" target="_blank">`; an empty href is the current page, and a desktop host that routes popups to the OS then asked Windows to open the page's own `onlyoffice://` URL (Bug 83951). `file:` targets now survive sanitizing so a host can read the path off the anchor, and a target that is still blanked renders as an inert anchor with no href and no `target`.
+
+## 0.6.25
+
+### Changed
+
+- **Only tool-result pictures are resized; attached images are back to 0.6.21.** The proportional, 300px-capped preview that 0.6.22–0.6.24 gave an image attached to a user message, the composer chip's `object-cover`, and `--chat-message-image-max-height` are withdrawn — the message preview is the 72px square and the chip the 36px square again. `BoundedImage` stays on the pictures a tool returns under its card, which is where the stretched portrait page was seen.
+
+## 0.6.24
+
+### Fixed
+
+- **Pictures a tool returns, and attached images, keep their proportions.** A `max-width: 100%` and a `max-height` on one `<img>` do not compose: when a picture violates both the browser clamps each axis on its own, so a portrait page under a tool card (and, since 0.6.22, in a sent message) rendered as a 696×300 strip. Both now go through `BoundedImage`, which derives the width cap from the height cap and the picture's own ratio once it has loaded (`min(100%, cap × ratio)`), so only one axis is ever clamped. The attachments row of a message wraps again instead of scrolling. `generate_image` results are unchanged.
+
+## 0.6.23
+
+### Fixed
+
+- **Attached portrait images no longer render as a wide strip.** 0.6.22 capped the message preview at 300px high but left the preflight's `max-width: 100%` on it; with both limits hit the browser clamps each axis separately, so a tall page came out 696×300. The preview now has `max-width: none` and only the height cap, and the attachments row scrolls horizontally again (as before 0.6.22) for an image wider than the row.
+
+## 0.6.22
+
+### Changed
+
+- **The permission mode defaults to `Auto approve`.** 0.6.20 shipped with `Ask every time`, which made every host tool that used to run silently show the dialog until the user found the new row. `auto` is the behaviour the widget had before the mode existed, so an upgrade changes nothing until the user picks otherwise. `DEFAULT_TOOL_PERMISSION_MODE`, `DEFAULT_PREFERENCES.toolPermissionMode` and the fallback of `AIEngineDeps.defaultToolPermissionMode` all follow.
+
+## 0.6.22
+
+### Fixed
+
+- **Attached images keep their proportions.** An image in a sent message was forced into a 72px square and cropped, and the composer chip stretched it into 36px without cropping, so a portrait page came out squashed. The message preview now renders at the image's own aspect ratio, capped at `--chat-message-image-max-height` (300px) and the row's width, with the attachments row wrapping instead of scrolling; the chip keeps its square and crops into it (`object-cover`).
+
+## 0.6.21
+
+### Changed
+
+- **Auto approve honours MCP tool annotations.** MCP tools never set `requireApproval`, so under `Auto approve` every one of them kept prompting even when the server declared it harmless. A tool annotated `readOnlyHint: true` or an explicit `destructiveHint: false` now runs without the dialog; a destructive or unannotated tool still asks, matching the protocol's default. `Ask every time` keeps ignoring the hints. `TMCPItem.annotations` is typed as `ToolAnnotations` and exported from the root and `/core` entries.
+
+## 0.6.20
+
+### Added
+
+- **A "Permissions" row under Effort in the model picker.** It switches how a tool call the model makes is approved: `Ask every time` prompts for every call bar the tools pinned with "always allow", `Auto approve` keeps the previous behaviour (the pins plus a tool's own `requireApproval: false`), `Allow without asking` runs everything. The default is `Ask every time`, so a host tool that used to run silently now shows the dialog until the user picks `Auto approve` or pins it. The pick is persisted as a preference next to the thinking depth: optional `*ToolPermissionMode` methods on `PreferencesStorage`, `get`/`setToolPermissionMode` on `PreferencesEngine`, two `preferences/*-tool-permission-mode` routes, and `AIEngineDeps.defaultToolPermissionMode` for a host that overrides the default. `processStream` folds the mode into `tool-call-pending.autoAllow`, the one flag the UI, middleware and server-executed tools already obey. The mode type and its helpers are exported from both the root and the `/core` entry.
+
+```ts
+type ToolPermissionMode = "ask" | "auto" | "allow";
+```
+
+## 0.6.19
+
+### Fixed
+
+- **DeepSeek stays on `/chat/completions`.** DeepSeek answers `/v1/responses`, so the live probe moved its profiles onto the Responses transport, where the history replay drops reasoning; after the second tool round of a thinking-mode reply the model refused the request with `400 The reasoning_text in the thinking mode must be passed back to the API` (Bug 83335). The chat endpoint carries the thinking switch and `reasoning_content` on every round, and profiles already probed onto Responses are steered back.
+
 ## 0.6.18
 
 ### Changed

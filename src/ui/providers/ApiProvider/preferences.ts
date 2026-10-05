@@ -46,5 +46,21 @@ export function createPreferencesApi(
         [value, entityId],
         engines
       ),
+    getToolPermissionMode: (entityId) =>
+      callRoute(
+        config,
+        "preferences",
+        "getToolPermissionMode",
+        [entityId],
+        engines
+      ),
+    setToolPermissionMode: (value, entityId) =>
+      callRoute(
+        config,
+        "preferences",
+        "setToolPermissionMode",
+        [value, entityId],
+        engines
+      ),
   };
 }

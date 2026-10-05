@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "AI 모델 API 구성을 JS 형식으로 입력하세요. 모델 이름, 엔드포인트 URL 및 헤더를 제공하세요.",
   "DownloadTemplate": "템플릿 다운로드",
   "Permissions": "권한",
+  "PermissionsAskEveryTime": "매번 확인",
+  "PermissionsAutoApprove": "자동 승인",
+  "PermissionsAllowWithoutAsking": "확인 없이 허용",
   "DropFilesHere": "파일을 여기에 놓아 첨부하세요",
   "Uploading": "업로드 중…",
   "PromptSaved": "프롬프트가 저장되었습니다",
-  "PromptSavedToFolder": "프롬프트가 “{{folder}}”에 저장되었습니다"
+  "PromptSavedToFolder": "프롬프트가 “{{folder}}”에 저장되었습니다",
+  "WebSearchKeySaved": "API 키가 저장되었습니다.",
+  "WebSearchAvailable": "AI Chat에서 웹 검색을 사용할 수 있습니다.",
+  "Close": "닫기"
 }

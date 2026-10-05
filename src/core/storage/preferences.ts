@@ -1,4 +1,5 @@
 import type { ReasoningLevel } from "../../shared/reasoning-level";
+import type { ToolPermissionMode } from "../../shared/tool-permission-mode";
 
 /**
  * Storage interface for small scalar user preferences.
@@ -56,4 +57,34 @@ export interface PreferencesStorage {
   ): Promise<void>;
 
   deleteReasoningLevel?(entityId?: string): Promise<void>;
+
+  // --- Tool permission mode ---
+  //
+  // How a tool call the model makes is approved: asked about every time
+  // (bar the always-allow list), also skipped for a tool that opted out
+  // via `requireApproval: false`, or never asked. The methods are optional so adapters written before the mode existed keep
+  // compiling; `PreferencesEngine` falls back to its default mode when
+  // they are absent. Same `entityId` scoping as deep mode.
+
+  createToolPermissionMode?(
+    value: ToolPermissionMode,
+    entityId?: string
+  ): Promise<void>;
+
+  readToolPermissionMode?(
+    entityId?: string
+  ): Promise<ToolPermissionMode | null>;
+
+  updateToolPermissionMode?(
+    value: ToolPermissionMode,
+    entityId?: string
+  ): Promise<void>;
+
+  /** Idempotent write — see {@link upsertDeepMode}. */
+  upsertToolPermissionMode?(
+    value: ToolPermissionMode,
+    entityId?: string
+  ): Promise<void>;
+
+  deleteToolPermissionMode?(entityId?: string): Promise<void>;
 }

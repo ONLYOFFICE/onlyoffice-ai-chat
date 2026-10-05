@@ -154,8 +154,14 @@
   "EnterModelConfigTooltip": "Introduza a configuração para a API do modelo de AI em formato JS. Indique o nome do modelo, os URLs de endpoint e os cabeçalhos.",
   "DownloadTemplate": "Transferir modelo",
   "Permissions": "Permissões",
+  "PermissionsAskEveryTime": "Perguntar sempre",
+  "PermissionsAutoApprove": "Aprovar automaticamente",
+  "PermissionsAllowWithoutAsking": "Permitir sem perguntar",
   "DropFilesHere": "Largue ficheiros aqui para anexar",
   "Uploading": "A enviar…",
   "PromptSaved": "Prompt guardado",
-  "PromptSavedToFolder": "Prompt guardado em “{{folder}}”"
+  "PromptSavedToFolder": "Prompt guardado em “{{folder}}”",
+  "WebSearchKeySaved": "Chave API guardada.",
+  "WebSearchAvailable": "A pesquisa na web está disponível no AI Chat.",
+  "Close": "Fechar"
 }
