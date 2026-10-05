@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.28
+
+### Fixed
+
+- **A link to a local file no longer opens the chat page itself.** react-markdown blanks every target outside `http(s)`/`mailto`, so `file:///…`, `sandbox:/…` and bare `C:/…` paths rendered as `<a href="" target="_blank">`; an empty href is the current page, and a desktop host that routes popups to the OS then asked Windows to open the page's own `onlyoffice://` URL (Bug 83951). `file:` targets now survive sanitizing so a host can read the path off the anchor, and a target that is still blanked renders as an inert anchor with no href and no `target`.
+
 ## 0.6.25
 
 ### Changed
