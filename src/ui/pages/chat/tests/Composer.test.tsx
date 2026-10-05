@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { createPortal } from "react-dom";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k }),
@@ -33,7 +34,7 @@ vi.mock("@assistant-ui/react", () => ({
       </form>
     ),
     Input: (props: Record<string, unknown>) => (
-      <input
+      <textarea
         data-testid={props["data-testid"] as string}
         placeholder={props.placeholder as string}
         disabled={props.disabled as boolean}
@@ -48,8 +49,22 @@ vi.mock("../sub-components/ComposerActionRoom", () => ({
   ComposerActionRoom: () => null,
 }));
 
+// The real actions open menus and dialogs through portals; React still
+// bubbles their events through the composer.
 vi.mock("../sub-components/ComposerAction", () => ({
-  ComposerAction: () => <div data-testid="composer-action" />,
+  ComposerAction: () => (
+    <div data-testid="composer-action">
+      {createPortal(
+        <div>
+          <div role="menuitem" data-testid="portaled-menu-item">
+            Delete
+          </div>
+          <form data-testid="portaled-form" />
+        </div>,
+        document.body
+      )}
+    </div>
+  ),
 }));
 
 vi.mock("../../../components/file-item", () => ({
@@ -174,6 +189,33 @@ describe("Composer", () => {
     screen
       .getByTestId("composer-root")
       .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it("focuses the input on a click in the composer's own gaps", () => {
+    setupStores({ currentProfile: { id: "1", name: "GPT" } });
+    render(<Composer />);
+    fireEvent.click(screen.getByTestId("composer-root"));
+    expect(document.activeElement).toBe(screen.getByTestId("composer-input"));
+  });
+
+  it("leaves focus alone on a click inside a portaled menu or dialog", () => {
+    setupStores({ currentProfile: { id: "1", name: "GPT" } });
+    render(<Composer />);
+    fireEvent.click(screen.getByTestId("portaled-menu-item"));
+    expect(document.activeElement).not.toBe(
+      screen.getByTestId("composer-input")
+    );
+  });
+
+  it("does not send when a form in a portaled dialog is submitted", () => {
+    setupStores({
+      attachmentFiles: [{ path: "/doc.pdf", content: "content", type: 1 }],
+      currentProfile: { id: "1", name: "GPT" },
+    });
+    render(<Composer />);
+    mockSend.mockClear();
+    fireEvent.submit(screen.getByTestId("portaled-form"));
     expect(mockSend).not.toHaveBeenCalled();
   });
 });
