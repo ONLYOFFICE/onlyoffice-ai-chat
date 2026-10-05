@@ -280,6 +280,109 @@ describe("openai/stream/handleToolCall", () => {
     } as ChatCompletionChunk.Choice);
     expect(out).toBe(seed);
   });
+
+  type ToolPart = {
+    type: string;
+    toolCallId: string;
+    toolName: string;
+    argsText: string;
+    args: Record<string, unknown>;
+  };
+
+  const toolChoice = (
+    calls: Array<{
+      index?: number;
+      id?: string;
+      name?: string;
+      args?: string;
+    }>
+  ): ChatCompletionChunk.Choice =>
+    ({
+      index: 0,
+      delta: {
+        tool_calls: calls.map((c) => ({
+          index: c.index,
+          id: c.id,
+          type: "function",
+          function: { name: c.name, arguments: c.args },
+        })),
+      },
+      finish_reason: null,
+    }) as unknown as ChatCompletionChunk.Choice;
+
+  it("keeps two interleaved calls apart by index (Bug 84216)", () => {
+    const slots = new Map<number, number>();
+    let msg = emptyMsg();
+    const feed = (calls: Parameters<typeof toolChoice>[0]): ThreadMessageLike =>
+      handleToolCall(msg, toolChoice(calls), slots);
+    msg = feed([{ index: 0, id: "c1", name: "search", args: "" }]);
+    msg = feed([{ index: 0, args: '{"query":"Vega' }]);
+    msg = feed([{ index: 1, id: "c2", name: "search", args: "" }]);
+    msg = feed([{ index: 0, args: ' rocket"}' }]);
+    msg = feed([{ index: 1, args: '{"query":"Soyuz-2"}' }]);
+
+    const parts = msg.content as unknown as ToolPart[];
+    expect(parts).toHaveLength(2);
+    expect(parts[0]).toMatchObject({
+      toolCallId: "c1",
+      toolName: "search",
+      argsText: '{"query":"Vega rocket"}',
+      args: { query: "Vega rocket" },
+    });
+    expect(parts[1]).toMatchObject({
+      toolCallId: "c2",
+      toolName: "search",
+      argsText: '{"query":"Soyuz-2"}',
+      args: { query: "Soyuz-2" },
+    });
+  });
+
+  it("reads every entry when one delta carries several calls", () => {
+    const msg = handleToolCall(
+      emptyMsg(),
+      toolChoice([
+        { index: 0, id: "c1", name: "a", args: "{}" },
+        { index: 1, id: "c2", name: "b", args: '{"x":1}' },
+      ])
+    );
+    const parts = msg.content as unknown as ToolPart[];
+    expect(parts.map((p) => p.toolCallId)).toEqual(["c1", "c2"]);
+    expect(parts[1].args).toEqual({ x: 1 });
+  });
+
+  it("opens a new part when a backend reuses index 0 with a new id", () => {
+    const slots = new Map<number, number>();
+    let msg = emptyMsg();
+    msg = handleToolCall(
+      msg,
+      toolChoice([{ index: 0, id: "c1", name: "a", args: "{}" }]),
+      slots
+    );
+    msg = handleToolCall(
+      msg,
+      toolChoice([{ index: 0, id: "c2", name: "b", args: "{}" }]),
+      slots
+    );
+    msg = handleToolCall(msg, toolChoice([{ index: 0, args: "" }]), slots);
+    const parts = msg.content as unknown as ToolPart[];
+    expect(parts.map((p) => p.toolCallId)).toEqual(["c1", "c2"]);
+  });
+
+  it("falls back to the last part when the delta has no index", () => {
+    let msg = emptyMsg();
+    msg = handleToolCall(
+      msg,
+      toolChoice([{ id: "c1", name: "a", args: '{"q":' }])
+    );
+    msg = handleToolCall(msg, toolChoice([{ args: '"x"}' }]));
+    msg = handleToolCall(
+      msg,
+      toolChoice([{ id: "c2", name: "b", args: "{}" }])
+    );
+    const parts = msg.content as unknown as ToolPart[];
+    expect(parts.map((p) => p.toolCallId)).toEqual(["c1", "c2"]);
+    expect(parts[0].args).toEqual({ q: "x" });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -400,6 +503,58 @@ describe("openai/stream/processStream", () => {
       (p) => p.type === "reasoning"
     );
     expect(reasoning?.parentId).toBeTruthy();
+  });
+
+  it("yields two tool-call parts for two parallel calls (Bug 84216)", async () => {
+    const call = (
+      index: number,
+      id: string | undefined,
+      args: string
+    ): ChatCompletionChunk =>
+      ({
+        id: "x",
+        object: "chat.completion.chunk",
+        created: 0,
+        model: "m",
+        choices: [
+          {
+            index: 0,
+            delta: {
+              tool_calls: [
+                {
+                  index,
+                  id,
+                  type: "function",
+                  function: {
+                    name: id ? "search" : undefined,
+                    arguments: args,
+                  },
+                },
+              ],
+            },
+            finish_reason: null,
+          },
+        ],
+      }) as unknown as ChatCompletionChunk;
+    const out = await collect(
+      processStream(
+        toStream([
+          call(0, "c1", '{"query":"Vega'),
+          call(1, "c2", '{"query":'),
+          call(0, undefined, ' rocket"}'),
+          call(1, undefined, '"Soyuz-2"}'),
+          createFinishChunk(),
+        ])
+      )
+    );
+    const last = out[out.length - 1] as unknown as {
+      responseMessage: { content: Array<{ args: unknown }> };
+    };
+    expect(last.responseMessage.content).toHaveLength(2);
+    expect(last.responseMessage.content.map((p) => p.args)).toEqual([
+      { query: "Vega rocket" },
+      { query: "Soyuz-2" },
+    ]);
   });
 
   it("salvages a partial response when the stream ends without finish_reason", async () => {

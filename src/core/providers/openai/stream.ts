@@ -302,20 +302,30 @@ export const handleImages = (
 // Tool-call delta handler
 // ---------------------------------------------------------------------------
 
+/** One entry of a streaming `delta.tool_calls` array. */
+type ToolCallDelta = NonNullable<
+  ChatCompletionChunk.Choice["delta"]["tool_calls"]
+>[number];
+
 /**
- * Create a fresh `tool-call` part from a streaming delta. All fields are
- * populated with whatever the delta carried; they may be empty strings
- * that later deltas will fill in via {@link mergeToolCall}.
+ * Positions of in-progress tool-call parts inside `message.content`,
+ * keyed by the delta's `index`. One map lives for the duration of a
+ * single stream — parallel calls arrive interleaved and each fragment
+ * says which call it extends only through that number.
  */
-const createToolCallPart = (
-  delta?: ChatCompletionChunk.Choice["delta"]
-): ToolCallMessagePart =>
+export type ToolCallSlots = Map<number, number>;
+
+/**
+ * Create an empty `tool-call` part. Every field is filled in by
+ * {@link mergeToolCall}, starting with the delta that opened the call.
+ */
+const createToolCallPart = (): ToolCallMessagePart =>
   ({
     type: "tool-call",
     args: {},
-    argsText: delta?.tool_calls?.[0]?.function?.arguments ?? "",
-    toolName: delta?.tool_calls?.[0]?.function?.name ?? "",
-    toolCallId: delta?.tool_calls?.[0]?.id ?? "",
+    argsText: "",
+    toolName: "",
+    toolCallId: "",
   }) as ToolCallMessagePart;
 
 /**
@@ -326,9 +336,8 @@ const createToolCallPart = (
  */
 const mergeToolCall = (
   existing: ToolCallMessagePart,
-  delta?: ChatCompletionChunk.Choice["delta"]
+  update?: ToolCallDelta
 ): ToolCallMessagePart => {
-  const update = delta?.tool_calls?.[0];
   const argsText = existing.argsText + (update?.function?.arguments ?? "");
 
   // Arguments stream as concatenated JSON fragments. Re-parsing the whole
@@ -358,28 +367,73 @@ const mergeToolCall = (
 };
 
 /**
- * Append or extend a tool-call part from a streaming delta. If the last
- * part is already a tool-call, the delta is merged into it; otherwise a
- * new tool-call part is pushed.
+ * Whether a delta may extend `part`, judged by ids alone. A fragment that
+ * names a different, non-empty id belongs to another call even if it
+ * arrives under the same `index` — some backends restart numbering at
+ * zero for every call they emit.
+ */
+const sameCall = (part: ToolCallMessagePart, update: ToolCallDelta): boolean =>
+  !update.id || !part.toolCallId || update.id === part.toolCallId;
+
+/**
+ * Append or extend tool-call parts from a streaming delta.
+ *
+ * Every entry of `delta.tool_calls` is routed by its `index`, the field
+ * the OpenAI format uses to tell parallel calls apart: a known index
+ * extends the part it was first seen on, a new one opens a new part.
+ * Routing by "the last part is a tool-call" used to glue a second call's
+ * arguments onto the first (`{"query":"A"}{"query":"B"}`), lose the
+ * second call entirely, and poison the transcript with invalid JSON that
+ * the next request was rejected for (Bug 84216). `parallel_tool_calls:
+ * false` is still sent, but OpenRouter routes and local servers ignore it.
+ *
+ * Without an `index` the delta falls back to id matching against the last
+ * part, which is also what keeps a lone fragment with neither id nor index
+ * flowing into the call in progress.
  *
  * @param responseMessage - The accumulating response.
  * @param chunk           - The streaming choice carrying the tool-call delta.
+ * @param slots           - Index → content-position map for this stream.
+ *   Callers that only ever feed one call may omit it.
  * @returns The updated response message.
  */
 export const handleToolCall = (
   responseMessage: ThreadMessageLike,
-  chunk: ChatCompletionChunk.Choice
+  chunk: ChatCompletionChunk.Choice,
+  slots: ToolCallSlots = new Map()
 ): ThreadMessageLike => {
-  const delta = chunk.delta.tool_calls;
-  if (!delta || !Array.isArray(responseMessage.content)) return responseMessage;
+  const updates = chunk.delta.tool_calls;
+  if (!updates?.length || !Array.isArray(responseMessage.content)) {
+    return responseMessage;
+  }
 
   const content = [...responseMessage.content];
-  const lastPart = content[content.length - 1];
 
-  if (!lastPart || lastPart.type !== "tool-call") {
-    content.push(createToolCallPart(chunk.delta));
-  } else {
-    content[content.length - 1] = mergeToolCall(lastPart, chunk.delta);
+  for (const update of updates) {
+    if (!update) continue;
+    const index = typeof update.index === "number" ? update.index : undefined;
+
+    let pos = index === undefined ? -1 : (slots.get(index) ?? -1);
+    // No slot to route by: an index-less delta, or an index this map has
+    // not seen while the fragment carries neither id nor name. The first
+    // fragment of a call always names it, so a bare fragment can only be
+    // continuing the call in progress.
+    const isBareFragment = !update.id && !update.function?.name;
+    if (pos === -1 && (index === undefined || isBareFragment)) {
+      pos = content.length - 1;
+    }
+
+    const target = pos >= 0 ? content[pos] : undefined;
+    if (target && target.type === "tool-call" && sameCall(target, update)) {
+      content[pos] = mergeToolCall(target, update);
+      if (index !== undefined) slots.set(index, pos);
+      continue;
+    }
+
+    // Run the opening fragment through the merge so arguments that arrive
+    // whole in the first delta are parsed right away.
+    content.push(mergeToolCall(createToolCallPart(), update));
+    if (index !== undefined) slots.set(index, content.length - 1);
   }
 
   return { ...responseMessage, content };
@@ -429,6 +483,7 @@ export async function* processStream(
   const splitter = options.splitInlineReasoning
     ? new InlineReasoningSplitter()
     : undefined;
+  const toolCallSlots: ToolCallSlots = new Map();
 
   for await (const streamEvent of stream) {
     // The caller hung up mid-reply. The SDK may keep the iterator alive for
@@ -510,7 +565,7 @@ export async function* processStream(
           responseMessage = finalizeReasoning(responseMessage);
           hasUnfinalizedReasoning = false;
         }
-        responseMessage = handleToolCall(responseMessage, chunk);
+        responseMessage = handleToolCall(responseMessage, chunk, toolCallSlots);
       }
     }
 
