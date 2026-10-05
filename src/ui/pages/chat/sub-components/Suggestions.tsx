@@ -22,7 +22,7 @@ const Suggestions = () => {
             type="button"
             data-testid="suggestion-button"
             onClick={() => composerRuntime.setText(suggestion.prompt)}
-            className="inline-flex h-[var(--chat-suggestion-height,25px)] max-w-full min-w-0 items-center gap-[6px] rounded-full border border-[var(--chat-suggestion-border-color)] px-[var(--chat-suggestion-padding-x,10px)] py-[var(--chat-suggestion-padding-y,3px)] text-[var(--text-normal)] hover:bg-[var(--highlight-button-hover)]"
+            className="inline-flex cursor-pointer h-[var(--chat-suggestion-height,25px)] max-w-full min-w-0 items-center gap-[6px] rounded-full border border-[var(--chat-suggestion-border-color)] px-[var(--chat-suggestion-padding-x,10px)] py-[var(--chat-suggestion-padding-y,3px)] text-[var(--text-normal)] hover:bg-[var(--highlight-button-hover)]"
           >
             <span className="truncate font-normal text-fs-12 leading-[var(--lh-18)] tracking-[0px]">
               {suggestion.name}
