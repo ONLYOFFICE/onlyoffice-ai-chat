@@ -16,6 +16,16 @@ describe("chat systemPrompt", () => {
     expect(systemPrompt).toMatch(/no tool is needed to view it/i);
   });
 
+  /**
+   * Bug 84216: models that ignore `parallel_tool_calls: false` emitted two
+   * calls in one turn. The stream handler now keeps them apart, and the
+   * prompt additionally asks for one call per response so such models
+   * take the sequential path the engine is built around.
+   */
+  it("asks for one tool call per response", () => {
+    expect(systemPrompt).toMatch(/at most one tool per response/i);
+  });
+
   it("forbids claiming it cannot see an attachment", () => {
     expect(systemPrompt).toMatch(/never tell the user that you cannot see/i);
   });
