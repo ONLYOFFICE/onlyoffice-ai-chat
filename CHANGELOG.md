@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.31
+
+### Fixed
+
+- **The model no longer claims it cannot see an attached image** (Bug 83837). The default chat prompt said only that the model has MCP tools and should rarely use them; with no tool named for viewing pictures, the model inferred it could not look at a standalone image and told the user so, although the image was delivered inline with the message. The prompt now states that attached images and files arrive with the message, that an image needs no tool, and that a path-only file is read through a file-reading tool. Hosts that `append` their own prompt keep the note; a `replace` override is unchanged.
+
 ## 0.6.30
 
 ### Added
