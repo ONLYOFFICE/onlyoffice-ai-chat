@@ -1,9 +1,15 @@
 # Changelog
 
-## 0.6.28
+## 0.6.30
+
+### Added
+
+- **A toast confirms a saved web-search API key** (Bug 83757). `PlatformAdapter.showToast` takes an optional second argument, `ToastMeta`, whose `heading` is the bold line above the text; a host that ignores it still shows the text. `WebSearchPage` now mounts its own `ToastProvider`, so a host that renders the page alone still sees the toast.
 
 ### Fixed
 
+- **The composer no longer steals focus from a dialog it opened** (Bug 84143). Clicks and submits inside the portaled prompt menus and dialogs bubble through the React tree to the composer, which refocused its textarea and left the on-screen keyboard up behind the dialog; events that did not originate in the composer are ignored now.
+- **Suggestion chips show a pointer cursor** (Bug 84210).
 - **A link to a local file no longer opens the chat page itself.** react-markdown blanks every target outside `http(s)`/`mailto`, so `file:///…`, `sandbox:/…` and bare `C:/…` paths rendered as `<a href="" target="_blank">`; an empty href is the current page, and a desktop host that routes popups to the OS then asked Windows to open the page's own `onlyoffice://` URL (Bug 83951). `file:` targets now survive sanitizing so a host can read the path off the anchor, and a target that is still blanked renders as an inert anchor with no href and no `target`.
 
 ## 0.6.25
