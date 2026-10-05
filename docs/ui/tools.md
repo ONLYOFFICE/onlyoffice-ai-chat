@@ -135,9 +135,10 @@ Tool names are namespaced by group id when exposed to the model:
 `requireApproval`:
 - `false` (default) — execute immediately while the permission mode is
   `"auto"` (the default mode). Under `"ask"` the dialog shows anyway,
-  unless the user has picked "always allow" for the tool.
+  even for a tool the user has marked "always allow".
 - `true` — show approval dialog. The user can approve once, deny,
-  or pick "always allow" to auto-approve future calls.
+  or pick "always allow" to auto-approve future calls under `"auto"`
+  (under `"ask"` the dialog keeps showing on every call).
 
 MCP tools never set `requireApproval`; under `"auto"` their
 `annotations` decide instead: `readOnlyHint: true` or an explicit

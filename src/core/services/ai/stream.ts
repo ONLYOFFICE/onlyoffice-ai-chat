@@ -307,11 +307,11 @@ export async function* processStream(
               ),
             ]);
             // Whether the call skips the dialog is the permission mode's
-            // call (see `resolveAutoAllow`): under "ask" only a tool the
-            // user pinned to the persisted "always-allow" list does; "auto"
-            // also lets a tool opt in via `requireApproval === false` or via
-            // read-only / non-destructive MCP annotations; "allow" runs
-            // everything. The list is keyed per server, so the
+            // call (see `resolveAutoAllow`): under "ask" nothing does, not
+            // even a tool pinned to the persisted "always-allow" list;
+            // "auto" lets the list, `requireApproval === false` and
+            // read-only / non-destructive MCP annotations skip it; "allow"
+            // runs everything. The list is keyed per server, so the
             // lookup composes the same `${serverType}_${toolName}` token the
             // settings routes and the approval dialog write (DocSpace bug
             // 84009).

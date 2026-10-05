@@ -248,9 +248,10 @@ chosen depth in memory for the session.
 
 `ToolPermissionMode` is `"ask" | "auto" | "allow"` (exported from the
 package root): whether a tool call the model makes waits for the user
-every time (only the persisted always-allow list skips the dialog), also
-skips it for a tool that opted out through `requireApproval: false` or is
-annotated read-only / non-destructive, or runs without asking. `processStream` reads the mode next to the
+every time (the persisted always-allow list does not skip the dialog
+either), skips it for an always-allowed tool, one that opted out through
+`requireApproval: false` or one annotated read-only / non-destructive, or
+runs without asking. `processStream` reads the mode next to the
 always-allow list and sets `tool-call-pending.autoAllow` from both — see
 [`ai-engine.md`](./ai-engine.md). A host that overrides this default
 passes the same value as `AIEngineDeps.defaultToolPermissionMode`, so

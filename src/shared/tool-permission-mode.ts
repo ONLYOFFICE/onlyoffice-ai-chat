@@ -1,9 +1,9 @@
 /**
  * How the chat treats a tool call the model makes.
  *
- * - `"ask"` — every call waits for the user's approval, except the tools
- *   the user has already marked "always allow". A tool's own
- *   `requireApproval: false` does not count here.
+ * - `"ask"` — every call waits for the user's approval. Neither the
+ *   "always allow" list nor a tool's own `requireApproval: false` counts
+ *   here; the list only matters again under `"auto"`.
  * - `"auto"` — the always-allow list, every tool that opted out of
  *   approval through `requireApproval: false` (host tools default to it),
  *   and every MCP tool annotated `readOnlyHint: true` or

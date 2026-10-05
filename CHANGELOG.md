@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.32
+
+### Changed
+
+- **"Ask every time" now asks on every tool call, the always-allow list included.** Under the `"ask"` permission mode a tool the user had once marked "always allow" still skipped the dialog, so the mode did not mean what its label said. The list is no longer consulted under `"ask"`; a pinned tool keeps its pin and skips the dialog again once the mode is switched back to `"auto"`.
+
 ## 0.6.31
 
 ### Fixed

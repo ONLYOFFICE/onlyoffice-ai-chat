@@ -446,9 +446,9 @@ deleteReasoningLevel?(entityId?: string): Promise<void>;
 ```
 
 The **tool permission mode** — how a tool call the model makes is
-approved (`"ask"` every time bar the always-allow list, `"auto"` also
-skips the dialog for a tool with `requireApproval: false`, `"allow"`
-never asks). Optional for the same reason; the engine
+approved (`"ask"` every time, the always-allow list included, `"auto"`
+skips the dialog for always-allowed tools and tools with
+`requireApproval: false`, `"allow"` never asks). Optional for the same reason; the engine
 falls back to `"ask"` when they are absent and only ever calls
 `read` / `upsert`:
 

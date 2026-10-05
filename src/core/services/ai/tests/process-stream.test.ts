@@ -293,7 +293,7 @@ describe("processStream", () => {
     expect((event as { autoAllow: boolean }).autoAllow).toBe(false);
   });
 
-  it("under ask, requireApproval: false still prompts unless always-allowed", async () => {
+  it("under ask, requireApproval: false and the always-allow pin both still prompt", async () => {
     const hostTool = {
       name: "host_edit",
       description: "",
@@ -328,9 +328,13 @@ describe("processStream", () => {
     expect(none.readToolPermissionMode).toHaveBeenCalledWith("room");
     // Stored ask: the opt-out no longer counts.
     expect(await run(makeStorage({ mode: "ask" }).storage)).toBe(false);
-    // The always-allow pin still wins under ask.
+    // Nor does the always-allow pin: ask means ask, on every tool.
     expect(
       await run(makeStorage({ mode: "ask", allowList: ["host_edit"] }).storage)
+    ).toBe(false);
+    // Under auto the pin lets a tool that requires approval through.
+    expect(
+      await run(makeStorage({ mode: "auto", allowList: ["host_edit"] }).storage)
     ).toBe(true);
   });
 

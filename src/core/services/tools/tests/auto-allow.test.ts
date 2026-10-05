@@ -3,11 +3,11 @@ import type { StorageAdapter } from "../../../storage";
 import { readToolPermissionMode, resolveAutoAllow } from "../auto-allow";
 
 describe("resolveAutoAllow", () => {
-  it("ask: only the always-allow list skips the dialog", () => {
-    expect(resolveAutoAllow("ask", { allowListed: true })).toBe(true);
+  it("ask: nothing skips the dialog, not even the always-allow list", () => {
+    expect(resolveAutoAllow("ask", { allowListed: true })).toBe(false);
     expect(
-      resolveAutoAllow("ask", { allowListed: true, requireApproval: true })
-    ).toBe(true);
+      resolveAutoAllow("ask", { allowListed: true, requireApproval: false })
+    ).toBe(false);
     expect(
       resolveAutoAllow("ask", { allowListed: false, requireApproval: false })
     ).toBe(false);
@@ -43,6 +43,12 @@ describe("resolveAutoAllow", () => {
     expect(
       resolveAutoAllow("ask", {
         allowListed: false,
+        annotations: { readOnlyHint: true },
+      })
+    ).toBe(false);
+    expect(
+      resolveAutoAllow("ask", {
+        allowListed: true,
         annotations: { readOnlyHint: true },
       })
     ).toBe(false);

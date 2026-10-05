@@ -183,7 +183,8 @@ writes), pass them through `actionArgs.tools` — those surface as
 host-configured MCP servers (HTTP transport) entirely server-side:
 it enumerates and executes their tools in-engine, so credentials in
 `headers` never reach the browser. Unlike other adapter tools, system
-tools **pause for UI approval** before running (unless always-allowed)
+tools **pause for UI approval** before running (unless the permission
+mode lets them through — see `resolveAutoAllow`)
 — the engine still executes them on the server once approved.
 
 ```ts

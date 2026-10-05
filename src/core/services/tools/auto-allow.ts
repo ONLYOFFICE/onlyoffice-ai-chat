@@ -9,10 +9,11 @@ import type { ToolAnnotations } from "../../../shared/mcp-item";
 /**
  * Whether one tool call runs without the approval dialog.
  *
- * - `"ask"` — only a tool the user pinned to the persisted always-allow
- *   list skips the dialog. A tool's own `requireApproval: false` (the
- *   default for host tools) and its MCP annotations are ignored: the user
- *   asked to be asked.
+ * - `"ask"` — every call waits for the dialog. The persisted always-allow
+ *   list, a tool's own `requireApproval: false` (the default for host
+ *   tools) and its MCP annotations are all ignored: the user asked to be
+ *   asked, on every tool, every time. A tool pinned to the list while in
+ *   this mode stays pinned and skips the dialog again under "auto".
  * - `"auto"` — the always-allow list, every tool that opted out of
  *   approval through `requireApproval === false`, and every tool whose
  *   MCP annotations say it cannot destroy anything: `readOnlyHint: true`
@@ -39,7 +40,7 @@ export function resolveAutoAllow(
         isHarmless(tool.annotations)
       );
     case "ask":
-      return tool.allowListed;
+      return false;
   }
 }
 

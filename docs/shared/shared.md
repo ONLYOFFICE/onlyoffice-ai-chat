@@ -527,9 +527,9 @@ function isToolPermissionMode(value: unknown): value is ToolPermissionMode;
 ```
 
 How a tool call the model makes is approved: `"ask"` waits for the user
-every time (bar the tools already marked "always allow" — a tool's own
-`requireApproval: false` does not count), `"auto"` also skips the dialog
-for a tool that opted out through `requireApproval: false` or whose MCP
+every time (neither the "always allow" list nor a tool's own
+`requireApproval: false` counts), `"auto"` skips the dialog for an
+always-allowed tool, one that opted out through `requireApproval: false` or one whose MCP
 annotations say `readOnlyHint: true` or `destructiveHint: false`
 (destructive or unannotated tools still ask), `"allow"` runs every call
 without asking. `resolveAutoAllow` in

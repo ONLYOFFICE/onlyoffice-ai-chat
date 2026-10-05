@@ -474,9 +474,9 @@ export type ChatEvent =
       /**
        * The consumer should execute the tool without prompting the user.
        * Decided by the tool permission mode (`resolveAutoAllow`): under
-       * "ask" only a tool in the persisted "always-allow" list; under
-       * "auto" also one that opts in via `TMCPItem.requireApproval ===
-       * false` (host tools default to this); under "allow" every tool.
+       * "ask" never; under "auto" a tool in the persisted "always-allow"
+       * list or one that opts in via `TMCPItem.requireApproval === false`
+       * (host tools default to this); under "allow" every tool.
        * For a client-side tool with a server-side
        * engine, this lets the engine return the pending call already
        * flagged auto-allow so the client runs it and streams the result
