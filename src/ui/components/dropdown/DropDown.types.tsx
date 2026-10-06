@@ -34,8 +34,8 @@ export type DropdownMenuProps = {
   maxWidth?: number | string;
   /**
    * Height cap for the content; defaults to
-   * `min(--dropdown-menu-max-height, available height)` — the available
-   * height alone until a host sets the token.
+   * `min(--dropdown-menu-max-height, available height)` — ten rows unless
+   * a host overrides the token.
    * A drilled-in level takes its parent row's `subMenuMaxHeight` when set.
    */
   maxHeight?: number | string;

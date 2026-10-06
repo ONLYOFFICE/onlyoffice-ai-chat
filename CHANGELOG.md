@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.34
+
+### Changed
+
+- **Dropdown menus show ten rows before they scroll.** 0.6.33 let a menu grow to the viewport; that is too tall for a long prompt or model list, so the cap is back as a row count. The new `--dropdown-menu-max-height` token defaults to ten rows plus the container padding (270px at the stock 26px row), derived from `--dropdown-item-height` and `--dropdown-menu-padding-y`, so a host that changes the row height keeps ten rows. The space to the viewport edge still applies on top. In the model picker the pinned Effort and Permissions rows count toward the ten.
+
 ## 0.6.33
 
 ### Changed

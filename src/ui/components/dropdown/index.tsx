@@ -132,10 +132,11 @@ const Shell = ({
           // wider/taller than the host shrinks and scrolls instead of
           // overflowing. (These vars are populated only with collision
           // avoidance on, which is the default now that `avoidCollisions` is
-          // no longer disabled.) There is no fixed height cap of its own: a
-          // menu grows to the viewport and only then scrolls. A host that
-          // wants shorter menus sets `--dropdown-menu-max-height`; the
-          // `100vh` fallback just keeps `min()` valid while it is unset.
+          // no longer disabled.) The height cap itself is the
+          // `--dropdown-menu-max-height` token — ten rows by default (see
+          // index.css) — so a host sets its own row count or height there;
+          // the `100vh` fallback only keeps `min()` valid without the
+          // stylesheet.
           style={{
             zIndex: 400,
             maxWidth:
