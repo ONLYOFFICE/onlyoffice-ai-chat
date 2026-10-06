@@ -123,7 +123,7 @@ const DropDownItem = ({
     e.target instanceof Element &&
     Boolean(
       e.target.closest("[data-slot='tooltip-trigger']") ||
-        e.target.closest("[data-slot='tooltip-content']")
+      e.target.closest("[data-slot='tooltip-content']")
     );
 
   const handleToggleClick = (e: React.MouseEvent) => {
@@ -442,7 +442,7 @@ const DropDownItem = ({
             // row: a click on the row's about button never reached it. A
             // click-opened "more" menu keeps the modal default.
             modal={subMenuIcon ? undefined : false}
-            contentClassName={cn("max-w-[300px]", subMenuClassName)}
+            contentClassName={subMenuClassName}
             maxHeight={subMenuMaxHeight}
             dropdownRef={submenuRef}
             data-testid={`${dataTestId}-submenu`}

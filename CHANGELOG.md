@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.37
+
+### Changed
+
+- **Dropdown panels are capped at 300px wide; longer labels truncate.** A new `--dropdown-menu-max-width` token (300px) bounds every content-sized panel, flyout submenus and drilled-in levels included; a label that does not fit ends in an ellipsis and shows a tooltip, as rows already did. The model picker, context menu and room menu caps now derive from it (the last two were 320px). A combobox that matches its trigger width is exempt, so a panel is never narrower than its field. The space to the viewport edge still applies on top.
+
 ## 0.6.36
 
 ### Fixed

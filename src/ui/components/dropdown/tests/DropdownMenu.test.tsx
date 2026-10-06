@@ -155,6 +155,40 @@ describe("DropdownMenu", () => {
     ).not.toThrow();
   });
 
+  describe("width cap", () => {
+    const items = [{ text: "Row", onClick: vi.fn() }];
+    const content = () =>
+      document.querySelector(".dropdown-menu") as HTMLElement;
+
+    it("caps a content-sized panel at the shared width token", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          matchTriggerWidth={false}
+          open
+        />
+      );
+      expect(content().style.maxWidth).toContain("--dropdown-menu-max-width");
+      expect(content().style.maxWidth).toContain("available-width");
+    });
+
+    it("leaves a trigger-width panel bound by the viewport alone", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          matchTriggerWidth
+          open
+        />
+      );
+      expect(content().style.maxWidth).not.toContain(
+        "--dropdown-menu-max-width"
+      );
+      expect(content().style.maxWidth).toContain("available-width");
+    });
+  });
+
   describe("footerItems", () => {
     const items = [
       { text: "Profile 1", onClick: vi.fn() },

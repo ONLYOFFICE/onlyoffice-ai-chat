@@ -141,8 +141,14 @@ const Shell = ({
           // by the viewport alone.
           style={{
             zIndex: 400,
+            // A content-sized panel is capped at `--dropdown-menu-max-width`
+            // (rows truncate); one that matches its trigger keeps the
+            // trigger's width, bound only by the viewport.
             maxWidth:
-              maxWidth ?? "var(--radix-dropdown-menu-content-available-width)",
+              maxWidth ??
+              (matchTriggerWidth
+                ? "var(--radix-dropdown-menu-content-available-width)"
+                : "min(var(--dropdown-menu-max-width, 300px), var(--radix-dropdown-menu-content-available-width))"),
             maxHeight:
               maxHeight ??
               (scrollInside
@@ -364,15 +370,7 @@ const DropdownMenuComponent = ({
       sideOffset={sideOffset}
       alignOffset={alignOffset}
       contentClassName={contentClassName}
-      // Drill-down reuses this one Content for every level, so a submenu of
-      // long labels (recent file names) would stretch the whole menu to the
-      // available width. Cap it like the flyout submenu does; rows truncate.
-      maxWidth={
-        maxWidth ??
-        (isDrill
-          ? "min(300px, var(--radix-dropdown-menu-content-available-width))"
-          : undefined)
-      }
+      maxWidth={maxWidth}
       // A drilled-in level reuses this Content too, so a row that wants a
       // taller submenu (`subMenuMaxHeight`) has to raise the cap here; every
       // other level keeps the default.

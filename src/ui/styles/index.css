@@ -43,6 +43,12 @@
      since both render the same container Shell and the same DropDownItem rows. */
   --dropdown-menu-padding-y: 5px; /* container vertical padding */
   --dropdown-menu-min-width: 150px; /* min width when matchTriggerWidth is on */
+  /* Width cap for every menu panel that sizes to its content; a longer label
+     truncates to an ellipsis (with a tooltip) rather than stretching the
+     panel. A combobox that matches its trigger width is exempt, since a
+     panel narrower than its field would look broken. The space to the
+     viewport edge still applies on top. */
+  --dropdown-menu-max-width: 300px;
   --dropdown-item-height: 26px; /* row height */
   /* Ten rows show before a list scrolls; derived from the row height so a
      host that changes it keeps ten. The extra half row is slack: at exactly
@@ -71,11 +77,11 @@
      the space Radix measured, so it shrinks on narrow screens instead of
      overflowing. Integrators can override either on `.aui-root`. */
   --dropdown-model-selector-min-width: 150px;
-  --dropdown-model-selector-max-width: 300px;
+  --dropdown-model-selector-max-width: var(--dropdown-menu-max-width);
   /* The composer's context menu (clouds / rooms): a long room name truncates
      instead of stretching the panel to fit. */
   --dropdown-context-menu-min-width: 240px;
-  --dropdown-context-menu-max-width: 320px;
+  --dropdown-context-menu-max-width: var(--dropdown-menu-max-width);
 
   /* Toggle (switch) geometry. Colors live in the theme files
      (`--toggle-button-*-color`); these tokens are the structural sizes.
