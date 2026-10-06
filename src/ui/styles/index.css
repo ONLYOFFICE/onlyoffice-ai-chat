@@ -45,11 +45,14 @@
   --dropdown-menu-min-width: 150px; /* min width when matchTriggerWidth is on */
   --dropdown-item-height: 26px; /* row height */
   /* Ten rows show before a list scrolls; derived from the row height so a
-     host that changes it keeps ten. Rows pinned below the list (the model
-     picker's Effort and Permissions) and the container padding come on top,
-     so the whole menu is this plus padding; the space to the viewport edge
-     still applies above either. */
-  --dropdown-list-max-height: calc(10 * var(--dropdown-item-height, 26px));
+     host that changes it keeps ten. The extra half row is slack: at exactly
+     ten rows the list came out a few pixels taller than ten row heights and
+     showed a scrollbar for them, and with more rows the eleventh peeks out,
+     which signals the scroll. Rows pinned below the list (the model picker's
+     Effort and Permissions) and the container padding come on top, so the
+     whole menu is this plus padding; the space to the viewport edge still
+     applies above either. */
+  --dropdown-list-max-height: calc(10.5 * var(--dropdown-item-height, 26px));
   --dropdown-menu-max-height: calc(
     var(--dropdown-list-max-height) + 2 * var(--dropdown-menu-padding-y, 5px)
   );

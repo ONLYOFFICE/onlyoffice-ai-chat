@@ -401,7 +401,7 @@ const DropdownMenuComponent = ({
       {pinned ? (
         <>
           <div
-            className="min-h-0 max-h-[var(--dropdown-list-max-height,260px)] overflow-y-auto flex flex-col"
+            className="min-h-0 max-h-[var(--dropdown-list-max-height,273px)] overflow-y-auto flex flex-col"
             data-testid="dropdown-scroll-area"
           >
             {items.map((item, index) => renderRow(item, index))}

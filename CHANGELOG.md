@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.36
+
+### Fixed
+
+- **A list of exactly ten rows no longer shows a scrollbar for a few pixels.** `--dropdown-list-max-height` is now ten and a half rows: ten fit with slack, and with more rows the eleventh peeks out to signal the scroll. `--dropdown-menu-max-height` follows.
+
 ## 0.6.35
 
 ### Fixed
