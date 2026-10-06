@@ -43,6 +43,9 @@
      since both render the same container Shell and the same DropDownItem rows. */
   --dropdown-menu-padding-y: 5px; /* container vertical padding */
   --dropdown-menu-min-width: 150px; /* min width when matchTriggerWidth is on */
+  /* --dropdown-menu-max-height: unset on purpose — a menu grows to the viewport
+     before it scrolls. Set it (e.g. 20rem) to cap every menu; the available
+     height to the viewport edge still applies on top. */
   --dropdown-item-height: 26px; /* row height */
   --dropdown-item-gap: 10px; /* gap between the row's leading group and trailing control */
   --dropdown-item-content-gap: 4px; /* gap inside the leading group (icon to label) */

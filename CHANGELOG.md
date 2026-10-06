@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.33
+
+### Changed
+
+- **Dropdown menus grow to the viewport before they scroll.** Every menu (the model picker, prompts, comboboxes, submenus) was capped at 14rem, so a dozen rows already scrolled while the window had room to spare. The fixed cap is gone; a menu is bounded only by the space to the viewport edge. A host that wants shorter menus sets `--dropdown-menu-max-height` (e.g. `20rem`), which applies on top of the viewport bound. The Effort and Permissions submenus drop their own cap override, now that it matches the default.
+
 ## 0.6.32
 
 ### Changed

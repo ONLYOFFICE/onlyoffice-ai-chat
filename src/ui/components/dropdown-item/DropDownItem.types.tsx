@@ -32,7 +32,8 @@ export type DropDownItemProps = {
   subMenuClassName?: string;
   /**
    * Height cap for this row's `subMenu` only, replacing the menu's default
-   * `min(14rem, available height)`. Applies in both navigation modes — the
+   * `min(--dropdown-menu-max-height, available height)`. Applies in both
+   * navigation modes — the
    * flyout it opens, or the drilled-in level that replaces the menu. Other
    * levels keep the default.
    */

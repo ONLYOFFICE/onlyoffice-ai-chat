@@ -121,7 +121,7 @@ const Shell = ({
           data-orientation="vertical"
           onKeyDown={onContentKeyDown}
           className={cn(
-            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[4px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[var(--dropdown-menu-padding-y,5px)] max-h-56 flex flex-col",
+            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[4px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[var(--dropdown-menu-padding-y,5px)] flex flex-col",
             scrollInside ? "overflow-hidden" : "overflow-y-auto",
             matchTriggerWidth
               ? "min-w-[var(--dropdown-menu-min-width,150px)] w-[var(--radix-dropdown-menu-trigger-width)]"
@@ -132,14 +132,17 @@ const Shell = ({
           // wider/taller than the host shrinks and scrolls instead of
           // overflowing. (These vars are populated only with collision
           // avoidance on, which is the default now that `avoidCollisions` is
-          // no longer disabled.)
+          // no longer disabled.) There is no fixed height cap of its own: a
+          // menu grows to the viewport and only then scrolls. A host that
+          // wants shorter menus sets `--dropdown-menu-max-height`; the
+          // `100vh` fallback just keeps `min()` valid while it is unset.
           style={{
             zIndex: 400,
             maxWidth:
               maxWidth ?? "var(--radix-dropdown-menu-content-available-width)",
             maxHeight:
               maxHeight ??
-              "min(14rem, var(--radix-dropdown-menu-content-available-height))",
+              "min(var(--dropdown-menu-max-height, 100vh), var(--radix-dropdown-menu-content-available-height))",
           }}
         >
           {children}

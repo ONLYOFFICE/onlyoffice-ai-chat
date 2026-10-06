@@ -192,12 +192,12 @@ describe("DropdownMenu drill-down", () => {
     renderMenu({ items });
     const content = () =>
       document.querySelector(".dropdown-menu") as HTMLElement;
-    expect(content().style.maxHeight).toContain("14rem");
+    expect(content().style.maxHeight).toContain("--dropdown-menu-max-height");
     fireEvent.click(screen.getByTestId("drill-Folder"));
     expect(content().style.maxHeight).toBe("40rem");
     // The deeper level has no cap of its own: back to the default.
     fireEvent.click(screen.getByTestId("drill-SubFolder"));
-    expect(content().style.maxHeight).toContain("14rem");
+    expect(content().style.maxHeight).toContain("--dropdown-menu-max-height");
   });
 
   it("resets to the root level when a controlled close happens outside Radix", () => {
