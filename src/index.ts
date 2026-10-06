@@ -83,6 +83,8 @@ export { PlatformProvider, usePlatform } from "./ui/providers/PlatformProvider";
 export {
   ATTACHMENT_ACCEPT,
   ATTACHMENT_PICK_FILTERS,
+  IMAGE_PICK_FILTER,
+  isSupportedImagePath,
 } from "./ui/providers/PlatformProvider";
 export type {
   AttachmentPickFilter,

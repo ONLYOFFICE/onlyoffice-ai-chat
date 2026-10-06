@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.39
+
+### Changed
+
+- **"Add local image" attaches by path under `attachFilesByPath`.** With the flag on and a host `pickFiles`, the item opens the host's own dialog with the new `IMAGE_PICK_FILTER` row and pushes the picked image into the draft as a path-only attachment, exactly like "Add local file"; the model then reads it through the host's file tool instead of receiving base64 inline. Every other host keeps the internal `<input accept="image/*">`. `isSupportedImagePath` is exported for a host that attaches images from elsewhere (a drop handler). The default chat prompt now says an image may arrive as a path with a read-it note, so the model reaches for the file tool in that case.
+
 ## 0.6.38
 
 ### Fixed

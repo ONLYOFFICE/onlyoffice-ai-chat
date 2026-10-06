@@ -718,6 +718,40 @@ describe("ComposerActionAttachment", () => {
       expect(mockConvertFileToText).not.toHaveBeenCalled();
     });
 
+    it("attaches a picked image by path through the host dialog", async () => {
+      mockAddLocalImageEnabled = true;
+      mockPickFiles.mockResolvedValue([
+        { path: "/pics/shot.PNG" },
+        { path: "/pics/notes.docx" },
+      ]);
+      mockGetFileType.mockReturnValue(0);
+
+      const { container } = render(<ComposerActionAttachment />);
+      const inputClick = vi.spyOn(
+        container.querySelector("input[type='file']") as HTMLInputElement,
+        "click"
+      );
+      const items = mockDropdownItems as {
+        text: string;
+        onClick: () => void;
+      }[];
+      await act(async () => {
+        items.find((i) => i.text === "AddLocalImage")!.onClick();
+      });
+
+      expect(mockPickFiles).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "images" }),
+      ]);
+      await waitFor(() => {
+        expect(mockAddAttachmentFile).toHaveBeenCalledWith([
+          { path: "/pics/shot.PNG", type: 0 },
+        ]);
+      });
+      // Not the internal input, and nothing inlined.
+      expect(inputClick).not.toHaveBeenCalled();
+      expect(mockAddAttachmentImage).not.toHaveBeenCalled();
+    });
+
     it("attaches a recent file by path without converting it", async () => {
       mockGetRecentFiles.mockResolvedValue(
         JSON.stringify({

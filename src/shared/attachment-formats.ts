@@ -166,6 +166,33 @@ const getExtension = (path: string): string => {
   return name.slice(dot + 1).toLowerCase();
 };
 
+const IMAGE_EXTENSIONS = [
+  "bmp",
+  "gif",
+  "ico",
+  "jpeg",
+  "jpg",
+  "png",
+  "tif",
+  "tiff",
+  "webp",
+];
+
+/**
+ * The one filter row for "Add local image" when images are attached by path
+ * (`WidgetConfig.attachFilesByPath`): the host's native dialog is opened with
+ * this instead of the internal `<input accept="image/*">`. Kept apart from
+ * {@link ATTACHMENT_PICK_FILTERS}, whose every entry must survive
+ * `convertFileToText`; an image never does, it is read by a host tool.
+ */
+export const IMAGE_PICK_FILTER: AttachmentPickFilter = {
+  id: "images",
+  label: "Images",
+  extensions: IMAGE_EXTENSIONS,
+};
+
+const IMAGE_EXTENSION_SET = new Set(IMAGE_EXTENSIONS);
+
 /**
  * Whether a path picked from disk is one the widget can attach.
  *
@@ -178,4 +205,13 @@ const getExtension = (path: string): string => {
  */
 export const isSupportedAttachmentPath = (path: string): boolean => {
   return SUPPORTED_EXTENSIONS.has(getExtension(path));
+};
+
+/**
+ * Whether a path picked from disk names an image the widget can attach by
+ * path — the same re-check as {@link isSupportedAttachmentPath}, against
+ * {@link IMAGE_PICK_FILTER}.
+ */
+export const isSupportedImagePath = (path: string): boolean => {
+  return IMAGE_EXTENSION_SET.has(getExtension(path));
 };
