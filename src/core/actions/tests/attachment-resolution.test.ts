@@ -24,6 +24,44 @@ const storageWith = (records: unknown[]) =>
     readManyByIds: vi.fn().mockResolvedValue(records),
   }) as unknown as AttachmentsStorage;
 
+describe("attachment-resolution — image attached by path", () => {
+  const user = (parts: unknown[]): ThreadMessageLike =>
+    ({ role: "user", content: parts }) as ThreadMessageLike;
+
+  it("sends the path, not the preview, for an image record with a path", async () => {
+    const storage = storageWith([
+      {
+        id: "img-1",
+        kind: "image",
+        title: "shot.png",
+        base64: "data:image/png;base64,PREVIEW",
+        path: "C:\\pics\\shot.png",
+      },
+    ]);
+    const [msg] = await resolveAttachmentRefs(
+      [user([buildImageRefBlock({ id: "img-1", title: "shot.png" })])],
+      storage
+    );
+    const [block] = msg.content as unknown as { type: string; text: string }[];
+    expect(block.type).toBe("text");
+    expect(block.text).toContain("[attached image: shot.png]");
+    expect(block.text).toContain("Path: C:\\pics\\shot.png");
+    expect(block.text).not.toContain("PREVIEW");
+  });
+
+  it("keeps an image without a path inline", async () => {
+    const [msg] = await resolveAttachmentRefs(
+      [user([buildImageRefBlock({ id: "img-1", title: "shot.png" })])],
+      storageWith([
+        { id: "img-1", kind: "image", title: "shot.png", base64: "data:x" },
+      ])
+    );
+    expect(msg.content).toEqual([
+      { type: "image", image: "data:x", name: "shot.png" },
+    ]);
+  });
+});
+
 describe("attachment-resolution — tool-result image refs", () => {
   const persisted = JSON.stringify({
     content: [

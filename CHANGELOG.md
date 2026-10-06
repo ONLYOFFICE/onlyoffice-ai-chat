@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.43
+
+### Fixed
+
+- **An image attached by path keeps its thumbnail.** 0.6.39 turned it into a plain file chip with a generic icon. `ImageAttachmentInput` now takes an optional `path`: the attachment stays an image ref whose base64 is the chip preview, and the resolver sends the model the path (an `[attached image: …]` block with the read-it note) instead of the base64. A new optional `PlatformFileOperations.readImage(path)` returns the preview as a data URL; with it, "Add local image" under `attachFilesByPath` goes this way, and without it the path-only file chip of 0.6.39 remains.
+
 ## 0.6.42
 
 ### Fixed

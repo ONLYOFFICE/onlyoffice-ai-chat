@@ -752,6 +752,42 @@ describe("ComposerActionAttachment", () => {
       expect(mockAddAttachmentImage).not.toHaveBeenCalled();
     });
 
+    it("attaches a picked image as an image ref with a preview when the host reads images", async () => {
+      mockAddLocalImageEnabled = true;
+      const readImage = vi.fn(async () => "data:image/png;base64,PREVIEW");
+      mockPlatformFile = {
+        pickFiles: mockPickFiles,
+        getFileType: mockGetFileType,
+        getRecentFiles: mockGetRecentFiles,
+        readImage,
+      };
+      mockPickFiles.mockResolvedValue([{ path: "/pics/shot.png" }]);
+
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        text: string;
+        onClick: () => void;
+      }[];
+      await act(async () => {
+        items.find((i) => i.text === "AddLocalImage")!.onClick();
+      });
+
+      await waitFor(() => {
+        expect(mockAddAttachmentImage).toHaveBeenCalledWith(
+          [
+            {
+              name: "shot.png",
+              base64: "data:image/png;base64,PREVIEW",
+              path: "/pics/shot.png",
+            },
+          ],
+          { pendingIds: ["pending-0"] }
+        );
+      });
+      expect(readImage).toHaveBeenCalledWith("/pics/shot.png");
+      expect(mockAddAttachmentFile).not.toHaveBeenCalled();
+    });
+
     it("attaches a recent file by path without converting it", async () => {
       mockGetRecentFiles.mockResolvedValue(
         JSON.stringify({

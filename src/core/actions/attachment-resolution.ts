@@ -93,8 +93,9 @@ function parseRef(value: unknown): RefMeta | null {
  * Walk a list of `ThreadMessageLike`s, replace every ref-block with
  * its hydrated inline form (`{data: content, mimeType: JSON({path,type})}`
  * for files; `{image: base64, name: title}` for images). Legacy inline
- * blocks pass through untouched. A file stored without `content` becomes
- * a text block carrying its path, for the model to read via a tool.
+ * blocks pass through untouched. A file stored without `content`, or an
+ * image stored with a `path`, becomes a text block carrying its path, for
+ * the model to read via a tool.
  *
  * Tool-result images are hydrated only in the current turn (after the
  * last user message); earlier ones become a short
@@ -319,17 +320,26 @@ function hydrateFileBlock(rec: Attachment, meta: RefMeta) {
   };
 }
 
-function makePathOnlyBlock(title: string, path: string) {
+function makePathOnlyBlock(
+  title: string,
+  path: string,
+  kind: "file" | "image" = "file"
+) {
   return {
     type: "text" as const,
     text:
-      `[attached file: ${title}]\n` +
+      `[attached ${kind}: ${title}]\n` +
       `Path: ${path}\n` +
       "The file content is not included. Use an available tool to read it from this path when it is needed to answer.",
   };
 }
 
 function hydrateImageBlock(rec: Attachment, meta: RefMeta) {
+  // Image attached by path: the base64 on the record is the chip preview
+  // only; the model gets the path and reads the image through a host
+  // tool, as it does for a path-only file.
+  const path = rec.path ?? meta.path;
+  if (path) return makePathOnlyBlock(rec.title ?? meta.title, path, "image");
   return {
     type: "image" as const,
     image: rec.base64 ?? "",

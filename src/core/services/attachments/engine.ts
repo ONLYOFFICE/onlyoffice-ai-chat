@@ -82,6 +82,7 @@ export class AttachmentsEngine {
       name: string;
       base64: string;
       title?: string;
+      path?: string;
     },
     entityId?: string
   ): Promise<Attachment> {
@@ -98,6 +99,8 @@ export class AttachmentsEngine {
       name: string;
       base64: string;
       title?: string;
+      /** Host path of an image attached by path; the base64 is then a preview. */
+      path?: string;
     }[],
     entityId?: string
   ): Promise<Attachment[]> {
@@ -107,6 +110,7 @@ export class AttachmentsEngine {
         kind: "image",
         title: input.title ?? input.name,
         base64: input.base64,
+        ...(input.path ? { path: input.path } : {}),
         entityId,
       }))
     );

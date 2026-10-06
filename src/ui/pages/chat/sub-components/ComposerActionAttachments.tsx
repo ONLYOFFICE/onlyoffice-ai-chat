@@ -204,6 +204,35 @@ const ComposerActionAttachment = () => {
     });
     if (images.length === 0) return;
 
+    // With a host preview reader the chip keeps its thumbnail: an image
+    // ref whose base64 is the preview and whose path is what the model
+    // gets. Without one the image is a path-only file chip.
+    if (fileApi.readImage) {
+      const readImage = fileApi.readImage.bind(fileApi);
+      const pendingIds = beginPendingAttachments(
+        images.map((file) => ({
+          title: file.path.split(/[\\/]/).pop() ?? file.path,
+          kind: "image" as const,
+        }))
+      );
+      const accepted = images.slice(0, pendingIds.length);
+      if (accepted.length === 0) return;
+      try {
+        const inputs = await Promise.all(
+          accepted.map(async (file) => ({
+            name: file.path.split(/[\\/]/).pop() ?? file.path,
+            base64: (await readImage(file.path)) ?? "",
+            path: file.path,
+          }))
+        );
+        await addAttachmentImage(inputs, { pendingIds });
+      } catch (err) {
+        failPendingAttachments(pendingIds);
+        logger.error("[ComposerActionAttachment] attach failed", err);
+      }
+      return;
+    }
+
     try {
       await addAttachmentFile(
         images.map((file) => ({
