@@ -115,4 +115,32 @@ describe("Input", () => {
       icon.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
+
+  it("toggles a password input between masked and revealed", () => {
+    const { container } = render(
+      <Input type="password" value="secret" readOnly />
+    );
+    const input = container.querySelector("input")!;
+    const toggle = screen.getByTestId("input-password-toggle");
+
+    expect(input).toHaveAttribute("type", "password");
+    expect(toggle).toHaveTextContent("eye.closed");
+
+    fireEvent.click(toggle);
+    expect(input).toHaveAttribute("type", "text");
+    expect(toggle).toHaveTextContent(/^eye$/);
+
+    fireEvent.click(toggle);
+    expect(input).toHaveAttribute("type", "password");
+  });
+
+  it("does not render the password toggle for other input types", () => {
+    render(<Input />);
+    expect(screen.queryByTestId("input-password-toggle")).toBeNull();
+  });
+
+  it("disables the password toggle with the input", () => {
+    render(<Input type="password" disabled />);
+    expect(screen.getByTestId("input-password-toggle")).toBeDisabled();
+  });
 });
