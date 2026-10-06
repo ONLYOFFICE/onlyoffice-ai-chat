@@ -5,7 +5,8 @@ export type DropdownMenuProps = {
   trigger: React.ReactNode;
   items: DropDownItemProps[];
   /**
-   * Rows pinned below the list. `items` scroll inside the menu's height
+   * Rows pinned below the list, on top of the list's own row cap
+   * (`--dropdown-list-max-height`). `items` scroll inside the menu's height
    * cap; these stay in view at the bottom, so a long list (many profiles)
    * never hides them. Root level only — in drill-down mode a drilled-in
    * level replaces the whole menu, footer included, and a footer row with a

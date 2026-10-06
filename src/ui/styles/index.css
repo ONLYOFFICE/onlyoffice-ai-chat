@@ -44,12 +44,14 @@
   --dropdown-menu-padding-y: 5px; /* container vertical padding */
   --dropdown-menu-min-width: 150px; /* min width when matchTriggerWidth is on */
   --dropdown-item-height: 26px; /* row height */
-  /* Ten rows show before a menu scrolls; derived from the row height and the
-     container padding so a host that changes either keeps ten. The space to
-     the viewport edge still applies on top. */
+  /* Ten rows show before a list scrolls; derived from the row height so a
+     host that changes it keeps ten. Rows pinned below the list (the model
+     picker's Effort and Permissions) and the container padding come on top,
+     so the whole menu is this plus padding; the space to the viewport edge
+     still applies above either. */
+  --dropdown-list-max-height: calc(10 * var(--dropdown-item-height, 26px));
   --dropdown-menu-max-height: calc(
-    10 * var(--dropdown-item-height, 26px) + 2 *
-      var(--dropdown-menu-padding-y, 5px)
+    var(--dropdown-list-max-height) + 2 * var(--dropdown-menu-padding-y, 5px)
   );
   --dropdown-item-gap: 10px; /* gap between the row's leading group and trailing control */
   --dropdown-item-content-gap: 4px; /* gap inside the leading group (icon to label) */

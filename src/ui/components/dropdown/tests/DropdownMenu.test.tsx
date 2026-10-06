@@ -199,6 +199,24 @@ describe("DropdownMenu", () => {
       expect(content.className).not.toContain("overflow-y-auto");
     });
 
+    it("caps the scroll area, not the content, so the footer comes on top of the rows", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          footerItems={footer}
+          open
+        />
+      );
+      const content = document.querySelector(".dropdown-menu") as HTMLElement;
+      const scroll = screen.getByTestId("dropdown-scroll-area");
+      expect(scroll.className).toContain("--dropdown-list-max-height");
+      expect(content.style.maxHeight).not.toContain(
+        "--dropdown-menu-max-height"
+      );
+      expect(content.style.maxHeight).toContain("available-height");
+    });
+
     it("does not indent the list for an icon that only the footer has", () => {
       render(
         <DropdownMenu
@@ -232,6 +250,7 @@ describe("DropdownMenu", () => {
       );
       const content = document.querySelector(".dropdown-menu") as HTMLElement;
       expect(content.className).toContain("overflow-y-auto");
+      expect(content.style.maxHeight).toContain("--dropdown-menu-max-height");
       expect(screen.queryByTestId("dropdown-footer")).toBeNull();
       expect(screen.queryByTestId("dropdown-scroll-area")).toBeNull();
     });

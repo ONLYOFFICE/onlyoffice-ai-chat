@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.35
+
+### Fixed
+
+- **Rows pinned below a list no longer eat into its ten visible rows.** In the model picker the Effort and Permissions rows sat inside the 0.6.34 cap, so only about seven profiles showed before the list scrolled. The row cap now sits on the scroll area itself (`--dropdown-list-max-height`, ten rows) and the pinned rows come on top; `--dropdown-menu-max-height` derives from it plus the container padding and still caps menus without a footer. The space to the viewport edge applies above either.
+
 ## 0.6.34
 
 ### Changed

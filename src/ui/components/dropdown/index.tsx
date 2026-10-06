@@ -132,18 +132,22 @@ const Shell = ({
           // wider/taller than the host shrinks and scrolls instead of
           // overflowing. (These vars are populated only with collision
           // avoidance on, which is the default now that `avoidCollisions` is
-          // no longer disabled.) The height cap itself is the
-          // `--dropdown-menu-max-height` token — ten rows by default (see
-          // index.css) — so a host sets its own row count or height there;
-          // the `100vh` fallback only keeps `min()` valid without the
-          // stylesheet.
+          // no longer disabled.) The row cap is the `--dropdown-menu-max-height`
+          // token — ten rows plus padding by default (see index.css) — so a
+          // host sets its own there; the `100vh` fallback only keeps `min()`
+          // valid without the stylesheet. With the scrolling inside, the
+          // scroll area carries the row cap itself so the pinned rows come on
+          // top of the ten rather than out of them, and the content is bound
+          // by the viewport alone.
           style={{
             zIndex: 400,
             maxWidth:
               maxWidth ?? "var(--radix-dropdown-menu-content-available-width)",
             maxHeight:
               maxHeight ??
-              "min(var(--dropdown-menu-max-height, 100vh), var(--radix-dropdown-menu-content-available-height))",
+              (scrollInside
+                ? "var(--radix-dropdown-menu-content-available-height)"
+                : "min(var(--dropdown-menu-max-height, 100vh), var(--radix-dropdown-menu-content-available-height))"),
           }}
         >
           {children}
@@ -397,7 +401,7 @@ const DropdownMenuComponent = ({
       {pinned ? (
         <>
           <div
-            className="min-h-0 overflow-y-auto flex flex-col"
+            className="min-h-0 max-h-[var(--dropdown-list-max-height,260px)] overflow-y-auto flex flex-col"
             data-testid="dropdown-scroll-area"
           >
             {items.map((item, index) => renderRow(item, index))}
