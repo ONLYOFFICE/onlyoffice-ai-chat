@@ -154,16 +154,19 @@ const defaultComponents = memoizeMarkdownComponents({
     />
   ),
   // Per-table, not per-cell — otherwise a mixed-language column alternates
-  // alignment.
+  // alignment. A table ignores `overflow` on itself, so a wide one scrolls in
+  // its own wrapper instead of widening the whole thread viewport.
   table: ({ className, ...props }) => (
-    <table
-      dir="auto"
-      className={cn(
-        "my-[8px] w-full border-separate border-spacing-0 overflow-y-auto text-[var(--chat-message-color)]",
-        className
-      )}
-      {...props}
-    />
+    <div className="my-[8px] overflow-x-auto">
+      <table
+        dir="auto"
+        className={cn(
+          "w-full border-separate border-spacing-0 text-[var(--chat-message-color)]",
+          className
+        )}
+        {...props}
+      />
+    </div>
   ),
   // `text-start`, not `text-left`, so it follows the table's direction; an
   // explicit GFM alignment still wins.

@@ -47,6 +47,8 @@ export type IconName =
   | "djvu"
   | "documents"
   | "dropdown-toggle"
+  | "eye"
+  | "eye.closed"
   | "image-generation"
   | "more"
   | "ocr"
