@@ -129,6 +129,7 @@ export type {
 // ---------------------------------------------------------------------------
 
 export {
+  ACTION_REQUIREMENTS,
   AIEngine,
   AssignmentsEngine,
   ContextEngine,
@@ -152,6 +153,8 @@ export {
   ToolsEngine,
   WebSearchEngine,
   composeToolsAdapters,
+  defaultCanServe,
+  meetsRequirements,
   toChatError,
   toOpenAIChatCompletionStream,
 } from "./core/services";

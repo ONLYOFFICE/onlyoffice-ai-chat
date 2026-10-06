@@ -1,7 +1,7 @@
 import { ActionType } from "../../../shared/action-type";
 import type { TErrorData } from "../../../shared/error-data";
 import type { Profile } from "../../types";
-import { meetsRequirements } from "./requirements";
+import { defaultCanServe, meetsRequirements } from "./requirements";
 import type {
   AssignmentMutationResult,
   AssignmentsEngineDeps,
@@ -42,7 +42,8 @@ export class AssignmentsEngine {
   /**
    * Resolve the profile bound to `actionType`, falling back to the
    * `Default` slot when nothing is bound to the specific action. Throws
-   * if neither slot is set or the resolved ID is missing from
+   * if neither slot is set, the default cannot run the action (see
+   * {@link tryResolveForAction}), or the resolved ID is missing from
    * `storage.profiles`.
    */
   async resolveForAction(
@@ -52,7 +53,7 @@ export class AssignmentsEngine {
     const result = await this.tryResolveForAction(actionType, entityId);
     if (!result) {
       throw new Error(
-        `No profile assigned to ActionType.${actionType} and no default set`
+        `No profile assigned to ActionType.${actionType} and no usable default set`
       );
     }
     return result;
@@ -68,6 +69,10 @@ export class AssignmentsEngine {
    * return an entity-specific profile (typically for `ActionType.Chat`).
    * The `Default` fallback lookup is unscoped — entity-specific defaults
    * are not a concept the engine tracks.
+   *
+   * A profile borrowed from `Default` must also pass
+   * {@link defaultCanServe}; otherwise the result is `null`, as if the
+   * slot were empty. Explicit bindings skip that check.
    */
   async tryResolveForAction(
     actionType: ActionType,
@@ -81,6 +86,9 @@ export class AssignmentsEngine {
       if (profileId) break;
       cur = ACTION_FALLBACKS[cur];
     }
+    // `cur` is still set when an explicit slot answered; it ran out when
+    // the chain was empty and we are about to borrow the `Default` slot.
+    const viaDefault = !cur && actionType !== ActionType.Default;
     profileId ??= await storage.assignments.readByType(ActionType.Default);
     if (!profileId) return null;
 
@@ -88,6 +96,12 @@ export class AssignmentsEngine {
     if (!profile) {
       throw new Error(`Assigned profile not found: ${profileId}`);
     }
+    // The `Default` slot accepts any profile, so a borrowed default may be
+    // unable to run the action at all (a chat model asked for an image).
+    // Treat that like an empty slot rather than letting the request reach
+    // the provider and fail there. Explicit bindings were validated on
+    // `assign` and are trusted as-is.
+    if (viaDefault && !defaultCanServe(profile, actionType)) return null;
     return { profileId, profile };
   }
 

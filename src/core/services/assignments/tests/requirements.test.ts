@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { ActionType } from "../../../../shared/action-type";
 import { CapabilitiesUI } from "../../../../shared/capabilities-ui";
-import { ACTION_REQUIREMENTS, meetsRequirements } from "../requirements";
+import {
+  ACTION_REQUIREMENTS,
+  defaultCanServe,
+  meetsRequirements,
+} from "../requirements";
 
 describe("ACTION_REQUIREMENTS", () => {
   it("includes a requirement entry for every ActionType", () => {
@@ -97,6 +101,41 @@ describe("meetsRequirements", () => {
             CapabilitiesUI.Chat | CapabilitiesUI.Vision | CapabilitiesUI.Tools,
         },
         ActionType.Chat
+      )
+    ).toBe(true);
+  });
+});
+
+describe("defaultCanServe", () => {
+  it("passes a profile with no declared capabilities", () => {
+    expect(
+      defaultCanServe({ capabilities: undefined }, ActionType.ImageGeneration)
+    ).toBe(true);
+    expect(
+      defaultCanServe(
+        { capabilities: CapabilitiesUI.None },
+        ActionType.ImageGeneration
+      )
+    ).toBe(true);
+  });
+
+  it("rejects a declared profile that lacks the required bits", () => {
+    expect(
+      defaultCanServe(
+        { capabilities: CapabilitiesUI.Chat | CapabilitiesUI.Vision },
+        ActionType.ImageGeneration
+      )
+    ).toBe(false);
+    expect(
+      defaultCanServe({ capabilities: CapabilitiesUI.Image }, ActionType.Chat)
+    ).toBe(false);
+  });
+
+  it("passes a declared profile that has the required bits", () => {
+    expect(
+      defaultCanServe(
+        { capabilities: CapabilitiesUI.Chat | CapabilitiesUI.Image },
+        ActionType.ImageGeneration
       )
     ).toBe(true);
   });

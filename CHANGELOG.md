@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.40
+
+### Fixed
+
+- **A default model that cannot run an action is no longer borrowed for it (Bug 84265).** The `Default` slot accepts any profile, so an empty `ImageGeneration` slot used to fall back to a text-only chat model and the request failed at the provider after the agent had already announced it was drawing. `tryResolveForAction` / `resolveForAction` now treat such a default like an empty slot: a profile reached through the fallback must pass the new `defaultCanServe(profile, actionType)`, which rejects only a profile that *declares* capabilities and lacks the required bits. Profiles with no declared mask (host-injected ones) and explicit bindings are untouched.
+
+### Added
+
+- `ACTION_REQUIREMENTS`, `meetsRequirements` and `defaultCanServe` are exported from the package root, so a host that implements its own `Default` fallback can apply the same rule.
+
 ## 0.6.39
 
 ### Changed

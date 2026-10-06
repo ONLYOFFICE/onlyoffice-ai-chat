@@ -424,3 +424,86 @@ describe("AssignmentsEngine.cascadeProfileDelete", () => {
     expect(storage.assignments.deleteMany).not.toHaveBeenCalled();
   });
 });
+
+describe("AssignmentsEngine Default fallback capability gate", () => {
+  it("returns null when the borrowed default declares capabilities that lack the action's bits", async () => {
+    const chatOnly = makeProfile({
+      id: "chat",
+      capabilities: CapabilitiesUI.Chat | CapabilitiesUI.Vision,
+    });
+    const { storage } = makeStorage({
+      profiles: [chatOnly],
+      assignments: { [ActionType.Default]: chatOnly.id },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    expect(
+      await engine.tryResolveForAction(ActionType.ImageGeneration)
+    ).toBeNull();
+    await expect(
+      engine.resolveForAction(ActionType.ImageGeneration)
+    ).rejects.toThrow(/No profile assigned to ActionType.ImageGeneration/);
+  });
+
+  it("lets a default with no declared capabilities through unchanged", async () => {
+    const legacy = makeProfile({ id: "legacy", capabilities: undefined });
+    const { storage } = makeStorage({
+      profiles: [legacy],
+      assignments: { [ActionType.Default]: legacy.id },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.tryResolveForAction(
+      ActionType.ImageGeneration
+    );
+    expect(result?.profileId).toBe("legacy");
+  });
+
+  it("serves the action when the default declares the required bits", async () => {
+    const image = makeProfile({
+      id: "img",
+      capabilities: CapabilitiesUI.Chat | CapabilitiesUI.Image,
+    });
+    const { storage } = makeStorage({
+      profiles: [image],
+      assignments: { [ActionType.Default]: image.id },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.tryResolveForAction(
+      ActionType.ImageGeneration
+    );
+    expect(result?.profileId).toBe("img");
+  });
+
+  it("never gates an explicit binding, even one that lacks the bits", async () => {
+    const chatOnly = makeProfile({ id: "chat", capabilities: CapabilitiesUI.Chat });
+    const { storage } = makeStorage({
+      profiles: [chatOnly],
+      assignments: { [ActionType.ImageGeneration]: chatOnly.id },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.tryResolveForAction(
+      ActionType.ImageGeneration
+    );
+    expect(result?.profileId).toBe("chat");
+  });
+
+  it("does not gate the Default action itself", async () => {
+    const imageOnly = makeProfile({ id: "img", capabilities: CapabilitiesUI.Image });
+    const { storage } = makeStorage({
+      profiles: [imageOnly],
+      assignments: { [ActionType.Default]: imageOnly.id },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    const result = await engine.tryResolveForAction(ActionType.Default);
+    expect(result?.profileId).toBe("img");
+  });
+
+  it("gates a default reached through the Code→Chat chain", async () => {
+    const imageOnly = makeProfile({ id: "img", capabilities: CapabilitiesUI.Image });
+    const { storage } = makeStorage({
+      profiles: [imageOnly],
+      assignments: { [ActionType.Default]: imageOnly.id },
+    });
+    const engine = new AssignmentsEngine({ storage });
+    expect(await engine.tryResolveForAction(ActionType.Code)).toBeNull();
+  });
+});

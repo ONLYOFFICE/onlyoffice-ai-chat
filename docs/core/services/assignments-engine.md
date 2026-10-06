@@ -89,10 +89,19 @@ that wants to filter "profiles eligible for this slot" should
 reach for `meetsRequirements` directly:
 
 ```ts
-import { meetsRequirements } from "@/core/services";
+import { meetsRequirements } from "@onlyoffice/ai-chat";
 
 const eligible = profiles.filter((p) => meetsRequirements(p, ActionType.Vision));
 ```
+
+A lenient twin, `defaultCanServe(profile, actionType)`, is what the
+resolver applies to a profile *borrowed from the `Default` slot*. It
+lets a profile with no declared capabilities through (hosts that
+inject profiles rarely fill the mask) and rejects only one that
+declares capabilities and lacks the required bits. A host that
+implements its own `Default` fallback outside the engine should use
+the same predicate so a text-only default is never asked for an
+image.
 
 ---
 
@@ -129,12 +138,15 @@ type ResolvedAssignment = { profileId: string; profile: Profile };
    **always unscoped**, since the engine treats per-entity
    defaults as out of scope.
 4. If everything is `null`, throw
-   `"No profile assigned to ActionType.<X> and no default set"`.
+   `"No profile assigned to ActionType.<X> and no usable default set"`.
 5. Read the resolved profile from `storage.profiles`.
 6. If the row is missing, throw
    `"Assigned profile not found: <id>"` — the assignment table
    has a dangling pointer (e.g. host mutated profiles out of band
    without going through `ProfilesEngine.delete`).
+7. If the profile came from the `Default` fallback (step 3) and
+   `defaultCanServe(profile, actionType)` is `false`, treat it as
+   step 4: the slot is effectively empty.
 
 ### When to use it
 
@@ -154,6 +166,12 @@ prefer [`tryResolveForAction`](#tryresolveforaction).
 Same lookup logic as `resolveForAction`, but returns `null`
 instead of throwing when both the specific slot and `Default` are
 empty.
+
+A profile reached through the `Default` fallback is additionally
+checked with `defaultCanServe`; when it declares capabilities that
+cannot run the action, the result is `null` as if the slot were
+empty. An explicit binding is returned as-is — it was validated on
+`assign`.
 
 ```ts
 async tryResolveForAction(
