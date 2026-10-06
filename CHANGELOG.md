@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.42
+
+### Fixed
+
+- **An attachment chip in a sent message is capped at 300px.** The close-less chip (the one a message shows after sending) had no width cap, so a long file name stretched it across the bubble; it now truncates at 300px like the composer's chips do.
+
 ## 0.6.41
 
 ### Changed
