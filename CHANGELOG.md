@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.41
+
+### Changed
+
+- Rebuilt release of 0.6.40 with no code changes, so consumers that cache the package by version pick up the Bug 84265 fix.
+
 ## 0.6.40
 
 ### Fixed
