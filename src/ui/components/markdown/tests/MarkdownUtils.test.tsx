@@ -127,6 +127,8 @@ describe("defaultComponents", () => {
     expect(anchor!.hasAttribute("href")).toBe(false);
     expect(anchor!.hasAttribute("target")).toBe(false);
     expect(anchor!.hasAttribute("rel")).toBe(false);
+    // A host click handler may still open the path, so it keeps the hand.
+    expect(anchor!.className).toContain("cursor-pointer");
   });
 
   it("renders ul as unordered list", () => {

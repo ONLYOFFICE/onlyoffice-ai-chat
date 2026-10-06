@@ -93,10 +93,12 @@ const defaultComponents = memoizeMarkdownComponents({
   // page itself, and a host that routes popups to the OS then asks the
   // system to open the page's own URL (Bug 83951). Such a link stays an
   // anchor — its text may still be a path a host click handler can read —
-  // but with no href and no target it does nothing on its own.
+  // but with no href and no target it does nothing on its own. It still
+  // shows the pointer: a browser gives an href-less anchor the text cursor,
+  // and the desktop host, which opens such a path on click, looked inert.
   a: ({ className, href, ...props }) => {
     const styles = cn(
-      "text-[var(--chat-link-color)] font-medium underline underline-offset-4",
+      "cursor-pointer text-[var(--chat-link-color)] font-medium underline underline-offset-4",
       className
     );
     if (!href) {

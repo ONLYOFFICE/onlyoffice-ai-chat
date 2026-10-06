@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.38
+
+### Fixed
+
+- **A link to a local file shows the hand cursor.** A link whose target the sanitizer blanked (a Windows `C:\…` path, `sandbox:`) renders as an anchor with no href, and a browser gives such an anchor the text cursor, so a file the model had just written looked inert in the desktop even though the host opens it on click. Message links now carry the pointer regardless of href.
+
 ## 0.6.37
 
 ### Changed
