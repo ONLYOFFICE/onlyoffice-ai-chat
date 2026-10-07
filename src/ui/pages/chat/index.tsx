@@ -8,7 +8,7 @@ import {
 } from "@assistant-ui/react";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../../providers/LocalesProvider";
 import { useComponents } from "../../providers/ComponentsProvider";
 import { useWidgetConfig } from "../../../widget-config";
@@ -36,7 +36,15 @@ import { ToastProvider } from "../../components/toast";
 
 import "./Thread.css";
 
-const ThreadInner = () => {
+// Memoized so a streamed token does not re-render the viewport: `Thread`
+// re-renders on every `messages` change, and each render of
+// `ThreadPrimitive.Viewport` hands React a new ref (assistant-ui 0.11
+// builds it from an inline callback). React then tears down and recreates
+// the runtime's autoscroll `MutationObserver`, and `disconnect()` drops the
+// records of the very commit that grew the reply — the autoscroll never
+// sees that growth, its next scroll event reads "not at bottom, didn't
+// move down", and following stops for the rest of the answer.
+const ThreadInner = memo(() => {
   const { Loader } = useComponents();
   const { useMessageStore } = useStores();
   const isStreamRunning = useMessageStore((s) => s.isStreamRunning);
@@ -240,7 +248,7 @@ const ThreadInner = () => {
       ) : null}
     </div>
   );
-};
+});
 
 const Thread = () => {
   const { useMessageStore, useProfilesStore, useRouter, useServersStore } =
