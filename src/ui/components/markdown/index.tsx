@@ -19,6 +19,14 @@ import "katex/dist/katex.min.css";
 import { normalizeMathDelimiters } from "./normalize-math";
 import { markdownUrlTransform } from "./url-transform";
 
+// Single-dollar inline math is off: model prose is full of money ("$4.60
+// million to $5.1 million") and `remark-math` would hand the span between two
+// amounts to KaTeX, which renders it in italic math font, collapses spaces and
+// drops everything after a `%` as a TeX comment. Inline formulas still work:
+// `normalizeMathDelimiters` rewrites `\(...\)` to `$$...$$`, which stays
+// inline when it does not sit on its own line.
+const remarkMathOptions = { singleDollarTextMath: false };
+
 const LazyMarkdownText = lazy(async () => {
   const [
     { MarkdownTextPrimitive },
@@ -37,7 +45,7 @@ const LazyMarkdownText = lazy(async () => {
     default: () => (
       <MarkdownTextPrimitive
         preprocess={normalizeMathDelimiters}
-        remarkPlugins={[remarkGfm, remarkMath]}
+        remarkPlugins={[remarkGfm, [remarkMath, remarkMathOptions]]}
         rehypePlugins={[rehypeKatex]}
         urlTransform={markdownUrlTransform}
         className="aui-md"
@@ -69,7 +77,7 @@ const LazyMarkdownContent = lazy(async () => {
     default: ({ children }: { children: string }) => (
       <div className="aui-md">
         <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
+          remarkPlugins={[remarkGfm, [remarkMath, remarkMathOptions]]}
           rehypePlugins={[rehypeKatex]}
           urlTransform={markdownUrlTransform}
           components={plainComponents}

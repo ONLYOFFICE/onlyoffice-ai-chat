@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.44
+
+### Fixed
+
+- **Dollar amounts in a reply no longer render as a formula.** `remark-math` treated a single `$...$` span as inline math, so prose like "revenue rose to $4.60 million … $210,000 saved" was handed to KaTeX: italic math font, collapsed spaces, and everything after a `%` dropped as a TeX comment. Single-dollar math is now off in both markdown renderers. Formulas still work: `\(...\)` is normalized to `$$...$$`, which `remark-math` keeps inline, and `\[...\]` still becomes a display block.
+
 ## 0.6.43
 
 ### Fixed
