@@ -450,7 +450,7 @@ const DropDownItem = ({
         </div>
       ) : null}
       {checked ? (
-        <IconButton iconName="checked" size={16} disableHover isStroke />
+        <IconButton iconName="checked" size={24} disableHover isStroke />
       ) : null}
       {withToggle && onToggleChange ? (
         <div onClick={(e) => e.stopPropagation()}>
