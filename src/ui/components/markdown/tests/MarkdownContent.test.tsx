@@ -88,7 +88,7 @@ describe("MarkdownContent code blocks", () => {
       return el as HTMLElement;
     });
     expect(code.className).toContain("font-bold");
-    expect(code.className).toContain("italic");
+    expect(code.className).not.toContain("italic");
     expect(screen.queryByTestId("copy-button")).not.toBeInTheDocument();
   });
 });

@@ -218,12 +218,14 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   // `dir` on an inline element also isolates it, so a `foo()` in an Arabic
   // sentence keeps its brackets instead of losing them to the surrounding run.
+  // Bold only, no italic: on Windows the mono stack falls through to
+  // Consolas, whose bold italic smears at small sizes in the desktop CEF.
   code: function Code({ className, ...props }) {
     const isCodeBlock = useIsMarkdownCodeBlock();
     return (
       <code
         dir="ltr"
-        className={cn(!isCodeBlock && "font-bold italic", className)}
+        className={cn(!isCodeBlock && "font-bold", className)}
         {...props}
       />
     );
@@ -312,7 +314,7 @@ export const plainMarkdownComponents = {
       return (
         <code
           dir="ltr"
-          className={cn("font-bold italic", className)}
+          className={cn("font-bold", className)}
           {...props}
         >
           {children}
