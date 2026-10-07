@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.45
+
+### Fixed
+
+- **Autoscroll keeps following a streamed reply (Bug 84295).** `Thread` re-renders on every token, and each render of `ThreadPrimitive.Viewport` handed React a new ref, so the runtime's autoscroll `MutationObserver` was torn down and recreated mid-stream and lost the records of the commit that grew the reply. `ThreadInner` is now memoized, so the viewport keeps its observer.
+- **Inline code is bold only, no italic.** On Windows the mono stack falls through to Consolas, whose bold italic smears at small sizes in the desktop CEF.
+
+### Changed
+
+- The check mark on a selected dropdown item is 24px instead of 16px.
+
 ## 0.6.44
 
 ### Fixed
