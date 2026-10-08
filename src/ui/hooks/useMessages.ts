@@ -22,6 +22,15 @@ type UseMessagesProps = {
   isReady: boolean;
 };
 
+// How often streamed deltas reach the message store. The stores are Zustand,
+// read through `useSyncExternalStore`, so every `set` renders synchronously
+// in a microtask. Applying each delta as it arrived chained the read loop and
+// those renders into one microtask run that never yielded: with a long
+// reasoning block on screen the editor stopped painting and answering input
+// for as long as the model streamed. Deltas are coalesced and applied from a
+// timer instead, so the event loop gets a turn between renders.
+const STREAM_RENDER_INTERVAL_MS = 50;
+
 /**
  * Hook that drives the chat lifecycle on the client side.
  *
@@ -423,8 +432,33 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
       const isOrphaned = () =>
         useMessageStore.getState()._streamEpoch !== streamEpoch;
 
+      // The newest `message-delta` not yet applied to the store. Only the
+      // latest one matters — each carries the whole message so far.
+      let pendingDisplay: ThreadMessageLike | null = null;
+      let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+      const flushPendingDisplay = () => {
+        if (pendingTimer !== null) {
+          clearTimeout(pendingTimer);
+          pendingTimer = null;
+        }
+        const pending = pendingDisplay;
+        pendingDisplay = null;
+        // An orphaned round must not touch the list it no longer owns.
+        if (pending && !isOrphaned()) updateLastMessage(pending);
+      };
+      const queueDisplay = (message: ThreadMessageLike) => {
+        pendingDisplay = message;
+        pendingTimer ??= setTimeout(
+          flushPendingDisplay,
+          STREAM_RENDER_INTERVAL_MS
+        );
+      };
+
       try {
         for await (const event of stream) {
+          // Anything but a plain delta may read or replace the last message,
+          // so the queued delta lands first and ordering stays as streamed.
+          if (event.type !== "message-delta") flushPendingDisplay();
           // Stop pressed. The transport is being torn down underneath us
           // (fetch abort in server-API mode, provider abort in engine
           // mode), but events already decoded may still be in flight —
@@ -638,7 +672,11 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
               messageUID: event.messageId,
             });
           } else {
-            updateLastMessage(display);
+            if (event.type === "message-delta") {
+              queueDisplay(display);
+            } else {
+              updateLastMessage(display);
+            }
             callbacksManager.emit("onStreamDelta", {
               threadId: resolvedThreadId,
               messageUID: event.messageId,
@@ -659,6 +697,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
             releaseBusy();
           }
         }
+
+        flushPendingDisplay();
 
         // Stream ended on a Stop press: in server-API mode the aborted
         // fetch ends the iteration without a terminal event (in engine
@@ -695,6 +735,8 @@ const useMessages = ({ isReady }: UseMessagesProps) => {
           });
         }
       } finally {
+        // Also covers a loop that threw: no delta is left queued.
+        flushPendingDisplay();
         // No-op when the terminal event already released this round; the
         // guard also keeps a late-finishing tail (title still generating
         // while the user started a new round) from clobbering the newer
