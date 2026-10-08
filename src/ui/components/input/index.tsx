@@ -20,10 +20,21 @@ const ICON_COLOR = "var(--icon-normal)";
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
-    { className, isError, icon, iconPosition = "end", onClear, ...props },
+    {
+      className,
+      isError,
+      icon,
+      iconPosition = "end",
+      onClear,
+      type = "text",
+      ...props
+    },
     ref
   ) => {
-    const showClear = props.type === "search" && Boolean(props.value);
+    const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+
+    const isPassword = type === "password";
+    const showClear = type === "search" && Boolean(props.value);
 
     const iconEl = icon ? (
       <div className="shrink-0 w-[24px] h-[24px] flex items-center justify-center">
@@ -39,7 +50,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     // when there's an icon/clear box vs. bare text. The `-with-icon` tokens
     // fall back to the base padding, so unset hosts keep the current behavior.
     const hasLeadingIcon = showStartIcon && Boolean(icon);
-    const hasTrailingIcon = showClear || (showEndIcon && Boolean(icon));
+    const hasTrailingIcon =
+      showClear || isPassword || (showEndIcon && Boolean(icon));
     const startPadding = hasLeadingIcon
       ? "ps-[var(--input-padding-start-with-icon,var(--input-padding-start,4px))]"
       : "ps-[var(--input-padding-start,4px)]";
@@ -67,7 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {showStartIcon && iconEl}
         <input
           ref={ref}
-          type={props.type ?? "text"}
+          type={isPassword && isPasswordVisible ? "text" : type}
           className={cn(
             "min-w-0 flex-1 h-full border-0 bg-transparent p-0 outline-none",
             "placeholder:text-[var(--input-placeholder-color)] text-[var(--input-color)]",
@@ -87,6 +99,27 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className="shrink-0 w-[24px] h-[24px] flex items-center justify-center cursor-pointer border-none bg-transparent"
           >
             <Icon name="clear.search" size={24} color={ICON_COLOR} isStroke />
+          </button>
+        )}
+        {isPassword && (
+          <button
+            type="button"
+            data-testid="input-password-toggle"
+            aria-pressed={isPasswordVisible}
+            disabled={props.disabled}
+            onClick={() => setIsPasswordVisible((visible) => !visible)}
+            className={cn(
+              "shrink-0 w-[24px] h-[24px] flex items-center justify-center border-none bg-transparent p-0",
+              props.disabled ? "cursor-not-allowed" : "cursor-pointer"
+            )}
+          >
+            {/* Crossed-out eye while the value is masked, open eye once revealed. */}
+            <Icon
+              name={isPasswordVisible ? "eye" : "eye.closed"}
+              size={24}
+              color={ICON_COLOR}
+              isStroke
+            />
           </button>
         )}
       </div>

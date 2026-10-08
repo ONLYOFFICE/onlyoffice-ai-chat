@@ -45,7 +45,13 @@ export type {
   ProfilesEngineMethod,
 } from "./profiles";
 
-export { AssignmentsEngine, DEFAULT_ASSIGNMENTS_ROUTES } from "./assignments";
+export {
+  ACTION_REQUIREMENTS,
+  AssignmentsEngine,
+  DEFAULT_ASSIGNMENTS_ROUTES,
+  defaultCanServe,
+  meetsRequirements,
+} from "./assignments";
 export type {
   AssignmentMutationResult,
   AssignmentsEngineDeps,

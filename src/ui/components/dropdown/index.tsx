@@ -121,7 +121,7 @@ const Shell = ({
           data-orientation="vertical"
           onKeyDown={onContentKeyDown}
           className={cn(
-            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[4px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[var(--dropdown-menu-padding-y,5px)] max-h-56 flex flex-col",
+            "dropdown-menu border border-[var(--drop-down-menu-border-color)] rounded-[4px] shadow-[var(--drop-down-menu-shadow)] bg-[var(--drop-down-menu-background-color)] py-[var(--dropdown-menu-padding-y,5px)] flex flex-col",
             scrollInside ? "overflow-hidden" : "overflow-y-auto",
             matchTriggerWidth
               ? "min-w-[var(--dropdown-menu-min-width,150px)] w-[var(--radix-dropdown-menu-trigger-width)]"
@@ -132,14 +132,28 @@ const Shell = ({
           // wider/taller than the host shrinks and scrolls instead of
           // overflowing. (These vars are populated only with collision
           // avoidance on, which is the default now that `avoidCollisions` is
-          // no longer disabled.)
+          // no longer disabled.) The row cap is the `--dropdown-menu-max-height`
+          // token — ten rows plus padding by default (see index.css) — so a
+          // host sets its own there; the `100vh` fallback only keeps `min()`
+          // valid without the stylesheet. With the scrolling inside, the
+          // scroll area carries the row cap itself so the pinned rows come on
+          // top of the ten rather than out of them, and the content is bound
+          // by the viewport alone.
           style={{
             zIndex: 400,
+            // A content-sized panel is capped at `--dropdown-menu-max-width`
+            // (rows truncate); one that matches its trigger keeps the
+            // trigger's width, bound only by the viewport.
             maxWidth:
-              maxWidth ?? "var(--radix-dropdown-menu-content-available-width)",
+              maxWidth ??
+              (matchTriggerWidth
+                ? "var(--radix-dropdown-menu-content-available-width)"
+                : "min(var(--dropdown-menu-max-width, 300px), var(--radix-dropdown-menu-content-available-width))"),
             maxHeight:
               maxHeight ??
-              "min(14rem, var(--radix-dropdown-menu-content-available-height))",
+              (scrollInside
+                ? "var(--radix-dropdown-menu-content-available-height)"
+                : "min(var(--dropdown-menu-max-height, 100vh), var(--radix-dropdown-menu-content-available-height))"),
           }}
         >
           {children}
@@ -356,15 +370,7 @@ const DropdownMenuComponent = ({
       sideOffset={sideOffset}
       alignOffset={alignOffset}
       contentClassName={contentClassName}
-      // Drill-down reuses this one Content for every level, so a submenu of
-      // long labels (recent file names) would stretch the whole menu to the
-      // available width. Cap it like the flyout submenu does; rows truncate.
-      maxWidth={
-        maxWidth ??
-        (isDrill
-          ? "min(300px, var(--radix-dropdown-menu-content-available-width))"
-          : undefined)
-      }
+      maxWidth={maxWidth}
       // A drilled-in level reuses this Content too, so a row that wants a
       // taller submenu (`subMenuMaxHeight`) has to raise the cap here; every
       // other level keeps the default.
@@ -393,7 +399,7 @@ const DropdownMenuComponent = ({
       {pinned ? (
         <>
           <div
-            className="min-h-0 overflow-y-auto flex flex-col"
+            className="min-h-0 max-h-[var(--dropdown-list-max-height,273px)] overflow-y-auto flex flex-col"
             data-testid="dropdown-scroll-area"
           >
             {items.map((item, index) => renderRow(item, index))}

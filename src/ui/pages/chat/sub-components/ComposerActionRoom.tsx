@@ -138,7 +138,7 @@ const ComposerActionRoom = () => {
         align="start"
         data-testid="composer-room-menu"
         contentClassName="min-w-[var(--chat-composer-room-menu-min-width,240px)]"
-        maxWidth="min(var(--chat-composer-room-menu-max-width,320px), var(--radix-dropdown-menu-content-available-width))"
+        maxWidth="min(var(--chat-composer-room-menu-max-width,var(--dropdown-menu-max-width,300px)), var(--radix-dropdown-menu-content-available-width))"
       />
     </div>
   );

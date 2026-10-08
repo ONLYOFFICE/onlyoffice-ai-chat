@@ -41,8 +41,18 @@ export interface FileAttachmentInput {
 
 export interface ImageAttachmentInput {
   name: string;
+  /**
+   * Data URL of the image. With `path` set it is only the preview the chips
+   * show; otherwise it is what the model receives.
+   */
   base64: string;
   title?: string;
+  /**
+   * The image's location on the host. When set, the model gets the path
+   * (and reads the image through a host tool, like a path-only file) rather
+   * than the base64 — see `WidgetConfig.attachFilesByPath`.
+   */
+  path?: string;
 }
 
 /**

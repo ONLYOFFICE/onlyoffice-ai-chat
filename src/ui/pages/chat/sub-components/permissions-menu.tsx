@@ -41,7 +41,6 @@ export function usePermissionsMenuItem(): DropDownItemProps {
         // ignore — the row only opens its submenu
       },
       trailingText: t(TOOL_PERMISSION_MODE_LABELS[mode]),
-      subMenuMaxHeight: "var(--radix-dropdown-menu-content-available-height)",
       subMenu: TOOL_PERMISSION_MODES.map((m) => ({
         text: t(TOOL_PERMISSION_MODE_LABELS[m]),
         "data-testid": `permissions-menu-option-${m}`,

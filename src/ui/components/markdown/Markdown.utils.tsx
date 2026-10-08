@@ -93,10 +93,12 @@ const defaultComponents = memoizeMarkdownComponents({
   // page itself, and a host that routes popups to the OS then asks the
   // system to open the page's own URL (Bug 83951). Such a link stays an
   // anchor — its text may still be a path a host click handler can read —
-  // but with no href and no target it does nothing on its own.
+  // but with no href and no target it does nothing on its own. It still
+  // shows the pointer: a browser gives an href-less anchor the text cursor,
+  // and the desktop host, which opens such a path on click, looked inert.
   a: ({ className, href, ...props }) => {
     const styles = cn(
-      "text-[var(--chat-link-color)] font-medium underline underline-offset-4",
+      "cursor-pointer text-[var(--chat-link-color)] font-medium underline underline-offset-4",
       className
     );
     if (!href) {
@@ -152,16 +154,19 @@ const defaultComponents = memoizeMarkdownComponents({
     />
   ),
   // Per-table, not per-cell — otherwise a mixed-language column alternates
-  // alignment.
+  // alignment. A table ignores `overflow` on itself, so a wide one scrolls in
+  // its own wrapper instead of widening the whole thread viewport.
   table: ({ className, ...props }) => (
-    <table
-      dir="auto"
-      className={cn(
-        "my-[8px] w-full border-separate border-spacing-0 overflow-y-auto text-[var(--chat-message-color)]",
-        className
-      )}
-      {...props}
-    />
+    <div className="my-[8px] overflow-x-auto">
+      <table
+        dir="auto"
+        className={cn(
+          "w-full border-separate border-spacing-0 text-[var(--chat-message-color)]",
+          className
+        )}
+        {...props}
+      />
+    </div>
   ),
   // `text-start`, not `text-left`, so it follows the table's direction; an
   // explicit GFM alignment still wins.
@@ -213,12 +218,14 @@ const defaultComponents = memoizeMarkdownComponents({
   ),
   // `dir` on an inline element also isolates it, so a `foo()` in an Arabic
   // sentence keeps its brackets instead of losing them to the surrounding run.
+  // Bold only, no italic: on Windows the mono stack falls through to
+  // Consolas, whose bold italic smears at small sizes in the desktop CEF.
   code: function Code({ className, ...props }) {
     const isCodeBlock = useIsMarkdownCodeBlock();
     return (
       <code
         dir="ltr"
-        className={cn(!isCodeBlock && "font-bold italic", className)}
+        className={cn(!isCodeBlock && "font-bold", className)}
         {...props}
       />
     );
@@ -307,7 +314,7 @@ export const plainMarkdownComponents = {
       return (
         <code
           dir="ltr"
-          className={cn("font-bold italic", className)}
+          className={cn("font-bold", className)}
           {...props}
         >
           {children}

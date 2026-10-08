@@ -472,7 +472,7 @@ an `isEnd` event, `drainToFinal` throws
 
 ### Errors
 
-- `"No profile assigned to ActionType.<X> and no default set"` —
+- `"No profile assigned to ActionType.<X> and no usable default set"` —
   neither the specific slot nor `Default` is set.
 - `"Assigned profile not found: <id>"` — the assignment row
   references a profile that has been deleted out of band.

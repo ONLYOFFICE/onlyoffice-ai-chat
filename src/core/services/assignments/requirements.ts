@@ -38,3 +38,22 @@ export function meetsRequirements(
   const caps = profile.capabilities ?? CapabilitiesUI.None;
   return (caps & required) === required;
 }
+
+/**
+ * Whether a profile reached through the `Default` *fallback* may run
+ * `actionType`. Lenient twin of {@link meetsRequirements}: a profile that
+ * declares no capabilities at all (`undefined` or `0`, typical for
+ * profiles injected by a host) is let through unchanged, so the fallback
+ * keeps working for every chat profile that predates capability
+ * tracking. Only a profile that *does* declare its capabilities and
+ * lacks the required bits is rejected — e.g. a text-only chat model
+ * standing in for an empty `ImageGeneration` slot (Bug 84265).
+ */
+export function defaultCanServe(
+  profile: Pick<Profile, "capabilities">,
+  actionType: ActionType
+): boolean {
+  const caps = profile.capabilities ?? CapabilitiesUI.None;
+  if (caps === CapabilitiesUI.None) return true;
+  return meetsRequirements(profile, actionType);
+}

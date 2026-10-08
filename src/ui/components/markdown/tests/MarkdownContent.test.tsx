@@ -88,7 +88,7 @@ describe("MarkdownContent code blocks", () => {
       return el as HTMLElement;
     });
     expect(code.className).toContain("font-bold");
-    expect(code.className).toContain("italic");
+    expect(code.className).not.toContain("italic");
     expect(screen.queryByTestId("copy-button")).not.toBeInTheDocument();
   });
 });
@@ -122,5 +122,32 @@ describe("MarkdownContent links", () => {
     const anchor = container.querySelector("a");
     expect(anchor!.getAttribute("href")).toBe("https://example.com");
     expect(anchor!.getAttribute("target")).toBe("_blank");
+  });
+});
+
+describe("MarkdownContent math", () => {
+  it("keeps dollar amounts in prose as plain text", async () => {
+    const md =
+      "revenue rising 12.2% to $4.60 million and 9% on-time; $210,000 saved";
+    const { container } = render(<MarkdownContent>{md}</MarkdownContent>);
+    await waitFor(() => expect(container.querySelector("p")).toBeTruthy());
+    expect(container.querySelector(".katex")).toBeNull();
+    expect(container.querySelector("p")!.textContent).toBe(md);
+  });
+
+  it("still renders \\(...\\) as an inline formula", async () => {
+    const md = "Euler \\(e^{i\\pi}+1=0\\) done";
+    const { container } = render(<MarkdownContent>{md}</MarkdownContent>);
+    await waitFor(() => expect(container.querySelector(".katex")).toBeTruthy());
+    expect(container.querySelector(".katex-display")).toBeNull();
+    expect(container.querySelector("p")!.textContent).toContain("Euler");
+  });
+
+  it("still renders \\[...\\] as a display formula", async () => {
+    const md = "\\[\\int_0^1 x^2 dx\\]";
+    const { container } = render(<MarkdownContent>{md}</MarkdownContent>);
+    await waitFor(() =>
+      expect(container.querySelector(".katex-display")).toBeTruthy()
+    );
   });
 });

@@ -3,15 +3,15 @@ import { describe, expect, it } from "vitest";
 import { normalizeMathDelimiters } from "../normalize-math";
 
 describe("normalizeMathDelimiters", () => {
-  it("converts inline \\(...\\) to $...$", () => {
+  it("converts inline \\(...\\) to $$...$$", () => {
     expect(normalizeMathDelimiters("Euler \\(e^{i\\pi}+1=0\\) done")).toBe(
-      "Euler $e^{i\\pi}+1=0$ done"
+      "Euler $$e^{i\\pi}+1=0$$ done"
     );
   });
 
   it("trims inline whitespace inside the delimiters", () => {
     expect(normalizeMathDelimiters("val \\( x^2 \\) end")).toBe(
-      "val $x^2$ end"
+      "val $$x^2$$ end"
     );
   });
 
@@ -22,7 +22,9 @@ describe("normalizeMathDelimiters", () => {
   });
 
   it("handles multiple math spans in one string", () => {
-    expect(normalizeMathDelimiters("\\(a\\) and \\(b\\)")).toBe("$a$ and $b$");
+    expect(normalizeMathDelimiters("\\(a\\) and \\(b\\)")).toBe(
+      "$$a$$ and $$b$$"
+    );
   });
 
   it("leaves fenced code blocks untouched", () => {
@@ -37,7 +39,7 @@ describe("normalizeMathDelimiters", () => {
 
   it("rewrites math outside a code span but not inside it", () => {
     expect(normalizeMathDelimiters("\\(a\\) `\\(b\\)` \\(c\\)")).toBe(
-      "$a$ `\\(b\\)` $c$"
+      "$$a$$ `\\(b\\)` $$c$$"
     );
   });
 

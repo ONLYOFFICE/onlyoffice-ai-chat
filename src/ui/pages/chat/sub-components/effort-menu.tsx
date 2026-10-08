@@ -85,10 +85,6 @@ export function useEffortMenuItem(): DropDownItemProps | null {
         </p>
       ),
       trailingText: options.find((o) => o.level === current)?.label,
-      // Six short rows at most; the menu's default 14rem cap was made for the
-      // widget's own row height and forces a scrollbar in hosts with taller
-      // rows. Let this one list grow to whatever the viewport allows.
-      subMenuMaxHeight: "var(--radix-dropdown-menu-content-available-height)",
       subMenu: options.map((o) => ({
         text: o.label,
         "data-testid": `effort-menu-option-${o.level}`,

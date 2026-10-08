@@ -718,6 +718,76 @@ describe("ComposerActionAttachment", () => {
       expect(mockConvertFileToText).not.toHaveBeenCalled();
     });
 
+    it("attaches a picked image by path through the host dialog", async () => {
+      mockAddLocalImageEnabled = true;
+      mockPickFiles.mockResolvedValue([
+        { path: "/pics/shot.PNG" },
+        { path: "/pics/notes.docx" },
+      ]);
+      mockGetFileType.mockReturnValue(0);
+
+      const { container } = render(<ComposerActionAttachment />);
+      const inputClick = vi.spyOn(
+        container.querySelector("input[type='file']") as HTMLInputElement,
+        "click"
+      );
+      const items = mockDropdownItems as {
+        text: string;
+        onClick: () => void;
+      }[];
+      await act(async () => {
+        items.find((i) => i.text === "AddLocalImage")!.onClick();
+      });
+
+      expect(mockPickFiles).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "images" }),
+      ]);
+      await waitFor(() => {
+        expect(mockAddAttachmentFile).toHaveBeenCalledWith([
+          { path: "/pics/shot.PNG", type: 0 },
+        ]);
+      });
+      // Not the internal input, and nothing inlined.
+      expect(inputClick).not.toHaveBeenCalled();
+      expect(mockAddAttachmentImage).not.toHaveBeenCalled();
+    });
+
+    it("attaches a picked image as an image ref with a preview when the host reads images", async () => {
+      mockAddLocalImageEnabled = true;
+      const readImage = vi.fn(async () => "data:image/png;base64,PREVIEW");
+      mockPlatformFile = {
+        pickFiles: mockPickFiles,
+        getFileType: mockGetFileType,
+        getRecentFiles: mockGetRecentFiles,
+        readImage,
+      };
+      mockPickFiles.mockResolvedValue([{ path: "/pics/shot.png" }]);
+
+      render(<ComposerActionAttachment />);
+      const items = mockDropdownItems as {
+        text: string;
+        onClick: () => void;
+      }[];
+      await act(async () => {
+        items.find((i) => i.text === "AddLocalImage")!.onClick();
+      });
+
+      await waitFor(() => {
+        expect(mockAddAttachmentImage).toHaveBeenCalledWith(
+          [
+            {
+              name: "shot.png",
+              base64: "data:image/png;base64,PREVIEW",
+              path: "/pics/shot.png",
+            },
+          ],
+          { pendingIds: ["pending-0"] }
+        );
+      });
+      expect(readImage).toHaveBeenCalledWith("/pics/shot.png");
+      expect(mockAddAttachmentFile).not.toHaveBeenCalled();
+    });
+
     it("attaches a recent file by path without converting it", async () => {
       mockGetRecentFiles.mockResolvedValue(
         JSON.stringify({

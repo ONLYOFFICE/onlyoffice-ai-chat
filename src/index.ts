@@ -83,6 +83,8 @@ export { PlatformProvider, usePlatform } from "./ui/providers/PlatformProvider";
 export {
   ATTACHMENT_ACCEPT,
   ATTACHMENT_PICK_FILTERS,
+  IMAGE_PICK_FILTER,
+  isSupportedImagePath,
 } from "./ui/providers/PlatformProvider";
 export type {
   AttachmentPickFilter,
@@ -127,6 +129,7 @@ export type {
 // ---------------------------------------------------------------------------
 
 export {
+  ACTION_REQUIREMENTS,
   AIEngine,
   AssignmentsEngine,
   ContextEngine,
@@ -150,6 +153,8 @@ export {
   ToolsEngine,
   WebSearchEngine,
   composeToolsAdapters,
+  defaultCanServe,
+  meetsRequirements,
   toChatError,
   toOpenAIChatCompletionStream,
 } from "./core/services";

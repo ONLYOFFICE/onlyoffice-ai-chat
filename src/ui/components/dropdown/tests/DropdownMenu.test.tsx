@@ -155,6 +155,40 @@ describe("DropdownMenu", () => {
     ).not.toThrow();
   });
 
+  describe("width cap", () => {
+    const items = [{ text: "Row", onClick: vi.fn() }];
+    const content = () =>
+      document.querySelector(".dropdown-menu") as HTMLElement;
+
+    it("caps a content-sized panel at the shared width token", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          matchTriggerWidth={false}
+          open
+        />
+      );
+      expect(content().style.maxWidth).toContain("--dropdown-menu-max-width");
+      expect(content().style.maxWidth).toContain("available-width");
+    });
+
+    it("leaves a trigger-width panel bound by the viewport alone", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          matchTriggerWidth
+          open
+        />
+      );
+      expect(content().style.maxWidth).not.toContain(
+        "--dropdown-menu-max-width"
+      );
+      expect(content().style.maxWidth).toContain("available-width");
+    });
+  });
+
   describe("footerItems", () => {
     const items = [
       { text: "Profile 1", onClick: vi.fn() },
@@ -199,6 +233,24 @@ describe("DropdownMenu", () => {
       expect(content.className).not.toContain("overflow-y-auto");
     });
 
+    it("caps the scroll area, not the content, so the footer comes on top of the rows", () => {
+      render(
+        <DropdownMenu
+          trigger={<button>Open</button>}
+          items={items}
+          footerItems={footer}
+          open
+        />
+      );
+      const content = document.querySelector(".dropdown-menu") as HTMLElement;
+      const scroll = screen.getByTestId("dropdown-scroll-area");
+      expect(scroll.className).toContain("--dropdown-list-max-height");
+      expect(content.style.maxHeight).not.toContain(
+        "--dropdown-menu-max-height"
+      );
+      expect(content.style.maxHeight).toContain("available-height");
+    });
+
     it("does not indent the list for an icon that only the footer has", () => {
       render(
         <DropdownMenu
@@ -232,6 +284,7 @@ describe("DropdownMenu", () => {
       );
       const content = document.querySelector(".dropdown-menu") as HTMLElement;
       expect(content.className).toContain("overflow-y-auto");
+      expect(content.style.maxHeight).toContain("--dropdown-menu-max-height");
       expect(screen.queryByTestId("dropdown-footer")).toBeNull();
       expect(screen.queryByTestId("dropdown-scroll-area")).toBeNull();
     });

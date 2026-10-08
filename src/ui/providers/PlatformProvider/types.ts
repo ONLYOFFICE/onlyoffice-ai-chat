@@ -87,6 +87,15 @@ export interface PlatformFileOperations {
   pickImage?(): Promise<{ name: string; base64: string } | null>;
 
   /**
+   * Read an image at a host path as a data URL, for the attachment chip's
+   * thumbnail. Consulted only under `WidgetConfig.attachFilesByPath`, where
+   * "Add local image" attaches by path: with this the image still shows its
+   * preview and the model still gets the path. `null` when the file cannot
+   * be read; the image is then attached as a plain file chip.
+   */
+  readImage?(path: string): Promise<string | null>;
+
+  /**
    * Convert a file at the given path to plain text (e.g. DOCX/PDF → text).
    * Not called when `WidgetConfig.attachFilesByPath` is on.
    */

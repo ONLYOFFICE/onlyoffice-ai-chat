@@ -127,6 +127,8 @@ describe("defaultComponents", () => {
     expect(anchor!.hasAttribute("href")).toBe(false);
     expect(anchor!.hasAttribute("target")).toBe(false);
     expect(anchor!.hasAttribute("rel")).toBe(false);
+    // A host click handler may still open the path, so it keeps the hand.
+    expect(anchor!.className).toContain("cursor-pointer");
   });
 
   it("renders ul as unordered list", () => {
@@ -305,11 +307,12 @@ describe("plainMarkdownComponents", () => {
     ).toBeTruthy();
   });
 
-  it("keeps inline code inline with font-bold italic", () => {
+  it("keeps inline code inline with font-bold, not italic", () => {
     const { container } = render(<PlainCode>{"x"}</PlainCode>);
     const code = container.querySelector("code");
     expect(code).toBeTruthy();
-    expect(code!.className).toContain("font-bold italic");
+    expect(code!.className).toContain("font-bold");
+    expect(code!.className).not.toContain("italic");
   });
 
   it("pre unwraps a single element child (the block UI owns the markup)", () => {

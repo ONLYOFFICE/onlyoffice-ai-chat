@@ -7,7 +7,9 @@ import { useToolsContext } from "../../../tools/context";
 import { getFileIconName, isSpreadsheet } from "../../../../shared/utils";
 import {
   ATTACHMENT_PICK_FILTERS,
+  IMAGE_PICK_FILTER,
   isSupportedAttachmentPath,
+  isSupportedImagePath,
 } from "../../../../shared/attachment-formats";
 import { useStores } from "../../../store/context";
 import { useWidgetConfig } from "../../../../widget-config";
@@ -176,6 +178,73 @@ const ComposerActionAttachment = () => {
     }
   };
 
+  // "Add local image" under `attachFilesByPath`: the host's native dialog
+  // and a path-only attachment, exactly like "Add local file" — the model
+  // reads the image through the host's file tool. The internal `<input>`
+  // (base64 inline) stays for every other host.
+  const pickImagesByPath = Boolean(
+    attachFilesByPath && platform.file?.pickFiles
+  );
+
+  const selectLocalImage = async () => {
+    const fileApi = platform.file;
+    if (!fileApi?.pickFiles) return;
+    const picked = await fileApi.pickFiles([IMAGE_PICK_FILTER]);
+    if (!picked) return;
+
+    // Same re-check as selectLocalFile: the filter is a hint the host may
+    // ignore, and a typed-in name can be anything.
+    const images = picked.filter((file) => {
+      if (isSupportedImagePath(file.path)) return true;
+      logger.warn(
+        "[ComposerActionAttachment] skipping non-image file",
+        file.path
+      );
+      return false;
+    });
+    if (images.length === 0) return;
+
+    // With a host preview reader the chip keeps its thumbnail: an image
+    // ref whose base64 is the preview and whose path is what the model
+    // gets. Without one the image is a path-only file chip.
+    if (fileApi.readImage) {
+      const readImage = fileApi.readImage.bind(fileApi);
+      const pendingIds = beginPendingAttachments(
+        images.map((file) => ({
+          title: file.path.split(/[\\/]/).pop() ?? file.path,
+          kind: "image" as const,
+        }))
+      );
+      const accepted = images.slice(0, pendingIds.length);
+      if (accepted.length === 0) return;
+      try {
+        const inputs = await Promise.all(
+          accepted.map(async (file) => ({
+            name: file.path.split(/[\\/]/).pop() ?? file.path,
+            base64: (await readImage(file.path)) ?? "",
+            path: file.path,
+          }))
+        );
+        await addAttachmentImage(inputs, { pendingIds });
+      } catch (err) {
+        failPendingAttachments(pendingIds);
+        logger.error("[ComposerActionAttachment] attach failed", err);
+      }
+      return;
+    }
+
+    try {
+      await addAttachmentFile(
+        images.map((file) => ({
+          path: file.path,
+          type: fileApi.getFileType?.(file.path) ?? 0,
+        }))
+      );
+    } catch (err) {
+      logger.error("[ComposerActionAttachment] attach failed", err);
+    }
+  };
+
   const [recentFiles, setRecentFiles] = React.useState<DropDownItemProps[]>([]);
   // Ticket for the in-flight read. Hosts signal in bursts, so reads overlap;
   // only the newest one may write, or a slow earlier answer would land on top
@@ -275,7 +344,10 @@ const ComposerActionAttachment = () => {
     items.push({
       text: t("AddLocalImage"),
       "data-testid": "attachment-menu-add-local-image",
-      onClick: () => imageInputRef.current?.click(),
+      onClick: () => {
+        if (pickImagesByPath) void selectLocalImage();
+        else imageInputRef.current?.click();
+      },
     });
   }
 

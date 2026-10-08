@@ -598,7 +598,7 @@ export const AssistantMessage = memo(() => {
       >
         <div
           data-testid="assistant-message-content"
-          className="col-span-2 col-start-2 row-start-1 break-words leading-7 text-[var(--chat-message-color)] select-text"
+          className="col-span-2 col-start-2 row-start-1 min-w-0 break-words leading-7 text-[var(--chat-message-color)] select-text"
         >
           <MessagePrimitive.Content
             components={{

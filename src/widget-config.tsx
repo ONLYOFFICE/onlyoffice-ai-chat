@@ -283,16 +283,20 @@ export interface WidgetConfig {
    * (attachments) dropdown. Opt-in: the item appears only when this is `true`.
    * `false` / omitted hides it. The item rides on an internal HTML `<input>`
    * (not on `PlatformAdapter.file`), so enabling it needs no host file
-   * capability.
+   * capability — except under `attachFilesByPath` with a `pickFiles` host,
+   * where it opens the host dialog and attaches the image by path instead.
    */
   addLocalImageEnabled?: boolean;
   /**
    * Attach files picked through "Add local file" / "Recent files" by path
    * only, without reading them. The model then gets the file name and path
    * instead of the text and must read the file through a tool the host
-   * registers (`hostToolGroups` or an MCP server). Opt-in: `false` /
+   * registers (`hostToolGroups` or an MCP server). "Add local image" follows
+   * suit when the host has `pickFiles`: the dialog opens with
+   * `IMAGE_PICK_FILTER` and the image is attached by path too, for the same
+   * tool to read, instead of being inlined as base64. Opt-in: `false` /
    * omitted converts each file with `PlatformAdapter.file.convertFileToText`
-   * and inlines the text, as before.
+   * and inlines the text, and reads images inline, as before.
    */
   attachFilesByPath?: boolean;
   /**

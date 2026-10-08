@@ -1,5 +1,92 @@
 # Changelog
 
+## 0.6.45
+
+### Fixed
+
+- **Autoscroll keeps following a streamed reply (Bug 84295).** `Thread` re-renders on every token, and each render of `ThreadPrimitive.Viewport` handed React a new ref, so the runtime's autoscroll `MutationObserver` was torn down and recreated mid-stream and lost the records of the commit that grew the reply. `ThreadInner` is now memoized, so the viewport keeps its observer.
+- **Inline code is bold only, no italic.** On Windows the mono stack falls through to Consolas, whose bold italic smears at small sizes in the desktop CEF.
+
+### Changed
+
+- The check mark on a selected dropdown item is 24px instead of 16px.
+
+## 0.6.44
+
+### Fixed
+
+- **Dollar amounts in a reply no longer render as a formula.** `remark-math` treated a single `$...$` span as inline math, so prose like "revenue rose to $4.60 million … $210,000 saved" was handed to KaTeX: italic math font, collapsed spaces, and everything after a `%` dropped as a TeX comment. Single-dollar math is now off in both markdown renderers. Formulas still work: `\(...\)` is normalized to `$$...$$`, which `remark-math` keeps inline, and `\[...\]` still becomes a display block.
+
+## 0.6.43
+
+### Fixed
+
+- **An image attached by path keeps its thumbnail.** 0.6.39 turned it into a plain file chip with a generic icon. `ImageAttachmentInput` now takes an optional `path`: the attachment stays an image ref whose base64 is the chip preview, and the resolver sends the model the path (an `[attached image: …]` block with the read-it note) instead of the base64. A new optional `PlatformFileOperations.readImage(path)` returns the preview as a data URL; with it, "Add local image" under `attachFilesByPath` goes this way, and without it the path-only file chip of 0.6.39 remains.
+
+## 0.6.42
+
+### Fixed
+
+- **An attachment chip in a sent message is capped at 300px.** The close-less chip (the one a message shows after sending) had no width cap, so a long file name stretched it across the bubble; it now truncates at 300px like the composer's chips do.
+
+## 0.6.41
+
+### Changed
+
+- Rebuilt release of 0.6.40 with no code changes, so consumers that cache the package by version pick up the Bug 84265 fix.
+
+## 0.6.40
+
+### Fixed
+
+- **A default model that cannot run an action is no longer borrowed for it (Bug 84265).** The `Default` slot accepts any profile, so an empty `ImageGeneration` slot used to fall back to a text-only chat model and the request failed at the provider after the agent had already announced it was drawing. `tryResolveForAction` / `resolveForAction` now treat such a default like an empty slot: a profile reached through the fallback must pass the new `defaultCanServe(profile, actionType)`, which rejects only a profile that *declares* capabilities and lacks the required bits. Profiles with no declared mask (host-injected ones) and explicit bindings are untouched.
+
+### Added
+
+- `ACTION_REQUIREMENTS`, `meetsRequirements` and `defaultCanServe` are exported from the package root, so a host that implements its own `Default` fallback can apply the same rule.
+
+## 0.6.39
+
+### Changed
+
+- **"Add local image" attaches by path under `attachFilesByPath`.** With the flag on and a host `pickFiles`, the item opens the host's own dialog with the new `IMAGE_PICK_FILTER` row and pushes the picked image into the draft as a path-only attachment, exactly like "Add local file"; the model then reads it through the host's file tool instead of receiving base64 inline. Every other host keeps the internal `<input accept="image/*">`. `isSupportedImagePath` is exported for a host that attaches images from elsewhere (a drop handler). The default chat prompt now says an image may arrive as a path with a read-it note, so the model reaches for the file tool in that case.
+
+## 0.6.38
+
+### Fixed
+
+- **A link to a local file shows the hand cursor.** A link whose target the sanitizer blanked (a Windows `C:\…` path, `sandbox:`) renders as an anchor with no href, and a browser gives such an anchor the text cursor, so a file the model had just written looked inert in the desktop even though the host opens it on click. Message links now carry the pointer regardless of href.
+
+## 0.6.37
+
+### Changed
+
+- **Dropdown panels are capped at 300px wide; longer labels truncate.** A new `--dropdown-menu-max-width` token (300px) bounds every content-sized panel, flyout submenus and drilled-in levels included; a label that does not fit ends in an ellipsis and shows a tooltip, as rows already did. The model picker, context menu and room menu caps now derive from it (the last two were 320px). A combobox that matches its trigger width is exempt, so a panel is never narrower than its field. The space to the viewport edge still applies on top.
+
+## 0.6.36
+
+### Fixed
+
+- **A list of exactly ten rows no longer shows a scrollbar for a few pixels.** `--dropdown-list-max-height` is now ten and a half rows: ten fit with slack, and with more rows the eleventh peeks out to signal the scroll. `--dropdown-menu-max-height` follows.
+
+## 0.6.35
+
+### Fixed
+
+- **Rows pinned below a list no longer eat into its ten visible rows.** In the model picker the Effort and Permissions rows sat inside the 0.6.34 cap, so only about seven profiles showed before the list scrolled. The row cap now sits on the scroll area itself (`--dropdown-list-max-height`, ten rows) and the pinned rows come on top; `--dropdown-menu-max-height` derives from it plus the container padding and still caps menus without a footer. The space to the viewport edge applies above either.
+
+## 0.6.34
+
+### Changed
+
+- **Dropdown menus show ten rows before they scroll.** 0.6.33 let a menu grow to the viewport; that is too tall for a long prompt or model list, so the cap is back as a row count. The new `--dropdown-menu-max-height` token defaults to ten rows plus the container padding (270px at the stock 26px row), derived from `--dropdown-item-height` and `--dropdown-menu-padding-y`, so a host that changes the row height keeps ten rows. The space to the viewport edge still applies on top. In the model picker the pinned Effort and Permissions rows count toward the ten.
+
+## 0.6.33
+
+### Changed
+
+- **Dropdown menus grow to the viewport before they scroll.** Every menu (the model picker, prompts, comboboxes, submenus) was capped at 14rem, so a dozen rows already scrolled while the window had room to spare. The fixed cap is gone; a menu is bounded only by the space to the viewport edge. A host that wants shorter menus sets `--dropdown-menu-max-height` (e.g. `20rem`), which applies on top of the viewport bound. The Effort and Permissions submenus drop their own cap override, now that it matches the default.
+
 ## 0.6.32
 
 ### Changed

@@ -197,7 +197,14 @@ pickFiles: (filters = ATTACHMENT_PICK_FILTERS) =>
 ```
 
 Images are **not** in this list: "Add local image" rides an internal
-`<input accept="image/*">` and never reaches `pickFiles`.
+`<input accept="image/*">` and never reaches `pickFiles` — unless
+`attachFilesByPath` is on and the host has `pickFiles`. Then the item opens the
+host dialog with the single `IMAGE_PICK_FILTER` row and attaches the image by
+path, like a file, for the host's file tool to read; `isSupportedImagePath` is
+the matching re-check for a host that attaches images from elsewhere (a drop
+handler). A host that also implements `readImage(path)` (the image as a data
+URL) keeps the thumbnail on the chip: the attachment is then an image ref whose
+base64 is the preview and whose `path` is what the model receives.
 
 ### Attaching by path
 
