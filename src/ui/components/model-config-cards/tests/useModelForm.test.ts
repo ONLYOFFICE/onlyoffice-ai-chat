@@ -57,9 +57,22 @@ const initialValues: ModelFormValues = {
 describe("useModelForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Dated so the picker order (newest first) matches the list order.
     mockGetProviderModels.mockResolvedValue([
-      { id: "gpt-4", name: "GPT-4", provider: "openai", capabilities: 0 },
-      { id: "gpt-3.5", name: "GPT-3.5", provider: "openai", capabilities: 0 },
+      {
+        id: "gpt-4",
+        name: "GPT-4",
+        provider: "openai",
+        capabilities: 0,
+        created: 1_680_000_000,
+      },
+      {
+        id: "gpt-3.5",
+        name: "GPT-3.5",
+        provider: "openai",
+        capabilities: 0,
+        created: 1_670_000_000,
+      },
     ]);
   });
 
@@ -259,6 +272,70 @@ describe("useModelForm", () => {
       );
     });
     expect(result.current.values.model).toBe("img-1");
+  });
+
+  it("defaults to the model the picker lists first, not the first one the API returned", async () => {
+    // OpenAI's /v1/models order is arbitrary; the picker sorts newest first.
+    mockGetProviderModels.mockResolvedValue([
+      {
+        id: "gpt-5.4-2026-03-05",
+        name: "gpt-5.4-2026-03-05",
+        provider: "openai",
+        capabilities: 0x01,
+        created: 1_772_000_000,
+      },
+      {
+        id: "gpt-image-2.5",
+        name: "gpt-image-2.5",
+        provider: "openai",
+        capabilities: 0x02, // Image — newest, but not chat-capable
+        created: 1_790_000_000,
+      },
+      {
+        id: "gpt-6.1-sol",
+        name: "gpt-6.1-sol",
+        provider: "openai",
+        capabilities: 0x01,
+        created: 1_785_000_000,
+      },
+    ]);
+    const { result } = renderHook(() => useModelForm(initialValues));
+    await act(async () => {
+      await result.current.fetchModels(
+        "openai" as never,
+        "sk-key",
+        "https://api.openai.com"
+      );
+    });
+    expect(result.current.values.model).toBe("gpt-6.1-sol");
+  });
+
+  it("keeps a server-ranked catalogue's order when picking the default", async () => {
+    mockGetProviderModels.mockResolvedValue([
+      {
+        id: "popular/model",
+        name: "Popular",
+        provider: "openrouter",
+        capabilities: 0x01,
+        created: 1_700_000_000,
+      },
+      {
+        id: "newer/model",
+        name: "Newer",
+        provider: "openrouter",
+        capabilities: 0x01,
+        created: 1_790_000_000,
+      },
+    ]);
+    const { result } = renderHook(() => useModelForm(initialValues));
+    await act(async () => {
+      await result.current.fetchModels(
+        "openrouter" as never,
+        "or-key",
+        "https://openrouter.ai/api/v1"
+      );
+    });
+    expect(result.current.values.model).toBe("popular/model");
   });
 
   it("fetchModels yields empty model list when provider returns non-array", async () => {
