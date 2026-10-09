@@ -20,7 +20,7 @@ const InitialSetup = () => {
       data-testid="initial-setup-page"
       className="aui-root flex h-full w-full [justify-content:var(--initial-setup-justify,flex-start)] bg-[var(--layout-background-color)]"
     >
-      <div className="max-w-[var(--initial-setup-max-width,560px)] flex flex-col m-[var(--initial-setup-margin,12px)] overflow-hidden select-none">
+      <div className="flex-1 min-w-0 max-w-[var(--initial-setup-max-width,560px)] flex flex-col m-[var(--initial-setup-margin,12px)] overflow-hidden select-none">
         <AddModelCard
           variant="standalone"
           isHorizontal={isAddModelCardHorizontal}

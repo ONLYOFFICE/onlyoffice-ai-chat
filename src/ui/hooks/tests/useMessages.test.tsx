@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 const { readToolCallMock, patchToolCallArgsMock, patchToolCallResultMock } =
@@ -1809,5 +1809,149 @@ describe("useMessages orphaned rounds", () => {
       undefined
     );
     expect(stores.messageState._abortController).toBeDefined();
+  });
+});
+
+describe("useMessages delta coalescing", () => {
+  // Every store write renders synchronously (Zustand through
+  // `useSyncExternalStore`), so applying each delta as it arrived chained
+  // the stream loop and its renders into one microtask run that froze the
+  // editor while a long reasoning block streamed. Deltas now reach the
+  // store at most once per render interval, from a timer.
+  const msg = (content: string) => ({ role: "assistant", content });
+  const start = { type: "message-start", message: msg(""), messageId: "m1" };
+  const delta = (content: string) => ({
+    type: "message-delta",
+    message: msg(content),
+    messageId: "m1",
+  });
+  const end = (content: string) => ({
+    type: "message-end",
+    message: msg(content),
+    messageId: "m1",
+  });
+
+  // Yields `head`, runs `beforeGate`, then waits until the test releases the
+  // gate before yielding `tail` — so the store can be checked mid-stream.
+  const gatedStream = (
+    head: unknown[],
+    tail: unknown[],
+    beforeGate?: () => void
+  ) => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    async function* stream() {
+      for (const event of head) yield event;
+      beforeGate?.();
+      await gate;
+      for (const event of tail) yield event;
+    }
+    return { stream: stream(), release };
+  };
+
+  const renderedContents = () =>
+    stores.messageState.updateLastMessage.mock.calls.map(
+      ([m]) => (m as { content?: unknown }).content
+    );
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    stores.profilesState.chatProfile = profile;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("applies only the latest of a burst of deltas, once the interval passes", async () => {
+    const { stream, release } = gatedStream(
+      [start, delta("a"), delta("ab"), delta("abc")],
+      [end("abcd")]
+    );
+    apiAi.sendWithStream.mockReturnValue(stream);
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+
+    let sending!: Promise<void>;
+    await act(async () => {
+      sending = result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(stores.messageState.updateLastMessage).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    expect(renderedContents()).toEqual(["abc"]);
+
+    await act(async () => {
+      release();
+      await sending;
+    });
+    expect(renderedContents()).toEqual(["abc", "abcd"]);
+  });
+
+  it("lands a queued delta before the event that follows it", async () => {
+    apiAi.sendWithStream.mockReturnValue(
+      arr([start, delta("a"), delta("ab"), end("abc")])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    expect(renderedContents()).toEqual(["ab", "abc"]);
+
+    // Nothing stale is left on the timer to overwrite the final message.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+    expect(renderedContents()).toEqual(["ab", "abc"]);
+  });
+
+  it("drops a queued delta once the round is orphaned", async () => {
+    const { stream, release } = gatedStream(
+      [start, delta("a")],
+      [end("ab")],
+      () => {
+        stores.messageState._streamEpoch += 1;
+      }
+    );
+    apiAi.sendWithStream.mockReturnValue(stream);
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+
+    let sending!: Promise<void>;
+    await act(async () => {
+      sending = result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    await act(async () => {
+      release();
+      await sending;
+    });
+    expect(stores.messageState.updateLastMessage).not.toHaveBeenCalled();
+  });
+
+  it("still emits onStreamDelta for every delta", async () => {
+    apiAi.sendWithStream.mockReturnValue(
+      arr([start, delta("a"), delta("ab"), delta("abc"), end("abcd")])
+    );
+    const { result } = renderHook(() => useMessages({ isReady: true }));
+    await act(async () => {
+      await result.current.onNew({
+        content: [{ type: "text", text: "hi" }],
+      } as never);
+    });
+    const deltas = callbacksManager.emit.mock.calls
+      .filter(([name]) => name === "onStreamDelta")
+      .map(
+        ([, payload]) =>
+          (payload as { message: { content: string } }).message.content
+      );
+    expect(deltas).toEqual(["a", "ab", "abc", "abcd"]);
   });
 });

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.1
+
+### Fixed
+
+- Coalesce streamed deltas so a long reasoning block can't freeze the editor. Every delta rendered synchronously; the store is now updated from a timer, at most once per 50 ms.
+- Default the model form to the model the picker lists first, not the first one the API returned. The two orders could disagree, leaving an old snapshot selected while the newest model topped the list.
+- Let the initial setup form fill the pane up to `--initial-setup-max-width`. It had shrunk to the width of its title, so the fields stopped halfway across the pane.
+- Draw the ONLYOFFICE logo in the context cloud row at its native 16px instead of stretching it to the 24px icon slot.
+
 ## 1.0.0
 
 First stable release of `@onlyoffice/ai-chat` — a headless AI chat widget with built-in providers, MCP tool support and pluggable adapters.

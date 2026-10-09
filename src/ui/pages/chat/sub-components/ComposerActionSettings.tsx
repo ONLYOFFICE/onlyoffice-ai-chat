@@ -86,7 +86,18 @@ const ComposerActionSettings = () => {
         id: `context-cloud:${folder.cloud}`,
         text: folder.cloud,
         "data-testid": "context-menu-cloud",
-        icon: <IconButton iconName="onlyoffice" size={24} disableHover />,
+        // The logo is drawn on a 16px grid, unlike the 24px room glyph:
+        // keep the row's 24px icon slot so the labels line up, but draw the
+        // logo at its native 16px instead of stretching it ×1.5.
+        icon: (
+          <IconButton
+            iconName="onlyoffice"
+            size={24}
+            width={16}
+            height={16}
+            disableHover
+          />
+        ),
         onClick: () => {
           // ignore — the row only opens its submenu
         },
