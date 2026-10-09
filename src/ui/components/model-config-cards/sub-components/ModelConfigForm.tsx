@@ -11,6 +11,7 @@ import { useComponents } from "../../../providers/ComponentsProvider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../tooltip";
 import { CapabilitiesUI } from "../../../../capabilities";
 import { Icon } from "../../icon";
+import { orderModels } from "../model-order";
 
 /**
  * The only provider whose catalogue carries real per-model capability
@@ -21,17 +22,6 @@ import { Icon } from "../../icon";
  * be decoration at best and wrong at worst. They stay hidden there.
  */
 const CAPABILITY_ICONS_PROVIDER = "openrouter";
-
-/**
- * Provider whose catalogue arrives already ordered by the server and is
- * therefore listed as-is.
- *
- * OpenRouter is asked for `?sort=most-popular`, a usage ranking that
- * exists purely as the response's array order — no field on a model
- * carries it. Re-sorting the list client-side would silently discard that
- * ranking, so the picker leaves this provider's order untouched.
- */
-const SERVER_ORDERED_PROVIDER = "openrouter";
 
 // Tool-calling is what makes a model usable as a chat model here (the
 // chat round is the only place tools are dispatched), so the Tools flag
@@ -185,35 +175,17 @@ export const ModelConfigForm = ({
 
   const showCapabilityIcons = values.provider === CAPABILITY_ICONS_PROVIDER;
 
-  // A server-ranked catalogue is shown in the order it arrived; everything
-  // else is sorted here, newest release first where the provider dates its
-  // models (`created`, Unix seconds) and alphabetically otherwise. Dated
-  // models sort above undated ones so a partially dated catalogue degrades
-  // predictably instead of interleaving.
-  const orderedModels =
-    values.provider === SERVER_ORDERED_PROVIDER
-      ? models
-      : [...models].sort((a, b) => {
-          if (a.created !== b.created) {
-            if (a.created === undefined) return 1;
-            if (b.created === undefined) return -1;
-            return b.created - a.created;
-          }
-          return a.name.localeCompare(b.name, undefined, {
-            sensitivity: "base",
-          });
-        });
+  const orderedModels = orderModels(models, values.provider);
 
-  const modelItems = orderedModels
-    .map((m) => ({
-      text: m.name,
-      id: m.id,
-      "data-testid": "model-form-model-option",
-      onClick: () => onChange("model", m.id),
-      trailingIcon: showCapabilityIcons ? (
-        <ModelCapabilityIcons model={m} />
-      ) : undefined,
-    }));
+  const modelItems = orderedModels.map((m) => ({
+    text: m.name,
+    id: m.id,
+    "data-testid": "model-form-model-option",
+    onClick: () => onChange("model", m.id),
+    trailingIcon: showCapabilityIcons ? (
+      <ModelCapabilityIcons model={m} />
+    ) : undefined,
+  }));
 
   const isExternalOnlyoffice =
     values.provider === "onlyoffice" && !!externalOnlyofficeConfig;
